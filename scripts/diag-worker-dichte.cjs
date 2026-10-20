@@ -1442,14 +1442,20 @@ async function gebaut(page, fehler) {
             const r = window.anazhRealm;
             const s = r.state;
             const t0 = performance.now();
-            while (!(s.hydrosphere && s.hydrosphere.ready) && performance.now() - t0 < 60000) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {
-                    /* der Boot reift */
-                }
-                await new Promise((res) => setTimeout(res, 16));
-            }
+            await window
+                .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
+                    fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
+                    takt: async () => {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {
+                        /* der Boot reift */
+                    }
+                    await new Promise((res) => setTimeout(res, 16));
+                    },
+                    max: 3750,
+                })
+                .catch(() => {});
             r._gameLoopTick = () => {}; // die Welt steht still
             const G = window.__gelaendeCore;
             const wl = s.waterLevel;

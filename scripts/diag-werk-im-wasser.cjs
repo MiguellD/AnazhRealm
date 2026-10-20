@@ -448,7 +448,6 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
-    const dl0 = performance.now() + 120000;
     await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const st = r.state;
@@ -1780,7 +1779,6 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    const dl0 = performance.now() + 120000;
     await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     if (!r) return { fehler: "die Welt bootete nicht" };
@@ -2390,7 +2388,6 @@ function selbsttest() {
 // Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
 // Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
 async function weltOrte(A) {
-    const dl = performance.now() + 120000;
     await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const G = window.__gelaendeCore;
@@ -2612,14 +2609,7 @@ async function lauf() {
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
-                    const t0 = performance.now();
-                    while (
-                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
-                        performance.now() - t0 < 120000
-                    )
-                        await new Promise((res) => setTimeout(res, 200));
-                    const r = window.anazhRealm;
-                    if (!r || !r.importWorldBeside) return null;
+                    const r = await window.__weltDa((w) => typeof w.importWorldBeside === "function");
                     const res = r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);

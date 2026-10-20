@@ -1025,16 +1025,20 @@ async function probeBahn(B) {
     };
     const M = r._genesisMitte();
     const vorschau = async () => {
-        const dlV = performance.now() + 30000;
         let e = null;
-        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte)
-        for (let t = 0; performance.now() < dlV; t++) {
-            r._genesisPortalRing(st.playerMesh.position);
-            r._portalApproachPrefetch(st.playerMesh.position);
-            e = st.architectures.find((a) => a && a.id === "portal-preview-garage");
-            if (e) break;
-            if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
-        }
+        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte); das EINE
+        // Warten (welt-boot `__gebautNach`) zählt Takte ohne Offenes, nie Sekunden
+        await window
+            .__gebautNach("die Vorschau der Garage", {
+                fertig: () => !!(e = st.architectures.find((a) => a && a.id === "portal-preview-garage")),
+                takt: async (t) => {
+                    r._genesisPortalRing(st.playerMesh.position);
+                    r._portalApproachPrefetch(st.playerMesh.position);
+                    if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
+                },
+                max: 3000,
+            })
+            .catch(() => {});
         return e;
     };
 

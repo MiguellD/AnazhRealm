@@ -77,7 +77,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const ohneKommentare = stammLib.ohneKommentare;
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, karteMin: 0.5, karteMax: 1.5 };
 // W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
 // die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
 const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
@@ -91,11 +91,12 @@ function zugVerdict(m) {
     ]) {
         if (!z) out.push(`zug ${wer}: keine Probe (vakuös)`);
         else if (!z.fremd) out.push(`zug ${wer}: kein fremder Zug im Flug (vakuös)`);
-        else if (!(Number.isFinite(z.ms) && z.ms <= SOLL.zugMs)) // null ist nie 0 (Lehre 17)
+        // erwacht er nach dem Ereignis (die Foundry hat nichts mehr offen), nie an einer Uhr (K-WANDUHR); null ist nie 0 (Lehre 17)
+        else if (!Number.isFinite(z.ms))
             out.push(
                 z.imCache
                     ? `zug ${wer} schläft: ${z.key} liegt im Cache, ${wer === "hand" ? "die Hand" : "die Vorschau"} wartet weiter`
-                    : `zug ${wer}: ${z.key} nach ${SOLL.zugMs} ms nicht angekommen (der fremde Zug im Rang der Ferne)`
+                    : `zug ${wer}: ${z.key} nach dem Zug nicht angekommen (der fremde Zug im Rang der Ferne)`
             );
     }
     // V-D3 STUFEN (K38-N2): jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
@@ -103,11 +104,11 @@ function zugVerdict(m) {
     const st = m.stufen || [];
     if (st.length !== 3) out.push(`zug stufen: ${st.length} von 3 Stufen gemessen (vakuös)`);
     for (const s of st)
-        if (!(Number.isFinite(s.ms) && s.ms <= SOLL.zugMs))
+        if (!Number.isFinite(s.ms))
             out.push(
                 s.da
                     ? `zug stufe L${s.lod} schläft: ${s.wart} ist da, die Vorschau wartet weiter`
-                    : `zug stufe L${s.lod}: ${s.wart} nach ${SOLL.zugMs} ms nicht da`
+                    : `zug stufe L${s.lod}: ${s.wart} nicht da, die Foundry hat nichts mehr offen`
             );
         // die Karte steht in ihrer Größe: die Box der Vorschau misst die Höhe ihrer Höhen-Stufe (der Rahmen rahmt die Karte,
         // nie den Stamm des Einheits-Quads)
@@ -852,7 +853,6 @@ const server = statikServer();
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(arg) {
     const kiPort = arg && arg.kiPort;
-    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     await window.__weltDa();
@@ -870,8 +870,9 @@ async function probe(arg) {
     try {
         const m = { gestartet: false };
         out.ankunft = m;
-        const dl0b = performance.now() + 60000;
-        while (performance.now() < dl0b && !st.architectures.some((a) => a && a.type === "start_plattform")) await tick(1, 100);
+        await window
+            .__gebautNach("die Genesis-Plattform", { fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"), takt: () => tick(1, 100), max: 600 })
+            .catch(() => {});
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
         if (!plat) throw new Error("keine Genesis-Plattform");
         const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
@@ -1400,12 +1401,13 @@ async function probe(arg) {
             });
         };
         r.selectBlueprintForEdit("baum_eiche");
-        const dl2 = performance.now() + 90000;
-        while (performance.now() < dl2) {
-            const p = ws.preview;
-            if (p && p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length) break;
-            await tick(1, 80);
-        }
+        await window
+            .__gebautNach("die Werkstatt-Vorschau der Eiche", {
+                fertig: () => !!(ws.preview && ws.preview.currentMesh && !r._wsStudioPending && ws.preview.currentMesh.children.length),
+                takt: () => tick(1, 80),
+                max: 1125,
+            })
+            .catch(() => {});
         const p = ws.preview;
         if (!p || !p.currentMesh) {
             // Der Zustand beim Namen: liegt der Körper im Cache, schläft die Vorschau; sonst wartet sie auf den Zug.
@@ -1507,7 +1509,7 @@ async function probe(arg) {
         const t0 = performance.now();
         r.selectBlueprintForEdit("baum_eiche");
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
-        while (performance.now() < t0 + zugFrist && !steht()) await tick(1, 80);
+        await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, { fertig: steht, takt: () => tick(1, 80), max: 275 }).catch(() => {});
         m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
         m.vorschau.imCache = f.cache.has(a.key);
         // (b) die Hand hinter dem Zug der Vorschau: geweckt zählt nur NACH der Ankunft
@@ -1529,7 +1531,9 @@ async function probe(arg) {
                 const t1 = performance.now();
                 const erst = r._heldFoundryGroup(klinge);
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
-                while (performance.now() < t1 + zugFrist && !m.hand.geweckt) await tick(1, 80);
+                await window
+                    .__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, { fertig: () => m.hand.geweckt > 0, takt: () => tick(1, 80), max: 275 })
+                    .catch(() => {});
                 m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
                 m.hand.imCache = f.cache.has(b.key);
             } finally {
@@ -1557,7 +1561,7 @@ async function probe(arg) {
                 }
                 const t2 = performance.now();
                 r.selectBlueprintForEdit("baum_eiche");
-                while (performance.now() < t2 + zugFrist && !steht()) await tick(1, 80);
+                await window.__gebautNach(`die Vorschau-Stufe L${s}`, { fertig: steht, takt: () => tick(1, 80), max: 275 }).catch(() => {});
                 const z = at ? at.zellen.get(zKey) : null;
                 const box = steht() ? new THREE.Box3().setFromObject(p.currentMesh) : null;
                 m.stufen.push({
@@ -1577,8 +1581,7 @@ async function probe(arg) {
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        const tV = performance.now();
-        while (f._vorrat && performance.now() < tV + zugFrist) await tick(1, 80); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }).catch(() => {}); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
@@ -2142,7 +2145,7 @@ async function probe(arg) {
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
 
@@ -2249,7 +2252,7 @@ async function probe(arg) {
     const vZ = zugVerdict(zm);
     const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
     check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
+        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (am Ereignis, nie an der Uhr)`,
         vZ.length === 0,
         `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );

@@ -83,8 +83,15 @@ async function fensterSchritt(o) {
     const t0 = performance.now();
     if (o.pr != null) {
         const f0 = L();
-        while (Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60 && performance.now() - t0 < 120000)
-            await warte();
+        await window
+            .__gebautNach("noch: Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60", {
+                fertig: () => !!(!(Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60)),
+                takt: async () => {
+                await warte();
+                },
+                max: 2400,
+            })
+            .catch(() => {});
     }
     const f0 = L();
     const S = window.__fensterEcht;

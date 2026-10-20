@@ -597,17 +597,8 @@ function standUrteil(b) {
             `NACHSCHUB: ${N.warten.length} Streu-Regionen warten, obwohl die Schlange des Walds leer ist und kein Asset ` +
                 `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
         );
-    // (A) ATEM (K-WANDUHR): ein atmender Regler weckt die Fege-Takte ohne Ende — das Einschwingen hält ihn (die Welt steht) und
-    // gibt ihn danach frei; ein Fege-Takt mit Offenem hält sie wach beim Namen
-    const A = b.atem;
-    if (!A) v.push("LEER: keine Atem-Phase");
-    else {
-        if (A.fehler) v.push(`ATEM: unter einem atmenden Regler steht die Welt nie — ${A.fehler}`);
-        else if (!(A.schritte >= 6)) v.push(`LEER: der Regler atmete nur ${A.schritte | 0}× — die Atem-Phase ist stumpf`);
-        else if (!(A.frei > 0)) v.push("ATEM: nach dem Einschwingen atmet der Regler nicht mehr — es schaltete ihn ab, statt ihn zu halten");
-        if (!/Fege-Takt[^]*archCull/.test(A.gegen || ""))
-            v.push(`ATEM-GEGENPROBE: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${A.gegen || "—"})`);
-    }
+    // (W) WACH: ein Fege-Takt mit Offenem hält die Welt wach, beim Namen
+    if (!/Fege-Takt[^]*archCull/.test(b.wach || "")) v.push(`WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${b.wach || "—"})`);
     // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
     // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
     if (b.fixWach !== false)

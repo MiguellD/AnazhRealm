@@ -532,7 +532,7 @@ let astMerk = { t: null };
 function ast(t) {
     if (astMerk.t !== t) {
         const acorn = require("acorn");
-        const baum = acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true });
+        const baum = acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true });
         const zeilenAb = [0];
         for (let i = t.indexOf("\n"); i !== -1; i = t.indexOf("\n", i + 1)) zeilenAb.push(i + 1);
         astMerk = { t, baum, zeilenAb, glieder: null, rufe: null };

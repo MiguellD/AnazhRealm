@@ -525,19 +525,20 @@ if (require.main === module) (async () => {
             const foundryT0 = performance.now();
             let foundryReadyMs = -1;
             if (_fdry) {
-                const FOUNDRY_WARM_CAP_MS = 120000;
-                const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
-                while (
-                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false) &&
-                    performance.now() < fDeadline
-                ) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {
-                        // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
-                    }
-                    await new Promise((resolve) => setTimeout(resolve, 25));
-                }
+                await window
+                    .__gebautNach("das Buch und der Vorrat der Foundry", {
+                        fertig: () => _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false,
+                        takt: async () => {
+                            try {
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {
+                                // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
+                            }
+                            await new Promise((resolve) => setTimeout(resolve, 25));
+                        },
+                        max: 4800,
+                    })
+                    .catch(() => {});
                 foundryReadyMs =
                     _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)

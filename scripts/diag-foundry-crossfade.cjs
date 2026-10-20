@@ -350,21 +350,28 @@ async function runPartB() {
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
         const warm = { 0: false, 1: false, 2: false };
-        const dl2 = performance.now() + 120000;
-        while (performance.now() < dl2 && !(warm[0] && warm[1] && warm[2])) {
-            for (const lod of [0, 1, 2]) {
-                if (!warm[lod]) {
-                    const fl = r._foundryFlattenFor(entry, preset, lod);
-                    if (fl && fl.instanceable) warm[lod] = true;
-                }
-            }
-            if (!(warm[0] && warm[1] && warm[2])) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
+        const loopTakt = async () => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            await sleep(120);
+        };
+        const waerme = (name, e, preset, stufen, w) =>
+            window
+                .__gebautNach(name, {
+                    fertig: () => {
+                        for (const l of stufen)
+                            if (!w[l]) {
+                                const fl = r._foundryFlattenFor(e, preset, l);
+                                w[l] = !!(fl && fl.instanceable);
+                            }
+                        return stufen.every((l) => w[l]);
+                    },
+                    takt: loopTakt,
+                    max: 1000,
+                })
+                .catch(() => {});
+        await waerme(`${preset} L0–L2`, entry, preset, [0, 1, 2], warm);
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
         // DIE STREU IM SPRUNG (F1 a, gemessen in (10)): die Geburt der Region vom Kopf des Spielers (der alte Ort der Wahl
@@ -402,32 +409,31 @@ async function runPartB() {
             st.camera.updateMatrixWorld(true);
             st.playerMesh.position.copy(streuPm);
         };
-        const dlS0 = performance.now() + 60000;
-        for (let kalt = true; kalt && performance.now() < dlS0; ) {
-            kalt = false;
-            for (const z of streuOrte) {
-                const reg = streuGeburt(z, false);
-                kalt = kalt || !reg || reg._deferredFoundry === true;
-                for (const c of (reg && reg.cells) || []) {
-                    if (!Number.isFinite(c.dient)) continue;
-                    const L = SC.layers.find((l) => l.name === c.layer);
-                    const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
-                    const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
-                    for (const l of [1, 2]) {
-                        const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                        kalt = kalt || !(fl && fl.instanceable);
+        await window
+            .__gebautNach("die Streu-Zellen in L1 und L2", {
+                fertig: () => {
+                    let kalt = false;
+                    for (const z of streuOrte) {
+                        const reg = streuGeburt(z, false);
+                        kalt = kalt || !reg || reg._deferredFoundry === true;
+                        for (const c of (reg && reg.cells) || []) {
+                            if (!Number.isFinite(c.dient)) continue;
+                            const L = SC.layers.find((l) => l.name === c.layer);
+                            const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
+                            const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
+                            for (const l of [1, 2]) {
+                                const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
+                                kalt = kalt || !(fl && fl.instanceable);
+                            }
+                        }
                     }
-                }
-            }
-            streuZurueck();
-            if (kalt) {
-                r._tickWaldPlan(Infinity);
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
+                    streuZurueck();
+                    return !kalt;
+                },
+                takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
+                max: 500,
+            })
+            .catch(() => {});
         // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
         // eigener Sweep.
@@ -438,21 +444,7 @@ async function runPartB() {
         const sEntry = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
         res.strauchPreset = sEntry ? r._foundryPresetForEntry(sEntry) : null;
         const sWarm = { 0: false, 1: false, 2: false };
-        const dlS = performance.now() + 120000;
-        while (sEntry && performance.now() < dlS && !(sWarm[0] && sWarm[1] && sWarm[2])) {
-            for (const lod of [0, 1, 2]) {
-                if (!sWarm[lod]) {
-                    const fl = r._foundryFlattenFor(sEntry, res.strauchPreset, lod);
-                    if (fl && fl.instanceable) sWarm[lod] = true;
-                }
-            }
-            if (!(sWarm[0] && sWarm[1] && sWarm[2])) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
+        if (sEntry) await waerme(`${res.strauchPreset} L0–L2`, sEntry, res.strauchPreset, [0, 1, 2], sWarm);
         res.strauchWarm = { l0: sWarm[0], l1: sWarm[1], l2: sWarm[2] };
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
@@ -477,20 +469,7 @@ async function runPartB() {
             const ziel = gezeigt.concat(karte ? [2] : []);
             const warm = {};
             const alleWarm = () => ziel.length > 0 && ziel.every((s) => warm[s] === true);
-            const dlO = performance.now() + 90000;
-            while (oE && oPreset && performance.now() < dlO && !alleWarm()) {
-                for (const lod of ziel)
-                    if (!warm[lod]) {
-                        const fl = r._foundryFlattenFor(oE, oPreset, lod);
-                        if (fl && fl.instanceable) warm[lod] = true;
-                    }
-                if (!alleWarm()) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                    await sleep(120);
-                }
-            }
+            if (oE && oPreset) await waerme(`${oPreset} ${ziel.join("/")}`, oE, oPreset, ziel, warm);
             const rec = oPreset && f.recipes ? f.recipes[oPreset] : null;
             res.kette.push({
                 typ,

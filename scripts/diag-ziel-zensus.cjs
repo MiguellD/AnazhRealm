@@ -348,16 +348,13 @@ function rundungProbe() {
         await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 300000) {
-                const r = window.anazhRealm;
-                const st = r && r.state;
-                if (st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera)
-                    return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
+            const r = await window.__weltDa((r) => {
+                const st = r.state;
+                return !!(st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera);
+            });
+            const st = r.state;
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
         });
-        if (!bereit.ok) throw new Error("Renderer und Post-Kette standen nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — der Zensus liest GPU-Befehle, die Wand wäre blind");
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
         // DER LESER IM BLICK: das Wasser am Bach der Mess-Wiese zeichnet — die Szenen-Tiefe steht mit ihrem Leser im Zensus

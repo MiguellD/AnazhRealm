@@ -62,7 +62,6 @@ async function runJob(page, fn, arg, timeoutMs) {
 // (Als Quelltext-Präambel in jeden Job kopiert — Jobs reisen als Strings.)
 async function jobKalt() {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
     await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht" };
@@ -166,7 +165,6 @@ async function jobKalt() {
 
 async function jobWarm(kaltIn) {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
     await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (warm)" };
@@ -274,7 +272,6 @@ async function jobWarm(kaltIn) {
 
 async function jobSelbsttest(kaltIn) {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
     await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (Selbsttest)" };

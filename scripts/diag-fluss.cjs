@@ -503,7 +503,7 @@ const WELT_MESSEN = async () => {
     const r = window.anazhRealm;
     const f = r._ensureAssetFoundry();
     const t0 = performance.now();
-    while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+    await window.__weltDa(() => !!(!(f && !f.ready)));
     const pump = async (n) => {
         for (let i = 0; i < n; i++) {
             r.state._frameOverBudget = false;

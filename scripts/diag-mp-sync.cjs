@@ -277,7 +277,6 @@ function bericht(p) {
                 !!window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 !!window.anazhRealm.state.playerMesh,
-            90000,
             "Seite A bereit"
         );
         await pageA.evaluate(installiere, SELBSTTEST);
@@ -374,7 +373,7 @@ function bericht(p) {
             `Inits ${kVor.inits}→${kAn.inits}→${kZwei.inits}, verbunden beim 2. Klick=${kZwei.connected}`
         );
         await pageA.evaluate(klick);
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.connected === true, 15000, "A verbunden über den Knopf");
+        await waitFor(pageA, () => window.anazhRealm.state.p2p.connected === true, "A verbunden über den Knopf");
         const kVerb = await bericht(pageA);
         check("Knopf an: A verbunden, Knopf „an“", kVerb.connected && kVerb.knopf === "true", `Inits ${kVerb.inits}`);
 
@@ -389,22 +388,21 @@ function bericht(p) {
                 !!window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 !!window.anazhRealm.state.playerMesh,
-            90000,
             "Seite B bereit"
         );
         await pageB.evaluate(installiere, false);
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, 30000, "B verbunden über den Boot");
+        await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
         const idB = (await bericht(pageB)).peerId;
-        await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "A kennt B", idB);
-        await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "B kennt A", idA);
+        await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), "A kennt B", idB);
+        await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
         // W13 P3 am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
-        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, 20000, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
+        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
         check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
-        const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), 120000, "A: Ladeschirm weg");
+        const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
         await waitFor(
             pageA,
             () => {
@@ -413,7 +411,6 @@ function bericht(p) {
                 window.__mpY = y;
                 return prev !== undefined && Math.abs(y - prev) < 0.02;
             },
-            30000,
             "A gesettelt"
         );
         await sleep(800);
@@ -456,14 +453,13 @@ function bericht(p) {
                     window.__mpP = { x: p.x, z: p.z };
                     return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
                 },
-                15000,
                 "A steht wieder"
             );
             await sleep(1200);
             // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
             // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
             const takteB = await pageB.evaluate(() => window.__mp.lsTakte);
-            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, 60000, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
+            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
             const wahrA = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
                 return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
@@ -613,7 +609,6 @@ function bericht(p) {
             await waitFor(
                 pageB,
                 () => !!window.__mp.langFenster && window.__mp.langFenster.takte.filter((t) => t.anschluss).length >= 3,
-                60000,
                 "B: drei lange Takte"
             ).catch(() => {});
             return langeTakte(false);

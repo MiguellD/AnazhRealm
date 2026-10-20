@@ -75,7 +75,7 @@ async function welt() {
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         const tF = performance.now();
-        while (f && !f.ready && performance.now() - tF < 60000) await sleep(100);
+        await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
         // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
         // die Streu mit, Kamera und Nah-Wiese blieben am Start (bis 06.10. lag das Auge jedes Umzugs bei 36 0).

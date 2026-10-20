@@ -52,7 +52,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
 async function blickProbe(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
-    const t0 = performance.now();
     let r = null,
         st = null,
         stand = null;
@@ -75,24 +74,23 @@ async function blickProbe(opts) {
         }
         return { tore: tore.length, fenster: tore.filter((rec) => rec.mesh).length, wartend };
     };
-    while (performance.now() - t0 < 300000) {
-        r = window.anazhRealm;
-        st = r && r.state;
-        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && r._portalMembranes && r._torZielAtlas) {
-            // DAS FENSTER WARTET AUF SEIN ZIEL (D8): erst wenn jedes angefragte Ziel steht (oder bricht) und der nächste 1-Hz-Scan
-            // lief, stehen alle Membranen des Rings — vorher hing B1 an der Reihenfolge der Ankünfte (15.10.: drei Membranen ohne
-            // das Drachentor im Blick nach −x, 0 von 3; dieselbe Welt mit allen vier: 1 von 4)
-            await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt));
-            stand = fensterStand();
-            if (stand.fenster >= 3 && stand.wartend.length === 0) break;
-        }
-        await warte(250);
-    }
+    // der Ring steht (das EINE Warten, welt-boot `__weltDa` und `__gebautNach`): erst die Welt mit Renderer und Membranen, dann je
+    // Takt die Ziele (`kommt`) und der Stand der Fenster — der Deckel zählt Takte, in denen die Welt nichts offen hat (bis K-WANDUHR
+    // 300 s Wanduhr)
+    r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w._portalMembranes && w._torZielAtlas);
+    st = r.state;
+    await window
+        .__gebautNach("die Fenster am Ring", {
+            fertig: () => (stand = fensterStand()).fenster >= 3 && !stand.wartend.length,
+            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await warte(250)),
+            max: 120,
+        })
+        .catch(() => {});
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
     if (!stand || stand.fenster < 3 || stand.wartend.length)
         return {
             fehler:
-                `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren nach 300 s` +
+                `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren, die Welt hat nichts mehr offen` +
                 (stand && stand.wartend.length ? ` — ohne Fenster: ${stand.wartend.join(" · ")}` : ""),
         };
     if (opts.nurWarten) return { bereit: true };

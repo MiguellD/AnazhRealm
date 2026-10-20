@@ -231,24 +231,22 @@ const server = statikServer();
         // (L) DIE LÖCHER NACH DEM RELOAD: 300 Kugeln über den Spielpfad, Save, echter Reload, zählen.
         // Die Welt steht (der Null-Renderer treibt den Takt nicht selbst: die Probe tickt ihn wie gate:worker-dichte).
         const weltSteht = async () => {
-            const ok = await page.evaluate(async () => {
-                const start = performance.now();
-                while (performance.now() - start < 120000) {
-                    const r = window.anazhRealm;
-                    if (r && typeof r._gameLoopTick === "function") {
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {
-                            /* der Boot reift */
-                        }
-                        const s = r.state;
-                        if (s && s.worldMeta && s.voxelChunks && s.voxelChunks.size > 4) return true;
-                    }
-                    await new Promise((res) => setTimeout(res, 16));
-                }
-                return false;
+            // das EINE Warten (welt-boot `__gebautNach`): Takt um Takt, Deckel nur in Takten ohne Offenes; steht sie nicht, wirft es beim Namen
+            await page.evaluate(async () => {
+                const r = await window.__weltDa();
+                await window.__gebautNach("die Welt mit 5 Chunks", {
+                        fertig: () => !!(r.state.worldMeta && r.state.voxelChunks && r.state.voxelChunks.size > 4),
+                        takt: async () => {
+                            try {
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {
+                                /* der Boot reift */
+                            }
+                            await new Promise((res) => setTimeout(res, 16));
+                        },
+                        max: 2000,
+                    });
             });
-            if (!ok) throw new Error("(L) die Welt stand nach 120 s nicht");
         };
         await weltSteht();
         const lVorher = await page.evaluate((n) => {

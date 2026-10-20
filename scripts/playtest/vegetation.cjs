@@ -2610,9 +2610,8 @@ async function checkBandScatterScheibe(ctx) {
         };
         try {
             clean();
-            const t0 = performance.now();
             const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
-            while (!bereit() && performance.now() - t0 < 90000) await new Promise((res) => setTimeout(res, 200));
+            await window.__weltDa(bereit);
             stoff.buch = !!(r._foundry && r._foundry.recipes);
             stoff.wahr = r._forestGesetzWahr();
             stoff.faden = !!st.voxelWorker;
@@ -2629,12 +2628,14 @@ async function checkBandScatterScheibe(ctx) {
             try {
                 const reg6 = r._scatterRegion(rx, rz, pos);
                 stoff.haupt = zaehler;
-                const t1 = performance.now();
                 // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
-                while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000) {
-                    r._tickWaldPlan(Infinity);
-                    await new Promise((res) => setTimeout(res, 50));
-                }
+                await window
+                    .__gebautNach("die Lieferung an die wartende Region", {
+                        fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
+                        takt: async () => (r._tickWaldPlan(Infinity), await new Promise((res) => setTimeout(res, 50))),
+                        max: 1200,
+                    })
+                    .catch(() => {});
                 stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
                 // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
                 // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten

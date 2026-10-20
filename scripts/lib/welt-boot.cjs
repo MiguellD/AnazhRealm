@@ -72,25 +72,28 @@ async function weltStehtNach(takt, max) {
     return n;
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis der Bau steht
-// (`fertig()`, sonst `_archIsRendered(e)`) — vor jedem Takt ruft `bau(n)` ihn (sonst `_rebuildArchitectureMesh(e)`, der
-// Rewarm-Weg von Hand); `takt(n)` wie oben. Der Deckel `max` zählt nur Takte, in denen die Foundry nichts offen hat
-// (`_weltOffen`): solange ein Auftrag fliegt, wartet der Bau auf sein Ereignis, nie auf die Uhr; steht er danach nicht, wirft er
-// beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212).
+// (`fertig()`, sonst `_archIsRendered(e)`) — vor jedem Takt ruft `bau(n)` ihn (ein Eintrag ohne `bau`: `_rebuildArchitectureMesh(e)`,
+// der Rewarm-Weg von Hand); `takt(n)` wie oben. `e` ist ein Eintrag oder der NAME dessen, was die Welt bauen soll (ein Asset,
+// eine Stufe, ein Chunk — `fertig` sagt, wann es steht). Der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat
+// (`_weltOffen`: Foundry, Chunks, Wald): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
+// nicht, wirft sie beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212,
+// und 130 Schleifen urteilten nach 3–300 s Wanduhr).
 async function gebautNach(e, { takt, fertig, bau, max } = {}) {
     const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
+    const baue = bau || (e && typeof e === "object" ? () => r._rebuildArchitectureMesh(e) : () => {});
     let n = 0;
     for (let k = 0; !steht() && k < (max || 120); n++) {
-        if (bau) bau(n);
-        else r._rebuildArchitectureMesh(e);
+        baue(n);
         if (steht()) break;
         await (takt || window.__seitenTakt)(n);
         await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
-        if (!r._weltOffen().foundry) k++;
+        const o = r._weltOffen();
+        if (!(o.foundry + o.chunks + o.wald)) k++;
     }
     if (!steht())
         throw new Error(
-            `DER BAU STEHT NICHT: ${e ? `${e.type}#${e.id}` : "kein Eintrag"} nach ${n} Takten — die Foundry hat nichts mehr offen`
+            `DER BAU STEHT NICHT: ${typeof e === "string" ? e : e ? `${e.type}#${e.id}` : "kein Eintrag"} nach ${n} Takten — die Welt hat nichts mehr offen`
         );
     return n;
 }
@@ -659,15 +662,8 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 // ist und das Weltbild steht (`welt`: nur diese Terme). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
 async function uferStellen(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
-    const t0 = performance.now();
-    let r, st;
-    while (performance.now() - t0 < 300000) {
-        r = window.anazhRealm;
-        st = r && r.state;
-        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && st.playerMesh) break;
-        await warte(100);
-    }
-    if (!st || !st.renderer || !st.renderer.backend) return { fehler: "der Renderer stand nach 300 s nicht" };
+    const r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w.state.playerMesh);
+    const st = r.state;
     if (st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — die Wand wäre blind" };
     if (opts.kappe != null) st._holzPixelCap = opts.kappe;
     const [mx, mz] = opts.messort;
@@ -713,14 +709,17 @@ async function uferStellen(opts) {
         const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
         return t && t.image ? t.image.width : 0;
     };
-    const t1 = performance.now();
     const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
     const welt = (l) => !opts.welt || opts.welt.includes(l.term); // und die Szenen-Tiefe trägt die Welt, nie nur Himmel
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
-    while (performance.now() - t1 < 240000 && !(steht() && !r._weltbildLuecken(true).some(welt))) {
-        if (!fern()) r._ensureFarWaterSheet();
-        await warte(100);
-    }
+    // das EINE Warten (`__gebautNach`): Takt um Takt der Seite, bis Wasser, Abbild und Weltbild stehen (Deckel: Takte ohne Offenes)
+    await window
+        .__gebautNach("das Ufer im Blick", {
+            fertig: () => steht() && !r._weltbildLuecken(true).some(welt),
+            takt: async () => (fern() || r._ensureFarWaterSheet(), await warte(100)),
+            max: 600,
+        })
+        .catch(() => {});
     return { bach: [Math.round(P.x), Math.round(P.z)], wasser: sichtbaresWasser(), fernWasser: fern() ? st.farWater.quads : 0, abbildBreite: abbild() };
 }
 
@@ -782,14 +781,15 @@ async function eigenePorte(...variablen) {
     }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-// wartet, bis `fn(...args)` in der Seite wahr ist (je 150 ms), und gibt die Wartezeit zurück; nach `frist` ms ROT mit `label`
-async function waitFor(page, fn, frist, label, ...args) {
+// wartet, bis `fn(...args)` in der Seite wahr ist (das Ereignis, je 150 ms gefragt), und gibt die Wartezeit zurück — ohne Frist:
+// ein Hänger endet an der Frist des Browsers (`frist` = protocolTimeout), die Stall-Akte nennt ihn mit `label` (bis K-WANDUHR
+// urteilte jeder Ruf an seiner eigenen Frist, 6–30 s)
+async function waitFor(page, fn, label, ...args) {
     const t0 = Date.now();
-    while (Date.now() - t0 < frist) {
-        if (await page.evaluate(fn, ...args).catch(() => false)) return Date.now() - t0;
-        await sleep(150);
-    }
-    throw new Error(`Zeitüberschreitung: ${label}`);
+    await page.evaluate((l) => (window.__weltDaWartet = l), label).catch(() => {});
+    await page.waitForFunction(fn, { polling: 150, timeout: 0 }, ...args);
+    await page.evaluate(() => (window.__weltDaWartet = null)).catch(() => {});
+    return Date.now() - t0;
 }
 
 module.exports = {

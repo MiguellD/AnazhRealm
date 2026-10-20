@@ -513,12 +513,18 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 let n = -1;
                 let still = 0;
                 const t0 = performance.now();
-                while (performance.now() - t0 < 40000 && still < 4) {
-                    await takt(1000);
-                    const m = (s.architectures || []).length + (s.creatures || []).length;
-                    still = m === n ? still + 1 : 0;
-                    n = m;
-                }
+                await window
+                    .__gebautNach("noch: still < 4", {
+                        fertig: () => !!(!(still < 4)),
+                        takt: async () => {
+                        await takt(1000);
+                        const m = (s.architectures || []).length + (s.creatures || []).length;
+                        still = m === n ? still + 1 : 0;
+                        n = m;
+                        },
+                        max: 800,
+                    })
+                    .catch(() => {});
             }
             const wm = () => s.worldMeta || {};
             // Die Welt-Substanz als Mengen (Identität, nie Länge): der Hort-Deckel des Nexus (MAX_NEXUS_STRUCTURES) lässt

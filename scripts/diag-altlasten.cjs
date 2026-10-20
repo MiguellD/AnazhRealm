@@ -15,6 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { scanWarteWand } = require("./lib/warte-wand.cjs");
 
 // Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
 // fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
@@ -2920,34 +2921,6 @@ function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     }
     return errs;
 }
-// DIE WARTE-WAND (K-WANDUHR, Lehre 26): eine Schleife, die wartet, solange der Bau eines Eintrags fehlt (`!e.mesh`,
-// `!e.instanced`, `!(e._hausHuelle && …)`), ist ROT — das EINE Warten ist welt-boot `__gebautNach` (bis dahin 20 Schleifen mit
-// 3–90 s Wanduhr oder festen Takten; gate:fahr-leben F4 fuhr unter Last durch eine Kiefer ohne Körper).
-function scanWarteWand(dateien) {
-    const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
-    const errs = [];
-    for (const [name, src] of dateien) {
-        if (name === "scripts/lib/welt-boot.cjs" || !/instanced|mesh|instSlots|_hausHuelle/.test(src)) continue;
-        astGeh(src, (n) => {
-            if (!/^(For|While|DoWhile)Statement$/.test(n.type)) return;
-            let bau = null;
-            astGeh(n.test, (u) => u.operator === "!" && astGeh(u.argument, (x) => x.object && x.object.type === "Identifier" && BAU.test(x.property.name) && (bau = x.property.name)));
-            if (bau) errs.push(`Warte-Wand: ${name}:${n.loc.start.line} wartet selbst auf einen Bau (${bau}) — das EINE Warten ist \`__gebautNach\``);
-        });
-    }
-    return errs;
-}
-// der Gang über einen Baum (acorn, Zeilen) — ein Quelltext wird geparst, ein Knoten begangen
-function astGeh(n, f) {
-    if (typeof n === "string") n = require("acorn").parse(n.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true, locations: true });
-    if (!n || typeof n.type !== "string") return;
-    f(n);
-    for (const k in n) {
-        const v = n[k];
-        if (Array.isArray(v)) v.forEach((x) => astGeh(x, f));
-        else if (v && typeof v.type === "string") astGeh(v, f);
-    }
-}
 // DIE BOOT-WAND (Z2b-1, 14.10.): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
 // starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
 // ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
@@ -3184,6 +3157,11 @@ function wirtsDateien(root, files) {
         aus.push([n, fs.readFileSync(f, "utf8")]);
     }
     return aus;
+}
+// die Kapitel des Playtests (scripts/playtest) — die Warte-Wand liest sie mit
+function playtestDateien(root) {
+    const d = "scripts/playtest";
+    return fs.readdirSync(path.join(root, d)).filter((f) => /\.cjs$/.test(f)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(root, d, f), "utf8")]);
 }
 function gateDateien(root) {
     const aus = [];
@@ -3457,11 +3435,18 @@ function main() {
             scanPortWand([["scripts/diag-z.cjs", "const PORT = Number(process.env.Z_PORT || 4" + "312);\n"]]).length === 1 &&
             scanPortWand([["scripts/werkbank.cjs", "const s = 1;\n"]]).length === 1;
         // Die Warte-Wand muss feuern: die Bau-Schleife von gate:fahr-leben bis K-WANDUHR, ein eigener Server-Start; still bleibt das EINE Warten
-        const warte = (src) => scanWarteWand([["scripts/diag-w.cjs", src]]).length;
+        // und die Frist: eine neue Frist-Schleife ist rot, der REST steht genau auf seiner Zahl (darunter: senken), ein Zähler auf Takte still
+        const warte = (src, rest = {}) => scanWarteWand([["scripts/diag-w.cjs", src]], rest).length;
+        const frist = "async () => { const dl = performance.now() + 30000; while (!e.fertig && performance.now() < dl) await tick(); };";
         const warteFeuert =
-            scanWarteWand(gates).length === 0 &&
+            scanWarteWand(gates.concat(playtestDateien(root))).length === 0 &&
             warte("async () => { for (let i = 0; i < 60 && !e.instanced && !e.mesh; i++) await sleep(50); };") === 1 &&
             warte("for (let s = 0; s < g.mesh.count; s++) n++;") === 0 &&
+            warte(frist) === 1 &&
+            warte("async () => { while (Date.now() - t0 < FRIST) await sleep(150); };") === 1 &&
+            warte(frist, { "scripts/diag-w.cjs": 1 }) === 0 &&
+            warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&
+            warte("async () => { for (let n = 0; !e.fertig && n < 120; n++) await tick(); };") === 0 &&
             eigenBoots([["scripts/diag-s.cjs", 'spawn("node", ["save-server.js"]);']]).length === 1;
         if (!warteFeuert) {
             console.log("❌ SELBST-TEST: die Warte-Wand feuert nicht (oder steht heute rot)", scanWarteWand(gates));
@@ -3972,7 +3957,7 @@ function main() {
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
-        .concat(scanWarteWand(gateDateien(root)))
+        .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))

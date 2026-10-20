@@ -1809,8 +1809,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
 async function checkBandWasserWahrheit(ctx) {
     const { page, check } = ctx;
     await safeEvaluate(page, async () => {
-        const dl = performance.now() + 120000;
-        while (!(window.anazhRealm.state.hydrosphere && window.anazhRealm.state.hydrosphere.ready) && performance.now() < dl) await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
     });
     const out = (await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -2398,14 +2397,13 @@ async function checkBandWasserSheetSpiegel(ctx) {
         // Spieler ans Wasser (Body-frei seit V18.331 — nur die Mesh-Position treibt das Streaming).
         s.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
         // Streaming-Pump: der Worker baut die Chunks um den Spieler + liefert waterCells.
-        // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (Frist 60 s), mindestens 280 Takte
-        const t0 = performance.now();
+        // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (das EINE Warten, welt-boot `__gebautNach`), mindestens 280 Takte
         const steht = () => {
             let n = 0;
             for (const e of s.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
             return s.voxelChunks.size > 8 && n > 0;
         };
-        for (let i = 0; i < 280 || (!steht() && performance.now() - t0 < 60000); i++) {
+        const pumpe = async (i) => {
             try {
                 r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
@@ -2414,7 +2412,9 @@ async function checkBandWasserSheetSpiegel(ctx) {
                 /* */
             }
             if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
-        }
+        };
+        for (let i = 0; i < 280; i++) await pumpe(i);
+        await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 }).catch(() => {});
         return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: s.voxelChunks.size };
     });
     const report = (await safeEvaluate(page, async () => {

@@ -142,7 +142,7 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
-        atem: { takte: 31, schritte: 7, frei: 3, gegen: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet" },
+        wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
         fixWach: false,
         fix: [
             { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
@@ -410,23 +410,7 @@ function selbsttest() {
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
-        [
-            "die Welt steht unter einem atmenden Regler nie (bis K-WANDUHR: jeder Gang brach die Ruhe, CI 39439645378)",
-            (b) => (b.atem = Object.assign(b.atem, { takte: undefined, fehler: "DIE WELT STEHT NICHT nach 300 Takten: Ruhe 9, zuletzt brach sie: Fege-Takt archCull" })),
-            /ATEM: unter einem atmenden Regler steht die Welt nie — DIE WELT STEHT NICHT nach 300 Takten/,
-        ],
-        [
-            "ein wartender Fege-Takt hält die Welt nicht wach",
-            (b) => (b.atem.gegen = "steht nach 31 Takten"),
-            /ATEM-GEGENPROBE: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen \(steht nach 31 Takten\)/,
-        ],
-        ["keine Atem-Phase", (b) => delete b.atem, /LEER: keine Atem-Phase/],
-        ["der Regler atmet nicht", (b) => (b.atem.schritte = 0), /LEER: der Regler atmete nur 0× — die Atem-Phase ist stumpf/],
-        [
-            "das Einschwingen schaltet den Regler ab, statt ihn zu halten",
-            (b) => (b.atem.frei = 0),
-            /ATEM: nach dem Einschwingen atmet der Regler nicht mehr/,
-        ],
+        ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
         [
             "die Welt steht mitten in der Runde der Stufen-Wahl (K-WANDUHR 08c017fb: steht nach 1 Takt, danach wirkte sie 4×)",
             (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
@@ -511,40 +495,14 @@ const server = statikServer();
                 await window.__weltStehtNach(takt);
                 const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
-                // (A) ATEM (K-WANDUHR): der Regler atmet, wie unter Last im Spiel — sein Stellglied (`_nexusPerfActuate`) setzt je
-                // 10 Gänge den Cull-Radius um 1 mm (kein Eintrag kreuzt ihn, das Maß, das gate:takt-atem erlaubt), solange er regelt
-                // (`perfRegulator`); jeder Schritt weckt Cull, Stufen-Wahl und Streu. Das Einschwingen hält ihn (die Welt steht) und
-                // gibt ihn danach frei. Gegenprobe: ein kalter Bau, den der Cull meldet (Offenes), hält sie wach — beim Namen.
+                // (W) WACH: ein kalter Bau, den der Cull meldet (Offenes), hält die Welt wach — beim Namen des Fege-Takts. Den atmenden
+                // Regler hält das Einschwingen (welt-boot Selbsttest REGLER).
                 const R0 = st.architectureCullingRadius;
-                const stellglied = P._nexusPerfActuate;
-                let schritte = 0;
-                let atem = 0;
-                P._nexusPerfActuate = () => {
-                    if (atem++ % 10 === 0) st.architectureCullingRadius = schritte++ % 2 ? R0 : R0 + 1e-3;
-                };
-                st.perfRegulator = true;
-                aus.atem = {};
-                for (let i = 0; i < 60; i++) takt(); // der Regler atmet schon, wenn die Frage kommt (6 Schritte)
-                try {
-                    aus.atem.takte = await window.__weltStehtNach(takt, 300);
-                } catch (e) {
-                    aus.atem.fehler = String(e.message).slice(0, 200);
-                }
-                aus.atem.schritte = schritte;
-                for (let i = 0; i < 30; i++) takt();
-                aus.atem.frei = schritte - aus.atem.schritte; // danach atmet er weiter: gehalten, nie abgeschaltet
-                st.perfRegulator = false;
-                P._nexusPerfActuate = stellglied;
                 r._foundryRewarmColdTrees = () => 1;
                 st.architectureCullingRadius = R0 + 2e-3;
-                try {
-                    aus.atem.gegen = `steht nach ${await window.__weltStehtNach(takt, 60)} Takten`;
-                } catch (e) {
-                    aus.atem.gegen = String(e.message).slice(0, 200);
-                } finally {
-                    delete r._foundryRewarmColdTrees;
-                    st.architectureCullingRadius = R0;
-                }
+                aus.wach = await window.__weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
+                delete r._foundryRewarmColdTrees;
+                st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -573,11 +531,9 @@ const server = statikServer();
                 aus.bisRuhe = await bisRuhe(900);
                 // (R) RUHE
                 aus.ruhe = await phase(30);
-                // (F) FIXPUNKT: die Welt steht erst, wenn jeder geweckte Fege-Takt seine Runde zu Ende ging (K-WANDUHR: „steht" nach 1
-                // Takt mitten in der Runde der Stufen-Wahl, 256 von 2 304, danach wirkte sie noch 4×). Ein Weckruf ohne Wirkung (der
-                // Cull-Radius um 1 mm) — nach einem Takt gehen Stufen-Wahl und Streu mitten in ihren Runden (9 und 11 Gänge): die Welt
-                // steht da nicht. Dann Schritte mit Wirkung (die LOD-Distanz L1→L2 × 0,8 und zurück): steht sie, geht in 150 Takten
-                // ohne Eingabe kein Fege-Takt mehr.
+                // (F) FIXPUNKT: die Welt steht erst, wenn jeder geweckte Fege-Takt seine Runde zu Ende ging. Ein Weckruf ohne Wirkung
+                // (1 mm): nach einem Takt stehen Stufen-Wahl und Streu mitten in der Runde. L1→L2 × 0,8 und zurück: nach dem Stand
+                // gehen 150 Takte ohne Eingabe keinen Fege-Takt mehr.
                 st.architectureCullingRadius += 1e-3;
                 takt();
                 aus.fixWach = r._weltSteht();
@@ -1518,11 +1474,7 @@ const server = statikServer();
                     : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
-    if (befund.atem)
-        console.log(
-            `  Atem: ${befund.atem.schritte} Regler-Schritte — ${befund.atem.fehler || `die Welt steht nach ${befund.atem.takte} Takten`}, ` +
-                `danach ${befund.atem.frei} frei · Gegenprobe (ein kalter Bau): ${befund.atem.gegen}`
-        );
+    console.log(`  Wach (ein kalter Bau): ${befund.wach}`);
     if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
     for (const [i, F] of (befund.fix || []).entries())
         console.log(
