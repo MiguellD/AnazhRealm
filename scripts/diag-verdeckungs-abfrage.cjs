@@ -600,7 +600,7 @@ async function verdeckungPhase(opts) {
         for (const k in eigen) be[k] = eigen[k];
     }
     // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
-    for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnung.offen.size); );
+    for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
