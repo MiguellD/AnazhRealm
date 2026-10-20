@@ -1,7 +1,4 @@
-// welt-boot.cjs — DER EINE WELT-BOOT jeder Linse (14.10., Z2b-1). Vorher startete jede Linse Server und Browser selbst:
-// 153 Dateien in scripts/ mit eigenem Start, 122 Kopien desselben Statik-Servers samt Mime-Tafel, 60 Kopien von vier
-// Browser-Rezepten — und jede Linse sammelte Seitenfehler nach eigenem Gusto oder gar nicht: gate:nah-fern stürzte seit
-// K16 ab und meldete Exit 0. Hier lebt der Start EINMAL:
+// welt-boot.cjs — DER EINE WELT-BOOT jeder Linse: Server, Browser und Fehler-Sammler leben EINMAL:
 //   statikServer()   der Statik-Server der Welt (Wurzel des Repos, `/` → index.html, nie aus der Wurzel heraus)
 //   starteBrowser()  der Browser über die EINE Adapter-Weiche (Rezepte: null · webgl · linse · echt, software-gpu.cjs)
 //                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
@@ -34,8 +31,8 @@ const { ohneKommentare } = require("./stamm.cjs");
 // `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
 // Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
 // DAS EINE EINSCHWINGEN jeder Linse (`await window.__weltStehtNach(takt, max)`): Takt um Takt, bis die Welt steht (A9
-// `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (CI 39016311220: die Ring-Zahl stand, die
-// Nah-Wiese wartete auf ihr Gras). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
+// `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (die Ring-Zahl
+// steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
 // ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Headless hält der Regler, solange sie schwingt (der PID
 // atmet ohne Bildrate, die Welt stünde nie). Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
 async function weltStehtNach(takt, max) {
@@ -204,8 +201,7 @@ function fehlerSammler(page) {
 }
 
 // ── DIE STALL-AKTE (K67) ────────────────────────────────────────────────────────────────────────────────────────────
-// Befund 14./15.10.: vier volle CI-Läufe rissen auf swiftshader-Linux an „Runtime.callFunctionOn timed out" bzw. einem
-// Navigations-Timeout — 300 s Stille, kein Name. Die Akte nennt den Täter: der PULS der Seite (ein Binding, das die
+// Ein Hänger der Seite („Runtime.callFunctionOn timed out", Navigations-Timeout) hat einen Namen. Die Akte nennt den Täter: der PULS der Seite (ein Binding, das die
 // Seite jede Sekunde ruft, mit ihrer Phase) zeigt, ob der Haupt-Thread lebt; die STEMPEL gehen EAGER hinaus, bevor ein
 // Aufruf blockieren kann (das Binding wartet nicht auf das Ende der Aufgabe); Debugger.pause unterbricht eine JS-Schleife
 // und liefert ihren Stapel (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
@@ -598,8 +594,7 @@ async function oeffneWelt(
 }
 
 // Eine Taste HALTEN, bis ihr Ereignis eintritt (`ziel` wird wahr auf `seite`, Page oder Frame) — nie nach der Wanduhr:
-// auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d) „A lief 0.77 m“
-// nach 1,6 s W, CI 38683406115). `taste` drückt über die Tastatur der Seite; ein Rahmen ohne Tastatur reicht `druck` und
+// auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs. `taste` drückt über die Tastatur der Seite; ein Rahmen ohne Tastatur reicht `druck` und
 // `los`. Losgelassen wird immer, auch nach der Frist. Die Wand: gate:apparat Klinge 5. → { erreicht, ms, wert } (`wert`:
 // was `ziel` im Moment des Ereignisses zurückgab)
 async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 30000 }) {
