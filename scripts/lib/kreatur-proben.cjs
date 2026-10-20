@@ -1965,9 +1965,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── jagdkreis (Leben-Schau 07.10., Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
     // stand still (ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten) und holte keinen Sprinter ein (der
-    // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) die Kampf-Schau — Wolf 4 m neben einem Hirsch, der
-    // Spieler 40 m fern, 3600 Takte: der Wolf läuft (Tempo in seinen Jagd-Takten), zur Beute hin (Anteil der Takte, deren
-    // Weg auf die Beute zeigt), und beißt; (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
+    // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) der Riss (unten); (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
     // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
     await buehne("jagdkreis", async (restore) => {
         r.setGameMode("pfad");
@@ -2036,63 +2034,9 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         if (taeter === "jagd-duft") decke(restore, "_kreaturAasZug", () => () => false);
-        // (A) die Kampf-Schau
-        const o = frei(50, 50, 25) || land(50, 50);
-        pm.set(o.x + 40, pm.y, o.z);
-        const hirsch = tier({ x: o.x, y: o.y, z: o.z }, "wesen", 1);
-        const wolf = tier({ x: o.x - 4, y: o.y, z: o.z + 1 }, "wolf", 1);
-        ruhig(hirsch);
-        ruhig(wolf);
-        hirsch.userData.hp = 1e6;
-        let bisse = 0;
-        decke(
-            restore,
-            "damageCreature",
-            (alt) =>
-                function (c, amount, opt) {
-                    if (c === hirsch && opt && opt.source === "jagd") bisse++;
-                    return alt.call(this, c, amount, opt);
-                }
-        );
-        let jagdT = 0,
-            jagdWeg = 0,
-            bewegt = 0,
-            hin = 0;
-        let wx = wolf.position.x,
-            wz = wolf.position.z;
         const dt = 1 / 60;
-        for (let k = 0; k < 3600; k++) {
-            const hx = hirsch.position.x,
-                hz = hirsch.position.z;
-            ruhigSpieler();
-            takt(dt);
-            const z = wolf.userData._motionZustand;
-            const vx = wolf.position.x - wx,
-                vz = wolf.position.z - wz;
-            const v = Math.hypot(vx, vz);
-            if (z === "jagd" || z === "hetzen") {
-                jagdT += dt;
-                jagdWeg += v;
-                // der Weg ZUR BEUTE zählt nur die Schritte der Jagd auf sie: verliert der Wolf den Hirsch und kommt dem
-                // Spieler nah, jagt er ihn (_jagdZiel "spieler") — seit der Biss ein Ansprung ist (Welle LF kampf), springt er
-                // ihn an, statt still neben ihm aus der Ferne zu beißen; diese Schritte gehen nicht zum Hirsch
-                if (v / dt > 0.3 && wolf.userData._jagdZiel !== "spieler") {
-                    bewegt++;
-                    if (vx * (hx - wx) + vz * (hz - wz) > 0) hin++;
-                }
-            }
-            wx = wolf.position.x;
-            wz = wolf.position.z;
-        }
-        const A1 = {
-            jagdS: +jagdT.toFixed(1),
-            tempoMs: jagdT > 0 ? +(jagdWeg / jagdT).toFixed(2) : 0,
-            hinAnteil: bewegt ? +(hin / bewegt).toFixed(3) : null,
-            bisse,
-        };
-        for (const c of s.creatures.slice()) r.removeCreature(c);
-        // (C) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3; er ersetzt das Bissen ohne Tod): ein Rudel aus drei
-        // Wölfen gegen einen Hirsch mit ECHTEM Leben —
+        // (A) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3; er ersetzt die Kampf-Schau und das Bissen ohne Tod): ein
+        // Rudel aus drei Wölfen gegen einen Hirsch mit ECHTEM Leben —
         // er fällt (der Riss), sein Leib wird ein Kadaver mit Zustand (Fleisch in kg, Alter), Fressen verbraucht ihn, und sein
         // Geruch (`_scentAt`) zieht Fuchs und Bär an, die im Moment des Risses 35 m fern stehen.
         const riss = () => {
@@ -2227,7 +2171,6 @@ async function kreaturProben(r, T, opts) {
 
         const abst1 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
         return {
-            kampfSchau: A1,
             riss: rissZahl,
             sprinter: {
                 sprintMs: +sprint.toFixed(2),
@@ -3088,14 +3031,7 @@ function urteil(name, z) {
         soll(z.gehalten === true, "die Passung verstellt die laufende Pose des Tiers");
     }
     if (name === "jagdkreis") {
-        const a = z.kampfSchau,
-            b = z.sprinter;
-        soll(a.jagdS >= 10, `der Wolf jagt nur ${a.jagdS} s von 60 (vakuös)`);
-        soll(a.tempoMs >= 0.5, `der Witterungs-Jäger steht still: ${a.tempoMs} m/s in seinen Jagd-Takten (Soll ≥ 0,5)`);
-        soll(
-            a.hinAnteil !== null && a.hinAnteil >= 0.8,
-            `der Witterungs-Jäger läuft nicht zur Beute: ${a.hinAnteil} seiner Schritte zeigen auf sie (Soll ≥ 0,8)`
-        );
+        const b = z.sprinter;
         soll(
             b.abstandEnde < b.abstand0 && b.bisse >= 1,
             `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
@@ -3233,7 +3169,7 @@ const TAETER = {
         ["abstand-spieler", /Leib im Spieler/],
     ],
     jagdkreis: [
-        ["jagd-gradient", /läuft nicht zur Beute|steht still|kein Riss/],
+        ["jagd-gradient", /kein Riss/],
         ["jagd-schritt", /Sprinter entkommt/],
         ["jagd-aas", /kein Kadaver/],
         ["jagd-duft", /kein Geruch/],
