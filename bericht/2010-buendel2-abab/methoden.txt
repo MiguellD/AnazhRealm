@@ -1,0 +1,5 @@
+Instrument A = n2010-b2a, Seite B = n2010-b2b
+Methoden A 3499 · B 3507
+in B entfernt (8): DAY_NIGHT_STOPS, _catmullDayNight, _celestialHorizonFade, _daemmerung, _himmelGrenzgroesse, _himmelHell, _interpolateDayNight, _nachtAnteil
+in B neu (16): _belichtungAnker, _dorfZugOffen, _erdbauGrundFaellt, _erdbauWirkt, _hausGrundSetzen, _himmelsBestrahlung, _himmelsTafelLesen, _kellerLage, _knochenPufferName, _leibDerSeele, _mondDurchlass, _tagAchse, _voxelFadenAuftrag, _voxelFadenTraegt, _wurfOhneFarbe, getSkinnedPosition
+vom Instrument gerufen und in B fehlend (0): KEINE

@@ -1,0 +1,4 @@
+﻿A1 uhr 05: Helligkeit 81.4  R/G/B 69/90/35
+A1 uhr 027: Helligkeit 111.9  R/G/B 116/116/58
+B1 uhr 05: Helligkeit 81.3  R/G/B 69/90/35
+B1 uhr 027: Helligkeit 63.7  R/G/B 67/67/21

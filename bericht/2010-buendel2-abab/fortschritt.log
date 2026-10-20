@@ -1,0 +1,57 @@
+20:45:08 KALT START A=dc6702ab B=8ba1510d sha=c1103c863597/c1103c863597
+20:45:13 kalt-A1 start dc6702ab gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:45:53 kalt-A1 ende exit=1 gpu[73, 1835 MHz, 4006 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 16.97 s ab Navigation
+20:46:28 kalt-B1 start 8ba1510d gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:47:05 kalt-B1 ende exit=1 gpu[74, 1721 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.99 s ab Navigation
+20:47:40 kalt-A2 start dc6702ab gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:48:19 kalt-A2 ende exit=1 gpu[75, 1835 MHz, 4006 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 16.14 s ab Navigation
+20:48:54 kalt-B2 start 8ba1510d gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:49:32 kalt-B2 ende exit=1 gpu[75, 1721 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.14 s ab Navigation
+20:50:07 kalt-A3 start dc6702ab gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:50:44 kalt-A3 ende exit=1 gpu[75, 1784 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.61 s ab Navigation
+20:51:20 kalt-B3 start 8ba1510d gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:51:57 kalt-B3 ende exit=1 gpu[76, 1708 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.11 s ab Navigation
+20:52:32 kalt-A4 start dc6702ab gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:53:10 kalt-A4 ende exit=1 gpu[74, 923 MHz, 3802 MHz, P2, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 16.03 s ab Navigation
+20:53:45 kalt-B4 start 8ba1510d gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+20:54:22 kalt-B4 ende exit=1 gpu[75, 1784 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.52 s ab Navigation
+20:54:52 KALT ENDE
+20:54:54 SERIE START A=dc6702ab[0] B=8ba1510d[0] Instrument=dc6702ab ZELLEN=g-third w-ego
+20:55:00 g-third-A1 start FP=806844c53c445b86 64 50 gpu[70, 151 MHz, 405 MHz, P8, 0x0000000000000001]
+20:57:51 g-third-A1 ende gpu[82, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.8 F95 16.8 C95 6.1 k0 0.2 | 1: fps 62.7 F95 25.1 C95 20.8 k0 0.2 |  {"ergebnis":{"s":-8.2,"wege":2,"wegM":128.2,"abwMaxM":0,"takte":2234,"lage":[0,-8.2]},"ms"
+20:58:23 g-third-B1 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:01:13 g-third-B1 ende gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 80.1 F95 16.7 C95 5.9 k0 0.2 | 1: fps 65.8 F95 25 C95 18.7 k0 0.21 |  {"ergebnis":{"s":-8.1,"wege":2,"wegM":128.1,"abwMaxM":0,"takte":2544,"lage":[0,-8.1]},"ms"
+21:01:44 g-third-A2 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:04:32 g-third-A2 ende gpu[82, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.9 F95 16.8 C95 5.9 k0 0.2 | 1: fps 65.4 F95 25 C95 19.4 k0 0.21 |  {"ergebnis":{"s":-8.2,"wege":2,"wegM":128.2,"abwMaxM":0,"takte":2526,"lage":[0,-8.2]},"ms"
+21:05:03 g-third-B2 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:07:50 g-third-B2 ende gpu[82, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.6 F95 16.8 C95 6 k0 0.2 | 1: fps 65 F95 25 C95 18.7 k0 0.2 |  {"ergebnis":{"s":-8.1,"wege":2,"wegM":128.1,"abwMaxM":0,"takte":2434,"lage":[0,-8.1]},"ms"
+21:08:22 g-third-A3 start FP=806844c53c445b86 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:11:12 g-third-A3 ende gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 79.4 F95 16.8 C95 6.6 k0 0.21 | 1: fps 53.7 F95 33.2 C95 25.3 k0 0.2 |  {"ergebnis":{"s":-8.2,"wege":2,"wegM":128.2,"abwMaxM":0,"takte":1742,"lage":[0,-8.2]},"ms"
+21:11:43 g-third-B3 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:14:31 g-third-B3 ende gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.5 F95 16.8 C95 6.5 k0 0.2 | 1: fps 65.9 F95 25 C95 18.8 k0 0.2 |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2535,"lage":[0,-8.3]},"ms"
+21:15:02 g-third-A4 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:17:50 g-third-A4 ende gpu[83, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.6 F95 16.8 C95 5.7 k0 0.2 | 1: fps 64.6 F95 25.1 C95 19.1 k0 0.21 |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":2491,"lage":[0,-8.4]},"ms"
+21:18:21 g-third-B4 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:21:10 g-third-B4 ende gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 79.5 F95 16.8 C95 6.8 k0 0.19 | 1: fps 55.4 F95 25.1 C95 25 k0 0.2 |  {"ergebnis":{"s":-8.5,"wege":2,"wegM":128.5,"abwMaxM":0,"takte":1818,"lage":[0,-8.5]},"ms"
+21:21:41 w-ego-A1 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:24:00 w-ego-A1 ende gpu[82, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.8 F95 16.8 C95 4.3 k0 0.26 | 1: fps 60.5 F95 25.1 C95 20.3 k0 0.25 |  {"ergebnis":{"s":-7.8,"wege":2,"wegM":127.8,"abwMaxM":0,"takte":2690,"lage":[-280.4,-1053.
+21:24:31 w-ego-B1 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:26:48 w-ego-B1 ende gpu[82, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.1 F95 16.8 C95 4.6 k0 0.26 | 1: fps 61.4 F95 25.1 C95 19.7 k0 0.25 |  {"ergebnis":{"s":-7.8,"wege":2,"wegM":127.8,"abwMaxM":0,"takte":2771,"lage":[-280.4,-1053.
+21:27:19 w-ego-A2 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:29:38 w-ego-A2 ende gpu[82, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.7 F95 16.8 C95 4.6 k0 0.26 | 1: fps 60.1 F95 25.1 C95 20 k0 0.25 |  {"ergebnis":{"s":-7.7,"wege":2,"wegM":127.7,"abwMaxM":0,"takte":2655,"lage":[-280.4,-1053.
+21:30:09 w-ego-B2 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:32:27 w-ego-B2 ende gpu[82, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.3 F95 16.8 C95 4.3 k0 0.26 | 1: fps 61.5 F95 25.1 C95 19.6 k0 0.25 |  {"ergebnis":{"s":-7.7,"wege":2,"wegM":127.7,"abwMaxM":0,"takte":2810,"lage":[-280.4,-1053.
+21:32:58 w-ego-A3 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:35:16 w-ego-A3 ende gpu[82, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 82.3 F95 16.8 C95 4 k0 0.26 | 1: fps 62.6 F95 25.1 C95 19.3 k0 0.25 |  {"ergebnis":{"s":-7.9,"wege":2,"wegM":127.9,"abwMaxM":0,"takte":2821,"lage":[-280.4,-1053.
+21:35:47 w-ego-B3 start FP=45776c4fa3dbe758 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:38:08 w-ego-B3 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 80.8 F95 16.8 C95 4.1 k0 0.26 | 1: fps 62.7 F95 25.1 C95 19.4 k0 0.25 |  {"ergebnis":{"s":-7.7,"wege":2,"wegM":127.7,"abwMaxM":0,"takte":2848,"lage":[-280.4,-1053.
+21:38:39 w-ego-A4 start FP=806844c53c445b86 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:41:00 w-ego-A4 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 81 F95 16.8 C95 4 k0 0.26 | 1: fps 61.7 F95 25.1 C95 19.6 k0 0.24 |  {"ergebnis":{"s":-7.8,"wege":2,"wegM":127.8,"abwMaxM":0,"takte":2747,"lage":[-280.4,-1053.
+21:41:31 w-ego-B4 start FP=45776c4fa3dbe758 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+21:43:48 w-ego-B4 ende gpu[82, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 80.2 F95 16.8 C95 4.3 k0 0.26 | 1: fps 62 F95 25.1 C95 19.3 k0 0.24 |  {"ergebnis":{"s":-7.7,"wege":2,"wegM":127.7,"abwMaxM":0,"takte":2834,"lage":[-280.4,-1053.
+21:44:13 SERIE ENDE A-status[0] B-status[0]
+21:44:25 blick-B1 start 8ba1510d FP=45776c4fa3dbe758 64 50
+21:45:50 blick-B1 ende pose[-280.4 29.71 -1045.6 -335.64 29.71 -1069.02] 2 Bilder
+21:46:27 blick-A1 start dc6702ab FP=806844c53c445b86 64 50
+21:47:52 blick-A1 ende pose[-280.4 29.71 -1045.6 -335.64 29.71 -1069.02] 2 Bilder
+21:48:17 BLICK ENDE

@@ -1,0 +1,16 @@
+g-third-A1: vor dem Logger
+g-third-B1: 169 s · Leistung 150 % · Limit 100 %
+g-third-A2: 167 s · Leistung 152 % · Limit 100 %
+g-third-B2: 166 s · Leistung 151 % · Limit 100 %
+g-third-A3: 170 s · Leistung 155 % · Limit 100 %
+g-third-B3: 168 s · Leistung 151 % · Limit 100 %
+g-third-A4: 167 s · Leistung 152 % · Limit 100 %
+g-third-B4: 169 s · Leistung 153 % · Limit 100 %
+w-ego-A1: 138 s · Leistung 152 % · Limit 100 %
+w-ego-B1: 136 s · Leistung 153 % · Limit 100 %
+w-ego-A2: 139 s · Leistung 152 % · Limit 100 %
+w-ego-B2: 138 s · Leistung 153 % · Limit 100 %
+w-ego-A3: 137 s · Leistung 153 % · Limit 100 %
+w-ego-B3: 141 s · Leistung 155 % · Limit 100 %
+w-ego-A4: 139 s · Leistung 154 % · Limit 100 %
+w-ego-B4: 137 s · Leistung 154 % · Limit 100 %
