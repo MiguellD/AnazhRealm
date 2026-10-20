@@ -21,9 +21,9 @@ var cpgCoupling=__tetrapodaCore.CPG_COUPLING;   // Kern-Quelle (W-A6)
 // gangSchritt wählt Takt, Fußweg und die Fußfolge nach der Froude-Zahl, cpgStep zieht die Beine in die Folge, gangFuss führt
 // jeden Fuß (vor/zurück dz, Hub). Die Stimmung trägt die Haltung, nie den Gang; der Sinus je Gelenk (Stimmungs-Schritt ×
 // Sprint-Faktor) fiel.
-var gangVh=0,gangS=0,gangTast=0.5,gangWinkel=0,gangFolge=null,gangArtIst='stand',gangL=1,gangH=[1,1,1,1];
-function gangTempo(vh){gangVh=Math.max(0,+vh||0);var el=document.getElementById('tempo');if(el&&+el.value!==gangVh)el.value=gangVh;}
-function gangTakt(dt,freqStand){var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,Lm=gangL*mE;var gs=K.gangSchritt(gangVh*Math.sqrt(K.GANG_GESETZ.g*Lm),Lm);
+var gangWerte={tempo:0},gangRegler=null,gangS=0,gangTast=0.5,gangWinkel=0,gangFolge=null,gangArtIst='stand',gangL=1,gangH=[1,1,1,1];
+function gangTempo(vh){gangWerte.tempo=Math.max(0,+vh||0);if(gangRegler)gangRegler.setzen({tempo:gangWerte.tempo},true);}
+function gangTakt(dt,freqStand){var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,Lm=gangL*mE;var gs=K.gangSchritt(gangWerte.tempo*Math.sqrt(K.GANG_GESETZ.g*Lm),Lm);
   if(!gangFolge)for(var i=0;i<4;i++)cpgPhase[i]=gs.folge[i];
   gangFolge=gs.folge;gangS=gs.S/mE;gangTast=gs.tast;gangWinkel=gangS>0?Math.atan(gangS/(2*gangL)):0;
   if(gs.art!==gangArtIst){gangArtIst=gs.art;var a=document.getElementById('gangart');if(a)a.textContent=gs.art;}
@@ -245,7 +245,7 @@ function init(){
   document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
   document.querySelectorAll('#stufen button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#stufen button').forEach(function(b2){b2.classList.toggle('active',b2===b);});stufeWahl=b.dataset.s;stufeSchalten();});});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
-  var te=document.getElementById("tempo");if(te)te.addEventListener("input",function(){gangTempo(+te.value);});
+  gangRegler=AnazhHuelle.regler(document.getElementById("gang"),[{id:"tempo",lab:"Tempo v̂ (Froude-Wurzel)",min:0,max:4,step:0.05,def:0}],{werte:gangWerte,gruppen:false,ruheMs:0});
   animate();
 }
 function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll('#presets button').forEach(function(b){b.classList.toggle('active',!!g&&b.dataset.p===g);});}
