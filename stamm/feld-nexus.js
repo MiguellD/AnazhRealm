@@ -972,7 +972,12 @@ class AnazhRealm_feld_nexus {
     _dslVokabular() {
         const W = AnazhRealm.DSL_WERTE;
         const liste = (eintraege) =>
-            eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2](this)}]` : ""}`).join(", ");
+            eintraege
+                .map(
+                    ([n, fn]) =>
+                        `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2].length ? "Band: am Ende" : W[n][2]()}]` : ""}`
+                )
+                .join(", ");
         const ops = Object.entries(this.dslEffects);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
@@ -1034,14 +1039,19 @@ class AnazhRealm_feld_nexus {
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
             '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
-            "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program. Eine Frage,",
-            "    ein Dank, ein Gespräch, ein Wunsch, den kein Verb kann, eine Zerstörung: program null — nur say.",
-            "Beispiel-Antworten:",
-            '{"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
-            '{"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
-            '{"say":"Drei frohe Wesen erwachen.","program":["spawn_creature",["near_player",10],3,"happy"]}',
-            '{"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
-            '{"say":"Das kann ich nicht tun.","program":null}',
+            "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
+            "  - Eine FRAGE antwortet NUR mit say (program null) — auch die Frage nach Uhrzeit oder Wetter ändert nie die Welt.",
+            "    Ebenso ein Dank, ein Gespräch, eine Zerstörung, ein Ding ohne Studio-Wort (spawn_creature ruft nur Tiere): null.",
+            "Beispiele (Spieler → Antwort):",
+            '„es soll regnen“ → {"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
+            '„mach es Abend“ → {"say":"Die Sonne sinkt.","program":["set_time_of_day",0.8]}',
+            '„es soll Frühling werden“ → {"say":"Der Frühling kommt.","program":["set_season","spring"]}',
+            '„drei Eichen vor mir“ → {"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
+            '„ein paar frohe Tiere“ → {"say":"Drei frohe Wesen erwachen.","program":["spawn_creature",["near_player",10],3,"happy"]}',
+            '„Sonne und gute Laune“ → {"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
+            '„wie heißt du?“ → {"say":"Ich bin die Stimme dieser Welt.","program":null}',
+            '„schenk mir ein Eis“ → {"say":"Ein Eis kann ich nicht erschaffen.","program":null}',
+            '„vernichte den Wald“ → {"say":"Ich zerstöre nicht — ich lasse wachsen.","program":null}',
             ...this._dslVokabular(),
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
@@ -1060,11 +1070,16 @@ class AnazhRealm_feld_nexus {
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
             "",
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
-            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
             `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
             moodLine,
             moodBgLine,
+            `Die Bänder jetzt: ${Object.entries(AnazhRealm.DSL_WERTE)
+                .filter(([, w]) => w[2].length)
+                .map(([n, w]) => `${n} ${w[2](this)}`)
+                .join(" · ")}.`,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
+            // die Zahl wechselt mit jeder Tat — sie steht zuletzt, der Cache hält bis davor
+            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
         ].join("\n");
     }
 
