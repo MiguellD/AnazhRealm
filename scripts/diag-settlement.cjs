@@ -2359,18 +2359,18 @@ const FIXTURES = [
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                    // marktstand_dorf), auf dem Erdbau eines Orts
+                    // marktstand_dorf), auf dem Erdbau eines Orts — nie das gesetzte Haus auf seinem EIGENEN Grund (`haus:`, S4)
                     let fremd = 0;
-                    if (typeof r._ortFrei === "function")
-                        for (const e of r.state.architectures)
-                            if (
-                                !e.fundament &&
-                                !/_dorf$/.test(e.type) &&
-                                !r._ortFrei(e.position.x, e.position.z, 0.01)
-                            ) {
-                                fremd++;
-                                (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
-                            }
+                    for (const e of r.state.architectures)
+                        if (
+                            !e.fundament &&
+                            !/_dorf$/.test(e.type) &&
+                            !r.state.worldMeta.erdbau[`haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`] &&
+                            !r._ortFrei(e.position.x, e.position.z, 0.01)
+                        ) {
+                            fremd++;
+                            (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
+                        }
                     res.fremdBauten = fremd;
                     // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
                     // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
