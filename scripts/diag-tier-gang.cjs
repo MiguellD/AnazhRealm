@@ -44,7 +44,7 @@ const LAUF = (k) => {
     const core = window.__tetrapodaCore;
     if (k.stub) {
         window.__gangEcht = core.gangSchritt;
-        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12 });
+        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
     }
     const pm = s.playerMesh.position;
     const x0 = pm.x + 40,
@@ -330,8 +330,8 @@ const LEIB = (k) => {
 // DIE SCHWERE DES GANGS (K07, dieselbe Linse): Schritt und Becken lesen die Schwere der Welt (state.gravity, die DSL setzt
 // sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen und
 // der des Wolfs im Schritt gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am
-// Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig, ein Trab-Muster neben
-// MOTION.phases im Tier-Gang). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
+// Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig; das Muster der Beine
+// urteilt die Gangart am Verhalten). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
     const r = window.anazhRealm,
         s = r.state,
@@ -389,8 +389,6 @@ const SCHWERE = (k) => {
     o.zwillinge = [];
     if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
-    if (!window.__fehlt(r._animateTierBaum, /\[\s*0\s*,\s*Math\.PI\s*\*/))
-        o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben MOTION.phases");
     return o;
 };
 
@@ -487,6 +485,95 @@ const STUDIO = (k) => {
     /* eslint-enable no-undef */
 };
 
+// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3): je Gattung EIN Tier, das über v̂ = 0,3 · 0,74 · 1,2 · 3,5 beschleunigt
+// (0,74: Fr 0,55 liegt im Band der Hysterese — wer geht, geht weiter, in Welt UND Labor), in Welt und Labor die Phasen der
+// Beine [VL, VR, HL, HR] → Schritt lateral (nach dem Hinterfuß der Vorderfuß derselben Seite), Trab (Diagonalen gemeinsam),
+// Galopp (Paare vorn und hinten, getrennt). --selftest: das Muster der Stimmung (MOTION.joy) an jedem Tempo → ROT.
+const VH = [0.3, 0.74, 1.2, 3.5];
+const GANG_SOLL = { 0.3: "schritt-lateral", 0.74: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
+const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
+// Aufsetzen bei Phase π (gangFuss): ein größerer Versatz setzt früher auf
+function gangart(ph) {
+    const rel = ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
+    const d = (a, b) => Math.min(Math.abs(rel[a] - rel[b]), 1 - Math.abs(rel[a] - rel[b]));
+    const aus = (art) => ({ art, rel: rel.map((x) => +x.toFixed(2)) });
+    if (d(0, 3) < 0.1 && d(1, 2) < 0.1 && d(0, 1) > 0.4) return aus("trab");
+    if (d(0, 1) < 0.25 && d(2, 3) < 0.25 && d(0, 2) >= 0.25 && d(1, 3) >= 0.25) return aus("galopp");
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) if (d(a, b) < 0.15) return aus("unbestimmt");
+    const folge = [0, 1, 2, 3].sort((a, b) => ((1 - rel[a]) % 1) - ((1 - rel[b]) % 1));
+    const nach = (bein) => folge[(folge.indexOf(bein) + 1) % 4];
+    return aus(nach(2) === 0 && nach(3) === 1 ? "schritt-lateral" : "schritt-diagonal");
+}
+// je Ort (k.labor: worlds/tetrapoda über gangTakt, sonst die Welt durch _animateCompoundMotion) die Phasen gegen das erste
+// Bein, im Kreis gemittelt über die sechste Sekunde (ein Takt allein fiele auf den Sprung eines Beins an seiner Grenze)
+const GANG = (k) => {
+    /* eslint-disable no-undef */
+    const core = window.__tetrapodaCore;
+    const r = window.anazhRealm;
+    const echt = core.gangSchritt;
+    if (k.stub)
+        core.gangSchritt = function (...a) {
+            return Object.assign(echt.apply(this, a), { folge: k.stimmung });
+        };
+    const zeilen = [];
+    let cr = null,
+        t = 0;
+    try {
+        if (k.labor) document.querySelector('#presets button[data-p="' + k.art + '"]').click();
+        else {
+            const st = r.state,
+                pm = st.playerMesh.position;
+            const saveMax = st.maxCreatures;
+            st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 4);
+            cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", k.art, { precise: true, bodySize: 1 });
+            st.maxCreatures = saveMax;
+            if (!cr || !cr.userData._tierBaum) return { fehler: "Spawn " + k.art };
+            cr.userData.task = { name: "wait", args: {}, since: 0 };
+            cr.userData.emotions = null;
+            cr.rotation.set(0, Math.PI / 2, 0);
+            cr.userData._animFade = 1;
+        }
+        for (const vh of k.vh) {
+            const c = [0, 0, 0, 0],
+                s = [0, 0, 0, 0];
+            const dazu = (ph) => {
+                for (let i = 0; i < 4; i++) {
+                    c[i] += Math.cos(ph[i] - ph[0]);
+                    s[i] += Math.sin(ph[i] - ph[0]);
+                }
+            };
+            let z = { vh };
+            if (k.labor) {
+                gangTempo(vh);
+                for (let i = 0; i < 360; i++) {
+                    gangTakt(1 / 60);
+                    if (i >= 300) dazu(cpgPhase);
+                }
+            } else {
+                const tb = cr.userData._tierBaum;
+                const roles = r._motionRolesForSoul(cr.userData.soul);
+                const Z = r._gangZeile(false);
+                const L = tb.beinL * (cr.scale.x || 1);
+                const v = vh * Math.sqrt((Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g) * L);
+                for (let i = 0; i < 360; i++) {
+                    cr.position.x += v / 60;
+                    r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
+                    if (i >= 300) dazu(tb._gang.ph);
+                }
+                z = { vh, v: +v.toFixed(2), L: +L.toFixed(2) };
+            }
+            z.ph = c.map((x, i) => Math.atan2(s[i], x));
+            zeilen.push(z);
+        }
+        if (k.labor) gangTempo(0);
+    } finally {
+        core.gangSchritt = echt;
+        if (cr) r.removeCreature(cr);
+    }
+    return { zeilen };
+    /* eslint-enable no-undef */
+};
+
 (async () => {
     await new Promise((res) => server.listen(PORT, res));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -496,6 +583,20 @@ const STUDIO = (k) => {
     await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
+    let gangRot = false;
+    const gangUrteil = (wo, res) => {
+        for (const z of res.zeilen || [{ fehler: res.fehler }]) {
+            const g = z.fehler ? { art: z.fehler, rel: [] } : gangart(z.ph);
+            const ok = g.art === GANG_SOLL[z.vh];
+            console.log(
+                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${ok ? "" : " — Soll " + GANG_SOLL[z.vh]}`
+            );
+            if (!ok) {
+                rot++;
+                gangRot = true;
+            }
+        }
+    };
     try {
         if (!NUR_STUDIO) {
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -578,6 +679,11 @@ const STUDIO = (k) => {
                     schwereRot = true;
                 }
             }
+            for (const seele of ["wolf", "fuchs", "baer", "wesen"])
+                gangUrteil(
+                    "Welt " + seele,
+                    await page.evaluate(GANG, { art: seele, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
+                );
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
@@ -613,6 +719,28 @@ const STUDIO = (k) => {
                 );
                 if (!ok) rot++;
             }
+            // dieselbe Gangart im Labor der Tiere (Labor = Welt)
+            const tp = await sb.newPage();
+            tp.setDefaultTimeout(280000);
+            tp.on("pageerror", (e) => console.log("[TETRAPODA-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+            await tp.goto(`http://127.0.0.1:${PORT}/worlds/tetrapoda/index.html`, {
+                waitUntil: "domcontentloaded",
+                timeout: 240000,
+            });
+            await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", {
+                timeout: 180000,
+            });
+            for (const gattung of ["wolf", "fox", "bear", "deer"])
+                gangUrteil(
+                    "Labor " + gattung,
+                    await tp.evaluate(GANG, {
+                        art: gattung,
+                        labor: true,
+                        vh: VH,
+                        stub: SELBST,
+                        stimmung: STIMMUNG_FOLGE,
+                    })
+                );
         } finally {
             await sb.close();
         }
@@ -631,12 +759,16 @@ const STUDIO = (k) => {
             );
             process.exit(1);
         }
+        if (!gangRot) {
+            console.error("\n❌ SELBST-TEST ROT — das Muster der Stimmung blieb grün: die Gangart-Wand ist vakuös.");
+            process.exit(1);
+        }
         console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
         process.exit(0);
     }
     if (rot) {
         console.error(
-            `\n❌ ROT — ${rot} Läufe verletzt (Schlupf > ${SCHWELLE}, Kadenz, Töne, Becken oder Lock-Löser).`
+            `\n❌ ROT — ${rot} Läufe verletzt (Schlupf > ${SCHWELLE}, Kadenz, Töne, Becken, Lock-Löser oder Gangart).`
         );
         process.exit(1);
     }

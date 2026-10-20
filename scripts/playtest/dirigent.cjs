@@ -715,7 +715,7 @@ async function checkBandV18177AAA(ctx) {
 }
 
 // Verdrahtungs-Band — KONSUM, nicht Existenz: A1 _growTreeBlueprintForSpawn (Worldgen-Hook) ·
-// A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 _creatureScentHuntDir +
+// A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 der Biss +
 // _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
 async function checkBandV18210Verdrahtung(ctx) {
     const { page, check } = ctx;
@@ -908,47 +908,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
-        // ============== A3: _scentAt KREATUR-KI ==============
-        // (A3a) Helper existieren
-        // (A3b) Konstanten gesetzt
-        // (Welle LF: die Witterung wählt die Beute an der Nase — der Proben-Schritt des Gradienten scentProbeM fiel;
-        // der Ring der Hetze hetzM und die Pirsch-Sicht sind Jagd-Gesetz)
-        out.a3ScentRangeM = A._verhaltenGesetz().jagd.scentRangeM;
-        out.a3ScentProbeM = A._verhaltenGesetz().jagd.hetzM;
-        out.a3ConstsOk =
-            typeof out.a3ScentRangeM === "number" &&
-            out.a3ScentRangeM >= 30 &&
-            typeof out.a3ScentProbeM === "number" &&
-            out.a3ScentProbeM > 0 &&
-            A._verhaltenGesetz().jagd.scentProbeM === undefined;
-        // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
-        // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
+        // ============== A3: der Biss der KREATUR-KI ==============
+        // (die Witterung urteilt gate:kreatur-takt jagdkreis am echten Takt)
         const savedMode = r.getGameMode();
         const savedCreatures = r.state.creatures;
         try {
             r.setGameMode("pfad");
-            // ein wildes Wesen und seine Beute 20 m östlich — ECHTE Leiber (Welle LF: das Beute-Urteil liest die EINE Masse
-            // des Leibs aus der Gestalt; der Wolf jagt, der Fuchs ist scheu und seine Beute)
-            const pmH = r.state.playerMesh.position;
-            const capH = r.state.maxCreatures;
-            r.state.maxCreatures = Math.max(capH || 0, savedCreatures.length + 2);
-            const optH = { precise: true, bodySize: 1 };
-            const predator = r.spawnCreatureAt(pmH.x + 380, pmH.y, pmH.z - 380, "calm", "wolf", optH);
-            const prey = predator && r.spawnCreatureAt(pmH.x + 400, pmH.y, pmH.z - 380, "calm", "fuchs", optH);
-            r.state.maxCreatures = capH;
-            if (predator && prey) {
-                prey.position.set(predator.position.x + 20, predator.position.y, predator.position.z);
-                r.state.creatures = [predator, prey];
-                const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
-                out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
-                // Ohne Beute → null
-                r.state.creatures = [predator];
-                const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
-                out.a3NoPreyNoDir = dirNoPrey === null;
-            }
-            r.state.creatures = savedCreatures;
-            if (predator) r.removeCreature(predator);
-            if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
@@ -1095,13 +1060,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
     check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
-    // A3 — Scent KI
-    check(
-        `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
-        res.a3ConstsOk === true
-    );
-    check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
-    check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
+    // A3 — der Biss
     check(
         "V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → der Biss trifft und stößt sie weg (echte Leiber, 0710-4)",
         res.a3StrikeHits === true,
