@@ -97,7 +97,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const bauRing = async (msMax) => {
             let ruhig = 0,
                 letzt = -1;
-            for (const weiter = window.__deckel("die Streu-Zellen", msMax / 40); weiter(); ) {
+            for (const weiter = window.__deckel("die Streu-Zellen", msMax / 40, false); weiter(); ) {
                 r._tickScatterStreaming(pm);
                 const n = zellen();
                 // offen: eine Region in Reichweite steht nicht (die EINE Antwort der Welt, `_streuWartet` — auch eine fehlende),
@@ -130,7 +130,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         {
             let vor = -1,
                 gleich = 0;
-            for (const weiter = window.__deckel("die wartende Streu", 1200); weiter(); ) {
+            for (const weiter = window.__deckel("die wartende Streu", 1200, false); weiter(); ) {
                 r._tickScatterLod(pm, 64, 4000);
                 const w = wartend();
                 if (w === 0) break;
@@ -262,7 +262,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     return o;
                 };
                 pm.set(ziel.x + 3, r._voxelSurfaceY(ziel.x + 3, ziel.z) + 1.8, ziel.z);
-                for (const weiter = window.__deckel("die Streu am Ziel", 900); weiter(); ) {
+                for (const weiter = window.__deckel("die Streu am Ziel", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     const n = nahe();
                     if (n.fern === 0 && n.mesh > 0 && n.ohneSlots === 0) break;
@@ -286,7 +286,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 // Totbands (an der Mess-Wiese −278/−1038 lag eine Mesh-Zelle 30–64 m vom Ziel, die Probe brach nach der
                 // Scheibe ab und zählte sie in B)
                 pm.set(heim.x, heim.y, heim.z);
-                for (const weiter = window.__deckel("die Absenz nach der Rückkehr", 900); weiter(); ) {
+                for (const weiter = window.__deckel("die Absenz nach der Rückkehr", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     if (umZiel().mesh === 0 && absenz().n === 0) break;
                     await sleep(100);
@@ -349,7 +349,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const fit = {};
         try {
             let satz = null;
-            for (const weiter = window.__deckel("der Gesetz-Fit des Gerölls", 600); weiter(); ) {
+            for (const weiter = window.__deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
                 if (satz && satz.length) break;
                 await sleep(100);
@@ -379,7 +379,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const st1 = {};
         try {
             let flat = null;
-            for (const weiter = window.__deckel("das Flat des Gerölls", 600); weiter(); ) {
+            for (const weiter = window.__deckel("das Flat des Gerölls", 600, false); weiter(); ) {
                 flat = r._foundryFlattenFor({ seed: 7 }, "geroell", 0);
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);

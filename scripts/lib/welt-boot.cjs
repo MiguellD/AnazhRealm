@@ -91,15 +91,16 @@ async function gebautNach(e, { takt, fertig, bau, max, offen } = {}) {
 }
 // DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): je Gang
 // zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
-// Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr.
+// Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
+// Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht — CI 7383002a: streu-fern hing 600 s bei 0 % CPU).
 function deckel(name, max, offen) {
     let n = 0,
         k = 0;
     return () => {
         const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { foundry: 1, chunks: 0, wald: 0 };
-        if (!(o.foundry + o.chunks + o.wald) && !(offen && offen()) && ++k > (max || 120))
-            throw new Error(`DER BAU STEHT NICHT: ${name} nach ${n} Takten — die Welt hat nichts mehr offen`);
+        if ((offen === false || (!(o.foundry + o.chunks + o.wald) && !(offen && offen()))) && ++k > (max || 120))
+            throw new Error(`DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`);
         return ++n > 0;
     };
 }

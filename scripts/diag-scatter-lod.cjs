@@ -215,7 +215,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     fertig: zweiNah,
                     takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await new Promise((r2) => setTimeout(r2, 60))),
                     max: 500,
-                });
+                })
+                .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
             // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
