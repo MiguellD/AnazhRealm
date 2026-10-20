@@ -1057,7 +1057,7 @@ const ZWILLINGE = [
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
-        fingerprint: "Math.sin(phases[j] - phases[i])",
+        fingerprint: "Math.sin(phases[j] - phases[i] - (folge[j] - folge[i]))",
         gesetzbuch: "tetrapoda-core.js",
         verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",

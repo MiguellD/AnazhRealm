@@ -1592,19 +1592,12 @@ class AnazhRealm_koerper_leib {
         // trifft. Aufrufer ohne _animFade → fadeMul 1.
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
-        let g = tb._gang;
-        // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand — jede Zeile trägt es, ein
-        // Muster ohne Zeile ist ein Bruch, kein zweiter Trab im Wirt) und seedet bei Profil-Wechsel neu (wie Lab emo.set).
-        // Der walkPhase-Versatz (Desync je Kreatur) bleibt; das gesetzte Muster wohnt am Gang (g.off), der Takt des Leibs
-        // liest es dort.
-        const phGesetz = Array.isArray(P.phases) && P.phases.length === 4 ? P.phases : null;
-        if (!phGesetz) return AnazhRealm._kernPflichtBruch("tetrapoda:MOTION." + name + ".phases");
-        if (!g || g.profil !== name) {
-            g = tb._gang = g || { ph: [0, 0, 0, 0], lastT: t };
-            for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
-            g.off = phGesetz;
-            g.profil = name;
-        }
+        // DIE FUSSFOLGE AUS DEM TEMPO (Meisterkarte Tiere H3, tetrapoda GANG_FOLGE): der Gang trägt das Muster, das das
+        // Gang-Gesetz zum Tempo wählt (gs.folge, unten — Schritt lateral, Trab, Galopp nach der Froude-Zahl; im Wasser die
+        // Paddel-Folge) und das Netz zieht die Beine hinein (cpgStep mit folge). Gesetzt wird es beim ersten Takt (der
+        // walkPhase-Versatz desynchronisiert die Kreaturen); der Takt des Leibs liest es am Gang (g.off). Vorher setzte die
+        // Stimmung das Muster (MOTION.phases beim Profil-Wechsel), und das alte Netz zog es in den Pass.
+        let g = tb._gang || (tb._gang = { ph: [0, 0, 0, 0], lastT: t });
         // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
         // Takt aus) — der Weg teilt sich durch sie, nie durch den gedeckelten Animations-Schritt. Der TAKT rückt um
         // dieselbe Spanne vor (dtTakt, in Schritten ≤ 0,1 s — die Kopplung bleibt stabil; eine Pause über 1 s ist kein
@@ -1629,14 +1622,22 @@ class AnazhRealm_koerper_leib {
         g.lageX = lage.x;
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
-        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false));
+        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false), g.art);
+        g.art = gs.art;
+        // die Länge des Schwungs im Takt (rad): der Stand füllt den Tastgrad des Gesetzes (im Galopp kürzer, gs.tast)
+        const sw = 2 * Math.PI * (1 - gs.tast);
+        const folge = zust === "schwimmen" ? core.GANG_FOLGE.paddeln : gs.folge;
+        if (!Array.isArray(folge) || folge.length !== 4) return AnazhRealm._kernPflichtBruch("tetrapoda:GANG_FOLGE");
+        if (!g.off) for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + folge[pi];
+        g.off = folge;
         g.omega = gs.omega; // der Takt des Gangs — die Raten-Leiter tastet ihn nie gröber als ein Viertel ab
         const st = gs.S * fadeMul;
         const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
         const phAlt = g.ph.slice();
-        if (dtTakt > 0 && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
-            const nT = Math.ceil(dtTakt / 0.1);
-            for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT);
+        if (dtTakt > 0) {
+            // der Schritt des Netzes trägt seinen Zug (GANG_FOLGE.kopplung × Takt, vier Beine): höchstens 1/(4·kopplung·Takt)
+            const nT = Math.ceil(dtTakt / Math.min(0.1, 1 / (4 * core.GANG_FOLGE.kopplung * Math.max(1e-6, freq))));
+            for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, dtTakt / nT, folge);
         }
         // DER LEIB WIEGT SICH IM SCHRITT, NIE IM STAND (Welle LF, die Pfoten-IK): Wiegen (sway) und Federn (bob) sind die
         // Gewichts-Verlagerung von Tritt zu Tritt — ihr Anteil folgt dem Schritt des Gang-Gesetzes (eingeblendet in ~0,25 s).
@@ -1654,7 +1655,18 @@ class AnazhRealm_koerper_leib {
             cL += Math.cos(2 * (g.ph[k] - offL[k]));
             sL += Math.sin(2 * (g.ph[k] - offL[k]));
         }
-        const takt2 = Math.atan2(sL, cL) + 2 * offL[0];
+        // DER TAKT ZIEHT NACH (der Wechsel der Gangart): das Muster springt auf die neue Folge, die Beine folgen in etwa
+        // einem Schritt — der Takt des Leibs läuft mit dem doppelten Takt der Beine weiter und zieht den Rest binnen eines
+        // Schritts nach (sprang er mit, ruckte der Rumpf: Roll je Takt bis 2,9 × des ruhigen Gangs)
+        const takt2Roh = Math.atan2(sL, cL) + 2 * offL[0];
+        if (!Number.isFinite(g.leib)) g.leib = takt2Roh;
+        else {
+            const vor = g.leib + 2 * freq * dtTakt;
+            const d = takt2Roh - vor;
+            g.leib =
+                vor + (d - 2 * Math.PI * Math.round(d / (2 * Math.PI))) * (1 - Math.exp((-freq * dtTakt) / Math.PI));
+        }
+        const takt2 = g.leib;
         let roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
@@ -1807,7 +1819,7 @@ class AnazhRealm_koerper_leib {
             // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine): im Stand
             // wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
             const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
-            const F = stand ? null : core.gangFuss(ph, st * (freq / Math.max(0.25 * freq, rate)));
+            const F = stand ? null : core.gangFuss(ph, st * (freq / Math.max(0.25 * freq, rate)), gs.tast);
             let hub = F ? F.hub : 0;
             if (tb._huefteLeib) vHuefte.copy(tb._huefteLeib[i]).applyMatrix4(group.matrixWorld);
             else vHuefte.copy(group.position);
@@ -1815,7 +1827,7 @@ class AnazhRealm_koerper_leib {
             let fx = vHuefte.x + vorX * vor,
                 fz = vHuefte.z + vorZ * vor;
             const u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-            const imStand = stand || u >= Math.PI;
+            const imStand = stand || u >= sw;
             // der WELTFESTE ANKER (K07): ein gehender Fuß setzt auf, wo das Gesetz ihn hinstellt — sein Ziel am Ende des
             // Schwungs ist in der Welt stetig (die Hermite-Enden laufen mit der Stand-Rate); die Sohle des letzten Takts
             // lag mit den alten Gelenken am NEUEN Leib, der Anker sprang je Aufsetzen um v·dt nach vorn (am Wolf 1,6 m/s
@@ -1857,7 +1869,7 @@ class AnazhRealm_koerper_leib {
                 fx = L.x;
                 fz = L.z;
             } else {
-                if (L.an && u < 0.7 * Math.PI) {
+                if (L.an && u < 0.7 * sw) {
                     L.ax = L.x;
                     L.az = L.z;
                     L.au = u;
@@ -1869,12 +1881,12 @@ class AnazhRealm_koerper_leib {
                     fz = L.z;
                     hub = 0;
                 } else if (Number.isFinite(L.ax)) {
-                    const w0 = Math.max(0, Math.min(1, (u - L.au) / Math.max(0.2 * Math.PI, 0.8 * Math.PI - L.au)));
+                    const w0 = Math.max(0, Math.min(1, (u - L.au) / Math.max(0.2 * sw, 0.8 * sw - L.au)));
                     const w = w0 * w0 * (3 - 2 * w0);
                     fx = L.ax + (fx - L.ax) * w;
                     fz = L.az + (fz - L.az) * w;
                 }
-                sinkt = !L.an && u >= LANDUNG * Math.PI;
+                sinkt = !L.an && u >= LANDUNG * sw;
             }
             // DIE LANDUNG STEHT IN DER WELT (K07) — EIN Halt für jeden sinkenden Fuß: ab LANDUNG seines Wegs (der Schwung ab
             // 0,85 π, der Tritt ab 0,85 seiner Viertel-Sekunde) hält die Pfote den Punkt, an dem sie aufsetzt. Das Ziel des
@@ -1987,7 +1999,7 @@ class AnazhRealm_koerper_leib {
                 // auf ein Drittel).
                 if (!stand && dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
                     const u = ((g.ph[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    if (u >= 0.7 * Math.PI) g.ph[i] += 2 * Math.PI - u;
+                    if (u >= 0.7 * sw) g.ph[i] += 2 * Math.PI - u;
                 }
                 const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
@@ -2509,8 +2521,24 @@ class AnazhRealm_koerper_leib {
         const ud = creature.userData;
         if (!ud) return;
         if (zustand) ud._motionZustand = zustand;
-        else if (ud._motionZustand === "jagd" || ud._motionZustand === "hetzen" || ud._motionZustand === "flucht")
+        else if (
+            ud._motionZustand === "jagd" ||
+            ud._motionZustand === "hetzen" ||
+            ud._motionZustand === "flucht" ||
+            ud._motionZustand === "fressen"
+        )
             ud._motionZustand = null;
+    }
+    // DIE ERNÄHRUNG EINES TIERS (der Dial diet seiner Gattung, über die Soul-Karte — einmal je Wesen gemerkt): der EINE Leser
+    // für das Weiden (_tickKreaturVerhalten) und den Kadaver (_kreaturAasZug). Ohne Studio-Dials ein Fleischfresser (1).
+    _kreaturDiet(creature) {
+        const ud = creature.userData;
+        if (ud._verhaltenDiet === undefined) {
+            const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
+            const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
+            ud._verhaltenDiet = dials && Number.isFinite(dials.diet) ? dials.diet : 1;
+        }
+        return ud._verhaltenDiet;
     }
     // KREATUR-LEBEN — der deterministische Verhaltens-Hash (FNV-1a über zwei
     // Zahlen; kein Math.random — dieselbe Kreatur würfelt reproduzierbar).
@@ -2541,6 +2569,8 @@ class AnazhRealm_koerper_leib {
         let mood;
         if (z === "jagd") {
             mood = "jagd";
+        } else if (z === "fressen") {
+            mood = "fressen"; // der Kopf im Kadaver (_kreaturAasZug)
         } else {
             // SCHLUSS-WELLE — die Stimmungs-Schwellen des Ticks sind Gesetzbuch-
             // Zeilen (tetrapoda VERHALTEN.stimmung.schwellen, fail-closed).
@@ -2550,14 +2580,9 @@ class AnazhRealm_koerper_leib {
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
                 // die Sonnenhöhe der EINEN Tag-Achse (`_sonnenRichtung`, sin der Höhe): tiefe Nacht = Ruhe; am Tag weiden
-                // Pflanzenfresser (diet ≤ weideDiet, tetrapoda-Dials über die Soul-Karte — einmal je Wesen gemerkt).
+                // Pflanzenfresser (diet ≤ weideDiet, _kreaturDiet).
                 const nacht = this._sonnenRichtung().y < SW.nachtSin;
-                if (ud._verhaltenDiet === undefined) {
-                    const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
-                    const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
-                    ud._verhaltenDiet = dials && Number.isFinite(dials.diet) ? dials.diet : 1;
-                }
-                mood = nacht ? "nacht" : ud._verhaltenDiet <= SW.weideDiet ? "tag" : "idle";
+                mood = nacht ? "nacht" : this._kreaturDiet(creature) <= SW.weideDiet ? "tag" : "idle";
             }
         }
         const A = ud._verhaltenAktion;
@@ -3010,7 +3035,7 @@ AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
 AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     schwimmen: Object.freeze({ kreatur: "schwimmen" }),
     jagd: Object.freeze({ kreatur: "hunt" }),
-    // die HETZE galoppiert wie die Flucht (Welle LF: der Sprint der Gestalt)
+    // die HETZE trägt die Haltung der Flucht (Welle LF: der Sprint der Gestalt; die Gangart wählt sein Tempo, GANG_FOLGE)
     hetzen: Object.freeze({ kreatur: "flee" }),
     flucht: Object.freeze({ kreatur: "flee" }),
     // koerper-Zustand kampf: frischer Schwung/Schuss (_koerperKampfZustand) wählt das Lab-Profil "fight"
