@@ -1,5 +1,5 @@
 // diaet-linse.cjs — DIE DIÄT-LINSE: was die Diät und die Bundles je gerendertem Frame im echten Loop arbeiten. Zahl je Frame:
-// Prüfungen · voll geprüft (hinter dem Tor des Registers, `_diaetVorTextur`; gemeldet = mit Stand) ·
+// Prüfungen · voll geprüft (hinter dem Tor des Registers, `_diaetVorTextur`) ·
 // Lage-Vergleiche (nur das Bewegliche) · Voll-Refreshs (Grund) · Gänge über Vorher-Knoten, Knoten, geteilte Gruppen, fremde
 // Verweise (und ihre Wiederholung im SELBEN Render-Abschnitt) · Uploads · writeBuffer · Replay-Bürger · Renders; netto je Bereich
 // (verschachtelte abgezogen) und WO der Schatten-Render startet. Urteil (Gebot 7) im Stand: kein Gang zweimal, jeder Voll-Refresh
@@ -106,8 +106,7 @@ function diaetZaehler() {
     haken("vt", A, "_diaetVorTextur", function (...a) {
         const ro = a[a.length - 1];
         zaehle("pruefVoll");
-        if (ro._anazhObs) zaehle("gemeldet");
-        else if (c && ro._anazhObs === undefined && bekannt.has(ro)) {
+        if (c && ro._anazhObs === undefined && bekannt.has(ro)) {
             zaehle("ohneMeldung");
             c.ohneM[nameVon(ro)] = (c.ohneM[nameVon(ro)] || 0) + 1;
         }
@@ -116,10 +115,8 @@ function diaetZaehler() {
     });
     haken("ruhig", A, "_diaetRuhig", function (obs, ro, rr, rid) {
         const v = roh.ruhig.call(this, obs, ro, rr, rid);
-        if (c && ro._anazhBeweglich) {
-            zaehle("lageVergleich");
-            c.lageW[nameVon(ro)] = (c.lageW[nameVon(ro)] || 0) + 1;
-        } else if (c && v && ro._anazhOd.worldMatrix.equals(ro.object.matrixWorld) !== true) {
+        zaehle(ro._anazhBeweglich ? "lageVergleich" : "lageStatisch");
+        if (c && v && !ro._anazhBeweglich && ro._anazhOd.worldMatrix.equals(ro.object.matrixWorld) !== true) {
             zaehle("regungOhne");
             c.regungO[nameVon(ro) + " Lage"] = 1;
         }
@@ -260,7 +257,7 @@ function diaetZaehler() {
         return roh.ubs.apply(this, a);
     });
     return {
-        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, lageW: {}, regungO: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
+        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
         aus: () => (c = null),
         zurueck: () => zurueck.forEach((z) => z()),
     };
@@ -343,7 +340,6 @@ function diaetLauf(opts) {
             vollGrund: top(mittel("grund"), 12),
             ohneAenderung: top(mittel("ohne"), 12),
             ohneMeldung: top(mittel("ohneM"), 8),
-            lageVergleich: top(mittel("lageW"), 10),
             regungOhne: top(mittel("regungO"), 8),
         };
     })();
@@ -370,7 +366,7 @@ function diaetUrteil(e) {
             );
         if (z.ohneMeldung > 0.5) v.push(`RUHE: ${z.ohneMeldung} Prüfungen ohne Meldung je Frame (${e.ohneMeldung.join(" · ")}) — die Diät fragt`);
     }
-    if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Tor ruhte, das Bild trüge die alte Lage`);
+    if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Bild trüge die alte Lage`);
     return v;
 }
 

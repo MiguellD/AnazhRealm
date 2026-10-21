@@ -108,7 +108,7 @@ function urteil(z) {
         if (!(a.diaet >= BILD_SOLL))
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
-            v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder (das Register hört das Blatt nicht) zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+            v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
         const n = (s.verschachtelt || {})[pfad] || {};
         if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
@@ -124,7 +124,7 @@ function urteil(z) {
 }
 
 function selbsttest() {
-    const ruhig = { zahl: { pruef: 13, pruefVoll: 2, gemeldet: 2 }, vollWer: {}, ohneMeldung: [], einmal: { erst: 2, danach: 0, wer: {} } };
+    const ruhig = { zahl: { pruef: 13, pruefVoll: 2 }, vollWer: {}, ohneMeldung: [], einmal: { erst: 2, danach: 0, wer: {} } };
     const gruen = {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
@@ -277,6 +277,7 @@ function buehne() {
         szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 0.35));
         const gruppe = new T.BundleGroup();
         gruppe.name = "kamera-treue:BUEHNE";
+        gruppe.matrixAutoUpdate = false;
         szene.add(gruppe);
         const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
         const boden = new T.Mesh(
@@ -330,6 +331,9 @@ function buehne() {
             const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
             kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
+            // die erste Kiste ist STATISCH (rückt über updateMatrix)
+            kiste.matrixAutoUpdate = i > 0;
+            kiste.updateMatrix();
             kiste.castShadow = true;
             kiste.receiveShadow = true;
             kiste.frustumCulled = false;
@@ -531,7 +535,7 @@ function buehne() {
                 const aendere = () => {
                     schritt++;
                     kisten[0].position.x += 1.5;
-                    kisten[0].updateMatrixWorld(true);
+                    kisten[0].updateMatrix();
                     m4.makeRotationX(-Math.PI / 2 + 0.6 * schritt).setPosition(0, 3.5, -4);
                     laub.setMatrixAt(1, m4);
                     laub.instanceMatrix.needsUpdate = true;
@@ -554,7 +558,7 @@ function buehne() {
                     aendere();
                     const diaetBild = await mitDiaet(null);
                     const wahr = await mitDiaet(immer);
-                    // der Täter: der Melder schweigt, das Blatt dreht ungemeldet
+                    // der Täter: der Melder schweigt
                     const regt = A._regt;
                     A._regt = () => 0;
                     aendere();
