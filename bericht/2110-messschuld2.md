@@ -28,3 +28,8 @@
 - **Stufen: OFFEN, nicht gebaut.** K8 kennt keine Treppe. Ein Stufen-Werkzeug (Treppe aus dem Bau-Gesetz, Gehen hinauf, Fuß-Abstand je Schritt) passte nach der Licht-Probe nicht mehr in ≤ 30 min. Messname `leib.K2 fuss-stufen`.
 
 Station: GPU-Schloss omen-2110-m2 nur um die 4 Boots, gelöst. Eigene Prozesse beendet, der save-server 4312 per stopp.ps1. Spielstände in `stand/` und `lauf1..4/stand/` beiseite. Kein Push.
+
+## Nachtrag 21.10. ~20:45: licht.K2 Staffel 1 mit n = 3 gültigen Läufen
+- In-situ dreimal bit-gleich Verhältnis **5,0132**, Schatten-Anteil **0,1995**, also **3/3 im Band** 5–12,5 / 0,08–0,20. Lauf 4 an 1011d41d, Läufe 5 und 6 an 97d8ee94 (`serie3.log`, `lauf5/kugel.json`, `lauf6/kugel.json`).
+- Gültigkeit je Lauf: A/B Sonnen-Kugel 1,000, A/C Schatten-Kugel 1,000, Projektion ~1450 px. Bild von Lauf 6 selbst gesehen, gleich Lauf 4.
+- Ehrlich: Der Wert liegt an der unteren Kante. Ohne Scheiben-Verdeckung (B/C) liegen 4,89 / 0,2045 je ~2 % außerhalb, weil die Scheibe 2,5 % Himmel verdeckt.
