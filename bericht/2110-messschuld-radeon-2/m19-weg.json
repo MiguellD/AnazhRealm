@@ -1,0 +1,18 @@
+{
+ "seed": "anazh-realm-seed",
+ "seedLauf": [
+  0,
+  91.83005479182209,
+  0
+ ],
+ "proben": 597,
+ "hoeheMin": "27.6",
+ "hoeheMax": "101.7",
+ "anstiegM": 106.3,
+ "hangMaxGrad": 44.2,
+ "sekundenHangUeber15": 160,
+ "dMaxAmHang": 14.09,
+ "sekundenImWald": 0,
+ "dMaxImWald": null,
+ "sekundenNass": 14
+}

@@ -1,0 +1,46 @@
+{
+ "k2": {
+  "rufe": 10,
+  "msJeRuf": {
+   "p50": 6.6,
+   "max": 14.6
+  },
+  "summeMs": 74.9,
+  "profilMs": 72.48,
+  "bilder": 5324,
+  "jeBild": {
+   "p95": 0,
+   "p99": 0,
+   "max": 14.6,
+   "mittel": 0.0141
+  },
+  "bilderMitSave": 10,
+  "standBytes": 210497
+ },
+ "k4": {
+  "bau": true,
+  "edits": 1,
+  "pose": [
+   42.6791307837399,
+   90.3125,
+   -7.70926227607669,
+   4.2,
+   0
+  ],
+  "sicht": "third",
+  "gespeichert": true,
+  "nachher": {
+   "geladen": [
+    42.6791307837399,
+    90.3125,
+    -7.70926227607669
+   ],
+   "dPose": 0,
+   "edits": 1,
+   "steinBloecke": 470
+  },
+  "diffAnteil": 0.0675,
+  "mittelDeltaLuma": 2.43
+ },
+ "fehler": []
+}

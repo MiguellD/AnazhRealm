@@ -1,0 +1,19 @@
+
+=== Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load) ===
+  ✅ World-Key == Active-Key (kein Key-Drift)
+  ✅ Haupt-Stand geschrieben
+  ✅ Rotierender .bak-Backup geschrieben
+  ✅ .bak ist gültiges JSON (der letzte gute Stand)
+  ✅ Korrupter Haupt-Stand → aus dem Backup WIEDERHERGESTELLT (Welt nicht verloren)
+  ✅ Haupt + Backup korrupt → ehrliches null (kein stiller Müll)
+  ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)
+  ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 25 → 25)
+  ✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (25 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {"von":0,"nach":2,"bauten":25,"bewegt":25,"geerdet":0,"dhP50":37.7,"dhMax":37.7,"spieler":-1.02})
+  ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null)
+  ✅ (L) Löcher nach Reload 300/300 (vor dem Reload 300/300, der Main hielt 300, geladen 300 Edits)
+  ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
+  ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
+  ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
+
+14/14 Persistenz-Invarianten OK.
+✅ Die Welt überlebt einen korrupten Write (ein Stand zurück) — kein stiller Datenverlust.

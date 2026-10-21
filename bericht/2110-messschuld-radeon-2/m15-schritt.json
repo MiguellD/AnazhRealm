@@ -1,0 +1,453 @@
+{
+ "klang": {
+  "weg": "cdp-klick",
+  "an": true,
+  "ctx": "running"
+ },
+ "orte": {
+  "erde": [
+   -280.4,
+   -1045.6
+  ],
+  "stein": [
+   -262.4,
+   -1076.8
+  ],
+  "glut": [
+   -274.1,
+   -998
+  ]
+ },
+ "stoffe": {
+  "erde": {
+   "ort": [
+    -280.4,
+    -1045.6
+   ],
+   "wegM": 11.4,
+   "bursts": 19,
+   "medianHz": 359,
+   "p10": 228,
+   "p90": 463,
+   "labels": [
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde",
+    "erde"
+   ],
+   "alle": [
+    {
+     "ms": 0,
+     "schwerHz": 389,
+     "mat": "erde"
+    },
+    {
+     "ms": 40,
+     "schwerHz": 228,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 380,
+     "mat": "erde"
+    },
+    {
+     "ms": 38,
+     "schwerHz": 463,
+     "mat": "erde"
+    },
+    {
+     "ms": 35,
+     "schwerHz": 393,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 224,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 331,
+     "mat": "erde"
+    },
+    {
+     "ms": 21,
+     "schwerHz": 370,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 312,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 319,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 414,
+     "mat": "erde"
+    },
+    {
+     "ms": 30,
+     "schwerHz": 307,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 359,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 449,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 357,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 357,
+     "mat": "erde"
+    },
+    {
+     "ms": 14,
+     "schwerHz": 361,
+     "mat": "erde"
+    },
+    {
+     "ms": 31,
+     "schwerHz": 353,
+     "mat": "erde"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 468,
+     "mat": "erde"
+    }
+   ]
+  },
+  "stein": {
+   "ort": [
+    -262.4,
+    -1076.8
+   ],
+   "wegM": 11.6,
+   "bursts": 23,
+   "medianHz": 2404,
+   "p10": 2115,
+   "p90": 2538,
+   "labels": [
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein",
+    "stein"
+   ],
+   "alle": [
+    {
+     "ms": 0,
+     "schwerHz": 2337,
+     "mat": "stein"
+    },
+    {
+     "ms": 8,
+     "schwerHz": 2414,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2414,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2404,
+     "mat": "stein"
+    },
+    {
+     "ms": 3,
+     "schwerHz": 2441,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2344,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2449,
+     "mat": "stein"
+    },
+    {
+     "ms": 33,
+     "schwerHz": 2115,
+     "mat": "stein"
+    },
+    {
+     "ms": 18,
+     "schwerHz": 2615,
+     "mat": "stein"
+    },
+    {
+     "ms": 32,
+     "schwerHz": 2225,
+     "mat": "stein"
+    },
+    {
+     "ms": 46,
+     "schwerHz": 1971,
+     "mat": "stein"
+    },
+    {
+     "ms": 16,
+     "schwerHz": 2245,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2576,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2478,
+     "mat": "stein"
+    },
+    {
+     "ms": 39,
+     "schwerHz": 2412,
+     "mat": "stein"
+    },
+    {
+     "ms": 7,
+     "schwerHz": 2104,
+     "mat": "stein"
+    },
+    {
+     "ms": 5,
+     "schwerHz": 2425,
+     "mat": "stein"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2265,
+     "mat": "stein"
+    },
+    {
+     "ms": 35,
+     "schwerHz": 2404,
+     "mat": "stein"
+    },
+    {
+     "ms": 23,
+     "schwerHz": 2538,
+     "mat": "stein"
+    },
+    {
+     "ms": 29,
+     "schwerHz": 2187,
+     "mat": "stein"
+    },
+    {
+     "ms": 28,
+     "schwerHz": 2389,
+     "mat": "stein"
+    },
+    {
+     "ms": 33,
+     "schwerHz": 2222,
+     "mat": "stein"
+    }
+   ]
+  },
+  "glut": {
+   "ort": [
+    -274.1,
+    -998
+   ],
+   "wegM": 11.6,
+   "bursts": 22,
+   "medianHz": 1721,
+   "p10": 1531,
+   "p90": 1896,
+   "labels": [
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut",
+    "glut"
+   ],
+   "alle": [
+    {
+     "ms": 0,
+     "schwerHz": 1822,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 1822,
+     "mat": "glut"
+    },
+    {
+     "ms": 50,
+     "schwerHz": 1797,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 1531,
+     "mat": "glut"
+    },
+    {
+     "ms": 36,
+     "schwerHz": 1674,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 1517,
+     "mat": "glut"
+    },
+    {
+     "ms": 5,
+     "schwerHz": 1557,
+     "mat": "glut"
+    },
+    {
+     "ms": 26,
+     "schwerHz": 1584,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2173,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 2173,
+     "mat": "glut"
+    },
+    {
+     "ms": 23,
+     "schwerHz": 1539,
+     "mat": "glut"
+    },
+    {
+     "ms": 51,
+     "schwerHz": 1570,
+     "mat": "glut"
+    },
+    {
+     "ms": 52,
+     "schwerHz": 1734,
+     "mat": "glut"
+    },
+    {
+     "ms": 44,
+     "schwerHz": 1559,
+     "mat": "glut"
+    },
+    {
+     "ms": 51,
+     "schwerHz": 1474,
+     "mat": "glut"
+    },
+    {
+     "ms": 13,
+     "schwerHz": 1721,
+     "mat": "glut"
+    },
+    {
+     "ms": 0,
+     "schwerHz": 1575,
+     "mat": "glut"
+    },
+    {
+     "ms": 39,
+     "schwerHz": 1773,
+     "mat": "glut"
+    },
+    {
+     "ms": 39,
+     "schwerHz": 1747,
+     "mat": "glut"
+    },
+    {
+     "ms": 76,
+     "schwerHz": 1896,
+     "mat": "glut"
+    },
+    {
+     "ms": 41,
+     "schwerHz": 1635,
+     "mat": "glut"
+    },
+    {
+     "ms": 31,
+     "schwerHz": 1811,
+     "mat": "glut"
+    }
+   ]
+  }
+ },
+ "fehler": []
+}

@@ -1,0 +1,4 @@
+"C:\Program Files\nodejs\node.exe" save-server.js
+"C:\Program Files\nodejs\node.exe" scripts/diag-regler-wirkt.cjs
+"C:\Program Files\nodejs\node.exe" scripts/diag-regler-wirkt.cjs --selftest
+"C:\Program Files\nodejs\node.exe" scripts/diag-kreatur-takt.cjs --proben bewohner

@@ -1,0 +1,73 @@
+BAND IM BAND: Befehle 90/208 (0.43×) · Dreiecke 312k/680k (0.46×) · VRAM MB 108.6/118 (0.92×) · GPU ms/Frame 9.73/16.7 (0.58×)
+ORT wiese — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        9/12          7/1/1           74k/120k  fern-ring 4 · bodenSatz 3 · farWater 1 · wasserSatz 1
+streu                         6/9          4/2/0            32k/40k  streuSatz 6
+nahWiese                      4/4          4/0/0            77k/80k  nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0              1k/1k !fimp:atlas:L2 1
+baum                        50/40        32/13/5           75k/150k !f:tanne:L0 12 · fscatter:fichte:L1 8 · f:tanne:L1 7 · f:eiche:L1 6
+busch                         4/8          2/2/0             7k/40k  f:strauch:L1 4
+tier*                        0/30          0/0/0              0/60k  
+bau                          4/40          2/1/1            15k/60k  bauSatz 2 · bauWurf 2
+    bauSatz haupt: f:feuerstelle:L1 46 Zellen = 13 685
+    bauWurf k0: f:feuerstelle:L3 25 Zellen = 600
+    bauWurf k1: f:feuerstelle:L3 15 Zellen = 360
+formationen                  3/20          1/1/1            14k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 19 Zellen = 6 080
+    formationenSatz k1: f:zacken:L0 10 Zellen = 3 200 · Lücke 640
+    formationenSatz haupt: f:zacken:L0 13 Zellen = 4 160
+einzelstuecke                9/25          4/5/0            16k/15k !spieler 5 · feld-pass 2 · himmel 1 · himmel-sonne 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                      90/208        57/25/8          312k/680k  Abstand 0.43× Befehle · 0.46× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 3 Befehle
+
+VRAM 108.6 MB / Band 118 MB (0.92×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     31.6 MB  2     tex:TRAANode.resolve
+     16.4 MB  266   buf:szene  (bodenSatz · geometrie-arena · streuSatz)
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.8 MB  188   buf:tier  (:tier:baer · :tier:fuchs · :tier:wesen)
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  1     tex:wege-karte
+      4.0 MB  2     tex:TRAANode.flacker
+      3.3 MB  1     tex:karte-albedo
+      2.7 MB  5     tex:spiegel
+      2.2 MB  2     tex:szene
+      2.0 MB  1     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.7 MB  1     tex:karte-normal
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+
+erst-Boot, Ladung 1 · eingeschwungen nach 226 Takten (14 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 41 Antworten 12.6 MB — von der Platte 0 (0 MB), Neubau 12.6 MB
+
+BAND IM BAND: Befehle 90/208 (0.43×) · Dreiecke 312k/680k (0.46×) · VRAM MB 108.6/118 (0.92×) · GPU ms/Frame 9.73/16.7 (0.58×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] streu k0: 6530 dreiecke über der Ratsche 0 (Täter: streuSatz)
+  [ratsche] nahWiese haupt: 77440 dreiecke über der Ratsche 57046 (Täter: nahWiese:L1, nahWiese:L2)
+  [ratsche] baum haupt: 32 befehle über der Ratsche 24 (Täter: f:tanne:L0, fscatter:fichte:L1, f:tanne:L1)
+  [ratsche] baum k0: 13 befehle über der Ratsche 9 (Täter: f:tanne:L0, fscatter:fichte:L1, f:tanne:L1)
+  [ratsche] baum k1: 5 befehle über der Ratsche 2 (Täter: f:tanne:L0, fscatter:fichte:L1, f:tanne:L1)
+  [ratsche] Summe (gebunden) 90 Befehle über der Ratsche 78
+  [weit] boden haupt dreiecke: Ratsche 77257 über der Messung 51707 — zu weit
+  [weit] boden k0 dreiecke: Ratsche 56052 über der Messung 13184 — zu weit
+  [weit] boden k1 dreiecke: Ratsche 54081 über der Messung 9277 — zu weit
+  [weit] busch haupt dreiecke: Ratsche 11672 über der Messung 3060 — zu weit
+  [weit] streu haupt dreiecke: Ratsche 30386 über der Messung 25005 — zu weit
+  [weit] einzelstuecke haupt befehle: Ratsche 7 über der Messung 4 — zu weit
+  [weit] einzelstuecke haupt dreiecke: Ratsche 11541 über der Messung 2477 — zu weit
+  [weit] einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13517 — zu weit
+  [weit] Summe (gebunden) Dreiecke: Ratsche 449499 über der Messung 311792 — zu weit
+  [weit] VRAM buf:szene: Ratsche 27.5 über der Messung 16.4 — zu weit
+  [weit] VRAM tex:TRAANode.resolve: Ratsche 35.6 über der Messung 31.6 — zu weit
+  [weit] VRAM tex:output: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM tex:depth: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM (gebunden): Ratsche 112.5 über der Messung 100.8 — zu weit
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 218/2048
+
+C:\Users\micha\AppData\Local\Temp\claude\C--Users-micha-AnazhRealm-profiband\bf30ee29-0ba1-482e-ac38-fc10c609d0c3\scratchpad\roh\m13-band-wiese-ego.json

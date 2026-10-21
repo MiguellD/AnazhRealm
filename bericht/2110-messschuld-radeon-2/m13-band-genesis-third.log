@@ -1,0 +1,75 @@
+BAND ROT: Befehle 139/208 (0.67×) · Dreiecke 393k/680k (0.58×) · VRAM MB 123/118 (1.04×) · GPU ms/Frame 27.15/16.7 (1.63×)
+ORT genesis — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1           75k/120k  fern-ring 4 · bodenSatz 3 · farWater 1
+streu                         7/9          7/0/0             3k/40k  fscatter:blume:L2 4 · streuSatz 2 · fscatter:geroell:L0 1
+nahWiese                      1/4          1/0/0            110/80k  nahWiese:L2 1
+karten                        1/1          1/0/0             944/1k  fimp:atlas:L2 1
+baum                        30/40         18/9/3           48k/150k  f:fichte:L1 8 · f:tanne:L1 7 · f:fichte:L0 4 · fscatter:tanne:L1 4
+busch                         0/8          0/0/0              0/40k  
+tier*                        0/30          0/0/0              0/60k  
+bau                         60/40        35/24/1           160k/60k !f:gt:L1 15 · bauSatz 12 · bau:esse 8 · bau:welt_klang 6
+    bauSatz k0: f:kathedrale:L2 2 Zellen = 3 010 · f:geisttor:L0 2 Zellen = 2 132 · f:ruine:L2 2 Zellen = 1 804
+    bauSatz haupt: f:drachentor:L0 3 Zellen = 23 192 · f:verkalkt:L1 5 Zellen = 23 082 · f:alemannisch:L1 4 Zellen = 17 972 · f:drachentor:L2 5 Zellen = 7 524
+    bauWurf k0: f:verkalkt:L3 1 Zellen = 7 632 · f:maurentor:L3 1 Zellen = 5 768 · f:drachentor:L3 2 Zellen = 3 536 · f:maschine:L3 1 Zellen = 2 312
+    bauWurf k1: f:feuerstelle:L3 6 Zellen = 144
+formationen                  5/20          2/2/1            18k/30k  formationenSatz 5
+    formationenSatz k0: f:zacken:L0 19 Zellen = 6 080 · f:kristalle:L0 1 Zellen = 440
+    formationenSatz k1: f:zacken:L0 13 Zellen = 4 160
+    formationenSatz haupt: f:zacken:L0 21 Zellen = 6 720 · f:kristalle:L0 1 Zellen = 440
+einzelstuecke               27/25         18/7/2            90k/15k !spieler 13 · portal-membran 5 · dsl-insel 4 · feld-pass 2
+reserve                      0/19          0/0/0               0/4k  
+SUMME                     139/208        88/43/8          393k/680k  Abstand 0.67× Befehle · 0.58× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Tor-Hülle f:drachentor:L0: 8984 Dreiecke je Exemplar (1 im Bild) / 60000 (0.15×)
+SOLL Tor-Hülle f:geisttor:L0: 4360 Dreiecke je Exemplar (1 im Bild) / 60000 (0.07×)
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 123 MB / Band 118 MB (1.04×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     31.6 MB  2     tex:TRAANode.resolve
+     23.7 MB  452   buf:szene  (bauSatz · bodenSatz · geometrie-arena)
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.8 MB  188   buf:tier  (:tier:baer · :tier:fuchs · :tier:wesen)
+      7.0 MB  1     tex:tor-ziel
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  1     tex:wege-karte
+      4.0 MB  2     tex:TRAANode.flacker
+      3.3 MB  1     tex:karte-albedo
+      2.7 MB  5     tex:spiegel
+      2.2 MB  2     tex:szene
+      2.0 MB  1     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.7 MB  1     tex:karte-normal
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+
+erst-Boot, Ladung 1 · eingeschwungen nach 1245 Takten (82 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 49 Antworten 14.8 MB — von der Platte 0 (0 MB), Neubau 14.8 MB
+
+BAND ROT: Befehle 139/208 (0.67×) · Dreiecke 393k/680k (0.58×) · VRAM MB 123/118 (1.04×) · GPU ms/Frame 27.15/16.7 (1.63×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] baum haupt: 36038 dreiecke über der Ratsche 25110 (Täter: f:fichte:L1, f:tanne:L1, f:fichte:L0)
+  [weit] boden haupt dreiecke: Ratsche 107507 über der Messung 53102 — zu weit
+  [weit] boden k0 dreiecke: Ratsche 101429 über der Messung 13760 — zu weit
+  [weit] boden k1 dreiecke: Ratsche 91864 über der Messung 7904 — zu weit
+  [weit] streu haupt dreiecke: Ratsche 12928 über der Messung 2592 — zu weit
+  [weit] bau haupt befehle: Ratsche 71 über der Messung 35 — zu weit
+  [weit] bau haupt dreiecke: Ratsche 296167 über der Messung 122535 — zu weit
+  [weit] formationen haupt dreiecke: Ratsche 12200 über der Messung 7160 — zu weit
+  [weit] formationen k0 dreiecke: Ratsche 16840 über der Messung 6520 — zu weit
+  [weit] einzelstuecke haupt befehle: Ratsche 22 über der Messung 18 — zu weit
+  [weit] einzelstuecke haupt dreiecke: Ratsche 189731 über der Messung 63033 — zu weit
+  [weit] einzelstuecke k0 dreiecke: Ratsche 47028 über der Messung 20045 — zu weit
+  [weit] Summe (gebunden) Befehle: Ratsche 180 über der Messung 139 — zu weit
+  [weit] Summe (gebunden) Dreiecke: Ratsche 958836 über der Messung 392983 — zu weit
+  [weit] VRAM buf:szene: Ratsche 42.7 über der Messung 23.7 — zu weit
+  [weit] VRAM tex:TRAANode.resolve: Ratsche 35.6 über der Messung 31.6 — zu weit
+  [weit] VRAM tex:output: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM tex:depth: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM (gebunden): Ratsche 131.8 über der Messung 115.2 — zu weit
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 218/2048
+
+C:\Users\micha\AppData\Local\Temp\claude\C--Users-micha-AnazhRealm-profiband\bf30ee29-0ba1-482e-ac38-fc10c609d0c3\scratchpad\roh\m13-band-genesis-third.json

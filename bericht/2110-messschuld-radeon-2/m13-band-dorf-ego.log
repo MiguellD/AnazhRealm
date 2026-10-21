@@ -1,0 +1,80 @@
+BAND ROT: Befehle 99/208 (0.48×) · Dreiecke 341k/680k (0.5×) · VRAM MB 122/118 (1.03×) · GPU ms/Frame 26.87/16.7 (1.61×)
+ORT dorf — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        9/12          7/1/1           99k/120k  fern-ring 4 · bodenSatz 3 · wasserSatz 1 · farWater 1
+streu                         4/9          3/1/0            18k/40k  streuSatz 4
+nahWiese                      4/4          4/0/0            54k/80k  nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0             886/1k  fimp:atlas:L2 1
+baum                        43/40        28/12/3           78k/150k !fscatter:fichte:L1 8 · f:fichte:L1 7 · f:fichte:L0 7 · f:tanne:L1 6
+busch                         4/8          2/2/0             2k/40k  f:strauch:L1 4
+tier*                        0/30          0/0/0              0/60k  
+bau                         12/40          7/3/2            44k/60k  bauSatz 9 · bauWurf 2 · siedlung-zaun 1
+    bauSatz k0: f:feuerstelle:L0 2 Zellen = 2 820 · f:laterne:L1 6 Zellen = 276
+    bauSatz k1: f:laterne:L1 2 Zellen = 92
+    bauSatz haupt: f:griechisch:L2 46 Zellen = 31 566 · f:roemisch:L2 8 Zellen = 3 834 · f:feuerstelle:L1 6 Zellen = 1 785 · f:marktstand:L1 4 Zellen = 754
+    bauWurf k0: f:griechisch:L3 14 Zellen = 792 · f:wandlaterne:L3 8 Zellen = 352 · f:feuerstelle:L3 5 Zellen = 120 · f:roemisch:L3 2 Zellen = 118
+    bauWurf k1: f:griechisch:L3 9 Zellen = 482 · f:wandlaterne:L3 4 Zellen = 176 · f:feuerstelle:L3 3 Zellen = 72
+formationen                  3/20          1/1/1             6k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 7 Zellen = 2 240
+    formationenSatz k1: f:zacken:L0 5 Zellen = 1 600
+    formationenSatz haupt: f:zacken:L0 7 Zellen = 2 240
+einzelstuecke               18/25          8/5/5            39k/15k !spieler 10 · dsl-insel 3 · feld-pass 2 · himmel 1
+reserve                      0/19          0/0/0               0/4k  
+OHNE-HAUSHALT                 1/0          1/0/0              117/0 !f:farn:L1 1
+SUMME                      99/208       62/25/12          341k/680k  Abstand 0.48× Befehle · 0.5× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Ausstattungs-Wurf nah ausstattung k0: 1410 Dreiecke je Exemplar (2 im Bild) / 3400 (0.41×) — Täter f:feuerstelle:L0 2 820
+SOLL Haus-Wurf haus k0: 57 Dreiecke je Exemplar (16 im Bild) / 96 (0.59×) — Täter f:griechisch:L3 792 · f:roemisch:L3 118
+SOLL Haus-Wurf haus k1: 54 Dreiecke je Exemplar (9 im Bild) / 96 (0.56×) — Täter f:griechisch:L3 482
+SOLL Ausstattungs-Wurf ausstattung k0: 39 Dreiecke je Exemplar (21 im Bild) / 48 (0.81×) — Täter f:wandlaterne:L3 352 · f:laterne:L1 276 · f:feuerstelle:L3 120
+SOLL Ausstattungs-Wurf ausstattung k1: 38 Dreiecke je Exemplar (9 im Bild) / 48 (0.79×) — Täter f:wandlaterne:L3 176 · f:laterne:L1 92 · f:feuerstelle:L3 72
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 122 MB / Band 118 MB (1.03×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     31.6 MB  2     tex:TRAANode.resolve
+     22.7 MB  361   buf:szene  (bauSatz · bodenSatz · geometrie-arena)
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.8 MB  188   buf:tier  (:tier:baer · :tier:fuchs · :tier:wesen)
+      7.0 MB  1     tex:tor-ziel
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  1     tex:wege-karte
+      4.0 MB  2     tex:TRAANode.flacker
+      3.3 MB  1     tex:karte-albedo
+      2.7 MB  5     tex:spiegel
+      2.2 MB  2     tex:szene
+      2.0 MB  1     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.7 MB  1     tex:karte-normal
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+
+erst-Boot, Ladung 1 · eingeschwungen nach 838 Takten (53 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 66 Antworten 17.8 MB — von der Platte 0 (0 MB), Neubau 17.8 MB
+
+BAND ROT: Befehle 99/208 (0.48×) · Dreiecke 341k/680k (0.5×) · VRAM MB 122/118 (1.03×) · GPU ms/Frame 26.87/16.7 (1.61×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [haushalt] f:farn:L1: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)
+  [ratsche] nahWiese haupt: 54188 dreiecke über der Ratsche 45974 (Täter: nahWiese:L1, nahWiese:L2)
+  [weit] boden k0 dreiecke: Ratsche 43273 über der Messung 21697 — zu weit
+  [weit] boden k1 dreiecke: Ratsche 51508 über der Messung 15112 — zu weit
+  [weit] streu haupt dreiecke: Ratsche 58326 über der Messung 14079 — zu weit
+  [weit] baum haupt dreiecke: Ratsche 87746 über der Messung 64044 — zu weit
+  [weit] busch haupt dreiecke: Ratsche 40116 über der Messung 1020 — zu weit
+  [weit] busch k0 dreiecke: Ratsche 16320 über der Messung 1020 — zu weit
+  [weit] bau haupt befehle: Ratsche 11 über der Messung 7 — zu weit
+  [weit] formationen haupt dreiecke: Ratsche 9480 über der Messung 2240 — zu weit
+  [weit] formationen k0 dreiecke: Ratsche 10240 über der Messung 2240 — zu weit
+  [weit] einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13517 — zu weit
+  [weit] einzelstuecke k1 dreiecke: Ratsche 37964 über der Messung 13517 — zu weit
+  [weit] Summe (gebunden) Dreiecke: Ratsche 580343 über der Messung 340801 — zu weit
+  [weit] VRAM buf:szene: Ratsche 41.3 über der Messung 22.7 — zu weit
+  [weit] VRAM tex:TRAANode.resolve: Ratsche 35.6 über der Messung 31.6 — zu weit
+  [weit] VRAM tex:output: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM tex:depth: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM (gebunden): Ratsche 125.8 über der Messung 114.2 — zu weit
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 218/2048
+
+C:\Users\micha\AppData\Local\Temp\claude\C--Users-micha-AnazhRealm-profiband\bf30ee29-0ba1-482e-ac38-fc10c609d0c3\scratchpad\roh\m13-band-dorf-ego.json

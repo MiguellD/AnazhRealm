@@ -1,0 +1,579 @@
+[
+ {
+  "z": 0,
+  "bootMs": 11260,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0,
+    0
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "haken": "bak",
+  "killPunkt": "{\"n\":28,\"t\":1792616227830,\"art\":\"ls\",\"k\":\"anazhRealmState_7cb44350-a11b-4ff7-817a-e606509eedda.bak\",\"len\":257895,\"pose\":[0,9.754776323487063]}",
+  "art": "haken",
+  "dauerS": 15.8
+ },
+ {
+  "z": 1,
+  "bootMs": 9863,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0,
+    9.754776323487063
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:bak",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 27
+  },
+  "alterS": 9.98,
+  "wegVerlustM": 11.44,
+  "art": "zufall",
+  "dauerS": 21.3
+ },
+ {
+  "z": 2,
+  "bootMs": 8223,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0,
+    32.21705264697437
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 79
+  },
+  "alterS": 1.78,
+  "wegVerlustM": 1.9,
+  "haken": "platz",
+  "killPunkt": "{\"n\":80,\"t\":1792616304531,\"art\":\"ls\",\"k\":\"anazhRealmState_7cb44350-a11b-4ff7-817a-e606509eedda\",\"len\":273783,\"pose\":[0.004335356061128726,67.50281276758714]}",
+  "art": "haken",
+  "dauerS": 24.5
+ },
+ {
+  "z": 3,
+  "bootMs": 8178,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.31748841158439073,
+    55.881435346631214
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:platz",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 78
+  },
+  "alterS": 10.01,
+  "wegVerlustM": 11.44,
+  "art": "zufall",
+  "dauerS": 30.7
+ },
+ {
+  "z": 4,
+  "bootMs": 9454,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    -0.21322097531697556,
+    78.86886795687343
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 81
+  },
+  "alterS": 9.75,
+  "wegVerlustM": 11.09,
+  "haken": "versionen",
+  "killPunkt": "{\"n\":91,\"t\":1792616398859,\"art\":\"ls\",\"k\":\"anazhRealmVersions\",\"len\":8,\"pose\":null}",
+  "art": "haken",
+  "dauerS": 30.1
+ },
+ {
+  "z": 5,
+  "bootMs": 7958,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.8703080309859987,
+    108.96464434326323
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:versionen",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 86
+  },
+  "alterS": 10,
+  "wegVerlustM": 11.21,
+  "art": "zufall",
+  "dauerS": 27.4
+ },
+ {
+  "z": 6,
+  "bootMs": 9004,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.7092885748204736,
+    133.27397386380574
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 88
+  },
+  "alterS": 6.17,
+  "wegVerlustM": 6.88,
+  "haken": "idb",
+  "killPunkt": "{\"n\":103,\"t\":1792616479955,\"art\":\"idb\",\"k\":\"7cb44350-a11b-4ff7-817a-e606509eedda\",\"pose\":[0.7092885748204736,168.17541685397893]}",
+  "art": "haken",
+  "dauerS": 21.7
+ },
+ {
+  "z": 7,
+  "bootMs": 8620,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.7092885748204736,
+    156.65625018730566
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:idb",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 97
+  },
+  "alterS": 10.01,
+  "wegVerlustM": 11.27,
+  "art": "zufall",
+  "dauerS": 31.6
+ },
+ {
+  "z": 8,
+  "bootMs": 8970,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.7092885748204736,
+    191.9410265108124
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 102
+  },
+  "alterS": 0.87,
+  "wegVerlustM": 0.77,
+  "haken": "index",
+  "killPunkt": "{\"n\":107,\"t\":1792616565843,\"art\":\"ls\",\"k\":\"anazhRealmWorlds\",\"len\":124,\"pose\":null}",
+  "art": "haken",
+  "dauerS": 25.5
+ },
+ {
+  "z": 9,
+  "bootMs": 13296,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.7092885748204736,
+    204.53590343895502
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:index",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "ls",
+   "k": "anazhRealmState_7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 106
+  },
+  "alterS": 0,
+  "wegVerlustM": 0,
+  "art": "zufall",
+  "dauerS": 29.5
+ },
+ {
+  "z": 10,
+  "bootMs": 8981,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    0.7092885748204736,
+    234.58817976245876
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 111
+  },
+  "alterS": 3.35,
+  "wegVerlustM": 3.21,
+  "haken": "bak",
+  "killPunkt": "{\"n\":105,\"t\":1792616644841,\"art\":\"ls\",\"k\":\"anazhRealmState_7cb44350-a11b-4ff7-817a-e606509eedda.bak\",\"len\":385067,\"pose\":[1.1344732970370957,245.8666686364975]}",
+  "art": "haken",
+  "dauerS": 18.8
+ },
+ {
+  "z": 11,
+  "bootMs": 12783,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.1344732970370957,
+    245.8666686364975
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:bak",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 104
+  },
+  "alterS": 10.01,
+  "wegVerlustM": 11.35,
+  "art": "zufall",
+  "dauerS": 17.7
+ },
+ {
+  "z": 12,
+  "bootMs": 8537,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.1344732970370957,
+    265.18561162664815
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 111
+  },
+  "alterS": 0.91,
+  "wegVerlustM": 0.92,
+  "haken": "platz",
+  "killPunkt": "{\"n\":118,\"t\":1792616711311,\"art\":\"ls\",\"k\":\"anazhRealmState_7cb44350-a11b-4ff7-817a-e606509eedda\",\"len\":411368,\"pose\":[1.1344732970370957,289.0853879501141]}",
+  "art": "haken",
+  "dauerS": 15
+ },
+ {
+  "z": 13,
+  "bootMs": 10547,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.1344732970370957,
+    277.5853879501246
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:platz",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 116
+  },
+  "alterS": 10,
+  "wegVerlustM": 11.42,
+  "art": "zufall",
+  "dauerS": 6.9
+ },
+ {
+  "z": 14,
+  "bootMs": 10653,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.1344732970370957,
+    277.5853879501246
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 116
+  },
+  "alterS": 30.77,
+  "wegVerlustM": 7.81,
+  "haken": "versionen",
+  "killPunkt": "{\"n\":126,\"t\":1792616774786,\"art\":\"ls\",\"k\":\"anazhRealmVersions\",\"len\":8,\"pose\":null}",
+  "art": "haken",
+  "dauerS": 23.6
+ },
+ {
+  "z": 15,
+  "bootMs": 9864,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    298.9936791512355
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:versionen",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 114
+  },
+  "alterS": 10,
+  "wegVerlustM": 11.42,
+  "art": "zufall",
+  "dauerS": 16.2
+ },
+ {
+  "z": 16,
+  "bootMs": 10767,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    309.8792888080466
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 104
+  },
+  "alterS": 6.68,
+  "wegVerlustM": 7.5,
+  "haken": "idb",
+  "killPunkt": "{\"n\":125,\"t\":1792616847387,\"art\":\"idb\",\"k\":\"7cb44350-a11b-4ff7-817a-e606509eedda\",\"pose\":[1.2994435244810827,343.2473984648373]}",
+  "art": "haken",
+  "dauerS": 24.3
+ },
+ {
+  "z": 17,
+  "bootMs": 7675,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    331.7282317981811
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:idb",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 119
+  },
+  "alterS": 10.01,
+  "wegVerlustM": 11.39,
+  "art": "zufall",
+  "dauerS": 25.7
+ },
+ {
+  "z": 18,
+  "bootMs": 8171,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    355.51230621564275
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 117
+  },
+  "alterS": 3.98,
+  "wegVerlustM": 0,
+  "haken": "index",
+  "killPunkt": "{\"n\":125,\"t\":1792616926327,\"art\":\"ls\",\"k\":\"anazhRealmWorlds\",\"len\":124,\"pose\":null}",
+  "art": "haken",
+  "dauerS": 21.7
+ },
+ {
+  "z": 19,
+  "bootMs": 7581,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    355.4939912783769
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "haken:index",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 122
+  },
+  "alterS": 10,
+  "wegVerlustM": 0.02,
+  "art": "zufall",
+  "dauerS": 35.3
+ },
+ {
+  "z": 20,
+  "bootMs": 7314,
+  "geladen": {
+   "worldId": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "pose": [
+    1.2994435244810827,
+    355.51429719303883
+   ],
+   "edits": 0,
+   "welten": 1
+  },
+  "konsole": [],
+  "fehler": [],
+  "vorTod": "zufall",
+  "gleicheWelt": true,
+  "treffer": {
+   "d": 0,
+   "art": "idb",
+   "k": "7cb44350-a11b-4ff7-817a-e606509eedda",
+   "n": 128
+  },
+  "alterS": 3.5,
+  "wegVerlustM": 0,
+  "art": "ende",
+  "dauerS": 29.1
+ }
+]

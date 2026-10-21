@@ -1,0 +1,5 @@
+probe-hit.cjs (Third, Tier 0,5 m gesetzt -> 1,11 m, Blick hoch 0,2, Kegel-Ziel nah 0,65 <= Klinge 0,73): verb hieb
+je rAF [sw.t, hitStopUntil - jetzt (s), Treffer]:
+[[0.133,null,0],[0.15,null,0],[0.167,null,0],[0.171,0.033,1],[0.171,0.013,1],[0.171,-0.009,1],[0.188,-0.021,1],[0.204,-0.042,1],...]
+=> die Anzeige-Uhr des Schwungs steht 3 Bilder (0,171) nach dem Treffer, Hit-Stop ~33 ms; im Bild nicht gemessen (Versuche in m18 verfehlt: Tier abgedrängt, verb graben).
+probe-kette.cjs: mousedown@0,6 -> tryMouseBreak/_beginPlayerSwing zurück @64-86 ms; _pickCreatureAtCrosshair 125-171 ms je Ruf (mit Hülle), _pickArchitectureAtCrosshair 3,9-11,4 ms

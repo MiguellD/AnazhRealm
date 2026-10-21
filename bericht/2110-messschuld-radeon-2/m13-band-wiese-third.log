@@ -1,0 +1,75 @@
+BAND IM BAND: Befehle 105/208 (0.5×) · Dreiecke 386k/680k (0.57×) · VRAM MB 109.2/118 (0.93×) · GPU ms/Frame 8.48/16.7 (0.51×)
+ORT wiese — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        9/12          7/1/1           81k/120k  fern-ring 4 · bodenSatz 3 · farWater 1 · wasserSatz 1
+streu                         8/9          7/1/0            38k/40k  streuSatz 4 · fscatter:geroell:L0 2 · fscatter:blume:L2 2
+nahWiese                      4/4          4/0/0            81k/80k !nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0              1k/1k !fimp:atlas:L2 1
+baum                        53/40        32/12/9           89k/150k !f:tanne:L0 12 · f:tanne:L1 9 · fscatter:fichte:L1 8 · f:fichte:L1 7
+busch                         6/8          2/2/2             6k/40k  f:strauch:L1 6
+tier*                        0/30          0/0/0              0/60k  
+bau                          4/40          2/1/1            16k/60k  bauSatz 2 · bauWurf 2
+    bauSatz haupt: f:feuerstelle:L1 50 Zellen = 14 875
+    bauWurf k0: f:feuerstelle:L3 28 Zellen = 672
+    bauWurf k1: f:feuerstelle:L3 22 Zellen = 528
+formationen                  3/20          1/1/1            18k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 22 Zellen = 7 040
+    formationenSatz k1: f:zacken:L0 18 Zellen = 5 760
+    formationenSatz haupt: f:zacken:L0 15 Zellen = 4 800
+einzelstuecke               17/25         12/5/0            56k/15k !spieler 13 · feld-pass 2 · himmel 1 · himmel-sonne 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                     105/208       68/23/14          386k/680k  Abstand 0.5× Befehle · 0.57× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 109.2 MB / Band 118 MB (0.93×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     31.6 MB  2     tex:TRAANode.resolve
+     17.0 MB  285   buf:szene  (bodenSatz · geometrie-arena · streuSatz)
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.8 MB  188   buf:tier  (:tier:baer · :tier:fuchs · :tier:wesen)
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  1     tex:wege-karte
+      4.0 MB  2     tex:TRAANode.flacker
+      3.3 MB  1     tex:karte-albedo
+      2.7 MB  5     tex:spiegel
+      2.2 MB  2     tex:szene
+      2.0 MB  1     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.7 MB  1     tex:karte-normal
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+
+erst-Boot, Ladung 1 · eingeschwungen nach 40 Takten (3 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 41 Antworten 12.6 MB — von der Platte 0 (0 MB), Neubau 12.6 MB
+
+BAND IM BAND: Befehle 105/208 (0.5×) · Dreiecke 386k/680k (0.57×) · VRAM MB 109.2/118 (0.93×) · GPU ms/Frame 8.48/16.7 (0.51×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2)
+  [ratsche] streu haupt: 32724 dreiecke über der Ratsche 21267 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2)
+  [ratsche] streu k0: 5120 dreiecke über der Ratsche 0 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2)
+  [ratsche] nahWiese haupt: 81156 dreiecke über der Ratsche 73934 (Täter: nahWiese:L1, nahWiese:L2)
+  [ratsche] baum haupt: 32 befehle über der Ratsche 22 (Täter: f:tanne:L0, f:tanne:L1, fscatter:fichte:L1)
+  [ratsche] baum haupt: 68626 dreiecke über der Ratsche 54438 (Täter: f:tanne:L0, f:tanne:L1, fscatter:fichte:L1)
+  [ratsche] baum k1: 9 befehle über der Ratsche 2 (Täter: f:tanne:L0, f:tanne:L1, fscatter:fichte:L1)
+  [ratsche] baum k1: 7962 dreiecke über der Ratsche 1086 (Täter: f:tanne:L0, f:tanne:L1, fscatter:fichte:L1)
+  [ratsche] Summe (gebunden) 105 Befehle über der Ratsche 85
+  [weit] boden haupt dreiecke: Ratsche 78506 über der Messung 52401 — zu weit
+  [weit] boden k0 dreiecke: Ratsche 56705 über der Messung 14514 — zu weit
+  [weit] boden k1 dreiecke: Ratsche 56460 über der Messung 14122 — zu weit
+  [weit] busch haupt dreiecke: Ratsche 11956 über der Messung 2040 — zu weit
+  [weit] einzelstuecke haupt befehle: Ratsche 16 über der Messung 12 — zu weit
+  [weit] einzelstuecke haupt dreiecke: Ratsche 174265 über der Messung 42471 — zu weit
+  [weit] einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13517 — zu weit
+  [weit] Summe (gebunden) Dreiecke: Ratsche 616145 über der Messung 385922 — zu weit
+  [weit] VRAM buf:szene: Ratsche 33.7 über der Messung 17 — zu weit
+  [weit] VRAM tex:TRAANode.resolve: Ratsche 35.6 über der Messung 31.6 — zu weit
+  [weit] VRAM tex:output: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM tex:depth: Ratsche 7.9 über der Messung 4.4 — zu weit
+  [weit] VRAM (gebunden): Ratsche 118.7 über der Messung 101.4 — zu weit
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 218/2048
+
+C:\Users\micha\AppData\Local\Temp\claude\C--Users-micha-AnazhRealm-profiband\bf30ee29-0ba1-482e-ac38-fc10c609d0c3\scratchpad\roh\m13-band-wiese-third.json
