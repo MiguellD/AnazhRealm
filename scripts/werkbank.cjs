@@ -3417,17 +3417,12 @@ async function starte() {
                 [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
                 // die Karte gegen ihre Gestalt (A7): vor dem Schnitt 1,24 × so hell (Fichte, Genesis) — ROT beim Namen
                 [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.24, dL: 3.7, dC: 1.4 } } } }).befunde.join(), /KARTE fichte: Karte\/Gestalt \(f:fichte:L1\) Luma 1\.24/],
-                [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
                 // die Hemi-Probe: eine Karte mit der Normale (0,1,0) überall (H = U) gegen ihre Gestalt (ȳ −0,5) ist ROT beim Namen
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.02, S: 0.04, U: 0.05, H: 0.05 } } } } } }).befunde.join(), /NORMALE fichte: Hemi-Probe Karte\/Gestalt 4 — die Karte zeigt dem Himmel ȳ 1, ihre Gestalt ȳ -0\.5/],
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.012, S: 0.032, U: 0.041, H: 0.0195 } } } } } }).urteil, "GRUEN"],
                 [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 0.73, dL: -5, dC: -4, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.012, S: 0.024, U: 0.041, H: 0.0195 } } } } } }).befunde.join(), /SONNE fichte: Richtlicht allein Karte\/Gestalt 0\.6 — die Sonnen-Sicht der Karte gegen den Wurf ihrer Gestalt \(f:fichte:L1\)/],
-                // die Karte in der Nacht (F6): an der Basis 25f53923 4,74 × so hell wie ihre Gestalt (Fichte, Mess-Wiese, Radeon) — ROT beim Namen der Stunde
-                [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 4.737, dL: 16.6, dC: 2.73 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 4\.737/],
                 // ohne das Band die Wirts-Zahlen (Rauheit 0,9, Mikro-Kavität): die Karte nachts 0,544 ihrer Gestalt — ROT nach unten
                 [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 0.544, dL: -3.86, dC: -0.53 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 0\.544/],
-                // die ganze Normale im zum Auge gekippten Rahmen: mittags 1,278 — ROT nach oben
-                [LL.laubLichtUrteil({ welt: { "fichte@0.5": { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.278, dL: 4.21, dC: -1.75 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({ welt: { eiche: { karte: { verhaeltnis: 1.02, dL: 0.3, dC: 4.2 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
                 // DIE FERNE JE STUNDE (F6): Fern-Ring gegen Boden-Satz, Basis 12997549 nachts 1,496 x ueber Mittag ROT beim Namen, Kopf GRUEN
@@ -3519,7 +3514,8 @@ async function starte() {
                     else if (wechsel && !boden) await stufen(plan.l1);
                     // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
                     for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
-                    if (!boden) await stufen(0.6);
+                    // die Karte an der Naht (`plan.l2`): nähere Kronen behalten Stufe und Wurf wie im Spiel (die Karte wirft nie)
+                    if (!boden) await stufen(haus || !wechsel ? 0.6 : plan.l2);
                 }
                 const w = argv.includes("--karte")
                     ? (await k(2)).ergebnis

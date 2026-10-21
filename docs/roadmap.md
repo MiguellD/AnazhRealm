@@ -87,8 +87,8 @@ headless-Zahl als Look-Beweis kann lügen).
   hat keinen Erzeuger für stehendes Totholz, kein Alias kehrt zurück) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen) · ihr Transport
   (`_foundrySchale` IM Worker: Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer — der Haupt-
   Thread fasst keinen Asset-Cache an, `gate:fluss`) · ihre Schlange (`_foundryAuftrag`: der Host hält sie, 12 je
-  Studio-Faden, nah zuerst, ab 6 s Alter abwechselnd der Älteste — `gate:takt` T5/T6; die Karte bäckt im eigenen
-  Bäcker-Faden `_foundryBaecker`, nie zwischen den Körpern — T7).
+  Studio-Faden, nah zuerst, ab 6 s Alter abwechselnd der Älteste — `gate:takt` T5/T6; die Karte bäckt in der
+  Welt, `_karteWeltBacken`, nie zwischen den Körpern — T7).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
   `uLodAuge` zum Ursprung der Instanz wie das Studio (`_iw`, nie zum Fragment — 1110-11), ein L0-Baum wirft seine L1 —

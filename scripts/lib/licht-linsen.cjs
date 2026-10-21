@@ -1597,16 +1597,16 @@ function laubGegenlicht(opts) {
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
         auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
         // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
-        // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet)
-        const D = r.constructor.LOD_DISTANCES;
-        const l1 = +(Math.max(r._lodPerceptionDistance(abstand, hoehe), opts.haus ? abstand : 0) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
+        // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet); `l2` ebenso weit darunter
+        const D = r.constructor.LOD_DISTANCES, pd = Math.max(r._lodPerceptionDistance(abstand, hoehe), opts.haus ? abstand : 0), saum = Math.max(D.hysteresis, D.fade || 0) + 1;
+        const [l1, l2] = [+(pd + saum).toFixed(1), +(pd - saum).toFixed(1)];
         // DAS FERNE AUGE (der Boden): 400 m vor S, der flachste Blick von oben (≥ 1°) — dort zeichnet der Fern-Ring S (Schuss 2)
         let fern = null;
         for (let j = 0; opts.plan && opts.boden && j < 24; j++) {
             const [fx, fz] = [ziel.fuss.x + 400 * Math.cos((j * Math.PI) / 12), ziel.fuss.z + 400 * Math.sin((j * Math.PI) / 12)], neig = Math.atan2(r._voxelSurfaceY(fx, fz) + (opts.augeH || 1.7) - ziel.fuss.y, 400);
             if (neig >= Math.PI / 180 && r._voxelSurfaceY(fx, fz) > (st.waterLevel || 0) && (!fern || neig < fern[2])) fern = [fx, fz, neig];
         }
-        if (opts.plan) return opts.boden && !fern ? { fehler: "kein fernes Auge über der Stelle" } : { fern, ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
+        if (opts.plan) return opts.boden && !fern ? { fehler: "kein fernes Auge über der Stelle" } : { fern, ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, l2, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;

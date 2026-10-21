@@ -594,7 +594,7 @@ class AnazhRealm_studio_gestalt {
     // DIE GESTALT DES ORTS (K20, nordstern §4.5: „die Gestalt folgt dem Ort, nicht der Art allein"): eine Baum-Art mit V ≥ 2
     // Bestand-Gestalten (budget.gestalten) trägt DAZU ihren Solitär als Gestalt T = V+1 (phyto-core `solitaerGestalt`,
     // gebaut mit FREISTAND_OV — growSkeleton: kein Schaft-Hub, der gedrungene Stamm); der Bestand behält 1..V (kein Klon).
-    // Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`): jeder Körper und jede Karte der
+    // Der EINE Leser der Worker-Naht (`_foundryRequest`): jeder Körper und jede Karte der
     // Gestalt T ist der Solitär — auch unter der Prägung eines Bestellers (`ov`, die Regler der Werkstatt, die Wald-
     // Overrides): die Prägung des Orts tritt DAZU, sie ersetzt sie nie (ein geprägter Solitär wuchs sonst als Bestand).
     // Rückgabe: die vereinte Prägung, null ohne jede (ein leeres ov ist keine).

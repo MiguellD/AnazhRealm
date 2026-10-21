@@ -1017,7 +1017,8 @@ class AnazhRealm_stoff_material {
                                     // nie — dieselbe Stelle des Quads trifft in zwei Ansichten 45° auseinander verschiedene Blätter,
                                     // ihr Mittel kippte die lichte Krone zum Auge (Radeon, Genesis Ego, Birke: Zenit-Sonne 54 %,
                                     // Seiten-Sonne 63–70 %, Front 111 % ihrer L1 — Karte/Gestalt 0,64 → 1,04)
-                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA, _uvB));
+                                    const _uvN = _Ta.select(_fb.lessThan(0.5), _uvA, _uvB);
+                                    const _nP = _probeA(_at.nmapNode, _uvN);
                                     const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
@@ -1056,26 +1057,28 @@ class AnazhRealm_stoff_material {
                                     //    Krone durchlässt (`_karteBuehne`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
                                     //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
                                     //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
-                                    //    BC: rg8 (r der Zenit, g der 45°-Kranz), leer = das Mittel der Schicht; rgba8: r und b,
-                                    //    vormultipliziert mit der Deckung (g). DIE HÖHE DES LICHTS (F6): die Sicht folgt der Höhe
-                                    //    des aktiven Körpers (`uSunDir`, dieselbe Richtung wie das Richtlicht) — bis 45° der Kranz,
-                                    //    darüber zum Zenit, im Sinus der Höhe. Das eine Mittel aller Richtungen ließ die
-                                    //    Mittagssonne durch die hohe Fichte wie durch ihre Flanke (ihr Sonnen-Licht 1,42 × das der
-                                    //    Gestalt).
-                                    const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
-                                    const _s2 = _vm
+                                    //    DIE RICHTUNG DES LICHTS (Licht K3): der Texel trägt seine Sicht als Funktion der
+                                    //    Licht-Richtung im Baum-Raum (vier Anker, `_karteSichtBasis`), gelesen in der Richtung des
+                                    //    aktiven Körpers (`uSunDir`, Sonne oder Mond, über die Naht in die Vorlage gedreht) — aus
+                                    //    der Ansicht der Normale (dieselbe Stelle der Krone). BC: rgba8, leer = das Mittel der
+                                    //    Schicht; rgba8: vormultipliziert mit der Deckung (z der Normale), das leere a steht auf 1.
+                                    const _lP = _probeA(_at.lmapNode, _uvN);
+                                    const _v4 = _vm
                                         ? _Ta
-                                              .vec2(_lP.r, _lP.b)
-                                              .div(_lP.g.max(_Ta.float(1e-3)))
-                                              .min(_Ta.vec2(1.0))
-                                        : _lP.rg;
-                                    const _sk = Math.SQRT1_2;
-                                    const _hoch = _Ta
-                                        .normalize(this._windUniformsEnsure().uSunDir)
-                                        .y.sub(_sk)
-                                        .div(1 - _sk)
+                                              .vec4(_lP.rgb, _lP.a.sub(1.0).add(_nP.z))
+                                              .div(_nP.z.max(_Ta.float(1e-3)))
+                                              .min(_Ta.vec4(1.0))
+                                        : _lP;
+                                    const _lB = _Ta.normalize(
+                                        _Ta.varying(_naht.vorlage(this._windUniformsEnsure().uSunDir), "vKarteSonne")
+                                    );
+                                    const _l4 = _Ta.vec4(1.0, _lB.x, _lB.y, _lB.z);
+                                    const _bs = this._karteSichtBasis();
+                                    const _gew = _bs.lies.map((z) => _l4.dot(_Ta.vec4(...z)));
+                                    const _sicht = _v4
+                                        .sub(_bs.null)
+                                        .dot(_Ta.vec4(..._gew))
                                         .clamp(0.0, 1.0);
-                                    const _sicht = _Ta.mix(_s2.y, _s2.x, _hoch);
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die

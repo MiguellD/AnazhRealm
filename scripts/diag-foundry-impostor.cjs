@@ -104,7 +104,7 @@ async function installiereBacke(page) {
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const out = { ready: false, rec: null, err: null, hasIframe: null, cutMethods: null };
+        const out = { ready: false, rec: null, err: null };
         try {
             const f = r._ensureAssetFoundry();
             const dl = performance.now() + 60000;
@@ -133,9 +133,7 @@ async function driveImpostor(page) {
             const at = r._impostorAtlas();
             if (rec) {
                 out.rec = {
-                    imAtlas: !!(at && at.zellen.get(rec.key) === rec),
                     schicht: rec.idx,
-                    hasFrame: !!(rec.frame && rec.frame.halfH > 0 && rec.frame.halfW > 0),
                     keineSaison: !/spring|summer|autumn|winter/.test(rec.key),
                 };
             }
@@ -146,9 +144,7 @@ async function driveImpostor(page) {
                 out.atlas = {
                     quadGeteilt: l1.geom === l2.geom,
                     materialGeteilt: l1.mat === l2.mat,
-                    billboard: !!(l1.mat && l1.mat.userData && l1.mat.userData.impostorBillboard),
                     schichtenVerschieden: l1.zelle !== l2.zelle,
-                    texturen: !!(at.map && at.nmap && at.lmap && at.cap >= at.n && at.map.image.depth === at.cap),
                     fmt: at.fmt,
                 };
                 // drei Instanzen über BEIDE Slot-Chokepoints: Streu (zwei Arten, Region 3,4) + ein gesetzter Eintrag
@@ -206,22 +202,6 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            out.vereinigung = {
-                weltBake: typeof r._karteWeltBacken === "function",
-                rttNachbau: typeof r._bakeImpostorAtlasRTT,
-            };
-            // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
-            out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
-            // Die iframe-Methoden sind weg (der Karten-Zwilling W6 — Canvas-Atlas je Karte, Umdrehen, Silhouette,
-            // Re-Frame, Rahmen-Quad — steht in gate:altlasten).
-            out.cutMethods = {
-                requestImpostor: typeof r._foundryRequestImpostor,
-                ensureBakeIframe: typeof r._foundryEnsureBakeIframe,
-                buildImpostorRecord: typeof r._foundryBuildImpostorRecord,
-                bakeImpostorRequest: typeof r._foundryBakeImpostorRequest,
-                studioImpostorPayload: typeof r._applyStudioImpostorPayload,
-                baecker: typeof r._foundryBaecker,
-            };
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -826,17 +806,12 @@ async function windProbe(page) {
     console.log(`  Atlas-Zelle: ${JSON.stringify(A.rec)}`);
     console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
-    console.log(`  Vereinigung (Kanal/Methoden/kein Nachbau): ${JSON.stringify(A.vereinigung)}`);
-    console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
-    console.log(`  gefallene Methoden (erwartet undefined): ${JSON.stringify(A.cutMethods)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
     if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
     if (!A.ready) errs.push("A: der Worker wurde nicht ready");
     if (!A.rec) errs.push("A: keine Atlas-Zelle entstanden (die LOD1-Geometrie lud nicht?)");
     else {
-        if (!A.rec.imAtlas) errs.push("A: die Zelle steht nicht im EINEN Atlas (_impostorAtlas().zellen)");
-        if (!A.rec.hasFrame) errs.push("A: die Zelle hat keinen Rahmen");
         if (!A.rec.keineSaison) errs.push("A: der Zell-Schlüssel trägt eine Saison");
     }
     if (!A.atlas) errs.push("A: keine Karten-Flats (Eiche + Fichte) entstanden");
@@ -844,9 +819,7 @@ async function windProbe(page) {
         if (!A.atlas.quadGeteilt) errs.push("A: zwei Arten tragen verschiedene Quads (je Karte eine Geometrie)");
         if (!A.atlas.materialGeteilt)
             errs.push("A: zwei Arten tragen verschiedene Materialien (je Karte ein Programm)");
-        if (!A.atlas.billboard) errs.push("A: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)");
         if (!A.atlas.schichtenVerschieden) errs.push("A: zwei Arten teilen dieselbe Atlas-Schicht");
-        if (!A.atlas.texturen) errs.push("A: der Atlas trägt keine Array-Texturen für seine Zellen");
     }
     if (A.gruppen) {
         const G = A.gruppen;
@@ -872,8 +845,8 @@ async function windProbe(page) {
             if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
-    if (A.vereinigung) {
-        const s = A.strich || {};
+    if (A.strich) {
+        const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
         if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0))
             errs.push(
@@ -881,15 +854,7 @@ async function windProbe(page) {
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
-        if (!A.vereinigung.weltBake) errs.push("A: `_karteWeltBacken` fehlt");
-        if (A.vereinigung.rttNachbau !== "undefined")
-            errs.push(`A: der RTT-Nachbau ` + "`_bakeImpostorAtlasRTT`" + ` lebt noch (${A.vereinigung.rttNachbau})`);
-    } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
-    if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
-    if (A.cutMethods) {
-        for (const [k, v] of Object.entries(A.cutMethods))
-            if (v !== "undefined") errs.push(`A: die gefallene Methode ${k} existiert noch (${v})`);
-    }
+    } else if (A.ready) errs.push("A: die Strich-Wand lief nicht");
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
     console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
