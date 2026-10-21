@@ -1452,14 +1452,15 @@ class AnazhRealm_stoff_material {
     // Werk, Studio- und Satz-Stoff, Gras, Wege): das Gesetz nasser Oberflächen (`_naesseGesetz`) mit dem Gewicht w = Nässe der
     // Welt (`atmoUniforms.naesse`, EIN Schreiber `_naesseTakt`) × Himmels-Sicht (unter einer Decke des Dach-Pools 0, am Boden ×
     // `aHimmel`) × Poren der Art (`NAESSE.poren`, Laub und Haut tragen Wachs bzw. Fett). Durchsichtiges (Glas, Rauch) bleibt;
-    // die Ausschnitt-Alpha bleibt in colorNode.a (Lehre 26). EIN KNOTEN JE GRAPH: dieselbe Farbe, Rauheit, Metall-Quelle,
+    // die Ausschnitt-Alpha bleibt in colorNode.a (Lehre 26). Die Albedo des Gesetzes ist die ganze Farbe: trägt sie r184 nach dem
+    // colorNode mit (die Instanz-Farbe des Zauns), nennt der Stoff den Faktor in `userData.naesseFarbe`. EIN KNOTEN JE GRAPH: dieselbe Farbe, Rauheit, Metall-Quelle,
     // Himmels-Sicht und Poren-Zahl ergeben DENSELBEN Knoten — Stoffe einer Studio-Signatur behalten ihr Programm.
     _naesseImStoff(mat, himmel) {
         const ud = mat.userData || {};
         const poren = ud.poren ?? AnazhRealm.NAESSE.poren[ud.foundryKind] ?? 1;
-        if (mat.transparent || !(poren > 0)) return;
+        if (mat.transparent || ud.shadowTwin || !(poren > 0)) return;
         const T = THREE.TSL;
-        const quellen = [mat.colorNode, mat.roughnessNode, mat.metalnessNode, himmel];
+        const quellen = [mat.colorNode, mat.roughnessNode, mat.metalnessNode, himmel, ud.naesseFarbe];
         const schluessel = quellen.map((n) => (n ? n.id : "-")).join("|") + "|" + poren;
         const karte = this._naesseKnoten || (this._naesseKnoten = new Map());
         if (!karte.has(schluessel)) {
@@ -1470,12 +1471,12 @@ class AnazhRealm_stoff_material {
             const A = { k: (n) => T.float(n), mul: (a, b) => a.mul(b), sub: (a, b) => a.sub(b), mix: T.mix };
             const n = AnazhRealm._naesseGesetz(
                 A,
-                farbe.rgb,
+                ud.naesseFarbe ? farbe.rgb.mul(ud.naesseFarbe) : farbe.rgb,
                 mat.roughnessNode || T.materialRoughness,
                 mat.metalnessNode || T.materialMetalness,
                 w
             );
-            karte.set(schluessel, { farbe: T.vec4(n.albedo, farbe.a), rauh: n.rauh });
+            karte.set(schluessel, { farbe: T.vec4(farbe.rgb.mul(n.faktor), farbe.a), rauh: n.rauh });
         }
         const k = karte.get(schluessel);
         mat.colorNode = k.farbe;
@@ -1483,14 +1484,14 @@ class AnazhRealm_stoff_material {
     }
 
     // DAS GESETZ NASSER OBERFLÄCHEN (Lagarde 2013, „Water drop 3b — Physically based wet surfaces"; Lekner & Dorf 1988): das
-    // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (dunkle Stoffe dunkeln
-    // stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
+    // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (`faktor` auf die Farbe:
+    // dunkle Stoffe dunkeln stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
     // im Stoff (`_naesseImStoff`), Zahlen in der Linse (`werkbank licht --naesse`: dicht) — EINE Formel.
     static _naesseGesetz(A, albedo, rauh, metall, w) {
         const N = AnazhRealm.NAESSE;
         const p = A.mul(w, A.sub(A.k(1), metall));
         return {
-            albedo: A.mix(albedo, A.mul(albedo, albedo), p),
+            faktor: A.mix(A.k(1), albedo, p),
             rauh: A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p),
         };
     }

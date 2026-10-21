@@ -1910,12 +1910,12 @@ class AnazhRealm_siedlung_satz {
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         // Farbe je Instanz (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
-        const mat =
-            this._stlWegeMat ||
-            (this._stlWegeMat = this._leuchtStoff(
-                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
-                null
-            )); // der Licht-Pool (K11)
+        let mat = this._stlWegeMat;
+        if (!mat) {
+            mat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+            mat.userData.naesseFarbe = THREE.TSL.varyingProperty("vec3", "vInstanceColor"); // die Farbe ist die der Instanz
+            this._stlWegeMat = this._leuchtStoff(mat, null); // der Licht-Pool (K11) und die Nässe
+        }
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).

@@ -2487,7 +2487,7 @@ function naesseSicht(o) {
             naesse: Number.isFinite(st.naesse) ? +st.naesse.toFixed(3) : null,
             innen: { n: je.innen.length, verhaeltnis: med(je.innen) },
             aussen: { n: je.aussen.length, verhaeltnis: med(je.aussen) },
-            dicht: dicht ? +(dicht.albedo / 0.4).toFixed(3) : null,
+            dicht: dicht ? +dicht.faktor.toFixed(3) : null,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
             png: o.png ? [klar, frisch, nass].map((u8) => {
                 const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
