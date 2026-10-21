@@ -15,6 +15,8 @@
 // Textur, jedes geschriebene Byte gleich dem dort liegenden — am Kopf vor K71 an Genesis Third jeder Satz in jedem Render, weil
 // sein Ausschnitt je Pass wechselt, und jede Nah-Wiesen-Senke, deren Version ohne neue Matrizen stieg; Täter beim Namen).
 //
+// DAS REGISTER (E-Bauart): voll prüft, wer hinter dem Tor geht (`_diaetVorTextur`) — gemeldet, wer einen Stand trug; ein bekanntes
+// Render-Objekt ohne Stand prüfte OHNE MELDUNG (die Basis: jedes).
 //   Seite:     window.__diaetLauf({ frames: 90, modus: "ruhe"|"drehen"|"gehen", grad: 1, tiere: "halten"|"frei" })
 //   Werkbank:  node scripts/werkbank.cjs diaet [frames] [--modus ruhe] [--tiere halten] | diaet --selbsttest
 
@@ -112,6 +114,16 @@ function diaetLauf(opts) {
                 c.grund[nameVon(ro)] = (c.grund[nameVon(ro)] || 0) + 1;
             }
             return v;
+        });
+        const bekannt = new WeakSet();
+        haken("vt", A, "_diaetVorTextur", function (...a) {
+            const ro = a[a.length - 1];
+            const art = ro._anazhObs ? "gemeldet" : ro._anazhObs === null ? "staendig" : bekannt.has(ro) ? "ohneMeldung" : "neu";
+            zaehle("pruefVoll");
+            zaehle(art);
+            if (c && art === "ohneMeldung") c.ohneM[nameVon(ro)] = (c.ohneM[nameVon(ro)] || 0) + 1;
+            bekannt.add(ro);
+            return roh.vt.apply(this, a);
         });
         haken("schreib", A, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
             imGang++;
@@ -271,7 +283,7 @@ function diaetLauf(opts) {
                         }
                     }
                     const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
-                    c = { n: {}, ms: {}, grund: {}, ohne: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() };
+                    c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() };
                     const t0 = performance.now();
                     try {
                         r._gameLoopTick(t);
@@ -318,6 +330,7 @@ function diaetLauf(opts) {
             schattenPfad: top(mittel("schattenPfad"), 6),
             vollGrund: top(mittel("grund"), 12),
             ohneAenderung: top(mittel("ohne"), 12),
+            ohneMeldung: top(mittel("ohneM"), 8),
         };
     })();
 }
@@ -341,6 +354,7 @@ function diaetUrteil(e) {
             v.push(
                 `RUHE: ${Math.round(z.ohne * 100) / 100} Refreshs ohne Änderung je Frame (${(e.ohneAenderung || []).join(" · ") || "?"}) — die Diät zahlt ohne neuen Eingang`
             );
+        if (z.ohneMeldung > 0.5) v.push(`RUHE: ${z.ohneMeldung} Prüfungen ohne Meldung je Frame (${e.ohneMeldung.join(" · ")}) — die Diät fragt`);
     }
     return v;
 }
@@ -358,6 +372,7 @@ function selbsttest() {
             Object.assign({}, gruen, { zahl: { pruef: 120, ohne: 6.5 }, ohneAenderung: ["bauSatz: 1.7", "nahWiese:L2:0:0: 0.3"] }),
             /RUHE: 6\.5 Refreshs ohne Änderung je Frame \(bauSatz: 1\.7 · nahWiese:L2:0:0: 0\.3\)/,
         ],
+        ["Prüfung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, ohneMeldung: 85 }, ohneMeldung: ["Ring: 12"] }), /RUHE: 85 Prüfungen ohne Meldung je Frame \(Ring: 12\)/],
     ];
     for (const [name, e, muss] of faelle) {
         const u = diaetUrteil(e);

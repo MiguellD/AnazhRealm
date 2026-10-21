@@ -3480,7 +3480,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung und eine blinde Linse beim Namen"
+                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen"
             );
             process.exit(f.length ? 1 : 0);
         }

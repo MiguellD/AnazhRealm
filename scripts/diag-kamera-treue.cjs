@@ -9,7 +9,7 @@
 //   (e) STAND — je Pfad vier Frames ohne Änderung: kein Voll-Refresh (auch nicht für einen Ausschnitt je Pass, K71), kein
 //       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
 //       Bürger einmal auf, der Frame danach nicht.
-//   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: nie-Refresh < 0,98.
+//   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: gemuteter Melder < 0,98.
 //   (g) VERSCHACHTELT — nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät wie der
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
@@ -109,7 +109,7 @@ function urteil(z) {
         if (!(a.diaet >= BILD_SOLL))
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
-            v.push(`ÄNDERUNG ${pfad}: eine Diät, die nie refresht, zeichnet ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+            v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder (das Register hört das Blatt nicht) zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
         const n = (s.verschachtelt || {})[pfad] || {};
         if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
@@ -581,9 +581,10 @@ function buehne() {
                     const vollWer = {};
                     for (const k in zs.wer) vollWer[k] = zs.wer[k] / 4;
                     const still = { pruef: zs.pruef / 4, voll: zs.voll / 4, vollWer, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
-                    // EINMAL JE ÄNDERUNG (K71): ein Attribut hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
+                    // EINMAL JE ÄNDERUNG (K71): ein Attribut, das jeder Pass liest, hebt seine Version — je Bürger EIN Voll-Refresh, danach
+                    // keiner (ein ungelesenes meldet sich auch, frischt aber nichts auf: das Tor liest die Attribute des Programms).
                     kisten[2].name = "KISTE";
-                    kisten[2].geometry.attributes.uv.needsUpdate = true;
+                    kisten[2].geometry.attributes.position.needsUpdate = true;
                     Object.assign(zs, { voll: 0, wer: {} });
                     messen = true;
                     await schuss();
@@ -597,16 +598,15 @@ function buehne() {
                 stand.direkt = await ruhe(false);
                 stand.replay = await ruhe(true);
                 // (f) ÄNDERUNG IM STAND: eine Kiste rückt, ein Blatt dreht — das Bild der Diät gleicht dem Bild, in dem jedes
-                // Objekt voll refresht (die Wahrheit ohne Diät); eine Täter-Diät, die nie refresht, weicht ab (Lauf-Kontrolle).
+                // Objekt voll refresht (die Wahrheit ohne Diät); mit gemutetem Melder weicht sie ab (Lauf-Kontrolle des Registers).
                 const immer = () => true;
-                const nie = (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : altNR.call(obs, ro, frame));
                 const m4 = new T.Matrix4();
                 let schritt = 0;
                 const aendere = () => {
                     schritt++;
                     kisten[0].position.x += 1.5;
                     kisten[0].updateMatrixWorld(true);
-                    m4.makeRotationX(-Math.PI / 2 + 0.3 * schritt).setPosition(0, 3.5, -4);
+                    m4.makeRotationX(-Math.PI / 2 + 0.6 * schritt).setPosition(0, 3.5, -4);
                     laub.setMatrixAt(1, m4);
                     laub.instanceMatrix.needsUpdate = true;
                 };
@@ -628,8 +628,11 @@ function buehne() {
                     aendere();
                     const diaetBild = await mitDiaet(null);
                     const wahr = await mitDiaet(immer);
+                    // der Täter: der Melder schweigt (`_regt`), die Kiste rückt (Lage ohne Melder), das Blatt dreht ungemeldet
+                    const regt = A._regt;
+                    A._regt = () => 0;
                     aendere();
-                    const taeterBild = await mitDiaet(nie);
+                    const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
                     const wahr2 = await mitDiaet(immer);
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
@@ -901,7 +904,7 @@ function buehne() {
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
-            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
 })();

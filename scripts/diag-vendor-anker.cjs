@@ -209,7 +209,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
     { file: "vendor/three.webgpu.min.js", sub: '"assign"!==e&&(ci.prototype[e]=function(...e){', organ: "Diät (9) die eigenen Felder: das Geerbte am Knoten-Prototyp sind nur Ketten-Methoden (B4, 18.10.: 122 Klassen, 2 324 Felder, 0 Uniform/Knoten/Accessor)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.hasAnimation=!0===e.object.isSkinnedMesh,this.refreshUniforms=", organ: "Diät (11) nach Eingang: der Stoff-Verweis, dessen Eigenschaft equals() prüft (refreshUniforms)" },
-    { file: "vendor/three.webgpu.min.js", sub: "const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;for(const e in o){const t=o[e],r=i[e];", organ: "Diät (13) der Stoff je Render-Objekt: equals() merkt die Stoff-Daten je STOFF und Render-Id (getMaterialData), nie je Render-Objekt, und geht JEDEN Schlüssel der Daten durch (der Stempel steht am Stoff)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;for(const e in o){const t=o[e],r=i[e];", organ: "Diät (13) · AnazhRealm._diaetStoffBlick: equals() merkt die Stoff-Daten je STOFF und Render-Id (getMaterialData), nie je Render-Objekt, und geht JEDEN Schlüssel der Daten durch (der Stempel steht am Stoff)" },
     { file: "vendor/three.webgpu.min.js", sub: "clearUpdateRanges(){this._updateRangeCache.clear(),super.clearUpdateRanges()}", organ: "Diät (11) nach Eingang: der eigene Uniform-Puffer lädt seine Bereiche und leert sie (wie Bindings._update)" },
     // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
     // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
@@ -280,8 +280,10 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "const t=e.textures,o=[];let u;const l=this._isRenderCameraDepthArray(e);for(let s=0;s<t.length;s++)", organ: "_kaskadenZiele (der Pass-Deskriptor: je Farbe ein Anhang — leere Liste, nur die Tiefe)" },
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
-    // instanceMatrix-Versions-Wächter (Kern-Setter)
-    { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
+    // DAS REGISTER DER REGUNG: der EINE Versions-Setter meldet (`_regungMelder`); das Tor liest die Attribute, die das Programm liest
+    { file: "vendor/three.core.min.js", sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setGeometry(e){this.geometry=e,this.attributes=null,", organ: "AnazhRealm._diaetRuhig (r184 meldet den Bau-Wechsel: attributes = null)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (die Attribute, die das Programm liest)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
     // Bereichs-Anfang (updateRanges → queue.writeBuffer(offset)); ohne diese Bahn lüde jeder Chunk den ganzen Satz.
     {
@@ -468,11 +470,24 @@ function diaetLaden(manipuliert) {
     if (manipuliert === "ohneStoffStand") AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, liest, v) => v;
     if (manipuliert === "stoffBlind")
         AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, l, v) => verpasst(od, s, md, vorR, rid, true, v);
+    if (manipuliert === "ohneMeldung") AnazhRealm._regt = () => 0;
     const echt = AnazhRealm._diaetRefresh;
-    if (manipuliert === "abkuerzung")
-        return (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR));
-    return echt;
+    const fn =
+        manipuliert === "abkuerzung"
+            ? (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR))
+            : echt;
+    fn.A = AnazhRealm;
+    return fn;
 }
+// Ein Puffer wie three.core: sein needsUpdate-Setter hebt die Version und meldet die Regung (der Melder der Diät-Scheibe).
+const puffer = (fn, p) =>
+    Object.defineProperty(p, "needsUpdate", {
+        set(v) {
+            if (v !== true) return;
+            this.version++;
+            fn.A._regt(this);
+        },
+    });
 // DER SCHEIN-BEOBACHTER (r184 NodeMaterialObserver) der drei Diät-Proben: Daten je Render-Objekt (die Lage `welt`), die
 // Vendor-Bahn (Kopf → renderId-Wand → equals()), und equals() vergleicht die Stoff-Daten `md` EINMAL je Render-Id
 // (`getMaterialData`: `_renderId`/`_equal`) und geht wie r184 JEDEN Schlüssel der Daten gegen den Stoff durch (ein fremder
@@ -583,7 +598,7 @@ function diaetLauf(fn) {
     for (let i = 0; i < 50; i++) {
         const senke = scheinObjekt({
             isInstancedMesh: true,
-            instanceMatrix: { version: 0 },
+            instanceMatrix: puffer(fn, { version: 0 }),
             material: { _anazhDiaet: true },
         });
         objekte.push(programme[i % 20](senke, { bindings: [{ groupNode: { shared: false } }] }));
@@ -608,7 +623,7 @@ function diaetLauf(fn) {
     const r2 = render();
     const r3 = render();
     const r4 = render(() => objekte[7].ro.object.welt++);
-    const r5 = render(() => objekte[11].ro.object.instanceMatrix.version++);
+    const r5 = render(() => (objekte[11].ro.object.instanceMatrix.needsUpdate = true));
     const r6 = render();
     const r7 = render(() => freiWert.value++);
     return { r1, r2, r3, r4, r5, r6, r7 };
@@ -620,7 +635,7 @@ function diaetLauf(fn) {
 // erste hochlud), eine neue Normale frischt das Hauptbild auf (nur es lädt sie).
 function getragenLauf(fn) {
     let n = 0;
-    const attr = (k) => ({ id: 900 + n++, version: 0, k });
+    const attr = (k) => puffer(fn, { id: 900 + n++, version: 0, k });
     const im = attr("im"),
         lage = attr("lage"),
         normale = attr("normale");
@@ -636,7 +651,7 @@ function getragenLauf(fn) {
     const geo = { id: 77, index: null, attributes: { position: lage, normal: normale } };
     const pass = (liest) => {
         const nbs = { updateNodes: [], updateBeforeNodes: [], updateAfterNodes: [] };
-        const ro = { object: obj, geometry: geo, getBindings: () => [], getNodeBuilderState: () => nbs };
+        const ro = { object: obj, geometry: geo, attributes: liest, getBindings: () => [], getNodeBuilderState: () => nbs };
         return { obs: scheinBeobachter(), ro, liest };
     };
     const paesse = [pass([im, lage]), pass([im, lage, normale])];
@@ -658,9 +673,9 @@ function getragenLauf(fn) {
     return {
         erst: render(),
         stand: render(),
-        matrix: render(() => im.version++),
-        lage: render(() => lage.version++),
-        normale: render(() => normale.version++),
+        matrix: render(() => (im.needsUpdate = true)),
+        lage: render(() => (lage.needsUpdate = true)),
+        normale: render(() => (normale.needsUpdate = true)),
         danach: render(),
     };
 }
@@ -709,7 +724,7 @@ function stoffLauf(fn) {
     const ros = ["D", "A", "B", "C", "E"].map((name) => {
         const eigen = { bindings: [scheinPuffer([{ nodeUniform: { node: wert }, getValue: () => wert.value }])] };
         const object = scheinObjekt(
-            name === "D" ? { isInstancedMesh: true, instanceMatrix: { id: 7, version: 0 } } : {}
+            name === "D" ? { isInstancedMesh: true, instanceMatrix: puffer(fn, { id: 7, version: 0 }) } : {}
         );
         const n = name === "E" ? nbsOhne : nbs;
         return {
@@ -736,7 +751,7 @@ function stoffLauf(fn) {
     render("DABCE");
     render("DABCE");
     stoff.farbe = 2;
-    ros[0].object.instanceMatrix.version++;
+    ros[0].object.instanceMatrix.needsUpdate = true;
     render("DA");
     ros[2].object.welt = 1;
     const ueber = render("DABCE").filter((n) => n !== "B" && n !== "C");
@@ -806,6 +821,8 @@ function diaetProbe(selftest) {
         const ohneG = getragenPruefe(getragenLauf(diaetLaden("ohneGetragen")));
         const immer = getragenPruefe(getragenLauf(diaetLaden("getragenImmer")));
         const ohneStand = stoffProbe(diaetLaden("ohneStoffStand"));
+        // DAS REGISTER: ein gemuteter Melder lässt die Instanz-Mutation ruhen (das Bild trüge die alte Matrix)
+        const stumm = pruefe(diaetLauf(diaetLaden("ohneMeldung")));
         const blind = stoffProbe(diaetLaden("stoffBlind"));
         selbstFeuert =
             ohneStand.length === 1 &&
@@ -813,7 +830,8 @@ function diaetProbe(selftest) {
             blind[0].startsWith("STOFF ÜBERFRISCHT: E") &&
             ohneG.some((e) => e.startsWith("GETRAGEN: eine neue Version")) &&
             immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
-            abk.some((e) => e.startsWith("r4: die Diät schrieb 0"));
+            abk.some((e) => e.startsWith("r4: die Diät schrieb 0")) &&
+            stumm.some((e) => e.startsWith("Instanz-Wächter"));
     }
     return { fehler, selbstFeuert, getragen };
 }
@@ -865,7 +883,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung lässt das bewegte Objekt ohne seinen Gang; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff, ein blinder frischt ein Programm ohne Stoff-Verweis auf)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung lässt das bewegte Objekt ohne seinen Gang; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff, ein blinder frischt ein Programm ohne Stoff-Verweis auf; ein gemuteter Melder lässt die Instanz-Mutation ruhen)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         if (errs.length > 1 || !errs.some((e) => e.includes("hasNode"))) for (const e of errs) console.error("   ❌ " + e);

@@ -146,6 +146,8 @@ class AnazhRealm_bild_kosten {
             };
             CSM.__anazhEinAufbau = true;
         }
+        // DAS REGISTER DER REGUNG: der EINE needsUpdate-Setter meldet jede Version (`_regungMelder`, in der Diät-Scheibe)
+        AnazhRealm._regungMelder(THREE, (t, l) => this.log(t, l));
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
@@ -3668,6 +3670,174 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         objektVoll,
     };
 };
+// DAS REGISTER DER REGUNG (E-Bauart, 21.10.): die Diät HÖRT, statt jedes Render-Objekt in jedem Pass zu fragen. Bis hier ging jede
+// Prüfung alles durch, was sich ändern KÖNNTE (Instanz · Geometrie · Texturen · freie Uniforms · Lage · Stoff; ~85 Prüfungen je
+// Frame an Genesis Third, Radeon aa709f30 — die Prüfung kostete so viel wie ihr Ergebnis: Nachschläge, nicht Vergleiche). Jetzt
+// meldet die QUELLE: EINE monotone Zahl (`_regungN`), jede Regung hebt sie und stempelt ihre Quelle (`_regt`):
+//   · jede Version (Attribut · Index · Instanz-Puffer · verschachtelter Puffer) — der EINE needsUpdate-Setter (`_regungMelder`);
+//   · die Texturen und freien Uniforms eines Programms — der Programm-Melder im Gang (`_diaetProgrammMelder`): three schreibt
+//     `.value` ohne Signal, der Gang vergleicht EINMAL je Programm und Render, nie je Render-Objekt;
+//   · jeder Stoff — der Stoff-Blick (`_diaetStoffBlick`, r184s Vergleich EINMAL je Stoff und Render) und sein Verbrauch (13).
+// Jedes Render-Objekt trägt am EIGENEN Feld den Stand, den es zuletzt verbrauchte (`_anazhR`, `_diaetStand`; ein verdeckter Pass
+// holt nach), das Tor (`_diaetRuhig`) liest nur die Stempel seiner Quellen. Ohne Melder bleibt, was three nicht meldet: die Lage
+// (16 Zahlen, nur wer sich bewegen KANN), die Verweise je Objekt (10), die Knochen.
+AnazhRealm._regungN = 0;
+AnazhRealm._regt = function (q) {
+    q._anazhRegung = ++AnazhRealm._regungN;
+    return q._anazhRegung;
+};
+// DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an
+// BufferAttribute und InterleavedBuffer; Index und Instanz-Puffer sind BufferAttribute) — er meldet die Regung mit.
+AnazhRealm._regungMelder = function (T, log) {
+    for (const [name, K] of [
+        ["BufferAttribute", T.BufferAttribute],
+        ["InterleavedBuffer", T.InterleavedBuffer],
+    ]) {
+        const p = K && K.prototype;
+        const d = p && Object.getOwnPropertyDescriptor(p, "needsUpdate");
+        if (!d || typeof d.set !== "function") {
+            log(`REGISTER: r184-${name}.needsUpdate nicht gefunden (Vendor-Drift)`, "ERROR");
+            continue;
+        }
+        if (d.set.__anazhRegung === true) continue;
+        const roh = d.set;
+        const set = function (v) {
+            roh.call(this, v);
+            if (v === true) AnazhRealm._regt(this);
+        };
+        set.__anazhRegung = true;
+        Object.defineProperty(p, "needsUpdate", { configurable: true, enumerable: d.enumerable, get: d.get, set });
+    }
+};
+// DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
+// Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN (eine Kette mit
+// matrixAutoUpdate bis zur Szene: three rechnet ihre Welt-Matrix jeden Frame neu, ohne Signal). STÄNDIG (kein Stand, jede Prüfung
+// voll) bleibt, was nur equals() je Render-Objekt sieht: Morph-Gewichte, die Karten der Spot-Lichter, die Mitte eines Sprites.
+AnazhRealm._diaetStand = function (obs, ro, od, md) {
+    ro._anazhR = AnazhRealm._regungN;
+    const obj = ro.object;
+    const staendig = !!(od.morphTargetInfluences || (od.lights && od.lights.length > 0) || (obj && obj.center));
+    ro._anazhObs = staendig ? null : obs;
+    if (staendig) return;
+    ro._anazhOd = od;
+    ro._anazhMd = md;
+    const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
+    ro._anazhIx = ro.geometry ? ro.geometry.index : undefined;
+    ro._anazhIM = senke ? senke.instanceMatrix : undefined;
+    ro._anazhIC = senke ? senke.instanceColor : undefined;
+    let kann = false;
+    for (let o = obj; o && o.isScene !== true && !kann; o = o.parent) kann = o.matrixAutoUpdate !== false;
+    ro._anazhBeweglich = kann;
+};
+// DAS TOR: trägt das Render-Objekt einen Stand und meldete keine seiner Quellen seither eine Regung (Attribute, die sein Programm
+// liest · Index · Instanz-Puffer · Programm · Stoff), ruht es — kein Nachschlag, kein equals(). Den Bau-Wechsel meldet r184 selbst
+// (`setGeometry` leert `attributes`), Index und Instanz-Puffer ihre Identität. Was three nicht meldet, stellt das Tor hier: die
+// Lage dessen, der sich bewegen kann, die Verweise je Objekt (10), die Knochen — der Objekt-Gang (11). true: es ruht (kein
+// Refresh); sonst geht die volle Prüfung (der Körper von `_diaetRefresh`).
+AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
+    const r = ro._anazhR;
+    const at = ro.attributes;
+    if (at === null || obs.needsVelocity(rend)) return false;
+    if (at)
+        for (let i = 0; i < at.length; i++)
+            if ((at[i].isInterleavedBufferAttribute === true ? at[i].data : at[i])._anazhRegung > r) return false;
+    const obj = ro.object;
+    const senke = obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
+    const ix = ro.geometry ? ro.geometry.index : undefined,
+        im = senke.instanceMatrix,
+        ic = senke.instanceColor;
+    if (ix !== ro._anazhIx || im !== ro._anazhIM || ic !== ro._anazhIC) return false;
+    if ((ix && ix._anazhRegung > r) || (im && im._anazhRegung > r) || (ic && ic._anazhRegung > r)) return false;
+    const nbs = ro.getNodeBuilderState();
+    const m = ro.material;
+    if (nbs._anazhRegung > r || (m && (m._anazhRegung > r || AnazhRealm._diaetStoffBlick(ro._anazhMd, m, rid))))
+        return false;
+    const k = nbs._anazhGang;
+    let og = obs.hasAnimation === true;
+    if (ro._anazhBeweglich === true && ro._anazhOd.worldMatrix.equals(obj.matrixWorld) !== true) {
+        ro._anazhOd.worldMatrix.copy(obj.matrixWorld);
+        og = true;
+    }
+    if (AnazhRealm._diaetVerweisAnders(obs, ro, k)) og = true;
+    if (og) AnazhRealm._diaetObjektGang(rend, ro, k, false);
+    return true;
+};
+// DER STOFF-BLICK: r184 vergleicht die Stoff-Daten EINMAL je Stoff und Render (equals: `_renderId` · `_equal` · jeder Schlüssel
+// gegen den Stoff; Farbe, Deckung … sind Klar-Felder ohne Melder). Zeichnet ein ruhendes Render-Objekt als erstes seines Stoffs
+// im Render, vergleicht das Tor — derselbe Vergleich (vendor-anker pinnt ihn), equals() liest danach sein Urteil. Ein Wechsel ist
+// die Regung des Stoffs (13: der Render seines Verbrauchs). Transmission (die Puffer-Größe je Render-Objekt) bleibt equals().
+// true: der Stoff wechselte in diesem Render.
+AnazhRealm._diaetStoffBlick = function (md, stoff, rid) {
+    if (md._renderId === rid) return md._equal === false;
+    if (stoff.transmission > 0) return true;
+    md._renderId = rid;
+    md._equal = true;
+    for (const e in md) {
+        if (e === "_renderId" || e === "_equal") continue;
+        const t = md[e],
+            s = stoff[e];
+        if (t.equals !== undefined) {
+            if (t.equals(s) !== false) continue;
+            t.copy(s);
+        } else if (s.isTexture === true) {
+            if (t.id === s.id && t.version === s.version) continue;
+            t.id = s.id;
+            t.version = s.version;
+        } else if (t === s) continue;
+        else md[e] = s;
+        md._equal = false;
+        stoff._anazhStoffR = rid;
+        AnazhRealm._regt(stoff);
+        return true;
+    }
+    return false;
+};
+// DER WERT-STAND: die Zahlen eines Uniform-Werts in einen Stand `w` (`w.z` ab `w.i`, `w.anders` hebt jeder Wechsel) — die EINE
+// Abflachung für den Programm-Melder und die Verweise (Zahl · Wahrheit · Textur Id+Version · Matrix · Farbe · Vektor, sonst
+// die Identität).
+AnazhRealm._diaetZahl = function (w, x) {
+    if (w.z[w.i] !== x) {
+        w.z[w.i] = x;
+        w.anders = true;
+    }
+    w.i++;
+};
+AnazhRealm._diaetWert = function (w, v) {
+    const z = AnazhRealm._diaetZahl;
+    if (typeof v === "number" || typeof v === "boolean") z(w, +v);
+    else if (v && v.isTexture === true) {
+        z(w, v.id);
+        z(w, v.version);
+    } else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) z(w, e);
+    else if (v && v.isColor === true) {
+        z(w, v.r);
+        z(w, v.g);
+        z(w, v.b);
+    } else if (v && typeof v.x === "number") {
+        z(w, v.x);
+        z(w, v.y);
+        z(w, v.z === undefined ? 0 : v.z);
+        z(w, v.w === undefined ? 0 : v.w);
+    } else z(w, v);
+};
+// DER PROGRAMM-MELDER: die Texturen (6) und die freien Uniforms (9) eines Programms melden sich nicht — der Gang vergleicht sie
+// EINMAL je Programm und Render (alle Render-Objekte des Programms binden dieselben Knoten) und meldet den Wechsel am Programm:
+// `_anazhTexR` · `_anazhFreiR`, an denen jedes Render-Objekt seinen Verbrauch misst (`_diaetVorTextur`, `_diaetFreiAnders`).
+AnazhRealm._diaetProgrammMelder = function (nbs, k) {
+    if (k.texturen.length === 0 && k.frei.length === 0) return;
+    const w = k.stand || (k.stand = { z: [], i: 0, anders: false });
+    w.i = 0;
+    w.anders = false;
+    for (const n of k.texturen) {
+        const t = n.value;
+        AnazhRealm._diaetZahl(w, t ? t.id : -1);
+        AnazhRealm._diaetZahl(w, t ? t.version : -1);
+    }
+    if (w.anders) nbs._anazhTexR = AnazhRealm._regt(nbs);
+    w.anders = false;
+    for (const u of k.frei) AnazhRealm._diaetWert(w, u.getValue());
+    if (w.anders) nbs._anazhFreiR = AnazhRealm._regt(nbs);
+};
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
 // es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
@@ -3708,94 +3878,24 @@ AnazhRealm._diaetVerweisAnders = function (obs, ro, k) {
     if (k.verweise.length === 0 || !ro.object) return false;
     const d = obs.getRenderObjectData(ro);
     const erst = !d._anazhVerweisW;
-    const w = d._anazhVerweisW || (d._anazhVerweisW = []);
-    let anders = false,
-        i = 0;
-    const zahl = (x) => {
-        if (w[i] !== x) {
-            w[i] = x;
-            anders = true;
-        }
-        i++;
-    };
-    for (const n of k.verweise) {
-        const v = n.getValueFromReference(ro.object);
-        if (typeof v === "number" || typeof v === "boolean") zahl(+v);
-        else if (v && v.isTexture === true) {
-            zahl(v.id);
-            zahl(v.version);
-        } else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e);
-        else if (v && v.isColor === true) {
-            zahl(v.r);
-            zahl(v.g);
-            zahl(v.b);
-        } else if (v && typeof v.x === "number") {
-            zahl(v.x);
-            zahl(v.y);
-            zahl(v.z === undefined ? 0 : v.z);
-            zahl(v.w === undefined ? 0 : v.w);
-        } else zahl(v);
-    }
-    return anders && !erst;
+    const w = d._anazhVerweisW || (d._anazhVerweisW = { z: [], i: 0, anders: false });
+    w.i = 0;
+    w.anders = false;
+    for (const n of k.verweise) AnazhRealm._diaetWert(w, n.getValueFromReference(ro.object));
+    return w.anders && !erst;
 };
-// (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
-// Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
-// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt lädt
-// jeder Wechsel die eigene Gruppe im Objekt-Gang (11) — seit jeder Welt-Stoff die Diät trägt (E1), ist die Objekt-Uniform
-// ein Wert des Stoffs, kein Bruch (der Melder nannte bis E1-n1 die Insel der Welt-Sprache); `_uniformHeimatTeilen` lädt sie EINMAL
-// je Render statt je Objekt. Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben hoch); liefert
-// die gewechselte Uniform, sonst null.
-AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
-    if (k.frei.length === 0) return null;
-    const d = obs.getRenderObjectData(ro);
-    const erst = !d._anazhFreiW;
-    const w = d._anazhFreiW || (d._anazhFreiW = []);
-    let anders = null,
-        i = 0;
-    // je Zahl vergleichen und merken — keine Kopie des Werts (die Prüfung läuft je Render-Objekt und Render)
-    const zahl = (x, u) => {
-        if (w[i] !== x) {
-            w[i] = x;
-            if (!erst && anders === null) anders = u;
-        }
-        i++;
-    };
-    for (const u of k.frei) {
-        const v = u.getValue();
-        if (typeof v === "number" || typeof v === "boolean") zahl(+v, u);
-        else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e, u);
-        else if (v && v.isColor === true) {
-            zahl(v.r, u);
-            zahl(v.g, u);
-            zahl(v.b, u);
-        } else if (v && typeof v.x === "number") {
-            zahl(v.x, u);
-            zahl(v.y, u);
-            zahl(v.z === undefined ? 0 : v.z, u);
-            zahl(v.w === undefined ? 0 : v.w, u);
-        }
-    }
-    return anders;
+// (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe, seit dieses Render-Objekt zuletzt
+// verbrauchte? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr ein
+// (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jeder Wechsel lädt die
+// eigene Gruppe im Objekt-Gang (11); `_uniformHeimatTeilen` lädt sie EINMAL je Render statt je Objekt. Den Wechsel meldet der
+// Programm-Melder (EIN Vergleich je Programm und Render, bis E-Bauart je Render-Objekt und Pass).
+AnazhRealm._diaetFreiAnders = function (ro, k) {
+    return k.frei.length > 0 && ro.getNodeBuilderState()._anazhFreiR > (ro._anazhR === undefined ? -1 : ro._anazhR);
 };
-// (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
-AnazhRealm._diaetVorTextur = function (obs, ro) {
-    const nbs = ro.getNodeBuilderState();
-    const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
-    if (k.texturen.length === 0) return false;
-    const d = obs.getRenderObjectData(ro);
-    const v = d._anazhVorTexV || (d._anazhVorTexV = []);
-    let anders = false;
-    for (let i = 0; i < k.texturen.length; i++) {
-        const t = k.texturen[i].value;
-        const id = t ? t.id : -1,
-            ver = t ? t.version : -1;
-        if (v[2 * i] !== id || v[2 * i + 1] !== ver) {
-            v[2 * i] = id;
-            v[2 * i + 1] = ver;
-            anders = true;
-        }
-    }
-    return anders;
+// (6) Wechselte eine Textur des Programms (Id oder Version), seit dieses Render-Objekt zuletzt verbrauchte? Der Programm-Melder
+// meldet den Wechsel (bis E-Bauart verglich jedes Render-Objekt jede Textur in jedem Pass).
+AnazhRealm._diaetVorTextur = function (ro) {
+    return ro.getNodeBuilderState()._anazhTexR > (ro._anazhR === undefined ? -1 : ro._anazhR);
 };
 AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
@@ -3843,6 +3943,8 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
         g._anazhRuf = ruf;
         rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
+    // DAS REGISTER: der Gang meldet, was sich am Programm ohne Melder änderte (Texturen nach den Vorher-Knoten, freie Uniforms)
+    AnazhRealm._diaetProgrammMelder(nbs, k);
 };
 // (8) GETRAGEN (K71): trägt die GPU die Version dieses Attributs schon? r184 lädt ein Attribut EINMAL je Version für alle
 // Render-Objekte (`Attributes.update`: Daten je Attribut-Objekt, `version` die hochgeladene) — hat ein anderer Pass es
@@ -3864,18 +3966,34 @@ AnazhRealm._diaetGetragen = function (A, a) {
 // `material[k].isTexture` — am Kopf c7225684 warf jeder Render eines Stoffs nach seinem ersten Wechsel, `_callDepth` wuchs).
 AnazhRealm._diaetStoffVerpasst = function (od, stoff, md, vorR, rid, liest, v) {
     if (rid === undefined) return v;
-    if (md && md._renderId !== vorR && md._equal === false) stoff._anazhStoffR = rid;
+    // der Verbrauch ist die Regung des Stoffs (das Register): jedes ruhende Render-Objekt des Stoffs prüft danach voll
+    if (md && md._renderId !== vorR && md._equal === false) {
+        stoff._anazhStoffR = rid;
+        AnazhRealm._regt(stoff);
+    }
     if (!v && liest && stoff && stoff._anazhStoffR > (od._anazhVollR === undefined ? -1 : od._anazhVollR)) v = true;
     if (v) od._anazhVollR = rid;
     return v;
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    const rend = frame && frame.renderer;
+    // DAS TOR DES REGISTERS: ein Render-Objekt mit Stand geht zuerst den Gang seines Programms (die geteilten Gruppen des
+    // Render-Abschnitts, der Programm-Melder) und ruht, wenn keine seiner Quellen sich meldete (`_diaetRuhig`); sonst die volle
+    // Prüfung (unten, unverändert der EINE Pfad)
+    if (rend && ro._anazhObs === obs) {
+        const rid = frame.renderId;
+        if (obs.renderId !== rid) {
+            obs.renderId = rid;
+            AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
+        }
+        if (AnazhRealm._diaetRuhig(obs, ro, rend, rid)) return false;
+    }
     // (8) eine neue VERSION desselben Attributs (Id gleich) ist ein Refresh-Grund nur, solange die GPU sie nicht trägt: der
     // erste Pass, der sie sieht, lädt sie hoch, jeder weitere frischte bis K71 voll auf und lud nichts (an Genesis Third in
     // Ruhe die Kaskaden-Zeichner der @wahl-Senken nach jedem Tausch ihres Hauptbilds, jeder Satz nach dem Index-Schreiben
     // eines anderen Passes). Eine neue Id (ein gewachsener Puffer) bleibt ein Grund für jedes Render-Objekt.
-    const A = frame && frame.renderer ? frame.renderer._attributes : null;
+    const A = rend ? rend._attributes : null;
     // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
     // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas). Eine Senke zeichnet über ihren Zeichner (1410-1):
     // ihre Instanz-Puffer sind die der Senke.
@@ -3935,8 +4053,10 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders || grund)
+        if (anders || grund) {
+            AnazhRealm._diaetStand(obs, ro, d, ro.material ? obs.getMaterialData(ro.material) : null);
             return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
+        }
         // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
         // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
         // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
@@ -3949,9 +4069,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             gd._equal = true;
         }
     }
-    if (grund) return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
-    const rend = frame && frame.renderer;
     const md = ro && ro.material ? obs.getMaterialData(ro.material) : null;
+    if (grund) {
+        AnazhRealm._diaetStand(obs, ro, d, md);
+        return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
+    }
     if (
         !rend ||
         !obs.renderObjects.has(ro) ||
@@ -3959,9 +4081,13 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         ro.getNodeBuilderState().updateAfterNodes.length > 0
     ) {
         const vorR = md && md._renderId;
-        const v = altNR.call(obs, ro, frame);
+        const alt = altNR.call(obs, ro, frame);
         const od = obs.getRenderObjectData(ro);
-        return AnazhRealm._diaetStoffVerpasst(od, ro && ro.material, md, vorR, frame && frame.renderId, true, v);
+        const v = AnazhRealm._diaetStoffVerpasst(od, ro && ro.material, md, vorR, frame && frame.renderId, true, alt);
+        // die Vendor-Bahn trägt keinen Stand; ihr voller Refresh verbraucht alles
+        ro._anazhObs = null;
+        if (v) ro._anazhR = AnazhRealm._regungN;
+        return v;
     }
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
@@ -3970,14 +4096,14 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben — die Bindung folgt ihr im
     // Objekt-Gang (11, `Bindings._update`: Hochladen, neue Generation → neue Bindegruppe), geteilte Gruppen im Gang je Render
-    const textur = AnazhRealm._diaetVorTextur(obs, ro);
+    const textur = AnazhRealm._diaetVorTextur(ro);
     const nbs = ro.getNodeBuilderState();
     const gang = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
     // (10) ein Objekt-Verweis wechselte seinen Wert (der Stoff-Wert eines atmenden Stoffs): der Objekt-Gang (11) stellt ihn
     const verweis = AnazhRealm._diaetVerweisAnders(obs, ro, gang);
     // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`): ein Objekt-Wert wie die Lage —
     // der Objekt-Gang (11) lädt die eigene Gruppe, die ihn trägt (bis E1-n1 ein Voll-Refresh und ein Bruch je Wechsel)
-    const frei = AnazhRealm._diaetFreiAnders(obs, ro, gang) !== null;
+    const frei = AnazhRealm._diaetFreiAnders(ro, gang);
     // (11) DIE LAGE vor equals(): eine neue Welt-Matrix ist ein Objekt-Wert (der Objekt-Gang), kein Grund für den vollen
     // Gang; jede andere Änderung (Stoff · Geometrie · Morph · Lichter), die equals() danach sieht, bleibt einer.
     const od = obs.getRenderObjectData(ro);
@@ -3988,7 +4114,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     const vorR = md && md._renderId;
     const anders = obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
-    if (AnazhRealm._diaetStoffVerpasst(od, ro.material, md, vorR, rid, gang.stoffLiest, anders)) return true;
+    const v = AnazhRealm._diaetStoffVerpasst(od, ro.material, md, vorR, rid, gang.stoffLiest, anders);
+    AnazhRealm._diaetStand(obs, ro, od, md);
+    if (v) return true;
     if (lage || verweis || textur || frei || obs.hasAnimation === true)
         AnazhRealm._diaetObjektGang(rend, ro, gang, textur);
     return false;
