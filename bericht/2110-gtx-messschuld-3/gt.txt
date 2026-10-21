@@ -1,0 +1,18 @@
+{
+ "ergebnis": {
+  "reich": 3,
+  "gt": [
+   -277.8,
+   -1045.6
+  ],
+  "abstand": 0,
+  "mesh": false,
+  "auf": true,
+  "ab": true,
+  "spieler": [
+   -277.8,
+   -1045.6
+  ]
+ },
+ "ms": 45110
+}
