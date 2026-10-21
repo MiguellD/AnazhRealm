@@ -196,12 +196,15 @@
         const _fl=(a,bq)=>{ if(bq-a<0.10)return; const _cc=(a+bq)/2, _ll=Math.max(0.1,bq-a-0.05); if(ax==='z')beam(g,_cc,y+lift-0.05,alo,_ll,0.03,0.045,'lattung'); else beam(g,alo,y+lift-0.05,_cc,0.045,0.03,_ll,'lattung'); };
         for(let _p=pa; _p<=pb+1e-6; _p+=_st){ const _sk=o.skip&&o.skip(ax==='z'?_p:alo, ax==='z'?alo:_p); if(!_sk){ if(_rs==null)_rs=_p; } else if(_rs!=null){ _fl(_rs,_p-_st); _rs=null; } }
         if(_rs!=null)_fl(_rs,pb); }   // Lattung
+      const _hr=(_HG&&!_fl2)?new Map():null;
       let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2; if(ax==='z')beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); _rA=null; };
       for(let p=Math.floor((pa-ox-tw/2)/tw)*tw+ox+tw/2; p<pb+tw; p+=tw){ const inner=p-tw*0.46, outer=p+tw*0.46;   // VERBAND-GESETZ: Fugenraster WELTFEST + ox-Halbverband — ein Muster für Haupt UND Flügel (vorher pa-verankert → Fugen fluchteten am Flügel zu Streifen) if(inner>pb-0.02||outer<pa+0.02)continue;
         let ww=tw*0.92, pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
+        if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
         if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); }
+      if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
@@ -233,9 +236,12 @@
   function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
+  // ════ DIE MASS-HÜLLE (`__nurMass`, nur massBau): der Mass-Bau zählt nur seine Box (Box3.setFromObject = Vereinigung der Geometrie-Boxen unter der Welt-Matrix) — ungebogen teilt jede Box gleichen Maßes EINE Geometrie (gleiche Float32-Ecken ⇒ dieselbe Box), ohne Tint; die Ziegelreihe legt je Maß nur ihre Enden (eindeckenFlaeche). Der Export bleibt byte-gleich (gate:settlement), der Mass-Bau fällt ~6× ════
+  const _HG=(P.__nurMass&&DEF_bk===0&&DEF_cv===0)?new Map():null;
+  function _hgBox(lx,ly,lz){ let a=_HG.get(lx); if(!a)_HG.set(lx,a=new Map()); let b=a.get(ly); if(!b)a.set(ly,b=new Map()); let q=b.get(lz); if(!q)b.set(lz,q=new THREE.BoxGeometry(lx,ly,lz)); return q; }
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
     const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
@@ -244,7 +250,7 @@
     const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
   const Vc=(x,y,z)=>new THREE.Vector3(x,y,z);
   function strut(g,x0,y0,z0,x1,y1,z1,th,role){ const dx=x1-x0,dy=y1-y0,dz=z1-z0, len=Math.hypot(dx,dy,dz); if(len<1e-4)return;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(_HG?_hgBox(th,len,th):new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
     const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
     let px=-uy,py=ux,pz=0, pl=Math.hypot(px,py,pz); if(pl<0.01){px=1;py=0;pz=0;pl=1;} px/=pl;py/=pl;pz/=pl;
     const qx=uy*pz-uz*py, qy=uz*px-ux*pz, qz=ux*py-uy*px;
@@ -3452,7 +3458,7 @@
     //    (MASSNUR, LOD1F) einmal bauen, Hülle vermessen, sofort entsorgen.
     //    B trägt die Sonden-Identität (q am Ursprung, hofGap 2.5). ──
     function massBau(p) {
-        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR }), LOD1F);
+        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR, __nurMass: true }), LOD1F);
         var bx = new THREE.Box3().setFromObject(mass.g);
         var B = {
             p: p,
