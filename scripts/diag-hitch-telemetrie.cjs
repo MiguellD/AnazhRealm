@@ -256,7 +256,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         for (let i = 0; i < 3; i++) {
             serie++;
             // ein Stoff mit einer eigenen Konstante: ein neues Programm, eine neue Pipeline (unbeleuchtet — swiftshader
-            // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon: haenger --erst)
+            // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon im ABBA der Welle K, 347992564)
             const m = new window.THREE.MeshBasicNodeMaterial();
             m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
             const mesh = probeMesh(m, (i - 1) * 0.8, 4);

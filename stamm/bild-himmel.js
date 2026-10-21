@@ -2613,13 +2613,13 @@ class AnazhRealm_bild_himmel {
     // Satz und im Gang der Uhr.
     _uhrAnzeigen(t) {
         const r = this._statusRefs;
-        if (r && r.time) r.time.textContent = this._timeOfDayLabel(t);
+        if (r) this._hudSchreib(r.time, this._timeOfDayLabel(t));
         const g = this._tageszeitRegler;
         if (g && g.tod) {
             const wert = String(Math.round((((t % 1) + 1) % 1) * 1000));
             if (g.tod.value !== wert) g.tod.value = wert;
             const text = this._timeOfDayLabel(t).replace(/^[^\s]+\s/, "");
-            if (g.todVal && g.todVal.textContent !== text) g.todVal.textContent = text;
+            this._hudSchreib(g.todVal, text);
         }
     }
 

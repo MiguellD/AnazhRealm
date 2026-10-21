@@ -189,7 +189,7 @@ class AnazhRealm_werkstatt_hof {
             }
             const base = chip.getAttribute("data-base") || "✺ Boost";
             const next = `${base} (${rest}s)`;
-            if (chip.textContent !== next) chip.textContent = next;
+            this._hudSchreib(chip, next);
         }
     }
 
@@ -763,10 +763,12 @@ class AnazhRealm_werkstatt_hof {
     _hofHandleDrawerChange(name) {
         const stage = this.state.hofStage;
         if (name === "kreaturen") {
-            // On-Open-Render: die Liste wird beim Öffnen SYNCHRON frisch gerendert (so darf die Insel
-            // `isOpen`-skippen, ohne dass das hidden-DOM stale wird). Bewusst ohne typeof-Guard — die
+            // On-Open-Render: die Listen werden beim Öffnen SYNCHRON frisch gerendert — Gesten und Gesetze schreibt
+            // der Status-Takt nur bei offenem Hof (`updateStatusPanel`, K2 Belegung). Bewusst ohne typeof-Guard — die
             // Grep-Wand zählt nur die geguardete Mechanik-Signatur.
             this._renderCreatureListUI();
+            this.renderAbilitiesList();
+            this.renderWorldRulesList();
             const s = this._hofEnsureStage();
             if (!s) return;
             s.active = true;
