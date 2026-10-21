@@ -772,7 +772,7 @@ async function checkBandWelle6APolish(ctx) {
         const _savedY = r.state.playerMesh.position.y;
         const _savedZ = r.state.playerMesh.position.z;
 
-        // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält 33 ms
+        // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält zwei Schritte
         // und trüge sonst einen stale Wert der alten Spieler-Position.
         // BÜHNE: der Himmel 5 km über jedem Boden
         r.state.playerMesh.position.set(0, 5000, 0);
@@ -1300,7 +1300,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const __hkKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "struktur|kiefer");
         const __heBp = __heKey && bps[__heKey];
         const __hkBp = __hkKey && bps[__hkKey];
-        out.hasBaumEiche = !!(__heBp && Array.isArray(__heBp.parts) && __heBp.parts.length >= 2);
         out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
         out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
@@ -1587,7 +1586,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
             wave6gResults.parallelSpawnTreeAtRemoved
         );
-        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumEiche);
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
