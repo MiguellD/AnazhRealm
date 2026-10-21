@@ -560,8 +560,12 @@ class AnazhRealm_stoff_material {
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
-            dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () => TSL.uniform(new THREE.Vector4(0, 0, 1, 0))),
-            dachMass: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () => TSL.uniform(new THREE.Vector4(0, 0, -1e6, 0))),
+            dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 1, 0))
+            ),
+            dachMass: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, -1e6, 0))
+            ),
             // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
             // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
             lichtGlut: Object.fromEntries(
@@ -1497,7 +1501,7 @@ class AnazhRealm_stoff_material {
     }
 
     // DIE HIMMELS-SICHT DES REGENS (EIN Knoten je Seite): 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je
-    // Platz die Decke eines Hauses (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Fragment darunter und im Grundriss
+    // Platz die Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Fragment darunter und im Grundriss
     // der Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
     _naesseHimmel(T) {
         if (this._naesseHimmelK) return this._naesseHimmelK;
@@ -1516,10 +1520,11 @@ class AnazhRealm_stoff_material {
         return this._naesseHimmelK;
     }
 
-    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Häuser, die dem Auge am nächsten
-    // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges oder einem neuen Stand der Grundrisse. Die Decke
-    // eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens die Hälfte der größten trägt (die Decke über
-    // dem Erdgeschoss, über dem Obergeschoss, nie der Kamin) — gemerkt je Hülle. Ein leerer Platz hat die Kanten 0.
+    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
+    // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der Grundrisse oder einer
+    // neuen Decke (`_dachKastenSetzen`). Die Decke eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens
+    // die Hälfte der größten trägt (die Decke über dem Erdgeschoss, über dem Obergeschoss, nie der Kamin) — gemerkt je Hülle;
+    // die eines Baus ohne Haus-Hülle sein Kasten (`_dachKasten`). Ein leerer Platz hat die Kanten 0.
     _dachTakt() {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
@@ -1531,21 +1536,34 @@ class AnazhRealm_stoff_material {
         const decken = [];
         for (const e of st.architectures || []) {
             const hu = e._hausHuelle;
-            if (!hu || !e.position || Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
-            if (!e._dachDecke || e._dachDecke.hu !== hu) {
+            if (!(hu || e._dachKasten) || !e.position) continue;
+            if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
+            if (hu && (!e._dachDecke || e._dachDecke.hu !== hu)) {
                 const b = (AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || []).filter((t) => t.art === "box");
                 const fl = (t) => t.h[0] * t.h[2];
                 const gross = Math.max(0, ...b.map(fl));
-                e._dachDecke = { hu, t: b.filter((t) => fl(t) >= gross / 2).sort((a, c) => c.c[1] + c.h[1] - a.c[1] - a.h[1])[0] };
+                e._dachDecke = {
+                    hu,
+                    t: b.filter((t) => fl(t) >= gross / 2).sort((a, c) => c.c[1] + c.h[1] - a.c[1] - a.h[1])[0],
+                };
             }
-            const t = e._dachDecke.t;
+            const t = hu ? e._dachDecke.t : e._dachKasten;
             if (!t) continue;
-            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : t.k;
             const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
             const [co, si] = [Math.cos(ry), Math.sin(ry)];
             const x = e.position.x + (t.c[0] * co + t.c[2] * si) * k;
             const z = e.position.z + (t.c[2] * co - t.c[0] * si) * k;
-            decken.push({ d: Math.hypot(x - auge.x, z - auge.z), x, z, co, si, ex: t.h[0] * k, ez: t.h[2] * k, y: e.position.y + (t.c[1] + t.h[1]) * k });
+            decken.push({
+                d: Math.hypot(x - auge.x, z - auge.z),
+                x,
+                z,
+                co,
+                si,
+                ex: t.h[0] * k,
+                ez: t.h[2] * k,
+                y: e.position.y + (hu ? 0 : t.dy) + (t.c[1] + t.h[1]) * k,
+            });
         }
         decken.sort((a, b) => a.d - b.d);
         const U = this._ensureAtmoUniforms();
@@ -1554,6 +1572,33 @@ class AnazhRealm_stoff_material {
             U.dachLage[i].value.set(d ? d.x : 0, d ? d.z : 0, d ? d.co : 1, d ? d.si : 0);
             U.dachMass[i].value.set(d ? d.ex : 0, d ? d.ez : 0, d ? d.y : -1e6, 0);
         }
+    }
+
+    // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`
+    // (Marktstand · Brunnen · Tor) trägt keine Hülle mit Decke, seine Form schließt oben über ihrem Grundriss (die Plane, das
+    // Schindeldach, das Gewölbe) — seine Decke ist der Kasten der gezeichneten Teile im Raum des Eintrags (`leaf.localMatrix` ×
+    // Geometrie-Kasten, die Welt-Matrix `_archEntryWorldMatrix`: Skala und 0,5 m unter der Lage), einmal je Eintrag.
+    _dachKastenSetzen(entry, leaves) {
+        const preset = this._foundryPresetForEntry(entry);
+        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        const arten = AnazhRealm.NAESSE.dachArten;
+        if (!rec || !(arten.includes(preset) || arten.includes(rec.kind))) return;
+        const b = new THREE.Box3();
+        const t = new THREE.Box3();
+        for (const lf of leaves || []) {
+            const g = lf && lf.geom;
+            if (!g || !g.attributes || !g.attributes.position) continue;
+            if (!g.boundingBox) g.computeBoundingBox();
+            t.copy(g.boundingBox);
+            if (lf.localMatrix) t.applyMatrix4(lf.localMatrix);
+            b.union(t);
+        }
+        if (b.isEmpty()) return;
+        const k = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const c = b.getCenter(new THREE.Vector3());
+        const h = b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+        entry._dachKasten = { c: c.toArray(), h: h.toArray(), k, dy: -0.5 };
+        this._dachWahl = null;
     }
 
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
@@ -2844,7 +2889,8 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // DIE NÄSSE (wetter.K2, `_naesseTakt`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke (Wetter-Feld `rain` über
 // `regenAb`; Regen 0,6 nach 10 min 0,91), ohne Regen trocknet die Welt mit τ = `trocknenS` / max(Sonne, 0,2); voll nass geht die
 // Albedo zu ihrem Quadrat, die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs,
-// Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`.
+// Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
+// Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
     benetzenS: 150,
@@ -2854,6 +2900,7 @@ AnazhRealm.NAESSE = Object.freeze({
     dachPlaetze: 8,
     dachUmkreisM: 64,
     dachSchrittM: 4,
+    dachArten: Object.freeze(["marktstand", "brunnen", "gate"]),
 });
 // Substanz-Antwort: microStrength = Oberflächen-Mikrostruktur, ao* = Kavitäts-AO. Default-Quelle in
 // `_ensureAtmoUniforms` (SUBSTANCE_RESPONSE-Antennen lesen daraus); die Luftperspektive ist `LUFT`.

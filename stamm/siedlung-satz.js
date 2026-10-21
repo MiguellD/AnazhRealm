@@ -2280,6 +2280,8 @@ class AnazhRealm_siedlung_satz {
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
         if (flat && flat.foundry && flat.huelle) this._hausHuelleSetzen(entry, flat.huelle);
+        // ein Bau ohne Haus-Hülle, dessen Form oben schließt (Marktstand · Brunnen · Tor), trägt seine Decke in den Dach-Pool
+        else if (flat && flat.foundry && !entry._dachKasten) this._dachKastenSetzen(entry, flat.leaves);
         // Merker: aus dem Studio (Foundry) platziert → der LOD-Tick (`_switchArchitectureLOD`) serviert die
         // neue Stufe aus der Foundry statt aus `grown_..._lodN`. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot.
