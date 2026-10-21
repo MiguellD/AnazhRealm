@@ -1000,6 +1000,7 @@ class AnazhRealm_dirigent_takt {
         // zurück).
         const _ct = performance.now();
         this.updateCreatures(delta);
+        this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
         // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
