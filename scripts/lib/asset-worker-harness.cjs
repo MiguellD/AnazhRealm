@@ -207,6 +207,8 @@ function pageHtml() {
   // DERSELBEN Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen); die Brücken-Antwort trägt ihren Budget-
   // Bericht mit. Die Liste läuft über einen Arbeits-Pool (dieselbe Boot-Kette je Worker; der erste ist der Haupt-Worker).
   const pool = [ask];
+  // je Kern ein Worker, höchstens 4 (pipeline.K3: die Hälfte der Kerne ließ am CI-Läufer mit 4 Kernen zwei leer, Haus 220 s)
+  const POOL_N = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2));
   const poolMehr = (n) => {
     while (pool.length < n) {
       const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
@@ -220,7 +222,7 @@ function pageHtml() {
   // fährt (kein Zweitbau). \`mitTeilen\` (DARF): je Stufe die Teile, wie der Wurf des Wirts sie liest — Art, Seh-Klasse,
   // Deckkraft (das Wurf-Recht \`_teilWirft\` des Stamms) und Dreiecke (budgetSippen je Teil); gate:regler-wirkt WURF.
   window.__kostenListe = async (liste, mitAbdruck, mitTeilen) => {
-    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
@@ -247,7 +249,7 @@ function pageHtml() {
   // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
   // Regler-Kanal der Werkstatt), je Stufe der EINE Bau-Fingerabdruck (\`bauAbdruck\`) — kein Puffer-Transport.
   window.__bauHashListe = async (liste) => {
-    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
