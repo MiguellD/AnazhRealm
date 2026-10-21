@@ -261,6 +261,10 @@ const FORBIDDEN = [
     { token: "_paintStudioAtlasCells", fiel: "W6 — das Umdrehen im Haupt-Thread (Studio-Layout lädt ohne Umdrehen)" },
     { token: "_reframeImpostorFlat", fiel: "W6 — der Rahmen reist je Instanz (aRahmen)" },
     { token: "_bakeImpostorSilhouetteCanvas", fiel: "W6 — die Silhouette erreichte das Auge nie" },
+    { token: "anopyShell", fiel: "N7.4 — Foundry-Wald und Fern-Ring tragen die Ferne" },
+    { token: "CANOPY_SHELL", fiel: "N7.4" },
+    { token: "anopyStreaming", fiel: "Licht K3 — das Kronen-Kachel-Streaming lief nie (Schalter aus, kein Schreiber)" },
+    { token: "canopyChunk", fiel: "Licht K3" },
     { token: "_buildImpostorCrossGeometry", fiel: "W6 — EIN Einheits-Quad (_impostorQuad)" },
     { token: "impostorKey", fiel: "W6 — EIN Karten-Material (impostorAtlas)" },
     { token: "_rec.frame", fiel: "W6 — die Programm-Konstante der Sichthöhe (|aKarte.w|, der Stempel der L1-Höhe)" },
@@ -1434,7 +1438,6 @@ const ENTSORGUNG_BESITZER = {
     _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
-    _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
         arten: ["material"],
         // K13: auch am Ende von Auftrag und Last — die EINE Räum-Methode

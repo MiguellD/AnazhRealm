@@ -1247,7 +1247,6 @@ class AnazhRealm_dirigent_takt {
         setze(D.fade0);
         setze(st.waterLevel);
         setze(st.foundryCrossfade === true);
-        setze(!!(st.atmosphere && st.atmosphere.treeLOD === false));
         setze(st.useOcclusionDemotion !== false);
         setze(st.voxelTerrainActive === true);
         if (neu) W.stempel++;
@@ -1281,7 +1280,7 @@ class AnazhRealm_dirigent_takt {
     }
 
     // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
-    // archLOD/canopy/waterCA/dirtyChunks) laufen immer, die budgetierten durch `_dispatchFrameJobs`.
+    // archLOD/waterCA/dirtyChunks) laufen immer, die budgetierten durch `_dispatchFrameJobs`.
     // `_frameOverBudget` ist die FOLGE des Schedulers (Budget leer).
     _runFrameScheduler(playerPos) {
         const st = this.state;
@@ -1309,7 +1308,6 @@ class AnazhRealm_dirigent_takt {
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
-        this._tickCanopyStreaming();
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt

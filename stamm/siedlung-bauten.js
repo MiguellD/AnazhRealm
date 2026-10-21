@@ -71,7 +71,7 @@ class AnazhRealm_siedlung_bauten {
     // IHRE 3m-Zelle; _occlusionOccludes marschiert die Sichtlinie hindurch. Periodisch (throttled), da
     // Bäume streamen; architectures ist streaming-bounded → der Loop bleibt klein.
     // Siehe _chooseLODForDistance (Hysterese aus LOD_DISTANCES) und _tickArchitectureLOD
-    // (≤ maxSwitchesPerFrame Wechsel/Frame; Flag state.atmosphere.treeLOD; blockerAABBs bleiben).
+    // (≤ maxSwitchesPerFrame Wechsel/Frame; blockerAABBs bleiben).
     _rebuildOcclusionGrid() {
         const O = AnazhRealm.OCCLUSION;
         let grid = this._occlGrid;
@@ -136,8 +136,6 @@ class AnazhRealm_siedlung_bauten {
     // Maske misst vom Auge, misst die Wahl vom Spieler, steht in der Verfolger-Kamera (9,6 m Arm) die Stufe ohne den Partner,
     // zu dem ihre Maske blendet (K36, Genesis: 9 halbe Tore und Ruinen im Bild).
     _tickArchitectureLOD(maxSwitchesPerFrame = 5, auge = null) {
-        const atmo = this.state.atmosphere;
-        if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
         // in der Ankunft aus der Ferne (B2: vor dem Bild und im Gleiten) wechselt die Wahl mit der Maske Schritt (`uLodPerf`)

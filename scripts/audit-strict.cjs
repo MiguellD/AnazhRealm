@@ -290,7 +290,6 @@ async function auditStateAndMethods() {
                 "_caTickCount", // V18.292 — Fluss-Re-Mesh-Throttle-Zähler, `(x||0)+1` lazy-init
                 // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
                 "hydroTiles",
-                "canopyChunks",
                 "bakedRegionFields",
                 "scatterRegions",
                 "scatterPromoted",

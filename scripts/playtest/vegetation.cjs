@@ -828,10 +828,7 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (G1) Helper existiert
-        out.helperExists = typeof r._growTreeBlueprint === "function";
-
-        if (out.helperExists) {
+        {
             // (G2) Determinismus: gleiche seed → gleiche parts
             const p1 = r._growTreeBlueprint("eiche", "seed-a");
             const p2 = r._growTreeBlueprint("eiche", "seed-a");
@@ -915,7 +912,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         return out;
     });
 
-    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
     check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
     check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
@@ -1021,12 +1017,11 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 }
 
 // Gigant-Restsubschritte: Ω-K2 Baum-Füße · Ω-W vertieftes Wind · Ω-H Promotion-Provenienz ·
-// Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
+// (die Canopy-Shell fiel, N7.4: gate:altlasten).
 async function checkBandV18212GigantRestsubschritte(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // ─── Ω-K2 BAUM-FÜSSE ───
@@ -1095,17 +1090,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             }
         }
 
-        // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
-        // Methoden · State · Restore-Pfad).
-        out.cConstGone = !A.CANOPY_SHELL;
-        out.cMethodsGone =
-            typeof r._ensureCanopyShell === "undefined" &&
-            typeof r._buildCanopyShell === "undefined" &&
-            typeof r._disposeCanopyShell === "undefined";
-        out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
-        out.cRestoreClean = window.__fehlt(r._loadStateRestoreWorldMeta, /_disposeCanopyShell/);
-
         return out;
     });
 
@@ -1125,12 +1109,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         );
         check("V18.212 (H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
     }
-
-    // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
-    check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
-    check("N7.4 (C2) Canopy-Shell-Methoden geschnitten (ensure/build/dispose weg)", res.cMethodsGone === true);
-    check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
-    check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
@@ -1144,8 +1122,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const out = {};
 
         // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 6 Baum-Spezies, kein Totholz ─────
-        out.variationExists = !!A.SPECIES_TAG_VARIATION;
-        if (out.variationExists) {
+        {
             const v = A.SPECIES_TAG_VARIATION;
             out.variationAllSpecies =
                 !!v.baum_tanne &&
@@ -1218,7 +1195,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         return out;
     });
 
-    check("V18.215 (W1a) SPECIES_TAG_VARIATION existiert", res.variationExists === true);
     check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
@@ -1827,7 +1803,7 @@ async function checkBandV18218LODStufen(ctx) {
 }
 
 // Gigant-Vollendung (eine Wand-Funktion): LOD-Activation per Frame · GPU-Feld-Bake-Region-Cache ·
-// Scatter-Bitmask + Cap + Lookup · Ω-H Promotion + Snapshot · Canopy-Chunk-Streaming — jeder
+// Scatter-Bitmask + Cap + Lookup · Ω-H Promotion + Snapshot — jeder
 // Helper mit echtem Konsumenten im Loop oder Spawn-Pfad.
 async function checkBandV18219bisVollendung(ctx) {
     const { page, check } = ctx;
@@ -1839,7 +1815,6 @@ async function checkBandV18219bisVollendung(ctx) {
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
         // KONSUM: ein Takt des Loops (Phasen → Frame-Scheduler → Job-Registry) ruft den LOD-Tick.
         out.lodTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickArchitectureLOD", [performance.now()]);
-        out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
         // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
         // Studio-Pfad die Stufe OHNE Typ-Wechsel (by design) → lokaler Hook.
@@ -1888,32 +1863,11 @@ async function checkBandV18219bisVollendung(ctx) {
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
 
-        // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
-        out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
-        out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
-        const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
-        try {
-            r.state.atmosphere.canopyStreaming = true;
-            const mesh = r._canopyEnsureChunk(2, 3);
-            out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
-            if (mesh) {
-                out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
-                out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
-                out.canopyMeshInMap = !!(r.state.canopyChunks && r.state.canopyChunks.has("2,3"));
-            }
-            const disposed = r._canopyDisposeChunkByKey("2,3");
-            out.canopyDisposed = disposed === true;
-            out.canopyMeshGoneFromMap = !!(r.state.canopyChunks && !r.state.canopyChunks.has("2,3"));
-        } finally {
-            if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
-        }
-
         return out;
     });
 
     // V18.218.1 LOD-Activation
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
-    check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
         "V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
         res.spawnedEntryHasLodFields === true
@@ -1934,18 +1888,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.220 (S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
 
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
-
-    // V18.222 Canopy chunk-streaming
-    check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
-    check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
-    check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
-    check("V18.222 (C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
-    check("V18.222 (C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
-    check("V18.222 (C11) Canopy-Mesh in state.canopyChunks-Map", res.canopyMeshInMap === true);
-    check(
-        "V18.222 (C12) Disposal entfernt das Mesh aus der Map",
-        res.canopyDisposed === true && res.canopyMeshGoneFromMap === true
-    );
 }
 
 // Echter Scatter + echte Promotion: ferner Wald als InstancedMesh-Streu (Dichte-Band) + Touch→Real-

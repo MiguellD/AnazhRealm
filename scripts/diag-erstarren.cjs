@@ -65,7 +65,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 "_tickArchitectureLOD",
                 "_tickPendingVegSpawns",
                 "_tickPortalMembranes",
-                "_tickCanopyStreaming",
                 "_tickWorldWaterCA",
                 "_tickDirtyVoxelChunks",
                 "_dispatchFrameJobs",

@@ -161,9 +161,6 @@ class AnazhRealm_speicher_laden {
         // Der soul-keyed Scent-sizeFactor-Cache wird am Welt-Wechsel geleert: eine andere Welt kann
         // CREATURE_SOULS-Custom-Definitionen austauschen.
         if (this._scentSizeBySoul) this._scentSizeBySoul.clear();
-        // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
-        // baut den 3×3-Ring der neuen Welt lazy nach.
-        if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
         // V18.224 — Scatter-Regionen disposen (welt-spezifisch, an worldSeed +
         // gebackene Felder gebunden). _tickScatterStreaming re-streut die neue
         // Welt lazy. Die promoteten Cells (echte Bäume) reisen via Snapshot.
