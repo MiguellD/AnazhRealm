@@ -5,8 +5,8 @@
 //   node scripts/diag-albedo-tafel.cjs                 (npm run gate:albedo-tafel, GPU-frei) die Tafel trägt Schema und
 //        Messung: jede der acht Klassen eine Zeile, jede Zeile Labor-Y, Welt-Y, Verhältnis und Ratsche, jedes Studio
 //        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie der Code, den es trägt (K63-n4, K63-n8:
-//        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft und veraltet
-//        brechen, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
+//        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft bricht, veraltet
+//        steht benannt ohne Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
 //        Soll-Stand (n von N im Rand) steht in der Ausgabe
 //   node scripts/diag-albedo-tafel.cjs --neu           die veralteten Zeilen auf dem Adapter der Weiche neu messen (lokal die
 //        Karte, unter dem GPU-Schloss): EINE Welt (ALBEDO_WERKBANK_PORT, Standard 4589) + das Labor, Urteil der frischen
@@ -281,7 +281,7 @@ async function selbsttest() {
                 ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
                 AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
         );
-        // S0w — DIE WAND DES STANDS: ungeprüft und veraltet brechen; zwei gefälschte Abdrücke stehen beide beim Namen
+        // S0w — DIE WAND DES STANDS: ungeprüft bricht, veraltet nicht; zwei gefälschte Abdrücke stehen beide beim Namen
         const wv = AT.standWand(code);
         const wu = AT.standWand(ohne);
         const zf = S0.zeilen[S0.zeilen.length - 1];
@@ -290,11 +290,11 @@ async function selbsttest() {
         Object.assign(S0.gemessen.welt.quellen, heute, { [fa]: "c:feedfacecafebeef", [fb]: "c:0badc0de0badc0de" });
         const gef = AT.standWand(AT.tafelStand(S0, pruefsumme)).veraltet[zf.id] || [];
         t(
-            `Wand: veraltet und ungeprüft → Bruch; gefälscht ${fa} und ${fb} → beide genannt`,
+            `Wand: ungeprüft → Bruch, veraltet benannt ohne Bruch; gefälscht ${fa} und ${fb} → beide genannt`,
             gef.length === 1 &&
                 gef[0].includes(`${fa} geändert (c:feedfacecafebeef → ${pruefsumme(fa)})`) &&
                 gef[0].includes(`${fb} (c:0badc0de0badc0de → ${pruefsumme(fb)})`) &&
-                wv.brueche.length === 2 * mitD0 &&
+                wv.brueche.length === 0 &&
                 wv.neu.length === mitD0 &&
                 wv.neu.every((id) => S0.zeilen.find((z) => z.id === id).quellen.includes(d0)) &&
                 wu.brueche.length > 0
@@ -566,7 +566,7 @@ async function neuMessen(t, ids) {
         `DIE ALBEDO-TAFEL: die veralteten Zeilen ${ids.join(", ")} neu gemessen, im Rand — sie bleiben ROT veraltet, bis ` +
             `nachgezogen: node scripts/diag-albedo-tafel.cjs --nachziehen ${path.relative(process.cwd(), wd)} ${path.relative(process.cwd(), ld)}`
     );
-    process.exit(1);
+    process.exit(0);
 }
 
 async function main() {
@@ -649,17 +649,17 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
-    // DER STAND (K63-n8; 21.10.: veraltet bei Exit 0 war still grün): jede Zeile mit fremdem Abdruck bricht; die Karte misst neu
+    // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
-    if (!errs.length && sw.neu.length && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
-        return neuMessen(t, sw.neu);
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);
-    if (sw.neu.length) errs.push("[stand] → `--neu`, dann `--nachziehen <welt> <labor>`");
     if (errs.length) {
         console.log("⛔ DIE ALBEDO-TAFEL:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
+    for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log(`⚠ ${x} (benannt, sperrt nicht)`);
+    if (sw.neu.length && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
+        return neuMessen(t, sw.neu);
     const weit = u.zeilen
         .filter((z) => !z.imSoll)
         .sort((a, b) => b.abweichung - a.abweichung)

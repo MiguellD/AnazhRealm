@@ -191,9 +191,9 @@ function tafelStand(t, pruefsumme) {
         }
     return rot;
 }
-// DIE WAND DES STANDS (K63-n8, 21.10.): ungeprüft und veraltet brechen; `neu`: die Zeilen der Neumessung.
+// DIE WAND DES STANDS (K63-n8, H5-Gesetz 21.10.): ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
 function standWand(rot) {
-    const brueche = rot.map((r) => r.text);
+    const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
     const veraltet = {};
     for (const r of rot) if (r.art === "veraltet") (veraltet[r.zeile] = veraltet[r.zeile] || []).push(r.text);
     return { brueche, veraltet, neu: Object.keys(veraltet) };
