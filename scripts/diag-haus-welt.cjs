@@ -362,7 +362,9 @@ async function proben(phasen) {
         o.haeuser.push(h);
         // die Stufe 0 holen: der Spieler steht am Haus, bis die Foundry die Hülle der Stufe 0 liefert
         stell(e.position.x, e.position.y + 3, e.position.z);
-        for (let k = 0; k < 40 && !(e._servedLod === 0); k++) await pumpe(10);
+        // im Bau-Ereignis, nie in Takten
+        const l0 = () => e._servedLod === 0 && !!e._hausHuelle && e._hausHuelle.stufe === 0;
+        await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: () => pumpe(10), max: 40 }).catch(() => null);
         h.stufe = e._servedLod;
         h.huelle = e._hausHuelle ? e._hausHuelle.stufe : null;
         const Hh = gesetz(e);
