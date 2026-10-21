@@ -1,21 +1,10 @@
-// diaet-linse.cjs — DIE DIÄT-LINSE (Welle K, 07.10.): was die Observer-Diät und die Bundles je gerendertem Frame im
-// echten Loop arbeiten — und was davon NETTO ihre Arbeit ist. Befund 07.10. (Mess-Wiese, echte GPU, Stand): das
-// OMEN-Profil führte `_diaetRefresh` mit 3,77 ms und `_renderBundles` mit 3,43 ms je Frame; beide Zeiten sind
-// INKLUSIV und tragen denselben verschachtelten Schatten-Render — er startet am ersten Licht-Empfänger mitten im
-// Replay (Pfad szene › replay › Prüfung › Gang › Vorher-Knoten des Schattens), netto 5–9 ms bei 1,3–1,4 Kaskaden je
-// Frame, die Diät selbst netto 0,7 (Prüfung) + 1,0 (Gang) ms, der Replay 0,1 ms. Die Linse zählt und zieht jeden
-// verschachtelten Bereich vom äußeren ab:
-//   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten, geteilte Gruppen und fremde Verweise
-//                  (und wie viele davon einen Knoten oder eine Gruppe im SELBEN Render-Abschnitt wiederholen) · Uploads geteilter
-//                  und eigener Gruppen · writeBuffer · Replay-Bürger · Renders
-//   Netto je Frame: Prüfung · Gang · Replay · Aufnahme · Voll-Refresh (Knoten · Bindungen · Geometrie) · Schatten-
-//                  Render · Szene — und WO der Schatten-Render startet (Pfad der umschließenden Bereiche)
-// Urteil (Gebot 7): im Stand wiederholt die Diät keinen Gang (je Knoten und geteilter Gruppe EINMAL je Render-Abschnitt), und
-// jeder Voll-Refresh trägt eine Änderung zur GPU (K71, 15.10.: ohne Änderung = kein Gruppen-Upload, kein neuer Puffer, keine
-// Textur, jedes geschriebene Byte gleich dem dort liegenden — am Kopf vor K71 an Genesis Third jeder Satz in jedem Render, weil
-// sein Ausschnitt je Pass wechselt, und jede Nah-Wiesen-Senke, deren Version ohne neue Matrizen stieg; Täter beim Namen).
-//
-// DAS REGISTER: hinter dem Tor (`_diaetVorTextur`) prüft ohne Stand OHNE MELDUNG (an der Basis jedes Render-Objekt).
+// diaet-linse.cjs — DIE DIÄT-LINSE: was die Diät und die Bundles je gerendertem Frame im echten Loop arbeiten. Zahl je Frame:
+// Prüfungen · voll geprüft (hinter dem Tor des Registers, `_diaetVorTextur`; gemeldet = mit Stand) ·
+// Lage-Vergleiche (nur das Bewegliche) · Voll-Refreshs (Grund) · Gänge über Vorher-Knoten, Knoten, geteilte Gruppen, fremde
+// Verweise (und ihre Wiederholung im SELBEN Render-Abschnitt) · Uploads · writeBuffer · Replay-Bürger · Renders; netto je Bereich
+// (verschachtelte abgezogen) und WO der Schatten-Render startet. Urteil (Gebot 7) im Stand: kein Gang zweimal, jeder Voll-Refresh
+// trägt eine Änderung zur GPU (jedes geschriebene Byte neu), keine Prüfung ohne Meldung (an der Basis ohne Register jede); immer:
+// ein ruhendes statisches Render-Objekt steht an seiner Lage (sonst REGUNG OHNE MELDUNG).
 //   Seite:     window.__diaetLauf({ frames: 90, modus: "ruhe"|"drehen"|"gehen", grad: 1, tiere: "halten"|"frei" })
 //   Werkbank:  node scripts/werkbank.cjs diaet [frames] [--modus ruhe] [--tiere halten] | diaet --selbsttest
 
@@ -124,6 +113,17 @@ function diaetZaehler() {
         }
         bekannt.add(ro);
         return roh.vt.apply(this, a);
+    });
+    haken("ruhig", A, "_diaetRuhig", function (obs, ro, rr, rid) {
+        const v = roh.ruhig.call(this, obs, ro, rr, rid);
+        if (c && ro._anazhBeweglich) {
+            zaehle("lageVergleich");
+            c.lageW[nameVon(ro)] = (c.lageW[nameVon(ro)] || 0) + 1;
+        } else if (c && v && ro._anazhOd.worldMatrix.equals(ro.object.matrixWorld) !== true) {
+            zaehle("regungOhne");
+            c.regungO[nameVon(ro) + " Lage"] = 1;
+        }
+        return v;
     });
     haken("schreib", A, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
         imGang++;
@@ -260,7 +260,7 @@ function diaetZaehler() {
         return roh.ubs.apply(this, a);
     });
     return {
-        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
+        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, lageW: {}, regungO: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
         aus: () => (c = null),
         zurueck: () => zurueck.forEach((z) => z()),
     };
@@ -343,6 +343,8 @@ function diaetLauf(opts) {
             vollGrund: top(mittel("grund"), 12),
             ohneAenderung: top(mittel("ohne"), 12),
             ohneMeldung: top(mittel("ohneM"), 8),
+            lageVergleich: top(mittel("lageW"), 10),
+            regungOhne: top(mittel("regungO"), 8),
         };
     })();
 }
@@ -368,6 +370,7 @@ function diaetUrteil(e) {
             );
         if (z.ohneMeldung > 0.5) v.push(`RUHE: ${z.ohneMeldung} Prüfungen ohne Meldung je Frame (${e.ohneMeldung.join(" · ")}) — die Diät fragt`);
     }
+    if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Tor ruhte, das Bild trüge die alte Lage`);
     return v;
 }
 
@@ -385,6 +388,7 @@ function selbsttest() {
             /RUHE: 6\.5 Refreshs ohne Änderung je Frame \(bauSatz: 1\.7 · nahWiese:L2:0:0: 0\.3\)/,
         ],
         ["Prüfung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, ohneMeldung: 85 }, ohneMeldung: ["Ring: 12"] }), /RUHE: 85 Prüfungen ohne Meldung je Frame \(Ring: 12\)/],
+        ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
     ];
     for (const [name, e, muss] of faelle) {
         const u = diaetUrteil(e);

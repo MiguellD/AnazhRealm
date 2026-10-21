@@ -186,8 +186,23 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // (16 Zahlen, nur wer sich bewegen KANN), die Verweise je Objekt (10), die Knochen.
 AnazhRealm._regungN = 0;
 AnazhRealm._regt = function (q) {
-    q._anazhRegung = ++AnazhRealm._regungN;
-    return q._anazhRegung;
+    const n = ++AnazhRealm._regungN;
+    q._anazhRegung = n;
+    AnazhRealm._regtHalter(q, n);
+    return n;
+};
+// DER HALTER hört die Regung seiner Quelle mit (`_anazhHaltR`) — die Werfer-Hülle eines Bündels die Puffer und die Sicht seiner
+// Kinder (`_bundleWerferHuelle`, der Leser der Pass-Sicht). Die Sicht einer Senke (`_instanzZahl`) meldet nur den Haltern.
+AnazhRealm._regtHalter = function (q, n) {
+    const h = q._anazhHalter;
+    if (h === undefined) return;
+    const z = n === undefined ? ++AnazhRealm._regungN : n;
+    for (let i = 0; i < h.length; i++) h[i]._anazhHaltR = z;
+};
+AnazhRealm._regungHalter = function (q, h) {
+    const l = q._anazhHalter;
+    if (l === undefined) q._anazhHalter = [h];
+    else if (l.indexOf(h) < 0) l.push(h);
 };
 // DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an
 // BufferAttribute und InterleavedBuffer; Index und Instanz-Puffer sind BufferAttribute) — er meldet die Regung mit.
@@ -211,11 +226,26 @@ AnazhRealm._regungMelder = function (T, log) {
         set.__anazhRegung = true;
         Object.defineProperty(p, "needsUpdate", { configurable: true, enumerable: d.enumerable, get: d.get, set });
     }
+    // DIE LAGE DES STATISCHEN: three rechnet die Matrix eines Objekts mit matrixAutoUpdate = false nur, wenn sein Schreiber
+    // updateMatrix ruft — der EINE Ort, an dem ein Statisches rückt, meldet es
+    const O = T.Object3D && T.Object3D.prototype;
+    if (!O || typeof O.updateMatrix !== "function")
+        log("REGISTER: r184-Object3D.updateMatrix nicht gefunden (Vendor-Drift)", "ERROR");
+    else if (O.updateMatrix.__anazhRegung !== true) {
+        const roh = O.updateMatrix;
+        O.updateMatrix = function () {
+            roh.call(this);
+            if (this.matrixAutoUpdate === false) AnazhRealm._regt(this);
+        };
+        O.updateMatrix.__anazhRegung = true;
+    }
 };
 // DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
-// Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN (eine Kette mit
-// matrixAutoUpdate bis zur Szene: three rechnet ihre Welt-Matrix jeden Frame neu, ohne Signal). STÄNDIG (kein Stand, jede Prüfung
-// voll) bleibt, was nur equals() je Render-Objekt sieht: Morph-Gewichte, die Karten der Spot-Lichter, die Mitte eines Sprites.
+// Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN: BEWEGLICH ist eine Kette
+// mit matrixAutoUpdate bis zur Szene (three rechnet ihre Welt-Matrix jeden Frame neu, ohne Signal — der Leib, die Tiere, das
+// Fahrzeug, der Himmel am Auge), STATISCH eine Kette ohne (die Bündel der Welt, `_archRegionBundleFor`): sie fällt aus dem
+// Lage-Vergleich, ihre Glieder melden über updateMatrix. STÄNDIG (kein Stand, jede Prüfung voll) bleibt, was nur equals() je
+// Render-Objekt sieht: Morph-Gewichte, die Karten der Spot-Lichter, die Mitte eines Sprites.
 AnazhRealm._diaetStand = function (obs, ro, od, md) {
     ro._anazhR = AnazhRealm._regungN;
     const obj = ro.object;
@@ -228,9 +258,14 @@ AnazhRealm._diaetStand = function (obs, ro, od, md) {
     ro._anazhIx = ro.geometry ? ro.geometry.index : undefined;
     ro._anazhIM = senke ? senke.instanceMatrix : undefined;
     ro._anazhIC = senke ? senke.instanceColor : undefined;
+    const kette = [];
     let kann = false;
-    for (let o = obj; o && o.isScene !== true && !kann; o = o.parent) kann = o.matrixAutoUpdate !== false;
+    for (let o = obj; o && o.isScene !== true && !kann; o = o.parent) {
+        kann = o.matrixAutoUpdate !== false;
+        kette.push(o);
+    }
     ro._anazhBeweglich = kann;
+    ro._anazhKette = kann ? null : kette;
 };
 // DAS TOR: trägt das Render-Objekt einen Stand und meldete keine seiner Quellen seither eine Regung (Attribute, die sein Programm
 // liest · Index · Instanz-Puffer · Programm · Stoff), ruht es — kein Nachschlag, kein equals(). Den Bau-Wechsel meldet r184 selbst
@@ -257,7 +292,9 @@ AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
         return false;
     const k = nbs._anazhGang;
     let og = obs.hasAnimation === true;
-    if (ro._anazhBeweglich === true && ro._anazhOd.worldMatrix.equals(obj.matrixWorld) !== true) {
+    if (ro._anazhBeweglich !== true) {
+        for (const o of ro._anazhKette) if (o._anazhRegung > r) return false;
+    } else if (ro._anazhOd.worldMatrix.equals(obj.matrixWorld) !== true) {
         ro._anazhOd.worldMatrix.copy(obj.matrixWorld);
         og = true;
     }

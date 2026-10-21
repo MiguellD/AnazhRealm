@@ -291,12 +291,23 @@ class AnazhRealm_siedlung_satz {
         const u = bg.userData;
         const takt = this._shadowFrame || 0;
         if (u._werferTakt === takt && u._werferHuelle !== undefined) return u._werferHuelle;
+        // DAS REGISTER (E-Bauart): die Hülle STEHT, solange das Bündel nicht neu aufnimmt (seine Version), keines seiner Kinder
+        // Puffer oder Sicht meldete (der Halter, `_anazhHaltR`) und jedes statisch ist — kein Gang über die Kinder je Schatten-Takt
+        if (u._werferR !== undefined && u._werferV === bg.version && !(bg._anazhHaltR > u._werferR)) {
+            u._werferTakt = takt;
+            return u._werferHuelle;
+        }
         const box = u._werferBox || (u._werferBox = new THREE.Box3());
         box.makeEmpty();
-        const spur = this._wfSpur || (this._wfSpur = { h: 0, neu: false });
+        const spur = this._wfSpur || (this._wfSpur = { h: 0, neu: false, bg: null, beweglich: false });
         spur.h = bg.children.length | 0;
         spur.neu = false;
+        spur.bg = bg;
+        spur.beweglich = false;
+        const r0 = AnazhRealm._regungN;
         for (const c of bg.children) this._werferBoxDazu(box, c);
+        u._werferV = bg.version;
+        u._werferR = spur.beweglich ? undefined : r0;
         if (spur.neu || u._werferSig !== spur.h || u._werferStand === undefined) {
             u._werferSig = spur.h;
             u._werferStand = (u._werferStand | 0) + 1;
@@ -309,9 +320,13 @@ class AnazhRealm_siedlung_satz {
     }
     _werferBoxDazu(box, o) {
         // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
-        if (!o || o.visible === false || o.isInstanzZeichner === true) return;
-        const g = o.geometry;
+        if (!o || o.isInstanzZeichner === true) return;
         const spur = this._wfSpur;
+        // das Register: das Bündel hört Sicht und Puffer jedes Kindes; ein Kind mit matrixAutoUpdate hält die Hülle im Gang
+        AnazhRealm._regungHalter(o, spur.bg);
+        if (o.matrixAutoUpdate !== false) spur.beweglich = true;
+        if (o.visible === false) return;
+        const g = o.geometry;
         spur.h = Math.imul(
             spur.h ^ (o.id * 4 + (o.castShadow === true ? 2 : 0) + (o.isMesh === true ? 1 : 0)),
             0x9e3779b1
@@ -319,6 +334,7 @@ class AnazhRealm_siedlung_satz {
         spur.h = Math.imul(spur.h ^ o.children.length, 0x85ebca6b);
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;
+            AnazhRealm._regungHalter(im || g.attributes.position, spur.bg);
             const mw = o.matrixWorld.elements;
             const ud = o.userData;
             const ver = im ? im.version : g.attributes.position.version;
@@ -769,6 +785,7 @@ class AnazhRealm_siedlung_satz {
             mesh.userData.bauSatz = satz;
         } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
+            mesh.matrixAutoUpdate = false; // STATISCH (E-Bauart): die Lage der Gruppe liegt in ihren Instanz-Matrizen
             bundle.add(mesh);
             AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);
             bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
@@ -890,6 +907,7 @@ class AnazhRealm_siedlung_satz {
             parent.remove(g.mesh);
             parent.add(next);
             if (parent.isBundleGroup) {
+                next.matrixAutoUpdate = false; // STATISCH wie die Gruppe vor ihr (E-Bauart)
                 AnazhRealm._buendelKinderReihe(parent, this._buendelAuge);
                 parent.needsUpdate = true;
             }

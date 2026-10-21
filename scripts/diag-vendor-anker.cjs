@@ -282,6 +282,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
     // DAS REGISTER (Melder und Tor)
     { file: "vendor/three.core.min.js", sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
+    { file: "vendor/three.core.min.js", sub: "this.matrixWorldNeedsUpdate=!0}updateMatrixWorld(t){this.matrixAutoUpdate&&this.updateMatrix(),", organ: "AnazhRealm._regungMelder (updateMatrix)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGeometry(e){this.geometry=e,this.attributes=null,this.attributesId=null}getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (Bau-Wechsel, gelesene Attribute)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
     // Bereichs-Anfang (updateRanges → queue.writeBuffer(offset)); ohne diese Bahn lüde jeder Chunk den ganzen Satz.
