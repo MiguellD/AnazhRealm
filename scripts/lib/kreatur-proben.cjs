@@ -2797,7 +2797,9 @@ async function kreaturProben(r, T, opts) {
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         let stall = null;
         try {
-            for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && leiber().length < sollSumme;) {
+            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`)
+            const offen = () => leiber().length < sollSumme || r._weltOffen().leiber > 0;
+            for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && offen();) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
@@ -2948,7 +2950,7 @@ async function kreaturProben(r, T, opts) {
             }
             if (Math.abs(stunde - 2) < 0.05) z.schmiede2 = anStation();
         }
-        // gezählt wird nur ein Leib mit Leib-Löser (Rig), der im Tag ging (> 0,5 m Weg)
+        // gezählt: ein Leib mit Rig, der im Tag ging
         const gegangen = (g) => weg.get(g) > 0.5 && !!g.userData.rig;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         const q3 = (v) => Math.round(v * 1000) / 1000;

@@ -384,11 +384,13 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas) — jede Linse liest SIE, nie die Marken; wer „nichts offen" fragt, liest JEDES Feld.
+    // zur Lieferung in den Atlas) und die Leiber der Bewohner, deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist —
+    // `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
-        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0 }); // je Takt, ohne Müll
+        const o =
+            this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, leiber: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -403,6 +405,10 @@ class AnazhRealm_dirigent_takt {
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        o.leiber = 0;
+        if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
+            for (const S of this._bewohnerSiedlungen.values())
+                for (const b of S.liste || []) if (b.leib && !b.drinnen && !b.leib.userData._kzVersuch) o.leiber++;
         return o;
     }
     _weltSteht() {

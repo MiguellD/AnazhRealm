@@ -2124,9 +2124,10 @@ class AnazhRealm_siedlung_ort {
                     echt &&
                     !b.drinnen &&
                     (u._kzNah === undefined ||
-                        (u._kzNah === true ? bd2 >= N.aus * N.aus : bd2 < N.ein * N.ein || !u._kzVersuch))
+                        !u._kzVersuch ||
+                        (u._kzNah === true ? bd2 >= N.aus * N.aus : bd2 < N.ein * N.ein))
                 )
-                    this._kzLeib(g, p);
+                    this._kzLeib(g, p, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
                 // DER NAH-KREIS (diesseits trägt kein Feld; ohne Bild jeder): darin der Satz, die Nächsten leben (`nahM`);
                 // wer drinnen ist, steht in keinem Kreis
                 const kreis = !b.drinnen && (!echt || u._kzNah === true);
