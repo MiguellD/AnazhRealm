@@ -1856,9 +1856,10 @@ async function korpusSatz(a) {
     const t0 = performance.now();
     await r.maybeAnswerWithLlm(a.satz, (z) => r._chatEcho(z));
     Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
-    for (const ende = t0 + a.fensterMs; !a.soll.still; ) {
+    // das Fenster zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
+    for (let gang = 0; !a.soll.still && gang <= a.fensterMs / 100; gang++) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
-        if (e.praedikat || performance.now() > ende) break;
+        if (e.praedikat) break;
         await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
     }
     Object.assign(e, { weltMs: e.praedikat ? Math.round(performance.now() - t0) : null, lauf: K.lauf });
