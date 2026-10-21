@@ -953,54 +953,27 @@ class AnazhRealm_studio_gestalt {
                 leaves.splice(i, 1, ...ecken);
             }
             if (zwillingsQuelle) {
-                // Nennt die Stufe einen WURF-TEIL (B2c `wurf.teil`, S3 — das EINE Wurf-Gesetz E1: Baum-L1 `teil: "schatten"`),
-                // wirft NUR dieses Teil: es ist selbst der Zwilling (SHADOW_TWIN_LAYER, Stempel 3 über `_foundrySchattenGeom`),
-                // im Hauptbild zeichnet es nie, jedes andere Teil wirft nicht. Fehlt das Teil, ist das ein Vertragsbruch
-                // (KERN-PFLICHT), nie still die ganze Stufe. Ohne Wurf-Zeile (Strauch) wirft jedes Teil ganz als Zwilling.
-                // DER WÄHLER IST FAIL-CLOSED (Gegenprüfung S3): eine Zeile `wurf` nennt ihr Teil beim Namen — ohne ihn träfe
-                // der Vergleich jedes Leaf ohne Teil (undefined === undefined), die ganze Stufe würfe still als Zwilling.
-                const wurf = this._foundryBudgetZeile(preset, lod).wurf;
-                const wurfTeil = wurf ? wurf.teil : null;
-                if (wurf && !(typeof wurfTeil === "string" && wurfTeil))
-                    AnazhRealm._kernPflichtBruch(
-                        "phyto:lod.budget." + preset + "[" + lod + "].wurf.teil (kein Teil-Name)"
-                    );
-                const n = leaves.length;
-                if (wurf) {
-                    let hat = false;
-                    for (let i = 0; i < n; i++) {
-                        const lf = leaves[i];
-                        if (lf.teil !== wurfTeil) continue;
-                        hat = true;
-                        const z = Object.assign({}, lf, {
-                            leafKey: lf.leafKey + "#S",
-                            castShadow: lf.teilWirft,
-                            shadowTwin: true,
-                            _schattenGeom: null,
-                        });
-                        z.geom = this._foundrySchattenGeom(z); // die gestempelte Gestalt gehört diesem Leaf (der Kehraus)
-                        leaves[i] = z;
-                    }
-                    if (!hat)
-                        AnazhRealm._kernPflichtBruch(
-                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (kein Teil " + wurfTeil + ")"
-                        );
-                } else
-                    for (let i = 0; i < n; i++) {
-                        const lf = leaves[i];
-                        leaves.push(
-                            Object.assign({}, lf, {
-                                leafKey: lf.leafKey + "#S",
-                                geom: this._foundrySchattenGeom(lf),
-                                // der Zwilling wirft nach dem Wurf-Recht des Teils, nie nach `lf.castShadow` (das ist bei
-                                // einer Zwillings-Quelle false: Sträucher würfen still keinen Schatten)
-                                castShadow: lf.teilWirft,
-                                shadowTwin: true,
-                                _eigen: false, // die Geometrie gehört dem Teil, nie dem Zwilling
-                                _schattenGeom: null,
-                            })
-                        );
-                    }
+                // Der Wurf der Stufe (`_foundryWurfWahl`, das EINE Wurf-Gesetz E1): ein genannter WURF-TEIL (Baum-L1 `teil:
+                // "schatten"`) wirft allein und ist selbst der Zwilling (SHADOW_TWIN_LAYER, Stempel 3 über `_foundrySchattenGeom`),
+                // im Hauptbild zeichnet er nie; ohne Wurf-Zeile (Strauch) wirft jedes Teil ganz als Zwilling. Der Zwilling wirft
+                // nach dem Wurf-Recht des Teils, nie nach `lf.castShadow` (bei einer Zwillings-Quelle false).
+                const w = this._foundryWurfWahl(
+                    preset,
+                    lod,
+                    leaves.map((lf) => lf.teil)
+                );
+                for (const i of w.wahl) {
+                    const lf = leaves[i];
+                    const z = Object.assign({}, lf, {
+                        leafKey: lf.leafKey + "#S",
+                        castShadow: lf.teilWirft,
+                        shadowTwin: true,
+                        _schattenGeom: null,
+                    });
+                    // ersetzt: die gestempelte Gestalt gehört dem Zwilling (der Kehraus); daneben: dem Teil, nie dem Zwilling
+                    if (w.ersetzt) leaves[i] = Object.assign(z, { geom: this._foundrySchattenGeom(z) });
+                    else leaves.push(Object.assign(z, { geom: this._foundrySchattenGeom(lf), _eigen: false }));
+                }
             }
             if (schatten && leaves.length) {
                 // Die Zwillings-Leaves der Wurf-Stufe, DIESELBEN Objekte (EIN Werfer je Gestalt); die Cache-Gruppe der

@@ -628,8 +628,8 @@ class AnazhRealm_stoff_instanz {
         const rend = this.state.renderer;
         const lod = this._foundryServierStufe(z.preset, 1);
         // DER WURF DER GESTALT (Licht K3, das EINE Wurf-Gesetz E1): die Sonnen-Kacheln zeichnen, was die Gestalt in der Welt
-        // wirft — die Stufe ihres Budgets (`schatten`, false = keine) und dort ihr Wurf-Teil (`wurf.teil`, ohne Zeile jedes
-        // werfende Teil); die Ansichten zeichnen, was das Auge sieht. Bis Licht K3 warf in den Kacheln das Laub der L1, in der
+        // wirft — die Stufe ihres Budgets (`schatten`, false = keine) und dort die Wahl des EINEN Wurf-Wählers
+        // (`_foundryWurfWahl`, mit dem Wurf-Recht des Teils); die Ansichten zeichnen, was das Auge sieht. Bis Licht K3 warf in den Kacheln das Laub der L1, in der
         // Welt ihr Wurf-Teil (12 Lagen): an der Naht trug die Karte im Richtlicht allein 0,6–3,1 × das Licht ihrer Gestalt.
         const ws = this._foundryBudgetZeile(z.preset, lod).schatten;
         const gruppe = (stufe) => {
@@ -651,7 +651,6 @@ class AnazhRealm_stoff_instanz {
         const gw = ws === false || ws === lod || !g ? g : gruppe(ws);
         if (g === false || gw === false) return false;
         if (g === undefined || gw === undefined) return null;
-        const wt = ws === false ? null : this._foundryBudgetZeile(z.preset, ws).wurf;
         const T = THREE;
         const core = globalThis.__phytoCore;
         const SZ = AnazhRealm.KARTE_SONNEN_SICHT;
@@ -682,8 +681,11 @@ class AnazhRealm_stoff_instanz {
                 dazu(c, B.wurzel);
                 rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
             }
-        if (ws !== false)
-            for (const c of flach(gw)) if (wt ? teil(c) === wt.teil : c.castShadow !== false) dazu(c, B.wurf);
+        if (ws !== false) {
+            const teile = flach(gw);
+            for (const i of this._foundryWurfWahl(z.preset, ws, teile.map(teil)).wahl)
+                if (teile[i].castShadow !== false) dazu(teile[i], B.wurf);
+        }
         B.wurzel.updateMatrixWorld(true);
         B.wurf.updateMatrixWorld(true);
         const vor = {
@@ -706,7 +708,7 @@ class AnazhRealm_stoff_instanz {
         cam.lookAt(0, fr.halfH, 0);
         cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
-        // Die Bühne hält still, was keine Gestalt ist: Wind, die zeitliche Laub-Kante, die Durchsicht (die Stufen-Maske hält
+        // Die Bühne hält still, was keine Gestalt ist: Wind und die Durchsicht (die Stufen-Maske hält
         // `_buehneRender`) — danach zurück auf den Welt-Stand.
         const lu = this.state.lodUniforms;
         const wu = this.state.windUniforms;
@@ -717,7 +719,6 @@ class AnazhRealm_stoff_instanz {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
-        still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
         if (!B.bereit) {

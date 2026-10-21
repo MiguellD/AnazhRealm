@@ -1534,6 +1534,21 @@ class AnazhRealm_studio_bruecke {
         for (const s of st) if (s !== lod && this._foundryBudgetZeile(preset, s).schatten === lod) return true;
         return false;
     }
+    // DER WURF-WÄHLER (B2c `wurf.teil`, S3 — das EINE Wurf-Gesetz E1): welche Teile der Stufe als Zwilling werfen. `teile`
+    // = der Teil-Name je Teil (Mesh-Gruppe oder Flat). → { ersetzt, wahl }: mit Wurf-Zeile wirft NUR das genannte Teil und
+    // ERSETZT sich als Zwilling (Baum-L1 `teil: "schatten"`), ohne sie wirft jedes Teil daneben (Strauch). FAIL-CLOSED: eine
+    // Zeile ohne Teil-Namen träfe jedes Teil ohne Namen (undefined === undefined) und ein fehlendes Teil ließe den Wurf
+    // still leer — beides KERN-PFLICHT. Leser: der Flatten (`_foundryFlattenFor`) und die Sonnen-Kacheln der Karte.
+    _foundryWurfWahl(preset, lod, teile) {
+        const wurf = this._foundryBudgetZeile(preset, lod).wurf;
+        const name = wurf ? wurf.teil : null;
+        const ort = "phyto:lod.budget." + preset + "[" + lod + "].wurf";
+        if (wurf && !(typeof name === "string" && name)) AnazhRealm._kernPflichtBruch(ort + ".teil (kein Teil-Name)");
+        const wahl = [];
+        for (let i = 0; i < teile.length; i++) if (!wurf || teile[i] === name) wahl.push(i);
+        if (wurf && !wahl.length) AnazhRealm._kernPflichtBruch(ort + " (kein Teil " + name + ")");
+        return { ersetzt: !!wurf, wahl };
+    }
     // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" · "huelle" — was die Art
     // jenseits der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
     // Mesh-Zug. Fail-closed: eine gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
