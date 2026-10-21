@@ -321,8 +321,8 @@ function wasserKoerper(opts) {
             // KAMERA unter dem Spiegel liegt — nie nach den Augen des Körpers. Zwei Fälle über der See-Mitte: (a) Kamera
             // 3 m unter dem Spiegel, die Augen des Körpers in der Luft; (b) Kamera 10 m darüber, die Augen getaucht.
             const cam = st.camera;
-            const luft = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
-            if (cam && luft && luft.U && luft.U.hoehe) {
+            const luft = r._luftEnsure();
+            if (cam) {
                 const camAlt = cam.position.clone();
                 const augenAlt = st.playerEyesUnderwater;
                 const modus = (camY, augen) => {
@@ -475,8 +475,8 @@ function wasserLicht(opts) {
         // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
         // der Spiegel des Wassers) am Horizont vor dem Tauchen und danach — der Tauchgang darf sie nicht färben.
         const camL = st.camera;
-        const luftL = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
-        if (camL && luftL && luftL.U && luftL.U.farbe) {
+        const luftL = r._luftEnsure();
+        if (camL) {
             const camAltL = camL.position.clone();
             const zeitAlt = st.timeOfDay;
             const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
@@ -1073,11 +1073,12 @@ function wasserBild(opts) {
         // trug die Probe ein anderes Gefühl — zwei Zustände (ruhig hell 0,9 % oder 6,7 %), je Lauf, nie je Adapter.
         const gefuehlAlt = U.emotion ? U.emotion.value : null;
         if (U.emotion) U.emotion.value = 0;
-        const irrAlt = U.irr.value.clone();
+        const WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         const lichtAlt = U.light.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
-            U.irr.value.setRGB(1, 1, 1);
+            WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+            r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π)
             U.light.value = 0;
             // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
             // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
@@ -1151,7 +1152,7 @@ function wasserBild(opts) {
         } finally {
             if (U.wind) U.wind.value = windAlt;
             U.time.value = zeitAlt;
-            U.irr.value.copy(irrAlt);
+            WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
             U.light.value = lichtAlt;
             himmelMittag(tagAlt, weltTagAlt);
             if (U.emotion) U.emotion.value = gefuehlAlt;

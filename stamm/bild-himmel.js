@@ -632,6 +632,7 @@ class AnazhRealm_bild_himmel {
             const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
+            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -1658,16 +1659,7 @@ class AnazhRealm_bild_himmel {
         const himmelFarbe = (dir) =>
             texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
-        const passUmgebung = Fn(() => {
-            const q = uv();
-            const phi = q.x
-                .sub(0.5)
-                .mul(2 * PI)
-                .toVar();
-            const el = q.y.sub(0.5).mul(PI).toVar();
-            const ce = el.cos().toVar();
-            return vec4(himmelFarbe(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
-        });
+        const passUmgebung = Fn(() => vec4(himmelFarbe(this._umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
         // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
@@ -1742,6 +1734,14 @@ class AnazhRealm_bild_himmel {
             tafelnFrisch: false,
         };
         return st.atmoLut;
+    }
+
+    // DIE RICHTUNG DER EQUIREKT-LAGE (die Umkehr von r184 `equirectUV`): uv → Einheits-Richtung, φ = (u − ½)·2π, Höhe = (v − ½)·π
+    // — so malt die Umgebung (`passUmgebung`), so tastet die Himmels-Sonde des Lichts der Welt ab (`_weltLichtHimmel`).
+    _umgebungRichtung(q) {
+        const phi = q.x.sub(0.5).mul(2 * Math.PI);
+        const el = q.y.sub(0.5).mul(Math.PI);
+        return THREE.TSL.vec3(el.cos().mul(phi.cos()), el.sin(), el.cos().mul(phi.sin()));
     }
 
     // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
@@ -2100,7 +2100,7 @@ class AnazhRealm_bild_himmel {
     // DIE BELICHTUNG AUS DEM LICHT (V18.507, S7): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV (die Kamera-Konvention
     // der Profi-Engines, UE5-Belichtungs-Bias +1; `BELICHTUNG.zielKarte` aus der Tonkurve). Die Karte steht der Sonne zugewandt
     // (D3-N2, Sunny 16: die Blende folgt dem Durchlass, nie dem Sinus der Höhe) und liest L = 0,18/π · E.
-    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`, dieselbe, die das Wasser liest) plus das Richtlicht, das
+    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`) plus das Richtlicht, das
     // die Waagrechte nicht nimmt — der Himmel aus der Bestrahlungs-Tafel der EINEN Atmosphäre an der Sonne DIESER Anwendung.
     // Bis S7 las sie den Himmel aus der zurückgelesenen Umgebung (eine Lesung nach der Malung): nach jedem Sprung der Uhr trug
     // der erste Frame die Belichtung der vorigen Stunde (bis 0,57 EV, Uhr 0,75); die erste Runde von S7 setzte den Himmel als
@@ -2252,8 +2252,7 @@ class AnazhRealm_bild_himmel {
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
     // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
-    // die jedes Material liest. EINE Rechnung für die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum
-    // leuchten im Licht des Orts); null, solange der Himmel des Orts noch nicht steht.
+    // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2323,6 +2322,24 @@ class AnazhRealm_bild_himmel {
         return L.betaRayleigh + Math.max(0, f.fog) * dunst + Math.max(0, f.rain) * regen;
     }
 
+    // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
+    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) über dem grauen Aerosol: blau
+    // verlischt zuerst, die Ferne nimmt den Farbton des Himmels an, der sie überstreut. Unter Wasser das Spektrum des
+    // Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis ferne-luft löschte die Luft grau (EIN Skalar β), ihr
+    // Himmel streute je Kanal (Linse: `werkbank licht --luft`, Δβ blau−rot 0 gegen die Referenz in spec).
+    _luftSpektrum(beta, unterWasser, out) {
+        if (unterWasser) {
+            const wK = (
+                AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+                AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ")
+            ).wK;
+            return out.set(wK[0] / wK[1], 1, wK[2] / wK[1]);
+        }
+        const M = this._atmoMedium(beta);
+        const k = 1000 * beta;
+        return out.set((M.betaR[0] + M.mieExt) / k, (M.betaR[1] + M.mieExt) / k, (M.betaR[2] + M.mieExt) / k);
+    }
+
     // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
     // der CPU-Leser DERSELBEN Uniforms, die der Knoten liest (Linsen, Fern-Wasser-Reichweite); ohne Szene das Gesetz
     // selbst (`_luftBeta` auf dem Bezugsniveau). Eine fehlende Augenhöhe ist ein Aufrufer-Fehler, nie 0.
@@ -2338,9 +2355,10 @@ class AnazhRealm_bild_himmel {
     }
 
     // Die Luft-Knoten (EINMAL je Szene): Uniforms in der geteilten renderGroup (Observer-Diät-Pflicht-Paar),
-    // `faktor(auge, punkt)` = 1 − e^{−τ} mit τ = β·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (k = Δy/H, k→0: 1 − k/2),
-    // `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung. `scene.fogNode` ist der Leser jedes
-    // Materials (r184 `getFogNode`), der Feld-Pass ruft dieselben Fn.
+    // `faktor(auge, punkt)` = 1 − e^{−τ} JE KANAL mit τ = β·s·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (s = `_luftSpektrum`,
+    // k = Δy/H, k→0: 1 − k/2), `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung.
+    // `scene.fogNode` ist der Leser jedes Materials (r184 `getFogNode`: es liest `output`), der Feld-Pass ruft dieselben
+    // Fn; r184 `fog()` mischt mit `factor.toFloat()` — darum mischt der Knoten selbst, je Kanal.
     _luftEnsure() {
         const st = this.state;
         if (st.luft) return st.luft;
@@ -2348,12 +2366,14 @@ class AnazhRealm_bild_himmel {
         const T = THREE.TSL;
         // Die Luft ist Pflicht jeder Szene: fehlen die TSL-Organe, ist der Vendor alt — laut, nie ein stiller Klar-Himmel
         // ohne Luft (und ohne Feld-Pass, der dieselben Knoten liest).
-        if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
-            throw new Error("Die Luft: THREE.TSL trägt fog/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
+        if (!T || !T.output || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
+            throw new Error("Die Luft: THREE.TSL trägt output/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
         const L = AnazhRealm.LUFT;
         const A = this._atmoLutBau();
+        const klar = this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny);
         const U = this._uniformHeimatTeilen({
-            beta: T.uniform(this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny)),
+            beta: T.uniform(klar),
+            spektrum: T.uniform(this._luftSpektrum(klar, false, new THREE.Vector3())),
             hoehe: T.uniform(L.skalenHoeheM),
             bezugY: T.uniform(0),
             farbe: T.uniform(new THREE.Color(0, 0, 0)),
@@ -2371,8 +2391,8 @@ class AnazhRealm_bild_himmel {
                 T.float(1).sub(T.exp(kSicher.negate())).div(kSicher)
             );
             const hoehenTerm = T.exp(auge.y.sub(U.bezugY).div(U.hoehe).negate());
-            const tau = U.beta.mul(hoehenTerm).mul(d).mul(fk);
-            return T.float(1).sub(T.exp(tau.negate()));
+            const tau = U.beta.mul(U.spektrum).mul(hoehenTerm).mul(d).mul(fk);
+            return T.vec3(1).sub(T.exp(tau.negate()));
         });
         // DIE IN-STREUUNG ist der Himmel selbst (D3): die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung — zur Sonne hin
         // trägt sie die Mie-Keule des Aerosols aus der Phase (g des Gesetzes), am Horizont das Blau der Rayleigh-Streuung;
@@ -2383,7 +2403,10 @@ class AnazhRealm_bild_himmel {
             const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
         });
-        st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
+        st.scene.fogNode = T.vec4(
+            T.mix(T.output.rgb, farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld)),
+            T.output.a
+        );
         st.luft = { U, faktor, farbe };
         return st.luft;
     }
@@ -2459,6 +2482,12 @@ class AnazhRealm_bild_himmel {
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
             }
+            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung)
+            const fuer = kameraUnterWasser ? -1 : U.beta.value;
+            if (luft.spektrumFuer !== fuer) {
+                this._luftSpektrum(U.beta.value, kameraUnterWasser, U.spektrum.value);
+                luft.spektrumFuer = fuer;
+            }
         }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
         // fehlte die Decke. Liegt die Kamera unter Wasser, wird das EINE geteilte Wasser-Material
@@ -2477,15 +2506,13 @@ class AnazhRealm_bild_himmel {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
-        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung); vor der ersten
-        // Bestrahlungs-Tafel (unter dem Ladeschirm) bleibt der Uniform unberührt.
-        const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
+        // Das Licht des Orts für Körper und Schaum ist das Licht der Welt (`_weltLicht`): sein Schreiber folgt der Uhr sofort
+        this._weltLichtTakt();
         // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            if (uniforms.irr && e) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
             // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
             const wu = this.state.windUniforms;

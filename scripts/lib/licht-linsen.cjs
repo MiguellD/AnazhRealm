@@ -335,14 +335,7 @@ function albedoSicht(opts) {
         st.camera.layers.enableAll();
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -759,14 +752,7 @@ function lichtBilanz() {
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -1113,14 +1099,7 @@ function nahFernSicht(opts) {
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const rt = new T.RenderTarget(W, HH, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lies = async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH);
@@ -1636,14 +1615,7 @@ function laubGegenlicht(opts) {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
-        const half = (h) => {
-            const sg = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (sg ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (sg ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -1790,12 +1762,7 @@ function laubGegenlicht(opts) {
                 const stufeJetzt = opts.boden ? (opts.karte === 1 ? "bodenSatz" : "fern-ring") : opts.haus ? "f:" + ziel.preset + ":L" + ziel.e._lodLevel : r._taeterKlasse(ziel.o);
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: stufeJetzt, ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
-                const lab = (rgb) => {
-                    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-                    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
-                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
-                    return { Y: +Y.toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
-                };
+                const lab = window.__lab;
                 if (opts.boden) {
                     const mittel = (x, m = x.maske.reduce((s, v) => s + v, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
@@ -1962,6 +1929,136 @@ function laubGegenlicht(opts) {
     })();
 }
 
+// Linear-RGB → Luma Y, L*, C*ab (D65): die Farb-Zahl jeder Karten- und Weg-Zeile
+function lab(rgb) {
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
+    return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+}
+
+// DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %) im Licht der Welt-Stoffe (eine MeshStandard-Karte gleicher Normale aus
+// demselben Auge) und im Licht eines Wegs, der den Baustein `_weltLicht` ruft — `panorama` (seine Textur grau), `feld` (ein grauer
+// Kasten im Welt-March), `spiegel` (die Spiegelung einer grauen Wand über Wasser), `wasser` (der Körper: das Bild mit minus ohne sein
+// Licht, ÷ R∞) — je Stunde, ohne Luft und Schatten. Eine Zahl am Namen (`feld0`, `spiegel180`) stellt die Fläche senkrecht, ihre
+// Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht. Das Urteil ist absolut (`weg`): 0,9–1,1.
+function lichtWeg(opts) {
+    return (async () => {
+        const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
+        const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
+        rend.setAnimationLoop(null);
+        if (window.__buehne) window.__buehne();
+        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
+        await r._himmelFrisch();
+        if (!fp) return { fehler: "kein Feld-Pass" };
+        r._weltLichtTakt();
+        const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
+        const W = 32, rt = new T.RenderTarget(W, W, { depthBuffer: true, type: T.HalfFloatType }), alle = [], dl = st.directionalLight, wurf = dl.castShadow;
+        // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
+        const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), ((+grad || 0) * Math.PI) / 180);
+        sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
+        const luftU = st.luft && st.luft.U, luftAlt = luftU && luftU.beta.value, kamAlt = [cam.position.clone(), cam.quaternion.clone()];
+        const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
+        const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
+        const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
+        [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
+        karte.position.copy(o).y -= 2;
+        see.position.copy(karte.position);
+        sc.add(karte, see);
+        const lies = async (ding, blick, wand) => {
+            cam.position.copy(o);
+            cam.lookAt(o.clone().add(blick));
+            cam.updateMatrixWorld(true);
+            // der Takt des Feld-Passes für DIESES Auge (Strahl, Stellvertreter), ohne neues Panorama
+            [fp.panoFlug, fp.mesh.visible] = [true, true];
+            r._tickFeldPass(st.fernRing);
+            for (const [m] of alle) m.visible = m === ding;
+            [karte, see].forEach((m) => (m.visible = m === ding));
+            if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
+            sc.traverse((g) => g.isBundleGroup && (g.needsUpdate = true));
+            await window.__linseRuhe(rend, rt, sc, cam, "der Lichtweg");
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, W), schritt = px.length > W * W * 4 ? Math.ceil((W * 8) / 256) * 128 : W * 4, s = [0, 0, 0];
+            for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;
+            return s;
+        };
+        const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
+        try {
+            dl.castShadow = false;
+            if (luftU) luftU.beta.value = 0;
+            let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
+            let weg;
+            if (art === "panorama") {
+                for (let i = 0; i < fp.panoDaten.length; i += 4) fp.panoDaten.set([0.18, 0.18, 0.18, 3000], i);
+                fp.panoTex.needsUpdate = true;
+                weg = await lies(fp.mesh, new T.Vector3(1, -0.1, 0));
+            } else if (art === "spiegel") {
+                // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
+                // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
+                // Feld des Spiegel-Passes trägt ihn. Die Welt: dieselbe Karte senkrecht, mit derselben Normale, aus demselben Auge.
+                const S = r._spiegelFeld(), L = r._spiegelLeser(), K = r.constructor.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
+                const H = see.position.y - S.bezug, fov = cam.fov;
+                const I0 = Math.floor(o.x / K.texel) - n / 2, J0 = Math.floor(o.z / K.texel) - n / 2, w = (k, k0, a) => (k0 + ((((k - k0) % n) + n) % n) + 0.5) * K.texel - a;
+                S.hoechste.fill(-30000);
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++) {
+                        const istWand = -(w(i, I0, o.x) * nh.x + w(j, J0, o.z) * nh.z) > 30, h = istWand ? H + 60 : H - 0.6, b = Math.floor(j / K.block) * S.nb + Math.floor(i / K.block);
+                        S.daten.set([T.DataUtils.toHalfFloat(h), S.leer, S.leer, 0], (j * n + i) * 4);
+                        S.stoff.set(istWand ? [108, 108, 108, 0] : [0, 0, 0, 1], (j * n + i) * 4);
+                        S.hoechste[b] = Math.max(S.hoechste[b], h);
+                    }
+                [S.tex, S.stoffTex, S.hTex].forEach((t) => (t.needsUpdate = true));
+                [S.mitte, S.hMax, cam.fov] = [[o.x, o.z], H + 60, 20];
+                cam.updateProjectionMatrix();
+                try {
+                    cam.lookAt(o.clone().add(nh.clone().negate().setY(-Math.tan((25 * Math.PI) / 180))));
+                    cam.updateProjectionMatrix();
+                    cam.updateMatrixWorld(true);
+                    [karte.visible, see.visible] = [false, true];
+                    // das Feld lädt seine Texturen erst im Bild hoch: die Erst-Ruhe, dann drei Läufe (an der Basis las der erste 0)
+                    const lauf = () => (st.postProcessing.render(), r._spiegelPassRechne(L));
+                    await window.__erstRuhe(lauf, {}, "der Spiegel");
+                    for (let k = 0; k < 3; k++) lauf(), await new Promise((q) => setTimeout(q, 200));
+                    const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = px.length / Hr;
+                    weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
+                } finally {
+                    [S.daten, S.stoff, S.hoechste].forEach((d, k) => d.set(alt[k]));
+                    [S.tex, S.stoffTex, S.hTex].forEach((t) => (t.needsUpdate = true));
+                    [S.mitte, S.hMax, cam.fov] = [alt[3], alt[4], fov];
+                    S.stand++;
+                    cam.updateProjectionMatrix();
+                }
+            } else if (art === "feld") {
+                // der graue Kasten: waagrecht 2,5 m unter dem Auge, senkrecht 12 m voraus mit der dünnen Achse auf `nh`
+                const m = senkrecht ? new T.Matrix4().makeRotationY(Math.atan2(-nh.z, nh.x)).setPosition(o.clone().addScaledVector(nh, -12)) : new T.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z);
+                const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
+                weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
+            } else {
+                const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
+                WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+                const ohne = await lies(see, unten);
+                weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
+            }
+            const [lw, lk] = [window.__lab(welt), window.__lab(weg)];
+            return { art: opts.weg, stufe: "welt-stoff → " + opts.weg, weg: true, karte: { gestalt: lw, karte: lk, verhaeltnis: +(lk.Y / lw.Y).toFixed(3), dL: +(lk.L - lw.L).toFixed(2), dC: +(lk.C - lw.C).toFixed(2) } };
+        } finally {
+            fp.panoDaten.set(panoAlt);
+            fp.panoFlug = false;
+            fp.panoTex.needsUpdate = true;
+            WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
+            for (const [m, v] of alle) m.visible = v;
+            sc.remove(karte, see);
+            karte.geometry.dispose();
+            karte.material.dispose();
+            see.geometry.dispose();
+            dl.castShadow = wurf;
+            if (luftU) luftU.beta.value = luftAlt;
+            cam.position.copy(kamAlt[0]);
+            cam.quaternion.copy(kamAlt[1]);
+            cam.updateMatrixWorld(true);
+            rt.dispose();
+        }
+    })();
+}
+
 function laubLichtUrteil(messung, band) {
     band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
@@ -1981,7 +2078,7 @@ function laubLichtUrteil(messung, band) {
             }
             zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC, mittag: mittag ? mittag.karte.verhaeltnis : undefined });
             if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
-                befunde.push(`${w.paar ? "FERN" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+                befunde.push(`${w.paar ? "FERN" : w.weg ? "WEG" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : w.weg ? "Weg/Welt" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
             continue;
         }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {
@@ -2041,6 +2138,237 @@ function kronenObenUrteil(messung) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
+// DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
+// Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
+// Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
+// Pixel. Misst eine Sicht kein Band (zur tiefen Sonne liegt die In-Streuung in der Kompression), schießt sie mit Blende 1/4 nach;
+// der Bloom ruht, seine Schwelle bricht die Linearität (zur Sonne 7° hob er T bei 8 km um 70 %).
+function luftTiefe(o) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const st = r.state;
+        const cam = st.camera;
+        const U = st.luft.U;
+        const R = o.ref;
+        const W = 480;
+        const H = 270;
+        const fov0 = cam.fov;
+        if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
+        st.renderer.setAnimationLoop(null);
+        window.__buehne();
+        const PU = st.postProcessingUniforms;
+        const bloom0 = PU.bloomStrength.value;
+        PU.bloomStrength.value = 0;
+        const gesetz = (x, z) => r._terrainMacroSurfaceY(x, z, false);
+        const gx = st.playerMesh.position.x;
+        const gz = st.playerMesh.position.z;
+        const gy = gesetz(gx, gz) + o.augeM;
+        const Hs = R.skalenHoeheM;
+        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const roh = (u8, i) => {
+            const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
+            const m = Math.min(...c);
+            const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
+            return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
+        };
+        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const ton = (u8, i) => {
+            const c = [u8[i], u8[i + 1], u8[i + 2]];
+            const hi = Math.max(...c);
+            const d = hi - Math.min(...c);
+            if (d < 1) return 0;
+            return 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
+        };
+        const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[a.length >> 1].toPrecision(4) : null);
+        // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
+        let dichte = null;
+        let blende = 1;
+        const anwenden = r._dayNightApplyHemiUndLuft;
+        const belichten = r._dayNightApplyBelichtung;
+        r._dayNightApplyHemiUndLuft = function (...a) {
+            anwenden.apply(this, a);
+            if (dichte != null) U.beta.value = dichte;
+        };
+        r._dayNightApplyBelichtung = function (...a) {
+            belichten.apply(this, a);
+            st.renderer.toneMappingExposure *= blende;
+        };
+        const schuss = async (b, k) => {
+            const alt = U.beta.value;
+            const e = st.renderer.toneMappingExposure;
+            blende = k;
+            st.renderer.toneMappingExposure = e * k;
+            if (b != null) U.beta.value = dichte = b;
+            if (st.fernRing) r._tickFeldPass(st.fernRing);
+            try {
+                return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            } finally {
+                dichte = null;
+                blende = 1;
+                U.beta.value = alt;
+                st.renderer.toneMappingExposure = e;
+            }
+        };
+        const blick = (az) => {
+            cam.fov = 16;
+            cam.updateProjectionMatrix();
+            cam.position.set(gx, gy, gz);
+            cam.lookAt(gx + Math.sin(az) * 1e3, gy - 44, gz - Math.cos(az) * 1e3);
+            cam.updateMatrixWorld(true);
+        };
+        const s = new T.Vector3();
+        const q = new T.Vector3();
+        const unter = (t) => gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t);
+        const treffer = (xx, yy, D) => {
+            const nx = ((xx + 0.5) / W) * 2 - 1;
+            const ny = 1 - ((yy + 0.5) / H) * 2;
+            s.set(nx, ny, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
+            let a = 0;
+            let t = 30;
+            while (t < 6e4 && !unter(t)) {
+                a = t;
+                t += Math.max(8, t * 0.01);
+            }
+            if (t >= 6e4) return null;
+            for (let k = 0; k < 12; k++) {
+                if (unter((a + t) / 2)) t = (a + t) / 2;
+                else a = (a + t) / 2;
+            }
+            const k = (s.y * t) / Hs;
+            const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
+            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
+            return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
+        };
+        const bRef = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+        const uhr = (u) => {
+            if (st.world) st.world.timeOfDay = u;
+            if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
+            const sd = r._sonnenRichtung();
+            return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
+        };
+        // die Schwellen L0 − S gehen mit der Blende k
+        const sicht = async (az, k) => {
+            blick(az);
+            const L = await schuss(null, k);
+            const D = await window.__spiegelDaten();
+            const L0 = await schuss(0, k);
+            const S = await schuss(1, k);
+            D.iv = new T.Matrix4().fromArray(D.ivp);
+            const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
+            const gez = [];
+            const fern = {};
+            for (let yy = 0; yy < H; yy += 2)
+                for (let xx = 4; xx < W; xx += 8) {
+                    const t = treffer(xx, yy, D);
+                    const i = (yy * W + xx) * 4;
+                    const l = roh(L, i);
+                    const l0 = roh(L0, i);
+                    const sa = roh(S, i);
+                    if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
+                    gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
+                    fern[xx] = Math.max(fern[xx] || 0, t.d);
+                    const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
+                    if (!b) continue;
+                    const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
+                    tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
+                    if (tc[0] > 0.01 && tc[2] > 0.01 && Math.min(Math.abs(l0[0] - sa[0]), Math.abs(l0[2] - sa[2])) >= 0.05 * k)
+                        b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
+                    const dh = Math.abs(ton(L, i) - ton(S, i));
+                    b.dh.push(Math.min(dh, 360 - dh));
+                }
+            const rand = med(Object.values(fern));
+            return {
+                blende: k,
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
+                rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
+            };
+        };
+        const zeilen = [];
+        try {
+            for (const u of R.uhren) {
+                const so = uhr(u);
+                for (let k = 0; k < 4; k++) {
+                    const az = so.az + (k * Math.PI) / 2;
+                    let z = await sicht(az, 1);
+                    if (z.baender.every((b) => b.n < R.mindest.n)) z = await sicht(az, 0.25);
+                    zeilen.push(Object.assign({ uhr: u, sonne: so.sonne, az: k * 90 }, z));
+                }
+            }
+        } finally {
+            delete r._dayNightApplyHemiUndLuft;
+            delete r._dayNightApplyBelichtung;
+            PU.bloomStrength.value = bloom0;
+            cam.fov = fov0;
+            cam.updateProjectionMatrix();
+            window.__buehne();
+        }
+        return { gy: Math.round(gy), zeilen };
+    })();
+}
+
+// DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
+// Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
+// (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
+function luftTiefeUrteil(m, R) {
+    const B = R.band;
+    const M = R.mindest;
+    const liste = [];
+    const dRef = R.rayleigh[2] - R.rayleigh[0];
+    const gemessen = R.baenderM.map(() => 0);
+    for (const u of R.uhren)
+        for (const az of [0, 90, 180, 270]) {
+            const z = m.zeilen.find((x) => x.uhr === u && x.az === az) || { sonne: "–", baender: [], rand: { km: 0, C: null } };
+            const wo = `Uhr ${u} (Sonne ${z.sonne}°) Azimut ${az}°`;
+            for (const b of z.baender.filter((x) => x.n >= M.n)) {
+                const q = b.q.map((x, c) => (x == null || Math.abs(x - 1) > B.T ? "RGB"[c] + " " + x : "")).filter(Boolean);
+                if (u === 0.5) gemessen[R.baenderM.indexOf(b.d)]++;
+                if (u === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
+                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
+            }
+            const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
+            const nk = fern.reduce((a, b) => a + b.nk, 0);
+            // inverse Varianz: der Fehler von dk fällt mit d, die Band-Mediane wiegen nk·d²
+            const w = fern.reduce((a, b) => a + b.nk * b.d * b.d, 0);
+            const v = +(fern.reduce((a, b) => a + b.dk * b.nk * b.d * b.d, 0) / w / dRef).toFixed(2);
+            if (nk < M.nk) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: ungemessen (${nk} Paare < ${M.nk})`);
+            else if (!(v >= B.kanal[0] && v <= B.kanal[1])) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: Δβ blau−rot ${v} × Referenz (grau = 0, ${nk} Paare)`);
+            if (u === 0.5 && !(z.rand.C != null && z.rand.C <= B.rand))
+                liste.push(`K2-1 KANTE ${wo}: Restkontrast ${z.rand.C == null ? "ungemessen" : z.rand.C} am Rand ${z.rand.km} km > ${B.rand}`);
+        }
+    gemessen.forEach((n, i) => {
+        if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);
+    });
+    const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
+    const staffel = {};
+    for (const k of ["K1-1", "K1-2", "K2-1"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
+    const befunde = liste.filter((b) => !offen(b));
+    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
+}
+
+function luftTiefeSelbsttest(R) {
+    const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+    const sichten = (dk, C, n = 50) =>
+        R.uhren.flatMap((uhr) =>
+            [0, 90, 180, 270].map((az) => ({
+                uhr,
+                sonne: 60,
+                az,
+                rand: { km: 20, C },
+                baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
+            }))
+        );
+    const urteil = (zeilen) => luftTiefeUrteil({ zeilen }, Object.assign({}, R, { offen: {} }));
+    const leer = urteil(sichten(null, null, 0)).staffel;
+    return [
+        urteil(sichten(ref[2] - ref[0], 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
+        urteil(sichten(0, 0.005)).befunde.some((b) => /JE KANAL/.test(b)) || "ein grauer β ist nicht ROT",
+        urteil(sichten(ref[2] - ref[0], 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
+        (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT") || "eine leere Messung ist nicht ROT",
+        urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
+    ].filter((x) => x !== true);
+}
+
 // DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang
 // (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve)` ist das k·L, das die 18-%-Karte
 // auf Mittelgrau + 1 EV legt: kurve(k·L / 2) = 0,18. Eine Kurve ohne Zeile hat keine Eichung (null) — die Linse nennt sie.
@@ -2068,6 +2396,9 @@ function kartenEichung(kurve) {
 }
 
 module.exports = {
+    luftTiefe,
+    luftTiefeUrteil,
+    luftTiefeSelbsttest,
     kartenEichung,
     laubLichtUrteil,
     tagKurveUrteil,
@@ -2086,7 +2417,9 @@ module.exports = {
         `window.__albedoSicht = ${albedoSicht.toString()};` +
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};` +
-        `window.__tagKurve = ${tagKurve.toString()};`,
+        `window.__tagKurve = ${tagKurve.toString()};` +
+        `window.__lichtWeg = ${lichtWeg.toString()};` +
+        `window.__lab = ${lab.toString()};`,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,

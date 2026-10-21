@@ -600,10 +600,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             BS.halt > 0 &&
             BS.vorlauf > 0;
         out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-        // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
-        // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
-        r._ensureAtmoUniforms();
-        out.hazeCouplesRing = r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
         // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
         // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
         out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
@@ -658,10 +654,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.lodHysteresis === true
         );
         check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
-        check(
-            "V17.114 U1 §2 → V18.530: kein Ring-gekoppelter Schleier mehr (hazeFar + _syncAtmoToViewDistance fort)",
-            voxelP2bResults.hazeCouplesRing === true
-        );
         check(
             "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
             voxelP2bResults.bandAiDiv === true

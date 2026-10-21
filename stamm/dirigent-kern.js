@@ -989,8 +989,8 @@ class AnazhRealm {
     }
 
     // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
-    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
-    // Sonne) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht der Welt (`_weltLicht`)
+    // und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
     _spiegelPassWach(L) {
         const st = this.state;
         const K = AnazhRealm.SPIEGEL;
@@ -1000,19 +1000,21 @@ class AnazhRealm {
         const m = this._spiegelZielMass();
         let sig = L.sig;
         if (!sig) {
-            const HU = st.hydroSurfaceUniforms;
             const lu = st.luft && st.luft.U;
             sig = L.sig = {
-                neu: new Float64Array(32),
-                alt: new Float64Array(32),
+                neu: new Float64Array(64),
+                alt: new Float64Array(64),
                 da: false,
                 zeit: 0,
                 bilder: 0,
                 k: 0,
                 proj: [0, 5, 8, 9, 10, 14],
-                licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
-                    Boolean
-                ),
+                licht: [
+                    ...Object.values(this._weltLicht().U),
+                    lu && lu.farbe,
+                    lu && lu.sonneFarbe,
+                    lu && lu.beta,
+                ].filter(Boolean),
             };
         }
         const v = sig.neu;
@@ -1028,6 +1030,7 @@ class AnazhRealm {
         for (const i of sig.proj) v[k++] = pr[i];
         v[k++] = S.stand;
         v[k++] = S.wasserSatz ? S.wasserSatz.stand : -1;
+        v[k++] = this._weltLicht().stand; // die Himmels-Sonde des Lichts der Welt
         v[k++] = m.w;
         v[k++] = m.h;
         // Licht und Luft
@@ -1786,7 +1789,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.41";
+AnazhRealm.VERSION = "18.546.42";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

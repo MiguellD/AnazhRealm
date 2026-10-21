@@ -15,8 +15,7 @@
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
 //   (6) SICHT-BESITZ (SELBST GESPIELT 16.07.) — mit bereitem Ring weitet die
-//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); DIE LUFT trägt
-//       (V18.530: scene.fogNode, Sichtweite am Boden ≥ 5 km, mit der Höhe weiter);
+//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die Luft misst gate:luft-tiefe:echt im Bild;
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 //   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
@@ -423,40 +422,6 @@ const server = statikServer();
             r.state.camera.far === camFarWide &&
             Number.isFinite(r._fernRingCamFarAlt) &&
             r._fernRingCamFarAlt < camFarWide;
-        // Die HÖHEN-ÖFFNUNG durch den ECHTEN Loop (der Spieler-Hub reist per
-        // V18.356-Teleport-Adoption; die Kamera folgt in _loopCamera; die
-        // Umgebungs-Proben sind takt-gecacht). `_gameLoopTick` wird erst bei
-        // Renderer-Ready zugewiesen — erst darauf warten, dann DETERMINISTISCH
-        // pumpen BIS die Bedingung steht (kein Ritt auf dem ~1-Hz-Headless-RAF).
-        await window.__weltDa();
-        if (typeof r._gameLoopTick !== "function") res.loopFehler = "_gameLoopTick kam nie (Renderer-Ready)";
-        // DIE LUFT TRÄGT (V18.530): kein Wald-Nebel mehr — die Sichtweite (Koschmieder 2 %) ist am Boden ≥ 5 km
-        // und wächst mit der Höhe (Dunst-Skalenhöhe). Gelesen nach echten Loop-Takten (Tag-Nacht schreibt die Luft).
-        const sichtBei = (y) => {
-            r.state.playerMesh.position.y = y;
-            for (let i = 0; i < 3; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (e) {
-                    res.loopFehler = String(e && e.message);
-                }
-            }
-            return Math.round(r._luftSichtM(r.state.camera.position.y));
-        };
-        const px = r.state.playerMesh.position.x;
-        const pz = r.state.playerMesh.position.z;
-        const hy = r.getTerrainHeightAt(px, pz);
-        const boden = Number.isFinite(hy) ? hy : 0;
-        res.sichtBoden = sichtBei(boden + 1);
-        res.sichtHoch = sichtBei(boden + 300);
-        res.sichtZurueck = sichtBei(boden + 1);
-        res.luftKnoten = !!r.state.scene.fogNode && !r.state.scene.fog;
-        res.oeffnungOk =
-            !res.loopFehler &&
-            res.luftKnoten &&
-            res.sichtBoden >= 5000 &&
-            res.sichtHoch > res.sichtBoden &&
-            Math.abs(res.sichtZurueck - res.sichtBoden) <= res.sichtBoden * 0.01; // der Spieler setzt sich neu
         // Die RÜCKNAHME: der Dispose stellt das alte far wieder her (Ring-Besitz).
         const altVorDispose = r._fernRingCamFarAlt;
         r._fernRingDispose();
@@ -1560,11 +1525,6 @@ const server = statikServer();
         "6: KAMERA-WEITUNG — far = Schale-3-aussen + 500, alter Wert gemerkt",
         out.camWidened === true,
         `far=${out.camFar} soll=${out.camFarWide} alt=${out.camFarAlt}`
-    );
-    check(
-        "6: DIE LUFT TRÄGT — scene.fogNode statt Nebel, Sichtweite am Boden ≥ 5 km, aus 300 m weiter (Höhen-Dunst)",
-        out.oeffnungOk === true,
-        `boden=${out.sichtBoden} hoch=${out.sichtHoch} zurueck=${out.sichtZurueck} knoten=${out.luftKnoten}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check(
