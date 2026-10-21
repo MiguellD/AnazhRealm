@@ -46,6 +46,7 @@
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
 //                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
+//   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
@@ -3412,6 +3413,48 @@ async function starte() {
         const u = LL.tagKurveUrteil(welt);
         console.log(JSON.stringify(u.kurven, null, 1));
         console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
+    } else if (cmd === "licht" && argv.includes("--naesse")) {
+        // DIE NÄSSE IM BILD (wetter.K2): Mess-Wiese und das nächste Haus im Dorf (von innen durch die offene Tür), klar · Regen
+        // frisch · Regen 10 min aus dem Ausgabe-Pfad; der Selbsttest macht die Basis (Nässe 1,0), eine Nässe ohne Dach und ein
+        // helles Regenbild beim Namen ROT.
+        const LL = require("./lib/licht-linsen.cjs");
+        const m = (aussen, innen, regenbild) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, regenbild });
+        const f = [
+            [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
+            [LL.naesseUrteil({ dorf: m(0.62, 0.64, 0.7) }).befunde.join(), /dorf innen unter dem Dach 0\.64 außerhalb/],
+            [LL.naesseUrteil({ dorf: Object.assign(m(0.62, 1.01, 0.7), { dicht: null }) }).urteil, "ROT"],
+            [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
+            [LL.naesseUrteil({}).urteil, "ROT"],
+        ];
+        const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+        console.log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
+        if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
+        const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        const welt = {};
+        try {
+            for (const ort of /^(wiese|dorf)/.test(opt("--naesse", "")) ? opt("--naesse").split(",") : ["wiese", "dorf"]) {
+                await rufe("/umstellen", { ort, sicht: "ego" });
+                const lauf = (o) => rufe("/eval", { code: `return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});` });
+                if (ort === "dorf") {
+                    const h = await lauf({ ort, haus: true });
+                    if (!h.ergebnis) throw new Error("NÄSSE: " + h.fehler);
+                    const s = h.ergebnis.schwelle;
+                    await rufe("/umstellen", { x: s[0], z: s[2] });
+                }
+                const a = await lauf({ ort, png: !!opt("--bilder") });
+                welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
+                for (const [i, png] of (welt[ort].png || []).entries())
+                    fs.writeFileSync(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), Buffer.from(png.split(",")[1], "base64"));
+                delete welt[ort].png;
+            }
+        } finally {
+            if (halt) await halt();
+        }
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(welt, null, 1));
+        const u = LL.naesseUrteil(welt);
+        console.log(JSON.stringify(welt, null, 1));
+        console.log(`NÄSSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr
