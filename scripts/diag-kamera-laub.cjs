@@ -132,10 +132,9 @@ const quantil = (a, q) => {
 };
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand (gemessen am Kopf d47f4ce9 unter derselben Bedingung)
 const SPRUENGE_MAX = 4;
-// K4 DER GANG: die Kugel der Linse R, die Nah-Pixel (je nahJe Bilder, Gitter gw × gh) geurteilt für Fels, Gelände und Rinde —
-// Bau steht in der Ausgabe (der offene Tür-Flügel trägt keinen Leib); die Kugel in Fels und Bau — ein Stamm (Pflanzen-Box ab
-// stammDickM) hält den Arm nie, er wird durchsichtig (`_kameraDurchsichtNode`), die Kugel in ihm steht in der Ausgabe. Der
-// Spieler kommt heranM an den Anker, der Ruck p95 ≤ ruckM.
+// K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände und Rinde; Bau-Pixel stehen in der
+// Ausgabe (der offene Tür-Flügel trägt keinen Leib), ebenso die Kugel im Stamm (ab stammDickM): er hält den Arm nie, er wird
+// durchsichtig (`_kameraDurchsichtNode`). Der Spieler kommt heranM an den Anker, der Ruck p95 ≤ ruckM.
 const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, nahUrteil: ["Fels", "Gelände", "Rinde"] });
 const NINJA_WP = [
     [0, 7, 0.8],
@@ -629,11 +628,10 @@ async function leibHang(arg) {
     return out;
 }
 
-// K4 DER GANG (Meisterkarte leib.K4 Staffel 1, Grok R11 WE-05): in der Welt von K2 geht der Spieler in Third durch den echten
-// Takt (`_gameLoopTick`, Bilder 8–33 ms) an seine Anker (der dickste Stamm, der nächste Fels, das erste Haus von K2): startM
-// davor, rückwärts heran, die Maus 360° in orbitMs, vorwärts fort, der Orbit noch einmal eine Armlänge fern. Je Bild die
-// Kugel der Linse gegen Feld und Boxen, je nahJe Bilder die Nah-Pixel (kamera-nah), der Ruck. Zuletzt derselbe Gang am Haus
-// mit einem Wurf, der nie trifft (der Arm ohne Kollision): die Linse muss ihn nennen.
+// K4 DER GANG (Meisterkarte leib.K4 Staffel 1, Grok R11 WE-05): in der Welt von K2 geht der Spieler in Third im echten Takt
+// (`_gameLoopTick`, Bilder 8–33 ms) an die Anker (dickster Stamm, Fels, Haus): rückwärts heran, die Maus 360°, vorwärts, der
+// Orbit eine Armlänge fern. Je Bild die Kugel gegen Feld und Boxen, die Nah-Pixel (kamera-nah), der Ruck; zuletzt der Gang am
+// Haus mit einem Wurf, der nie trifft — die Linse muss ihn nennen.
 async function leibGang(G) {
     const L = window.__kamLeib;
     const r = window.anazhRealm;
@@ -654,7 +652,7 @@ async function leibGang(G) {
             const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [] };
             const v = L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
             L.fuss(v.x, v.z, v.gier, 0.15);
-            st.yaw = v.gier; // der Wechsel des Rigs (nach dem Ritt von K2) nahm die Gier der alten Kamera
+            st.yaw = v.gier; // nach dem Rig-Wechsel
             const mitte = () => Math.hypot(st.playerMesh.position.x - (a.b.minX + a.b.maxX) / 2, st.playerMesh.position.z - (a.b.minZ + a.b.maxZ) / 2);
             g.heran = { d0: +mitte().toFixed(2) };
             const q = [];
