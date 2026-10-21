@@ -1301,9 +1301,9 @@ jobs:
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
               if: matrix.gruppe == 9
-              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
-              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
-              # und Wand je einzeln.
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen,
+              # im echten Boot (headless, foundry-ON); L-WERKSTATT faehrt echte Eingaben (Tasten, Klicks, Rad) und zaehlt sie
+              # am Ereignis-Strom (<= 3 bis zum stehenden Werk); der Selbsttest bricht Verdikte und Wand je einzeln.
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
