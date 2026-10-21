@@ -90,19 +90,19 @@ module.exports = {
       kriterien: [
         {
           name: "Die Luft macht Tiefe: Kontrast nach Koschmieder, je Kanal, mit heller Sonnenseite",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = C = e^(−βd) ±15 % bei 1/2/5/8 km an einem Gerät, Uhr 0,5 · 2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
           messung: "Spielgang-Station Hügel (Auge 120 m) und Augenhöhe: Grat gegen Himmel bei 1/2/5/8 km im Ausgabe-Bild; β aus einer EXTERNEN Referenz in spec (meteorologische Sichtweite je Wetter, Rayleigh-β je Kanal), nie aus LUFT gelesen.",
-          beleg: "Das Gesetz steht: geschlossenes Integral des Höhen-Nebels, die In-Streuung ist die Himmels-Sicht der EINEN Atmosphäre (`stamm/bild-himmel.js:2245-2294`). β ist aber EIN grauer Skalar (`_luftBeta` `:2221-2228`), keine Extinktion je Kanal. Im Bild ungemessen.",
+          beleg: "GEMESSEN an main d3a626ee (ferne-luft e9f79deb, Radeon 890M --echt, Hügel Genesis +120 m, 4 Azimute, Uhr 0,5 und 0,27, `npm run gate:luft-tiefe:echt`, Referenz Bucholtz in spec/farbe/luft-referenz.json): Koschmieder T/T_soll 0,88–1,07 → Staffel 1; je Kanal Δβ blau−rot 0,83–1,33 × Referenz (grauer β vorher −0,32…0,28); Staffel 2 offen: Farbton bei 8 km 21–29° (Soll ≤ 10°, Karte himmel-ton), Sonnenseite 1,19; GTX: dieselbe Wand im echt-Job an d3a626ee GRÜN (CI 39547307165). Vorher: Das Gesetz steht: geschlossenes Integral des Höhen-Nebels, die In-Streuung ist die Himmels-Sicht der EINEN Atmosphäre (`stamm/bild-himmel.js:2245-2294`). β ist aber EIN grauer Skalar (`_luftBeta` `:2221-2228`), keine Extinktion je Kanal. Im Bild ungemessen.",
           schlupfloch: "Ein Nebel, der die Ferne grau macht, senkt den Kontrast ohne Physik: Farb- und Mie-Bedingung. β aus LUFT prüfte nur, ob der Code sich selbst folgt (B36).",
           aenderung: "Das Soll kommt aus einer externen Referenz (B36)."
         },
         {
           name: "Die Welt hat keine Kante",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
           messung: "Station Hügel und Gipfel, klar, 4 Azimute: Restkontrast Gelände/Himmel am Rand der letzten Fern-Schale.",
-          beleg: "Der Fern-Ring endet bei 8 000 m (`stamm/gelaende-fern.js:1353`), die Luft rechnet bis 20 km (`foundry-core.js:252`, sichtKlarM 20000); am Rand bleiben rechnerisch e^(−3,91·0,4) = 21 % Restkontrast — bei klarem Wetter steht die Welt-Kante als Linie. Im Bild ungemessen.",
+          beleg: "GEMESSEN an main d3a626ee (ferne-luft, Radeon --echt, Hügel +120 m, 4 Azimute, klar): der Feld-Pass schließt die Ferne bis 17,4–21,8 km, Restkontrast am Rand 0,9–1,2 % → Staffel 1 (die Prämisse „Kante bei 8 km“ traf nicht zu: der Feld-Pass ist die letzte Schale); Staffel 2 (Struktur-Tensor, beide Geräte) ungemessen. Vorher: Der Fern-Ring endet bei 8 000 m (`stamm/gelaende-fern.js:1353`), die Luft rechnet bis 20 km (`foundry-core.js:252`, sichtKlarM 20000); am Rand bleiben rechnerisch e^(−3,91·0,4) = 21 % Restkontrast — bei klarem Wetter steht die Welt-Kante als Linie. Im Bild ungemessen.",
           schlupfloch: "Mehr Nebel versteckt die Kante und verliert die Ferne — K1 verbietet das; bei Dunst gemessen wäre die Kante immer unsichtbar: darum klar."
         },
         {
@@ -133,7 +133,7 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Luft je Kanal und eine Fern-Schale bis 20 km", k: ["ferne.K1+2", "ferne.K2+1"], t: [1.5, 2], wurzel: "`stamm/bild-himmel.js:_luftBeta` (`:2221`) → vec3 aus ATMO_GESETZ betaR, der Luft-Knoten `:2245-2294`; `stamm/gelaende-fern.js:FERN_RING.schalen` (`:1350-1354`) + Schale {aussen 20000, snap 160}, Kosten am Schirm.", pflicht: "A (Ferne); Last: E (Boden-Haushalt 12/120k)", v1: true },
+        { name: "Die Ferne wird blau: Himmels-Ton am Horizont und Sonnenseite (Karte himmel-ton); die Kante als Struktur an beiden Geräten (Luft je Kanal steht seit d3a626ee, die Fern-Schale ist der Feld-Pass)", k: ["ferne.K1+1", "ferne.K2+1"], t: [1, 1.5], wurzel: "`stamm/bild-himmel.js:_luftBeta` (`:2221`) → vec3 aus ATMO_GESETZ betaR, der Luft-Knoten `:2245-2294`; `stamm/gelaende-fern.js:FERN_RING.schalen` (`:1350-1354`) + Schale {aussen 20000, snap 160}, Kosten am Schirm.", pflicht: "A (Ferne); Last: E (Boden-Haushalt 12/120k)", v1: true },
         { name: "Der Fern-Saum aus dem Gesetz (S8)", k: ["ferne.K3+2"], t: [2, 3], wurzel: "`stamm/gelaende-fern.js`: Vertex-Hebung um Kronenhöhe (treeParams) × Deckung aus aKrone (`:238`, `:999-1011`) + Hash je planForestCell (phyto-core) im WGSL; der Flag-Zwilling canopyStreaming fällt (`stamm/bild-himmel.js:416-585`, `stamm/dirigent-kern.js:338`).", pflicht: "A", v1: true },
         { name: "Horizont-Karte aus dem Gelände-Kern", k: ["ferne.K4+2"], t: [2, 2], wurzel: "`gelaende-core.js`: reine Funktion horizontWinkel(x, z, azimut), im Fern-Faden je 0,5° Sonne gebacken; Boden-Stoff (receivedShadowNode, `stamm/stoff-material.js:1263`) und Feld-Pass (`stamm/bild-sicht.js:1843-1851`) lesen sie.", pflicht: "—", v1: false },
         { name: "Die Sicht im Wetter aus EINEM Medium (nach Wetter H1)", k: ["ferne.K5+1"], t: [1, 1], wurzel: "Luft-Knoten liest das Wetter am Ort statt des globalen Worts; der Vorhang als Dichte-Kante der Front.", pflicht: "—", v1: false }
