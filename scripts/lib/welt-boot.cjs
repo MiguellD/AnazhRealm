@@ -78,21 +78,35 @@ async function weltStehtNach(takt, max) {
 // (`_weltOffen`: Foundry, Chunks, Wald): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
 // nicht, wirft sie beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212,
 // und 130 Schleifen urteilten nach 3–300 s Wanduhr).
-async function gebautNach(e, { takt, fertig, bau, max, offen } = {}) {
+async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
     const baue = bau || (e && typeof e === "object" ? () => r._rebuildArchitectureMesh(e) : () => {});
     let n = 0;
-    for (const weiter = window.__deckel(typeof e === "string" ? e : e ? `${e.type}#${e.id}` : "kein Eintrag", max, offen); (baue(n), !steht()) && weiter(); n++) {
-        await (takt || window.__seitenTakt)(n);
-        await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
+    try {
+        for (
+            const weiter = window.__deckel(
+                typeof e === "string" ? e : e ? `${e.type}#${e.id}` : "kein Eintrag",
+                max,
+                offen
+            );
+            (baue(n), !steht()) && weiter();
+            n++
+        ) {
+            await (takt || window.__seitenTakt)(n);
+            await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
+        }
+    } catch (f) {
+        // `warum()` nennt das Teil-Prädikat, das nicht steht
+        if (warum) f.message += ` — ${warum()}`;
+        throw f;
     }
     return n;
 }
 // DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): je Gang
 // zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
 // Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
-// Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht — CI 7383002a: streu-fern hing 600 s bei 0 % CPU).
+// Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht).
 function deckel(name, max, offen) {
     let n = 0,
         k = 0;
@@ -100,7 +114,9 @@ function deckel(name, max, offen) {
         const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { foundry: 1, chunks: 0, wald: 0 };
         if ((offen === false || (!(o.foundry + o.chunks + o.wald) && !(offen && offen()))) && ++k > (max || 120))
-            throw new Error(`DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`);
+            throw new Error(
+                `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
+            );
         return ++n > 0;
     };
 }
@@ -109,7 +125,7 @@ function deckel(name, max, offen) {
 // Sekunde; bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
 async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
-    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r))); )
+    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await new Promise((ok) => setTimeout(ok, 50));
     window.__weltDaWartet = null;
     return window.anazhRealm;
@@ -157,7 +173,10 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             const typ = MIME[path.extname(p)] || "text/html";
             return Promise.resolve()
                 .then(() => (typeof s === "function" ? s(req) : s))
-                .then((inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)), (e) => bruch(res, p, e));
+                .then(
+                    (inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)),
+                    (e) => bruch(res, p, e)
+                );
         }
         if (p === "/") p = start;
         const fp = path.join(root, p);
@@ -166,12 +185,15 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             const roh = err ? null : data;
             Promise.resolve()
                 .then(() => (wandle ? wandle(p, roh) : roh))
-                .then((inhalt) => {
-                    if (inhalt == null) return ((res.statusCode = 404), res.end());
-                    res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-                    if (keinCache) res.setHeader("Cache-Control", "no-store");
-                    res.end(inhalt);
-                }, (e) => bruch(res, p, e));
+                .then(
+                    (inhalt) => {
+                        if (inhalt == null) return ((res.statusCode = 404), res.end());
+                        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
+                        if (keinCache) res.setHeader("Cache-Control", "no-store");
+                        res.end(inhalt);
+                    },
+                    (e) => bruch(res, p, e)
+                );
         });
     });
 }
@@ -197,7 +219,8 @@ const GPU_REZEPTE = ["linse", "webgl", "echt"];
 // `viewport` = defaultViewport, `profil` = userDataDir; `headless` steht, wenn nichts gesagt ist (echt: mit Fenster nur,
 // wenn gesagt).
 function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
-    if (!REZEPTE[art]) throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
+    if (!REZEPTE[art])
+        throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless };
     if (profil != null) o.userDataDir = profil;
     if (frist != null) o.protocolTimeout = frist;
@@ -214,10 +237,15 @@ const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
 const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
 
 function melde(art, text) {
-    const t = String(text || "").split("\n").slice(0, 3).join(" | ").slice(0, 400);
+    const t = String(text || "")
+        .split("\n")
+        .slice(0, 3)
+        .join(" | ")
+        .slice(0, 400);
     if (sammlung.erwartet && sammlung.erwartet.test(t)) return;
     // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite dann meldet, steht laut als SELBSTTEST, kein Fehler der Welt
-    if (sammlung.selbsttest && (art === "console.error" || art === "pageerror")) return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
+    if (sammlung.selbsttest && (art === "console.error" || art === "pageerror"))
+        return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
     sammlung.fehler.push(`${art}: ${t}`);
     console.log(`[welt-boot] FEHLER ${art}: ${t}`);
 }
@@ -289,7 +317,16 @@ function pulsSeite() {
             return lp.apply(this, arguments);
         };
         // die synchronen Rückfragen an den GPU-Prozess (der Haupt-Thread wartet auf die Antwort): Stempel beim Namenswechsel
-        for (const m of ["getProgramParameter", "getShaderParameter", "readPixels", "getBufferSubData", "finish", "getError", "clientWaitSync", "checkFramebufferStatus"]) {
+        for (const m of [
+            "getProgramParameter",
+            "getShaderParameter",
+            "readPixels",
+            "getBufferSubData",
+            "finish",
+            "getError",
+            "clientWaitSync",
+            "checkFramebufferStatus",
+        ]) {
             const o = G[m];
             if (typeof o !== "function") continue;
             G[m] = function () {
@@ -301,7 +338,12 @@ function pulsSeite() {
     }
     const D = window.GPUDevice && window.GPUDevice.prototype;
     if (D)
-        for (const m of ["createRenderPipeline", "createRenderPipelineAsync", "createComputePipeline", "createComputePipelineAsync"]) {
+        for (const m of [
+            "createRenderPipeline",
+            "createRenderPipelineAsync",
+            "createComputePipeline",
+            "createComputePipelineAsync",
+        ]) {
             const o = D[m];
             if (typeof o !== "function") continue;
             D[m] = function (d) {
@@ -321,9 +363,14 @@ function pulsSeite() {
             const o = ro && ro.object;
             const p = ro && ro.pipeline;
             const len = (s) => (s && typeof s.code === "string" ? s.code.length : "?");
-            const lichter = ro && ro.lightsNode && typeof ro.lightsNode.getLights === "function" ? ro.lightsNode.getLights().length : "?";
+            const lichter =
+                ro && ro.lightsNode && typeof ro.lightsNode.getLights === "function"
+                    ? ro.lightsNode.getLights().length
+                    : "?";
             const name = `${(m && (m.name || m.type)) || "?"} · ${(o && (o.name || o.type)) || "?"}`;
-            stempel(`Pipeline ${name} · vs ${len(p && p.vertexProgram)} fs ${len(p && p.fragmentProgram)} Zeichen · ${lichter} Lichter`);
+            stempel(
+                `Pipeline ${name} · vs ${len(p && p.vertexProgram)} fs ${len(p && p.fragmentProgram)} Zeichen · ${lichter} Lichter`
+            );
             const t0 = performance.now();
             const aus = crp.apply(this, arguments);
             const ms = performance.now() - t0;
@@ -353,15 +400,37 @@ function pulsSeite() {
 
 // Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
-    if (!page.__akteBereit) page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), akteAnlegen(page, b)]);
+    if (!page.__akteBereit)
+        page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), akteAnlegen(page, b)]);
     return page.__akteBereit;
 }
 async function akteAnlegen(page, b) {
-    const A = (page.__akte = { id: ++akteN, b, konsole: [], stempel: [], puls: null, pulsN: 0, offen: new Map(), gemeldet: false, s: null, dbg: false, warte: null });
+    const A = (page.__akte = {
+        id: ++akteN,
+        b,
+        konsole: [],
+        stempel: [],
+        puls: null,
+        pulsN: 0,
+        offen: new Map(),
+        gemeldet: false,
+        s: null,
+        dbg: false,
+        warte: null,
+    });
     AKTE_SEITEN.add(page);
     page.on("close", () => AKTE_SEITEN.delete(page));
     page.on("console", (m) => ring(A.konsole, `${m.type()}: ${m.text().replace(/\s+/g, " ").slice(0, 200)}`, 12));
-    for (const n of ["goto", "reload", "evaluate", "evaluateHandle", "waitForFunction", "waitForSelector", "waitForNavigation", "screenshot"]) {
+    for (const n of [
+        "goto",
+        "reload",
+        "evaluate",
+        "evaluateHandle",
+        "waitForFunction",
+        "waitForSelector",
+        "waitForNavigation",
+        "screenshot",
+    ]) {
         const o = page[n];
         if (typeof o !== "function") continue;
         page[n] = function (...a) {
@@ -372,7 +441,10 @@ async function akteAnlegen(page, b) {
                 async (e) => {
                     const msg = (e && e.message) || String(e);
                     if ((e && e.name === "TimeoutError") || /timed out/i.test(msg))
-                        await akte(page, `${auf.was} riss nach ${sek(Date.now() - auf.an)} s: ${msg.split("\n")[0].slice(0, 160)}`);
+                        await akte(
+                            page,
+                            `${auf.was} riss nach ${sek(Date.now() - auf.an)} s: ${msg.split("\n")[0].slice(0, 160)}`
+                        );
                     A.offen.delete(auf);
                     throw e;
                 }
@@ -391,7 +463,7 @@ async function akteAnlegen(page, b) {
         await s.send("Runtime.enable");
         await s.send("Runtime.addBinding", { name: "__weltPuls" });
         await page.evaluateOnNewDocument(pulsSeite);
-        if (b.stapel) ((await s.send("Debugger.enable")), (A.dbg = true));
+        if (b.stapel) (await s.send("Debugger.enable"), (A.dbg = true));
     } catch (e) {
         if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${(e && e.message) || e}`);
     }
@@ -405,7 +477,10 @@ async function akteAnlegen(page, b) {
                 }
                 if (!P.puls || P.gemeldet || / verborgen /.test(` ${P.puls.text} `)) continue;
                 const luecke = Date.now() - P.puls.an;
-                if (luecke >= P.b.stallMs) akte(p, `der Puls steht seit ${sek(luecke)} s`).catch((e) => console.log(`[stall-akte] Akte brach: ${e && e.message}`));
+                if (luecke >= P.b.stallMs)
+                    akte(p, `der Puls steht seit ${sek(luecke)} s`).catch((e) =>
+                        console.log(`[stall-akte] Akte brach: ${e && e.message}`)
+                    );
             }
         }, 1000);
         akteUhr.unref();
@@ -417,7 +492,10 @@ function puls(A, payload) {
     const art = String(payload).slice(0, i);
     const text = String(payload).slice(i + 1);
     if (art !== "puls") return ring(A.stempel, `${new Date().toISOString().slice(11, 23)} ${text}`, 12);
-    if (A.gemeldet && A.puls && Date.now() - A.puls.an >= A.b.stallMs) console.log(`[stall-akte] Seite #${A.id}: der Puls kehrt zurück nach ${sek(Date.now() - A.puls.an)} s — ${text}`);
+    if (A.gemeldet && A.puls && Date.now() - A.puls.an >= A.b.stallMs)
+        console.log(
+            `[stall-akte] Seite #${A.id}: der Puls kehrt zurück nach ${sek(Date.now() - A.puls.an)} s — ${text}`
+        );
     A.gemeldet = false;
     A.puls = { an: Date.now(), text };
     A.pulsN++;
@@ -426,7 +504,10 @@ function puls(A, payload) {
 const stapelText = (e) =>
     e.callFrames
         .slice(0, 8)
-        .map((f) => `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.location.lineNumber + 1}`)
+        .map(
+            (f) =>
+                `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.location.lineNumber + 1}`
+        )
         .join(" < ");
 
 // DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, gruppiert nach Faden-Namen — die Raster-Arbeiter
@@ -440,7 +521,10 @@ function faedenProbe(pid) {
             try {
                 const st = fs.readFileSync(`/proc/${pid}/task/${t}/stat`, "utf8");
                 const rest = st.slice(st.lastIndexOf(")") + 2).split(" ");
-                m.set(t, { name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")), ticks: Number(rest[11]) + Number(rest[12]) });
+                m.set(t, {
+                    name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")),
+                    ticks: Number(rest[11]) + Number(rest[12]),
+                });
             } catch (_e) {
                 // der Faden endete zwischen Liste und Lesen
             }
@@ -461,7 +545,12 @@ function faedenText(a, z, ms) {
         g.set(k, e);
     }
     const z2 = [...g].filter(([, e]) => e.ticks > 0).sort((x, y) => y[1].ticks - x[1].ticks);
-    return z2.length ? z2.slice(0, 6).map(([k, e]) => `${k}${e.n > 1 ? ` ×${e.n}` : ""} ${((e.ticks / (ms / 10)) * 100).toFixed(0)} %`).join(" · ") : null;
+    return z2.length
+        ? z2
+              .slice(0, 6)
+              .map(([k, e]) => `${k}${e.n > 1 ? ` ×${e.n}` : ""} ${((e.ticks / (ms / 10)) * 100).toFixed(0)} %`)
+              .join(" · ")
+        : null;
 }
 
 // CPU je Prozess: zwei Proben im Abstand `ms` am Browser (SystemInfo antwortet ohne den Haupt-Thread der Seite), unter Linux
@@ -480,7 +569,11 @@ async function cpuDelta(b, ms) {
         const d = [...z].map(([k, v]) => [k, v - (a.get(k) || 0)]).sort((x, y) => y[1] - x[1]);
         const anteil = (typ) => Math.max(0, ...d.filter(([k]) => k.startsWith(typ)).map(([, v]) => v)) / (ms / 1000);
         return {
-            text: d.filter(([k, v]) => v >= 0.02 || k.startsWith("GPU")).map(([k, v]) => `${k} ${(v / (ms / 1000) * 100).toFixed(0)} %`).join(" · ") || "alles ruht",
+            text:
+                d
+                    .filter(([k, v]) => v >= 0.02 || k.startsWith("GPU"))
+                    .map(([k, v]) => `${k} ${((v / (ms / 1000)) * 100).toFixed(0)} %`)
+                    .join(" · ") || "alles ruht",
             renderer: anteil("renderer"),
             gpu: anteil("GPU"),
             faeden: faedenText(fa, fz, ms),
@@ -509,9 +602,11 @@ async function akte(page, grund) {
     const letzt = A.stempel.length ? A.stempel[A.stempel.length - 1] : "kein Stempel";
     let urteil;
     if (!A.puls) urteil = "KEIN PULS — das Dokument lief nie an (Navigation oder Dokument-Start)";
-    else if (luecke < 3000) urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
+    else if (luecke < 3000)
+        urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
     else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
-    else if (cpu.renderer >= 0.5) urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
+    else if (cpu.renderer >= 0.5)
+        urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
     else if (cpu.gpu >= 0.5)
         urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
     else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
@@ -522,7 +617,9 @@ async function akte(page, grund) {
     z.push(`CPU (2 s) ${cpu.text}`);
     if (cpu.faeden) z.push(`Fäden des GPU-Prozesses (2 s) ${cpu.faeden}`);
     if (A.b.last.length) z.push(`Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) ${A.b.last.join(" · ")}`);
-    z.push(`Stapel ${stapel ? stapelText(stapel) : fragen ? "keine Pause in 6 s — der Haupt-Thread steht NATIV" : A.dbg ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Debugger: Zeit-Linse)"}`);
+    z.push(
+        `Stapel ${stapel ? stapelText(stapel) : fragen ? "keine Pause in 6 s — der Haupt-Thread steht NATIV" : A.dbg ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Debugger: Zeit-Linse)"}`
+    );
     for (const k of A.konsole) z.push(`Konsole ${k}`);
     for (const l of A.b.stderr.slice(-24)) z.push(`Stderr ${l}`);
     z.push(`URTEIL ${urteil}`);
@@ -544,7 +641,13 @@ async function starteBrowser(opts = {}) {
         );
     const browser = await puppeteer.launch(browserOptionen(opts));
     // die Stall-Akte des Browsers: Stderr-Ring (Chrome, GPU-Prozess), Browser-Sitzung für CPU je Prozess, die Schwelle
-    const b = { stderr: [], cdp: null, stapel: !opts.zeit && opts.art !== "echt", stallMs: opts.stallMs || 20000, offen: true };
+    const b = {
+        stderr: [],
+        cdp: null,
+        stapel: !opts.zeit && opts.art !== "echt",
+        stallMs: opts.stallMs || 20000,
+        offen: true,
+    };
     const proc = browser.process();
     if (proc && proc.stderr) {
         let rest = "";
@@ -570,10 +673,18 @@ async function starteBrowser(opts = {}) {
                 const jetzt = new Map(info.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
                 const fJetzt = faedenProbe((info.find((p) => p.type === "GPU") || {}).id);
                 if (vor) {
-                    const d = (typ) => Math.max(0, ...[...jetzt].filter(([k]) => k.startsWith(typ)).map(([k, v]) => v - (vor.get(k) || 0)));
+                    const d = (typ) =>
+                        Math.max(
+                            0,
+                            ...[...jetzt].filter(([k]) => k.startsWith(typ)).map(([k, v]) => v - (vor.get(k) || 0))
+                        );
                     // unter Linux der stärkste Faden des GPU-Prozesses dazu (wer die Last trägt)
                     const f = faedenText(fVor, fJetzt, 2000);
-                    ring(b.last, `${new Date().toISOString().slice(14, 19)} gpu ${((d("GPU") / 2) * 100).toFixed(0)}${f ? ` [${f.split(" · ")[0]}]` : ""}/r ${((d("renderer") / 2) * 100).toFixed(0)}`, 30);
+                    ring(
+                        b.last,
+                        `${new Date().toISOString().slice(14, 19)} gpu ${((d("GPU") / 2) * 100).toFixed(0)}${f ? ` [${f.split(" · ")[0]}]` : ""}/r ${((d("renderer") / 2) * 100).toFixed(0)}`,
+                        30
+                    );
                 }
                 vor = jetzt;
                 fVor = fJetzt;
@@ -634,7 +745,15 @@ async function warteAufWelt(page, frist = 120000) {
 // Die Seite der Welt: Null-Renderer wahlweise, laden, auf die Welt warten.
 async function oeffneWelt(
     browser,
-    { port, pfad = "/index.html", nullRenderer: ohneBild = false, viewport, frist = 120000, warteBis = "networkidle0", warten = true } = {}
+    {
+        port,
+        pfad = "/index.html",
+        nullRenderer: ohneBild = false,
+        viewport,
+        frist = 120000,
+        warteBis = "networkidle0",
+        warten = true,
+    } = {}
 ) {
     const page = await browser.newPage();
     if (viewport) await page.setViewport(viewport);
@@ -669,7 +788,14 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 // ist und das Weltbild steht (`welt`: nur diese Terme). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
 async function uferStellen(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
-    const r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w.state.playerMesh);
+    const r = await window.__weltDa(
+        (w) =>
+            w.state.rendererReady &&
+            w.state.renderer &&
+            w.state.renderer.backend &&
+            w.state.camera &&
+            w.state.playerMesh
+    );
     const st = r.state;
     if (st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — die Wand wäre blind" };
     if (opts.kappe != null) st._holzPixelCap = opts.kappe;
@@ -715,13 +841,22 @@ async function uferStellen(opts) {
     const welt = (l) => !opts.welt || opts.welt.includes(l.term); // und die Szenen-Tiefe trägt die Welt, nie nur Himmel
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
     // das EINE Warten (`__gebautNach`): Takt um Takt der Seite, bis Wasser, Abbild und Weltbild stehen (Deckel: Takte ohne Offenes)
-    await window
-        .__gebautNach("das Ufer im Blick", {
-            fertig: () => steht() && !r._weltbildLuecken(true).some(welt),
-            takt: async () => (fern() || r._ensureFarWaterSheet(), await warte(100)),
-            max: 600,
-        });
-    return { bach: [Math.round(P.x), Math.round(P.z)], wasser: sichtbaresWasser(), fernWasser: fern() ? st.farWater.quads : 0, abbildBreite: abbild() };
+    await window.__gebautNach("das Ufer im Blick", {
+        fertig: () => steht() && !r._weltbildLuecken(true).some(welt),
+        takt: async () => (fern() || r._ensureFarWaterSheet(), await warte(100)),
+        max: 600,
+        warum: () =>
+            `Wasser ${sichtbaresWasser()} · Abbild ${abbild()} · fern ${fern()} gezeichnet ${fern() && E.gezeichnet.has(st.farWater.mesh)} · offen ${r
+                ._weltbildLuecken(true)
+                .filter(welt)
+                .map((l) => l.term)}`,
+    });
+    return {
+        bach: [Math.round(P.x), Math.round(P.z)],
+        wasser: sichtbaresWasser(),
+        fernWasser: fern() ? st.farWater.quads : 0,
+        abbildBreite: abbild(),
+    };
 }
 
 // Die Bühne: Mittag · Sonne · Sommer fest (window.__buehne aus AUSGABE_INSTALL).
@@ -757,7 +892,11 @@ function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
         proc.stderr.on("data", (c) => (fehler = (fehler + c).slice(-2000)));
         const ende = (code) => {
             const wort = fehler.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/);
-            reject(new Error(`${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`));
+            reject(
+                new Error(
+                    `${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`
+                )
+            );
         };
         proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (proc.off("exit", ende), resolve(proc)));
         proc.on("exit", ende);
@@ -806,8 +945,16 @@ const hat = (x, f) => {
     });
     return j;
 };
-const uhr = (c) => c.type === "CallExpression" && c.callee.property && c.callee.property.name === "now" && /^(performance|Date)$/.test(c.callee.object.name);
-const frist = (t) => hat(t, (b) => b.type === "BinaryExpression" && /^[<>]=?$/.test(b.operator) && (hat(b.left, uhr) || hat(b.right, uhr)));
+const uhr = (c) =>
+    c.type === "CallExpression" &&
+    c.callee.property &&
+    c.callee.property.name === "now" &&
+    /^(performance|Date)$/.test(c.callee.object.name);
+const frist = (t) =>
+    hat(
+        t,
+        (b) => b.type === "BinaryExpression" && /^[<>]=?$/.test(b.operator) && (hat(b.left, uhr) || hat(b.right, uhr))
+    );
 function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(require("../../spec/ci/frist-rest.json")))) {
     const errs = [];
     for (const [name, src] of dateien) {
@@ -817,22 +964,55 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
             if (/^(For|While|DoWhile)Statement$/.test(n.type)) {
                 schleifen.push(n);
                 if (n.test && frist(n.test)) fristen.add(n);
-                const bau = n.test && hat(n.test, (b) => b.operator === "!" && hat(b.argument, (x) => x.object && x.object.type === "Identifier" && BAU.test(x.property.name)));
-                if (bau && name !== "scripts/lib/welt-boot.cjs") errs.push(`Warte-Wand: ${name}:${zeileVon(src, n.start)} wartet selbst auf einen Bau — das EINE Warten ist \`__gebautNach\``);
-            } else if (n.type === "IfStatement" && frist(n.test) && hat(n.consequent, (c) => /^(Break|Return|Throw)Statement$/.test(c.type))) {
+                const bau =
+                    n.test &&
+                    hat(
+                        n.test,
+                        (b) =>
+                            b.operator === "!" &&
+                            hat(
+                                b.argument,
+                                (x) => x.object && x.object.type === "Identifier" && BAU.test(x.property.name)
+                            )
+                    );
+                if (bau && name !== "scripts/lib/welt-boot.cjs")
+                    errs.push(
+                        `Warte-Wand: ${name}:${zeileVon(src, n.start)} wartet selbst auf einen Bau — das EINE Warten ist \`__gebautNach\``
+                    );
+            } else if (
+                n.type === "IfStatement" &&
+                frist(n.test) &&
+                hat(n.consequent, (c) => /^(Break|Return|Throw)Statement$/.test(c.type))
+            ) {
                 const s = schleifen.filter((l) => l.body.start <= n.start && n.end <= l.body.end).pop();
                 if (s) fristen.add(s);
-            } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch" && hat(n.callee.object, (c) => c.property && c.property.name === "__gebautNach")) {
+            } else if (
+                n.type === "CallExpression" &&
+                n.callee.property &&
+                n.callee.property.name === "catch" &&
+                hat(n.callee.object, (c) => c.property && c.property.name === "__gebautNach")
+            ) {
                 const f = n.arguments[0];
-                if (f && f.body && f.body.type === "BlockStatement" && !f.body.body.length) errs.push(`Warte-Wand: ${name}:${zeileVon(src, n.start)} schluckt den Deckel von \`__gebautNach\` — er wirft beim Namen`);
+                if (f && f.body && f.body.type === "BlockStatement" && !f.body.body.length)
+                    errs.push(
+                        `Warte-Wand: ${name}:${zeileVon(src, n.start)} schluckt den Deckel von \`__gebautNach\` — er wirft beim Namen`
+                    );
             }
         });
         const zeilen = [...fristen].map((n) => zeileVon(src, n.start));
         const soll = rest[name] || 0;
-        if (zeilen.length > soll) errs.push(`Warte-Wand: ${name}:${zeilen.join(",")} urteilt an der Wanduhr (${zeilen.length} Frist-Schleifen, REST ${soll}) — das EINE Warten ist \`__deckel\` / \`__weltDa\``);
-        else if (zeilen.length < soll) errs.push(`Warte-Wand: ${name} trägt nur ${zeilen.length} von ${soll} Frist-Schleifen im REST — die Zahl senken (sie schrumpft nur)`);
+        if (zeilen.length > soll)
+            errs.push(
+                `Warte-Wand: ${name}:${zeilen.join(",")} urteilt an der Wanduhr (${zeilen.length} Frist-Schleifen, REST ${soll}) — das EINE Warten ist \`__deckel\` / \`__weltDa\``
+            );
+        else if (zeilen.length < soll)
+            errs.push(
+                `Warte-Wand: ${name} trägt nur ${zeilen.length} von ${soll} Frist-Schleifen im REST — die Zahl senken (sie schrumpft nur)`
+            );
     }
-    for (const name of Object.keys(rest)) if (!dateien.some(([n]) => n === name)) errs.push(`Warte-Wand: ${name} steht im REST, die Datei fehlt — streichen`);
+    for (const name of Object.keys(rest))
+        if (!dateien.some(([n]) => n === name))
+            errs.push(`Warte-Wand: ${name} steht im REST, die Datei fehlt — streichen`);
     return errs;
 }
 
@@ -865,7 +1045,8 @@ module.exports = {
 // einem kurzen Block (0,8 s, unter der Schwelle) darf KEINE Akte tragen.
 async function selbsttest() {
     const seiten = {
-        "/ruhig.html": "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
+        "/ruhig.html":
+            "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
@@ -890,7 +1071,12 @@ async function selbsttest() {
     // Sie läuft in der ruhigen Seite während ihrer 4,5 s (sie blockt nie: ihr Takt ist ein Versprechen).
     let bau = null;
     const bauProbe = async () => {
-        const r = (window.anazhRealm = { _weltStand: { takte: 0 }, offen: 1, _gameLoopTick() {}, _archIsRendered: (e) => !!e.mesh });
+        const r = (window.anazhRealm = {
+            _weltStand: { takte: 0 },
+            offen: 1,
+            _gameLoopTick() {},
+            _archIsRendered: (e) => !!e.mesh,
+        });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
         r._weltOffen = () => ({ foundry: r.offen, chunks: 0, wald: 0 });
         const takt = () => new Promise((ok) => setTimeout(ok, 10));
@@ -899,17 +1085,26 @@ async function selbsttest() {
         const takte = await window.__gebautNach(langsam, { max: 5, takt });
         const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
         r.offen = 0;
-        aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then((n) => `steht nach ${n} Takten`, (x) => x.message);
+        aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then(
+            (n) => `steht nach ${n} Takten`,
+            (x) => x.message
+        );
         let still = 0;
         r.state = { renderer: {}, perfRegulator: true };
         r._weltSteht = () => still >= 30;
         r._bepflanzungWartet = () => false;
         const atmet = async () => (still = r.state.perfRegulator === false ? still + 1 : 0);
-        aus.regler = await window.__weltStehtNach(atmet, 300).then((n) => `steht nach ${n} Takten`, (x) => x.message.slice(0, 60));
+        aus.regler = await window.__weltStehtNach(atmet, 300).then(
+            (n) => `steht nach ${n} Takten`,
+            (x) => x.message.slice(0, 60)
+        );
         aus.frei = r.state.perfRegulator === true;
         return aus;
     };
-    const ruhig = await fall("/ruhig.html", async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)])));
+    const ruhig = await fall(
+        "/ruhig.html",
+        async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]))
+    );
     const schleife = await fall("/schleife.html", async () => {
         for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await warte(500);
         await warte(500);
@@ -932,16 +1127,27 @@ async function selbsttest() {
     const urteile = [
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
-            schleife.length > 0 && /^JS-SCHLEIFE/.test(schleife[0].urteil) && /__stallSchleife/.test(schleife[0].stapel || ""),
+            schleife.length > 0 &&
+                /^JS-SCHLEIFE/.test(schleife[0].urteil) &&
+                /__stallSchleife/.test(schleife[0].stapel || ""),
             `Schleife: ${schleife.length ? `${schleife[0].urteil} · Stapel ${schleife[0].stapel}` : "KEINE Akte"}`,
         ],
-        [haenger.length > 0 && /^AWAIT/.test(haenger[haenger.length - 1].urteil), `Versprechen: ${haenger.length ? haenger[haenger.length - 1].urteil : "KEINE Akte"}`],
+        [
+            haenger.length > 0 && /^AWAIT/.test(haenger[haenger.length - 1].urteil),
+            `Versprechen: ${haenger.length ? haenger[haenger.length - 1].urteil : "KEINE Akte"}`,
+        ],
         [
             !!bau && bau.langsam.steht && bau.langsam.ms >= 3000,
             `Bau LANGSAM (3,2 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
-        [!!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot), `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`],
-        [!!bau && /^steht nach 30 /.test(bau.regler) && bau.frei, `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`],
+        [
+            !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
+            `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
+        ],
+        [
+            !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
+            `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
+        ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
     ];
