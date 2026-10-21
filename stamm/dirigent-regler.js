@@ -192,6 +192,11 @@ class AnazhRealm_dirigent_regler {
     // Async-Leser (fire-and-forget): EIN Resolve in Flug (Guard `_gpuTsPending`), Ergebnis in
     // `_gpuTsLast`/`_gpuTsAtMs` (Instanz-Felder, nie serialisiert). `backend.trackTimestamp` ist die
     // EINE Wahrheit; jeder Wurf wird geschluckt — der Pfad läuft außerhalb der Loop-Fehler-Grenze.
+    // DER TAKT DES LESERS (K2 Belegung): der Wert gilt PERF_GPU_TS_STALE_MS als frisch — ein Auflösen je Bild schickte je Bild
+    // einen Auftrag mehr an die Queue und eine mapAsync-Rückkehr samt Fortsetzung über den Haupt-Faden; es löst höchstens alle
+    // PERF_GPU_TS_TAKT_MS (r184 gibt die Summe des LETZTEN Bilds zurück). r184 hält jeden Pass-Stempel für immer (`timestamps`,
+    // ein Schlüssel je Pass und Bild: 25 851 Einträge nach 6 729 Bildern, Radeon) — der Regler liest nur die Summe, nach
+    // jedem Auflösen fällt die Karte.
     _perfGpuResolveKick() {
         const st = this.state;
         const r = st.renderer;
@@ -199,11 +204,16 @@ class AnazhRealm_dirigent_regler {
         if (this._gpuTsPending) return;
         if (!r.backend || r.backend.trackTimestamp !== true) return;
         if (typeof r.resolveTimestampsAsync !== "function") return;
+        const jetzt = performance.now();
+        if (jetzt - (this._gpuTsKickMs || -Infinity) < AnazhRealm.PERF_GPU_TS_TAKT_MS) return;
+        this._gpuTsKickMs = jetzt;
         this._gpuTsPending = true;
         try {
             r.resolveTimestampsAsync("render").then(
                 (v) => {
                     this._gpuTsPending = false;
+                    const pool = r.backend.timestampQueryPool && r.backend.timestampQueryPool.render;
+                    if (pool && pool.timestamps) pool.timestamps.clear();
                     if (Number.isFinite(v) && v >= 0) {
                         this._gpuTsLast = v;
                         this._gpuTsAtMs =
@@ -2025,6 +2035,7 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // gilt: bleibt die nächste Auflösung länger aus (Headless-Wechsel, Device-Verlust,
 // stockende mapAsync-Kette), fällt `_perfGpuSample` ehrlich auf den Proxy zurück.
 AnazhRealm.PERF_GPU_TS_STALE_MS = 2000;
+AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKick`): ein Achtel der Frische
 // GPU-Last-Proxy: ms-Äquivalent je Draw-Call (~0.011 → 1092 Draw-Calls ≈ 12 ms). Hebt die
 // GPU-Render-Last in die Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die
 // render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.

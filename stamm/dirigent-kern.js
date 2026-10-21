@@ -1208,7 +1208,7 @@ class AnazhRealm {
     // gespiegelt nach state.gameMode für Gate-Reads. setGameMode ist der EINZIGE Mutations-Pfad
     // (beide + UI-Latches + Status-Bar + Save).
     static get GAME_MODES() {
-        return Object.freeze(["frieden", "pfad", "schöpfer"]);
+        return this._einmal("GAME_MODES", Object.freeze(["frieden", "pfad", "schöpfer"]));
     }
 
     setGameMode(mode) {
