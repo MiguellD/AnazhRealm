@@ -418,18 +418,18 @@ function latenzAn(k) {
         window.__wetterHalten();
         r._gameLoopTick(t);
     });
-    // je Probe: zurück an den Start (der Leib steht, die Ruhe ist abgewartet), die Sicht, 8 ruhige Bilder, dann eine
+    // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
     // zufällige Phase gegen den Bild-Takt
     L.bereit = async (sicht, zurueck) => {
         L.probe = null;
         if (zurueck) st.playerMesh.position.copy(L.start);
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
-        for (const bis = performance.now() + 4000; L.still < 8; await raf()) if (performance.now() > bis) return false;
+        for (const bis = L.bilder.length + 240; L.still < 8; await raf()) if (L.bilder.length > bis) return false;
         await new Promise((f) => setTimeout(f, Math.random() * 17));
         return !!(L.probe = {});
     };
     L.treffer = async () => {
-        for (const bis = performance.now() + 1000; !L.probe.ms && performance.now() < bis; ) await raf();
+        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await raf();
         return Object.assign(L.probe, { ref: undefined });
     };
     L.ende = () => {
@@ -1878,7 +1878,7 @@ async function starte() {
                                     if (!(await page.evaluate((s, z) => window.__latenz.bereit(s, z), s, verb === "gehen"))) {
                                         reihe.push({ unruhe: true });
                                         if (reihe.filter((p) => p.unruhe).length < 3) continue;
-                                        throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille Bilder in 4 s) — der Leib steht nicht`);
+                                        throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht`);
                                     }
                                     await druck("keyDown", taste[verb]);
                                     reihe.push(await page.evaluate(() => window.__latenz.treffer()));
