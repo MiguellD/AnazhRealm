@@ -7,6 +7,28 @@
     "baenderM": [1000, 2000, 5000, 8000],
     "uhren": [0.5, 0.27],
     "mindest": { "n": 10, "nk": 30, "azimute": 3 },
-    "band": { "T": 0.15, "kanal": [0.5, 1.5], "dh": 10, "rand": 0.02 },
-    "offen": { "FARBTON": "die In-Streuung am Horizont traegt Ton 130-138 Grad, das ferne Gelaende ist helle Wiese: Himmel und Albedo, nie beta" }
+    "band": {
+        "T": 0.15,
+        "kanal": [0.5, 1.5],
+        "dh": 10,
+        "saett": [0.67, 1.5],
+        "grau": 0.05,
+        "seite": 0.1,
+        "weissRB": 1.3,
+        "rand": 0.02
+    },
+    "himmel": {
+        "quelle": "der Himmel am Horizont nach Hillaire 2020 (CGF 39(4), Gl. 5-9) mit den Konstanten von Bruneton 2017 (Precomputed Atmospheric Scattering: a New Implementation, Demo): Rayleigh 5,802/13,558/33,1 e-6/m bei 680/550/440 nm, Skalenhoehe 8 km; Mie g 0,8, Einfach-Albedo 3,996/4,44 = 0,9; Ozon 0,650/1,881/0,085 e-6/m im Zelt 10-40 km (Gipfel 25 km); Boden grau 0,1; Radien 6360/6460 km; das Aerosol die klare Luft oben (Koschmieder)",
+        "erdeM": 6360000,
+        "randM": 6460000,
+        "rayleigh": [5.802e-6, 1.3558e-5, 3.31e-5],
+        "rayleighH": 8000,
+        "mieG": 0.8,
+        "mieAlbedo": 0.9,
+        "ozon": [6.5e-7, 1.881e-6, 8.5e-8],
+        "ozonMitteKm": 25,
+        "ozonHalbKm": 15,
+        "boden": [0.1, 0.1, 0.1]
+    },
+    "weiss": { "m": 5000, "seite": 300 }
 }

@@ -1505,10 +1505,10 @@ jobs:
               if: ${{ !cancelled() }}
               run: npm run gate:streu-fern
 
-            - name: Luft im Bild auf der Karte (Koschmieder je Kanal gegen die Referenz in spec, der Rand der Ferne ohne Kante)
+            - name: Luft im Bild auf der Karte (Koschmieder je Kanal und der Himmel am Horizont gegen die Referenz in spec, der Rand der Ferne ohne Kante)
               if: ${{ !cancelled() }}
               # werkbank licht --luft: vom Huegel 120 m ueber Genesis je Uhr 0,5/0,27 vier Azimute, drei Schuesse aus dem Ausgabe-Pfad
-              # (Luft, beta 0, beta 1); der Selbsttest macht einen grauen beta und die Kante 21 % rot — lokal 1,5 min samt Boot (Radeon)
+              # (Luft, beta 0, beta 1) + fernes Weiss bei Sonne 5 Grad; der Selbsttest macht grauen beta, gruenen Horizont und Kante 21 % rot — lokal 2,5 min (Radeon)
               run: npm run gate:luft-tiefe:echt
 
             - name: Chunk-Naht auf der Karte (kein ungedeckter Spalt)

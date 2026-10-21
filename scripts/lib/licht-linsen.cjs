@@ -2256,6 +2256,7 @@ function luftTiefe(o) {
             const S = await schuss(1, k);
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
+            const inS = [[], [], []];
             const gez = [];
             const fern = {};
             for (let yy = 0; yy < H; yy += 2)
@@ -2267,6 +2268,7 @@ function luftTiefe(o) {
                     const sa = roh(S, i);
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
+                    sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
@@ -2281,10 +2283,12 @@ function luftTiefe(o) {
             return {
                 blende: k,
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
+                himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
             };
         };
         const zeilen = [];
+        let weiss = null;
         try {
             for (const u of R.uhren) {
                 const so = uhr(u);
@@ -2295,6 +2299,29 @@ function luftTiefe(o) {
                     zeilen.push(Object.assign({ uhr: u, sonne: so.sonne, az: k * 90 }, z));
                 }
             }
+            // FERNES WEISS bei Sonne 5° (die Uhr in Halbierungen): eine weiße Lambert-Tafel in `weiss.m` gegen die Sonne, R/B linear
+            let [a, b] = [0.2, 0.3];
+            for (let k = 0; k < 14; k++) [a, b] = uhr((a + b) / 2).sonne < 5 ? [(a + b) / 2, b] : [a, (a + b) / 2];
+            const so = uhr(b);
+            const az = so.az + Math.PI;
+            const [wx, wz] = [gx + Math.sin(az) * R.weiss.m, gz - Math.cos(az) * R.weiss.m];
+            const tafel = new T.Mesh(new T.PlaneGeometry(R.weiss.seite, R.weiss.seite), new T.MeshStandardMaterial());
+            tafel.position.set(wx, gesetz(wx, wz) + R.weiss.seite, wz);
+            st.scene.add(tafel);
+            try {
+                blick(az);
+                tafel.lookAt(cam.position);
+                const p = tafel.position.clone().project(cam);
+                for (const k of Math.max(Math.abs(p.x), Math.abs(p.y)) < 0.9 ? [1, 0.25] : []) {
+                    if (weiss) break;
+                    const c = roh(await schuss(null, k), (Math.round(((1 - p.y) / 2) * H) * W + Math.round(((p.x + 1) / 2) * W)) * 4);
+                    weiss = weiss || (c && { sonne: so.sonne, blende: k, RB: +(c[0] / c[2]).toFixed(3) });
+                }
+            } finally {
+                st.scene.remove(tafel);
+                tafel.geometry.dispose();
+                tafel.material.dispose();
+            }
         } finally {
             delete r._dayNightApplyHemiUndLuft;
             delete r._dayNightApplyBelichtung;
@@ -2303,17 +2330,94 @@ function luftTiefe(o) {
             cam.updateProjectionMatrix();
             window.__buehne();
         }
-        return { gy: Math.round(gy), zeilen };
+        return { gy: Math.round(gy), augeM: Math.round(gy - (st.waterLevel || 0)), zeilen, weiss };
     })();
 }
 
+// DER HIMMEL DER REFERENZ (Hillaire 2020, CGF 39(4), Gl. 5–9, die Konstanten `R.himmel`; CPU, nie die Tafeln der Welt): rgb am
+// Horizont (Blick waagrecht aus `augeM`, Azimut ab der Sonne) je Einheit der Sonne, Einfach- und Mehrfach-Streuung Ψ_ms.
+const himmelVorrat = new Map();
+function himmelReferenz(R, sonneGrad, azGrad, augeM) {
+    const az = Math.min(azGrad % 360, 360 - (azGrad % 360));
+    const schluessel = [sonneGrad, az, augeM].join();
+    if (himmelVorrat.has(schluessel)) return himmelVorrat.get(schluessel);
+    const A = R.himmel;
+    const [RG, RT] = [A.erdeM / 1e3, A.randM / 1e3];
+    const mie = (-Math.log(R.kontrast) / R.sichtKlarM - A.rayleigh[1]) * 1e3;
+    const sq = (x) => Math.sqrt(Math.max(0, x));
+    // je Höhe (km): [Streuung Rayleigh, Streuung Mie, Extinktion] je Kanal
+    const medium = (h) => {
+        const [r, m, o] = [Math.exp((-h * 1e3) / A.rayleighH), Math.exp((-h * 1e3) / R.skalenHoeheM), Math.max(0, 1 - Math.abs(h - A.ozonMitteKm) / A.ozonHalbKm)];
+        return [A.rayleigh.map((b) => b * 1e3 * r), mie * A.mieAlbedo * m, A.rayleigh.map((b, c) => (b * r + A.ozon[c] * o) * 1e3 + mie * m)];
+    };
+    const boden = (r, mu) => mu < 0 && r * r * (mu * mu - 1) + RG * RG >= 0;
+    // der Marsch von r längs v (quadratisch dicht am Auge): L += Durchlass · quelle · (1 − e^−eΔt)/e, F dasselbe für σs
+    const marsch = (r, v, N, quelle) => {
+        const w = r * r * (v[1] * v[1] - 1);
+        const tM = -r * v[1] + (boden(r, v[1]) ? -sq(w + RG * RG) : sq(w + RT * RT));
+        const [L, F, thr] = [[0, 0, 0], [0, 0, 0], [1, 1, 1]];
+        for (let s = 0; s < N; s++) {
+            const p = [0, 1, 2].map((i) => v[i] * tM * ((s + 0.5) / N) ** 2 + (i === 1 ? r : 0));
+            const [sR, sM, e] = medium(Math.hypot(...p) - RG);
+            const Q = quelle ? quelle(p, sR, sM) : [0, 0, 0];
+            for (let c = 0; c < 3; c++) {
+                const tr = Math.exp((-e[c] * tM * (2 * s + 1)) / N / N);
+                L[c] += (thr[c] * Q[c] * (1 - tr)) / e[c];
+                F[c] += (thr[c] * (sR[c] + sM) * (1 - tr)) / e[c];
+                thr[c] *= tr;
+            }
+        }
+        return { L, F, thr, ende: v.map((x, i) => x * tM + (i === 1 ? r : 0)) };
+    };
+    const zur = (p, s) => (p[0] * s[0] + p[1] * s[1]) / Math.hypot(...p);
+    const durch = (p, s) => (boden(Math.hypot(...p), zur(p, s)) ? [0, 0, 0] : marsch(Math.hypot(...p), [sq(1 - zur(p, s) ** 2), zur(p, s), 0], 30).thr);
+    const psiVorrat = new Map();
+    const psi = (p, s) => {
+        const k = [Math.round(Math.hypot(...p) * 20), Math.round(zur(p, s) * 64)].join();
+        if (!psiVorrat.has(k)) {
+            const s2 = [sq(1 - zur(p, s) ** 2), zur(p, s)];
+            const [Ls, Fs] = [[0, 0, 0], [0, 0, 0]];
+            for (let i = 0; i < 64; i++) {
+                const [mu, phi] = [((i >> 3) + 0.5) / 4 - 1, ((i % 8) + 0.5) * (Math.PI / 4)];
+                const m = marsch(Math.hypot(...p), [sq(1 - mu * mu) * Math.cos(phi), mu, sq(1 - mu * mu) * Math.sin(phi)], 20, (q, sR, sM) =>
+                    durch(q, s2).map((T, c) => (T * (sR[c] + sM)) / 4 / Math.PI)
+                );
+                const nl = boden(Math.hypot(...p), mu) ? Math.max(0, zur(m.ende, s2)) : 0;
+                const T = nl ? durch(m.ende, s2) : [0, 0, 0];
+                for (let c = 0; c < 3; c++) [Ls[c], Fs[c]] = [Ls[c] + m.L[c] + (m.thr[c] * T[c] * nl * A.boden[c]) / Math.PI, Fs[c] + m.F[c]];
+            }
+            psiVorrat.set(k, Ls.map((x, c) => x / 64 / (1 - Fs[c] / 64)));
+        }
+        return psiVorrat.get(k);
+    };
+    const sonne = [Math.cos((sonneGrad * Math.PI) / 180), Math.sin((sonneGrad * Math.PI) / 180)];
+    const nu = Math.cos((az * Math.PI) / 180) * sonne[0];
+    const pR = (3 / 16 / Math.PI) * (1 + nu * nu);
+    const pM = (1 - A.mieG ** 2) / (4 * Math.PI * (1 + A.mieG ** 2 - 2 * A.mieG * nu) ** 1.5);
+    const v = [Math.cos((az * Math.PI) / 180), 0, Math.sin((az * Math.PI) / 180)];
+    const L = marsch(RG + augeM / 1e3, v, 64, (p, sR, sM) => {
+        const [T, P] = [durch(p, sonne), psi(p, sonne)];
+        return sR.map((r, c) => T[c] * (r * pR + sM * pM) + P[c] * (r + sM));
+    }).L;
+    himmelVorrat.set(schluessel, L);
+    return L;
+}
+
+// Ton (°) und Sättigung (HSV) einer linearen Farbe
+function tonSaett(c) {
+    const [hi, d] = [Math.max(...c), Math.max(...c) - Math.min(...c)];
+    const h = !d ? 0 : 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
+    return [Math.round(h), +(d / hi).toFixed(3)];
+}
+
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
-// Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
-// (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
+// Referenz, grau = 0) · FARBTON (8 km zur In-Streuung) · HIMMEL (die In-Streuung am Horizont gegen den Himmel der Referenz, Ton
+// und Sättigung) · SONNENSEITE · FERNES WEISS, K2-1 KANTE. Jede Sicht (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen.
 function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
     const liste = [];
+    const zahlen = [];
     const dRef = R.rayleigh[2] - R.rayleigh[0];
     const gemessen = R.baenderM.map(() => 0);
     for (const u of R.uhren)
@@ -2326,6 +2430,12 @@ function luftTiefeUrteil(m, R) {
                 if (u === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
                 if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
             }
+            // ein fast graues Soll (Sättigung < `grau`) trägt keinen Ton: dort zählt allein, dass die Messung grau bleibt
+            const [h, s] = z.himmel ? tonSaett(z.himmel) : [];
+            const [hr, sr] = z.himmel ? tonSaett(himmelReferenz(R, z.sonne, az, m.augeM)) : [];
+            if (z.himmel) zahlen.push(`${wo}: Himmel am Horizont ${h}°/${s}, Referenz ${hr}°/${sr}`);
+            if (!((Math.min(Math.abs(h - hr), 360 - Math.abs(h - hr)) <= B.dh || sr < B.grau) && s >= B.saett[0] * sr && s <= B.saett[1] * Math.max(sr, B.grau)))
+                liste.push(`K1-2 HIMMEL ${wo}: die In-Streuung am Horizont ${z.himmel ? `Ton ${h}° Sättigung ${s} gegen die Referenz ${hr}° ${sr}` : "ungemessen"}`);
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
             const nk = fern.reduce((a, b) => a + b.nk, 0);
             // inverse Varianz: der Fehler von dk fällt mit d, die Band-Mediane wiegen nk·d²
@@ -2339,31 +2449,48 @@ function luftTiefeUrteil(m, R) {
     gemessen.forEach((n, i) => {
         if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);
     });
-    const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
+    // DIE SONNENSEITE (die Mie-Keule): zu Mittag Y der In-Streuung zur Sonne / gegen sie, gegen dasselbe Verhältnis der Referenz
+    const [z0, z1] = [0, 180].map((az) => m.zeilen.find((x) => x.uhr === 0.5 && x.az === az && x.himmel));
+    const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const seite = z0 && z1 && +(Y(z0.himmel) / Y(z1.himmel)).toFixed(3);
+    const seiteRef = z0 && +(Y(himmelReferenz(R, z0.sonne, 0, m.augeM)) / Y(himmelReferenz(R, z0.sonne, 180, m.augeM))).toFixed(3);
+    const weiss = m.weiss && m.weiss.RB;
+    zahlen.push(`Sonnenseite ${seite} (Referenz ${seiteRef}), fernes Weiß R/B ${weiss} (${JSON.stringify(m.weiss)})`);
+    if (!(Math.abs(seite / seiteRef - 1) <= B.seite))
+        liste.push(`K1-2 SONNENSEITE Uhr 0.5: Y der In-Streuung zur Sonne / gegen sie ${seite}, Referenz ${seiteRef} (±${B.seite * 100} %)`);
+    if (!(weiss >= B.weissRB)) liste.push(`K1-2 FERNES WEISS bei Sonne 5°: R/B ${weiss} < ${B.weissRB}`);
     const staffel = {};
     for (const k of ["K1-1", "K1-2", "K2-1"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
-    const befunde = liste.filter((b) => !offen(b));
-    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
+    return { urteil: liste.length ? "ROT" : "GRUEN", staffel, befunde: liste, zahlen };
 }
 
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
-    const sichten = (dk, C, n = 50) =>
+    const blau = (az) => himmelReferenz(R, 60, az, 120);
+    const sichten = (dk, C, n = 50, himmel = blau) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
                 sonne: 60,
                 az,
                 rand: { km: 20, C },
+                himmel: n && himmel(az),
                 baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen) => luftTiefeUrteil({ zeilen }, Object.assign({}, R, { offen: {} }));
+    const urteil = (zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, augeM: 120, weiss }, R);
+    const rot = (zeilen, re, weiss) => urteil(zeilen, weiss).befunde.some((b) => re.test(b));
+    const k = ref[2] - ref[0];
     const leer = urteil(sichten(null, null, 0)).staffel;
+    const h = tonSaett(blau(90))[0];
     return [
-        urteil(sichten(ref[2] - ref[0], 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
-        urteil(sichten(0, 0.005)).befunde.some((b) => /JE KANAL/.test(b)) || "ein grauer β ist nicht ROT",
-        urteil(sichten(ref[2] - ref[0], 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
+        (h >= 195 && h <= 235) || `der Himmel der Referenz am Horizont ist nicht bläulich-weiß (${h}°)`,
+        urteil(sichten(k, 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
+        rot(sichten(0, 0.005), /JE KANAL/) || "ein grauer β ist nicht ROT",
+        urteil(sichten(k, 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
+        rot(sichten(k, 0.005, 50, () => [0.06, 0.066, 0.0605]), /HIMMEL/) || "ein grüner Horizont ist nicht ROT",
+        rot(sichten(k, 0.005, 50, (az) => blau(az).map((x) => (az ? x : 0.8 * x))), /SONNENSEITE/) || "die Sonnenseite 0,8 × Referenz ist nicht ROT",
+        rot(sichten(k, 0.005), /FERNES WEISS/, null) || "ein ungemessenes fernes Weiß ist nicht ROT",
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
     ].filter((x) => x !== true);

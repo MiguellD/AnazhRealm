@@ -582,13 +582,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // 1. HemisphereLight im Scene + state-cached
-        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
-        // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
+        // 1. HemisphereLight im Scene + state-cached (die In-Streuung der Luft misst `werkbank licht --luft` im Bild)
         r._applyDayNightToScene();
-        const atmoU = r._atmoLutBau().U;
-        const mE = atmoU.mondE.value;
-        out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
@@ -681,10 +676,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v827Results && !v827Results.error) {
-        check(
-            "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
-            v827Results.fogColorSet
-        );
         check("V18.507: EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
         check(
             `V18.507: Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
