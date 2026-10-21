@@ -373,20 +373,22 @@ function methodeAusQuelle(quelle, name) {
 // Input.dispatchKeyEvent, `event.timeStamp`), Ende die Marke des präsentierten Bilds (`getCurrentTexture` am Canvas der Welt,
 // wie die Belegungs-Spur), in dem Kamera oder Leib ≥ 1 cm von der Lage des letzten Bilds vor der Taste stehen. Je Probe die
 // Zerlegung: eingabe (Ereignis → Hörer) · warten (Hörer → Beginn des Takts, der das Bild zeichnet) · takte · bild (Takt →
-// Marke). `verzug` (Selbsttest) hält die Taste n Bilder im Eingabe-Pfad zurück; die Bewegung liest nie das Render-Signal.
+// Marke) · regung (das erste Bild ≥ 1 mm: bis dahin die Kette, danach die Gang-Kurve).
+// `verzug` (Selbsttest) hält die Taste n präsentierte Bilder im Eingabe-Pfad zurück (die Leine zeichnet nicht jeden Takt); die Bewegung liest nie das Render-Signal.
 function latenzAn(k) {
     const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
     if (window.__tiereHalten) window.__tiereHalten();
     const lage = () => [st.camera.matrixWorld.elements.slice(12, 15), st.playerMesh.position.toArray()];
     const weg = (a, b) => Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j]))));
-    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], sicht: st.cameraMode });
+    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();
     const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
     GPUCanvasContext.prototype.getCurrentTexture = function () {
         if (this.canvas === rend.domElement) {
             const t = performance.now(), l = lage(), p = L.probe;
             L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
+            if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
             if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
                 Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
             L.vor = l;
@@ -402,10 +404,11 @@ function latenzAn(k) {
         if (!k.verzug) return;
         ev.stopImmediatePropagation();
         const kopie = new KeyboardEvent(ev.type, { key: ev.key, code: ev.code, bubbles: true, cancelable: true });
-        synth.add(kopie);
+        const eintrag = [ev.target, kopie];
+        synth.add(kopie), L.offen.push(eintrag);
         (async () => {
-            for (let i = 0; i < k.verzug; i++) await raf();
-            ev.target.dispatchEvent(kopie);
+            for (const n = L.bilder.length + k.verzug; L.bilder.length < n && L.offen.includes(eintrag); ) await raf();
+            if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
         })();
     };
     for (const typ of ["keydown", "keyup"]) window.addEventListener(typ, hoer, true);
@@ -430,6 +433,7 @@ function latenzAn(k) {
         return Object.assign(L.probe, { ref: undefined });
     };
     L.ende = () => {
+        for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
         GPUCanvasContext.prototype.getCurrentTexture = gct;
         for (const typ of ["keydown", "keyup"]) window.removeEventListener(typ, hoer, true);
         rend.setAnimationLoop(null);
@@ -450,7 +454,7 @@ function latenzUrteil(proben, bildMs, soll = 50) {
         const ms = ok.map((p) => p.ms).sort((a, b) => a - b);
         const z = { eingabe: med("eingabe"), warten: med("warten"), bild: med("bild") };
         const e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
-        Object.assign(e, z, { takte: med("takte") });
+        Object.assign(e, z, { takte: med("takte"), regung: med("regung") });
         if (e.fehlt || !(e.p95 <= soll)) {
             const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
             rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);
@@ -1873,7 +1877,8 @@ async function starte() {
                                     const s = sicht === "ego" ? "first" : "third";
                                     if (!(await page.evaluate((s, z) => window.__latenz.bereit(s, z), s, verb === "gehen"))) {
                                         reihe.push({ unruhe: true });
-                                        continue;
+                                        if (reihe.filter((p) => p.unruhe).length < 3) continue;
+                                        throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille Bilder in 4 s) — der Leib steht nicht`);
                                     }
                                     await druck("keyDown", taste[verb]);
                                     reihe.push(await page.evaluate(() => window.__latenz.treffer()));
