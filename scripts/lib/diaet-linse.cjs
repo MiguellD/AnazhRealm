@@ -1,10 +1,6 @@
-// diaet-linse.cjs — DIE DIÄT-LINSE: was die Diät und die Bundles je gerendertem Frame im echten Loop arbeiten. Zahl je Frame:
-// Prüfungen · voll geprüft (hinter dem Tor des Registers, `_diaetVorTextur`) ·
-// Lage-Vergleiche (nur das Bewegliche) · Voll-Refreshs (Grund) · Gänge über Vorher-Knoten, Knoten, geteilte Gruppen, fremde
-// Verweise (und ihre Wiederholung im SELBEN Render-Abschnitt) · Uploads · writeBuffer · Replay-Bürger · Renders; netto je Bereich
-// (verschachtelte abgezogen) und WO der Schatten-Render startet. Urteil (Gebot 7) im Stand: kein Gang zweimal, jeder Voll-Refresh
-// trägt eine Änderung zur GPU (jedes geschriebene Byte neu), keine Prüfung ohne Meldung (an der Basis ohne Register jede); immer:
-// ein ruhendes statisches Render-Objekt steht an seiner Lage (sonst REGUNG OHNE MELDUNG).
+// diaet-linse.cjs — DIE DIÄT-LINSE: was Diät und Bundles je gerendertem Frame im echten Loop arbeiten (Prüfungen, Gänge,
+// Uploads, Renders; netto je Bereich). Urteil im Stand: kein Gang zweimal, jeder Voll-Refresh trägt eine Änderung, keine Prüfung
+// ohne Meldung; immer: keine Regung ohne Meldung, kein zeichnendes Render-Objekt ohne Attribute.
 //   Seite:     window.__diaetLauf({ frames: 90, modus: "ruhe"|"drehen"|"gehen", grad: 1, tiere: "halten"|"frei" })
 //   Werkbank:  node scripts/werkbank.cjs diaet [frames] [--modus ruhe] [--tiere halten] | diaet --selbsttest
 
@@ -29,10 +25,8 @@ function diaetZaehler() {
     const stapel = [];
     let imGang = 0;
     let imOG = 0;
-    // DER REFRESH OHNE ÄNDERUNG (K71): ein Voll-Refresh, der nichts Neues zur GPU trägt — kein Upload einer Gruppe (r184
-    // lädt eine Gruppe nur bei geändertem Wert), kein neuer Puffer, und jedes geschriebene Byte gleicht dem, was an dieser
-    // Stelle schon liegt (eine Version, die ein Schreiber ohne Änderung hob). Je Refresh offen bis zum Ende seiner
-    // Bindungen; Schreibe zählen beim Render-Objekt, dessen Auffrischung sie trägt.
+    // DER REFRESH OHNE ÄNDERUNG (K71): kein Gruppen-Upload, kein neuer Puffer, jedes geschriebene Byte gleich dem alten —
+    // offen bis zum Ende seiner Bindungen; Schreibe zählen beim Render-Objekt, dessen Auffrischung sie trägt.
     const offen = new Map();
     let aktRo = null;
     const kopie = new WeakMap();
@@ -78,9 +72,7 @@ function diaetZaehler() {
             if (aussen) aussen.kind += d;
         }
     };
-    const zaehle = (k, n = 1) => {
-        if (c) c.n[k] = (c.n[k] || 0) + n;
-    };
+    const zaehle = (k, n = 1) => c && (c.n[k] = (c.n[k] || 0) + n);
     // Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`, wie der Stempel des Gangs): nach einem
     // verschachtelten Render stellt der äußere seine Knoten zu Recht ein zweites Mal.
     const besuch = (art, id) => {
@@ -94,6 +86,10 @@ function diaetZaehler() {
     haken("refresh", A, "_diaetRefresh", function (obs, ro, frame, altNR) {
         const v = rahmen("pruef", () => roh.refresh(obs, ro, frame, altNR));
         zaehle("pruef");
+        if (c && ro.attributes === null && ro.vertexBuffers) {
+            zaehle("geloescht");
+            c.tot[nameVon(ro)] = (c.tot[nameVon(ro)] || 0) + 1;
+        }
         if (frame) c && c.rids.add(frame.renderId);
         if (v && c) {
             offen.set(ro, { name: nameVon(ro), wirkung: 0 });
@@ -256,7 +252,7 @@ function diaetZaehler() {
         return roh.ubs.apply(this, a);
     });
     return {
-        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
+        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, tot: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
         aus: () => (c = null),
         zurueck: () => zurueck.forEach((z) => z()),
     };
@@ -340,12 +336,12 @@ function diaetLauf(opts) {
             ohneAenderung: top(mittel("ohne"), 12),
             ohneMeldung: top(mittel("ohneM"), 8),
             regungOhne: top(mittel("regungO"), 8),
+            geloescht: top(mittel("tot"), 8),
         };
     })();
 }
 
-// DAS URTEIL (Node, auch im Selbsttest): im Stand wiederholt die Diät keinen Gang — kein Knoten, kein Vorher-Knoten,
-// keine geteilte Gruppe zweimal im selben Render. Die Netto-Zeiten sind Richtwerte (die Zeit misst der OMEN).
+// DAS URTEIL (Node, auch im Selbsttest); die Netto-Zeiten sind Richtwerte (die Zeit misst der OMEN).
 function diaetUrteil(e) {
     const v = [];
     if (!e || !(e.frames > 0)) return ["DIÄT: kein gerenderter Frame gemessen — die Linse ist blind"];
@@ -365,6 +361,7 @@ function diaetUrteil(e) {
             );
         if (z.ohneMeldung > 0.5) v.push(`RUHE: ${z.ohneMeldung} Prüfungen ohne Meldung je Frame (${e.ohneMeldung.join(" · ")}) — die Diät fragt`);
     }
+    if (z.geloescht > 0.5) v.push(`ATTRIBUTE GELÖSCHT: ${z.geloescht} je Frame (${e.geloescht}) — zeichnet, prüft voll`);
     if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Bild trüge die alte Lage`);
     return v;
 }
@@ -383,6 +380,7 @@ function selbsttest() {
             /RUHE: 6\.5 Refreshs ohne Änderung je Frame \(bauSatz: 1\.7 · nahWiese:L2:0:0: 0\.3\)/,
         ],
         ["Prüfung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, ohneMeldung: 85 }, ohneMeldung: ["Ring: 12"] }), /RUHE: 85 Prüfungen ohne Meldung je Frame \(Ring: 12\)/],
+        ["gelöschte Attribute", Object.assign({}, gruen, { zahl: { pruef: 85, geloescht: 5 }, geloescht: "bauSatz" }), /GELÖSCHT: 5 .*bauSatz/],
         ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
     ];
     for (const [name, e, muss] of faelle) {
