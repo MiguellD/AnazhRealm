@@ -86,7 +86,10 @@ function diaetZaehler() {
     haken("refresh", A, "_diaetRefresh", function (obs, ro, frame, altNR) {
         const v = rahmen("pruef", () => roh.refresh(obs, ro, frame, altNR));
         zaehle("pruef");
-        if (c && ro.attributes === null && ro.vertexBuffers) c.tot[nameVon(ro)] = zaehle("geloescht");
+        if (c && ro.attributes === null && ro.vertexBuffers) {
+            zaehle("geloescht");
+            c.tot[nameVon(ro)] = (c.tot[nameVon(ro)] || 0) + 1;
+        }
         if (frame) c && c.rids.add(frame.renderId);
         if (v && c) {
             offen.set(ro, { name: nameVon(ro), wirkung: 0 });
