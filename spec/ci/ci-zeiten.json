@@ -266,13 +266,6 @@
       "lauf": "npm run gate:boot-rettung",
       "laeufe": ["39627539048", "39614141577", "39610714347", "39584063009", "39567386389", "39562739076", "39547307165"]
     },
-    "Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)": {
-      "s": 11,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:grass-thin",
-      "laeufe": ["39627539048", "39614141577", "39610714347", "39584063009", "39567386389", "39562739076", "39547307165"]
-    },
     "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)": {
       "s": 12,
       "n": 7,

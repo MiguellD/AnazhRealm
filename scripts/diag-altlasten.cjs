@@ -76,6 +76,8 @@ const FORBIDDEN = [
     { token: "GRASS_MAX_BLADES", fiel: "V18.492" },
     { token: "_grassStudioGeometry", fiel: "V18.492 — die Studio-Halm-Geometrie" },
     { token: "_tickGrassStage", fiel: "V18.492 — der Stufen-Tick lief ins Leere" },
+    { token: "GRASS_TUFT_BLADES", fiel: "N7.4 — die Wiese ist Boden-Funktion" },
+    { token: "voxelChunkGrassDensity", fiel: "N7.4" },
     { token: "voxelChunkGrassStage", fiel: "V18.492" },
     { token: "_buildTierBaum", fiel: "DIE EINE PIPE — der Stamm-Inline-Baum-Tunnel" },
     { token: "_tierFernTeile", fiel: "DIE EINE PIPE — das Stamm-eigene Fern-System (lod1 kommt aus der Pipe)" },

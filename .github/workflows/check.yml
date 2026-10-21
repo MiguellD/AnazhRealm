@@ -533,15 +533,6 @@ jobs:
               # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
               run: npm run gate:boot-rettung
 
-            - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
-              if: matrix.gruppe == 8
-              # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
-              # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
-              # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
-              # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
-              # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
-              run: npm run gate:grass-thin
-
             - name: Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)
               if: matrix.gruppe == 5
               # Fake-Info mit exakter r184-Semantik (calls=Lebenszeit, drawCalls=pro Frame) am EINEN Tap:

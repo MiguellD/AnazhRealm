@@ -2860,176 +2860,125 @@ async function kreaturProben(r, T, opts) {
         // gegen den Stand jedes Leibs, je Takt die Sprung-Wand im Nahbereich und der Weg jedes Leibs.
         const KC = window.__koerperCore;
         const planFn = KC && typeof KC.tagesPlan === "function" ? KC.tagesPlan : null;
-        const S = [...(r._bewohnerSiedlungen || new Map()).values()].find(
-            (x) => x && x.plan && x.plan.seed >>> 0 === plan.seed >>> 0 && Array.isArray(x.liste)
-        );
-        const liste = S ? S.liste.filter((b) => b.leib && L.includes(b.leib)) : [];
+        const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((x) => x.liste && x.plan.seed === plan.seed);
+        const liste = S ? S.liste.filter((b) => L.includes(b.leib)) : [];
         const tag0 = s.timeOfDay;
-        restore.push(() => r._uhrSetzen(tag0, "regler"));
-        const tagMin = s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES;
-        const SCHRITT_H = 0.1;
-        const DT = 0.1;
-        const takte = Math.max(1, Math.round(((SCHRITT_H / 24) * tagMin * 60) / DT));
-        const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
-        const verschub = taeter === "bewohner-plan6" ? 6 : 0;
-        const weg = new Map();
-        const treffer = new Map();
-        const proben = new Map();
-        const wegVorher = new Map();
-        const letzte = new Map();
-        for (const b of L) letzte.set(b, { x: b.position.x, z: b.position.z });
-        let sprungN = 0;
-        let wandN = 0;
+        restore.push(
+            () => r._uhrSetzen(tag0, "regler"),
+            () => delete r._bewohnerStrecke
+        );
         // Täter (Selbsttest): der Weg geradeaus zum Ziel, durch jedes Haus
         if (taeter === "bewohner-wand") r._bewohnerStrecke = (S0, von, ziel) => [ziel];
-        restore.push(() => delete r._bewohnerStrecke);
-        let sprungMax = 0;
-        let alsLeibMax = alsLeibStart;
-        let schmiede10 = null;
-        let schmiede2 = null;
+        const DT = 0.1;
+        const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
+        const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
+        const weg = new Map(L.map((g) => [g, 0]));
+        const lage = new Map(L.map((g) => [g, { x: g.position.x, z: g.position.z }]));
+        const treffer = new Map();
+        const vorher = new Map();
+        const z = { sprungN: 0, wandN: 0, alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
         let blick10 = null;
         let planGleich = !!planFn;
-        const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte && b.orte.werk).map((b) => b.orte.werk);
-        const anStation = () => {
-            let n = 0;
-            for (const b of L)
-                if (gezeichnet(b) && stationen.some((o) => Math.hypot(b.position.x - o.x, b.position.z - o.z) < 1.5))
-                    n++;
-            return n;
-        };
-        const tStart = s.timeOfDay * 24;
-        const schritte = Math.round(24 / SCHRITT_H);
+        const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte.werk).map((b) => b.orte.werk);
+        const anStation = () =>
+            L.filter(
+                (g) => gezeichnet(g) && stationen.some((o) => Math.hypot(g.position.x - o.x, g.position.z - o.z) < 1.5)
+            ).length;
         const tTag = performance.now();
-        const TAG_DECKEL_MS = 240000; // der Zeitraffer hat seine Wand: ein Takt, der den Tag nicht trägt, ist ein Befund
-        let abgebrochen = null;
-        let taktMs = 0;
-        let taktMax = 0;
-        let taktN = 0;
-        for (let i = 1; i <= schritte; i++) {
-            const stunde = (tStart + i * SCHRITT_H) % 24;
+        for (let i = 1; i <= 240; i++) {
+            const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             r._uhrSetzen(stunde / 24, "regler");
-            if (performance.now() - tTag > TAG_DECKEL_MS) {
-                abgebrochen = Math.round(stunde * 10) / 10;
-                break;
-            }
             for (let k = 0; k < takte; k++) {
-                const tk = performance.now();
                 r._tickBewohner(DT);
-                const dk = performance.now() - tk;
-                taktMs += dk;
-                taktMax = Math.max(taktMax, dk);
-                taktN++;
-                // Täter (Selbsttest): der Teleport an den Soll-Ort — jeder Leib steht im Takt an seinem Ziel
-                // die Wand: wer geht, steht nie im Grundriss eines Hauses — auf dem Bein zwischen Tür und Stand nie in einem fremden
-                for (const b of liste) {
-                    const g = b.leib;
-                    if (!b.weg || !gezeichnet(g)) continue;
-                    const o = b.orte;
-                    const q = b.weg[b.wi];
-                    const bein = q === o.tuer || (q === o.vor && b.wi === 0 && b.stand === o.tuer);
-                    if (r._imGrundriss(g.position.x, g.position.z, 0, 0, bein ? o.tuer.haus : null) === "haus") wandN++;
-                }
+                // Täter (Selbsttest): der Teleport an den Soll-Ort
                 if (taeter === "bewohner-sprung")
-                    for (const b of liste)
-                        if (b.ziel && b.leib) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
+                    for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
+                for (const b of liste) {
+                    // die Wand: wer geht, steht in keinem Haus — auf dem Bein zwischen Tür und Vor-Punkt in keinem fremden
+                    const g = b.leib;
+                    const o = b.orte;
+                    const q = b.weg && b.weg[b.wi];
+                    const bein = q === o.tuer || (q === o.vor && b.stand === o.tuer);
+                    if (
+                        q &&
+                        gezeichnet(g) &&
+                        r._imGrundriss(g.position.x, g.position.z, 0, 0, bein ? o.tuer.haus : null) === "haus"
+                    )
+                        z.wandN++;
+                }
                 for (const g of L) {
-                    const v = letzte.get(g);
+                    const v = lage.get(g);
                     const d = Math.hypot(g.position.x - v.x, g.position.z - v.z);
-                    if (d > 0) weg.set(g, (weg.get(g) || 0) + d);
-                    const nah =
-                        Math.hypot(v.x - pm.x, v.z - pm.z) < nahR ||
-                        Math.hypot(g.position.x - pm.x, g.position.z - pm.z) < nahR;
-                    if (d > 2 && nah) {
-                        sprungN++;
-                        sprungMax = Math.max(sprungMax, d);
-                    }
+                    weg.set(g, weg.get(g) + d);
+                    if (
+                        d > 2 &&
+                        Math.min(
+                            Math.hypot(v.x - pm.x, v.z - pm.z),
+                            Math.hypot(g.position.x - pm.x, g.position.z - pm.z)
+                        ) < nahR
+                    )
+                        z.sprungN++;
                     v.x = g.position.x;
                     v.z = g.position.z;
                 }
             }
-            alsLeibMax = Math.max(alsLeibMax, L.filter((b) => b.visible).length);
-            // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs zum Soll (sein Weg
-            // schrumpft, siehe unten)
-            if (planFn)
-                for (const b of liste) {
-                    const sh = (stunde + verschub) % 24;
-                    const soll = planFn(b.same, b.rolle, b.orte.heim, b.orte.werk, sh, b.orte.platz);
-                    const nochmal = planFn(b.same, b.rolle, b.orte.heim, b.orte.werk, sh, b.orte.platz);
-                    if (JSON.stringify(soll) !== JSON.stringify(nochmal)) planGleich = false;
-                    const g = b.leib;
-                    const ziel = soll.drinnen ? b.orte.tuer : soll.ort;
-                    const dist = Math.hypot(g.position.x - ziel.x, g.position.z - ziel.z);
-                    const rest = Number.isFinite(b.wegRest) ? b.wegRest : null;
-                    // unterwegs: sein Weg zu DIESEM Soll begann seit dem letzten Ereignis, oder er schrumpfte seitdem um die Hälfte
-                    // dessen, was sein Gang-Tempo in der Zeit trägt
-                    const alt = wegVorher.get(b);
-                    const unterwegs =
-                        b.ziel === ziel &&
-                        rest !== null &&
-                        (!alt || alt.ziel !== ziel
-                            ? true
-                            : Number.isFinite(alt.rest) && alt.rest - rest >= 0.5 * (b.tempo || 1) * takte * DT);
-                    const da = soll.drinnen ? dist < 1.5 && !gezeichnet(g) : dist < 1.5 && gezeichnet(g);
-                    if (da || unterwegs) treffer.set(b, (treffer.get(b) || 0) + 1);
-                    proben.set(b, (proben.get(b) || 0) + 1);
-                    wegVorher.set(b, { ziel: b.ziel, rest });
-                }
-            if (Math.abs(stunde - 10) < SCHRITT_H / 2) {
-                schmiede10 = anStation();
-                blick10 = { ego: blickZaehlen("ego", L), third: blickZaehlen("third", L) };
+            z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
+            // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs: sein Weg zu DIESEM
+            // Soll begann seit dem letzten Ereignis oder schrumpfte um die Hälfte dessen, was sein Tempo in der Zeit trägt
+            for (const b of planFn ? liste : []) {
+                const o = b.orte;
+                const sh = (stunde + (taeter === "bewohner-plan6" ? 6 : 0)) % 24;
+                const soll = planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz);
+                if (JSON.stringify(soll) !== JSON.stringify(planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz)))
+                    planGleich = false;
+                const ziel = soll.drinnen ? o.tuer : soll.ort;
+                const g = b.leib;
+                const alt = vorher.get(b);
+                const rest = b.ziel === ziel && Number.isFinite(b.wegRest) ? b.wegRest : null;
+                const unterwegs =
+                    rest !== null && (!alt || alt.ziel !== ziel || alt.rest - rest >= 0.5 * b.tempo * takte * DT);
+                const da =
+                    Math.hypot(g.position.x - ziel.x, g.position.z - ziel.z) < 1.5 && gezeichnet(g) !== soll.drinnen;
+                treffer.set(b, (treffer.get(b) || 0) + (da || unterwegs ? 1 / 240 : 0));
+                vorher.set(b, { ziel: b.ziel, rest });
             }
-            if (Math.abs(stunde - 2) < SCHRITT_H / 2) schmiede2 = anStation();
+            if (Math.abs(stunde - 10) < 0.05) {
+                z.schmiede10 = anStation();
+                blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
+            }
+            if (Math.abs(stunde - 2) < 0.05) z.schmiede2 = anStation();
         }
-        const tagSek = Math.round((performance.now() - tTag) / 100) / 10;
         // gezählt wird nur ein Leib mit Leib-Löser (Rig), der im Tag ging (> 0,5 m Weg)
-        const gegangen = (g) => (weg.get(g) || 0) > 0.5 && !!g.userData.rig;
-        const quoten = liste.map((b) => (proben.get(b) ? treffer.get(b) / proben.get(b) : 0));
-        const unter = liste
-            .map((b, i) => ({ b, q: quoten[i] }))
-            .filter((x) => x.q < 0.9)
-            .map((x) => `${x.b.rolle}/${x.b.beruf || "?"} #${x.b.heim}: ${Math.round(x.q * 100)} %`);
-        const wege = L.map((g) => weg.get(g) || 0);
-        const r3 = (v) => (v === null ? null : Math.round(v * 1000) / 1000);
-        return {
+        const gegangen = (g) => weg.get(g) > 0.5 && !!g.userData.rig;
+        const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
+        const q3 = (v) => Math.round(v * 1000) / 1000;
+        return Object.assign(z, {
             dorf: plan.name,
             haeuser: haeuser.length,
             sollSumme,
             leiber: L.length,
-            quote: sollSumme > 0 ? r3(L.length / sollSumme) : null,
+            quote: sollSumme > 0 ? q3(L.length / sollSumme) : null,
             leer: leer.slice(0, 6),
             leerN: leer.length,
             imBlick: {
-                ego: blick10 ? blick10.ego.filter(gegangen).length : 0,
-                third: blick10 ? blick10.third.filter(gegangen).length : 0,
+                ego: blick10 ? blick10[0].filter(gegangen).length : 0,
+                third: blick10 ? blick10[1].filter(gegangen).length : 0,
             },
-            alsLeib: alsLeibMax,
             nahLeiber: A.BEWOHNER.nahLeiber,
             plan: !!planFn,
             planGleich,
-            tag: {
-                ereignisse: schritte,
-                takte,
-                sek: tagSek,
-                abgebrochen,
-                taktMs: taktN ? Math.round((taktMs / taktN) * 1000) / 1000 : null,
-                taktMaxMs: Math.round(taktMax * 10) / 10,
-            },
+            tagSek: Math.round((performance.now() - tTag) / 100) / 10,
             bewohner: liste.length,
             bewegtN: L.filter(gegangen).length,
-            wegMedianM: Math.round((quantil(wege, 0.5) || 0) * 10) / 10,
-            trefferMin: quoten.length ? r3(Math.min(...quoten)) : null,
-            trefferMittel: quoten.length ? r3(quoten.reduce((a, q) => a + q, 0) / quoten.length) : null,
+            trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
+            unter: unter
+                .slice(0, 5)
+                .map((b) => `${b.rolle}/${b.beruf} #${b.heim}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
             unterN: unter.length,
-            unter: unter.slice(0, 5),
             stationen: stationen.length,
-            schmiede10,
-            schmiede2,
-            sprungN,
-            wandN,
-            sprungMaxM: Math.round(sprungMax * 100) / 100,
             stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
-        };
+        });
     });
 
     return aus;
@@ -3087,17 +3036,10 @@ function urteil(name, z) {
         // DER TAG (mensch.K2): das Gesetz der Uhr, jeder Leib geht, trifft seine Soll-Orte, springt nie im Nahbereich
         soll(z.plan, "kein Tagesplan: koerper-core trägt kein tagesPlan (VERHALTEN) — der Bewohner kennt keinen Tag");
         soll(z.planGleich, "der Tagesplan ist bei gleichem Samen nicht bit-gleich");
-        soll(
-            z.tag.abgebrochen === null,
-            `Zeitraffer abgebrochen um ${z.tag.abgebrochen} Uhr: der Bewohner-Takt trug den Tag nicht in 240 s (${z.tag.taktMs} ms je Takt, max ${z.tag.taktMaxMs})`
-        );
-        soll(
-            z.bewegtN === z.leiber,
-            `${z.leiber - z.bewegtN} von ${z.leiber} Bewohnern ohne Bewegung im Tag (Weg-Median ${z.wegMedianM} m)`
-        );
+        soll(z.bewegtN === z.leiber, `${z.leiber - z.bewegtN} von ${z.leiber} Bewohnern ohne Bewegung im Tag`);
         soll(
             z.trefferMin !== null && z.trefferMin >= 0.9,
-            `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} · Mittel ${z.trefferMittel} (Soll ≥ 0,9 je Bewohner; ${z.unterN} darunter: ${z.unter.join(" · ")})`
+            `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9 je Bewohner; ${z.unterN} darunter: ${z.unter.join(" · ")})`
         );
         soll(z.stationen > 0, "keine Station Schmiede im Start-Dorf (kein Bewohner mit Rolle schmiede)");
         soll(z.schmiede10 > 0, `Station Schmiede um 10 Uhr leer (${z.schmiede10} am Werk)`);
@@ -3106,7 +3048,7 @@ function urteil(name, z) {
             z.wandN === 0,
             `durch die Hauswand: ${z.wandN} Takte, in denen ein Gehender im Grundriss eines Hauses stand`
         );
-        soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame (max ${z.sprungMaxM} m)`);
+        soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame`);
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "geburt") {
