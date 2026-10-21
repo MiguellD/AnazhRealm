@@ -65,8 +65,9 @@
 //                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
 //                                                           Empfänger) ist abgezogen und beim Pfad genannt
 //                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
-//   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
-//                                                           ruht (scripts/lib/takt-linse.cjs)
+//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|aus] [--json datei] | takt --auswerten <x.roh.json>
+//                                                           DIE TAKT-SPITZE des Gehens je Methode (scripts/lib/haenger-
+//                                                           linse.cjs); Exit 1 bei einem Spitzen-Täter
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
 //                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
 //                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
@@ -80,19 +81,16 @@
 //                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
 //                                                           des Spiels), Drehen (1°/Frame), Gehen
 //                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
-//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s] | lauf --selbsttest
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s] [--wandern bahn]
+//                                 | lauf --selbsttest
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach `--ein` s
 //                                                           Einschwingen misst er `sek` s Frame-Zeit · GPU-Zeit (timestamp-
 //                                                           query; je Pass p50 · p95 · `rein` = p50 des unteren Gipfels,
 //                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
 //                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
 //                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
-//   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
-//                                                           DAS CPU-PROFIL des echten Laufs (Stichproben der
-//                                                           Spur, 1 ms): Selbst- und Gesamtzeit je Funktion — wer
-//                                                           den Takt trägt, beim Namen (nach einem `lauf`)
-//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern kreis]
-//                                     [--schwelle ms] [--probe] [--json datei] | haenger --selbsttest
+//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
+//                                     [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte
 //                                                           Lauf mit den Stichproben der Spur (1 ms), je Frame über der
 //                                                           Schwelle (100 ms) die Ursache beim Namen — TAKT (die Engstelle
@@ -200,7 +198,6 @@ const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
-const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
@@ -396,16 +393,18 @@ function lauf(k) {
         const proben = [];
         let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
-        // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `wandern: "kreis"` hält W und dreht den Blick
-        // 0,08 rad/s, `probe` schmuggelt 250 ms in den Takt.
+        // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
+        // DIE BAHN (`wandern: "bahn"`, die OMEN-Zellen „geht"): 4 m/s −z 0 → −60 m und zurück, je Takt vor dem Spiel-Takt; das
+        // Ende stellt an den Anfang zurück — jeder Gang geht dieselbe Bahn.
         const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
             for (const x in a) if (a[x] !== (b[x] || 0)) o[x] = +(a[x] - (b[x] || 0)).toFixed(2);
             return Object.keys(o).length ? o : 0;
         };
-        const ort = st.playerMesh.position.clone(), yaw0 = st.yaw;
-        let snap = H && Object.assign({}, H.acc), tWand = null, probeTakt = 0;
+        const ort = st.playerMesh.position.clone();
+        const bahn = k.wandern === "bahn" ? { t0: null, weg: 0 } : null;
+        let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         rend.setAnimationLoop((t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
             const spur = messen && k.spur;
@@ -416,10 +415,9 @@ function lauf(k) {
             const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
-            if (messen && k.wandern === "kreis") {
-                if (tWand == null) tWand = t;
-                st.keys.w = true;
-                st.yaw = yaw0 + ((t - tWand) / 1000) * 0.08;
+            if (bahn) {
+                bahn.weg = (4 * (t - (bahn.t0 ??= t))) / 1000;
+                st.playerMesh.position.set(ort.x, st.playerMesh.position.y, ort.z - 60 + Math.abs((bahn.weg % 120) - 60));
             }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
@@ -637,6 +635,7 @@ function lauf(k) {
                     buch: window.__wetterBuch(wetterVor.seq).buch,
                 },
                 saison: st.season,
+                bahnM: bahn && Math.round(bahn.weg),
                 haenger,
             };
         } finally {
@@ -645,11 +644,7 @@ function lauf(k) {
             rend.setAnimationLoop(null);
             uhr.ab();
             st.perfTargetMs = decke;
-            st.keys.w = false;
-            if (k.wandern === "kreis") {
-                st.playerMesh.position.copy(ort);
-                st.yaw = yaw0;
-            }
+            if (bahn) st.playerMesh.position.copy(ort);
         }
     })();
 }
@@ -922,7 +917,6 @@ async function starte() {
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(BAND.EINSCHWING_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
-        await page.evaluate(TAKT_INSTALL);
         await page.evaluate(DIAET.DIAET_INSTALL);
         await page.evaluate(SICHT.SICHT_INSTALL);
         await page.evaluate(`window.__tierZahl = ${tierZahl.toString()};`);
@@ -2409,13 +2403,6 @@ async function starte() {
                     });
                     return send(Object.assign(o, { urteil: DIAET.diaetUrteil(o), ms: Date.now() - t0 }));
                 }
-                if (req.url === "/takt") {
-                    const o = await page.evaluate((k) => window.__taktZerlegung(k), {
-                        n: Number(b.n) || 120,
-                        extra: b.extra ? String(b.extra).split(",") : [],
-                    });
-                    return send(Object.assign(o, { ms: Date.now() - t0 }));
-                }
                 if (req.url === "/stand") {
                     const o = await page.evaluate((k) => window.__standLauf(k), {
                         n: Number(b.n) || 120,
@@ -2934,7 +2921,7 @@ async function starte() {
                 const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"];
                 if (req.url === "/lauf") {
                     const { o, ev } = await laufMitSpur(
-                        { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei" },
+                        { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei", wandern: b.wandern },
                         ZL.BELEGUNG_SPUR
                     );
                     o.belegung = ZL.belegungAuswerten(ev);
@@ -2942,22 +2929,9 @@ async function starte() {
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
-                if (req.url === "/profil") {
-                    const { o: l, ev } = await laufMitSpur({ sek: Number(b.sek) || 8, ein: 2 }, PROBEN);
-                    const sp = HL.spurProfil(ev);
-                    if (!sp) return send({ fehler: "keine Stichproben in der Spur", ms: Date.now() - t0 });
-                    return send(
-                        Object.assign(HL.profilTop(sp.profil, Number(b.top) || 30), {
-                            fps: l.fps,
-                            // die Frames des Fensters (die ms je Frame = gesampelt / Frames) und die Wetter-Wache des Laufs
-                            frames: l.frames,
-                            wetterHalt: wetterUrteil(l.wetterHalt),
-                            ms: Date.now() - t0,
-                        })
-                    );
-                }
                 // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`lauf`, `k.haenger`) mit den Stichproben der
-                // Spur (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle).
+                // Spur (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle);
+                // `spitze` urteilt die Takt-Spitze (`takt`), `wandern: bahn` geht die Bahn der OMEN-Zellen „geht".
                 if (req.url === "/haenger") {
                     const { o: l, ev } = await laufMitSpur({
                         sek: Number(b.sek) || 120,
@@ -2967,11 +2941,11 @@ async function starte() {
                         probe: !!b.probe,
                         haenger: true,
                     }, PROBEN);
-                    const roh = l.haenger, sp = HL.spurProfil(ev);
-                    const a = HL.haengerAuswerten(roh, sp, { schwelle: Number(b.schwelle) || 100 });
-                    const befunde = HL.haengerLinsenBefunde(a);
+                    const roh = Object.assign(l.haenger, { bahnM: l.bahnM, wetterHalt: wetterUrteil(l.wetterHalt) });
+                    const sp = HL.spurProfil(ev);
+                    const a = HL.linseWerten(roh, sp, b);
                     const datei = path.resolve(
-                        b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`)
+                        b.json || path.join(root, "artifacts", "werkbank", `${b.spitze ? "takt" : "haenger"}-${Date.now()}.json`)
                     );
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
@@ -2979,21 +2953,13 @@ async function starte() {
                     fs.writeFileSync(
                         datei,
                         JSON.stringify(
-                            Object.assign(
-                                { echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen }, befunde },
-                                a
-                            ),
+                            Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a),
                             null,
                             1
                         )
                     );
-                    return send({
-                        tabelle: HL.haengerTabelle(a),
-                        befunde,
-                        haenger: a.haengerN,
-                        datei,
-                        ms: Date.now() - t0,
-                    });
+                    const { tabelle, befunde, cpuMs, taeter } = a;
+                    return send({ tabelle, befunde, cpuMs, taeter, wetterHalt: roh.wetterHalt, datei, ms: Date.now() - t0 });
                 }
                 if (req.url === "/licht") {
                     const o = await page.evaluate(() => window.__lichtBilanz());
@@ -3520,7 +3486,6 @@ async function starte() {
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
-    else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "diaet") {
         if (argv.includes("--selbsttest")) {
             const f = DIAET.selbsttest();
@@ -3699,6 +3664,7 @@ async function starte() {
             regler: opt("--regler", "frei"),
             tiere: opt("--tiere", "halten"),
             ruhe: opt("--ruhe", 0),
+            wandern: opt("--wandern"),
         });
         // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
         const rot = [
@@ -3709,38 +3675,33 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
             process.exit(1);
         }
-    } else if (cmd === "profil")
-        o = await rufe("/profil", {
-            sek: a[0],
-            regler: opt("--regler", "voll"),
-            top: opt("--top", 30),
-            tiere: opt("--tiere", "halten"),
-        });
-    else if (cmd === "haenger") {
+    } else if (cmd === "haenger" || cmd === "takt") {
+        // `takt` ist die Takt-Spitze des Gehens (Bahn, 30 s nach 2 s Einschwingen), `haenger` die Hänger über der Schwelle
+        const spitze = cmd === "takt";
         if (argv.includes("--selbsttest")) {
             const f = HL.selbsttest();
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte"
+                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN"
             );
             process.exit(f.length ? 1 : 0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
             const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const a = HL.haengerAuswerten(roh, spur, { schwelle: Number(opt("--schwelle", 100)) });
-            const befunde = HL.haengerLinsenBefunde(a);
-            console.log(HL.haengerTabelle(a));
-            if (befunde.length) console.log("\nLINSE ROT:\n  " + befunde.join("\n  "));
-            process.exit(befunde.length ? 1 : 0);
+            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle") });
+            console.log(w.tabelle);
+            if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
+            process.exit(w.befunde.length ? 1 : 0);
         }
         o = await rufe("/haenger", {
-            sek: a[0],
-            ein: opt("--ein"),
+            spitze,
+            sek: opt("--sek", a[0] || (spitze ? 30 : undefined)),
+            ein: opt("--ein", spitze ? 2 : undefined),
             regler: opt("--regler", "voll"),
             tiere: opt("--tiere", "frei"),
-            wandern: opt("--wandern", "aus"),
+            wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
             probe: argv.includes("--probe"),
             json: opt("--json"),
