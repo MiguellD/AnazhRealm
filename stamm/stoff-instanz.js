@@ -3017,6 +3017,7 @@ class AnazhRealm_stoff_instanz {
         const vor = mesh.count | 0;
         mesh.count = n;
         mesh.visible = n > 0;
+        if (vor > 0 !== n > 0) AnazhRealm._regtHalter(mesh); // die Werfer-Hülle ihres Bündels (das Register)
         // die Arena zählt ihre Glieder mit Instanzen: ohne eines betritt sie keinen Pass (kein leeres Render-Objekt)
         const a = mesh.__arena;
         if (a && vor > 0 !== n > 0) {

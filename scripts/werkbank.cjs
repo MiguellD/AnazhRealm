@@ -2395,12 +2395,7 @@ async function starte() {
                     });
                 }
                 if (req.url === "/diaet") {
-                    const o = await page.evaluate((k) => window.__diaetLauf(k), {
-                        frames: Number(b.frames) || 90,
-                        modus: b.modus || "ruhe",
-                        grad: Number(b.grad) || 1,
-                        tiere: b.tiere || "halten",
-                    });
+                    const o = await page.evaluate((k) => window.__diaetLauf(k), b);
                     return send(Object.assign(o, { urteil: DIAET.diaetUrteil(o), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/stand") {
@@ -3492,7 +3487,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung und eine blinde Linse beim Namen"
+                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen"
             );
             process.exit(f.length ? 1 : 0);
         }
