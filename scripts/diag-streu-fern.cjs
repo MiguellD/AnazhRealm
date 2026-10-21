@@ -62,22 +62,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const res = { boot: false };
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 120000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa((w) => typeof w._tickScatterLod === "function");
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const AR = r.constructor;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 90000;
-        while (performance.now() < dl1) {
-            if (f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod) break;
-            await sleep(100);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         const cfg = AR._studioRenderConfig;
         const B = cfg && cfg.lod && cfg.lod.budget;
         res.buch = !!B;
@@ -103,24 +94,24 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             for (const reg of map.values()) n += reg.cells ? reg.cells.length : 0;
             return n;
         };
-        const bauRing = async (msMax) => {
-            const dl = performance.now() + msMax;
-            let ruhig = 0,
-                letzt = -1;
-            while (performance.now() < dl) {
+        // die Streu steht: jede Region in Reichweite (`_streuWartet`, auch eine fehlende) und der Karte (`_streuRegionWartet`),
+        // der Takt der Streu wie im Spiel (`waldPlan` vor `scatterDeco`; ohne den Wald kommt die Zusage ihrer Bäume nie)
+        const liste = [];
+        try {
+            for (let ruhig = 0, letzt = -1, weiter = window.__deckel("die Streu-Zellen", 3000, false); ruhig < 20 && weiter(); ) {
+                r._tickWaldPlan(Infinity);
                 r._tickScatterStreaming(pm);
                 const n = zellen();
-                // offen: eine Region in Reichweite steht nicht (die EINE Antwort der Welt, `_streuWartet` — auch eine fehlende),
-                // oder eine Region der Karte wartet noch (`_streuRegionWartet`)
-                const offen = r._streuWartet(pm) > 0 || Array.from(map.keys()).some((k) => r._streuRegionWartet(k));
-                if (n === letzt && !offen) ruhig++;
-                else ruhig = 0;
+                liste.length = 0;
+                r._streuWartet(pm, liste);
+                for (const k of map.keys()) if (r._streuRegionWartet(k)) liste.push(`${k} ${r._streuRegionWartet(k)}`);
+                ruhig = n === letzt && n > 0 && !liste.length ? ruhig + 1 : 0;
                 letzt = n;
-                if (ruhig >= 20 && n > 0) break;
                 await sleep(40);
             }
-        };
-        await bauRing(120000);
+        } catch (e) {
+            throw new Error(`${e.message} — es wartet: ${liste.slice(0, 8).join(" · ")}`);
+        }
         res.zellen = zellen();
         const NICHT_BAUM = new Set(["under", "litter", "rock"]);
         const istKarte = (p) => {
@@ -138,10 +129,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
         // Einschwingen der Gesetz-Bahn: der LOD-Tick wiederholt wartende Zellen (Fit-Takt 16/s), bis keine mehr wartet.
         {
-            const dl = performance.now() + 60000;
             let vor = -1,
                 gleich = 0;
-            while (performance.now() < dl) {
+            for (const weiter = window.__deckel("die wartende Streu", 1200, false); weiter(); ) {
                 r._tickScatterLod(pm, 64, 4000);
                 const w = wartend();
                 if (w === 0) break;
@@ -273,8 +263,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     return o;
                 };
                 pm.set(ziel.x + 3, r._voxelSurfaceY(ziel.x + 3, ziel.z) + 1.8, ziel.z);
-                const dlH = performance.now() + 90000;
-                while (performance.now() < dlH) {
+                for (const weiter = window.__deckel("die Streu am Ziel", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     const n = nahe();
                     if (n.fern === 0 && n.mesh > 0 && n.ohneSlots === 0) break;
@@ -298,8 +287,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 // Totbands (an der Mess-Wiese −278/−1038 lag eine Mesh-Zelle 30–64 m vom Ziel, die Probe brach nach der
                 // Scheibe ab und zählte sie in B)
                 pm.set(heim.x, heim.y, heim.z);
-                const dlZ = performance.now() + 90000;
-                while (performance.now() < dlZ) {
+                for (const weiter = window.__deckel("die Absenz nach der Rückkehr", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     if (umZiel().mesh === 0 && absenz().n === 0) break;
                     await sleep(100);
@@ -362,8 +350,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const fit = {};
         try {
             let satz = null;
-            const dlF = performance.now() + 60000;
-            while (performance.now() < dlF) {
+            for (const weiter = window.__deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
                 if (satz && satz.length) break;
                 await sleep(100);
@@ -393,8 +380,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const st1 = {};
         try {
             let flat = null;
-            const dlS = performance.now() + 60000;
-            while (performance.now() < dlS) {
+            for (const weiter = window.__deckel("das Flat des Gerölls", 600, false); weiter(); ) {
                 flat = r._foundryFlattenFor({ seed: 7 }, "geroell", 0);
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
@@ -666,13 +652,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const h = await hPage.evaluate(async (KALT) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const H = window.__buchHalt;
-        const dl0 = performance.now() + 120000;
-        while (
-            !H.zuSpaet &&
-            !(H.los && window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function") &&
-            performance.now() < dl0
-        )
-            await sleep(50);
+        await window.__weltDa(() => H.zuSpaet || H.los);
         const r = window.anazhRealm;
         const res = { zuSpaet: H.zuSpaet, halt: !!H.los };
         if (!H.los) return res;
@@ -702,8 +682,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             for (let i = 0; i < 4; i++) r._gameLoopTick((tMs += 1000 / 60));
             await sleep(10);
         };
-        const dl1 = performance.now() + 120000;
-        while (kalt < KALT && performance.now() < dl1) await takt();
+        for (const weiter = window.__deckel("der kalte Takt ohne Buch", 12000); kalt < KALT && weiter(); ) await takt();
         res.kalt = kalt;
         res.buchKalt = !(r._foundry && r._foundry.recipes);
         res.fehlerKalt = fehler.splice(0);
@@ -713,14 +692,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return Object.getPrototypeOf(r)._tickNahStreu.call(this, dl);
         };
         const k0 = kalt;
-        const dlS = performance.now() + 60000;
-        while (kalt < k0 + 3 && performance.now() < dlS) await takt();
+        for (const weiter = window.__deckel("drei Takte der Selbstprobe", 6000); kalt < k0 + 3 && weiter(); ) await takt();
         delete r._tickNahStreu;
         res.selbst = fehler.splice(0);
         // Das Buch dockt: die Nah-Wiese liest jetzt ihr Budget und legt die vier Studio-Vorlagen (2 Gestalten × L1/L2).
         H.los();
-        const dl2 = performance.now() + 120000;
-        while (performance.now() < dl2) {
+        for (const weiter = window.__deckel("die vier Vorlagen der Nah-Wiese", 12000); weiter(); ) {
             await takt();
             if (warm > 0 && st.nahWiese && st.nahWiese.vorlagen.size >= 4) break;
         }

@@ -388,8 +388,7 @@ const server = statikServer();
 async function probe(arg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0) await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -437,7 +436,7 @@ async function probe(arg) {
         if (ls && typeof r._ankunftsBild === "function") {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick und wieder vor den Fällen: die
             // Mesh-Zone wächst im Rundblick, ein Baum im Werden hielte jeden Fall (lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
-            const steht = async (dlW = performance.now() + 90000) => { while (r._weltbildFehlt().length && performance.now() < dlW) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
+            const steht = async () => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt().length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
             m.fehltNachBoot = await steht();
             // DER RUNDBLICK (B3d): nach der Kontrolle (der EINE Schreiber, der Nachlauf beginnt) dreht die Kamera in RUNDBLICK_BILDER
             // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle
@@ -780,7 +779,7 @@ async function probe(arg) {
                 const merk = { da: st._weltbildDa, soul: st._deferredAvatarSoul, mode: st.cameraMode, held: st.player.equipped && st.player.equipped.held };
                 const zurueck = () => ["_foundryZug", "_foundryCacheGet", "_standRuht", "_weltKapselHolen", "_weltBakeErlaubt", "_foundryRequest", "_foundryRequestSettlement", "applyPlayerSoul"].forEach((n) => delete r[n]);
                 const P = Object.getPrototypeOf(r);
-                const bis = async (fn, ms, takt) => { for (const dl = performance.now() + ms; !fn() && performance.now() < dl; ) await (takt ? tick(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
+                const bis = async (fn, ms, takt) => { for (const weiter = window.__deckel(String(fn), ms / 50); !fn() && weiter(); ) await (takt ? tick(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
                 try {
                     Object.assign(st, { _weltbildDa: 0, _weltbildErsteFrage: null, _weltbildLuecke: null }); // eine neue Ankunft (die Fälle davor ließen den Deckel stehen)
                     let wer = "die Nah-Wiese";
@@ -801,7 +800,7 @@ async function probe(arg) {
                     r._foundryRequest = function (pre, s, lod, ...a) { if (pre === "mensch") k.leib.bestellt.push(`${st._weltbildDa ? "nach" : "vor"} L${lod}${a[1] && a[1].kopf ? " Kopf" : ""}`); return P._foundryRequest.call(this, pre, s, lod, ...a); }; // prettier-ignore
                     r.applyPlayerSoul = function (...a) { const x = P.applyPlayerSoul.apply(this, a); k.leib.baut.push(`${st._weltbildDa ? "nach" : "vor"} ${(st.playerMesh.userData._gelenk || {}).nahStufe}`); return x; }; // prettier-ignore
                     r._ofenSpielerVorlagen();
-                    if (!(await bis(() => r._leibBereit(), 90000))) k.leib.fehler = "die Vorlagen des Leibs kamen nicht in 90 s";
+                    await bis(() => r._leibBereit(), 90000);
                     k.leib.ohneFein = r._leibBereit() && !memo.has(key(0));
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
@@ -835,8 +834,8 @@ async function probe(arg) {
                 [w.ferne, w.steht] = [Q.size - vor, r._waldPlanSteht(o.x, o.z)];
                 const z = r._waldPlanZusage(o.x, o.z);
                 if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
-                // bis die Zusage kam, dann bis der ferne Kasten wieder steht (höchstens 60 s)
-                for (const dl = performance.now() + 60000; ((z && !w.kam) || Q.size) && performance.now() < dl; ) await tick(1, 30);
+                // bis die Zusage kam, dann bis der ferne Kasten wieder steht
+                for (const weiter = window.__deckel("die Zusage des fernen Kastens", 2000); ((z && !w.kam) || Q.size) && weiter(); ) await tick(1, 30);
             }
             // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) der Lade-Takt
             {
@@ -1012,8 +1011,7 @@ async function probe(arg) {
                 .filter((a) => a && /^baum_/.test(a.type) && a.blockerAABBs && a.blockerAABBs.length)
                 .sort((a, b) => Math.hypot(a.position.x - P.x, a.position.z - P.z) - Math.hypot(b.position.x - P.x, b.position.z - P.z));
         let baeume = naheBaeume();
-        const dlB = performance.now() + 60000;
-        while (!baeume.length && performance.now() < dlB) {
+        for (const weiter = window.__deckel("ein naher Baum", 1500); !baeume.length && weiter(); ) {
             await tick(5, 40);
             baeume = naheBaeume();
         }
@@ -1169,12 +1167,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
             const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
             if (gt) {
-                const dlG = performance.now() + 45000;
-                while (!gt.instanced && !gt.mesh && performance.now() < dlG) {
-                    r._rebuildArchitectureMesh(gt);
-                    if (gt.instanced || gt.mesh) break;
-                    await sleep(200);
-                }
+                await window.__gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
                 if (mr && mr.ok) {
                     weg(
@@ -1496,7 +1489,6 @@ async function probe(arg) {
         const ohne = Object.keys(defs).find((k) => defs[k].requiresKey);
         llm.provider = ohne;
         llm.enabled = true;
-        llm.lastResponseAt = -1e9;
         if (llm.providerConfig[ohne]) llm.providerConfig[ohne].apiKey = "";
         const n0 = zeilen().length;
         r.processChatCommand("lass mir ein paar birken und ein fachwerkhaus wachsen");
@@ -1509,7 +1501,6 @@ async function probe(arg) {
         llm.enabled = true;
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
         llm.providerConfig.ollama.useProxy = true;
-        llm.lastResponseAt = -1e9;
         const ant = await r.llmCall("hallo welt");
         m.proxyFehler = ant && ant.error ? String(ant.error) : "";
         llm.enabled = alt.enabled;
@@ -1556,8 +1547,7 @@ async function probe(arg) {
         const vor = new Set(st.architectures);
         const z0 = zeilen().length;
         r.processChatCommand("dorf 7 18");
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z))) await sleep(200);
+        for (const weiter = window.__deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
         const neu = st.architectures.filter((a) => !vor.has(a) && /^haus_/.test(a.type || ""));
         const fx = Math.sin(best.yaw);
         const fz = Math.cos(best.yaw);
@@ -1594,10 +1584,9 @@ async function probe(arg) {
                 st.yaw = gier;
                 const vorM = new Set(st.architectures);
                 r.dslRun(satz.program, { source: quelle });
-                const dlM = performance.now() + 60000;
                 let n = -1;
                 let ruhig = 0;
-                while (performance.now() < dlM && ruhig < 6) {
+                for (const weiter = window.__deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
                     await sleep(250);
                     const k = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || "")).length;
                     ruhig = k > 0 && k === n ? ruhig + 1 : 0;

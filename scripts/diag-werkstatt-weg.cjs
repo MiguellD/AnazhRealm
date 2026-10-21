@@ -306,9 +306,7 @@ const server = statikServer();
 async function probe(argW) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
-        await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -319,9 +317,9 @@ async function probe(argW) {
             await sleep(ms || 30);
         }
     };
-    const dlB = performance.now() + 90000;
-    while (
-        performance.now() < dlB &&
+    for (
+        const weiter = window.__deckel("Buch, Leib und Eiche", 900);
+        weiter() &&
         !(
             st.playerMesh &&
             r._foundry &&
@@ -329,7 +327,8 @@ async function probe(argW) {
             st.blueprints &&
             st.blueprints.baum_eiche &&
             r._genesisPlattform()
-        )
+        );
+
     )
         await tick(1, 100);
     await tick(10, 30);

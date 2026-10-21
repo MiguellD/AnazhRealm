@@ -33,7 +33,12 @@ class AnazhRealm_dienst {
         });
     }
 
-    async llmCall(userText, systemPromptOverride = null) {
+    // DIE EINE TÜR ZUM MODELL — der Satz des Spielers hat Vorrang (KI H1, 20.10.): am lokalen Modell verweigerte sie 2 von 3
+    // Sätzen („Anfrage läuft bereits", „Kurze Pause"), weil ein Ruf der Welt im Flug war — der Kommentar zum Journal, den die
+    // Tat des vorigen Satzes auslöste, 30–60 s auf der CPU. Ein Ruf der Welt (`hintergrund`: Journal-Kommentar, Reflexion eines
+    // Wesens, die geteilte Stimme eines Mitspielers) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler
+    // wartet auf keins von beiden. Ein zweiter Vordergrund-Ruf während des Abbruchs findet die Tür wieder besetzt (`while`).
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -44,12 +49,20 @@ class AnazhRealm_dienst {
             return {
                 error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
-        if (llm.inFlight) return { error: "Anfrage läuft bereits" };
+        while (llm.inFlight) {
+            if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
+            this._llmHintergrund.abort();
+            await this._llmFrei;
+        }
         const nowSec = performance.now() / 1000;
-        if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
+        if (hintergrund && nowSec - llm.lastResponseAt < llm.minGapSeconds) {
             return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
         }
         llm.inFlight = true;
+        const abbruch = new globalThis.AbortController();
+        this._llmHintergrund = hintergrund ? abbruch : null;
+        let frei;
+        this._llmFrei = new Promise((r) => (frei = r));
         // Wohin die Anfrage ging (der Fehler-Klassifizierer liest den Endpunkt-Host, V-D6).
         let zielUrl = null,
             zielLokal = false,
@@ -59,7 +72,7 @@ class AnazhRealm_dienst {
             // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
             // Pfad bleibt sonst identisch (Provider, Headers, Body, Parse).
             const system = systemPromptOverride || this.llmBuildSystemPrompt();
-            const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
+            const userContent = def.buildUserContent(system, this.llmBuildContext(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
@@ -80,6 +93,7 @@ class AnazhRealm_dienst {
                 method: "POST",
                 headers: fetchHeaders,
                 body: fetchBody,
+                signal: abbruch.signal,
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
@@ -105,6 +119,7 @@ class AnazhRealm_dienst {
             llm.lastError = parsed.error || null;
             return parsed;
         } catch (err) {
+            if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
             // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
             // klaren Hinweis geben. „Failed to fetch" ist der typische
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
@@ -142,6 +157,8 @@ class AnazhRealm_dienst {
             return { error: llm.lastError };
         } finally {
             llm.inFlight = false;
+            this._llmHintergrund = null;
+            frei();
         }
     }
 
@@ -1378,6 +1395,7 @@ class AnazhRealm_dienst {
                 leer: 0,
                 ruht: 0,
                 arbeit: 0,
+                offen: false,
             };
             W.takte.set(name, t);
         }
@@ -1408,7 +1426,11 @@ class AnazhRealm_dienst {
             t.stempel = s;
             t.leer = 0;
         }
-        if (t.leer >= Math.max(1, runde | 0)) {
+        // die Runde, die er geht, ehe er schläft — so lange steht die Welt nicht (`_standGeht`). Ohne Einheit (0) ist sie
+        // gegangen: bis K-WANDUHR hieß sie 1, ein Gang über 0 Zellen meldete 0 — die Streu einer leeren Bühne ging für immer
+        // „0/1", die Welt stand nie (CI 39510089436 schatten-terminator, der Leib wärmte nie vor)
+        t.runde = runde | 0;
+        if (t.leer >= t.runde) {
             t.ruht++;
             return true;
         }
@@ -1416,11 +1438,12 @@ class AnazhRealm_dienst {
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
-    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach). Beides beginnt seine Runde neu.
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
+        t.offen = !!offen;
         if (gewirkt) {
             t.leer = 0;
             if (t.bau) this._bauRegt();

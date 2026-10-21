@@ -11,16 +11,14 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
-const PORT = Number(process.env.WEBRTC_PORT || 4312);
-const SIGNAL_PORT = Number(process.env.WEBRTC_SIGNAL_PORT || 4313);
-const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+// die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
@@ -105,6 +103,9 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
 (async () => {
     const failures = [];
+    [PORT, SIGNAL_PORT] = await eigenePorte("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
     function check(name, ok, detail = "") {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
         if (!ok) failures.push(name);
@@ -131,13 +132,11 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageA,
             () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            120000,
             "Seite A initialisiert"
         );
         await waitFor(
             pageB,
             () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            120000,
             "Seite B initialisiert"
         );
 
@@ -156,8 +155,8 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
         // Auf den WebRTC-Handshake warten: beide Seiten müssen meshActive
         // melden (alle Peer-Kanäle offen).
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, 20000, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, 20000, "Mesh auf B aktiv");
+        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
+        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
         check("Seite A: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
         check("Seite B: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
 
@@ -192,7 +191,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const peers = Array.from(window.anazhRealm.state.p2p.peers.values());
                 return peers.some((p) => Math.abs(p.x - x) < 0.5 && Math.abs(p.z - z) < 0.5);
             },
-            8000,
             "B sieht A's markante Position über das Mesh",
             MARK_X,
             MARK_Z
@@ -210,7 +208,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const peers = Array.from(window.anazhRealm.state.p2p.peers.values());
                 return peers.some((p) => Math.abs(p.x - x) < 0.5);
             },
-            8000,
             "A sieht B's markante Position über das Mesh",
             MARK_X2
         );
@@ -241,7 +238,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageB,
             (id) => window.anazhRealm.state.architectures.some((a) => a && a.id === id),
-            8000,
             "B sieht A's gebaute Struktur über das Mesh",
             archId
         );
@@ -253,7 +249,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageB,
             (id) => !window.anazhRealm.state.architectures.some((a) => a && a.id === id),
-            8000,
             "B's Kopie der Struktur verschwindet nach A's Abbau",
             archId
         );
@@ -283,7 +278,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 }
                 return false;
             },
-            10000,
             "B sieht A's Kreatur als Sicht-Kreatur über das Mesh",
             CRX,
             CRZ
@@ -313,7 +307,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const rx = window.__companionSayRx;
                 return !!rx && rx.text === "Ich träume mit dir." && rx.voice === "Aria";
             },
-            10000,
             "B empfängt A's companion-say über das Mesh"
         );
         check("Begleiter-Stimme floss peer-to-peer über das Mesh", true);
@@ -331,7 +324,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageB,
             () => Array.from(window.anazhRealm.state.p2p.peers.values()).some((p) => p.voiceShared === true),
-            8000,
             "B kennt A als Stimm-Teiler"
         );
         const voiceReply = await pageB.evaluate(
@@ -370,7 +362,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageB,
             () => Array.from(window.anazhRealm.state.p2p.peers.values()).some((p) => p.worldRole === "host"),
-            8000,
             "B kennt A als Host"
         );
         // B fordert den Welt-Resync an.
@@ -383,7 +374,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
             (wid) =>
                 window.anazhRealm.activeWorldGet() === wid &&
                 !!localStorage.getItem(window.anazhRealm.worldStorageKey(wid)),
-            15000,
             "B übernimmt A's Welt über den chunked Mesh-Transfer",
             worldIdA
         );
@@ -433,7 +423,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const peer = window.anazhRealm.state.p2p.peers.get(pid);
                 return !!(peer && Array.isArray(peer.catalog) && peer.catalog.some((w) => w.id === wid));
             },
-            15000,
             "A's Welt erscheint in B's Welt-Katalog",
             peerIdA,
             W16_ID
@@ -473,7 +462,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const cw = window.anazhRealm.state.customWorlds;
                 return !!(cw && cw[id] && cw[id].trust === "sandboxed");
             },
-            15000,
             "B empfängt A's Welt-Bündel über das Mesh",
             W16_ID
         );
@@ -523,13 +511,11 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageA,
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            15000,
             "A's Sub-Welt-iframe öffnete den Shim-WebSocket"
         );
         await waitFor(
             pageB,
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            15000,
             "B's Sub-Welt-iframe öffnete den Shim-WebSocket"
         );
         check("W17 B-Relay: beide Sub-Welt-iframes haben einen Shim-WebSocket geöffnet", true);
@@ -553,7 +539,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
                     String(e.text || "").includes("subnet-recv:subnet-from-A")
                 ),
-            12000,
             "B's Sub-Welt empfängt A's ws-send über das Mesh"
         );
         check("W17 B-Relay: A's Sub-Welt-Verkehr floss peer-to-peer zu B", true);
@@ -572,7 +557,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
                     String(e.text || "").includes("subnet-recv:subnet-from-B")
                 ),
-            12000,
             "A's Sub-Welt empfängt B's ws-send über das Mesh"
         );
         check("W17 B-Relay: das Mesh trägt Sub-Welt-Verkehr in beide Richtungen", true);
@@ -600,7 +584,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const inv = window.anazhRealm.state.p2p.pendingInvite;
                 return !!inv && inv.worldId === "skeleton";
             },
-            10000,
             "B empfängt A's portal-invite über das Mesh"
         );
         check("W17 C: B bekommt die Gruppen-Portal-Einladung peer-to-peer", true);
@@ -678,19 +661,16 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await waitFor(
             pageA,
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.serverReady === true,
-            15000,
             "A's Server-Kontext-iframe geladen"
         );
         await waitFor(
             pageA,
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            15000,
             "A's Client-iframe öffnete den Shim-WebSocket"
         );
         await waitFor(
             pageB,
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            15000,
             "B's Client-iframe öffnete den Shim-WebSocket"
         );
         check("W17 JS-Compute: Server-Kontext + beide Client-iframes bereit", true);
@@ -705,7 +685,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
                     String(e.text || "").includes("jscompute-client-recv:7")
                 ),
-            12000,
             "A's Client empfängt die Server-Antwort auf 7"
         );
         check("W17 JS-Compute: A's Verkehr lief durch A's eigenen Server-Kontext", true);
@@ -721,7 +700,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
                     String(e.text || "").includes("jscompute-client-recv:12")
                 ),
-            12000,
             "B's Client empfängt die laufende Summe 12"
         );
         check(
@@ -747,7 +725,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                     return false;
                 }
             },
-            15000,
             "B cachte die Migrations-Mitgift {total:12} vom Host"
         );
         check("F2: der kooperative Server-Snapshot reiste als subworld-state zum Gast", true);
@@ -761,7 +738,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 const po = window.anazhRealm._portalOverlay;
                 return po && po.computeRole === "host" && po.serverReady === true;
             },
-            15000,
             "B übernahm den Compute-Host nach A's Abgang"
         );
         check("W17 JS-Compute Phase 2: B erkannte A's Abgang + wurde Compute-Host", true);
@@ -779,7 +755,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
                     String(e.text || "").includes("jscompute-client-recv:21")
                 ),
-            12000,
             "B's Verkehr lief durch B's restaurierten Server-Kontext (21 = 12+9)"
         );
         check("F2: Host-Migration MIT Zustand — die Summe überlebte den Host-Wechsel (21 = 12+9, nicht 9)", true);

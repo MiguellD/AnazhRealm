@@ -92,9 +92,7 @@ const SEH_KLASSEN = KERNE.__phytoCore.BUDGET_GESETZ.seh.slice();
 // dynamischer Schlüssel ist eine Tafel-Frage) · `gesetz-ersatz` · `stiller-catch` im Gesetz-Leser · `zwilling` = ein Stamm-Objekt
 // mit ≥ 2 markanten Zahlen (eine Reihe zählt doppelt) unter den Schlüsseln eines Kern-Objekts — ein MUSTER, nie ein Name (Lehre 7).
 function einWertTaeter(dateien, kerne) {
-    const kinder = (n, f) => {
-        for (const k in n) for (const c of [].concat(k === "loc" ? [] : n[k])) if (c && typeof c.type === "string") f(c);
-    };
+    const { kinder } = stammLib;
     const asts = dateien.map((d) => ({ ...d, ast: require("acorn").parse(d.src, { ecmaVersion: "latest", locations: true }) }));
     const istAR = (n) => n.type === "Identifier" && n.name === "AnazhRealm";
     const istGesetz = (m) => m.type === "MemberExpression" && istAR(m.object) && m.property.name === "Gesetz";

@@ -2,18 +2,17 @@
 // Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
 // Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
-const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
 // Default 30 s = CI-Wert (.github/workflows/check.yml).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
-// der Port des save-servers (PLAYTEST_PORT, sonst 4312): ein Prüfer fährt den vollen Playtest in seinem Port-Band
-const PLAYTEST_PORT = Number(process.env.PLAYTEST_PORT) || 4312;
-const SERVER_URL = `http://127.0.0.1:${PLAYTEST_PORT}/index.html`;
+// der Port des save-servers: PLAYTEST_PORT (ein Prüfer fährt den vollen Playtest in seinem Port-Band), sonst ein freier des
+// Systems (welt-boot `eigenePorte`) — nie 4312, dort läuft der Spiel-Server des Schöpfers
+let SERVER_URL = null;
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 // Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
 // (swiftshader unter Last). PLAYTEST_REAL_RENDERER=1 = echter WebGPU-Renderer + End-Screenshot
@@ -21,27 +20,6 @@ const STRICT = process.env.PLAYTEST_STRICT !== "0";
 const REAL_RENDERER = process.env.PLAYTEST_REAL_RENDERER === "1";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
-
-function startSaveServer() {
-    return new Promise((resolve, reject) => {
-        const proc = spawn("node", ["save-server.js"], {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: Object.assign({}, process.env, { PORT: String(PLAYTEST_PORT) }),
-        });
-        let ready = false;
-        const timeout = setTimeout(() => {
-            if (!ready) reject(new Error("Save-Server startete nicht innerhalb 5 s"));
-        }, 5000);
-        proc.stdout.on("data", (chunk) => {
-            if (!ready && /läuft/.test(chunk.toString())) {
-                ready = true;
-                clearTimeout(timeout);
-                resolve(proc);
-            }
-        });
-        proc.on("error", reject);
-    });
-}
 
 // page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf — und der Wurf ist eine verletzte
 // Invariante beim Namen (WUERFE, apparat-diaet 20.10.): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
@@ -127,7 +105,9 @@ const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest"
 if (require.main === module) (async () => {
     const T0 = Date.now();
     console.log(`Starte Save-Server ...`);
-    const server = await startSaveServer();
+    const [port] = await eigenePorte("PLAYTEST_PORT");
+    SERVER_URL = `http://127.0.0.1:${port}/index.html`;
+    const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);
 
     // Der Browser über die EINE Weiche (scripts/lib/welt-boot.cjs) mit dem Fehler-Sammler an der Seite: jeder Seitenfehler,
@@ -479,12 +459,7 @@ if (require.main === module) (async () => {
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
             const BOOT_READY_CAP_MS = 60000;
             const deadline = start + BOOT_READY_CAP_MS;
-            while (
-                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-                performance.now() < deadline
-            ) {
-                await new Promise((resolve) => setTimeout(resolve, 50));
-            }
+            await window.__weltDa();
             const r = window.anazhRealm;
             if (!r || typeof r._gameLoopTick !== "function") {
                 // Init nicht zeitig fertig (>BOOT_READY_CAP_MS = echter Hänger) →
@@ -550,19 +525,19 @@ if (require.main === module) (async () => {
             const foundryT0 = performance.now();
             let foundryReadyMs = -1;
             if (_fdry) {
-                const FOUNDRY_WARM_CAP_MS = 120000;
-                const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
-                while (
-                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false) &&
-                    performance.now() < fDeadline
-                ) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {
-                        // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
-                    }
-                    await new Promise((resolve) => setTimeout(resolve, 25));
-                }
+                await window
+                    .__gebautNach("das Buch und der Vorrat der Foundry", {
+                        fertig: () => _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false,
+                        takt: async () => {
+                            try {
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {
+                                // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
+                            }
+                            await new Promise((resolve) => setTimeout(resolve, 25));
+                        },
+                        max: 4800,
+                    });
                 foundryReadyMs =
                     _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)

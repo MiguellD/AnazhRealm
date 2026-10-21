@@ -325,27 +325,24 @@ function uhrHalten() {
     r._tickPortalMembranes(performance.now() / 1000);
 }
 
-// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie in Takten, nie in Wanduhr (ruht der Loop, schaltet
-// sie ihn und stellt Kamera und Stunde zurück); der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht
-// seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973 Takte). Sonst bricht der Schuss LAUT beim Täter.
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
+// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt nur Takte
+// ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973
+// Takte). Sonst bricht der Schuss LAUT beim Täter. Bis K-WANDUHR trug die Bühne eine eigene Schleife (der Zwilling des Einschwingens).
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
-    const takte = () => (r._weltStand ? r._weltStand.takte : 0);
-    const t0 = takte();
-    for (let k = 0, vor, o; !r._weltSteht() && k < (max || 1800); k += o.foundry + o.chunks + o.wald ? 0 : 1) {
-        vor = takte();
-        await new Promise((ok) => requestAnimationFrame(ok));
-        o = r._weltOffen();
-        if (takte() !== vor) continue;
-        r._gameLoopTick(performance.now());
+    const takt = async () => {
+        await window.__seitenTakt();
         cam.position.copy(p);
         cam.quaternion.copy(q);
         if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
-    }
+    };
+    // steht sie schon, schießt die Bühne ohne Takt (ein Takt rendert und tickt, was die Linse für den Schuss gesetzt hat)
+    const n = r._weltSteht() ? 0 : await window.__weltStehtNach(takt, max);
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
@@ -354,9 +351,8 @@ async function weltStehtWarten(max) {
     await r._himmelFrisch();
     r._applyDayNightToScene();
     const W = r._weltStand || {};
-    if (!r._weltSteht())
-        throw new Error(`DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${W.ruhe | 0}, zuletzt brach sie: ${W.grund}`);
-    return takte() - t0;
+    if (!r._weltSteht()) throw new Error(`DIE WELT STEHT NICHT nach dem Himmel des Schusses: zuletzt brach sie: ${W.grund}`);
+    return n;
 }
 
 function buehne(o) {
@@ -1345,6 +1341,7 @@ module.exports = {
         `window.__uhrSpion = ${uhrSpion.toString()};` +
         `window.__bildUhren = ${bildUhren.toString()};` +
         `window.__uhrHalten = ${uhrHalten.toString()};` +
+        require("./welt-boot.cjs").WARTEN_SEITE +
         `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +

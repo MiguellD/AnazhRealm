@@ -142,6 +142,12 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
+        wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
+        fixWach: false,
+        fix: [
+            { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
+            { takte: 44, wirkte: 8, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
+        ],
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -404,6 +410,19 @@ function selbsttest() {
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
+        ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
+        [
+            "die Welt steht mitten in der Runde der Stufen-Wahl (K-WANDUHR 08c017fb: steht nach 1 Takt, danach wirkte sie 4×)",
+            (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
+            /FIXPUNKT: die Welt stand nach 1 Takten, danach ging archLod \(_tickArchitectureLOD\) ohne Eingabe noch 2048 Einheiten/,
+        ],
+        ["der Regler-Schritt wirkt nicht", (b) => b.fix.forEach((f) => (f.wirkte = 0)), /LEER: der Regler-Schritt wirkte nicht/],
+        ["keine Fixpunkt-Phase", (b) => delete b.fix, /LEER: keine Fixpunkt-Phase/],
+        [
+            "ein Weckruf ohne Wirkung lässt die Welt stehen (K-WANDUHR 08c017fb)",
+            (b) => (b.fixWach = true),
+            /FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend/,
+        ],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -476,6 +495,14 @@ const server = statikServer();
                 await window.__weltStehtNach(takt);
                 const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
+                // (W) WACH: ein kalter Bau, den der Cull meldet (Offenes), hält die Welt wach — beim Namen des Fege-Takts. Den atmenden
+                // Regler hält das Einschwingen (welt-boot Selbsttest REGLER).
+                const R0 = st.architectureCullingRadius;
+                r._foundryRewarmColdTrees = () => 1;
+                st.architectureCullingRadius = R0 + 2e-3;
+                aus.wach = await window.__weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
+                delete r._foundryRewarmColdTrees;
+                st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -504,6 +531,30 @@ const server = statikServer();
                 aus.bisRuhe = await bisRuhe(900);
                 // (R) RUHE
                 aus.ruhe = await phase(30);
+                // (F) FIXPUNKT: die Welt steht erst, wenn jeder geweckte Fege-Takt seine Runde zu Ende ging. Ein Weckruf ohne Wirkung
+                // (1 mm): nach einem Takt stehen Stufen-Wahl und Streu mitten in der Runde. L1→L2 × 0,8 und zurück: nach dem Stand
+                // gehen 150 Takte ohne Eingabe keinen Fege-Takt mehr.
+                st.architectureCullingRadius += 1e-3;
+                takt();
+                aus.fixWach = r._weltSteht();
+                st.architectureCullingRadius -= 1e-3;
+                const LD = r.constructor.LOD_DISTANCES;
+                const d12 = LD.thresh12;
+                const fixpunkt = async (d) => {
+                    const wach = [];
+                    LD.thresh12 = d;
+                    const f = { takte: await window.__weltStehtNach(() => (takt(), wach.push(L.frame()))) };
+                    f.wirkte = Object.values(window.__standPhase(wach).takte).reduce((a, t) => a + t.wirkt, 0);
+                    f.nach = await phase(150);
+                    return f;
+                };
+                try {
+                    aus.fix = [await fixpunkt(d12 * 0.8), await fixpunkt(d12)];
+                } catch (e) {
+                    aus.fix = [{ fehler: String(e.message).slice(0, 200) }];
+                    LD.thresh12 = d12;
+                    await window.__weltStehtNach(takt);
+                }
                 // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie, jeder Takt geht wie vor der Welle), so lange,
                 // bis JEDER Takt eine volle Runde ging — die Runde nennt der Takt selbst (`_standRuht(name, runde, …)`), gegangen
                 // ist, was er `_standMeldet` (die Arbeit der Wache). `jeFrame(f, gang)` sieht jeden Frame.
@@ -520,7 +571,7 @@ const server = statikServer();
                     const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
-                        const r = Math.max(1, a[1] | 0);
+                        const r = a[1] | 0;
                         if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
                             rundeVon[a[0]] = runden[a[0]];
                         runden[a[0]] = r;
@@ -1423,6 +1474,13 @@ const server = statikServer();
                     : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
+    console.log(`  Wach (ein kalter Bau): ${befund.wach}`);
+    if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
+    for (const [i, F] of (befund.fix || []).entries())
+        console.log(
+            `  Fixpunkt ${i ? "L1→L2 zurück" : "L1→L2 × 0,8"}: ${F.fehler || `${F.wirkte} Wirkungen, die Welt steht nach ${F.takte} ` +
+                `Takten, danach in ${F.nach.frames} Takten ${F.nach.summe} Einheiten`}`
+        );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ STAND-TAKT ROT:\n  " + v.join("\n  "));

@@ -947,21 +947,12 @@ function buehne(nFrames, nachtLicht) {
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 300000) {
-                const r = window.anazhRealm;
-                const st = r && r.state;
-                if (st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera) {
-                    return {
-                        ok: true,
-                        ms: Math.round(performance.now() - t0),
-                        webgpu: st.renderer.backend.isWebGPUBackend === true,
-                    };
-                }
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
+            const r = await window.__weltDa((r) => {
+                const st = r.state;
+                return !!(st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera);
+            });
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
         });
-        if (!bereit.ok) throw new Error("Renderer und Post-Kette standen nach 300 s nicht");
         if (!bereit.webgpu)
             throw new Error("kein WebGPU-Backend — die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);

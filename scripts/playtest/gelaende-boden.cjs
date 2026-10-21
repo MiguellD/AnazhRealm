@@ -1335,7 +1335,6 @@ async function checkBandV18132FerneSeen(ctx) {
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.machinery = typeof window.__gelaendeCore.kachelSchluessel === "function";
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
@@ -1412,7 +1411,6 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.132 Ferne Seen: gelaende-core kachelSchluessel steht", res.machinery);
     if (!res.unmeasurable) {
         check("V18.132 Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
         check(

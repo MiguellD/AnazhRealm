@@ -284,9 +284,8 @@ function leibInstall(cfg) {
         }
     };
     L.steht = async (ms) => {
-        const dl = performance.now() + ms;
         let n = 0;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
             await L.tick(5, 40);
             n++;
             if (n >= 4 && !r._weltbildFehlt(true).length) break;
@@ -378,12 +377,7 @@ function leibInstall(cfg) {
     L.gtHolen = async (x, z) => {
         if (L.gt && st.architectures.includes(L.gt)) return L.gt;
         const gt = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true });
-        const dl = performance.now() + 45000;
-        while (gt && !gt.instanced && !gt.mesh && performance.now() < dl) {
-            r._rebuildArchitectureMesh(gt);
-            if (gt.instanced || gt.mesh) break;
-            await sleep(200);
-        }
+        if (gt) await window.__gebautNach(gt);
         L.gt = gt;
         return gt;
     };
@@ -756,8 +750,7 @@ const server = statikServer({
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
 async function probe(arg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0) await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const nahDeckung = window.__nahDeckung;
@@ -780,9 +773,8 @@ async function probe(arg) {
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
     // die Welt wächst, bis ihr Bild steht (`_weltbildFehlt` leer)
     const steht = async (ms) => {
-        const dl = performance.now() + ms;
         let n = 0;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
             await tick(5, 40);
             n++;
             if (n >= 4 && !r._weltbildFehlt(true).length) break;
@@ -965,10 +957,9 @@ async function probe(arg) {
             window.__nahSpeicher = null;
             // die Stämme des Orts wachsen nach dem Boden (Buch → Bäcker → Instanz): gewartet wird, bis ihre Zahl ruht
             {
-                const dlS = performance.now() + 30000;
                 let vorN = -1;
                 let ruhe = 0;
-                while (performance.now() < dlS && ruhe < 4) {
+                for (const weiter = window.__deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
                     await tick(5, 40);
                     const n = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25).length;
                     ruhe = n === vorN ? ruhe + 1 : 0;
@@ -1066,12 +1057,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen, 3 m vor dem Stamm (die Verfolger-Kamera des Kerns hinter ihm)
             if (!gt) {
                 gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
-                const dlG = performance.now() + 45000;
-                while (gt && !gt.instanced && !gt.mesh && performance.now() < dlG) {
-                    r._rebuildArchitectureMesh(gt);
-                    if (gt.instanced || gt.mesh) break;
-                    await sleep(200);
-                }
+                if (gt) await window.__gebautNach(gt);
             }
             const mr = gt ? r.mountArchitecture(gt) : null;
             if (mr && mr.ok) {

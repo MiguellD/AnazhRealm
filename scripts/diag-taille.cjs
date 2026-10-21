@@ -20,16 +20,12 @@
 //
 //   node scripts/diag-taille.cjs
 
-const { starteBrowser } = require("./lib/welt-boot.cjs");
-const { spawn } = require("child_process");
+const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
-const SERVER_JS = path.resolve("save-server.js");
-// Der Port des eigenen save-servers (TAILLE_PORT, sonst 4312): parallele Worktrees fahren je einen eigenen — auf einem
-// belegten Port fände die Seite den FREMDEN Server und prüfte dessen Dateien.
-const TAILLE_PORT = Number(process.env.TAILLE_PORT || 4312);
-const SERVER_URL = `http://127.0.0.1:${TAILLE_PORT}/index.html`;
+// Der Port des eigenen save-servers: TAILLE_PORT, sonst ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
+// Seite den Spiel-Server des Schöpfers und prüfte dessen Dateien.
 const GOLDEN_DIR = path.resolve("spec/golden/v1");
 
 // Das EINGEFRORENE Test-Schlüsselpaar der goldenen Dateien (nur für golden —
@@ -46,40 +42,18 @@ const GOLDEN_JWK = {
 };
 const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeitfelder
 
-function startSaveServer() {
-    return new Promise((resolve, reject) => {
-        const proc = spawn("node", [SERVER_JS], {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: Object.assign({}, process.env, { PORT: String(TAILLE_PORT) }),
-        });
-        let ready = false;
-        const to = setTimeout(() => !ready && reject(new Error("server timeout")), 5000);
-        proc.stdout.on("data", (c) => {
-            if (!ready && /läuft/.test(c.toString())) {
-                ready = true;
-                clearTimeout(to);
-                resolve(proc);
-            }
-        });
-        proc.on("error", reject);
-    });
-}
-
 (async () => {
     const minting = !fs.existsSync(GOLDEN_DIR);
-    const server = await startSaveServer();
+    const [port] = await eigenePorte("TAILLE_PORT");
+    const SERVER_URL = `http://127.0.0.1:${port}/index.html`;
+    const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     let fail = false;
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
-            const deadline = performance.now() + 12000;
-            while (
-                (!window.anazhRealm || !window.anazhRealm.state || !window.anazhRealm.state.blueprints) &&
-                performance.now() < deadline
-            )
-                await new Promise((r) => setTimeout(r, 50));
+            await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state || !window.anazhRealm.state.blueprints));
         });
 
         const result = await page.evaluate(

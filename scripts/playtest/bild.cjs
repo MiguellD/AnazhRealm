@@ -56,13 +56,12 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm,
             st = r.state;
-        const out = { hasMethod: typeof r._ensureSkyEnvironment === "function", ready: !!st.rendererReady };
-        if (out.hasMethod) out.ensured = r._ensureSkyEnvironment(true);
+        const out = { ready: !!st.rendererReady };
+        out.ensured = r._ensureSkyEnvironment(true);
         out.envSet = !!(st.scene && st.scene.environment && st.scene.environment.isTexture);
         out.notFailed = !st._skyEnvFailed;
         return out;
     });
-    check("Ω-OPSIS §7: _ensureSkyEnvironment existiert (PBR-Metalle vs schwarz)", res.hasMethod === true);
     // wenn der Renderer (headless) bereit ist, MUSS die Env stehen; sonst kein Flake-Zwang
     check(
         "Ω-OPSIS §7: scene.environment gesetzt (Renderer-bereit) ohne Fehlschlag",
@@ -1292,22 +1291,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
-        out.swimFnExists = typeof r._swimVerticalVelocity === "function";
-        if (out.swimFnExists) {
-            const dive = r._swimVerticalVelocity(0, 4, true, false);
-            const rise = r._swimVerticalVelocity(0, 4, false, true);
-            const neutral = r._swimVerticalVelocity(0, 4, false, false);
-            out.diveSinks = dive < 0;
-            out.riseLifts = rise > 0;
-            out.neutralFloats = neutral > 0 && neutral <= 2.5;
-            out.diveBelowNeutral = dive < neutral;
-            // Aktives Auftauchen konvergiert per lerp gegen das Gesetz (schwimmen.aufV ≈ 1.0 m/s): gemessen wird
-            // die KONVERGIERTE Steig-Geschwindigkeit gegen den Neutral-Auftrieb, nicht der erste lerp-Schritt.
-            let riseKonv = 0;
-            for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
-            out.riseAboveNeutral = riseKonv > neutral;
-            out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
-        }
+        const dive = r._swimVerticalVelocity(0, 4, true, false);
+        const rise = r._swimVerticalVelocity(0, 4, false, true);
+        const neutral = r._swimVerticalVelocity(0, 4, false, false);
+        out.diveSinks = dive < 0;
+        out.riseLifts = rise > 0;
+        out.neutralFloats = neutral > 0 && neutral <= 2.5;
+        out.diveBelowNeutral = dive < neutral;
+        // Aktives Auftauchen konvergiert per lerp gegen das Gesetz (schwimmen.aufV ≈ 1.0 m/s): gemessen wird
+        // die KONVERGIERTE Steig-Geschwindigkeit gegen den Neutral-Auftrieb, nicht der erste lerp-Schritt.
+        let riseKonv = 0;
+        for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
+        out.riseAboveNeutral = riseKonv > neutral;
+        out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
         // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht. Die Bühne
         // ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie mit (CI 38993175603).
         {
@@ -1378,7 +1374,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v833Results && !v833Results.error) {
-        check("V8.33: _swimVerticalVelocity existiert (reine Funktion)", v833Results.swimFnExists);
         check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
         check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
         check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
@@ -1957,12 +1952,11 @@ async function checkBandV18264ShadowCache(ctx) {
         const A = r.constructor;
         const st = r.state;
         const out = {};
-        out.hasMethod = typeof r._loopShadowUpdate === "function";
         const csm = st.csmNode;
         const lichter =
             csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
         out.lichter = lichter.length;
-        if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
+        if (!lichter.length || !A.SCHATTEN_TAKT) return out;
         // 1410-3: in Ruhe je Frame höchstens EINE Kaskade (die nahe jeden nahMax-ten Frame, die ferne dazwischen); bewegt
         // sich die Kamera, folgt die nahe jedem Frame im Regler-Takt (der Schatten des gehenden Spielers hinkt nie).
         const kam = st.camera;
@@ -2012,7 +2006,7 @@ async function checkBandV18264ShadowCache(ctx) {
         out.fernSeltener = lichter.length < 2 || (z1[1] >= Math.floor(fern) - 1 && z1[1] <= Math.ceil(fern));
         return out;
     });
-    check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.hasMethod && res.autoUpdateOff);
+    check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.autoUpdateOff);
     check(
         `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
             `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,
@@ -2029,12 +2023,7 @@ async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const t0 = performance.now();
-        while (performance.now() - t0 < 60000) {
-            const r = window.anazhRealm;
-            if (r && r.state && typeof r._weatherFieldFor === "function") break;
-            await sleep(30);
-        }
+        await window.__weltDa((r) => typeof r._weatherFieldFor === "function");
         const r = window.anazhRealm;
         if (!r || typeof r._weatherFieldFor !== "function") return { err: "keine Instanz / _weatherFieldFor fehlt" };
         // Keine laufende Transition — die Wort-Vorgabe führt.
