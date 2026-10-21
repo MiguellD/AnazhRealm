@@ -3395,7 +3395,7 @@ async function starte() {
             const zeile = uhr == null ? art : `${art}@${uhr}`;
             // DER LICHTWEG (Licht K3): `panorama`, `feld`, `spiegel` und `wasser` (eine Zahl stellt die Fläche senkrecht, Grad neben
             // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
-            if (/^(panorama|feld|spiegel|wasser)d*$/.test(art)) {
+            if (/^(panorama|feld|spiegel|wasser)\d*$/.test(art)) {
                 welt[zeile] = (await rufe("/eval", { code: `return await window.__lichtWeg({ weg: "${art}", uhr: ${uhr} });` })).ergebnis;
                 continue;
             }

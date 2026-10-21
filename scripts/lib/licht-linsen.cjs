@@ -1944,7 +1944,7 @@ function lab(rgb) {
 function lichtWeg(opts) {
     return (async () => {
         const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
-        const [, art, grad] = /^([a-z]+)(d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
+        const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
@@ -1980,7 +1980,7 @@ function lichtWeg(opts) {
             for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;
             return s;
         };
-        const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => u.value.clone());
+        const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         try {
             dl.castShadow = false;
             if (luftU) luftU.beta.value = 0;
@@ -2033,7 +2033,7 @@ function lichtWeg(opts) {
                 weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
                 const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
-                WL.forEach((u) => u.value.multiplyScalar(0));
+                WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
             }
@@ -2043,7 +2043,7 @@ function lichtWeg(opts) {
             fp.panoDaten.set(panoAlt);
             fp.panoFlug = false;
             fp.panoTex.needsUpdate = true;
-            WL.forEach((u, i) => u.value.copy(wlAlt[i]));
+            WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
             for (const [m, v] of alle) m.visible = v;
             sc.remove(karte, see);
             karte.geometry.dispose();

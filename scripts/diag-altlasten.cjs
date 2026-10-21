@@ -1031,7 +1031,6 @@ const STAMM = stammLib.dateien(path.join(__dirname, ".."));
 // das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
 const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
 const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
-const LICHT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_weltLicht");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
@@ -1244,12 +1243,11 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
         fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
     },
-    // Licht K3 — DAS LICHT DER WELT als MUSTER: das Lambert-Licht eines Passes (der Faktor 1/π im WGSL, die Neigung gegen die
-    // Sonnenhöhe im TSL) rechnet nur der EINE Baustein `weltLicht` — jede andere Stelle ist ein Lichtweg neben ihm.
+    // Licht K3 — DAS LICHT DER WELT als MUSTER: kein Pass rechnet sein Lambert-Licht selbst (der Faktor 1/π im WGSL, die Neigung
+    // gegen die Sonnenhöhe im TSL) — Feld-March und Panorama reichen Albedo und Normale an den EINEN Baustein (`_weltLicht`).
     {
         muster: /\b1\.0\s*\/\s*PI\b|0\.31830988|max\(\s*[\w.]+\.y\s*,\s*0\.2\s*\)/,
-        gesetzbuch: LICHT_BUCH,
-        einmal: true,
+        gefallen: true,
         verboten: STAMM,
         fiel: "Licht K3 — Spiegel, Panorama, Feld-March und Wasser rufen den EINEN Baustein weltLicht (_weltLicht)",
     },
@@ -3884,10 +3882,11 @@ function main() {
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske) &&
             feuert(WORT_BUCH, "q.writeBuffer(b, 0, a.buffer, a.byteOffset + 0, 4);".repeat(2), "neben 2 .*Wort-Schrift") &&
-            feuert(LICHT_BUCH, `"return 0.3183098861837907 * x;" + "(l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)"`, "neben 2 .*weltLicht");
+            feuert(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"', "weltLicht") &&
+            still(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"');
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift, der Lambert-Zwilling im Panorama neben weltLicht — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift, der Lambert-Zwilling im Panorama — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);

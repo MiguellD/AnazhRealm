@@ -632,6 +632,7 @@ class AnazhRealm_bild_himmel {
             const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
+            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -1658,16 +1659,7 @@ class AnazhRealm_bild_himmel {
         const himmelFarbe = (dir) =>
             texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
-        const passUmgebung = Fn(() => {
-            const q = uv();
-            const phi = q.x
-                .sub(0.5)
-                .mul(2 * PI)
-                .toVar();
-            const el = q.y.sub(0.5).mul(PI).toVar();
-            const ce = el.cos().toVar();
-            return vec4(himmelFarbe(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
-        });
+        const passUmgebung = Fn(() => vec4(himmelFarbe(this._umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
         // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
@@ -1742,6 +1734,14 @@ class AnazhRealm_bild_himmel {
             tafelnFrisch: false,
         };
         return st.atmoLut;
+    }
+
+    // DIE RICHTUNG DER EQUIREKT-LAGE (die Umkehr von r184 `equirectUV`): uv → Einheits-Richtung, φ = (u − ½)·2π, Höhe = (v − ½)·π
+    // — so malt die Umgebung (`passUmgebung`), so tastet die Himmels-Sonde des Lichts der Welt ab (`_weltLichtHimmel`).
+    _umgebungRichtung(q) {
+        const phi = q.x.sub(0.5).mul(2 * Math.PI);
+        const el = q.y.sub(0.5).mul(Math.PI);
+        return THREE.TSL.vec3(el.cos().mul(phi.cos()), el.sin(), el.cos().mul(phi.sin()));
     }
 
     // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
