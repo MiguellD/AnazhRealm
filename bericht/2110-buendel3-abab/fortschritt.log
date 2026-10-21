@@ -1,0 +1,31 @@
+09:00:40 SERIE START A=57a9f2ab[0] B=d3a626ee[0] Instrument=d3a626ee ZELLEN=g-third w-ego
+09:00:46 g-third-A1 start FP=35e07c38ff541286 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:03:41 g-third-A1 ende gpu[79, 822 MHz, 2999 MHz, P3, 0x0000000000000001] LEER | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2434,"lage":[0,-8.3]},"ms"
+09:04:12 g-third-B1 start FP=ab1f91f6c83924da 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:07:13 g-third-B1 ende gpu[78, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 79.9 F95 16.7 C95 6.1 k0 0.2 | LEER |  {"ergebnis":{"s":-7.6,"wege":2,"wegM":127.6,"abwMaxM":0,"takte":2655,"lage":[0,-7.6]},"ms"
+09:07:44 g-third-A2 start FP=35e07c38ff541286 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:10:46 g-third-A2 ende gpu[79, 1404 MHz, 4006 MHz, P0, 0x0000000000000000] LEER | LEER |  {"ergebnis":{"s":-7.8,"wege":2,"wegM":127.8,"abwMaxM":0,"takte":2285,"lage":[0,-7.8]},"ms"
+09:11:17 g-third-B2 start FP=ab1f91f6c83924da 64 50 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:14:18 g-third-B2 ende gpu[76, 430 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 80 F95 16.7 C95 6 k0 0.2 | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2751,"lage":[0,-8.3]},"ms"
+09:14:49 g-third-A3 start FP=35e07c38ff541286 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:17:55 g-third-A3 ende gpu[77, 923 MHz, 4006 MHz, P0, 0x0000000000000001] LEER | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2345,"lage":[0,-8.3]},"ms"
+09:18:26 g-third-B3 start FP=ab1f91f6c83924da 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:21:27 g-third-B3 ende gpu[77, 240 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 79.9 F95 16.7 C95 6.3 k0 0.19 | LEER |  {"ergebnis":{"s":-7.6,"wege":2,"wegM":127.6,"abwMaxM":0,"takte":2695,"lage":[0,-7.6]},"ms"
+09:21:58 w-ego-A1 start FP=35e07c38ff541286 64 50 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:24:54 w-ego-A1 ende gpu[76, 1050 MHz, 4006 MHz, P0, 0x0000000000000001] LEER | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2659,"lage":[-280.4,-1053.
+09:25:25 w-ego-B1 start FP=ab1f91f6c83924da 64 50 gpu[73, 1050 MHz, 4006 MHz, P0, 0x0000000000000001]
+09:28:20 w-ego-B1 ende gpu[76, 1050 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 78.2 F95 16.8 C95 4.5 k0 0.63 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":3038,"lage":[-280.4,-1054]
+09:28:51 w-ego-A2 start FP=35e07c38ff541286 64 50 gpu[73, 1050 MHz, 4006 MHz, P0, 0x0000000000000001]
+09:31:49 w-ego-A2 ende gpu[76, 367 MHz, 405 MHz, P8, 0x0000000000000001] LEER | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2498,"lage":[-280.4,-1053.
+09:32:19 w-ego-B2 start FP=ab1f91f6c83924da 64 50 gpu[71, 367 MHz, 405 MHz, P8, 0x0000000000000001]
+09:35:14 w-ego-B2 ende gpu[76, 240 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 78.5 F95 16.8 C95 5.1 k0 0.26 | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2872,"lage":[-280.4,-1053.
+09:58:29 w-ego-A3 start FP=35e07c38ff541286 64 50 gpu[65, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:01:26 w-ego-A3 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] LEER | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":2537,"lage":[-280.4,-1054]
+10:21:33 w-ego-B3 start FP=ab1f91f6c83924da 64 50 gpu[63, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:24:31 w-ego-B3 ende gpu[75, 303 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 79.6 F95 16.8 C95 4.6 k0 0.26 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":3149,"lage":[-280.4,-1054]
+10:24:56 SERIE ENDE A-status[0] B-status[0]
+10:46:38 blick-B1 start d3a626ee FP=ab1f91f6c83924da 64 50
+10:48:12 blick-B1 ende pose[-280.4 29.71 -1045.6 -335.64 29.71 -1069.02] 2 Bilder
+10:48:50 blick-A1 start 57a9f2ab FP=35e07c38ff541286 64 50
+10:50:25 blick-A1 ende pose[-280.4 29.71 -1045.6 -335.64 29.71 -1069.02] 2 Bilder
+10:50:50 BLICK ENDE

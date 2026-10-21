@@ -1,0 +1,5 @@
+Instrument A = n2010-b2b, Seite B = n2010-b2a
+Methoden A 3532 · B 3528
+in B entfernt (6): _hudSchreib, _luftSpektrum, _umgebungRichtung, _weltLicht, _weltLichtHimmel, _weltLichtTakt
+in B neu (2): _feldEnvIrradianz, _feldLichtSync
+vom Instrument gerufen und in B fehlend (2): _weltLicht (licht-linsen.cjs, wasser-linse.cjs); _weltLichtTakt (licht-linsen.cjs)

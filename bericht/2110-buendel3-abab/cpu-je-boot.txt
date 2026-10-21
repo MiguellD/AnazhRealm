@@ -1,0 +1,12 @@
+g-third-A1: 150 %
+g-third-B1: 151 %
+g-third-A2: 150 %
+g-third-B2: 151 %
+g-third-A3: 149 %
+g-third-B3: 150 %
+w-ego-A1: 151 %
+w-ego-B1: 151 %
+w-ego-A2: 150 %
+w-ego-B2: 150 %
+w-ego-A3: 152 %
+w-ego-B3: 158 %

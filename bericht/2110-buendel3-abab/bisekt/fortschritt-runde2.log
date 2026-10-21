@@ -1,0 +1,18 @@
+11:08:40 BISEKT START A=57a9f2ab C=fdda7c13 F=9d5e1ca8 B=d3a626ee Instrument=d3a626ee
+11:08:52 A1 start 57a9f2ab FP=35e07c38ff541286 64 50 gpu[76, 1404 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:10:54 A1 ende gpu[79, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.5,"cpuJeFrameMs":2.94,"gpuGebunden":true,"nachlaufMs":102.7,"ms":871}]
+11:11:30 C1 start fdda7c13 FP=1764f8394be46596 64 50 gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:13:35 C1 ende gpu[78, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] bank[{"n":12,"runden":5,"gpuJeFrameMs":10.96,"cpuJeFrameMs":3.02,"gpuGebunden":true,"nachlaufMs":95.3,"ms":807}]
+11:14:11 F1 start 9d5e1ca8 FP=2545aa0199a18798 64 50 gpu[77, 1784 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:16:15 F1 ende gpu[78, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.61,"cpuJeFrameMs":2.97,"gpuGebunden":true,"nachlaufMs":103.7,"ms":878}]
+11:16:51 B1 start d3a626ee FP=ab1f91f6c83924da 64 50 gpu[77, 1784 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:18:56 B1 ende gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.45,"cpuJeFrameMs":2.67,"gpuGebunden":true,"nachlaufMs":105.4,"ms":866}]
+11:19:37 A2 start 57a9f2ab FP=35e07c38ff541286 64 50 gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:21:39 A2 ende gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.78,"cpuJeFrameMs":3.14,"gpuGebunden":true,"nachlaufMs":105.7,"ms":887}]
+11:22:16 C2 start fdda7c13 FP=1764f8394be46596 64 50 gpu[77, 1822 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:24:19 C2 ende gpu[78, 1809 MHz, 4006 MHz, P0, 0x0000000000000001] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.04,"cpuJeFrameMs":3.08,"gpuGebunden":true,"nachlaufMs":92.7,"ms":814}]
+11:24:55 F2 start 9d5e1ca8 FP=2545aa0199a18798 64 50 gpu[77, 1809 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:27:00 F2 ende gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.54,"cpuJeFrameMs":2.73,"gpuGebunden":true,"nachlaufMs":106.6,"ms":832}]
+11:27:36 B2 start d3a626ee FP=ab1f91f6c83924da 64 50 gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000]
+11:29:40 B2 ende gpu[78, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] bank[{"n":12,"runden":5,"gpuJeFrameMs":11.43,"cpuJeFrameMs":2.7,"gpuGebunden":true,"nachlaufMs":105.9,"ms":858}]
+11:30:05 BISEKT ENDE

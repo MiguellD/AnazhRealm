@@ -1,0 +1,16 @@
+bisekt/A1 10.27
+bisekt/C1 11.46
+bisekt/F1 11.57
+bisekt/B1 11.19
+bisekt/A2 11.43
+bisekt/C2 11.38
+bisekt/F2 11.03
+bisekt/B2 11.04
+bisekt2/A1 11.5
+bisekt2/C1 10.96
+bisekt2/F1 11.61
+bisekt2/B1 11.45
+bisekt2/A2 11.78
+bisekt2/C2 11.04
+bisekt2/F2 11.54
+bisekt2/B2 11.43
