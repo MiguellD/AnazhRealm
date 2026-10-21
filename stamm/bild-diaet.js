@@ -263,6 +263,8 @@ AnazhRealm._diaetStand = function (obs, ro, od, md) {
     ro._anazhOd = od;
     ro._anazhMd = md;
     const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
+    ro._anazhSenke = senke;
+    ro._anazhNbs = ro.getNodeBuilderState();
     ro._anazhIx = ro.geometry ? ro.geometry.index : undefined;
     ro._anazhIM = senke ? senke.instanceMatrix : undefined;
     ro._anazhIC = senke ? senke.instanceColor : undefined;
@@ -283,21 +285,34 @@ AnazhRealm._diaetStand = function (obs, ro, od, md) {
 AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
     const r = ro._anazhR;
     const at = ro.attributes;
-    if (at === null || obs.needsVelocity(rend)) return false;
+    if (at === null) return false;
+    // die Velocity-MRT ist je Render EINE (r184 needsVelocity liest nur den Renderer)
+    if (rend._anazhVelR !== rid) {
+        rend._anazhVelR = rid;
+        rend._anazhVel = obs.needsVelocity(rend);
+    }
+    if (rend._anazhVel === true) return false;
     if (at)
         for (let i = 0; i < at.length; i++)
             if ((at[i].isInterleavedBufferAttribute === true ? at[i].data : at[i])._anazhRegung > r) return false;
-    const obj = ro.object;
-    const senke = obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
+    const senke = ro._anazhSenke;
     const ix = ro.geometry ? ro.geometry.index : undefined,
         im = senke.instanceMatrix,
         ic = senke.instanceColor;
     if (ix !== ro._anazhIx || im !== ro._anazhIM || ic !== ro._anazhIC) return false;
     if ((ix && ix._anazhRegung > r) || (im && im._anazhRegung > r) || (ic && ic._anazhRegung > r)) return false;
-    const nbs = ro.getNodeBuilderState();
+    const nbs = ro._anazhNbs;
     const m = ro.material;
-    if (nbs._anazhRegung > r || (m && (m._anazhRegung > r || AnazhRealm._diaetStoffBlick(ro._anazhMd, m, rid))))
-        return false;
+    if (nbs._anazhRegung > r) return false;
+    if (m) {
+        const md = ro._anazhMd;
+        if (
+            m._anazhRegung > r ||
+            (md._renderId === rid ? md._equal === false : AnazhRealm._diaetStoffBlick(md, m, rid))
+        )
+            return false;
+    }
+    const obj = ro.object;
     const k = nbs._anazhGang;
     let og = obs.hasAnimation === true;
     if (ro._anazhBeweglich !== true) {
@@ -306,7 +321,7 @@ AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
         ro._anazhOd.worldMatrix.copy(obj.matrixWorld);
         og = true;
     }
-    if (AnazhRealm._diaetVerweisAnders(obs, ro, k)) og = true;
+    if (k.verweise.length > 0 && AnazhRealm._diaetVerweisAnders(obs, ro, k)) og = true;
     if (og) AnazhRealm._diaetObjektGang(rend, ro, k, false);
     return true;
 };

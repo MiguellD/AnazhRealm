@@ -1639,6 +1639,7 @@ class AnazhRealm_siedlung_bauten {
         const spec = s.spec;
         const mesh = new THREE.Mesh(s.geom, spec.mat);
         mesh.name = spec.name;
+        mesh.matrixAutoUpdate = false; // STATISCH (E-Bauart): die Lage des Satzes liegt in seinen Vertices
         mesh.frustumCulled = false;
         mesh.castShadow = spec.schatten;
         mesh.receiveShadow = spec.empfang;
