@@ -1291,7 +1291,7 @@ jobs:
               # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
               run: npm run gate:mp-sync
 
-            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
+            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)
               if: matrix.gruppe == 14
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
