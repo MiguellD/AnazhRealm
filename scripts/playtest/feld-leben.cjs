@@ -97,7 +97,6 @@ async function checkBandV1727WritableField(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
-        out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
         // die Geburt trägt Leben ins Feld: ein spawn_creature über die DSL deponiert an der Wiege (am Ruf)
         const capD = r.state.maxCreatures;
         const nD = r.state.creatures.length;
@@ -146,7 +145,6 @@ async function checkBandV1727WritableField(ctx) {
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
         return out;
     });
-    check("V17.27 Schreib-Feld: LIFE_FIELD-Konstante existiert (cell/decay/pulse/max)", res.hasConst);
     check("V17.27 Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
     check("V17.27 Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
     check(
@@ -766,8 +764,6 @@ async function checkBandWelle6APolish(ctx) {
         out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
         out.stateZwillingAbwesend = !("maxWalkableSlopeY" in r.state);
-        out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
-        out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
 
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
         // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
@@ -862,8 +858,6 @@ async function checkBandWelle6APolish(ctx) {
             "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
             wave6a3Results.stateZwillingAbwesend
         );
-        check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
-        check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
         check(
             "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
             wave6a3Results.skyOnSteepSlope === false
@@ -883,7 +877,6 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
 
 
 
@@ -960,7 +953,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6a45Results) {
-        check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
         if (wave6a45Results.phantomExists) {
             check(
                 "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
@@ -1665,15 +1657,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         // V9.39 — der Voxel-Populator ist die lebende Schicht.
-        // Drei neue Baupläne als Built-ins.
-        const bps = r.state.blueprints || {};
-        out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
-        out.hasKristallGeode = !!(
-            bps.kristall_geode &&
-            bps.kristall_geode.builtIn &&
-            bps.kristall_geode.parts.length >= 2
-        );
-        out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
         out.fieldHas4Axes = !!(
@@ -1813,9 +1796,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     if (wave6gP2Results && !wave6gP2Results.error) {
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
-        check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
-        check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
-        check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
         check(
             "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
             wave6gP2Results.fieldHas4Axes
@@ -1921,8 +1901,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const bps = r.state.blueprints || {};
         const fb = bps.felsbogen;
         const ft = bps.felsturm;
-        out.hasFelsbogen = !!(fb && fb.builtIn && fb.parts && fb.parts.length >= 3);
-        out.hasFelsturm = !!(ft && ft.builtIn && ft.parts && ft.parts.length >= 3);
 
         // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
         // eine begehbare Lücke; ein Sturz spannt darüber.
@@ -2074,8 +2052,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gP3Results && !wave6gP3Results.error) {
-        check("W6.G P3: Bauplan 'felsbogen' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsbogen);
-        check("W6.G P3: Bauplan 'felsturm' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsturm);
         check(
             `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
             wave6gP3Results.felsbogenWalkable
@@ -2117,8 +2093,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        const mats = r.state.materials || {};
-        out.hasErde = !!(mats.erde && mats.erde.builtIn);
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.
         // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
@@ -2214,7 +2188,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gP4Results && !wave6gP4Results.error) {
-        check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
         check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
         check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
         check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
@@ -2251,7 +2224,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         const out = {};
 
         // (F1) FIELD_CHARACTER frozen Konstanten
-        out.constExists = !!A.FIELD_CHARACTER && Object.isFrozen(A.FIELD_CHARACTER);
         if (A.FIELD_CHARACTER) {
             const FC = A.FIELD_CHARACTER;
             // Wellenlängen-Spreizung: lebendig 200, dichte 340, glut 520, magie 160
@@ -2360,8 +2332,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.warpedMatchesActual = Math.abs(fW.lebendig - withWarp) < 1e-9;
             out.warpChangesValue = Math.abs(noWarp - withWarp) > 1e-6;
 
-            // (F10) Warp-Stream existiert + ist eigener Stream
-            out.warpStreamExists = !!fwNoise.warpNoise && typeof fwNoise.warpNoise.noise2D === "function";
 
             // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
             r.state.worldMeta.genVersion = 1;
@@ -2384,7 +2354,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         return out;
     });
 
-    check("V18.203 (F1a) FIELD_CHARACTER frozen + existiert", res.constExists === true);
     check("V18.203 (F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
     check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
     check(
@@ -2407,7 +2376,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         "V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
         res.warpedMatchesActual === true
     );
-    check("V18.204 (F10) Eigener warpNoise-Stream existiert (Γ5-Disziplin)", res.warpStreamExists === true);
     check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 

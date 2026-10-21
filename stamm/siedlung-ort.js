@@ -1973,8 +1973,9 @@ class AnazhRealm_siedlung_ort {
     // DER BEWOHNER-TAKT (Lehre 13: im Frame-Takt der Wesen, nie am Render-Signal): je gemeldeter Siedlung nahe dem Spieler
     // (`AUTO_SETTLEMENT.nearM`, die Nähe des Dorf-Zugs) die Liste, sobald ihre Häuser stehen, die Vorlagen im Faden und je
     // Takt höchstens `BEWOHNER.geburtenJeTakt` Geburten; jenseits nearM × `fernFaktor` gehen die Leiber (`_bewohnerFort`).
-    // Je Leib: der Stufen-Schalter (`_gelenkStufe`), jenseits der Nah-Grenze der Glieder-Satz (`_kzLeib`, echte GPU), diesseits
-    // der Atem des Stands (`_animateHuman`, Ruhe-Pose mit Kontrapost) auf der Raten-Leiter (`_creatureAnimDiv`).
+    // Je Leib: jenseits der Nah-Grenze der Glieder-Satz (`_kzLeib`, echte GPU), diesseits der Satz seiner Gestalt
+    // (`_bewohnerSatzSchreiben`) — nur die Nah-Wahl lebt als Leib: der Stufen-Schalter (`_gelenkStufe`) und der Atem des
+    // Stands (`_animateHuman`, Ruhe-Pose mit Kontrapost) auf der Raten-Leiter (`_creatureAnimDiv`).
     _tickBewohner(delta) {
         const st = this.state;
         const pm = st.playerMesh;

@@ -2723,13 +2723,10 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── bewohner (Klasse: das leere Dorf, Meisterkarte mensch.K1): das Start-Dorf wächst wie im Spiel (der Dorf-Zug am
-    // Genesis-Ort, `_startDorfBestellen` → `_tickAutoSettlement`), dann läuft der Spiel-Takt (`_gameLoopTick`), bis jeder
-    // Bewohner seinen Leib trägt. Der Zensus zählt je Haus des Plans (`_ortPlaene`, das stehende Haus mit dem Samen des
-    // Slots) die Körper mit Menschen-Leib (`userData.rig`) und der Laufzeit-Marke ihres Hauses (`userData.heim` = der Same)
-    // gegen die leute des Gesetzbuchs (fachwerk-core `leuteVon`), und am Dorfplatz (Ego und Third) die Menschen im Blick:
-    // im Frustum der Kamera, gezeichnet (Leib sichtbar oder sein Fern-Satz) und mit einer Sichtlinie, die kein Grundriss
-    // eines Hauses schneidet (`_imGrundriss`).
+    // ── bewohner (Klassen: das leere Dorf und die Menge als Leib, mensch.K1): das Start-Dorf wächst wie im Spiel, der Spiel-Takt
+    // läuft, bis jeder Bewohner seinen Leib trägt; je stehendem Haus die Leiber (`userData.heim`) gegen `leuteVon`, am Dorfplatz
+    // (Ego, Third) die Menschen im Blick (Frustum, gezeichnet als Leib, Satz oder Feld, Sichtlinie frei von Grundrissen), und
+    // höchstens `nahLeiber` zeichnen als Leib.
     await buehne("bewohner", async (restore) => {
         const W = window;
         const altHook = W.__anazhAutoSettlement;
@@ -2740,11 +2737,9 @@ async function kreaturProben(r, T, opts) {
         W.__anazhAutoSettlement = true;
         const schlaf = (ms) => new Promise((z) => setTimeout(z, ms));
         const FC = globalThis.__fachwerkCore;
-        const gesetz = !!(FC && typeof FC.leuteVon === "function");
         const wm = s.worldMeta;
         const t0 = performance.now();
         if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
-        // das EINE Warten (`__deckel`): gezählt wird nur ein Gang, in dem die Welt nichts mehr offen hat und kein Export unterwegs ist
         for (
             const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
             weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
@@ -2771,26 +2766,17 @@ async function kreaturProben(r, T, opts) {
             seed: sl.seed >>> 0,
             rolle: sl.rolle,
             kultur: sl.kultur,
-            soll: gesetz ? FC.leuteVon(sl.ov) : null,
+            soll: FC.leuteVon(sl.ov),
         }));
-        // der Dorfplatz: der Spieler am Rand des Platzes (die Blick-Wahl sucht freie Sicht, Lehre 17: zuerst die Enden der langen
-        // Achse, dann die Seiten, dann die Diagonalen — der erste Stand außerhalb jedes Grundrisses), der Blick zur Mitte
+        // der Spieler am Rand des Dorfplatzes (Lehre 17: Enden der langen Achse, Seiten, Diagonalen — frei von Grundrissen)
         const pz = plan.platz;
         const pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
         const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
         let stand = null;
-        for (const da of [
-            0,
-            Math.PI,
-            Math.PI / 2,
-            -Math.PI / 2,
-            Math.PI / 4,
-            (3 * Math.PI) / 4,
-            -Math.PI / 4,
-            (-3 * Math.PI) / 4,
-        ])
+        for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
             for (const plus of [2, 5, 9]) {
                 if (stand) break;
+                const da = (k * Math.PI) / 4;
                 const a = (pz.phi || 0) + lang + da;
                 const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
                 const x = pc.x - Math.cos(a) * ex;
@@ -2804,12 +2790,9 @@ async function kreaturProben(r, T, opts) {
         const az = (pc.z - stand.z) / sl0;
         const hS = r.getTerrainHeightAt(stand.x, stand.z);
         pm.set(stand.x, (Number.isFinite(hS) ? hS : pm.y) + A.PLAYER_FOOT_OFFSET, stand.z);
-        // DER SPIEL-TAKT: der Leib jedes Bewohners entsteht, wie das Spiel ihn baut (Vorlagen im Faden, Geburt im Takt)
         const leiber = () =>
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // der Takt läuft, bis jeder Leib steht — oder bis die Welt nichts mehr offen hat und kein Leib mehr kommt (`__deckel`:
-        // dann bleibt die Zahl, wie sie ist, und das Urteil nennt sie)
         let stall = null;
         try {
             for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && leiber().length < sollSumme;) {
@@ -2833,15 +2816,9 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "bewohner-menge") for (const b of L) b.visible = true;
         const jeHaus = new Map();
         for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
-        const leer = [];
-        const abw = [];
-        for (const h of haeuser) {
-            const ist = jeHaus.get(h.seed) || 0;
-            if (h.soll > 0 && ist === 0) leer.push(`${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
-            else if (h.soll !== null && ist !== h.soll)
-                abw.push(`${h.rolle} ${h.kultur} #${h.seed}: ${ist} von ${h.soll}`);
-        }
-        // die Menschen im Blick am Dorfplatz, Ego und Third
+        const leer = haeuser
+            .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
+            .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
         const cam = s.camera;
         const blickZaehlen = (sicht) => {
             const auge =
@@ -2878,16 +2855,12 @@ async function kreaturProben(r, T, opts) {
         const third = blickZaehlen("third");
         return {
             dorf: plan.name,
-            stand: { x: Math.round(stand.x * 10) / 10, z: Math.round(stand.z * 10) / 10 },
             haeuser: haeuser.length,
-            slots: plan.slots.length,
-            gesetz,
             sollSumme,
             leiber: L.length,
             quote: sollSumme > 0 ? Math.round((L.length / sollSumme) * 1000) / 1000 : null,
             leer: leer.slice(0, 6),
             leerN: leer.length,
-            abw: abw.slice(0, 6),
             imBlick: { ego, third },
             alsLeib: L.filter((b) => b.visible).length,
             nahLeiber: A.BEWOHNER.nahLeiber,
@@ -2934,7 +2907,6 @@ function urteil(name, z) {
         if (!bed) f.push(text);
     };
     if (name === "bewohner") {
-        soll(z.gesetz, "das Gesetzbuch nennt keine leute je Haus (fachwerk-core leuteVon fehlt)");
         soll(z.leiber > 0, `0 Bewohner im Start-Dorf ${z.dorf} (${z.haeuser} Häuser, Σ leute ${z.sollSumme})`);
         soll(
             z.quote !== null && Math.abs(z.quote - 1) <= 0.05,

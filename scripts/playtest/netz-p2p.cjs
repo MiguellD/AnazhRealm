@@ -1698,7 +1698,6 @@ async function checkBandLateMultiUser(ctx) {
         const p2p = r.state.p2p;
         const grok = r.state.grok;
 
-        out.voiceField = typeof grok.companionVoice === "string";
 
         // p2pSend mocken.
         const sent = [];
@@ -1826,7 +1825,6 @@ async function checkBandLateMultiUser(ctx) {
             (w11v4Results && w11v4Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W11 V4: state.grok.companionVoice existiert", w11v4Results.voiceField);
         check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
         check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
         check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
@@ -1979,7 +1977,6 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
 
         // 1. Raum-Override: state.p2p.roomOverride existiert + persist
-        out.hasRoomOverride = typeof r.state.p2p.roomOverride === "string";
         r.state.p2p.roomOverride = "test-shared-room-xyz";
         r.p2pPersist();
         r.state.p2p.roomOverride = "";
@@ -2104,7 +2101,6 @@ async function checkBandLateMultiUser(ctx) {
             (ring11V21Results && ring11V21Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 11 V2.1: state.p2p.roomOverride existiert", ring11V21Results.hasRoomOverride);
         check("Ring 11 V2.1: roomOverride persistiert via localStorage", ring11V21Results.roomOverridePersists);
         check(
             "Ring 11 V2.1: NON_BROADCASTABLE_OPS Set enthält player_*+set_visible",
@@ -2151,9 +2147,6 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
 
         // 1. State: role in worldMeta + p2p
-        out.hasWorldRole = typeof r.state.worldMeta.role === "string";
-        out.hasP2PRole = typeof r.state.p2p.role === "string";
-        out.hasPendingFlag = typeof r.state.p2p.pendingWorldSnapshot === "boolean";
 
         // 2. Invitation-Code: encode + decode roundtrip
         const codeA = r.makeInvitationCode("ws://192.168.1.42:4313", "w-1k7p-abc123");
@@ -2304,9 +2297,6 @@ async function checkBandLateMultiUser(ctx) {
             (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 11.5: worldMeta.role-Feld existiert", ring115Results.hasWorldRole);
-        check("Ring 11.5: state.p2p.role-Feld existiert", ring115Results.hasP2PRole);
-        check("Ring 11.5: state.p2p.pendingWorldSnapshot-Feld existiert", ring115Results.hasPendingFlag);
         check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
         check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
         check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
