@@ -2235,14 +2235,6 @@ function luftTiefe(o) {
                 if (unter((a + t) / 2)) t = (a + t) / 2;
                 else a = (a + t) / 2;
             }
-            // DAS WASSER SPIEGELT DIE LUFT (himmel-ton): sein Bild hängt an β (der Spiegel-Pass dunstet den gespiegelten Strahl), L0
-            // ist dort nicht das Ziel ohne Luft — ein Fluss in 8 km Azimut 0 zog T/T_soll auf 0,5. Fluss, See und Meer im Fußabdruck
-            // des Pixels (± 2,4 % des Wegs) messen keine Koschmieder-Ferne.
-            const nass = (u) => {
-                const [x, z] = [gx + s.x * u, gz + s.z * u];
-                return r._hydroRiverAt(x, z) || r._hydrosphereLakeAt(x, z) || r._koerperWasser(x, z, gesetz(x, z)) > gesetz(x, z);
-            };
-            if ([-2, -1, 0, 1, 2].some((k) => nass(t * (1 + 0.012 * k)))) return null;
             const k = (s.y * t) / Hs;
             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
             const dr = z < 1 ? q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) : Infinity;
@@ -2263,6 +2255,11 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
+            // DER FELD-PASS dunstet mit seinem Weg, nie dem der Tiefe: wo er zeichnet (L ohne ihn ≠ L), misst nur der Rand der Ferne
+            // (8 km Azimut 0: T/T_soll 0,47 über einem Weg wie 13 km, himmel-ton)
+            const fp = st.feldPass && st.feldPass.mesh;
+            if (fp) fp.visible = false;
+            const Lf = await schuss(null, k).finally(() => fp && (fp.visible = true));
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [], px: [] }));
             const gez = [];
@@ -2277,7 +2274,7 @@ function luftTiefe(o) {
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa), sa });
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
-                    const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
+                    const b = t.szene && [0, 1, 2].every((c) => Math.abs(L[i + c] - Lf[i + c]) <= 2) && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
                     const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
