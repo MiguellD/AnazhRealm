@@ -13,146 +13,146 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-17T00:52:30.918Z",
-            "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-            "echt": false,
-            "version": "18.546.9",
-            "sha": "cbc222cc8629c4bc02983e44c8a808b7daa2d2fa+geaendert",
+            "datum": "2026-10-21T13:31:30.445Z",
+            "geraet": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "echt": true,
+            "version": "18.546.45",
+            "sha": "aff6124708cde363f726fc39e2766c07585e087b",
             "quellen": {
-                "phyto-core.js": "c:6cf8df94e3dac37e",
-                "foundry-core.js": "c:3b21a4161089ec4f",
-                "vehicle-core.js": "c:97f0f918c22eb27c",
+                "phyto-core.js": "c:16a203abe302878a",
+                "foundry-core.js": "c:772353e41449ed6e",
+                "vehicle-core.js": "c:48e15ecfb2ea2c0d",
                 "porta-core.js": "c:43576786f20c3d32",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
-                "fachwerk-core.js": "c:20c90a30fd7550b9",
+                "fachwerk-core.js": "c:94de6b56052d08a1",
                 "klang-core.js": "c:8e668691b9eb131c",
-                "koerper-core.js": "c:876df0482c417a50",
-                "tetrapoda-core.js": "c:26b6005f5594dbd5",
-                "gelaende-core.js": "c:671ad7ea812567a8",
-                "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
-                "stamm/dienst.js": "c:9dbb35631827895a",
-                "stamm/daten.js": "c:77f594d329eec958",
-                "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
-                "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
-                "stamm/gelaende-fern.js": "c:b57891f2ec398270",
-                "stamm/gelaende-kollision.js": "c:2e87a656ca40b729",
+                "koerper-core.js": "c:9b54f7af7b2907e3",
+                "tetrapoda-core.js": "c:1fc7b857f0874bc8",
+                "gelaende-core.js": "c:1da07e646fe2b0ad",
+                "stamm/dirigent-kern.js": "c:b7e5fc4324284bd6",
+                "stamm/dienst.js": "c:430a155d2f78c220",
+                "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
+                "stamm/gelaende-boden.js": "c:cc710bae1ebb3503",
+                "stamm/gelaende-chunks.js": "c:565aeb1bfccc1b40",
+                "stamm/gelaende-fern.js": "c:464b61129260d7ae",
+                "stamm/gelaende-kollision.js": "c:50a5c532157a87e0",
                 "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
-                "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                "stamm/stoff-material.js": "c:d13f1ee108ed0513",
-                "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                "stamm/studio-bruecke.js": "c:c02ee558d706f68f",
-                "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
+                "stamm/wasser-zellen.js": "c:490833418d368555",
+                "stamm/stoff-material.js": "c:80384323ebb46e1a",
+                "stamm/stoff-instanz.js": "c:461e3272f4a6ecaf",
+                "stamm/studio-bruecke.js": "c:e1bd1c1507e27f83",
+                "stamm/studio-gestalt.js": "c:211b5222c7b04931",
                 "stamm/bau-vorlagen.js": "c:834379bf703ce162",
                 "stamm/bau-buch.js": "c:4f39e33d31169f7e",
-                "stamm/bau-teile.js": "c:2f57496634336443",
-                "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
-                "stamm/siedlung-satz.js": "c:f7655acae82a9127",
-                "stamm/vegetation-wiese.js": "c:afd98ffd6cd3bd30",
-                "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
-                "stamm/vegetation-streu.js": "c:b77b8f83325fc77e",
-                "stamm/bild-kosten.js": "c:f0f700bdda342ece",
-                "stamm/bild-sicht.js": "c:4816280621f673f8",
-                "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
-                "stamm/klang.js": "c:e09e27396a488bfc",
-                "stamm/koerper-leib.js": "c:e31475ed5f2228e1",
+                "stamm/bau-teile.js": "c:426d4e4d8e390275",
+                "stamm/siedlung-ort.js": "c:0656473bf23d87fc",
+                "stamm/siedlung-bauten.js": "c:69a4335cf2255094",
+                "stamm/siedlung-satz.js": "c:93579029577b3e51",
+                "stamm/vegetation-wiese.js": "c:a66135b9bc5e8c6a",
+                "stamm/vegetation-baum.js": "c:1f4346c0da3aa491",
+                "stamm/vegetation-streu.js": "c:e63bf4500ca177d3",
+                "stamm/bild-kosten.js": "c:b810d3c0f6a7a36c",
+                "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
+                "stamm/bild-himmel.js": "c:b155da189f3e3b5d",
+                "stamm/klang.js": "c:8d2a8182a847cba7",
+                "stamm/koerper-leib.js": "c:1736bb3a3c4d5771",
                 "stamm/koerper-seele.js": "c:a3cfbcefe7d69e5e",
-                "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
-                "stamm/koerper-fahrt.js": "c:df826e0c426a656b",
-                "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
-                "stamm/kreatur-verhalten.js": "c:f49d4f3142d0a25a",
-                "stamm/kampf.js": "c:89d84297274d2ad7",
-                "stamm/netz-p2p.js": "c:97c1aa258bf41722",
-                "stamm/netz-identitaet.js": "c:01e66a9fc1676852",
+                "stamm/koerper-bewegung.js": "c:b08074adc760fcb7",
+                "stamm/koerper-fahrt.js": "c:ec3d2ca335b92fa5",
+                "stamm/kreatur-leben.js": "c:ffb3c01b89776159",
+                "stamm/kreatur-verhalten.js": "c:b23e9d93a31062f0",
+                "stamm/kampf.js": "c:603fe48b62ba7f50",
+                "stamm/netz-p2p.js": "c:43ee668e507d07f5",
+                "stamm/netz-identitaet.js": "c:7221ecc965f15f68",
                 "stamm/netz-portal.js": "c:74f8e7cc9861b40e",
-                "stamm/feld-leben.js": "c:1700a002085d75ae",
-                "stamm/feld-dsl.js": "c:9569e8438ecdaa0b",
-                "stamm/feld-nexus.js": "c:016e53895d3edac9",
+                "stamm/feld-leben.js": "c:f1767366a5fe2f4e",
+                "stamm/feld-dsl.js": "c:8a2bc34caf08180e",
+                "stamm/feld-nexus.js": "c:dda45f4b38579dae",
                 "stamm/feld-sprache.js": "c:887ade7880703be6",
-                "stamm/speicher-welten.js": "c:35a2fd5d0132d072",
-                "stamm/speicher-laden.js": "c:d59b9dbacc0efad7",
-                "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
-                "stamm/werkstatt-vorschau.js": "c:3d391ef9c649890e",
-                "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
-                "stamm/werkstatt-hof.js": "c:81fe2deba9502d40",
+                "stamm/speicher-welten.js": "c:493f23ae4e85bbd3",
+                "stamm/speicher-laden.js": "c:313293f87b311ceb",
+                "stamm/werkstatt-hud.js": "c:d4b5046010d3abf1",
+                "stamm/werkstatt-vorschau.js": "c:1d86735c5a694684",
+                "stamm/werkstatt-bauen.js": "c:67458633d2c91be0",
+                "stamm/werkstatt-hof.js": "c:d1d7af70123e3abb",
                 "stamm/werkstatt-sozial.js": "c:5050d651d5fa8fe4",
-                "stamm/dirigent-regler.js": "c:93499096fe07d501",
-                "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
-                "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                "stamm/dirigent-regler.js": "c:87054858bedca4dd",
+                "stamm/dirigent-takt.js": "c:5098f6954c31ed0d",
+                "stamm/dirigent-ankunft.js": "c:286673f4959d4423"
             }
         },
         "welt": {
-            "datum": "2026-10-17T00:59:36.788Z",
-            "geraet": "amd rdna-3",
+            "datum": "2026-10-21T13:30:16.465Z",
+            "geraet": "nvidia pascal",
             "ort": "genesis",
             "spieler": [
                 0,
                 0
             ],
             "echt": true,
-            "version": "18.546.9",
-            "sha": "cbc222cc8629c4bc02983e44c8a808b7daa2d2fa+geaendert",
+            "version": "18.546.45",
+            "sha": "aff6124708cde363f726fc39e2766c07585e087b",
             "quellen": {
-                "phyto-core.js": "c:6cf8df94e3dac37e",
-                "foundry-core.js": "c:3b21a4161089ec4f",
-                "vehicle-core.js": "c:97f0f918c22eb27c",
+                "phyto-core.js": "c:16a203abe302878a",
+                "foundry-core.js": "c:772353e41449ed6e",
+                "vehicle-core.js": "c:48e15ecfb2ea2c0d",
                 "porta-core.js": "c:43576786f20c3d32",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
-                "fachwerk-core.js": "c:20c90a30fd7550b9",
+                "fachwerk-core.js": "c:94de6b56052d08a1",
                 "klang-core.js": "c:8e668691b9eb131c",
-                "koerper-core.js": "c:876df0482c417a50",
-                "tetrapoda-core.js": "c:26b6005f5594dbd5",
-                "gelaende-core.js": "c:671ad7ea812567a8",
-                "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
-                "stamm/dienst.js": "c:9dbb35631827895a",
-                "stamm/daten.js": "c:77f594d329eec958",
-                "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
-                "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
-                "stamm/gelaende-fern.js": "c:b57891f2ec398270",
-                "stamm/gelaende-kollision.js": "c:2e87a656ca40b729",
+                "koerper-core.js": "c:9b54f7af7b2907e3",
+                "tetrapoda-core.js": "c:1fc7b857f0874bc8",
+                "gelaende-core.js": "c:1da07e646fe2b0ad",
+                "stamm/dirigent-kern.js": "c:b7e5fc4324284bd6",
+                "stamm/dienst.js": "c:430a155d2f78c220",
+                "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
+                "stamm/gelaende-boden.js": "c:cc710bae1ebb3503",
+                "stamm/gelaende-chunks.js": "c:565aeb1bfccc1b40",
+                "stamm/gelaende-fern.js": "c:464b61129260d7ae",
+                "stamm/gelaende-kollision.js": "c:50a5c532157a87e0",
                 "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
-                "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                "stamm/stoff-material.js": "c:d13f1ee108ed0513",
-                "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                "stamm/studio-bruecke.js": "c:c02ee558d706f68f",
-                "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
+                "stamm/wasser-zellen.js": "c:490833418d368555",
+                "stamm/stoff-material.js": "c:80384323ebb46e1a",
+                "stamm/stoff-instanz.js": "c:461e3272f4a6ecaf",
+                "stamm/studio-bruecke.js": "c:e1bd1c1507e27f83",
+                "stamm/studio-gestalt.js": "c:211b5222c7b04931",
                 "stamm/bau-vorlagen.js": "c:834379bf703ce162",
                 "stamm/bau-buch.js": "c:4f39e33d31169f7e",
-                "stamm/bau-teile.js": "c:2f57496634336443",
-                "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
-                "stamm/siedlung-satz.js": "c:f7655acae82a9127",
-                "stamm/vegetation-wiese.js": "c:afd98ffd6cd3bd30",
-                "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
-                "stamm/vegetation-streu.js": "c:b77b8f83325fc77e",
-                "stamm/bild-kosten.js": "c:f0f700bdda342ece",
-                "stamm/bild-sicht.js": "c:4816280621f673f8",
-                "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
-                "stamm/klang.js": "c:e09e27396a488bfc",
-                "stamm/koerper-leib.js": "c:e31475ed5f2228e1",
+                "stamm/bau-teile.js": "c:426d4e4d8e390275",
+                "stamm/siedlung-ort.js": "c:0656473bf23d87fc",
+                "stamm/siedlung-bauten.js": "c:69a4335cf2255094",
+                "stamm/siedlung-satz.js": "c:93579029577b3e51",
+                "stamm/vegetation-wiese.js": "c:a66135b9bc5e8c6a",
+                "stamm/vegetation-baum.js": "c:1f4346c0da3aa491",
+                "stamm/vegetation-streu.js": "c:e63bf4500ca177d3",
+                "stamm/bild-kosten.js": "c:b810d3c0f6a7a36c",
+                "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
+                "stamm/bild-himmel.js": "c:b155da189f3e3b5d",
+                "stamm/klang.js": "c:8d2a8182a847cba7",
+                "stamm/koerper-leib.js": "c:1736bb3a3c4d5771",
                 "stamm/koerper-seele.js": "c:a3cfbcefe7d69e5e",
-                "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
-                "stamm/koerper-fahrt.js": "c:df826e0c426a656b",
-                "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
-                "stamm/kreatur-verhalten.js": "c:f49d4f3142d0a25a",
-                "stamm/kampf.js": "c:89d84297274d2ad7",
-                "stamm/netz-p2p.js": "c:97c1aa258bf41722",
-                "stamm/netz-identitaet.js": "c:01e66a9fc1676852",
+                "stamm/koerper-bewegung.js": "c:b08074adc760fcb7",
+                "stamm/koerper-fahrt.js": "c:ec3d2ca335b92fa5",
+                "stamm/kreatur-leben.js": "c:ffb3c01b89776159",
+                "stamm/kreatur-verhalten.js": "c:b23e9d93a31062f0",
+                "stamm/kampf.js": "c:603fe48b62ba7f50",
+                "stamm/netz-p2p.js": "c:43ee668e507d07f5",
+                "stamm/netz-identitaet.js": "c:7221ecc965f15f68",
                 "stamm/netz-portal.js": "c:74f8e7cc9861b40e",
-                "stamm/feld-leben.js": "c:1700a002085d75ae",
-                "stamm/feld-dsl.js": "c:9569e8438ecdaa0b",
-                "stamm/feld-nexus.js": "c:016e53895d3edac9",
+                "stamm/feld-leben.js": "c:f1767366a5fe2f4e",
+                "stamm/feld-dsl.js": "c:8a2bc34caf08180e",
+                "stamm/feld-nexus.js": "c:dda45f4b38579dae",
                 "stamm/feld-sprache.js": "c:887ade7880703be6",
-                "stamm/speicher-welten.js": "c:35a2fd5d0132d072",
-                "stamm/speicher-laden.js": "c:d59b9dbacc0efad7",
-                "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
-                "stamm/werkstatt-vorschau.js": "c:3d391ef9c649890e",
-                "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
-                "stamm/werkstatt-hof.js": "c:81fe2deba9502d40",
+                "stamm/speicher-welten.js": "c:493f23ae4e85bbd3",
+                "stamm/speicher-laden.js": "c:313293f87b311ceb",
+                "stamm/werkstatt-hud.js": "c:d4b5046010d3abf1",
+                "stamm/werkstatt-vorschau.js": "c:1d86735c5a694684",
+                "stamm/werkstatt-bauen.js": "c:67458633d2c91be0",
+                "stamm/werkstatt-hof.js": "c:d1d7af70123e3abb",
                 "stamm/werkstatt-sozial.js": "c:5050d651d5fa8fe4",
-                "stamm/dirigent-regler.js": "c:93499096fe07d501",
-                "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
-                "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                "stamm/dirigent-regler.js": "c:87054858bedca4dd",
+                "stamm/dirigent-takt.js": "c:5098f6954c31ed0d",
+                "stamm/dirigent-ankunft.js": "c:286673f4959d4423"
             }
         }
     },
@@ -202,20 +202,20 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0892,
+                    "Y": 0.0893,
                     "rgb": "0.1065/0.0869/0.0618",
-                    "pixel": 17710
+                    "pixel": 17716
                 },
                 "welt": {
                     "Y": 0.0866,
                     "rgb": "0.1037/0.0842/0.0598",
-                    "pixel": 7417,
+                    "pixel": 7429,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 1.03
+                "verhaeltnis": 1.0312
             },
             "ratsche": 0.016
         },
@@ -271,20 +271,20 @@
                 "labor": {
                     "Y": 0.1784,
                     "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 121912
+                    "pixel": 121866
                 },
                 "welt": {
-                    "Y": 0.1799,
-                    "rgb": "0.0996/0.2172/0.0465",
-                    "pixel": 54932,
+                    "Y": 0.1686,
+                    "rgb": "0.0903/0.2043/0.0447",
+                    "pixel": 54731,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 0.9917
+                "verhaeltnis": 1.0581
             },
-            "ratsche": 0.0083
+            "ratsche": 0.0565
         },
         {
             "id": "fels",
@@ -371,7 +371,7 @@
                 "welt": {
                     "Y": 0.2388,
                     "rgb": "0.2641/0.2377/0.1761",
-                    "pixel": 79682,
+                    "pixel": 79681,
                     "stufen": [
                         0
                     ]
@@ -433,12 +433,12 @@
                     "pixel": 256000
                 },
                 "welt": {
-                    "Y": 0.0837,
-                    "rgb": "0.1146/0.0782/0.0469",
+                    "Y": 0.0843,
+                    "rgb": "0.1154/0.0789/0.0469",
                     "pixel": 256000,
                     "stufen": []
                 },
-                "verhaeltnis": 0.994
+                "verhaeltnis": 0.987
             },
             "ratsche": 0.006
         },
@@ -489,14 +489,14 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1491,
+                    "Y": 0.1492,
                     "rgb": "0.2826/0.1169/0.0754",
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.158,
-                    "rgb": "0.274/0.1307/0.0871",
-                    "pixel": 162561,
+                    "Y": 0.1581,
+                    "rgb": "0.2742/0.1308/0.0871",
+                    "pixel": 162565,
                     "stufen": [
                         1
                     ]
@@ -556,8 +556,8 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0066,
-                    "rgb": "0.0056/0.0065/0.0097",
+                    "Y": 0.0059,
+                    "rgb": "0.005/0.0058/0.0087",
                     "pixel": 245421
                 },
                 "welt": {
@@ -568,9 +568,9 @@
                         0
                     ]
                 },
-                "verhaeltnis": 1.1379
+                "verhaeltnis": 1.0172
             },
-            "ratsche": 0.0953
+            "ratsche": 0.0171
         },
         {
             "id": "tor",
@@ -667,17 +667,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0607,
-                    "rgb": "0.1218/0.0462/0.025",
-                    "pixel": 74765
+                    "Y": 0.0606,
+                    "rgb": "0.1216/0.0461/0.0249",
+                    "pixel": 74954
                 },
                 "welt": {
                     "Y": 0.0708,
-                    "rgb": "0.1424/0.0538/0.0292",
-                    "pixel": 33177,
+                    "rgb": "0.1425/0.0538/0.0292",
+                    "pixel": 33152,
                     "stufen": []
                 },
-                "verhaeltnis": 0.8573
+                "verhaeltnis": 0.8559
             },
             "ratsche": 0.152
         },
@@ -722,17 +722,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.169,
-                    "rgb": "0.2061/0.1637/0.1124",
-                    "pixel": 152418
+                    "Y": 0.1688,
+                    "rgb": "0.2059/0.1635/0.1123",
+                    "pixel": 152387
                 },
                 "welt": {
-                    "Y": 0.1853,
-                    "rgb": "0.2274/0.1792/0.1214",
-                    "pixel": 45015,
+                    "Y": 0.185,
+                    "rgb": "0.2271/0.179/0.1212",
+                    "pixel": 45014,
                     "stufen": []
                 },
-                "verhaeltnis": 0.912
+                "verhaeltnis": 0.9124
             },
             "ratsche": 0.0909
         },
@@ -779,7 +779,7 @@
                 "welt": {
                     "Y": 0.3493,
                     "rgb": "0.388/0.3419/0.3081",
-                    "pixel": 6474,
+                    "pixel": 6473,
                     "stufen": [
                         0
                     ]
@@ -796,29 +796,29 @@
                 "ausgabe": [
                     168,
                     173,
-                    166
+                    167
                 ]
             },
             "ratsche": 0.7612
         },
         "garage": {
             "ist": {
-                "kL": 0.6468,
+                "kL": 0.5658,
                 "ausgabe": [
-                    207,
-                    210,
-                    212
+                    188,
+                    197,
+                    202
                 ]
             },
-            "ratsche": 0.717
+            "ratsche": 0.5832
         },
         "portale": {
             "ist": {
-                "kL": 0.8026,
+                "kL": 0.8031,
                 "ausgabe": [
-                    197,
-                    207,
-                    202
+                    200,
+                    210,
+                    206
                 ]
             },
             "ratsche": 0.9292
@@ -827,16 +827,16 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    175,
-                    162,
-                    151
+                    177,
+                    165,
+                    153
                 ]
             },
             "ratsche": 0.7106
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4807,
+                "kL": 0.4822,
                 "ausgabe": [
                     197,
                     194,
@@ -847,7 +847,7 @@
         },
         "koerperstudio": {
             "ist": {
-                "kL": 0.699,
+                "kL": 0.6995,
                 "ausgabe": [
                     170,
                     181,
@@ -858,11 +858,11 @@
         },
         "tetrapoda": {
             "ist": {
-                "kL": 0.8802,
+                "kL": 0.8807,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    253,
+                    253,
+                    253
                 ]
             },
             "ratsche": 1.0251

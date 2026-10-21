@@ -177,30 +177,26 @@ function tafelPruefen(t) {
 // beim Messen nahm (`gemessen.welt|labor` { version, sha, quellen } — der `kernStand` des Werkzeugs: jeder Kern und jede
 // Stamm-Zone). Ohne Version, Commit oder Abdruck → `ungeprüft` (ein Bruch der Tafel: das Werkzeug schreibt sie immer); ein
 // fremder Abdruck → `veraltet` „veraltet seit <Commit der Messung>: <Datei> geändert" — eine Kommentarzeile ändert keinen
-// Abdruck. `pruefsumme(d)` liest den Baum von heute.
+// Abdruck, dahinter jeder weitere. `pruefsumme(d)` liest den Baum von heute.
 function tafelStand(t, pruefsumme) {
     const { messStand } = require("./abnahme-urteil.cjs");
     const rot = [];
     const g = t.gemessen || {};
     for (const z of t.zeilen || [])
         for (const seite of ["welt", "labor"]) {
+            const q = (g[seite] || {}).quellen || {};
             const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
+            const art = /^veraltet/.test(s) ? "veraltet" : "ungeprüft";
+            const fremd = art === "ungeprüft" ? [] : z.quellen.filter((d) => q[d] !== pruefsumme(d)).slice(1);
+            const auch = fremd.map((d) => `${d} (${q[d]} → ${pruefsumme(d)})`).join(", ");
             if (s)
-                rot.push({
-                    zeile: z.id,
-                    seite,
-                    art: /^veraltet/.test(s) ? "veraltet" : "ungeprüft",
-                    text: `${z.id}: das Ist der ${seite} — ${s}`,
-                });
+                rot.push({ zeile: z.id, seite, art, text: `${z.id}: das Ist der ${seite} — ${s}${auch && "; fremd auch " + auch}` });
         }
     return rot;
 }
-// DIE WAND DES STANDS (K63-n8; Koordinator 15.10.: die Stand-Wand sperrte jeden Merge, der eine Quelle berührte, und die
-// Neumessung brauchte die Radeon von Hand): `ungeprüft` ist ein Bruch der Tafel (das Werkzeug schreibt Version, Commit und
-// Abdruck immer — Exit 1); `veraltet` ist ROT „veraltet seit <Commit>" beim Namen der Zeile, nie GRÜN, und bricht keinen
-// Merge — die Neumessung fährt die Karte (`neu`: die Zeilen, die eine Welt + ihr Labor neu messen).
+// DIE WAND DES STANDS (K63-n8, 21.10.): ungeprüft und veraltet brechen; `neu`: die Zeilen der Neumessung.
 function standWand(rot) {
-    const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
+    const brueche = rot.map((r) => r.text);
     const veraltet = {};
     for (const r of rot) if (r.art === "veraltet") (veraltet[r.zeile] = veraltet[r.zeile] || []).push(r.text);
     return { brueche, veraltet, neu: Object.keys(veraltet) };
