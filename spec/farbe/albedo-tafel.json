@@ -13,11 +13,11 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-21T13:31:30.445Z",
+            "datum": "2026-10-21T13:51:55.314Z",
             "geraet": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
-            "version": "18.546.45",
-            "sha": "aff6124708cde363f726fc39e2766c07585e087b",
+            "version": "18.546.46",
+            "sha": "a37a2c99476a475a5b6c3391bae6a17cebb5a90c",
             "quellen": {
                 "phyto-core.js": "c:16a203abe302878a",
                 "foundry-core.js": "c:772353e41449ed6e",
@@ -29,7 +29,7 @@
                 "koerper-core.js": "c:9b54f7af7b2907e3",
                 "tetrapoda-core.js": "c:1fc7b857f0874bc8",
                 "gelaende-core.js": "c:1da07e646fe2b0ad",
-                "stamm/dirigent-kern.js": "c:b7e5fc4324284bd6",
+                "stamm/dirigent-kern.js": "c:d9b3f0f5cce3fa24",
                 "stamm/dienst.js": "c:430a155d2f78c220",
                 "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
                 "stamm/gelaende-boden.js": "c:cc710bae1ebb3503",
@@ -39,19 +39,20 @@
                 "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
                 "stamm/wasser-zellen.js": "c:490833418d368555",
                 "stamm/stoff-material.js": "c:80384323ebb46e1a",
-                "stamm/stoff-instanz.js": "c:461e3272f4a6ecaf",
+                "stamm/stoff-instanz.js": "c:cc2aca55abe2a001",
                 "stamm/studio-bruecke.js": "c:e1bd1c1507e27f83",
                 "stamm/studio-gestalt.js": "c:211b5222c7b04931",
                 "stamm/bau-vorlagen.js": "c:834379bf703ce162",
                 "stamm/bau-buch.js": "c:4f39e33d31169f7e",
                 "stamm/bau-teile.js": "c:426d4e4d8e390275",
                 "stamm/siedlung-ort.js": "c:0656473bf23d87fc",
-                "stamm/siedlung-bauten.js": "c:69a4335cf2255094",
-                "stamm/siedlung-satz.js": "c:93579029577b3e51",
+                "stamm/siedlung-bauten.js": "c:2a60578ae0e232ff",
+                "stamm/siedlung-satz.js": "c:f91ec999676058b6",
                 "stamm/vegetation-wiese.js": "c:a66135b9bc5e8c6a",
                 "stamm/vegetation-baum.js": "c:1f4346c0da3aa491",
                 "stamm/vegetation-streu.js": "c:e63bf4500ca177d3",
-                "stamm/bild-kosten.js": "c:b810d3c0f6a7a36c",
+                "stamm/bild-kosten.js": "c:0f591cc52b89e607",
+                "stamm/bild-diaet.js": "c:33fc75b181496b8a",
                 "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
                 "stamm/bild-himmel.js": "c:b155da189f3e3b5d",
                 "stamm/klang.js": "c:8d2a8182a847cba7",
@@ -82,7 +83,7 @@
             }
         },
         "welt": {
-            "datum": "2026-10-21T13:30:16.465Z",
+            "datum": "2026-10-21T13:50:46.349Z",
             "geraet": "nvidia pascal",
             "ort": "genesis",
             "spieler": [
@@ -90,8 +91,8 @@
                 0
             ],
             "echt": true,
-            "version": "18.546.45",
-            "sha": "aff6124708cde363f726fc39e2766c07585e087b",
+            "version": "18.546.46",
+            "sha": "a37a2c99476a475a5b6c3391bae6a17cebb5a90c",
             "quellen": {
                 "phyto-core.js": "c:16a203abe302878a",
                 "foundry-core.js": "c:772353e41449ed6e",
@@ -103,7 +104,7 @@
                 "koerper-core.js": "c:9b54f7af7b2907e3",
                 "tetrapoda-core.js": "c:1fc7b857f0874bc8",
                 "gelaende-core.js": "c:1da07e646fe2b0ad",
-                "stamm/dirigent-kern.js": "c:b7e5fc4324284bd6",
+                "stamm/dirigent-kern.js": "c:d9b3f0f5cce3fa24",
                 "stamm/dienst.js": "c:430a155d2f78c220",
                 "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
                 "stamm/gelaende-boden.js": "c:cc710bae1ebb3503",
@@ -113,19 +114,20 @@
                 "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
                 "stamm/wasser-zellen.js": "c:490833418d368555",
                 "stamm/stoff-material.js": "c:80384323ebb46e1a",
-                "stamm/stoff-instanz.js": "c:461e3272f4a6ecaf",
+                "stamm/stoff-instanz.js": "c:cc2aca55abe2a001",
                 "stamm/studio-bruecke.js": "c:e1bd1c1507e27f83",
                 "stamm/studio-gestalt.js": "c:211b5222c7b04931",
                 "stamm/bau-vorlagen.js": "c:834379bf703ce162",
                 "stamm/bau-buch.js": "c:4f39e33d31169f7e",
                 "stamm/bau-teile.js": "c:426d4e4d8e390275",
                 "stamm/siedlung-ort.js": "c:0656473bf23d87fc",
-                "stamm/siedlung-bauten.js": "c:69a4335cf2255094",
-                "stamm/siedlung-satz.js": "c:93579029577b3e51",
+                "stamm/siedlung-bauten.js": "c:2a60578ae0e232ff",
+                "stamm/siedlung-satz.js": "c:f91ec999676058b6",
                 "stamm/vegetation-wiese.js": "c:a66135b9bc5e8c6a",
                 "stamm/vegetation-baum.js": "c:1f4346c0da3aa491",
                 "stamm/vegetation-streu.js": "c:e63bf4500ca177d3",
-                "stamm/bild-kosten.js": "c:b810d3c0f6a7a36c",
+                "stamm/bild-kosten.js": "c:0f591cc52b89e607",
+                "stamm/bild-diaet.js": "c:33fc75b181496b8a",
                 "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
                 "stamm/bild-himmel.js": "c:b155da189f3e3b5d",
                 "stamm/klang.js": "c:8d2a8182a847cba7",
@@ -203,8 +205,8 @@
             "ist": {
                 "labor": {
                     "Y": 0.0893,
-                    "rgb": "0.1065/0.0869/0.0618",
-                    "pixel": 17716
+                    "rgb": "0.1066/0.087/0.0618",
+                    "pixel": 17717
                 },
                 "welt": {
                     "Y": 0.0866,
@@ -271,12 +273,12 @@
                 "labor": {
                     "Y": 0.1784,
                     "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 121866
+                    "pixel": 121954
                 },
                 "welt": {
                     "Y": 0.1686,
-                    "rgb": "0.0903/0.2043/0.0447",
-                    "pixel": 54731,
+                    "rgb": "0.0904/0.2043/0.0447",
+                    "pixel": 54782,
                     "stufen": [
                         0,
                         1
@@ -667,17 +669,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0606,
-                    "rgb": "0.1216/0.0461/0.0249",
-                    "pixel": 74954
+                    "Y": 0.0607,
+                    "rgb": "0.1217/0.0462/0.025",
+                    "pixel": 75153
                 },
                 "welt": {
                     "Y": 0.0708,
                     "rgb": "0.1425/0.0538/0.0292",
-                    "pixel": 33152,
+                    "pixel": 33166,
                     "stufen": []
                 },
-                "verhaeltnis": 0.8559
+                "verhaeltnis": 0.8573
             },
             "ratsche": 0.152
         },
@@ -722,19 +724,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1688,
-                    "rgb": "0.2059/0.1635/0.1123",
-                    "pixel": 152387
+                    "Y": 0.169,
+                    "rgb": "0.2061/0.1637/0.1124",
+                    "pixel": 152496
                 },
                 "welt": {
                     "Y": 0.185,
-                    "rgb": "0.2271/0.179/0.1212",
-                    "pixel": 45014,
+                    "rgb": "0.2272/0.179/0.1212",
+                    "pixel": 45219,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9124
+                "verhaeltnis": 0.9135
             },
-            "ratsche": 0.0909
+            "ratsche": 0.0905
         },
         {
             "id": "klinge",
@@ -794,9 +796,9 @@
             "ist": {
                 "kL": 0.676,
                 "ausgabe": [
-                    168,
-                    173,
-                    167
+                    169,
+                    174,
+                    168
                 ]
             },
             "ratsche": 0.7612
@@ -814,11 +816,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8031,
+                "kL": 0.803,
                 "ausgabe": [
-                    200,
-                    210,
-                    206
+                    198,
+                    208,
+                    203
                 ]
             },
             "ratsche": 0.9292
@@ -827,16 +829,16 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    177,
-                    165,
-                    153
+                    172,
+                    160,
+                    148
                 ]
             },
             "ratsche": 0.7106
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4822,
+                "kL": 0.4811,
                 "ausgabe": [
                     197,
                     194,
@@ -860,9 +862,9 @@
             "ist": {
                 "kL": 0.8807,
                 "ausgabe": [
-                    253,
-                    253,
-                    253
+                    255,
+                    255,
+                    255
                 ]
             },
             "ratsche": 1.0251
