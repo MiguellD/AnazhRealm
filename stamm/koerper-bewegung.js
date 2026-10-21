@@ -100,7 +100,7 @@ class AnazhRealm_koerper_bewegung {
         const s = this.state;
         if (s.playerUnderwater || !s.playerVel) return false;
         if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
-        const nowS = performance.now() / 1000;
+        const nowS = s._simZeit;
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         // Das Frische-Fenster wohnt im parkour-Gesetz (gilt auch fürs Klettern); das Feld steht in der
         // Gültigkeits-Wand von _parkourGesetz — kein lokaler Fallback.
@@ -964,7 +964,7 @@ class AnazhRealm_koerper_bewegung {
         s.onSteepSlope =
             grounded && groundNormalY < AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         s._groundedCache = grounded;
-        s._groundedCachedAt = performance.now();
+        s._groundedCachedAt = s._simZeit;
         s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
         // DER TRÄGER dieses Schritts — die Sicht-Schicht liest ihn (`_gaitBodenY` → `_standSicht`): die Fläche unter den
         // Füßen (Gelände, in der Höhle ihr Boden) bzw. das Bauwerk; in der Luft keiner (die Fuß-IK ruht).
@@ -1181,7 +1181,7 @@ class AnazhRealm_koerper_bewegung {
         }
         this.state._wandKontaktNx = nx;
         this.state._wandKontaktNz = nz;
-        this.state._wandKontaktAt = performance.now() / 1000;
+        this.state._wandKontaktAt = this.state._simZeit;
     }
 
     // Der waagrechte Abstand² eines Punkts zu einer Blocker-Box — im Rahmen der GEDREHTEN Box (`obb`, die Haus-Hülle und
@@ -1207,6 +1207,7 @@ class AnazhRealm_koerper_bewegung {
     }
 
     _loopPlayerMovement(currentTime, dtOverride) {
+        this.state._simZeit = currentTime; // die Uhr des Schritts (auch Replay, Lockstep): die Parkour-Wand stempelt und liest sie
         // ### Spielerbewegung ###
         // `dtOverride` (FIXED_DT im Sim-Schritt) macht die Bewegung zur reinen Funktion von (Input, dt);
         // ohne Override dt aus der Wall-Clock. Die horizontale Intent-Velocity lebt in `state.playerVel`,
@@ -1400,11 +1401,15 @@ class AnazhRealm_koerper_bewegung {
             // PARKOUR — KLETTERN: W gegen die frische Wand (der Kontakt bleibt frisch, solange man hineindrückt)
             // zehrt Ausdauer und trägt den Körper — der Step liest _parkourKletter als Steig-vy statt
             // Schwerkraft. Erschöpft/W los/Wand weg → Fall. Frische-Fenster = kontaktFrischeSec (parkour-Gesetz).
+            // GEGEN heißt hinein: der Blick höchstens 45° neben der Wand-Normalen — wer an einer Wand entlang geht (die
+            // Türzarge, der Flur), klettert nicht (siedlung.K1: vorher stieg der Spieler an jeder gestreiften Wand auf).
             let kletterV = 0;
             if (
                 parkG &&
                 this.state.keys["w"] &&
                 !slide &&
+                this.state.forward.x * this.state._wandKontaktNx + this.state.forward.z * this.state._wandKontaktNz <
+                    -Math.SQRT1_2 &&
                 Number.isFinite(this.state._wandKontaktAt) &&
                 currentTime - this.state._wandKontaktAt < parkG.kontaktFrischeSec
             ) {
@@ -1989,12 +1994,13 @@ class AnazhRealm_koerper_bewegung {
         // der 9-Ray-Fallback (jetzt feld-nativer `_runRaycast`) greift nur, falls der Cache fehlt.
         if (!this.state.playerMesh) return false;
 
-        // Erdungs-Cache (2-Frame-TTL, auf state): isPlayerGrounded wird mehrfach je Frame gerufen (Bewegung,
-        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat (kein Mid-Frame-Drift), 1/3 Raycasts.
-        const now = performance.now();
+        // Erdungs-Cache (2 Sim-Schritte, auf state): isPlayerGrounded wird mehrfach je Schritt gerufen (Bewegung,
+        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat, 1/3 Raycasts. Die Uhr ist die des Schritts
+        // (`_simZeit`): Replay, Lockstep und ein Nachhol-Frame treffen dieselbe Entscheidung wie der erste Lauf.
+        const now = this.state._simZeit;
         if (
             typeof this.state._groundedCachedAt === "number" &&
-            now - this.state._groundedCachedAt < 33 // ~2 Frames bei 60 fps
+            now - this.state._groundedCachedAt < 2 * AnazhRealm.FIXED_DT
         ) {
             // Side-effect bestNormalY + onSteepSlope wurden beim ersten Call
             // dieses Frames bereits gesetzt — keine Notwendigkeit zu wiederholen.
@@ -2194,6 +2200,8 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// Der Stab: eine Blocker-Box, deren Grundfläche schmaler ist als ein Fuß, trägt keinen Leib (`_blockerFugen`).
+AnazhRealm.PLAYER_STAB = 0.15;
 // ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
 // Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
