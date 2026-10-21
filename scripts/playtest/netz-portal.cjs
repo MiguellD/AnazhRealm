@@ -2464,7 +2464,7 @@ async function checkBandR6Capability(ctx) {
             r._portalOverlay = savedPo || null;
             r.state.capabilityProposals = savedProps;
             r.state.grantedCapabilities = savedCaps;
-            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "human");
+            r._setWeather(savedWeather, "human");
             else r.state.weather = savedWeather;
         }
         return out;

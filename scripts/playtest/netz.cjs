@@ -1217,8 +1217,8 @@ async function checkBandG8R4Immunity(ctx) {
         r.unrevokeKey(KEVIL);
         r.state.revokedKeys = savedRevoked;
         r.state.signedWorlds = savedSigned;
-        if (typeof r._saveSignedWorlds === "function") r._saveSignedWorlds();
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveSignedWorlds();
+        r._saveRevokedKeys();
         return out;
     });
     if (!res) {
@@ -1539,7 +1539,7 @@ async function checkBandTailleGolden(ctx) {
                         window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh])
                     );
                 });
-            if (typeof r._p2pRemovePeer === "function") r._p2pRemovePeer("__golden");
+            r._p2pRemovePeer("__golden");
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
             return out;
@@ -1646,7 +1646,7 @@ async function checkBandPhiArchipel(ctx) {
             }) === null;
         // Aufräumen — wir haben gerade einen Test-Schlüssel revoziert.
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
         out.revokeCleanup = r.state.revokedKeys.size === before;
 
         // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
@@ -2104,7 +2104,7 @@ async function checkBandPhi7PortalHalls(ctx) {
         });
         out.admitTaintedNull = admittedTainted === null;
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
 
         // (H9) materializePortalHall braucht einen Portal-Bauplan + Position.
         // Wir nehmen den ersten Built-In-Portal-Bauplan oder bauen einen ad hoc.
@@ -2325,7 +2325,7 @@ async function checkBandPhi6ComputeSpende(ctx) {
         out.verifyForged = forgedVerify.equal === false && forgedEntry.status === "forged";
         out.revokedSchummler = r.state.revokedKeys.has(fakeKey) && r.state.revokedKeys.size === revBefore + 1;
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
 
         // (K9) PLAYTEST-Lauf signieren + recordPlaytestRun ehrlicher Pfad.
         const runRes = await r.signPlaytestRun(
