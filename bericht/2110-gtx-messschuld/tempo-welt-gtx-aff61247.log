@@ -1,0 +1,79 @@
+{
+ "ende": "ok",
+ "phasen": {
+  "gas": "vmax",
+  "orbit": "orbit",
+  "drift": "drift"
+ },
+ "bahnNachStand": false,
+ "ort": {
+  "x": -160.4,
+  "z": -1045.6
+ },
+ "richtungHubM": 1.18,
+ "weltStandS": 5.4,
+ "mount": true,
+ "vmaxGesetz": 15.997810615923129,
+ "ruhe": {
+  "fov": 75,
+  "armM": 9.89
+ },
+ "top": {
+  "v": 15.1,
+  "fov": 84.42,
+  "armM": 11.7,
+  "fovPlus": 9.42,
+  "armPlus": 0.183
+ },
+ "fovMaxGas": 84.42,
+ "rueck": {
+  "orbitGrad": 69,
+  "rueckS": 1.1,
+  "sollS": [
+   1,
+   1.25
+  ],
+  "zeigt": 0.005,
+  "quelle": true,
+  "fov10": 4.79,
+  "n": 768
+ },
+ "drift": {
+  "bilder": 120,
+  "vEnde": 12.17,
+  "schlupfMax": 23.6,
+  "schlupfEndeMedian": 3.8,
+  "kameraGegenFahrtEndeMedian": 9.7,
+  "kameraGegenFahrtMax": 10.9,
+  "kameraGegenFahrtBeiSchlupfMax": 4.1,
+  "soll": 15
+ },
+ "bilder": [
+  {
+   "name": "1-stand",
+   "sicht": "third",
+   "v": 0,
+   "fov": 75,
+   "armM": 9.89,
+   "jpg": "tempo-welt-gtx-aff61247-1-stand.jpg"
+  },
+  {
+   "name": "2-vmax",
+   "sicht": "third",
+   "v": 15.1,
+   "fov": 84.42,
+   "armM": 11.7,
+   "jpg": "tempo-welt-gtx-aff61247-2-vmax.jpg"
+  },
+  {
+   "name": "3-drift",
+   "sicht": "third",
+   "v": 12.17,
+   "fov": 82.55,
+   "armM": 11.31,
+   "jpg": "tempo-welt-gtx-aff61247-3-drift.jpg"
+  }
+ ],
+ "spurN": 768
+}
+EXIT=0

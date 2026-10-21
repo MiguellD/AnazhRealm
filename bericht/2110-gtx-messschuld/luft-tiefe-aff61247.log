@@ -1,0 +1,11 @@
+SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT
+[linse-gpu] nvidia/pascal
+[seite] 2026-10-21T13:18:45.368Z navigiert http://127.0.0.1:4495/index.html
+WERKBANK bereit: Steuer 127.0.0.1:4496 · Seite :4495
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.37° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 28.63° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 13.33° von der In-Streuung > 10°
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN (offen: FARBTON)
+EXIT=0

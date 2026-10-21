@@ -1,0 +1,11 @@
+Band {"T":0.15,"kanal":[0.5,1.5],"dh":10,"rand":0.02} Uhren 0.5,0.27
+K1-1 Uhr 0.5 T/T_soll min 0.8583 max 1.076 (n Werte 45)
+Uhr 0.5 Sonne 74.21 Az 0: Δβ 0.87 (1098 P) · Farbton 1 km 46.29, 2 km 43.45, 5 km 32.5, 8 km 21.18 · Rand C 0.01271 @ 19.4 km
+Uhr 0.5 Sonne 74.21 Az 90: Δβ 1.04 (290 P) · Farbton 1 km 52.47, 2 km 50.62, 5 km 38.8, 8 km 26.37 · Rand C 0.01075 @ 21.8 km
+Uhr 0.5 Sonne 74.21 Az 180: Δβ 1.19 (125 P) · Farbton 1 km 59.08, 2 km 54.46, 5 km 40, 8 km 28.63 · Rand C 0.01015 @ 21 km
+Uhr 0.5 Sonne 74.21 Az 270: Δβ 1.03 (198 P) · Farbton 1 km 41.04, 2 km 49.23, 5 km 40, 8 km 25.23 · Rand C 0.01079 @ 17.4 km
+Uhr 0.27 Sonne 7.2 Az 0: Δβ 0.98 (379 P) · Farbton 1 km 6.129, 2 km 2.778, 5 km 0.7273, 8 km 0.3077 · Rand C 0.07899 @ 37.5 km
+Uhr 0.27 Sonne 7.2 Az 90: Δβ 0.98 (696 P) · Farbton 1 km 25.76, 2 km 20, 5 km 9.265, 8 km 2.157 · Rand C 0.01918 @ 19.6 km
+Uhr 0.27 Sonne 7.2 Az 180: Δβ 0.78 (513 P) · Farbton 1 km 37.19, 2 km 31.67, 5 km 21.67, 8 km 13.33 · Rand C 0.003998 @ 21.8 km
+Uhr 0.27 Sonne 7.2 Az 270: Δβ 0.97 (563 P) · Farbton 1 km 27.37, 2 km 21.68, 5 km 10.59, 8 km 3.529 · Rand C 0.01762 @ 22 km
+URTEIL GRUEN {"K1-1":"GRUEN","K1-2":"ROT","K2-1":"GRUEN"} befunde 0 offen 5

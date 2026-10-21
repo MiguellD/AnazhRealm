@@ -1,0 +1,5 @@
+Albedo-Frische: Tafel am Zweig-Kopf a37a2c99 (V18.546.46) auf der GTX neu gepraegt, die Versions-Stufe kein Code-Abdruck [ci voll]
+
+gate:albedo-tafel bricht an jedem fremden Quell-Abdruck beim Namen (Selbsttest 14/14, zwei gefaelschte gesehen), an integ-probe 1883d350 vorher EXIT 1 mit 20 Eintraegen, und AnazhRealm.VERSION zaehlt nicht mehr im Abdruck (machte bei jeder Versions-Stufe 10/10 Zeilen veraltet). Deklarierter Re-Mint spec/farbe/albedo-tafel.json (Welt --echt + Labor --echt, GTX): 9/10 Zeilen im Soll, Ratsche fell 0,0909->0,0905, laub 1,058 auf der GTX zweimal gleich. Offen: haut 0,86, 0/7 Studio-Karten im Soll, jede Quell-Aenderung sperrt Gruppe 11 bis zum Re-Mint.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

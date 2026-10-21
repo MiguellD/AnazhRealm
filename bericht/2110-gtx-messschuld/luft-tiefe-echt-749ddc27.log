@@ -1,0 +1,21 @@
+2026-10-21T07:40:55.8128000Z ##[group]Run npm run gate:luft-tiefe:echt
+2026-10-21T07:40:55.8128527Z [36;1mnpm run gate:luft-tiefe:echt[0m
+2026-10-21T07:40:55.8390725Z shell: C:\windows\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+2026-10-21T07:40:55.8391845Z env:
+2026-10-21T07:40:55.8392063Z   CI_KLASSE: gpu
+2026-10-21T07:40:55.8392303Z   LINSE_GPU: karte
+2026-10-21T07:40:55.8392531Z ##[endgroup]
+2026-10-21T07:40:56.6346883Z 
+2026-10-21T07:40:56.6347469Z > anazhrealm@18.546.43 gate:luft-tiefe:echt
+2026-10-21T07:40:56.6348298Z > node scripts/werkbank.cjs licht --luft --eigen --port 4495
+2026-10-21T07:40:56.6348783Z 
+2026-10-21T07:40:56.9394176Z SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT
+2026-10-21T07:40:58.2937070Z [linse-gpu] nvidia/pascal
+2026-10-21T07:40:58.3946046Z [seite] 2026-10-21T07:40:58.394Z navigiert http://127.0.0.1:4494/index.html
+2026-10-21T07:41:00.8683580Z WERKBANK bereit: Steuer 127.0.0.1:4495 · Seite :4494
+2026-10-21T07:42:55.5716222Z   OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+2026-10-21T07:42:55.5717325Z   OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.37° von der In-Streuung > 10°
+2026-10-21T07:42:55.5718328Z   OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 28.63° von der In-Streuung > 10°
+2026-10-21T07:42:55.5720241Z   OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+2026-10-21T07:42:55.5722426Z   OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 13.33° von der In-Streuung > 10°
+2026-10-21T07:42:55.5724500Z LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN (offen: FARBTON)

@@ -1,0 +1,31 @@
+{
+ "spieler": [
+  0,
+  92.2,
+  0
+ ],
+ "chunks": 0,
+ "wetter": "sunny",
+ "saison": "summer",
+ "boot": {
+  "art": "erst",
+  "serie": null,
+  "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\werkbank-profil-4496-1792589042303",
+  "serieNeu": true,
+  "ladungen": 1
+ },
+ "zerstoert": 0,
+ "stempel": {
+  "warnung": 0,
+  "ueberlauf": 0,
+  "spitze": 0,
+  "taeter": {},
+  "pool": null,
+  "an": false
+ },
+ "fehler": [
+  "[konsole] [AnazhRealm V18.546.45] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+  "[konsole] [AnazhRealm V18.546.45] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+ ],
+ "gpuFehler": null
+}

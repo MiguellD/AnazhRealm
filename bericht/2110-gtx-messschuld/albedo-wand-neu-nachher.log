@@ -1,0 +1,25 @@
+
+> anazhrealm@18.546.45 gate:albedo-tafel
+> node scripts/diag-albedo-tafel.cjs --selftest && node scripts/diag-albedo-tafel.cjs
+
+[linse-gpu] nvidia/pascal
+   Labor-Probe (r128): Karte 0.1799 · Granit roh Y 0.5742 (Labor/Welt 1.983) · nach dem Gesetz Y 0.2894 (1.000) · Welt-Y 0.2895
+   Labor-Karte der Probe: k·L 0.7513 (Belichtung 1.3), Ausgabe 215,216,218
+✅ SELBST-TEST: Stand: heute gemessen → kein Befund; eine Kommentarzeile → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot
+✅ SELBST-TEST: Wand: veraltet → Bruch, jede betroffene Zeile beim Namen in der Neumessung; ungeprüft → Bruch
+✅ SELBST-TEST: Gefälschter Abdruck: stamm/siedlung-bauten.js und stamm/werkstatt-bauen.js der Zeile klinge (Welt) → Bruch beim Namen, beide Dateien mit Abdruck genannt, die Labor-Seite frisch
+✅ SELBST-TEST: Labor = Welt auf jeder Zeile → GRÜN, jede Zeile und Karte im Soll
+✅ SELBST-TEST: eine Zeile Labor/Welt 2,3 → ROT `ratsche`, nicht im Soll; 1,06 (|ln| 0,058 ≤ 0,05 + Rand) → GRÜN
+✅ SELBST-TEST: Welt-Karte liest 0,20 → ROT `eichung`
+✅ SELBST-TEST: eine stumme Labor-Zeile → ROT `stumm`
+✅ SELBST-TEST: Karte garage k·L 0,62 → ROT `ratsche`
+✅ SELBST-TEST: Tafel ohne Klinge, Welt-Muster ohne Anker, Verhältnis ≠ Labor/Welt → rot; die echte Tafel nicht
+✅ SELBST-TEST: Stufe: erklärt L0, gezeichnet L0/L1 → ROT `stufe` beim Namen; nur L0 → kein Befund; ohne Stufen → ROT; Foundry-Klasse ohne Stufen → Schema rot
+✅ SELBST-TEST: Nachzug: 0,05 → 0 (Labor = Welt) und 0,05 → 0,01; über der Ratsche bleibt 0,05; eine stumme Zeile verliert ihr Ist; eine falsche Eichung zieht nicht
+✅ SELBST-TEST: Labor-Linse: die 18-%-Karte liest 0,180 ± 0,002 unter Fremd-Licht, Nebel, ACES und Belichtung 1,3
+✅ SELBST-TEST: Täter roh gelesenes Hex 0x8e939a: Labor/Welt ≈ 2 (> 1,5) → ROT gegen die geheilte Ratsche; nach dem FARB-GESETZ 1 ± 1 % → GRÜN
+✅ SELBST-TEST: Labor-Karte: k·L > 0 und die Belichtung 1,3 steht im Ergebnis, der Ausgabe-Pixel ist gelesen
+✅ SELBST-TEST: Krone von oben: Band aus der Blatt-Albedo (A 0,164 → [0,0705, 0,099]), Tanne als besonnte Schale ROT beim Namen, Fichte im Band still, ohne Messung ROT
+✅ SELBST-TEST: die Albedo-Wand feuert (15/15)
+✅ DIE ALBEDO-TAFEL steht — 10 Zeilen in 8 Klassen, 7 Studio-Karten; im Soll (±10 %) 9/10 Zeilen, 0/7 Karten — außerhalb (Labor/Welt): haut 0.8559 · gemessen Labor 2026-10-21 (ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0, D3D11)), Welt 2026-10-21 (Ort genesis).
+EXIT=0
