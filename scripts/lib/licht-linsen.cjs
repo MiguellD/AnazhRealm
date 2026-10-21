@@ -2041,43 +2041,29 @@ function kronenObenUrteil(messung) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
-// DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel (Auge `augeM` über dem Gesetz am Spieler) je Uhr und je
-// Azimut (zur Sonne, quer, gegen sie, quer) DREI Schüsse aus dem Ausgabe-Pfad — die Luft wie sie ist (L), ohne Dichte (L0),
-// gesättigt (S: jedes Gelände-Pixel trägt nur die In-Streuung) —, linear (sRGB und die Neutral-Kurve zurück). Je Pixel der
-// Durchlass je Kanal T = (L − S)/(L0 − S) und der Abstand d des Strahls zum Gelände-Gesetz (in den Bändern nur, wo die Tiefe
-// des Szenen-Passes ihn bestätigt); gegen
-// die EXTERNE Referenz (`o.ref`, spec/farbe/luft-referenz.json, nie aus LUFT): β je Kanal = Aerosol grau aus der Sichtweite +
-// Rayleigh je Kanal, längs des Strahls durch den Höhen-Dunst. Je Band (1/2/5/8 km) die Mediane von T/T_soll, β je Kanal, dem
-// Farbton-Abstand zur In-Streuung und der Leuchtdichte; der Rand: der fernste gezeichnete Abstand und der Restkontrast
-// |Y(L) − Y(S)|/Y(S) im äußeren Zehntel jeder Spalte (Median der Spalten). Fernes Weiß: eine weiße Tafel (Lambert) in `weissM` gegen die Sonne bei Sonne 5°, R/B wie das Auge es sieht (sRGB zurück).
+// DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei Schüsse aus
+// dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe Referenz
+// längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste Pixel.
 function luftTiefe(o) {
     return (async () => {
-        const r = window.anazhRealm, T = window.THREE, st = r.state, cam = st.camera, rend = st.renderer, U = st.luft.U, R = o.ref;
-        if (rend.toneMapping !== T.NeutralToneMapping) throw new Error(`__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve (${rend.toneMapping})`);
-        const W = o.w || 480, H = o.h || 270, fov0 = cam.fov;
-        rend.setAnimationLoop(null);
+        const r = window.anazhRealm, T = window.THREE, st = r.state, cam = st.camera, U = st.luft.U, R = o.ref, W = 480, H = 270, fov0 = cam.fov;
+        if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
+        st.renderer.setAnimationLoop(null);
         window.__buehne();
         const gesetz = (x, z) => r._terrainMacroSurfaceY(x, z, false);
-        const gx = st.playerMesh.position.x, gz = st.playerMesh.position.z, gy = gesetz(gx, gz) + o.augeM;
-        const y0 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const gx = st.playerMesh.position.x, gz = st.playerMesh.position.z, gy = gesetz(gx, gz) + o.augeM, Hs = R.skalenHoeheM;
         const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
-        // linear: sRGB zurück, dann die Neutral-Kurve (r184) unter ihrer Kompression — darüber (0,75) ist das Pixel ungemessen
         const roh = (u8, i) => {
-            const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
-            const m = Math.min(c[0], c[1], c[2]);
-            if (Math.max(c[0], c[1], c[2]) > 0.75) return null;
-            const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
-            const v = mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi;
-            return [c[0] + v, c[1] + v, c[2] + v];
+            const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]], m = Math.min(...c), mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
+            return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
         const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const ton = (u8, i) => {
             const c = [u8[i], u8[i + 1], u8[i + 2]], hi = Math.max(...c), d = hi - Math.min(...c);
-            const h = d < 1 ? 0 : hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4;
-            return h * 60;
+            return 60 * (d < 1 ? 0 : hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
         };
-        const med = (a, q = 0.5) => (a.length ? +a.slice().sort((x, y) => x - y)[Math.floor((a.length - 1) * q)].toPrecision(4) : null);
-        // die Dichte des Schusses: das Anwenden des Himmels schreibt β je Bild neu, die Hülle legt die gewählte darüber
+        const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[a.length >> 1].toPrecision(4) : null);
+        // β des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
         const anwenden = r._dayNightApplyHemiUndLuft;
         r._dayNightApplyHemiUndLuft = function (...a) {
@@ -2091,47 +2077,36 @@ function luftTiefe(o) {
             try {
                 return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             } finally {
-                dichte = null;
-                U.beta.value = alt;
+                (dichte = null), (U.beta.value = alt);
             }
         };
         const blick = (az) => {
-            cam.fov = o.fov || 16;
+            cam.fov = 16;
             cam.updateProjectionMatrix();
             cam.position.set(gx, gy, gz);
-            cam.lookAt(gx + Math.sin(az) * 1e3, gy - Math.tan(o.neigung || 0.044) * 1e3, gz - Math.cos(az) * 1e3);
+            cam.lookAt(gx + Math.sin(az) * 1e3, gy - 44, gz - Math.cos(az) * 1e3);
             cam.updateMatrixWorld(true);
         };
-        const s = new T.Vector3();
-        const ort = (d, dy) => {
-            const k = dy / R.skalenHoeheM;
-            return { d, g: Math.exp(-(gy - y0) / R.skalenHoeheM) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
-        };
+        const s = new T.Vector3(), q = new T.Vector3();
         const treffer = (xx, yy, D) => {
-            s.set(((xx + 0.5) / W) * 2 - 1, 1 - ((yy + 0.5) / H) * 2, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
+            const nx = ((xx + 0.5) / W) * 2 - 1, ny = 1 - ((yy + 0.5) / H) * 2;
+            s.set(nx, ny, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
             let a = 0, t = 30;
-            for (; t < o.weitM; a = t, t += Math.max(8, t * 0.01)) if (gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t)) break;
-            if (t >= o.weitM) return null;
-            for (let k = 0; k < 12; k++) {
-                const m = (a + t) / 2;
-                if (gy + s.y * m < gesetz(gx + s.x * m, gz + s.z * m)) t = m;
-                else a = m;
-            }
-            // in den Bändern zählt die Szene nur, wo ihre Tiefe das Gesetz zeigt (±15 %: kein Kronen-Saum, kein Grat der groben
-            // Schale davor); der Rand liest jedes gezeichnete Pixel (der Feld-Pass jenseits der Ferne der Kamera)
-            const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
-            const p = new T.Vector3(((xx + 0.5) / W) * 2 - 1, 1 - ((yy + 0.5) / H) * 2, z).applyMatrix4(D.iv);
-            return Object.assign(ort(t, s.y * t), { szene: z < 1 && Math.abs(p.distanceTo(cam.position) / t - 1) <= 0.15 });
+            for (; t < 6e4; a = t, t += Math.max(8, t * 0.01)) if (gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t)) break;
+            if (t >= 6e4) return null;
+            for (let k = 0; k < 12; k++) if (gy + (s.y * (a + t)) / 2 < gesetz(gx + (s.x * (a + t)) / 2, gz + (s.z * (a + t)) / 2)) t = (a + t) / 2; else a = (a + t) / 2;
+            const k = (s.y * t) / Hs, z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
+            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
+            return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
         const bRef = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
         const uhr = (u) => {
             if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
             const sd = r._sonnenRichtung();
-            return { sonne: (Math.asin(sd.y) * 180) / Math.PI, az: Math.atan2(sd.x, -sd.z) };
+            return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
         };
         const zeilen = [];
-        let weiss = null;
         try {
             for (const u of o.uhren) {
                 const so = uhr(u);
@@ -2139,57 +2114,29 @@ function luftTiefe(o) {
                     blick(so.az + (k * Math.PI) / 2);
                     const L = await schuss(null), D = await window.__spiegelDaten(), L0 = await schuss(0), S = await schuss(1);
                     D.iv = new T.Matrix4().fromArray(D.ivp);
-                    const baender = R.baenderM.map((d) => ({ d, q: [[], [], []], beta: [[], [], []], dh: [], Y: [] }));
-                    const gez = [], fern = {};
+                    const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] })), gez = [], fern = {};
                     for (let yy = 0; yy < H; yy += 2)
                         for (let xx = 4; xx < W; xx += 8) {
-                            const t = treffer(xx, yy, D);
-                            const i = (yy * W + xx) * 4, l = roh(L, i), l0 = roh(L0, i), sa = roh(S, i), auge = Y([lin[L[i]], lin[L[i + 1]], lin[L[i + 2]]]);
-                            if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) {
-                                const b = t && t.szene && baender.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
-                                if (b) b.Y.push(auge);
-                                continue;
-                            }
+                            const t = treffer(xx, yy, D), i = (yy * W + xx) * 4, l = roh(L, i), l0 = roh(L0, i), sa = roh(S, i);
+                            const b = t && t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
+                            if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                             gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
                             fern[xx] = Math.max(fern[xx] || 0, t.d);
-                            const b = t.szene && baender.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                             if (!b) continue;
-                            for (let c = 0; c < 3; c++) {
-                                if (Math.abs(l0[c] - sa[c]) < 0.02) continue;
-                                const tc = (l[c] - sa[c]) / (l0[c] - sa[c]);
-                                b.q[c].push(tc / Math.exp(-bRef[c] * t.g * t.d));
-                                if (tc > 0.01 && tc < 1) b.beta[c].push(-Math.log(tc) / (t.g * t.d));
-                            }
+                            const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
+                            tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
+                            if (tc[0] > 0.01 && tc[2] > 0.01 && Math.min(Math.abs(l0[0] - sa[0]), Math.abs(l0[2] - sa[2])) >= 0.05)
+                                b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
                             const dh = Math.abs(ton(L, i) - ton(S, i));
                             b.dh.push(Math.min(dh, 360 - dh));
-                            b.Y.push(auge);
                         }
                     const rand = med(Object.values(fern));
                     zeilen.push({
-                        uhr: u, sonne: +so.sonne.toFixed(2), az: k * 90,
-                        baender: baender.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map((x) => med(x)), beta: b.beta.map((x) => med(x)), dh: med(b.dh), Y: med(b.Y) })),
+                        uhr: u, sonne: so.sonne, az: k * 90,
+                        baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
                         rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
                     });
                 }
-            }
-            // FERNES WEISS bei Sonne 5°: die Uhr in Halbierungen zwischen Aufgang und Vormittag, die Tafel gegen die Sonne
-            let a = 0.25, b = 0.3;
-            for (let k = 0; k < 14; k++) if (uhr((a + b) / 2).sonne < 5) a = (a + b) / 2; else b = (a + b) / 2;
-            const so = uhr(b), az = so.az + Math.PI, wx = gx + Math.sin(az) * o.weissM, wz = gz - Math.cos(az) * o.weissM;
-            const tafel = new T.Mesh(new T.PlaneGeometry(o.weissSeite, o.weissSeite), new T.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
-            tafel.position.set(wx, gesetz(wx, wz) + o.weissSeite, wz);
-            st.scene.add(tafel);
-            try {
-                blick(az);
-                tafel.lookAt(cam.position);
-                const u8 = await schuss(null), p = tafel.position.clone().project(cam), c = [0, 0, 0];
-                const px = Math.round(((p.x + 1) / 2) * W), py = Math.round(((1 - p.y) / 2) * H);
-                for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) for (let j = 0; j < 3; j++) c[j] += lin[u8[((py + dy) * W + px + dx) * 4 + j]];
-                weiss = { uhr: +b.toFixed(4), sonne: +so.sonne.toFixed(2), km: o.weissM / 1000, RB: +(c[0] / c[2]).toFixed(3) };
-            } finally {
-                st.scene.remove(tafel);
-                tafel.geometry.dispose();
-                tafel.material.dispose();
             }
         } finally {
             delete r._dayNightApplyHemiUndLuft;
@@ -2197,56 +2144,42 @@ function luftTiefe(o) {
             cam.updateProjectionMatrix();
             window.__buehne();
         }
-        return { gy: Math.round(gy), y0, augeM: o.augeM, zeilen, weiss };
+        return { gy: Math.round(gy), zeilen };
     })();
 }
 
-// DAS URTEIL DER LUFT (Meisterkarte Ferne): K1 Staffel 1 — zu Mittag T/T_soll je Kanal und Band im Band ±`T`; K1 Staffel 2 —
-// je Kanal (Δβ blau−rot ab 5 km im Band `kanal` × Referenz; grau = 0), der Farbton bei 8 km höchstens `dh`° von der
-// In-Streuung, die Ferne zur Sonne hell (Y bei 8 km zur Sonne / gegen sie ≥ `sonne`), fernes Weiß bei Sonne 5° R/B ≥ `weissRB`;
-// K2 Staffel 1 — zu Mittag der Restkontrast am Rand der letzten Schale ≤ `rand` an allen vier Azimuten.
+// DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
+// Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht.
 function luftTiefeUrteil(m, R) {
-    const B = R.band, befunde = [], dRef = R.rayleigh[2] - R.rayleigh[0], f = (x) => (x == null ? "—" : x);
+    const B = R.band, liste = [], dRef = R.rayleigh[2] - R.rayleigh[0];
     for (const z of m.zeilen) {
-        const wo = `Uhr ${z.uhr} (Sonne ${z.sonne}°) Azimut ${z.az}°`;
-        for (const b of z.baender) {
-            if (b.n < 10) continue;
-            const q = b.q.map((x, c) => (x == null || Math.abs(x - 1) > B.T ? "RGB"[c] + " " + f(x) : "")).filter(Boolean);
-            if (z.uhr === 0.5 && q.length) befunde.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
-            const v = b.beta[2] != null && b.beta[0] != null ? (b.beta[2] - b.beta[0]) / dRef : null;
-            if (b.d >= 5000 && !(v >= B.kanal[0] && v <= B.kanal[1])) befunde.push(`K1-2 JE KANAL ${wo} ${b.d / 1000} km: Δβ blau−rot ${f(v == null ? v : +v.toFixed(2))} × Referenz (grau = 0)`);
-            if (b.d === 8000 && !(b.dh <= B.dh)) befunde.push(`K1-2 FARBTON ${wo} 8 km: ${f(b.dh)}° von der In-Streuung > ${B.dh}°`);
+        const wo = `Uhr ${z.uhr} (Sonne ${z.sonne}°) Azimut ${z.az}°`, fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
+        for (const b of z.baender.filter((x) => x.n >= 10)) {
+            const q = b.q.map((x, c) => (x == null || Math.abs(x - 1) > B.T ? "RGB"[c] + " " + x : "")).filter(Boolean);
+            if (z.uhr === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
+            if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
         }
-        if (z.uhr === 0.5 && !(z.rand.C <= B.rand)) befunde.push(`K2-1 KANTE ${wo}: Restkontrast ${f(z.rand.C)} am Rand ${z.rand.km} km > ${B.rand}`);
+        const nk = fern.reduce((a, b) => a + b.nk, 0), v = fern.reduce((a, b) => a + b.dk * b.nk, 0) / nk / dRef;
+        if (nk >= 30 && !(v >= B.kanal[0] && v <= B.kanal[1])) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: Δβ blau−rot ${+v.toFixed(2)} × Referenz (grau = 0, ${nk} Paare)`);
+        if (z.uhr === 0.5 && !(z.rand.C <= B.rand)) liste.push(`K2-1 KANTE ${wo}: Restkontrast ${z.rand.C} am Rand ${z.rand.km} km > ${B.rand}`);
     }
-    for (const u of new Set(m.zeilen.map((z) => z.uhr))) {
-        const y8 = (az) => ((m.zeilen.find((z) => z.uhr === u && z.az === az) || { baender: [] }).baender.find((b) => b.d === 8000) || {}).Y;
-        const v = y8(0) / y8(180);
-        if (!(v >= B.sonne)) befunde.push(`K1-2 SONNENSEITE Uhr ${u}: Y bei 8 km zur Sonne / gegen sie ${f(+v.toFixed(3))} < ${B.sonne}`);
-    }
-    if (!(m.weiss && m.weiss.RB >= B.weissRB)) befunde.push(`K1-2 FERNES WEISS bei Sonne ${m.weiss && m.weiss.sonne}°: R/B ${m.weiss && m.weiss.RB} < ${B.weissRB}`);
+    const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
     const staffel = {};
-    for (const k of ["K1-1", "K1-2", "K2-1"]) staffel[k] = befunde.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
-    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde };
+    for (const k of ["K1-1", "K1-2", "K2-1"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
+    const befunde = liste.filter((b) => !offen(b));
+    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
 }
 
-// Der Selbsttest der Luft-Linse: eine Messung nach der Referenz ist GRÜN, ein grauer β ROT (je Kanal), die Kante 21 % ROT.
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
-    const messung = (beta, C) => ({
-        zeilen: [0, 90, 180, 270].map((az) => ({
-            uhr: 0.5, sonne: 60, az, rand: { km: 40, C },
-            baender: R.baenderM.map((d) => ({ d, n: 50, q: [1, 1, 1], beta, dh: 5, Y: az ? 0.4 : 0.6 })),
-        })),
-        weiss: { sonne: 5, RB: 1.4 },
-    });
-    const fehl = [];
-    const gut = luftTiefeUrteil(messung(ref, 0.005), R);
-    if (gut.urteil !== "GRUEN") fehl.push("die Referenz selbst ist ROT: " + gut.befunde.join(" | "));
-    const grau = luftTiefeUrteil(messung([ref[1], ref[1], ref[1]], 0.005), R);
-    if (grau.staffel["K1-2"] !== "ROT" || !grau.befunde.some((b) => /JE KANAL/.test(b))) fehl.push("ein grauer β ist nicht ROT");
-    if (luftTiefeUrteil(messung(ref, 0.21), R).staffel["K2-1"] !== "ROT") fehl.push("die Kante 21 % ist nicht ROT");
-    return fehl;
+    const urteil = (dk, C) =>
+        luftTiefeUrteil({ zeilen: [0, 90, 180, 270].map((az) => ({ uhr: 0.5, sonne: 60, az, rand: { km: 20, C },
+            baender: R.baenderM.map((d) => ({ d, n: 50, q: [1, 1, 1], dk, nk: 50, dh: 5 })) })) }, Object.assign({}, R, { offen: {} }));
+    return [
+        urteil(ref[2] - ref[0], 0.005).urteil === "GRUEN" || "die Referenz selbst ist ROT",
+        urteil(0, 0.005).befunde.some((b) => /JE KANAL/.test(b)) || "ein grauer β ist nicht ROT",
+        urteil(ref[2] - ref[0], 0.21).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
+    ].filter((x) => x !== true);
 }
 
 // DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang

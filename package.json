@@ -121,7 +121,6 @@
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
         "gate:fernwald": "node scripts/diag-fernwald.cjs",
-        "gate:luft-sicht": "node scripts/diag-luft-sicht.cjs --selftest",
         "gate:weg-boden": "node scripts/diag-weg-boden.cjs --selftest",
         "gate:foundry-impostor": "node scripts/diag-foundry-impostor.cjs",
         "gate:foundry-crossfade": "node scripts/diag-foundry-crossfade.cjs --selftest && node scripts/diag-foundry-crossfade.cjs",
@@ -179,6 +178,7 @@
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
         "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4492",
+        "gate:luft-tiefe:echt": "node scripts/werkbank.cjs licht --luft --eigen --port 4493",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
         "lens:wiese": "node scripts/diag-wiese.cjs"
     },

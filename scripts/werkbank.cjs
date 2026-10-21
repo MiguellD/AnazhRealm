@@ -3318,38 +3318,28 @@ async function starte() {
         console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--luft")) {
-        // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel am Ort (`--ort`, Standard der Genesis-Platz: offen nach allen Seiten) je Uhr
-        // (`--uhren`, Standard 0,5 und 0,27) vier Azimute ab der Sonne (`luftTiefe`), das Urteil `luftTiefeUrteil` gegen die
-        // externe Referenz spec/farbe/luft-referenz.json; `--selbsttest` ohne Welt, `--eigen` die Wand, `--datei f.json` die Messung.
+        // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr
+        // (`--uhren`), das Urteil `luftTiefeUrteil` gegen die externe Referenz spec/farbe/luft-referenz.json.
         const LL = require("./lib/licht-linsen.cjs");
-        const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "farbe", "luft-referenz.json"), "utf8"));
-        if (argv.includes("--selbsttest")) {
-            const f = LL.luftTiefeSelbsttest(ref);
-            console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: die Luft-Linse nennt den grauen β und die Kante beim Namen");
-            process.exit(f.length ? 1 : 0);
-        }
+        const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
+        const fehl = LL.luftTiefeSelbsttest(ref);
+        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β und Kante 21 % beim Namen ROT");
+        if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
         let m;
         try {
             await rufe("/umstellen", { ort: opt("--ort", "genesis"), sicht: "ego" });
-            const o = { ref, augeM: 120, uhren: String(opt("--uhren", "0.5,0.27")).split(",").map(Number), weitM: 60000, weissM: 5000, weissSeite: 300 };
+            const o = { ref, augeM: 120, uhren: String(opt("--uhren", "0.5,0.27")).split(",").map(Number) };
             const a = await rufe("/eval", { code: `return await (${LL.luftTiefe.toString()})(${JSON.stringify(o)});` });
             m = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
         } finally {
             if (halt) await halt();
         }
         if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
-        if (m.fehler) {
-            console.log("LUFT ROT: " + m.fehler);
-            process.exit(1);
-        }
-        const e6 = (x) => (x == null ? "—" : (x * 1e6).toFixed(0));
-        for (const z of m.zeilen)
-            console.log(`  Uhr ${z.uhr} Sonne ${z.sonne}° Az ${z.az}°: ` + z.baender.map((b) => `${b.d / 1000} km n ${b.n} T/Soll ${b.q.join("/")} β ${b.beta.map(e6).join("/")}e-6 Δh ${b.dh}° Y ${b.Y}`).join(" · ") + ` · Rand ${z.rand.km} km C ${z.rand.C}`);
-        console.log(`  fernes Weiß: ${JSON.stringify(m.weiss)}`);
+        if (m.fehler) throw new Error("LUFT: " + m.fehler);
         const u = LL.luftTiefeUrteil(m, ref);
-        for (const b of u.befunde) console.log("  ROT " + b);
-        console.log(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map(([k, v]) => k + " " + v).join(" · ")}`);
+        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) console.log("  " + b);
+        console.log(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
         // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht

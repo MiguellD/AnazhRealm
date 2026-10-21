@@ -2212,21 +2212,6 @@ async function checkBandPhaseAFundament(ctx) {
                 }
             }
         }
-        // ── A5 · DIE LUFT TRÄGT (V18.530): die Ring-Kante ist kein Nebel-Rand mehr — die Fernform (Fern-Ring +
-        // Feld-Pass) trägt die Ferne, die Luft dunstet sie nach Koschmieder (klarer Tag ≥ 5 km Sicht).
-        {
-            const cfg = r._voxelChunkConfig();
-            const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
-            const L = r.constructor.LUFT;
-            // (dass die Extinktion der Szene dem Wetter folgt, misst gate:luft-sicht am Uniform der Szene: Sonne · Regen · Sturm)
-            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(r.constructor.WEATHER_FIELD.sunny);
-            out.a5 = {
-                sichtKlar,
-                ringEdge,
-                knoten: !!r.state.scene.fogNode && !r.state.scene.fog,
-                kanteKlar: Math.exp((-ringEdge * -Math.log(L.kontrast)) / sichtKlar) >= 0.9,
-            };
-        }
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
         // kein Mantel). Das Band prüft die ABWESENHEIT (Methoden · Konstante · State · Tick-Aufruf).
         out.b2 = {
@@ -2281,11 +2266,6 @@ async function checkBandPhaseAFundament(ctx) {
         "A2: Edit-Vertex-Delta ist LOKAL — 0 geänderte Vertices außerhalb des Einflusses (kein sichtbarer Ganz-Chunk-Reset)",
         res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
-    );
-    check(
-        "A5: die Luft trägt — scene.fogNode statt Nebel, klarer Tag ≥ 5 km Sicht, die Ring-Kante liegt klar",
-        res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
-        res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
     );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);

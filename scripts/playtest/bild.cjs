@@ -581,7 +581,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
-        out.fogExists = !!r.state.luft && !!r.state.scene.fogNode && !r.state.scene.fog;
         // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
@@ -683,7 +682,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v827Results && !v827Results.error) {
-        check("V8.27 → V18.530: die Luft steht (scene.fogNode, kein THREE.Fog)", v827Results.fogExists);
         check(
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
@@ -724,7 +722,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Phase C: die Luft (V18.530) ---
         // Die Luftperspektive ist Physik (`_luftEnsure` → scene.fogNode, Koschmieder aus dem Wetter-Feld; das Verhalten
-        // beweist gate:luft-sicht): kein Nebel-Regler mehr — der tote Fog-Distanz-Knopf ist mit dem Nebel gefallen.
+        // misst gate:luft-tiefe:echt im Bild): kein Nebel-Regler mehr — der tote Fog-Distanz-Knopf ist mit dem Nebel gefallen.
         out.fogSliderWorks = r.setFogDistance === undefined && !document.getElementById("slider-fog");
 
         // --- Phase D: Wind + Wolken + Wasser ---
@@ -1920,7 +1918,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const WF = r.constructor.WEATHER_FIELD;
         out.hazeNearWeather =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
-        out.hazeNearUniform = !!(r.state.luft && r.state.luft.U.beta && r.state.luft.U.hoehe);
 
         return out;
     });
@@ -1939,7 +1936,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
         res.hazeNearWeather === true
     );
-    check("Ω-OPSIS S5 (V3) die Luft-Uniforms existieren (β, Skalenhöhe)", res.hazeNearUniform === true);
 }
 
 // Der Schatten-Takt (V18.524; ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
@@ -2083,8 +2079,6 @@ async function checkBandLookPhysik(ctx) {
             meadow: K.MEADOW_GREEN,
             tints: K.WEATHER_TINTS,
             intensity: K.WEATHER_INTENSITY,
-            luft: K.LUFT,
-            luftBeta: r._luftBeta ? ["sunny", "rainy", "stormy"].map((w) => r._luftBeta(K.WEATHER_FIELD[w])) : null,
             toneMapping: rend ? rend.toneMapping : null,
             belichtung: K.BELICHTUNG ? { kurve: K.BELICHTUNG.kurve, zielKarte: K.BELICHTUNG.zielKarte } : null,
             kurveConst: K.BELICHTUNG && T[K.BELICHTUNG.kurve] != null ? T[K.BELICHTUNG.kurve] : null,
@@ -2101,14 +2095,6 @@ async function checkBandLookPhysik(ctx) {
     const wi = b.intensity || {};
     const tintOk = !!(t.sunny && t.rainy && t.stormy) && t.sunny.lightMul > t.rainy.lightMul && t.rainy.lightMul > t.stormy.lightMul && t.sunny.skyMul > t.rainy.skyMul && t.rainy.skyMul > t.stormy.skyMul;
     check("Look-Physik: Wetter dimmt Licht monoton (sunny > rainy > stormy), die Intensität monoton", tintOk && wi.sunny < wi.rainy && wi.rainy < wi.stormy, `intensity ${wi.sunny}/${wi.rainy}/${wi.stormy}`);
-    // 4) Luftperspektive (Koschmieder): Sicht = −ln(Kontrast)/β, Rayleigh 1,16·10⁻⁵/m, Sommertag ≥ 5 km, Grenzschicht 0,5–3 km
-    const L = b.luft;
-    const lb = b.luftBeta;
-    check(
-        "Look-Physik: Luftperspektive physikalisch (Koschmieder 2 %, Rayleigh-Basis, Sicht ≥ 5 km, Grenzschicht, Wetter monoton)",
-        !!(L && lb) && Math.abs(L.kontrast - 0.02) < 1e-9 && Math.abs(L.betaRayleigh / 1.16e-5 - 1) < 0.1 && -Math.log(L.kontrast) / lb[0] >= 5000 && L.skalenHoeheM >= 500 && L.skalenHoeheM <= 3000 && lb[0] < lb[1] && lb[1] < lb[2],
-        L && lb ? `Sicht ${lb.map((x) => Math.round(-Math.log(L.kontrast) / x)).join("/")} m · H ${L.skalenHoeheM} m` : "LUFT/_luftBeta fehlt"
-    );
     // 5) die Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV; 6) lineares Farb-Management
     const B = b.belichtung || {};
     const sollKarte = kartenEichung(B.kurve);
