@@ -1163,7 +1163,7 @@ class AnazhRealm_dirigent_ankunft {
     _ladeschirmStand(text) {
         if (typeof document === "undefined") return;
         const el = document.getElementById("ladeschirm-stand");
-        if (el && el.textContent !== text) el.textContent = text;
+        this._hudSchreib(el, text);
     }
 
     // Der Ladeschirm weicht: nach dem ersten fertigen Weltbild, oder dem WebGPU-Tor (das Tor IST die Antwort — unter dem

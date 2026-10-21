@@ -425,7 +425,15 @@ class AnazhRealm_dirigent_takt {
     _gpuLeineFrei() {
         const L =
             this._gpuLeine ||
-            (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, sammelMs: 0, versuch: false });
+            (this._gpuLeine = {
+                imFlug: 0,
+                gerendert: 0,
+                ausgesetzt: 0,
+                sammelMs: 0,
+                versuch: false,
+                fertig: 0,
+                fertigMs: null,
+            });
         L.versuch = false;
         if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
@@ -463,10 +471,12 @@ class AnazhRealm_dirigent_takt {
         const L = this._gpuLeine;
         if (!L) return;
         L.gerendert++;
-        this._gpuLeineBinden();
+        this._gpuLeineBinden(true);
     }
-    // Eine abgeschickte GPU-Arbeit an die Leine (das Bild, die Karte): unterwegs, bis die Queue sie abgearbeitet hat.
-    _gpuLeineBinden() {
+    // Eine abgeschickte GPU-Arbeit an die Leine (das Bild, die Karte): unterwegs, bis die Queue sie abgearbeitet hat. Ein
+    // fertiges BILD zählt mit Zeitpunkt (`fertig`, `fertigMs` — der Takt der GPU; `werkbank lauf` liest ihn, statt je Bild
+    // eine zweite Abfrage an die Queue zu stellen).
+    _gpuLeineBinden(bild) {
         const L = this._gpuLeine;
         const q = this._gpuLeineQueue();
         if (!L || !q) return;
@@ -474,8 +484,13 @@ class AnazhRealm_dirigent_takt {
         const los = () => {
             L.imFlug = Math.max(0, L.imFlug - 1);
         };
+        const fertig = () => {
+            los();
+            L.fertig++;
+            L.fertigMs = performance.now();
+        };
         try {
-            q.onSubmittedWorkDone().then(los, los);
+            q.onSubmittedWorkDone().then(bild ? fertig : los, los);
         } catch (_e) {
             los();
         }

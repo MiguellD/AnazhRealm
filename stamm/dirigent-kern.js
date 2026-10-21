@@ -1386,30 +1386,26 @@ class AnazhRealm {
         const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
         // Welle 6.X.4 B3 V8.14 — neue Bar-Breite 166 (von 158), zusätzlicher
         // Glow-Strip oben drauf folgt derselben Breite.
-        hpFill.setAttribute("width", String(166 * hpRatio));
-        const hpGlow = document.getElementById("stats-hud-hp-glow");
-        if (hpGlow) hpGlow.setAttribute("width", String(166 * hpRatio));
-        stamFill.setAttribute("width", String(166 * stamRatio));
-        const stamGlow = document.getElementById("stats-hud-stam-glow");
-        if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
-        hpText.textContent = `${hp}/${hpMax}`;
-        stamText.textContent = `${stam}/${stamMax}`;
+        // Jeder Wert über den EINEN HUD-Schreiber (`_hudSchreib`): im Stand schreibt der 10-Hz-Takt nichts.
+        this._hudSchreib(hpFill, 166 * hpRatio, "width");
+        this._hudSchreib(document.getElementById("stats-hud-hp-glow"), 166 * hpRatio, "width");
+        this._hudSchreib(stamFill, 166 * stamRatio, "width");
+        this._hudSchreib(document.getElementById("stats-hud-stam-glow"), 166 * stamRatio, "width");
+        this._hudSchreib(hpText, `${hp}/${hpMax}`);
+        this._hudSchreib(stamText, `${stam}/${stamMax}`);
         // Mana-Row: Welt-Gesten kosten in pfad Mana (derselbe Kosten-Walker wie das Nexus-Wirk-Budget);
         // dritte Row derselben Familie (eine Quelle, eine Throttle), NUR in pfad sichtbar.
         const manaRow = document.getElementById("stats-hud-mana-row");
         if (manaRow) {
             const isPfad = typeof this.getGameMode === "function" && this.getGameMode() === "pfad";
-            manaRow.hidden = !isPfad;
+            if (manaRow.hidden !== !isPfad) manaRow.hidden = !isPfad;
             if (isPfad) {
                 const manaMax = Math.max(1, Math.round(typeof p.manaMax === "number" ? p.manaMax : 40));
                 const mana = Math.max(0, Math.round(typeof p.mana === "number" ? p.mana : manaMax));
                 const manaRatio = Math.max(0, Math.min(1, mana / manaMax));
-                const manaFill = document.getElementById("stats-hud-mana-fill");
-                if (manaFill) manaFill.setAttribute("width", String(166 * manaRatio));
-                const manaGlow = document.getElementById("stats-hud-mana-glow");
-                if (manaGlow) manaGlow.setAttribute("width", String(166 * manaRatio));
-                const manaText = document.getElementById("stats-hud-mana-text");
-                if (manaText) manaText.textContent = `${mana}/${manaMax}`;
+                this._hudSchreib(document.getElementById("stats-hud-mana-fill"), 166 * manaRatio, "width");
+                this._hudSchreib(document.getElementById("stats-hud-mana-glow"), 166 * manaRatio, "width");
+                this._hudSchreib(document.getElementById("stats-hud-mana-text"), `${mana}/${manaMax}`);
             }
         }
         // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
@@ -1431,7 +1427,7 @@ class AnazhRealm {
         if (!tooltip) return;
         const stats = (this.state.player && this.state.player.stats) || null;
         if (!stats) {
-            tooltip.textContent = "Stats nicht initialisiert";
+            this._hudSchreib(tooltip, "Stats nicht initialisiert");
             return;
         }
         const lines = [
@@ -1460,7 +1456,7 @@ class AnazhRealm {
             lines.push(`Boosts        ${activeBoosts.length}`);
         }
         // <br>-getrennt damit das Tooltip schmal bleibt
-        tooltip.innerHTML = lines.join("<br>");
+        this._hudSchreib(tooltip, lines.join("<br>"), "html");
     }
 
     // ### Atmosphäre-Wurzel-Helper ###
