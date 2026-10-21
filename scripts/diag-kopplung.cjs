@@ -112,8 +112,8 @@ const server = statikServer();
                 shim.state.yaw = yaw || 0;
                 let t = 0;
                 for (let i = 0; i < n; i++) {
-                    shim._stepCharacter(DT, t);
                     shim._loopPlayerMovement(t, DT);
+                    shim._stepCharacter(DT, t);
                     t += DT;
                 }
             };

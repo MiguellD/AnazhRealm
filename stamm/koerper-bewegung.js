@@ -1353,8 +1353,8 @@ class AnazhRealm_koerper_bewegung {
                 this.state.moveDirection.normalize();
                 const v = this.state.playerVel;
                 // ZENSUS 17.07. — die vier C5-Gefühls-Hebel wohnen im koerper-
-                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-soft
-                // byte-gleich: Boden kAcc / Luft kAccLuft).
+                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-closed:
+                // Boden kAcc / Luft kAccLuft).
                 const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
                 const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? LG.kAccLuft : LG.kAcc;
                 const f = 1 - Math.exp(-kAcc * nowDt);

@@ -566,13 +566,15 @@
                         // LUFTKONTROLLE (Zensus 17.07., rein additive DATEN-Zeile):
                         // die vier C5-Gefuehls-Hebel der Beschleunigungs-/Brems-
                         // Kurven als Gesetzbuch-Daten (exp-Lerp 1-e^(-k*dt):
-                        // kAcc Boden-Beschleunigung ~70 ms bis 63 %, kAccLuft die
-                        // schwaechere Luftkontrolle, kBrake der Boden-Schlitter
-                        // ~110 ms, kBrakeLuft laesst den Sprung-Bogen ballistisch).
-                        // Byte-gleiche Zahlen des historischen Host-Satzes; der
-                        // Wirt liest fail-soft (_bewegungsBlock): Kern kalt ->
-                        // seine Literale.
-                        luft: { kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
+                        // kAcc Boden-Beschleunigung 25 ms bis 63 %, 98 % des Tempos
+                        // in 0,1 s (die Anfahr-Rampe der Spiele, Source/Quake;
+                        // leib.K1: kAcc 14 brauchte ~31 ms Sim bis 1 cm Gang, die
+                        // Taste bis zum bewegten Leib im Bild p95 > 50 ms),
+                        // kAccLuft die schwaechere Luftkontrolle, kBrake der
+                        // Boden-Schlitter ~110 ms, kBrakeLuft laesst den Sprung-
+                        // Bogen ballistisch). Der Wirt liest fail-closed
+                        // (_bewegungsBlock).
+                        luft: { kAcc: 40, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
                         // SPRUNG-FENSTER (Zensus 17.07., rein additiv): die zwei
                         // Plattformer-Toleranzen -- coyoteSec (Sprung kurz NACH
                         // der Kante) + bufferSec (Space kurz VOR der Landung

@@ -731,13 +731,14 @@ class AnazhRealm_dirigent_takt {
     // (alpha). EIN Sim-Schritt = `_loopPhysicsSync` + `_loopPlayerMovement(simTime, FIXED_DT)`
     // (+ Replay-Capture) = reine Funktion (state, input, FIXED_DT); `replayRun` reicht kein dtOverride.
 
-    // Der EINE Sim-Schritt (deterministisch, fixed-dt). Physik LIEST die Velocity, die Bewegung
-    // SETZT sie (dieselbe Ordnung wie der variable Loop: physics → movement → 1-Frame-Input-Latenz).
+    // Der EINE Sim-Schritt (deterministisch, fixed-dt). Die Bewegung SETZT die Velocity aus der Eingabe dieses Schritts, die
+    // Physik integriert sie im SELBEN Schritt (leib.K1: die Ordnung Physik → Bewegung trug die Taste erst einen Schritt später
+    // in die Lage — 16,7 ms jeder Anfahrt; die Folge der Schritte ist dieselbe, die Eingabe greift einen Schritt früher).
     _stepFixedSim(simTime, dt) {
         // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
-        this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
+        this._loopPhysicsSync(dt, simTime);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
@@ -774,7 +775,10 @@ class AnazhRealm_dirigent_takt {
             }
         }
         // prev = die Sim-Position VOR DEM LETZTEN SCHRITT (Fiedler: das Bild liegt zwischen den zwei jüngsten Zuständen, um den
-        // Rest des Akkumulators). Ein Bild ohne Schritt behält sein Paar und gleitet weiter; ein Teleport beginnt ohne Schweif.
+        // Rest des Akkumulators). DIE SIM LÄUFT VORAUS (leib.K1): sie schreitet, solange die Wanduhr vor ihr liegt, und steht
+        // danach bis zu einem Schritt vor ihr — das Bild liegt zwischen prev und cur genau auf der Wanduhr. Vorher stand die Sim
+        // bis zu einem Schritt hinter der Wanduhr und das Bild noch einen Schritt dahinter: der eigene Leib zeigte jede Taste
+        // 16,7 ms zu spät (Radeon, Mess-Wiese, Taste bis 1 cm im Bild: Ego p95 78,2 ms, Third 72,2 ms). Ein Bild ohne Schritt behält sein Paar und gleitet weiter; ein Teleport beginnt ohne Schweif.
         // F1 (Befund des Schöpfers 17.10.: „Third ruckelt horizontal"): prev war die Lage VOR DEM BILD — mit zwei Schritten
         // lag das Bild um zwei Schritte zurück, ohne Schritt sprang es auf den Zustand; der gezeichnete Wagen lief je Bild
         // 0,56–2,3-mal so weit, wie die Physik ihn trug (Spielgang, Null-Renderer, p95 der Abweichung).
@@ -783,7 +787,7 @@ class AnazhRealm_dirigent_takt {
         st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
         let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
         let steps = 0;
-        while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
+        while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
@@ -791,9 +795,10 @@ class AnazhRealm_dirigent_takt {
             steps++;
         }
         // bei hartem Cap den Rest-Akkumulator verwerfen (Zeit fallen lassen statt einholen → kein Spiral)
-        if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator >= FIXED_DT) st._fixedAccumulator = 0;
+        if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
-        st._fixedAlpha = FIXED_DT > 0 ? st._fixedAccumulator / FIXED_DT : 0;
+        // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
+        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
         return steps;
     }
 
@@ -906,10 +911,10 @@ class AnazhRealm_dirigent_takt {
             s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
             s.yaw = f.yaw;
             t += f.dt;
-            // Loop-Reihenfolge: erst der Feld-Schritt (integriert die Velocity des
-            // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
-            this._stepCharacter(f.dt, t);
+            // die Ordnung des Sim-Schritts (`_stepFixedSim`): erst die Bewegung (setzt die Intent-Velocity dieses
+            // Schritts), dann der Feld-Schritt (integriert sie + Kollision).
             this._loopPlayerMovement(t);
+            this._stepCharacter(f.dt, t);
             this._rittSchritt(f.dt);
         }
         const end = this._replaySnapshotState();
