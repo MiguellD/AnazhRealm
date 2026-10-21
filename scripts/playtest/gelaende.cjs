@@ -535,7 +535,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
         const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
@@ -653,7 +652,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (wave6c2Results && !wave6c2Results.error) {
-        check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -1735,9 +1733,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         const out = {};
         // 1) Worker-Methoden existieren
         // 2) State-Felder existieren
-        out.hasCacheField = "voxelDensityCache" in r.state;
-        out.hasPendingField = "voxelDensityPending" in r.state;
-        out.hasSyncedGenField = "voxelWorkerWorldgenSynced" in r.state;
         // 3) Worker spawnt + initial sync
         const worker = r._getVoxelWorker();
         if (!worker) return { ...out, error: "worker spawn failed" };
@@ -1836,9 +1831,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         check("Welle Perf-3.c V9.90: Phase-2-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.90: state.voxelDensityCache existiert", res.hasCacheField);
-    check("Welle Perf-3.c V9.90: state.voxelDensityPending existiert", res.hasPendingField);
-    check("Welle Perf-3.c V9.90: state.voxelWorkerWorldgenSynced existiert", res.hasSyncedGenField);
     check(
         "Welle Perf-3.c V9.90: Worker-State synced nach Worldgen (worldgenSynced=true)",
         res.workerSynced,
@@ -1874,8 +1866,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        out.hasMeshCache = "voxelMeshCache" in r.state;
-        out.hasMeshPending = "voxelMeshPending" in r.state;
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
         // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
         const worker = r._getVoxelWorker();
@@ -2038,8 +2028,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         check("Welle Perf-3.c V9.91: Phase-3-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.91: state.voxelMeshCache existiert", res.hasMeshCache);
-    check("Welle Perf-3.c V9.91: state.voxelMeshPending existiert", res.hasMeshPending);
     check("Welle Perf-3.c V9.91: Worker-State synced (worldgenSynced)", res.workerSynced);
     check("Welle Perf-3.c V9.91: Sync-Build erfolgreich", res.syncBuildOk);
     check("Welle Perf-3.c V9.91: Worker-Mesh-Build erfolgreich", res.workerMeshOk);

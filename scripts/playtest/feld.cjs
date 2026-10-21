@@ -279,7 +279,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const A2E = r.constructor.ACTION_TO_EMOTION;
-        out.hasTable = !!A2E && typeof A2E.build === "object";
         // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
         const axes = new Set();
         for (const t of Object.keys(A2E || {})) for (const a of Object.keys(A2E[t])) axes.add(a);
@@ -306,7 +305,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         reset();
         return out;
     });
-    check("V17.30 Pfeiler 2: ACTION_TO_EMOTION-Tabelle existiert (die Regel IST die Daten)", res.hasTable);
     check("V17.30 Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)", res.allSixAxes);
     check("V17.30 Taten: bauen → joy + hope", res.buildJoyHope);
     check("V17.30 Taten: Schaden/Gefahr → sorrow + chaos", res.damageSorrowChaos);

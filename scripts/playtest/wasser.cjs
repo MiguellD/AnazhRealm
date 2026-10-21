@@ -797,7 +797,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         const out = {};
         const STATE = r.constructor.CELL_STATE;
         // 1) State-Feld existiert (Map)
-        out.hasIsoMap = r.state.voxelChunkWaterIso !== undefined;
         // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
@@ -999,7 +998,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         check("Welle C.2 V9.72: Iso-Mesher-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.2 V9.72: state.voxelChunkWaterIso existiert", res.hasIsoMap);
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
     check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
     check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);

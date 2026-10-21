@@ -192,6 +192,7 @@ class AnazhRealm_speicher_laden {
             // Heiß-Pfad liest den Erbgut-Merker direkt.
             this.state.worldMeta = this._weltMetaWechsel(state.worldMeta);
             AnazhRealm._weltMetaHeil(this.state.worldMeta);
+            this._bewohnerFortAlle(); // die Leiber der Bewohner gehen vor ihrem Gedächtnis (`_bewohnerSiedlungen`)
             for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
         } else {
             // Ein Zustand ohne worldMeta ist keine Welt (ein Bruchstück: Baupläne, Hotbar, Seele) — er quert keine Grenze,

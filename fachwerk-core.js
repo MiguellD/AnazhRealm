@@ -196,12 +196,15 @@
         const _fl=(a,bq)=>{ if(bq-a<0.10)return; const _cc=(a+bq)/2, _ll=Math.max(0.1,bq-a-0.05); if(ax==='z')beam(g,_cc,y+lift-0.05,alo,_ll,0.03,0.045,'lattung'); else beam(g,alo,y+lift-0.05,_cc,0.045,0.03,_ll,'lattung'); };
         for(let _p=pa; _p<=pb+1e-6; _p+=_st){ const _sk=o.skip&&o.skip(ax==='z'?_p:alo, ax==='z'?alo:_p); if(!_sk){ if(_rs==null)_rs=_p; } else if(_rs!=null){ _fl(_rs,_p-_st); _rs=null; } }
         if(_rs!=null)_fl(_rs,pb); }   // Lattung
+      const _hr=(_HG&&!_fl2)?new Map():null;
       let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2; if(ax==='z')beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); _rA=null; };
       for(let p=Math.floor((pa-ox-tw/2)/tw)*tw+ox+tw/2; p<pb+tw; p+=tw){ const inner=p-tw*0.46, outer=p+tw*0.46;   // VERBAND-GESETZ: Fugenraster WELTFEST + ox-Halbverband — ein Muster für Haupt UND Flügel (vorher pa-verankert → Fugen fluchteten am Flügel zu Streifen) if(inner>pb-0.02||outer<pa+0.02)continue;
         let ww=tw*0.92, pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
+        if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
         if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); }
+      if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
@@ -233,9 +236,12 @@
   function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
+  // ════ DIE MASS-HÜLLE (`__nurMass`, nur massBau): der Mass-Bau zählt nur seine Box (Box3.setFromObject = Vereinigung der Geometrie-Boxen unter der Welt-Matrix) — ungebogen teilt jede Box gleichen Maßes EINE Geometrie (gleiche Float32-Ecken ⇒ dieselbe Box), ohne Tint; die Ziegelreihe legt je Maß nur ihre Enden (eindeckenFlaeche). Der Export bleibt byte-gleich (gate:settlement), der Mass-Bau fällt ~6× ════
+  const _HG=(P.__nurMass&&DEF_bk===0&&DEF_cv===0)?new Map():null;
+  function _hgBox(lx,ly,lz){ let a=_HG.get(lx); if(!a)_HG.set(lx,a=new Map()); let b=a.get(ly); if(!b)a.set(ly,b=new Map()); let q=b.get(lz); if(!q)b.set(lz,q=new THREE.BoxGeometry(lx,ly,lz)); return q; }
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
     const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
@@ -244,7 +250,7 @@
     const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
   const Vc=(x,y,z)=>new THREE.Vector3(x,y,z);
   function strut(g,x0,y0,z0,x1,y1,z1,th,role){ const dx=x1-x0,dy=y1-y0,dz=z1-z0, len=Math.hypot(dx,dy,dz); if(len<1e-4)return;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(_HG?_hgBox(th,len,th):new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
     const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
     let px=-uy,py=ux,pz=0, pl=Math.hypot(px,py,pz); if(pl<0.01){px=1;py=0;pz=0;pl=1;} px/=pl;py/=pl;pz/=pl;
     const qx=uy*pz-uz*py, qy=uz*px-ux*pz, qz=ux*py-uy*px;
@@ -2953,6 +2959,12 @@
     function distPunktOBB(px,pz,o){ const c=Math.cos(o.phi),s2=Math.sin(o.phi), dx=px-o.cx, dz=pz-o.cz;
   const lx=dx*c-dz*s2, lz=dx*s2+dz*c;             // Welt→lokal = R(−φ)
   const ex=Math.max(Math.abs(lx)-o.ex,0), ez=Math.max(Math.abs(lz)-o.ez,0); return Math.hypot(ex,ez); }
+    // DIE VORAUSWAHL DER NÄHE (siedlung.K5): sicher fern, ohne Winkel zu rechnen — die Box liegt im Kreis ex+ez um ihre Mitte, ein Weg in
+    // seinem Kasten; was weiter als thr (+1 µm für die Rundung) liegt, kann die genaue Probe nicht treffen, ihr Urteil bleibt bit-gleich.
+    // Leser: dorfLayout (Bauplatz, Laterne) · brunnenWeicht · wandLaternen — bis K5 rechnete jede Probe Winkel und Abstand zu allem (nH 300: 4 s).
+    function fernOBB(px,pz,o,thr){ const dx=px-o.cx, dz=pz-o.cz, R=thr+o.ex+o.ez+1e-6; return dx*dx+dz*dz>R*R; }
+    function wegKasten(P){ const K={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity}; for(const p of P){ if(p.x<K.x0)K.x0=p.x; if(p.x>K.x1)K.x1=p.x; if(p.z<K.z0)K.z0=p.z; if(p.z>K.z1)K.z1=p.z; } return K; }
+    function fernKasten(x,z,K,thr){ const ax=Math.max(K.x0-x,0,x-K.x1), az=Math.max(K.z0-z,0,z-K.z1), R=thr+1e-6; return ax*ax+az*az>R*R; }
     // ════════════ PROXY-GESETZ ════════════ ferne Gebäude als Massivkörper (~30 Prims): Korpus·Fensterraster·Tür·Satteldach·Giebel·Kamin
     // prettier-ignore
     function PROXYHAUS(p){ const W=p.W, D=p.D, st=Math.max(1,p.storeys), sh=2.75, H=st*sh;
@@ -3169,7 +3181,7 @@
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
           for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
-            if(distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
+            if(!fernOBB(q2.x,q2.z,o,thr)&&distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
       if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
         const fmx=q.x+cu.side*q.nx*(rd.w/2+gw+jit), fmz=q.z+cu.side*q.nz*(rd.w/2+gw+jit);
         pl[i]={x:tx,z:tz,phi,obb:o,fm:[fmx,fmz],rd:cu.rd,fr:rd.w/2+gw,jit};
@@ -3204,7 +3216,7 @@
         if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
           else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
           obbs.push({i,o}); done=true; } }
@@ -3220,7 +3232,7 @@
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o};
@@ -3295,9 +3307,9 @@
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
-  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2})));   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
-  const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
-  const laterneFrei=(x,z)=>obbs.every(q2=>distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
+  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
+  const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
+  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
@@ -3452,7 +3464,7 @@
     //    (MASSNUR, LOD1F) einmal bauen, Hülle vermessen, sofort entsorgen.
     //    B trägt die Sonden-Identität (q am Ursprung, hofGap 2.5). ──
     function massBau(p) {
-        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR }), LOD1F);
+        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR, __nurMass: true }), LOD1F);
         var bx = new THREE.Box3().setFromObject(mass.g);
         var B = {
             p: p,
@@ -5264,7 +5276,7 @@
         var fremd = function (x, z, h) {
             for (var j = 0; j < pl.length; j++) {
                 var o = pl[j] && pl[j].obb;
-                if (!o || pl[j] === h.q) continue;
+                if (!o || pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
                 var c = Math.cos(o.phi || 0),
                     s = Math.sin(o.phi || 0);
                 if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
@@ -5375,8 +5387,11 @@
             }
             return null;
         };
+        var kw = wege.map(function (rd) {
+            return wegKasten(rd.pts);
+        });
         var aufWeg = function (x, z, saum) {
-            for (var j = 0; j < wege.length; j++) if (fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
+            for (var j = 0; j < wege.length; j++) if (!fernKasten(x, z, kw[j], wege[j].w / 2 + saum) && fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
             return false;
         };
         // die Flächen der Häuser: der Grundriss und der Gang vom Eingang bis an den Weg (mindestens ORT_GESETZ.vorplatzM)
@@ -5402,8 +5417,8 @@
         }
         var frei = function (x, z) {
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
-            for (var j = 0; j < flaechen.length; j++) if (distPunktOBB(x, z, flaechen[j]) < r) return false;
-            for (j = 0; j < (lay.felder || []).length; j++) if (distPunktOBB(x, z, lay.felder[j]) < r) return false;
+            for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
+            for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
             var nah = function (L, m) {
                 for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
                 return false;
@@ -5419,9 +5434,16 @@
             var b = lay.brunnen[k],
                 stand = frei(b.x, b.z) ? b : null;
             if (!stand) {
-                var nach = raender.slice().sort(function (p1, p2) {
-                    return Math.hypot(p1.x - b.x, p1.z - b.z) - Math.hypot(p2.x - b.x, p2.z - b.z);
-                });
+                var nach = raender
+                    .map(function (p1) {
+                        return [Math.hypot(p1.x - b.x, p1.z - b.z), p1];
+                    })
+                    .sort(function (e1, e2) {
+                        return e1[0] - e2[0];
+                    })
+                    .map(function (e1) {
+                        return e1[1];
+                    });
                 for (a = 0; !stand && a < nach.length; a++) if (frei(nach[a].x, nach[a].z)) stand = nach[a];
             }
             if (stand && stand !== b) aus.gerueckt++;
@@ -5506,6 +5528,25 @@
       else if(stil==='modern'||stil==='glas') col = {putz:0xe9e6df,glas:0x9fb8c4,metall:0x8a8a92,dachmod:0x33363c};
       else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
       return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
+    }
+    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das META-GESETZ von der anderen Seite: dort emergiert die
+    //    Größe eines Hauses aus Personen und Wohlstand, hier wohnen in einem gebauten Haus (die Zeile hp des Plans, `slot.ov`)
+    //    so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
+    //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
+    //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
+    //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
+    //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2 } };
+    function leuteVon(hp) {
+        if (!hp || typeof hp !== "object") return 0;
+        var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
+        if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
+        var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
+        var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
+        if (!(W > 0 && D > 0)) return 1;
+        var fl = W * D * (st >= 1 ? st : 1) * LEUTE_GESETZ.nutz;
+        var jeP = LEUTE_GESETZ.flaeche + LEUTE_GESETZ.wohlFlaeche * wohl;
+        return Math.max(1, Math.min(LEUTE_GESETZ.max, Math.round(fl / jeP)));
     }
 
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
@@ -5613,8 +5654,8 @@
             // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
             // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
             // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
-            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
-            // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
+            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; es wacht
+            // das Golden von gate:settlement Teil N, das den ganzen Export einfriert). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
             roads: lay.roads,
@@ -6265,6 +6306,8 @@
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
+        LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
+        leuteVon: leuteVon,
         DORF: DORF,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,

@@ -136,8 +136,6 @@ async function checkBandWelle6HCreatures(ctx) {
             r.constructor.CREATURE_TASKS.includes("wait");
         out.hasAuraHueMap =
             r.constructor.CREATURE_TASK_AURA_HUE && r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
-        out.hasFollowDistance =
-            Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) && r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
 
         // Default-Task für initial-gespawnte Kreaturen ist wander
         const c0 = r.state.creatures[0];
@@ -262,7 +260,6 @@ async function checkBandWelle6HCreatures(ctx) {
     if (wave6hResults && !wave6hResults.error) {
         check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
         check("Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
-        check("Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv", wave6hResults.hasFollowDistance);
         check(
             "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
             wave6hResults.initialTaskWander

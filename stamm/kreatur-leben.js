@@ -1373,7 +1373,8 @@ class AnazhRealm_kreatur_leben {
     // ihren Boden. Der Fahr-Schritt las die Oberkante der Säule (`getTerrainHeightAt`): unter dem Überhang des Spalts
     // (Fels 22,3–29,5 m, Luft 16–22,3 m) stand der Boden 12 m ÜBER dem Wagen, der Flug-Zweig des Kerns ließ ihn fallen —
     // −6 428 m nach 30 s, durch den Grund bei 16 m. Leser: `_creatureGroundY`, `_creatureSlopeProbe`, `_kreaturStossSchritt`,
-    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`. gate:fall-waechter (Q) nennt
+    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`, die Geburt eines Bewohners
+    // (`_bewohnerGeburt`). gate:fall-waechter (Q) nennt
     // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
     // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
     _koerperBodenUnter(x, yRef, z) {

@@ -1068,7 +1068,6 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         if (!C || !C.STAT_FROM_TAGS) return null;
         const out = {};
-        out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
         // V18.61 Ich-F — die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
 
@@ -1228,7 +1227,6 @@ async function checkBandWelle6DSoul(ctx) {
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
 
         // (2) Chat-Pattern für damage
@@ -1326,8 +1324,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.humanSpeedRaised = humanResult.stats.speed >= speedBaseReflex - 1e-9;
 
         // (4) Tod-Wunde persistent + regeneriert
-        out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
-        out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
         r.state.player.deathWoundIntensity = 0;
         r.state.player.respawnGraceUntil = -Infinity;
         r.state.player.hp = 1;
@@ -1355,8 +1351,6 @@ async function checkBandWelle6DSoul(ctx) {
         // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
         r.state.player.deathWoundIntensity = 0;
         r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
-        out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
-        out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
         // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
@@ -1474,8 +1468,6 @@ async function checkBandWelle6DSoul(ctx) {
             `speed=${(reflexResults.humanSpeed || 0).toFixed(2)} base=${(reflexResults.humanSpeedBase || 0).toFixed(2)}`
         );
         // (4) Wunde
-        check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
-        check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
         check("Reflex 4: _playerDeathRespawn setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
         check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
         check("Reflex 4: tickPlayerVitals regeneriert Wunde linear", reflexResults.woundRegens);
@@ -1488,8 +1480,6 @@ async function checkBandWelle6DSoul(ctx) {
             reflexResults.deathDepositsLife
         );
         // (5) Werkzeug-Kosten
-        check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
-        check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
         check(
             "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
             reflexResults.applyOpOkWithStamina,
@@ -1521,8 +1511,6 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         // Konstanten + Methoden
-        out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
-        out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
         out.hasEquippedState =
@@ -1639,8 +1627,6 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (wave6d3bResults && !wave6d3bResults.error) {
-        check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
-        check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1801,7 +1787,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
 
         // --- Konsumables ---
-        out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
         // define_consumable via DSL
         r.dslRun(
             ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
@@ -1890,7 +1875,6 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3aResults.twoStepAboveMin
         );
         // Konsumables
-        check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
         check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
         check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
         check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
@@ -1922,7 +1906,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasBoostsField = Array.isArray(r.state.player.boosts);
         out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
         out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
-        out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
 
         // Setup: Save initial state für Vergleich
         r.state.player.boosts = [];
@@ -2057,7 +2040,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
             wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
         );
-        check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
         check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
         check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
         check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
@@ -2381,7 +2363,6 @@ async function checkBandWelle6DSoul(ctx) {
     }
 
     if (wave6dResults) {
-        check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
             // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.

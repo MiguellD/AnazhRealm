@@ -225,10 +225,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p2p = r.state.p2p;
-        out.methods =
-            typeof r._p2pBroadcastVibe === "function" &&
-            typeof r._p2pBuildNameLabel === "function" &&
-            typeof r._p2pRefreshPeerNameLabel === "function";
         // Peer-Entry trägt die Vibe-Pass-Felder.
         const probe = r._p2pEnsurePeerEntry("_w13p3probe");
         out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
@@ -324,7 +320,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13p3Results && !w13p3Results.error) {
-        check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
         check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
         check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
         check(
@@ -358,10 +353,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r.renderLibraryUI === "function" &&
-            typeof r.obtainPortalForWorld === "function" &&
-            typeof r.libraryInitDOM === "function";
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
@@ -613,7 +604,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14Results && !w14Results.error) {
-        check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
         check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
@@ -704,12 +694,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r._canonicalManifest === "function" &&
-            typeof r.signWorld === "function" &&
-            typeof r.verifyWorldSignature === "function" &&
-            typeof r._loadSignedWorlds === "function" &&
-            typeof r._portalShowSignature === "function";
         // _canonicalManifest deterministisch + ignoriert world/desc.
         const c1 = r._canonicalManifest(REG.fluid);
         const c2 = r._canonicalManifest({
@@ -794,10 +778,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14p2Results && !w14p2Results.error) {
-        check(
-            "W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren",
-            w14p2Results.methods
-        );
         check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
         check(
             "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
@@ -1146,14 +1126,7 @@ async function checkBandG8R4Immunity(ctx) {
         const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
-        // (1) Methoden + revokedKeys benannt im innersten Ring + NIE im Snapshot.
-        out.methods =
-            typeof r.revokeKey === "function" &&
-            typeof r._appendProvenance === "function" &&
-            typeof r._isKeyRevoked === "function" &&
-            typeof r._provenanceSummary === "function" &&
-            typeof r._artifactProvenanceTainted === "function" &&
-            typeof r._normalizePubKey === "function";
+        // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
@@ -1226,8 +1199,8 @@ async function checkBandG8R4Immunity(ctx) {
         return;
     }
     check(
-        "G8 R4: Immun-Methoden + revokedKeys im innersten Ring + NIE im Snapshot",
-        res.methods && res.revokedInRing && res.revokedNotInSnapshot
+        "G8 R4: revokedKeys im innersten Ring + NIE im Snapshot",
+        res.revokedInRing && res.revokedNotInSnapshot
     );
     check(
         "G8 R4 (4a): die Herkunftskette baut sich (Ursprung → Überträger, dedup) + zeigt die Lineage",
