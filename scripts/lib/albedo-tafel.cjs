@@ -172,12 +172,9 @@ function tafelPruefen(t) {
     return f;
 }
 
-// DER STAND DES ISTS (K63-n4; Prüfer K63 R3: die Wand las die Werte vom 07.10. und stand still grün): je Zeile und Seite die
-// EINE Regel der Soll-Tafel (abnahme-urteil `messStand`, K63-n8): jede Quelle der Zeile gegen den Code-Abdruck, den die Seite
-// beim Messen nahm (`gemessen.welt|labor` { version, sha, quellen } — der `kernStand` des Werkzeugs: jeder Kern und jede
-// Stamm-Zone). Ohne Version, Commit oder Abdruck → `ungeprüft` (ein Bruch der Tafel: das Werkzeug schreibt sie immer); ein
-// fremder Abdruck → `veraltet` „veraltet seit <Commit der Messung>: <Datei> geändert" — eine Kommentarzeile ändert keinen
-// Abdruck, dahinter jeder weitere. `pruefsumme(d)` liest den Baum von heute.
+// DER STAND DES ISTS (K63-n4, K63-n8): je Zeile und Seite die EINE Regel der Soll-Tafel (`messStand`) gegen den `kernStand`
+// der Messung (`gemessen.welt|labor`): ohne Version, Commit oder Abdruck `ungeprüft`, ein fremder Abdruck `veraltet` — jeder
+// fremde beim Namen. `pruefsumme(d)` liest den Baum von heute.
 function tafelStand(t, pruefsumme) {
     const { messStand } = require("./abnahme-urteil.cjs");
     const rot = [];
