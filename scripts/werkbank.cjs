@@ -42,7 +42,7 @@
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
 //                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
-//   node scripts/werkbank.cjs licht --luft [--uhren 0.5,0.27] [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
+//   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
 //                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
@@ -3319,17 +3319,17 @@ async function starte() {
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr
-        // (`--uhren`), das Urteil `luftTiefeUrteil` gegen die externe Referenz spec/farbe/luft-referenz.json.
+        // der Referenz, das Urteil `luftTiefeUrteil` gegen die externe Referenz spec/farbe/luft-referenz.json.
         const LL = require("./lib/licht-linsen.cjs");
         const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β und Kante 21 % beim Namen ROT");
+        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT");
         if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
         let m;
         try {
             await rufe("/umstellen", { ort: opt("--ort", "genesis"), sicht: "ego" });
-            const o = { ref, augeM: 120, uhren: String(opt("--uhren", "0.5,0.27")).split(",").map(Number) };
+            const o = { ref, augeM: 120 };
             const a = await rufe("/eval", { code: `return await (${LL.luftTiefe.toString()})(${JSON.stringify(o)});` });
             m = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
         } finally {
