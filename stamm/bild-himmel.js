@@ -2252,8 +2252,7 @@ class AnazhRealm_bild_himmel {
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
     // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
-    // die jedes Material liest. EINE Rechnung für die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum
-    // leuchten im Licht des Orts); null, solange der Himmel des Orts noch nicht steht.
+    // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2477,15 +2476,13 @@ class AnazhRealm_bild_himmel {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
-        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung); vor der ersten
-        // Bestrahlungs-Tafel (unter dem Ladeschirm) bleibt der Uniform unberührt.
-        const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
+        // Das Licht des Orts für Körper und Schaum ist das Licht der Welt (`_weltLicht`): sein Schreiber folgt der Uhr sofort
+        this._weltLichtTakt();
         // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            if (uniforms.irr && e) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
             // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
             const wu = this.state.windUniforms;

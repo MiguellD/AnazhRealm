@@ -733,17 +733,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
         out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
-        // V10.0-f-1 Doku-Sync: cloudCover-Uniform lebt jetzt als uniform-Knoten
-        // in state.skyboxUniforms (statt material.uniforms). Plus die TSL-
-        // Identität des Materials als Bonus-Probe (isMeshBasicNodeMaterial).
-        out.skyboxHasClouds = !!(
-            r.state.skyboxUniforms &&
-            r.state.skyboxUniforms.cloudCover &&
-            r.state.skybox &&
-            r.state.skybox.material &&
-            r.state.skybox.material.isMeshBasicNodeMaterial === true
-        );
-        // Wolken-Cover folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
+        // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
         r.state.weatherTransition = null;
         r.state.weather = "rainy";
@@ -754,9 +744,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
-        // V17.2 — der gemalte Wolkenhimmel: sunDir-Uniform (Glow) + FBM-Struktur.
-        const sd = r.state.skyboxUniforms.sunDir;
-        out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
         // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
         // KONSUM: nach fernem Kamera-Teleport steht die Sonne nahe der Kamera (in Himmelsrichtung),
         // nicht um den Welt-Ursprung.
@@ -922,9 +909,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
-        check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-        check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
             v828Results.sunFollowsCamera
@@ -1181,109 +1166,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
 
-    // ### V8.30 — Schnittstellen-Politur (Sterne-Tiefe, Avatar,
-    // Wasser-Wellen, Wasser-Physik) ###
+    // ### V8.30 — die Sterne testen gegen den Tiefenpuffer (kein Overlay mehr). Die Existenz-Proben des Wasser-Stoffs (sunDir,
+    // emotion, minDepth, keine Fog-Uniforms, das Augen-Flag) fielen mit Licht K3: sein Verhalten fahren die Wasser-Linse und der
+    // Lichtweg (`werkbank licht --laub wasser`) im Bild ###
     const v830Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-        // Sterne testen gegen den Tiefenpuffer (kein Overlay mehr)
-        out.starsDepthTest = !!(
-            r.state.starField &&
-            r.state.starField.material &&
-            r.state.starField.material.depthTest === true
-        );
-
-        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
-        // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
-        out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
-        // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
-        out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
-        // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + Default + Source-Probe.
-        out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
-        // Nur endlich + ≥ 0 prüfen: der Default lebt in state.atmosphere.waterCull und ist live justierbar.
-        out.waterMinDepthValueOk = !!(
-            r.state.hydroSurfaceUniforms &&
-            r.state.hydroSurfaceUniforms.minDepth &&
-            Number.isFinite(r.state.hydroSurfaceUniforms.minDepth.value) &&
-            r.state.hydroSurfaceUniforms.minDepth.value >= 0
-        );
-        // V13.9.2: der Wert ist live über setWaterCull(minDepth) justierbar +
-        // persistiert in state.atmosphere.waterCull.
-
-        return out;
+        const sf = window.anazhRealm.state.starField;
+        return { starsDepthTest: !!(sf && sf.material && sf.material.depthTest === true) };
     });
-
-    if (v830Results && !v830Results.error) {
-        check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
-        check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
-        check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
-        check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
-        check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
-    } else {
-        check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
-    }
-
-    // ### V8.31 — Fog an die Custom-Shader + heterogenere Wasser-Wellen ###
-    const v831Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-        // V10.0-f-4 Doku-Sync: Wasser-Uniforms in state.hydroSurfaceUniforms,
-        // Source-Patterns im _ensureHydroSurfaceMaterial-Builder.
-        const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        if (wm) {
-            // V18.530: das Wasser trägt KEINEN eigenen Nebel mehr — die EINE Luft (scene.fogNode) dunstet es wie
-            // jedes Material (mat.fog), die Fog-Uniforms sind fort.
-            out.waterFogUniforms = !!(
-                r.state.hydroSurfaceUniforms &&
-                r.state.hydroSurfaceUniforms.fogColor === undefined &&
-                r.state.hydroSurfaceUniforms.fogNear === undefined &&
-                wm.fog !== false &&
-                r.state.scene.fogNode
-            );
-            // Kein Wasser-eigener Nebel-Mix mehr im Builder (die Luft ist EINE).
-            out.waterFogInShader = window.__fehlt(r._ensureHydroSurfaceMaterial, /uFogNear|uFogFar|uFogColor/);
-        }
-
-        return out;
-    });
-
-    if (v831Results && !v831Results.error) {
-        check(
-            "V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)",
-            v831Results.waterFogUniforms
-        );
-        check("V8.31 → V18.530: kein Wasser-eigener Nebel-Mix im Builder", v831Results.waterFogInShader);
-    } else {
-        check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
-    }
-
-    // ### V8.32 — Tauch-Tint nur bei Augen-unter-Wasser + Wasser-Fresnel ###
-    const v832Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-        // Getrennte Flags: playerUnderwater (Körper) vs.
-        // playerEyesUnderwater (Augen/Tauchen).
-        out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-
-        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
-
-        // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
-        out.fogSliderTo300 = !document.getElementById("slider-fog");
-        out.fogDistanceTo3 = r.setFogDistance === undefined;
-
-        return out;
-    });
-
-    if (v832Results && !v832Results.error) {
-        check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
-        check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
-        check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
-    } else {
-        check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
-    }
+    check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", !!(v830Results && v830Results.starsDepthTest), v830Results && v830Results.error);
 
     // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
     const v833Results = await safeEvaluate(page, () => {
@@ -1410,8 +1300,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
 
             // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
-            // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
-            out.fogTripleRange = r.setFogDistance === undefined;
+            // trägt den Beweis (persistiertes Datum, Slider-Verdrahtung; den Setter prüft V8.28).
             out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
             out.fogHandlerTriples = window.__fehlt(r.slidersInitDOM, /slider-fog/);
 
@@ -1427,7 +1316,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
         check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
         check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
         check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);

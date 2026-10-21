@@ -1762,12 +1762,7 @@ function laubGegenlicht(opts) {
                 const stufeJetzt = opts.boden ? (opts.karte === 1 ? "bodenSatz" : "fern-ring") : opts.haus ? "f:" + ziel.preset + ":L" + ziel.e._lodLevel : r._taeterKlasse(ziel.o);
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: stufeJetzt, ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
-                const lab = (rgb) => {
-                    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-                    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
-                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
-                    return { Y: +Y.toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
-                };
+                const lab = window.__lab;
                 if (opts.boden) {
                     const mittel = (x, m = x.maske.reduce((s, v) => s + v, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
@@ -1934,18 +1929,26 @@ function laubGegenlicht(opts) {
     })();
 }
 
+// Linear-RGB → Luma Y, L*, C*ab (D65): die Farb-Zahl jeder Karten- und Weg-Zeile
+function lab(rgb) {
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
+    return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+}
+
 // DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %, waagrecht) im Licht der Welt-Stoffe (die Karte der Licht-Bilanz) und
-// im Licht eines Wegs, der sein Licht selbst rechnet — `panorama` (seine Textur grau), `wasser` (der Körper: das Bild mit minus
+// im Licht eines Wegs, der sein Licht selbst rechnet — `panorama` (seine Textur grau), `feld` (ein grauer Kasten im Welt-March),
+// `wasser` (der Körper: das Bild mit minus
 // ohne sein Licht, ÷ R∞; Himmel und Glanz heben sich auf) — je Stunde, ohne Luft und Schatten; eine Zeile der Ferne (`paar`).
 function lichtWeg(opts) {
     return (async () => {
-        const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass, HU = st.hydroSurfaceUniforms;
+        const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
         await r._himmelFrisch();
-        if (!fp || !HU) return { fehler: "kein Feld-Pass oder kein Wasser-Stoff" };
-        r._feldLichtSync(fp.U);
+        if (!fp) return { fehler: "kein Feld-Pass" };
+        r._weltLichtTakt();
         const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
         const W = 32, rt = new T.RenderTarget(W, W, { depthBuffer: true, type: T.HalfFloatType }), alle = [], dl = st.directionalLight, wurf = dl.castShadow;
         sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
@@ -1973,11 +1976,7 @@ function lichtWeg(opts) {
             for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;
             return s;
         };
-        const lab = (c) => {
-            const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116), [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
-            return { Y: +(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
-        };
-        const panoAlt = fp.panoDaten.slice(), irrAlt = HU.irr.value.clone();
+        const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => u.value.clone());
         try {
             dl.castShadow = false;
             if (luftU) luftU.beta.value = 0;
@@ -2029,17 +2028,17 @@ function lichtWeg(opts) {
                 weg = await lies(fp.march, unten).finally(() => r._weltFeldFrei(h));
             } else {
                 const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
-                HU.irr.value.setRGB(0, 0, 0);
+                WL.forEach((u) => u.value.setScalar(0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
             }
-            const [lw, lk] = [lab(welt), lab(weg)];
+            const [lw, lk] = [window.__lab(welt), window.__lab(weg)];
             return { art: opts.weg, stufe: "welt-stoff → " + opts.weg, paar: "weg/welt", karte: { gestalt: lw, karte: lk, verhaeltnis: +(lk.Y / lw.Y).toFixed(3), dL: +(lk.L - lw.L).toFixed(2), dC: +(lk.C - lw.C).toFixed(2) } };
         } finally {
             fp.panoDaten.set(panoAlt);
             fp.panoFlug = false;
             fp.panoTex.needsUpdate = true;
-            HU.irr.value.copy(irrAlt);
+            WL.forEach((u, i) => u.value.copy(wlAlt[i]));
             for (const [m, v] of alle) m.visible = v;
             sc.remove(karte, see);
             karte.geometry.dispose();
@@ -2180,7 +2179,8 @@ module.exports = {
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};` +
         `window.__tagKurve = ${tagKurve.toString()};` +
-        `window.__lichtWeg = ${lichtWeg.toString()};`,
+        `window.__lichtWeg = ${lichtWeg.toString()};` +
+        `window.__lab = ${lab.toString()};`,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,

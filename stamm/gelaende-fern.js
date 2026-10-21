@@ -924,11 +924,11 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
-    // des Wasser-Stoffs (`hydroSurfaceUniforms`, EIN Schreiber `_dayNightApplyWaterMaterials`). Ohne Wasser-Stoff bricht er laut.
+    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`). Ohne Wasser-Stoff bricht er laut.
     _fernWasserBlickNode(_T) {
         this._ensureHydroSurfaceMaterial();
         const U = this.state.hydroSurfaceUniforms;
-        if (!U || !U.irr || !U.sunCol || !U.sunDir || !U.light)
+        if (!U || !U.sunCol || !U.sunDir || !U.light)
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
@@ -938,7 +938,7 @@ class AnazhRealm_gelaende_fern {
             viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
             T: _T.float(0.0),
             koerper: _T.vec3(...this._fernWasserKoerper()),
-            irr: U.irr,
+            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0)),
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,

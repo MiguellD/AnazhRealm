@@ -1358,6 +1358,8 @@ class AnazhRealm_dirigent_takt {
             this.state.skyboxUniforms.time.value = bildZeit;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time)
             this.state.hydroSurfaceUniforms.time.value = bildZeit;
+        // DAS LICHT DER WELT am Bild (`_weltLicht`): Spiegel, Wasser, Feld und Panorama lesen die Lichter dieses Bilds
+        this._weltLichtTakt();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
         // Kontinuierlicher Böen-Drift (Math.random-frei): layered-sine auf der Bild-Uhr (~±18 % um die Wort-Basis), ein

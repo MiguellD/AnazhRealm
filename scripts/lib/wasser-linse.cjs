@@ -1073,11 +1073,11 @@ function wasserBild(opts) {
         // trug die Probe ein anderes Gefühl — zwei Zustände (ruhig hell 0,9 % oder 6,7 %), je Lauf, nie je Adapter.
         const gefuehlAlt = U.emotion ? U.emotion.value : null;
         if (U.emotion) U.emotion.value = 0;
-        const irrAlt = U.irr.value.clone();
+        const WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => u.value.clone());
         const lichtAlt = U.light.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
-            U.irr.value.setRGB(1, 1, 1);
+            WL.forEach((u, i) => u.value.setScalar(i === 2 ? Math.PI : 0)); // das Licht der Welt E/π = 1 (allein Ambient π)
             U.light.value = 0;
             // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
             // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
@@ -1151,7 +1151,7 @@ function wasserBild(opts) {
         } finally {
             if (U.wind) U.wind.value = windAlt;
             U.time.value = zeitAlt;
-            U.irr.value.copy(irrAlt);
+            WL.forEach((u, i) => u.value.copy(wlAlt[i]));
             U.light.value = lichtAlt;
             himmelMittag(tagAlt, weltTagAlt);
             if (U.emotion) U.emotion.value = gefuehlAlt;

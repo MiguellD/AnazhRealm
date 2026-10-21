@@ -989,8 +989,8 @@ class AnazhRealm {
     }
 
     // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
-    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
-    // Sonne) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht der Welt (`_weltLicht`)
+    // und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
     _spiegelPassWach(L) {
         const st = this.state;
         const K = AnazhRealm.SPIEGEL;
@@ -1000,19 +1000,21 @@ class AnazhRealm {
         const m = this._spiegelZielMass();
         let sig = L.sig;
         if (!sig) {
-            const HU = st.hydroSurfaceUniforms;
             const lu = st.luft && st.luft.U;
             sig = L.sig = {
-                neu: new Float64Array(32),
-                alt: new Float64Array(32),
+                neu: new Float64Array(64),
+                alt: new Float64Array(64),
                 da: false,
                 zeit: 0,
                 bilder: 0,
                 k: 0,
                 proj: [0, 5, 8, 9, 10, 14],
-                licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
-                    Boolean
-                ),
+                licht: [
+                    ...Object.values(this._weltLicht().U),
+                    lu && lu.farbe,
+                    lu && lu.sonneFarbe,
+                    lu && lu.beta,
+                ].filter(Boolean),
             };
         }
         const v = sig.neu;

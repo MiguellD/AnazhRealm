@@ -3420,6 +3420,7 @@ async function starte() {
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
             await ein();
             // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
+            // — auch der Boden: Boden-Satz und Fern-Ring aus dem fernen Auge der Naht (zwei Augen maßen den Blickwinkel mit, Licht K3)
             const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
             // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
             // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
