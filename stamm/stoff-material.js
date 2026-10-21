@@ -1516,7 +1516,10 @@ class AnazhRealm_stoff_material {
             const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
             unter = unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z)));
         }
-        this._naesseHimmelK = T.float(1).sub(unter);
+        // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
+        // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
+        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
+        this._naesseHimmelK = T.select(nass, T.float(1).sub(unter), T.float(0));
         return this._naesseHimmelK;
     }
 
