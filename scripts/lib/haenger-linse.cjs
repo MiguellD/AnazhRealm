@@ -20,9 +20,7 @@
 //
 //   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken und das LoAF-Ohr laufen nur, solange ein Lauf misst)
 //              der Lauf ist `werkbank lauf` (`k.haenger`): je Takt Beginn, Ende, Leine, Geräte-Aufträge → Rohdaten (Takte, LoAF)
-//   Werkbank:  node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten]
-//                                               [--wandern kreis] [--schwelle ms] [--probe] [--json datei]
-//              node scripts/werkbank.cjs haenger --selbsttest     (ohne Welt: die Auswertung gegen erfundene Hänger)
+//   Werkbank:  `haenger` und `takt` (die Takt-Spitze, unten) — Aufruf in der Hilfe von scripts/werkbank.cjs;
 //   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (250 ms im Takt in `__haengerProbeTakt`,
 //   250 ms neben dem Takt in `__haengerProbeNeben`) — die Linse muss beide beim Namen nennen, sonst Exit 1.
 const stammLib = require("./stamm.cjs");
@@ -252,15 +250,7 @@ function profilLesen(p) {
         return s;
     };
     const fnName = (id) => knoten.get(id).n.callFrame.functionName || "";
-    return {
-        knoten,
-        zeiten,
-        samples: p.samples,
-        name,
-        stapel,
-        fnName,
-        intervallUs: p.samples.length > 1 ? (p.endTime - p.startTime) / p.samples.length : 1000,
-    };
+    return { zeiten, samples: p.samples, name, stapel, fnName };
 }
 
 // Die Eichung: die Proben der Eichmarke legen den Profiler-Takt (µs) auf die Seiten-Uhr (ms).
@@ -278,6 +268,28 @@ function eichen(P, eich) {
     const drift = spaet != null && eich[1] != null ? +((spaet - eich[1] * 1000 - versatz) / 1000).toFixed(2) : null;
     return { versatzUs: versatz, driftMs: drift, treffer: treffer.length };
 }
+// Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
+function quantil(werte) {
+    const s = werte.slice().sort((x, y) => x - y);
+    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
+    return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
+}
+// Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms, geeicht).
+function probenIn(P, eich, von, bis) {
+    if (!P || !eich) return [];
+    const lo = von * 1000 + eich.versatzUs,
+        hi = bis * 1000 + eich.versatzUs;
+    let a0 = 0,
+        b0 = P.zeiten.length;
+    while (a0 < b0) {
+        const m = (a0 + b0) >> 1;
+        if (P.zeiten[m] < lo) a0 = m + 1;
+        else b0 = m;
+    }
+    const out = [];
+    for (let s = a0; s < P.zeiten.length && P.zeiten[s] < hi; s++) out.push(P.samples[s]);
+    return out;
+}
 
 // Die Engstelle einer Proben-Menge über die NAMEN der Rahmen (V8 legt dieselbe Funktion je Code-Stufe — Bytecode,
 // optimiert — als Geschwister-Knoten an; über Knoten-Nummern zerfiel ein Pfad in Hälften unter der Schwelle): der Pfad
@@ -285,28 +297,26 @@ function eichen(P, eich) {
 // Renderers und der Werkbank, die Spiel-Schleife); endet er in einer Hülle, ist die Last VERTEILT und die drei
 // schwersten Zweige stehen beim Namen. Dazu die teuersten Selbst-Funktionen.
 const HUELLE = /^(loop|_gameLoopTick)$|^\(anonym\) \[werkbank[:\]]/;
+// Der Baum der Rahmen-Namen unter der Hülle (alles bis zum letzten Hüllen-Rahmen fällt: über dem Takt liegt nur
+// Verteilung), je Probe das Gewicht g, dazu die Selbst-Rahmen — die Engstelle und die Takt-Spitze lesen ihn.
+function rahmenBaum(P, ids, g = 1, wurzel = { n: 0, k: new Map() }, selbst = new Map()) {
+    for (const leaf of ids) {
+        const namen = P.stapel(leaf).map((id) => P.name(id));
+        let knot = wurzel;
+        wurzel.n += g;
+        for (let x = namen.findLastIndex((nm) => HUELLE.test(nm)) + 1; x < namen.length; x++) {
+            if (namen[x] === "(root)") continue;
+            if (!knot.k.has(namen[x])) knot.k.set(namen[x], { n: 0, k: new Map() });
+            (knot = knot.k.get(namen[x])).n += g;
+        }
+        selbst.set(namen[namen.length - 1], (selbst.get(namen[namen.length - 1]) || 0) + g);
+    }
+    return { wurzel, selbst };
+}
 function engstelle(P, ids, anteil) {
     const n = ids.length;
     if (!n) return { pfad: [], zweige: [], selbst: [] };
-    const wurzel = { n: 0, k: new Map() };
-    const selbst = new Map();
-    for (const leaf of ids) {
-        const namen = P.stapel(leaf).map((id) => P.name(id));
-        // die Hüllen-Spitze: alles bis zum letzten Hüllen-Rahmen fällt (über dem Takt liegt nur Verteilung)
-        let ab = 0;
-        for (let x = 0; x < namen.length; x++) if (HUELLE.test(namen[x])) ab = x + 1;
-        let knot = wurzel;
-        wurzel.n++;
-        for (let x = ab; x < namen.length; x++) {
-            if (namen[x] === "(root)") continue;
-            let c = knot.k.get(namen[x]);
-            if (!c) knot.k.set(namen[x], (c = { n: 0, k: new Map() }));
-            c.n++;
-            knot = c;
-        }
-        const s = namen[namen.length - 1];
-        selbst.set(s, (selbst.get(s) || 0) + 1);
-    }
+    const { wurzel, selbst } = rahmenBaum(P, ids);
     const pct = (c) => Math.round((100 * c) / n);
     const pfad = [];
     let knot = wurzel;
@@ -376,22 +386,7 @@ function haengerAuswerten(roh, profil, opts) {
     for (let q = 1; q < nT; q++) abst.push(T.c0[q] - T.c0[q - 1]);
     abst.sort((x, y) => x - y);
     const periode = abst.length ? abst[abst.length >> 1] : 16.7;
-    // die Proben-Indizes im Seiten-Zeit-Bereich [von, bis)
-    const proben = (von, bis) => {
-        if (!P || !eich) return [];
-        const lo = von * 1000 + eich.versatzUs,
-            hi = bis * 1000 + eich.versatzUs;
-        let a0 = 0,
-            b0 = P.zeiten.length;
-        while (a0 < b0) {
-            const m = (a0 + b0) >> 1;
-            if (P.zeiten[m] < lo) a0 = m + 1;
-            else b0 = m;
-        }
-        const out = [];
-        for (let s = a0; s < P.zeiten.length && P.zeiten[s] < hi; s++) out.push(P.samples[s]);
-        return out;
-    };
+    const proben = (von, bis) => probenIn(P, eich, von, bis);
     const gerendert = [];
     for (let i = 0; i < nT; i++) if (T.g[i]) gerendert.push(i);
     const dts = [];
@@ -518,9 +513,6 @@ function haengerAuswerten(roh, profil, opts) {
         e.maxMs = Math.max(e.maxMs, h.dt);
         jeUrsache.set(h.ursache, e);
     }
-    const sortiert = dts.slice().sort((x, y) => x - y);
-    const q = (p) =>
-        sortiert.length ? +sortiert[Math.min(sortiert.length - 1, Math.floor(p * sortiert.length))].toFixed(1) : null;
     // die Probe: jede geschmuggelte Last muss als Hänger mit ihrem Namen erscheinen
     const probe = (roh.probe || []).map((p) => {
         const soll = p.art === "takt" ? "__haengerProbeTakt" : "__haengerProbeNeben";
@@ -573,7 +565,7 @@ function haengerAuswerten(roh, profil, opts) {
         knotenBau,
         bildTaktMs: +periode.toFixed(1),
         frames: gerendert.length,
-        frameMs: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) },
+        frameMs: quantil(dts).zahl,
         haengerN: haenger.length,
         jeKlasse: Object.fromEntries(KLASSEN.map((kl) => [kl, haenger.filter((h) => h.klasse === kl).length])),
         jeUrsache: [...jeUrsache.values()]
@@ -587,7 +579,7 @@ function haengerAuswerten(roh, profil, opts) {
         lauf: {
             regler: roh.k && roh.k.regler,
             tiere: roh.k && roh.k.tiere,
-            wandern: roh.k && roh.k.wandern,
+            wandern: roh.bahn ? "bahn" : "aus",
             kreaturen: roh.kreaturen,
             chunks: roh.chunks,
             loadScale: roh.loadScale,
@@ -616,7 +608,7 @@ function haengerTabelle(a) {
             KLASSEN.map((k) => `${k} ${a.jeKlasse[k]}`).join(" · ")
     );
     z.push(
-        `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern || "aus"} · ` +
+        `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern} · ` +
             `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Profil ${a.profil ? "ja" : "NEIN"}` +
             (a.eichung ? ` (Eich-Drift ${a.eichung.driftMs} ms)` : "") +
             ` · LoAF ${a.loafDa ? "ja" : "nein"}`
@@ -693,7 +685,7 @@ function selbsttest() {
     knoten(1, "(root)", "", [2, 6, 7, 9, 10, 12]);
     knoten(2, "", "werkbank", [3]);
     // V8 legt dieselbe Funktion je Code-Stufe als Geschwister an (13/14 neben 4/5) — die Engstelle muss sie vereinen
-    knoten(3, "_gameLoopTick", "http://x/stamm/dirigent-takt.js", [4, 11, 13, 15, 16, 17]);
+    knoten(3, "_gameLoopTick", "http://x/stamm/dirigent-takt.js", [4, 11, 13, 15, 16, 17, 18]);
     knoten(4, "_loopRender", "http://x/stamm/dirigent-takt.js", [5]);
     knoten(5, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
     knoten(6, "(idle)", "");
@@ -708,6 +700,7 @@ function selbsttest() {
     knoten(15, "_teilA", "http://x/stamm/dirigent-takt.js");
     knoten(16, "_teilB", "http://x/stamm/dirigent-takt.js");
     knoten(17, "_teilC", "http://x/stamm/dirigent-takt.js");
+    knoten(18, "_spitzenLast", "http://x/stamm/dirigent-takt.js");
     // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Profiler-Uhr = Seite + 5 000 000 µs
     const V = 5e9 / 1000; // 5 000 000 µs
     const samples = [],
@@ -789,6 +782,16 @@ function selbsttest() {
         takt(4);
         luecke(t + 16.7);
     }
+    // DIE TAKT-SPITZE: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last steht als Täter mit
+    // 3 ms, A mit 2 ms, ROT über Band 6; ohne Last GRÜN ohne Befund
+    const spitzen = [0, 3].map((last) => {
+        const von = T.t.length;
+        for (let i = 0; i < 200; i++) {
+            takt(i % 10 === 9 ? 5 + last : 5, [15, 15, 16, 17, 17, 18, 18, 18]);
+            luecke(t + 16.7);
+        }
+        return Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von)]));
+    });
     const ende = t;
     for (let x = ende + 5; x < ende + 13; x++) probe(x, 10);
     const profil = { nodes, startTime: V + 989 * 1000, endTime: letzte, samples, timeDeltas: deltas };
@@ -837,18 +840,142 @@ function selbsttest() {
         f.push("ohne Profil: Takt-Hänger nicht als TAKT gezählt");
     if (!haengerLinsenBefunde(ohne).length)
         f.push("ohne Profil meldet die Linse keinen Befund (sie wäre blind und grün)");
+    spitzen.forEach((takte, last) => {
+        const sp = spitzenAuswerten({ takte, eich: roh.eich }, profil, 6);
+        const nennt = (re, ms) => sp.taeter.some((x) => re.test(x.name) && Math.abs(x.spitzeMs - ms) < 0.3);
+        if (last && (sp.urteil !== "ROT" || !nennt(/^_spitzenLast$/, 3) || !nennt(/^_teilA$/, 2)))
+            f.push(`Spitze: 3 ms je 10. Takt nicht ROT beim Namen:\n${spitzenTabelle(sp)}`);
+        if (!last && spitzenBefunde(sp).length) f.push(`Spitze: ohne Last nicht GRÜN:\n${spitzenTabelle(sp)}`);
+    });
     return f;
 }
 
+// ── DIE TAKT-SPITZE (Profi-Band K1/K2 + PFLICHT E in Bewegung) ─────────────────────────────────────────────────────────
+// Befund OMEN Serie 1 (GTX, 21.10.): CPU-Takt p95 Genesis Third steht 5,78 ms, geht 19,7 ms — keine Linse nannte, WER die
+// Spitzen-Takte des Gehens trägt. Der echte Lauf geht die Bahn der OMEN-Zellen (`__taktBahn`: 4 m/s geradeaus −z 0 → −60 m
+// und zurück, im Takt über `tickAffordances`) unter dem Profiler; die gerenderten Takte ab p95 (wie `lauf` cpuTaktMs) und die
+// der Mitte (p40–p60) zerfallen je Rahmen-Pfad unter der Spiel-Schleife (die Proben im Takt-Fenster teilen seine CPU-Zeit).
+// Täter: jeder Rahmen, der in den Spitzen ≥ 1 ms trägt, ohne dass ein Kind ≥ 1 ms es erklärt. ROT über dem Band (K2: 8 ms).
+function taktBahn(an) {
+    const r = window.anazhRealm,
+        g0 = window.__taktGeher,
+        pm = r.state.playerMesh.position;
+    // das Ende stellt an den Anfang zurück: jeder Gang einer Sitzung geht dieselbe Bahn
+    if (g0) {
+        delete r.tickAffordances;
+        window.__taktGeher = null;
+        pm.set(g0.x, pm.y, g0.z);
+    }
+    if (!an) return g0 && { wegM: Math.round(g0.weg), wege: g0.wege };
+    const P = Object.getPrototypeOf(r);
+    const g = (window.__taktGeher = { x: pm.x, z: pm.z, s: 0, dir: -1, wege: 0, weg: 0 });
+    r.tickAffordances = function (dt) {
+        if (Number.isFinite(dt) && dt > 0) {
+            const s0 = g.s;
+            g.s = Math.max(-60, Math.min(0, g.s + g.dir * 4 * Math.min(dt, 0.1)));
+            if (g.s === -60 || g.s === 0) {
+                g.dir = g.s === 0 ? -1 : 1;
+                g.wege++;
+            }
+            g.weg += Math.abs(g.s - s0);
+            pm.set(g.x, pm.y, g.z + g.s);
+        }
+        return P.tickAffordances.call(this, dt);
+    };
+}
+
+function spitzenAuswerten(roh, profil, band) {
+    const T = roh.takte,
+        P = profil ? profilLesen(profil) : null,
+        eich = P ? eichen(P, roh.eich) : null;
+    const cpu = (i) => T.c1[i] - T.c0[i];
+    const ids = [...T.t.keys()].filter((i) => T.g[i]);
+    const q = quantil(ids.map(cpu));
+    const r2 = (x) => +x.toFixed(2);
+    const gruppe = (lo, hi) => ids.filter((i) => cpu(i) >= lo && cpu(i) <= hi);
+    const spitze = gruppe(q(0.95), Infinity);
+    let gedeckt = 0;
+    // der Rahmen-Baum je Gruppe: jede Probe trägt cpu / Proben ihres Takts, je Takt gemittelt (ms)
+    const baum = (gr) => {
+        const w = { n: 0, k: new Map() };
+        for (const i of gr) {
+            const s = probenIn(P, eich, T.c0[i], T.c1[i]);
+            gedeckt += gr === spitze && s.length ? 1 : 0;
+            rahmenBaum(P, s, cpu(i) / s.length / gr.length, w);
+        }
+        return w;
+    };
+    const zeilen = [],
+        taeter = [];
+    const geh = (k, km, pfad) => {
+        let rest = k.n,
+            restM = km ? km.n : 0;
+        for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= 1).sort((a, b) => b[1].n - a[1].n)) {
+            const cm = km && km.k.get(nm);
+            zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
+            rest -= c.n;
+            restM -= cm ? cm.n : 0;
+            geh(c, cm, pfad.concat(nm));
+        }
+        // was kein Kind ≥ 1 ms erklärt, trägt der Rahmen selbst (verteilt oder Selbst-Zeit)
+        const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
+        if (pfad.length && rest >= 1) taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
+    };
+    geh(baum(spitze), baum(gruppe(q(0.4), q(0.6))), []);
+    taeter.sort((a, b) => b.spitzeMs - a.spitzeMs);
+    const urteil = q(0.95) > band ? "ROT" : "GRÜN";
+    const lauf = { bahn: roh.bahn || null, loadScale: roh.loadScale, chunks: roh.chunks };
+    return {
+        band,
+        cpuMs: q.zahl,
+        spitzeN: spitze.length,
+        takte: ids.length,
+        gedeckt,
+        profil: !!P,
+        eichung: eich,
+        zeilen,
+        taeter,
+        urteil,
+        lauf,
+    };
+}
+// Blind ohne Profil, ohne Eichung oder mit ungedeckten Spitzen-Takten — ROT über dem Band, mit den Tätern.
+function spitzenBefunde(a) {
+    const b = haengerLinsenBefunde(a);
+    if (a.gedeckt < 0.9 * a.spitzeN) b.push(`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`);
+    const t = a.taeter.map((x) => `${x.name} ${x.spitzeMs} ms (Mitte ${x.mitteMs})`).join(" · ") || "keiner ≥ 1 ms";
+    if (a.urteil === "ROT") b.push(`CPU-Takt p95 ${a.cpuMs.p95} ms > Band ${a.band} ms — Täter: ${t}`);
+    return b;
+}
+function spitzenTabelle(a) {
+    const z = [
+        `TAKT-SPITZE: ${a.takte} gerenderte Takte, CPU-Takt ${JSON.stringify(a.cpuMs)} ms, ${a.spitzeN} ab p95 · ` +
+            `${JSON.stringify(a.lauf)} · Urteil ${a.urteil} (Band ${a.band} ms)`,
+        `  Spitze  Mitte  ms je Takt, Rahmen ≥ 1 ms`,
+        ...a.zeilen.map(
+            (e) =>
+                `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`
+        ),
+        "TÄTER (Spitze · Mitte ms je Takt):",
+    ];
+    return z.concat(a.taeter.map((t) => `  ${t.name}  ${t.spitzeMs} · ${t.mitteMs}`)).join("\n");
+}
+// Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
+function linseWerten(roh, profil, b) {
+    const a = b.spitze
+        ? spitzenAuswerten(roh, profil, Number(b.band) || 8)
+        : haengerAuswerten(roh, profil, { schwelle: Number(b.schwelle) || 100 });
+    const befunde = b.spitze ? spitzenBefunde(a) : haengerLinsenBefunde(a);
+    return Object.assign(a, { befunde, tabelle: b.spitze ? spitzenTabelle(a) : haengerTabelle(a) });
+}
+
 module.exports = {
-    KLASSEN,
-    haengerAuswerten,
-    haengerTabelle,
-    haengerLinsenBefunde,
+    linseWerten,
     selbsttest,
     HAENGER_INSTALL:
         `window.__haengerAn = ${haengerAn.toString()};` +
         `window.__haengerEichmarke = ${haengerEichmarke.toString()};` +
         `window.__haengerProbeTakt = ${__haengerProbeTakt.toString()};` +
-        `window.__haengerProbeNeben = ${__haengerProbeNeben.toString()};`,
+        `window.__haengerProbeNeben = ${__haengerProbeNeben.toString()};` +
+        `window.__taktBahn = ${taktBahn.toString()};`,
 };
