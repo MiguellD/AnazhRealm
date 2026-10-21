@@ -1,0 +1,25 @@
+- [ÜBERGABE NOTBREMSE 21.10.](uebergabe-stand.md) — ZUERST LESEN: koordination UEBERGABE-2026-10-21.md + auftrag/2210-wochenplan.md; main 5951786f, integ 816f26b4; Meisterkarte 29/330; Zweige bewohner, haus-innen, naesse
+- [Klarheits-Audit 16.10.](klarheits-audit.md) — 4/10: README tot, Stamm nach Lage statt Domäne, scripts/ 103k → 223k in 15 Tagen; Plan K1–K6
+- [Arbeitsweise 2.0](arbeitsweise-2.md) — Fehler-Klassen + Regeln (Linse ersetzt Linse, Datei-Besitz, Profil vor Schätzung); großer Pfad G1–G5
+- [Verdichtung](verdichtung.md) — Prüf-Apparat verdichten: Stamm zerlegt, Welt-Boot 153 → 1, Archiv-Wand, Flacker geheilt, Linsen auf der Radeon; offen playtest.cjs, CI-Diät
+- [Genialität](genialitaet.md) — Schöpfer 15.10.: nicht wie die meisten; Sandkasten-Fotorealität skaliert über Kosten am Schirm; Spike vor Bau, Tiefe statt Breite
+- [Vision des Schöpfers](vision-schoepfer.md) — alles prozedural: Haare, Fahrdynamik, Städte durch jedes Jahrhundert, Alexandria, open source; Weg bleibt v1.0 zuerst
+- [Selbst organisieren](selbst-organisieren.md) — volle Vollmacht; keine Fragen/Chips; Budget = Tokens je gemergtem Ergebnis, Vollgas bis 98 %
+- [Auge-Pflicht](auge-pflicht.md) — jede Version im echten Fenster spielen + Bilder senden; Orte, Bühne, Fallen (HUD, Viewport, GPU-Last)
+- [Studio-Vollendung](studio-vollendung.md) — Studios = Gesetzbücher; im Studio auf Weltgrund vollenden, EIN Export; Studio = Modus der Welt-Engine; Prüfbühne
+- [Dirigieren](dirigieren.md) — OMEN Mess- + Werkplatz, Ereignis-Wache, GPU-Schloss, eigener Scratch, voller Playtest je Merge, Kosten-Soll je Linse
+- [Profi-Band-Merge](profiband-merge.md) — Regel: CI 13/13 + voller Playtest + OMEN-ABAB nicht langsamer (auch gehend), dann FF; main 062ec357 (14.10.)
+- [OMEN-Messplatz](omen-messplatz.md) — GTX 1060 per Remote-Control-Sitzung (Name wechselt); GPU = Pixel-Arbeit, Takt + Drossel je Urteil
+- [GPU-Mess-Lehren](gpu-mess-lehren.md) — gpu-bank statt Pass-Stempel, Ruhe + Tiere frei, Port 3000 frei, gleiche Szene oder ≥ 4 Boots je Seite
+- [Werkzeug-Lehren](werkzeug-lehren.md) — Backslash nur per Edit; NIE git stash; NIE SendMessage an Workflow-Agenten; SHAs per ls-remote
+- [Notbremse](notbremse.md) — EINE Regel: bis 98 % VOLLGAS, keine Drosselung; erst bei 98 % TaskStop + notbremse.sh + Übergabe
+- [Lokaler Klon + echte GPU](lokaler-klon-echte-gpu.md) — Arbeits-Klon AnazhRealm-profiband, Radeon 890M per werkbank --echt; gh fehlt
+- [Grok-Prüfer](grok-pruefer.md) — externer KI-Kritiker, Pakete in AnazhRealm-rundgang (nur lesen); stark bei Zwillingen/Spieler-Gefühl, Zahlen oft alt
+- [Richter und Macher](richter-macher.md) — Schöpfer 16.10.: der Prüf-Apparat wurde zu groß; Linsen urteilen Verhalten/Gesetz, nie Text/Wanduhr/Läufer-Zeit; Kraft in Spiel-Karten
+- [Repo öffentlich](repo-oeffentlich.md) — 17.10.: bleibt öffentlich; privat sprengt CI-Minuten (15,7k/24 h vs 2–3k/Monat frei), vorher CI-Diät
+- [Spielgang](spielgang.md) — 17.10.: v1-Pfad als Spieler statt Messbühnen, Station je Domäne; Bug → Gesetz als EINE Funktion
+- [Übergänge unter Bewegung](spieler-uebergaenge.md) — 17.10. Schöpfer fand 6 Brüche (F1–F6: Sicht-Wechsel in Fahrt, hoch bauen, Graben×Wasser, Wiese im Haus, Tempo, Nacht-Fernfarbe); meine Linsen prüfen nur Ruhe/Boden/Mittag → Spieler-Matrix Extreme × Wechselwirkung
+- [Token-Waage](token-waage.md) — 18.10. gemessen: Macher = Schritte × Kontext (~250 × ~400k), Orientierung aus Quelltext (atlas 23× vs grep 556×); Hebel Vorkauen + Phasen-Schnitt + Werkzeug-Hilfe
+- [Macher-Gesetz](macher-gesetz.md) — 20.10. Schöpfer: keine Prüfloops; Macher trägt 8 Gesetze vor dem Push, Prüfer 1 Runde, Karten nach Meisterkarte-Punkten; Meisterkarte-Link neu
+- [Punkte je Token](punkte-je-token.md) — 21.10. Schöpfer: Stunden für +6 Punkte; nur Staffel-Überschreiter, schlank (kein Prüfer-Agent), ≤ 3 Radeon-Karten, Spike nein = stopp
+- [Wochen-Reflexion 21.10.](wochen-reflexion-2110.md) — Drittel-Bilanz 16 → 29/330, schlank 2–3× effizienter, GPU-Schloss als Engpass, Startablauf nächste Woche
