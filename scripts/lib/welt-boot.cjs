@@ -54,10 +54,9 @@ async function weltStehtNach(takt, max) {
     st.perfRegulator = false;
     let n = 0;
     try {
-        for (let k = 0, o; !(n && steht()) && k < (max || 1800); n++) {
+        for (let k = 0; !(n && steht()) && k < (max || 1800); n++) {
             await (takt || window.__seitenTakt)(n);
-            o = r._weltOffen();
-            if (!(o.foundry + o.chunks + o.wald) && !r._bepflanzungWartet()) k++;
+            if (!Object.values(r._weltOffen()).some(Boolean) && !r._bepflanzungWartet()) k++;
             if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
         }
     } finally {
@@ -74,7 +73,7 @@ async function weltStehtNach(takt, max) {
 // (`fertig()`, sonst `_archIsRendered(e)`) — vor jedem Takt ruft `bau(n)` ihn (ein Eintrag ohne `bau`: `_rebuildArchitectureMesh(e)`,
 // der Rewarm-Weg von Hand); `takt(n)` wie oben. `e` ist ein Eintrag oder der NAME dessen, was die Welt bauen soll (ein Asset,
 // eine Stufe, ein Chunk — `fertig` sagt, wann es steht). Der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat
-// (`_weltOffen`: Foundry, Chunks, Wald): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
+// (`_weltOffen`: jedes Feld — Foundry, Chunks, Wald, Karten): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
 // nicht, wirft sie beim Namen.
 async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     const r = window.anazhRealm;
@@ -110,8 +109,8 @@ function deckel(name, max, offen) {
         k = 0;
     return () => {
         const r = window.anazhRealm;
-        const o = r && r._weltOffen ? r._weltOffen() : { foundry: 1, chunks: 0, wald: 0 };
-        if ((offen === false || (!(o.foundry + o.chunks + o.wald) && !(offen && offen()))) && ++k > (max || 120))
+        const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
+        if ((offen === false || (!Object.values(o).some(Boolean) && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
             );
@@ -1060,7 +1059,7 @@ async function selbsttest() {
         return akten.filter((a) => a.seite === id);
     };
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, die Foundry hat solange einen Auftrag offen —
+    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, eine Karte wartet solange auf ihren Bake —
     // das Warten hält; TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
     // REGLER: ein echter Renderer, der Regler atmet je Takt, solange er regelt — das Einschwingen hält ihn in jedem Pfad (die
     // Welt steht nach 30 stillen Takten) und gibt ihn danach frei.
@@ -1074,11 +1073,11 @@ async function selbsttest() {
             _archIsRendered: (e) => !!e.mesh,
         });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
-        r._weltOffen = () => ({ foundry: r.offen, chunks: 0, wald: 0 });
+        r._weltOffen = () => ({ foundry: 0, chunks: 0, wald: 0, karten: r.offen });
         const takt = () => new Promise((ok) => setTimeout(ok, 10));
         const langsam = { type: "langsam", id: 1, ab: performance.now() + 3200 };
         const t0 = performance.now();
-        const takte = await window.__gebautNach(langsam, { max: 5, takt });
+        const takte = await window.__gebautNach(langsam, { max: 5, takt }).catch((x) => x.message);
         const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
         r.offen = 0;
         aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then(
@@ -1134,7 +1133,7 @@ async function selbsttest() {
         ],
         [
             !!bau && bau.langsam.steht && bau.langsam.ms >= 3000,
-            `Bau LANGSAM (3,2 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
+            `Bau LANGSAM (3,2 s, eine Karte offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
         [
             !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
