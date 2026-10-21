@@ -254,30 +254,18 @@ function staticLaws(garage) {
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (
-                f &&
+        await window.__weltDa(() => f &&
                 f.ready &&
                 f.recipes &&
                 f.recipes.gt &&
                 f.recipes.gt.fx &&
                 f.recipes.gt.fx.fahrprofil &&
                 r.state.blueprints &&
-                r.state.blueprints.fahrzeug_gt
-            )
-                break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+                r.state.blueprints.fahrzeug_gt);
         // ===== B-a: das LIVE-Buch je Fahrzeug-Preset =====
         try {
             for (const id in f.recipes) {
@@ -347,12 +335,7 @@ function staticLaws(garage) {
             res.drive = { spawned: !!entry };
             if (entry) {
                 // Studio-Gestalt andocken lassen (der Bau ist async: Flat-Miss → Anfrage → Bau).
-                const dl2 = performance.now() + 45000;
-                while (!entry.instanced && !entry.mesh && performance.now() < dl2) {
-                    r._rebuildArchitectureMesh(entry);
-                    if (entry.instanced || entry.mesh) break;
-                    await new Promise((res3) => setTimeout(res3, 200));
-                }
+                await window.__gebautNach(entry);
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k) => {
@@ -514,12 +497,7 @@ function staticLaws(garage) {
             );
             res.gefuehl.spawned = !!e2;
             if (e2) {
-                const dl3 = performance.now() + 45000;
-                while (!e2.instanced && !e2.mesh && performance.now() < dl3) {
-                    r._rebuildArchitectureMesh(e2);
-                    if (e2.instanced || e2.mesh) break;
-                    await new Promise((res3) => setTimeout(res3, 200));
-                }
+                await window.__gebautNach(e2);
                 r.mountArchitecture(e2);
                 const fzg = r._fahrzeugGesetzFor(e2);
                 const h = fzg.drive.huelle;

@@ -382,10 +382,6 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return E ? E.offen.size : 0;
             });
             if (offen === 0) break;
-            if (Date.now() - t0 > 600000) {
-                log(`nach 600 s noch ${offen} Pipelines offen (${wo})`);
-                break;
-            }
             await new Promise((res) => setTimeout(res, 500));
         }
         const ms = Date.now() - t0;
@@ -437,7 +433,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             letztes = null;
         if (SELBSTTEST_RUHE) await ruf("Selbsttest-Ruhe", () => (window.__selbsttestRuhe = true));
         const t0 = Date.now();
-        while (ruhig < 8 && extra < 80 && Date.now() - t0 < 240000) {
+        while (ruhig < 8 && extra < 80) {
             const b = await frame(`Ruhe-Frame ${extra}`);
             extra++;
             ruhig = b.tot === stand && b.erst === erstStand && b.offen === 0 ? ruhig + 1 : 0;

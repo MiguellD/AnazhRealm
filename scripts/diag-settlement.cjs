@@ -461,10 +461,7 @@ async function gtDorfweg(v2, anker, sek) {
             { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "k10-gt-dorfweg" }
         );
         if (!e) return Object.assign(res, { err: "kein GT" });
-        for (let i = 0; i < 60 && !e.instanced && !e.mesh; i++) {
-            r._rebuildArchitectureMesh(e);
-            await new Promise((ok) => setTimeout(ok, 50));
-        }
+        await window.__gebautNach(e, { takt: frame });
         ereignis("keydown", "e");
         ereignis("keyup", "e");
         frame();
@@ -712,13 +709,7 @@ const FIXTURES = [
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
             const z = await page.evaluate(async (s) => {
                 const dl = performance.now() + 90000;
-                while (performance.now() < dl) {
-                    const r0 = window.anazhRealm;
-                    const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null;
-                    if (f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch)
-                        break;
-                    await new Promise((ok) => setTimeout(ok, 100));
-                }
+                await window.__weltDa(() => { const r0 = window.anazhRealm; const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null; return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch; });
                 const r = window.anazhRealm;
                 const out = {
                     arten: {},
@@ -1412,19 +1403,11 @@ const FIXTURES = [
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.alemannisch) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
         // 1) Der Export durch den EINEN Worker (Timeout-bewacht — massBau × Häuser braucht Sekunden).
         const plan = await Promise.race([
@@ -1944,12 +1927,11 @@ const FIXTURES = [
                         const hook0 = window.__anazhAutoSettlement;
                         window.__anazhAutoSettlement = true;
                         try {
-                            const t0 = performance.now();
                             for (let still = 0; still <= r.constructor.AUTO_SETTLEMENT.drosselTakte; ) {
                                 const vor = leer();
                                 r._tickAutoSettlement(pm.position);
                                 const q = r._autoSettlementQueue;
-                                if ((cells()[zelle] && !(q && q.cellKey === zelle)) || performance.now() - t0 > 300000) break;
+                                if (cells()[zelle] && !(q && q.cellKey === zelle)) break;
                                 still = vor && leer() ? still + 1 : 0;
                                 await new Promise((ok) => setTimeout(ok, 20));
                             }

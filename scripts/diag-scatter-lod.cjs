@@ -59,21 +59,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function"));
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 60000;
-        while (performance.now() < dl1) {
-            if (f && f.ready) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
         // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
@@ -85,16 +76,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             r._tickWaldPlan(Infinity);
             r._tickScatterStreaming(pm);
         };
-        const dl2 = performance.now() + 45000;
         let cells = 0;
-        while (performance.now() < dl2) {
-            streuTakt();
+        const zellen = () => {
             const map = r.state.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
-            if (cells > 40 && r._streuWartet(pm) === 0) break;
-            await new Promise((r2) => setTimeout(r2, 30));
-        }
+            return cells;
+        };
+        const streuSchritt = async () => (streuTakt(), await new Promise((r2) => setTimeout(r2, 30)));
+        await window
+            .__gebautNach("die Streu um den Spieler", { fertig: () => zellen() > 40 && r._streuWartet(pm) === 0, takt: streuSchritt, max: 1500 });
         res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
         // ── P: die Promotion erreicht eine Zelle jenseits der Region-Grenze (nah 0,85·pr in der Nachbar-Region), die ferne
@@ -145,13 +136,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // privat + B2-geschützt). Kurz warten, dann die NAH-Richtung an einer
         // echten Fern-Baum-Zelle proben — der STÄRKERE Beweis (echter Slot-Tausch).
         let probe = null;
-        const dlP = performance.now() + 10000;
-        while (!probe && performance.now() < dlP) {
-            probe = sucheProbe(true);
-            if (probe) break;
-            streuTakt();
-            await new Promise((r2) => setTimeout(r2, 60));
-        }
+        await window
+            .__gebautNach("eine Fern-Baum-Zelle", { fertig: () => !!(probe = sucheProbe(true)), takt: streuSchritt, max: 170 });
         if (!probe) probe = sucheProbe(false);
         res.probeGefunden = !!probe;
         if (!probe) return res;
@@ -178,15 +164,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Foundry-Stufen-Bau nie ankommen sehen (die Nah-Richtung 2→1/0 wäre
         // strukturell unmöglich). Dieselbe 30-s-Warte-Disziplin wie der
         // F-Block (Flat lädt async, 100-ms-Polls).
-        let wandel = 0;
-        const dlW = performance.now() + 45000;
-        while (!wandel && performance.now() < dlW) {
-            for (let i = 0; i < 40 && !wandel; i++) {
-                r._tickScatterLod(pm, 8, 400);
-                if (probe.lod !== lodVorher) wandel = 1;
-            }
-            if (!wandel) await new Promise((r2) => setTimeout(r2, 150));
-        }
+        const lodTakt = (zahl, bis) => async () => {
+            for (let i = 0; i < 40 && !bis(); i++) r._tickScatterLod(pm, 8, zahl);
+            await new Promise((r2) => setTimeout(r2, 150));
+        };
+        const gewandelt = () => probe.lod !== lodVorher;
+        await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
+        const wandel = gewandelt() ? 1 : 0;
         res.l = {
             lodVorher,
             lodNachher: probe.lod,
@@ -221,23 +205,18 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 typeof c.bpName === "string" &&
                 (c.bpName.startsWith("fscatter:strauch:") || c.bpName.startsWith("fscatter:eiche:"));
             let dz2 = null;
-            const dlD = performance.now() + 30000;
-            while (!dz2 && performance.now() < dlD) {
-                for (const reg of map.values()) {
-                    for (const c of reg.cells || []) {
-                        if (c.slots && c.bpName && c.lod < 2 && b2Privat(c) && zweiStufig(c)) {
-                            dz2 = c;
-                            break;
-                        }
-                    }
-                    if (dz2) break;
-                }
-                if (!dz2) {
-                    streuTakt();
-                    r._tickScatterLod(pm, 8, 800);
-                    await new Promise((r2) => setTimeout(r2, 60));
-                }
-            }
+            const zweiNah = () => {
+                for (const reg of map.values())
+                    for (const c of reg.cells || []) if (c.slots && c.bpName && c.lod < 2 && b2Privat(c) && zweiStufig(c)) return (dz2 = c);
+                return null;
+            };
+            await window
+                .__gebautNach("eine nahe zwei-stufige Zelle", {
+                    fertig: zweiNah,
+                    takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await new Promise((r2) => setTimeout(r2, 60))),
+                    max: 500,
+                })
+                .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
             // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
@@ -262,12 +241,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 if (kand) {
                     pm.x = kand.x - 8;
                     pm.z = kand.z;
-                    const dlN = performance.now() + 45000;
-                    while (!(kand.lod < 2 && b2Privat(kand)) && performance.now() < dlN) {
-                        streuTakt();
-                        for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
-                        await new Promise((r2) => setTimeout(r2, 100));
-                    }
+                    await window
+                        .__gebautNach("der Kandidat in der Nah-Stufe", {
+                            fertig: () => kand.lod < 2 && b2Privat(kand),
+                            takt: async () => {
+                                streuTakt();
+                                for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
+                                await new Promise((r2) => setTimeout(r2, 100));
+                            },
+                            max: 450,
+                        });
                     if (kand.lod < 2 && b2Privat(kand)) dz2 = kand;
                 }
             }
@@ -293,15 +276,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
                         return !g || (g.liveCount | 0) === 0;
                     });
-                let dWandel = 0;
-                const dlW2 = performance.now() + 45000;
-                while (!dWandel && performance.now() < dlW2) {
-                    for (let i = 0; i < 40 && !dWandel; i++) {
-                        r._tickScatterLod(pm, 8, 800);
-                        if (dz2.lod === 2 && huelleLeer()) dWandel = 1;
-                    }
-                    if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
-                }
+                const fern2 = () => dz2.lod === 2 && huelleLeer();
+                await window.__gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
                 dblk.demotet = dz2.lod === 2;
                 // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
                 dblk.slotsFern =
@@ -370,13 +346,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
             let flat = null,
                 karte = null;
-            const dlF = performance.now() + 30000;
-            while (performance.now() < dlF) {
-                flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
-                karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
-                if (flat && flat.instanceable && karte && karte.instanceable) break;
-                await new Promise((r2) => setTimeout(r2, 100));
-            }
+            await window
+                .__gebautNach("gras und strauch in L2", {
+                    fertig: () => {
+                        flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
+                        karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
+                        return !!(flat && flat.instanceable && karte && karte.instanceable);
+                    },
+                    takt: () => new Promise((r2) => setTimeout(r2, 100)),
+                    max: 300,
+                });
             fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
             if (fern.flat) {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.

@@ -64,27 +64,17 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._archFlattenBlueprint !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._archFlattenBlueprint !== "function"));
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const AR = r.constructor;
         // Foundry warm ziehen (Produktions-Boot) + den WALD bauen (Scatter-Zellen).
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 60000;
-        while (performance.now() < dl1) {
-            if (f && f.ready) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready);
         const pm = r.state.playerMesh.position;
-        const dl2 = performance.now() + 45000;
         let cells = 0;
-        while (performance.now() < dl2) {
+        for (const weiter = window.__deckel("die Streu-Zellen", 1500); weiter(); ) {
             r._tickScatterStreaming(pm);
             const map = r.state.scatterRegions;
             cells = 0;

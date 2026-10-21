@@ -1664,8 +1664,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
-        out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
         // V9.39 — der Voxel-Populator ist die lebende Schicht.
         // Drei neue Baupläne als Built-ins.
         const bps = r.state.blueprints || {};
@@ -1677,78 +1675,72 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
         // worldFieldAt liefert 4 Tag-Achsen.
-        if (out.hasWorldFieldAt) {
-            const sample = r.worldFieldAt(0, 0);
-            out.fieldHas4Axes = !!(
-                sample &&
-                typeof sample.lebendig === "number" &&
-                typeof sample.dichte === "number" &&
-                typeof sample.glut === "number" &&
-                typeof sample.magieleitung === "number"
-            );
-            out.fieldValuesInRange =
-                sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
-        }
+        const sample = r.worldFieldAt(0, 0);
+        out.fieldHas4Axes = !!(
+            sample &&
+            typeof sample.lebendig === "number" &&
+            typeof sample.dichte === "number" &&
+            typeof sample.glut === "number" &&
+            typeof sample.magieleitung === "number"
+        );
+        out.fieldValuesInRange =
+            sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
         // Determinismus: gleiche Position → gleiche Werte; zwei verschiedene Positionen → verschiedene
         // Werte (Noise nicht-konstant).
-        if (out.hasWorldFieldAt) {
-            const a1 = r.worldFieldAt(50, 30);
-            const a2 = r.worldFieldAt(50, 30);
-            out.fieldDeterministic =
-                Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
-            const b1 = r.worldFieldAt(50, 30);
-            const b2 = r.worldFieldAt(1000, -1000);
-            out.fieldVariesBySamplePos =
-                Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
-        }
+        const a1 = r.worldFieldAt(50, 30);
+        const a2 = r.worldFieldAt(50, 30);
+        out.fieldDeterministic =
+            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
+        const b1 = r.worldFieldAt(50, 30);
+        const b2 = r.worldFieldAt(1000, -1000);
+        out.fieldVariesBySamplePos =
+            Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
         // spawnAffinityForBlueprint: in einer (empirisch gesuchten) lebendig-hohen Region hat baum_eiche
         // (holz+laub) höhere Affinität als stein_block (dichte-hoch, lebendig=0).
-        if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
-            // Iteriere Welt-Grid um eine Position mit hohem lebendig
-            // zu finden.
-            let bestLebendigSpot = null;
-            let bestLebendig = 0;
-            for (let x = -200; x <= 200; x += 25) {
-                for (let z = -200; z <= 200; z += 25) {
-                    const f = r.worldFieldAt(x, z);
-                    if (f.lebendig > bestLebendig) {
-                        bestLebendig = f.lebendig;
-                        bestLebendigSpot = { x, z };
-                    }
+        // Iteriere Welt-Grid um eine Position mit hohem lebendig
+        // zu finden.
+        let bestLebendigSpot = null;
+        let bestLebendig = 0;
+        for (let x = -200; x <= 200; x += 25) {
+            for (let z = -200; z <= 200; z += 25) {
+                const f = r.worldFieldAt(x, z);
+                if (f.lebendig > bestLebendig) {
+                    bestLebendig = f.lebendig;
+                    bestLebendigSpot = { x, z };
                 }
             }
-            if (bestLebendigSpot && bestLebendig > 0.5) {
-                const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestLebendigSpot.x, bestLebendigSpot.z);
-                const steinAff = r.spawnAffinityForBlueprint("stein_block", bestLebendigSpot.x, bestLebendigSpot.z);
-                // In hohem-lebendig-Bereich sollte Baum >> Stein.
-                out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
-            }
-            // Dasselbe für dichte: in dichte-hoher Region
-            // sollte stein_block bevorzugt sein.
-            let bestDichteSpot = null;
-            let bestDichte = 0;
-            for (let x = -200; x <= 200; x += 25) {
-                for (let z = -200; z <= 200; z += 25) {
-                    const f = r.worldFieldAt(x, z);
-                    if (f.dichte > bestDichte) {
-                        bestDichte = f.dichte;
-                        bestDichteSpot = { x, z };
-                    }
+        }
+        if (bestLebendigSpot && bestLebendig > 0.5) {
+            const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestLebendigSpot.x, bestLebendigSpot.z);
+            const steinAff = r.spawnAffinityForBlueprint("stein_block", bestLebendigSpot.x, bestLebendigSpot.z);
+            // In hohem-lebendig-Bereich sollte Baum >> Stein.
+            out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
+        }
+        // Dasselbe für dichte: in dichte-hoher Region
+        // sollte stein_block bevorzugt sein.
+        let bestDichteSpot = null;
+        let bestDichte = 0;
+        for (let x = -200; x <= 200; x += 25) {
+            for (let z = -200; z <= 200; z += 25) {
+                const f = r.worldFieldAt(x, z);
+                if (f.dichte > bestDichte) {
+                    bestDichte = f.dichte;
+                    bestDichteSpot = { x, z };
                 }
             }
-            if (bestDichteSpot && bestDichte > 0.5) {
-                const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestDichteSpot.x, bestDichteSpot.z);
-                const steinAff = r.spawnAffinityForBlueprint("stein_block", bestDichteSpot.x, bestDichteSpot.z);
-                // Ist die Stelle auch lebendig-hoch, kann der Baum gewinnen — geprüft wird daher nur
-                // „stein signifikant > 0“ (die Affinität greift).
-                out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
-                // Für klare Diskrimination: an einer wirklich
-                // dichte-dominanten Position erwarten wir
-                // stein > tree (wenn lebendig dort low).
-                const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
-                if (f.lebendig < 0.4) {
-                    out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
-                }
+        }
+        if (bestDichteSpot && bestDichte > 0.5) {
+            const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestDichteSpot.x, bestDichteSpot.z);
+            const steinAff = r.spawnAffinityForBlueprint("stein_block", bestDichteSpot.x, bestDichteSpot.z);
+            // Ist die Stelle auch lebendig-hoch, kann der Baum gewinnen — geprüft wird daher nur
+            // „stein signifikant > 0“ (die Affinität greift).
+            out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
+            // Für klare Diskrimination: an einer wirklich
+            // dichte-dominanten Position erwarten wir
+            // stein > tree (wenn lebendig dort low).
+            const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
+            if (f.lebendig < 0.4) {
+                out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
             }
         }
         // Initial-Worldgen: state.architectures enthält jetzt
@@ -1819,8 +1811,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gP2Results && !wave6gP2Results.error) {
-        check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
-        check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
         check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
@@ -2129,38 +2119,35 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const out = {};
         const mats = r.state.materials || {};
         out.hasErde = !!(mats.erde && mats.erde.builtIn);
-        out.hasTerrainMaterialAt = typeof r._terrainMaterialAt === "function";
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.
         // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
         const origWFA = r.worldFieldAt;
         const known = ["erde", "stein", "glut", "quarz"];
-        if (out.hasTerrainMaterialAt) {
-            const probe = (lebendig, dichte, glut, magieleitung) => {
-                r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
-                return r._terrainMaterialAt(0, 0);
-            };
-            out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
-            out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
-            out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
-            out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
-            r.worldFieldAt = origWFA;
-            out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
-            // Das Terrain ist nicht uniform — über ein Raster
-            // emergieren ≥2 verschiedene Boden-Materialien.
-            const seen = {};
-            for (let x = -200; x <= 200; x += 40) {
-                for (let z = -200; z <= 200; z += 40) {
-                    seen[r._terrainMaterialAt(x, z)] = true;
-                }
+        const probe = (lebendig, dichte, glut, magieleitung) => {
+            r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
+            return r._terrainMaterialAt(0, 0);
+        };
+        out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
+        out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
+        out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
+        out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
+        r.worldFieldAt = origWFA;
+        out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
+        // Das Terrain ist nicht uniform — über ein Raster
+        // emergieren ≥2 verschiedene Boden-Materialien.
+        const seen = {};
+        for (let x = -200; x <= 200; x += 40) {
+            for (let z = -200; z <= 200; z += 40) {
+                seen[r._terrainMaterialAt(x, z)] = true;
             }
-            out.terrainMaterialVariety = Object.keys(seen).length;
         }
+        out.terrainMaterialVariety = Object.keys(seen).length;
 
         // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
         // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
         // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
-        if (out.hasTerrainMaterialAt && typeof r.tryMouseBreak === "function") {
+        if (typeof r.tryMouseBreak === "function") {
             const origRay = r._raycastWorldHit;
             const origPick = r._pickArchitectureAtCrosshair;
             const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
@@ -2228,7 +2215,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
     if (wave6gP4Results && !wave6gP4Results.error) {
         check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
-        check("W6.G P4: _terrainMaterialAt-Methode existiert", wave6gP4Results.hasTerrainMaterialAt);
         check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
         check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
         check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);

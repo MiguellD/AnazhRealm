@@ -999,7 +999,7 @@ class AnazhRealm_dirigent_ankunft {
         const { span } = this._voxelChunkConfig();
         const chunkImBlick = (cx, cz) => imBlick((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2);
         // DER BODEN IM BILD (B-Blick): der Ring bis zum Existenz-Boden, soweit die Ankunft ihn sieht — der Chunk des Spielers
-        // immer, rundum (der Nachlauf) jeder; was dahinter liegt, baut der Ring danach mit der Kappe des Spiels (`_tickVoxelChunkStreaming`).
+        // immer, rundum (der Nachlauf) jeder; was dahinter liegt, baut der Ring in jedem Takt mit seiner eigenen Kappe (`_tickVoxelChunkStreaming`).
         // Bis B-Blick wartete das Bild auf den Boden hinter dem Spieler (GTX kalt: 40 von 122 Ring-Rufen und 10 von 44 Einbauten
         // außer Blick, 0,8 s Haupt-Faden; p3/n2010/blick/f5.txt).
         const pc = st.lastPlayerVoxelChunk;

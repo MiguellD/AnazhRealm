@@ -291,7 +291,7 @@ function atem() {
         // die Welt steht: Renderer, Foundry-Buch, Sätze und Bäume der Stufen-Wahl; danach ruht der Spiel-Loop
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 240000) {
+            for (const weiter = window.__deckel("Renderer, Buch, Sätze und Bäume", 1200); weiter(); ) {
                 const r = window.anazhRealm,
                     st = r && r.state;
                 const n =
@@ -316,14 +316,14 @@ function atem() {
                 st = r && r.state;
             if (!st || !st.rendererReady) return { ok: false };
             let n0 = -1,
-                seit = performance.now();
-            while (performance.now() - t0 < 240000) {
+                seit = 0;
+            for (let k = 0, weiter = window.__deckel("der ruhende Bestand", 960); weiter(); k++) {
                 const n = st.architectures.length;
                 const offen = st.voxelMeshPending ? st.voxelMeshPending.size : 0;
                 if (n !== n0 || offen > 0) {
                     n0 = n;
-                    seit = performance.now();
-                } else if (performance.now() - seit > 5000) {
+                    seit = k;
+                } else if (k - seit > 20) {
                     st.renderer.setAnimationLoop(null);
                     const b = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
                     return { ok: true, ms: Math.round(performance.now() - t0), baeume: b, bestand: n };

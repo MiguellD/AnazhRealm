@@ -1390,8 +1390,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                             const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
                             if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
                         }
-                        const t0 = performance.now();
-                        while (performance.now() - t0 < 20000) {
+                        for (const weiter = window.__deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
                             await sleep(15);
                             let fertig = true;

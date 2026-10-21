@@ -280,8 +280,7 @@ function werkzeug() {
             return g;
         };
         let glut = sucheGlut();
-        const dlGlut = performance.now() + 90000;
-        while (!(glut && glut.d < 160) && performance.now() < dlGlut) {
+        for (const weiter = window.__deckel("eine Glut in Hörweite", 3000); !(glut && glut.d < 160) && weiter(); ) {
             W.takt();
             st.playerMesh.position.x = wx;
             st.playerMesh.position.z = wz;
@@ -300,8 +299,7 @@ function werkzeug() {
         // an der Mess-Wiese ein Dorf des Gesetzes, sein Glutbrunnen 9,9 m neben dem Messort (glut −35,1 dB über Wind
         // −36,4). Das Dorf wächst erst ganz (die Bau-Schlange leer, höchstens 30 s), dann gilt der nächste trockene, ebene
         // Punkt um den Messort, an dem jede Glut außer Hörweite liegt und kein Wasser im Hör-Ring.
-        const dlDorf = performance.now() + 30000;
-        while (r._autoSettlementQueue && r._autoSettlementQueue.plan && performance.now() < dlDorf) {
+        for (const weiter = window.__deckel("der Dorf-Plan", 1000); r._autoSettlementQueue && r._autoSettlementQueue.plan && weiter(); ) {
             W.takt();
             await sleep(30);
         }

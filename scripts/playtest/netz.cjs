@@ -830,7 +830,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     const w13v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.payloadMethods = typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
         const baseP = r._portalEnterPayload();
         out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
         out.payloadVibeId = typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
@@ -864,7 +863,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13v2Results && !w13v2Results.error) {
-        check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
         check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
         check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
         check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);

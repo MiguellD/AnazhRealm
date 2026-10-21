@@ -701,14 +701,13 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const out = await page.evaluate(async (laufzeitMs) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = {};
-        const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("der Ring", 600); weiter(); ) {
             const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {

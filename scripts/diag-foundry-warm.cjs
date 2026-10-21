@@ -20,14 +20,7 @@ const server = statikServer();
     // Welt bereit (gameLoopTick als Funktion — renderer-unabhängig korrekt).
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                !window.anazhRealm.state.blueprints) &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.blueprints);
     });
 
     const S = await page.evaluate(async () => {
@@ -51,7 +44,7 @@ const server = statikServer();
             // auf f.ready warten (der Worker bootet die Studio-Kette + meldet ready über self.postMessage)
             const t0 = performance.now();
             const dl = t0 + 60000;
-            while (!f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+            await window.__weltDa(() => !(!f.ready));
             out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
             // N2 (V9.56-i): f.worker entsteht seit dem manifest-getriebenen Boot ASYNC im
             // fetch-then — der ehrliche Lese-Moment ist NACH dem ready-Wait (vorher ist ein
@@ -65,8 +58,7 @@ const server = statikServer();
             // ready-Handler gepostet) — die Linse wartet auf die WAHRHEIT (Rezepte fliessen),
             // nicht auf den Timing-Zufall des 50-ms-Poll-Fensters (der Race stand seit dem
             // Prefetch-Fächer auf der Kippe und kippte mit dem IDB-Layer deterministisch).
-            const dlR = performance.now() + 30000;
-            while (!(f.recipeCount > 0) && performance.now() < dlR) await new Promise((res) => setTimeout(res, 100));
+            await window.__weltDa(() => f.recipeCount > 0);
             out.recipeCount = f.recipeCount || 0;
             // DER KERN-BEWEIS: eine echte build-asset-Anfrage durch den Worker — liefert sie Meshes?
             const meshes = await r._foundryRequest("eiche", 7, 0);

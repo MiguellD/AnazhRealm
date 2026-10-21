@@ -68,7 +68,7 @@ const server = statikServer({ keinCache: true });
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
-        while (performance.now() - start < 120000) {
+        for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
@@ -1108,12 +1108,8 @@ async function studioProbe() {
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
         console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
         const da = await page.evaluate(async () => {
-            const t = performance.now();
-            while (performance.now() - t < 30000) {
-                if (window.__gelaendeStudio && document.querySelector("#gelaende-studio")) return true;
-                await new Promise((r) => setTimeout(r, 50));
-            }
-            return false;
+            while (!(window.__gelaendeStudio && document.querySelector("#gelaende-studio"))) await new Promise((r) => setTimeout(r, 50));
+            return true;
         });
         if (!da) {
             befunde.push(
@@ -1442,14 +1438,19 @@ async function gebaut(page, fehler) {
             const r = window.anazhRealm;
             const s = r.state;
             const t0 = performance.now();
-            while (!(s.hydrosphere && s.hydrosphere.ready) && performance.now() - t0 < 60000) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {
-                    /* der Boot reift */
-                }
-                await new Promise((res) => setTimeout(res, 16));
-            }
+            await window
+                .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
+                    fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
+                    takt: async () => {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {
+                        /* der Boot reift */
+                    }
+                    await new Promise((res) => setTimeout(res, 16));
+                    },
+                    max: 3750,
+                });
             r._gameLoopTick = () => {}; // die Welt steht still
             const G = window.__gelaendeCore;
             const wl = s.waterLevel;

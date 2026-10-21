@@ -325,32 +325,25 @@ class AnazhRealm_dirigent_takt {
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
-    // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr — und kein Fege-Takt der Stand-Wache geht noch (ihre Arbeit
-    // steht: ein Takt, der auf ein Budget wartet, hält sich wach, ohne die Welt zu regen; A9 Zweit-Boot an der Mess-Wiese: die
-    // Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh, als die Stempel schon 30 Takte standen — boden-nah 2,418 statt
-    // 1,830). Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
+    // blieben, nichts mehr baut (`_weltOffen`: kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr) und jeder geweckte Fege-Takt der Stand-Wache seine Runde
+    // zu Ende ging (`_standGeht`; A9 Zweit-Boot an der Mess-Wiese: die Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh,
+    // als die Stempel schon 30 Takte standen — boden-nah 2,418 statt 1,830). So ist „steht" ein FIXPUNKT: ohne Eingabe wirkt
+    // danach nichts mehr (gate:stand-takt FIXPUNKT; K-WANDUHR zählte kurz nur die Wirkung — nach einem Dichte-Schritt stand die
+    // Welt nach 1 Takt, mitten in der Runde der Stufen-Wahl 256 von 2 304, und wirkte danach noch 4×). Ein atmender Regler weckt
+    // die Takte ohne Ende: wer auf das Wort wartet, hält ihn (`__weltStehtNach`; unter Last stand die Welt am Genesis-Ring sonst
+    // nie, CI 39439645378 · 39449804810 · 39452595795).
+    // Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
     // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
-    // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen, das Offene) — wer auf das Wort wartet
-    // und es nicht bekommt, bricht beim Namen des Täters.
+    // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen samt Runde, das Offene) — wer auf das
+    // Wort wartet und es nicht bekommt, bricht beim Namen des Täters.
     _weltStandTakt() {
-        const W =
-            this._weltStand ||
-            (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, je: new Map(), ruhe: 0, takte: 0 });
+        const W = this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, ruhe: 0, takte: 0 });
         W.takte++;
         const welt = this._weltRegung | 0,
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
-        let arbeit = 0,
-            geht = null;
-        if (this._standWache)
-            for (const [n, t] of this._standWache.takte) {
-                arbeit += t.arbeit;
-                if (W.je.get(n) !== t.arbeit) {
-                    W.je.set(n, t.arbeit);
-                    geht = geht ? `${geht}, ${n}` : n;
-                }
-            }
+        const geht = this._standGeht();
         const o = this._weltOffen();
         const grund =
             welt !== W.welt
@@ -359,7 +352,7 @@ class AnazhRealm_dirigent_takt {
                   ? "Bau-Regung"
                   : karte !== W.karte
                     ? "Karten-Regung"
-                    : arbeit !== W.arbeit
+                    : geht
                       ? `Fege-Takt ${geht}`
                       : o.foundry
                         ? `Foundry offen ${o.foundry}`
@@ -372,10 +365,19 @@ class AnazhRealm_dirigent_takt {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
-            W.arbeit = arbeit;
             W.grund = grund;
             W.ruhe = 0;
         } else W.ruhe++;
+    }
+    // Die Fege-Takte mitten in ihrer Runde, beim Namen (`wartet`: auf ein Budget oder ein Asset, sonst gegangen/Runde) — null,
+    // wenn jeder schläft.
+    _standGeht() {
+        let geht = null;
+        if (this._standWache)
+            for (const [n, t] of this._standWache.takte)
+                if (t.leer < t.runde)
+                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? "wartet" : `${t.leer}/${t.runde}`}`;
+        return geht;
     }
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
@@ -406,7 +408,7 @@ class AnazhRealm_dirigent_takt {
         if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
             return false;
         const o = this._weltOffen();
-        return o.foundry + o.chunks + o.wald === 0;
+        return o.foundry + o.chunks + o.wald === 0 && !this._standGeht();
     }
 
     // ═══ DIE GPU-LEINE ═══

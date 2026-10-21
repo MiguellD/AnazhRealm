@@ -124,7 +124,7 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
               # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
               env:
                   WACHSTUM_VORHER: ${{ github.event.before }}
@@ -1303,7 +1303,8 @@ jobs:
               if: matrix.gruppe == 13
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
-              # bricht jede Stelle einzeln.
+              # bricht jede Stelle einzeln. WORT: der KI-Korpus (40 Saetze) mit dem Mitschnitt des echten Modells ueber den
+              # echten Chat-Pfad - der echte Lauf (--korpus --echt, lokales ollama) ist nicht CI-Pflicht.
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)

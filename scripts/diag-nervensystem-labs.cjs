@@ -67,19 +67,10 @@ function staticLaws(manifestSrc) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {}, w: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
         const lofi = f && f.recipes ? f.recipes.lofi : null;
         res.b.lofiKind = lofi && lofi.kind;

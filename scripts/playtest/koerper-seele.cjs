@@ -1284,7 +1284,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul("human"); // restore
 
         // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
-        r.dslRun(["player_speed", 20], { source: "test" });
+        r.dslRun(["player_speed", r._koerperGesetzBand("speed").max], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
         // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der

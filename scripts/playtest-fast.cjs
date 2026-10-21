@@ -56,16 +56,7 @@ function check(name, ok) {
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
             // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
-            const dl = performance.now() + 60000;
-            while (
-                (!window.anazhRealm ||
-                    !window.anazhRealm.state ||
-                    !window.anazhRealm.state.rendererReady ||
-                    typeof window.anazhRealm._gameLoopTick !== "function" ||
-                    !window.anazhRealm.state.blueprints) &&
-                performance.now() < dl
-            )
-                await new Promise((r) => setTimeout(r, 100));
+            await window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
@@ -395,44 +386,14 @@ function check(name, ok) {
         check("Spieler-Stats sinnvoll (hp>0, speed>0)", ps && ps.hp > 0 && ps.speed > 0);
         if (!(ps.hp > 0 && ps.speed > 0)) console.log("     ⟶ " + JSON.stringify(ps));
 
-        // V18.492 — v1.0-Schritt 4 (mit der KI erschaffen) als Kern-Gesundheit: der Satz wird
-        // zum Studio-Programm, und die KI-Antwort (gestubbt — kein Netz im Gate) pflanzt echte
-        // Studio-Baupläne über den EINEN Chokepoint. Das volle Band: checkBandV18493CoSchoepferStudio.
+        // V18.492 — v1.0-Schritt 4 ohne Schlüssel: der Satz wird zum Studio-Programm. Die KI-Antwort trägt der Korpus mit den
+        // Antworten eines echten Modells (scripts/diag-v1-pfad.cjs --korpus).
         const K = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const o = {};
             try {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
                 o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
-                // Die Welt wächst während der Antwort weiter (die Promotion um den Spieler macht Streu-Zellen zu Bäumen, das
-                // Welt-Dorf setzt seine Häuser über die Takte): gezählt wird nach Identität, nicht nach Listen-Index — die
-                // CI (Lauf 37717894108) fand neben den Birken einen anderen neuen Eintrag und meldete die Birken als falsch.
-                const vorher = new Set(r.state.architectures);
-                const llm = r.state.llm;
-                const alt = { enabled: llm.enabled, provider: llm.provider };
-                const orig = r.llmCall;
-                llm.enabled = true;
-                llm.provider = "ollama";
-                // Der Spieler steht auf der Genesis-Plattform: ihre Lichtung ist ein Grundriss der Natur-Wand (Entscheid
-                // D3) — keine Birke, deren Krone über die Scheibe reicht (6,5 m + bis 14 m Krone). Die KI pflanzt 30–50 m weit.
-                r.llmCall = async () => ({
-                    say: "Birken.",
-                    program: ["spawn_studio", "birke", ["far_player", 30, 50], 3, 5],
-                });
-                try {
-                    await r.maybeAnswerWithLlm("birken bitte", () => {});
-                } finally {
-                    r.llmCall = orig;
-                    llm.enabled = alt.enabled;
-                    llm.provider = alt.provider;
-                }
-                const neu = r.state.architectures.filter((e) => !vorher.has(e));
-                const birke = r._studioBlueprintForWord("birke");
-                const birken = neu.filter((e) => e.type === birke);
-                // die KI pflanzt Studio-Birken — und nichts, was kein Baum ist (ein Baum der Promotion darf mitwachsen)
-                o.ki = birken.length > 0 && neu.every((e) => e.type === birke || /^(baum_|grown_)/.test(e.type || ""));
-                o.neu = neu.map((e) => e.type).slice(0, 8);
-                for (const e of birken.reverse()) r.removeArchitecture(e);
             } catch (e) {
                 o.err = (e && e.message) || String(e);
             }
@@ -541,9 +502,7 @@ function check(name, ok) {
             RI.faelle === 54 && RI.rot === 0
         );
         check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
-        check("CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)", K.ki === true);
         if (K.err) console.log("     ⟶ " + K.err);
-        if (K.ki !== true) console.log("     ⟶ neu: " + JSON.stringify(K.neu || []));
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);
         if (fails.length) {

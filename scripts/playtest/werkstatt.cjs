@@ -2605,29 +2605,11 @@ async function checkBandRezeptKatalog(ctx) {
         const res = { warm: {}, a: {}, b: {}, c: {}, d: {}, e: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-        const dl0 = performance.now() + 120000;
-        while (
-            !window.anazhRealm &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (
-                f &&
-                f.ready &&
-                f.recipes &&
-                f.recipes.drachentor &&
-                f.recipes.gras &&
-                f.paramsByKind &&
-                f.paramsByKind.gate &&
-                !f._vorrat
-            )
-                break;
-            await sleep(120);
-        }
+        await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.drachentor && f.recipes.gras && f.paramsByKind && f.paramsByKind.gate && !f._vorrat));
         res.warm.ready = !!(f && f.ready);
         res.warm.recipeCount = f && f.recipes ? Object.keys(f.recipes).length : 0;
         res.warm.vorrat = (f && f._vorrat) || false; // die Phase des Vorrats (VORRAT_PHASE), false = durch
@@ -2746,11 +2728,12 @@ async function checkBandRezeptKatalog(ctx) {
                 return orig();
             };
             let g = r._workshopFoundryPreviewGroup("tor_drachentor");
-            const dl = performance.now() + 45000;
-            while ((!g || g === "pending") && performance.now() < dl) {
-                await sleep(200);
-                g = r._workshopFoundryPreviewGroup("tor_drachentor");
-            }
+            await window
+                .__gebautNach("die Vorschau des Drachentors", {
+                    fertig: () => !!(g = r._workshopFoundryPreviewGroup("tor_drachentor")) && g !== "pending",
+                    takt: () => sleep(200),
+                    max: 225,
+                });
             r._workshopRebuildPreviewMesh = orig;
             res.d.rebuilds = rebuilds;
             res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;

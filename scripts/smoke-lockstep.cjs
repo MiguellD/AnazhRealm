@@ -7,10 +7,10 @@
 // (beide booten die seed-deterministische Default-Welt → identisches Dichtefeld).
 // Plus: der Ghost treibt B's Peer-Avatar (glatt statt 30-Hz-Snaps), pos-Nachrichten sind
 // zur Drift-Autorität umgeleitet, kein Ent-Seeden während des Laufs.
-const { starteBrowser, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 
-const PAGE_URL = "http://127.0.0.1:4312/index.html";
-const SIGNALING_URL = "ws://127.0.0.1:4313";
+// die eigenen Ports: LOCKSTEP_PORT und LOCKSTEP_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313
+let PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-lockstep-room";
 
 (async () => {
@@ -21,8 +21,11 @@ const ROOM = "smoke-lockstep-room";
     }
 
     console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/);
-    const signaling = await startProc("signaling-server.js", /lauscht/);
+    const [PORT, SIGNAL_PORT] = await eigenePorte("LOCKSTEP_PORT", "LOCKSTEP_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
 
     const browser = await starteBrowser({ art: "webgl", frist: 240000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
 
@@ -37,13 +40,11 @@ const ROOM = "smoke-lockstep-room";
         await waitFor(
             pageA,
             () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            60000,
             "Seite A bereit"
         );
         await waitFor(
             pageB,
             () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            60000,
             "Seite B bereit"
         );
         // Der swiftshader-Render (Sekunden/Frame bei ZWEI Seiten) verhungert den Event-Loop →
@@ -89,8 +90,8 @@ const ROOM = "smoke-lockstep-room";
         const peerIdA = await pageA.evaluate(joinRoom, SIGNALING_URL, ROOM);
         const peerIdB = await pageB.evaluate(joinRoom, SIGNALING_URL, ROOM);
         console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, 30000, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, 30000, "Mesh auf B aktiv");
+        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
+        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
         check("WebRTC-Mesh aktiv (A+B)", true);
 
         // A settlen lassen (Welt warm + Position stabil — kein Rescue/Fall während des Laufs;
@@ -101,7 +102,6 @@ const ROOM = "smoke-lockstep-room";
                 const r = window.anazhRealm;
                 return !!(r.state.voxelChunks && r.state.voxelChunks.size >= 9);
             },
-            90000,
             "A: Welt warm (≥9 Chunks)"
         );
         await waitFor(
@@ -113,7 +113,6 @@ const ROOM = "smoke-lockstep-room";
                 window.__lsPrevY = y;
                 return prev !== undefined && Math.abs(y - prev) < 0.02; // Höhe stabil ≈ gesettelt
             },
-            30000,
             "A: Position gesettelt"
         );
         await sleep(1200);
@@ -154,7 +153,6 @@ const ROOM = "smoke-lockstep-room";
                     const e = window.anazhRealm.state.p2p.peers.get(pidA);
                     return !!(e && e.lockstep && e.lockstep.seeded && e.lockstep.doneSeq > 90);
                 },
-                30000,
                 "B: Ghost simuliert A (doneSeq > 90)",
                 peerIdA
             );

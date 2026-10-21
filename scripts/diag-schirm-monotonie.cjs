@@ -161,15 +161,13 @@ async function welt() {
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        const dl = performance.now() + 240000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "keine Welt" };
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        while (!(f && f.ready && f.recipeCount > 0) && performance.now() < dl) await sleep(100);
+        await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
         if (!(f && f.ready)) return { fatal: "Foundry nicht bereit" };
         // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest — die Tageszeit lief in der langen
         // Einschwing-Schleife davon und zog Feuerstelle und Zacken mit, gemessen 06.10.).
@@ -271,8 +269,7 @@ async function welt() {
         waechst();
         let still = 0,
             stillTakte = 0;
-        const dlStill = performance.now() + 120000;
-        while (still < 3 && performance.now() < dlStill) {
+        for (const weiter = window.__deckel("der stille Schirm", 400); still < 3 && weiter(); ) {
             for (let i = 0; i < 30; i++) {
                 takt();
                 stillTakte++;

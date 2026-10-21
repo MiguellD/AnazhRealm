@@ -154,7 +154,7 @@ function pruefRaum(echt) {
         F.wurzel = r.state.scene;
         // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
         F.leibWechsel = async () => {
-            for (let t = performance.now(), fehlt = 1; fehlt && performance.now() - t < 60000; ) {
+            for (let fehlt = 1, weiter = window.__deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
                 await F.zeichne(1);
                 fehlt = 0;
                 r.state.playerMesh.traverseVisible(
@@ -164,10 +164,9 @@ function pruefRaum(echt) {
         };
         F.zeichne = async (n) => {
             const info = rend.info.render;
-            const a = info.calls,
-                t = performance.now();
-            while ((info.calls - a < n || performance.now() - t < 600) && performance.now() - t < 120000)
-                await new Promise((res) => setTimeout(res, 50));
+            const a = info.calls;
+            await new Promise((res) => setTimeout(res, 600)); // ein Bild steht mindestens 600 ms
+            for (const weiter = window.__deckel("ein Bild", 2400); info.calls - a < n && weiter(); ) await new Promise((res) => setTimeout(res, 50));
         };
         F.drehe = () => (r.state.yaw += 1.1);
         F.mittag = () => {
@@ -278,8 +277,7 @@ function pruefRaum(echt) {
     });
     const boot = await page.evaluate(
         async ({ minChunks, echt }) => {
-            const dl = performance.now() + 360000;
-            while (performance.now() < dl) {
+            for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {
                 const r = window.anazhRealm;
                 const st = r && r.state;
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm (GTX 16.10.); headless
@@ -496,14 +494,13 @@ function pruefRaum(echt) {
     const warteBuehne = (wer) =>
         page.evaluate(async (wer) => {
             const r = window.anazhRealm;
-            const dl = performance.now() + 180000;
             const holen = () =>
                 wer === "ich"
                     ? r.state.ichStage
                     : wer === "hof"
                       ? r.state.hofStage
                       : r.state.workshop && r.state.workshop.preview;
-            while (performance.now() < dl) {
+            for (const weiter = window.__deckel("die Bühne", 900); weiter(); ) {
                 const s = holen();
                 if (s && s.renderer && s.renderer.info.render.calls >= 2) break;
                 await new Promise((res) => setTimeout(res, 200));
@@ -638,8 +635,7 @@ function pruefRaum(echt) {
         E.warte = async (holen) => {
             const s0 = holen();
             const c0 = s0 && s0.renderer ? s0.renderer.info.render.calls : 0;
-            const t = performance.now();
-            while (performance.now() - t < 20000) {
+            for (const weiter = window.__deckel("ein Bild der Bühne", 400); weiter(); ) {
                 const s = holen();
                 if (s && s.renderer && s.renderer.info.render.calls > c0) return;
                 await new Promise((res) => setTimeout(res, 50));
@@ -1004,10 +1000,9 @@ function pruefRaum(echt) {
     });
 
     // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
-    // async Pipeline-Bau endet — 3 s Zeichnen, dann darf kein Wort nachkommen.
+    // async Pipeline-Bau endet — fünf Bilder Zeichnen (je ≥ 600 ms), dann darf kein Wort nachkommen.
     await page.evaluate(async () => {
-        const t = performance.now();
-        while (performance.now() - t < 3000) await window.__frostWand.zeichne(1);
+        for (let i = 0; i < 5; i++) await window.__frostWand.zeichne(1);
     });
     {
         const l = await lage();
@@ -1117,10 +1112,10 @@ function pruefRaum(echt) {
     else {
         const steht = await bildPaar("taeter-format");
         // Das Wort der Validierung kommt, wenn sie gemeldet wird: sofort (uncapturederror) oder mit dem Ende des async
-        // Pipeline-Baus, der den Fehler-Bereich offen hielt — die Wand zeichnet weiter und wartet höchstens 30 s.
+        // Pipeline-Baus, der den Fehler-Bereich offen hielt — die Wand zeichnet, solange ein Bau oder Fehler-Bereich offen ist (mindestens 8 Bilder).
         const tWort = Date.now();
         let l = await lage();
-        while ((l.hoer === 0 || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && Date.now() - tWort < 30000) {
+        for (let n = 0; (l.hoer === 0 || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && (n++ < 8 || l.bauOffen || l.bereiche); ) {
             await zeichne(1);
             await new Promise((res) => setTimeout(res, 250));
             l = await lage();

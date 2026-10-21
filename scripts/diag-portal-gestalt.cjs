@@ -44,22 +44,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {}, warm: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm ||
-                typeof window.anazhRealm._ensureAssetFoundry !== "function" ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => typeof r._ensureAssetFoundry === "function");
         const r = window.anazhRealm;
         if (!r) return res;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale) break;
-            await new Promise((res2) => setTimeout(res2, 100));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
         res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
         // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
         // Auto-Klone des Register-Chokepoints tragen sie auch — ihre Wahrheit prüft gate:rezept-katalog).
@@ -145,14 +134,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         res.c.coldAfterSpawn = !entry.instanced && !entry.mesh;
         // Materialisieren: der erste Rebuild stiess die Studio-Anfrage an (kalt); pollen,
         // bis das Asset andockt (der Rewarm-Weg, hier deterministisch von Hand gefahren).
-        const t0 = performance.now();
-        const dl = performance.now() + 90000;
-        while (!entry.instanced && performance.now() < dl) {
-            r._rebuildArchitectureMesh(entry);
-            if (entry.instanced) break;
-            await new Promise((res2) => setTimeout(res2, 300));
-        }
-        res.c.materializeMs = Math.round(performance.now() - t0);
+        res.c.materializeTakte = await window.__gebautNach(entry, { fertig: () => entry.instanced === true });
         res.c.instanced = entry.instanced === true;
         res.c.instFoundry = entry.instFoundry === true;
         // die gezeigten Slots: der Wurf-Zwilling der NUR-WURF-Stufe 3 (1110-9, Gruppe `…#S` auf der Schatten-Ebene) zeichnet
@@ -251,7 +233,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
     check("C: alle Slots leben im f:verkalkt-Namensraum", outCD.c.allSlotsFoundry === true);
     console.log(
-        `  ℹ️ Kalt-Verhalten: nach dem Spawn (Buch warm, Asset kalt) ${outCD.c.coldAfterSpawn ? "KALT ohne Interim (Baum-Kalt-Regel; E-Trigger lebt schon)" : "sofort materialisiert/Interim"} · Materialisierung nach ${outCD.c.materializeMs} ms (headless swiftshader-Worker)`
+        `  ℹ️ Kalt-Verhalten: nach dem Spawn (Buch warm, Asset kalt) ${outCD.c.coldAfterSpawn ? "KALT ohne Interim (Baum-Kalt-Regel; E-Trigger lebt schon)" : "sofort materialisiert/Interim"} · Materialisierung nach ${outCD.c.materializeTakte} Takten (headless swiftshader-Worker)`
     );
     check(
         "C: KEIN Doppel-Bild (kein entry.mesh, keine lebende Part-Gruppe)",

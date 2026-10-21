@@ -55,25 +55,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const res = { boot: false };
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                !window.anazhRealm.state.blueprints) &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa((r) => r.state.blueprints);
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const AR = r.constructor;
         const st = r.state;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 90000;
-        while (performance.now() < dl1) {
-            if (f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod) break;
-            await sleep(100);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         res.buch = !!(f && f.ready);
         if (!res.buch) return res;
         // E DER STAND DES WALD-GESETZES (K20): die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
@@ -339,11 +328,10 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return { radius: Math.round(R), n, ok, riesen, taeter: t };
         };
         const einschwingen = async (msMax) => {
-            const dl = performance.now() + msMax;
             let vor = -1,
                 ruhig = 0,
                 z = formZensus();
-            while (performance.now() < dl) {
+            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter(); ) {
                 await tick(10);
                 z = formZensus();
                 const s = st.architectures.length * 1000 + z.ok;
