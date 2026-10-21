@@ -454,6 +454,9 @@ class AnazhRealm_gelaende_kollision {
     // übergehen sie). Eine Treppe bleibt Treppe: die nächste Stufe deckt nie die Mitte der vorigen. Gedrehte Boxen messen im
     // Rahmen der deckenden (`obb`). Vorher stand jeder Leib, der einen Baum berührte, auf der ersten Stamm-Fuge in der Box
     // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, jede der 2803 Fugen trug).
+    // DER STAB (siedlung.K1): eine Box, deren Grundfläche schmaler ist als ein Fuß (`PLAYER_STAB`), trägt ebenso keinen
+    // Leib — Brüstung, Geländer, Türblatt bleiben Wand. Vorher stieg die Kapsel auf jeder Treppe neben der Schacht-Brüstung
+    // auf deren Holm (Hub 0,56–0,59 m in einem Schritt, gate:haus-welt W10).
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
@@ -488,9 +491,11 @@ class AnazhRealm_gelaende_kollision {
             return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx + rand && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz + rand;
         };
         for (const a of boxes) {
-            let gedeckt = false;
+            const ob = a.obb;
+            let gedeckt =
+                (ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;
             let eckenDa = false;
-            for (const b of boxes) {
+            for (const b of gedeckt ? [] : boxes) {
                 if (b === a || !(b.botY <= a.topY + SNAP) || !(b.topY > a.topY)) continue;
                 if (!eckenDa) {
                     ecken(a);
