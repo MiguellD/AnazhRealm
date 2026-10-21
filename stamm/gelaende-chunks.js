@@ -2406,6 +2406,7 @@ class AnazhRealm_gelaende_chunks {
                 qz0 = Math.min(sz, ez) - M,
                 qz1 = Math.max(sz, ez) + M;
             const Z = AnazhRealm.BLOCKER_ZELLE;
+            let spannen = null; // die Kugel: je berührte Box ihre Spanne (`_segmentKugelBox`)
             const ix0 = Math.floor(qx0 / Z),
                 iz0 = Math.floor(qz0 / Z);
             const nx = Math.floor(qx1 / Z) - ix0 + 1;
@@ -2437,10 +2438,12 @@ class AnazhRealm_gelaende_chunks {
                             bx.minZ > qz1
                         )
                             continue;
-                        const hitInfo =
-                            rad > 0
-                                ? this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad)
-                                : this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
+                        if (rad > 0) {
+                            const k = this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad);
+                            if (k) (spannen || (spannen = [])).push(k);
+                            continue;
+                        }
+                        const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
                         if (
                             hitInfo &&
                             (hitInfo.t < structHitT ||
@@ -2453,6 +2456,26 @@ class AnazhRealm_gelaende_chunks {
                         }
                     }
                 }
+            }
+            // DIE STELLE DER KUGEL (K4): die Mitte hält vor jeder Box, die der dünne Strahl kreuzt, und vor der ersten Haut (der
+            // um r aufgeblasenen Box), die die Strecke betritt. Eine Haut AM START (die Mitte steht schon an ihr, binnen 1 mm:
+            // die Schulter an der Wand, der Abstieg neben dem GT) hält sie nur, wenn die Stelle noch in ihr läge — verlässt die
+            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt.
+            if (spannen) {
+                let st = 1;
+                for (const k of spannen) {
+                    const halt = Math.min(k.roh, k.t * len > 1e-3 ? k.t : Infinity);
+                    if (halt < st) {
+                        st = halt;
+                        sFace = k;
+                    }
+                }
+                for (const k of spannen)
+                    if (k.t * len <= 1e-3 && k.t < st && st < k.aus) {
+                        st = k.t;
+                        sFace = k;
+                    }
+                if (sFace) structHitT = st;
             }
         }
         // (2) TERRAIN — DDA durchs Dichtefeld: erster solider Punkt, dann Bisektion + Gradient. Der Gradient liest den Punkt
@@ -2594,10 +2617,11 @@ class AnazhRealm_gelaende_chunks {
         return out;
     }
 
-    // DIE BOX FÜR DIE KUGEL (K06, `_fieldRaycast` mit `radius`): der Schnitt der Strecke mit der Box, um r aufgeblasen — die
-    // Mitte der Kugel betritt sie, wo die Kugel die Box berührt (an Kanten und Ecken hält sie etwas früher als die runde
-    // Hülle). Beginnt die Strecke schon in der aufgeblasenen Box (die Kugel streift sie am Start), hält die Mitte r vor der Box
-    // selbst, entlang der Strecke — der Weg von ihr fort ist frei, an ihr entlang endet er nie auf ihrer Fläche.
+    // DIE BOX FÜR DIE KUGEL (K06 · K4, `_fieldRaycast` mit `radius`): die Spanne der Strecke in der um r aufgeblasenen Box —
+    // `t` Eintritt (0, wenn die Kugel schon am Start in ihrer Haut steht), `aus` Austritt — und `roh` der Eintritt des dünnen
+    // Strahls in die Box selbst (Infinity ohne Schnitt). Bis K4 hielt ein Start in der Haut die Mitte r ENTLANG der Strecke vor
+    // der Box: im flachen Winkel stand die Kugel in der Wand (gate:kamera-leib K4 am Haus: 49 von 1096 Bildern, die Linse
+    // 0,14 m vor der Fläche); ohne die Haut-Regel fiel der Arm beim Abstieg neben dem GT in das Blickziel (gate:fahr-leben T4).
     _segmentKugelBox(sx, sy, sz, dx, dy, dz, b, r) {
         const q =
             this._kugelBox ||
@@ -2627,16 +2651,11 @@ class AnazhRealm_gelaende_chunks {
             q.ob.hz = ob.hz + r;
             q.obb = q.ob;
         } else q.obb = null;
-        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
-        // DER START IN BERÜHRUNG (F1 b, 19.10.): eine Mitte, die die aufgeblasene Box erst nach weniger als 1 mm betritt, steht
-        // schon an ihr (die Schulter der 3rd-Kamera rückt bis r vor eine Wand, `_fieldRaycast` mit `radius`) — sie gilt als
-        // Start in der Box. Bis hier hielt ihr Arm dort bei t = 0: neben dem geparkten GT schnappte die Kamera in die Brust
-        // und flatterte (2,4–6,9 m je Bild, gate:fahr-leben T4), wo der Strahl nur einen Splitter der Hülle streifte.
-        if (!h || h.t * len > 1e-3) return h;
+        if (!h) return null;
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
-        if (g) g.t = Math.max(0, g.t - r / len);
-        return g;
+        h.roh = g ? g.t : Infinity;
+        return h;
     }
 
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
@@ -2705,6 +2724,7 @@ class AnazhRealm_gelaende_chunks {
         const t = tmin < 0 ? 0 : tmin;
         return {
             t,
+            aus: tmax, // der Austritt (die Spanne der Kugel, `_segmentKugelBox`)
             nx: axis === 0 ? sign : 0,
             ny: axis === 1 ? sign : 0,
             nz: axis === 2 ? sign : 0,
