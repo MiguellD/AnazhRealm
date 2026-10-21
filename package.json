@@ -152,7 +152,7 @@
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs && node scripts/diag-studio-huelle.cjs --engine",
         "gate:portal-konformanz": "node scripts/diag-portal-konformanz.cjs --selftest && node scripts/diag-portal-konformanz.cjs",
-        "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs",
+        "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs --teil=1 && node scripts/diag-regler-wirkt.cjs --teil=2",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
         "smoke:lockstep": "node scripts/smoke-lockstep.cjs",

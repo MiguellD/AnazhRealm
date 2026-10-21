@@ -30,7 +30,10 @@
 //                                                   Mensch-Bäcker wirft → Not-Körper → BRICHT; WURF: die Regel
 //                                                   „der Zwilling wirft immer" wirft an kathedrale von der
 //                                                   teureren Stufe → rot beim Namen
-//   node scripts/diag-regler-wirkt.cjs              Messung gegen die Ratsche
+//   node scripts/diag-regler-wirkt.cjs --teil=1|2   Messung gegen die Ratsche, je Teil (CI-Zeit ≤ 3 min): Teil 2 baut das
+//                                                   Haus (3 936 der 6 527 Bauten), Teil 1 alle übrigen Arten und den Ofen;
+//                                                   jeder Teil richtet NUR die Ratschen-Zeilen seiner Arten, die Staffel
+//                                                   zählt die Zeilen des anderen Teils aus der Ratsche hinzu
 //   node scripts/diag-regler-wirkt.cjs --messen     nur messen und ausgeben (kein Urteil)
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
@@ -42,6 +45,12 @@ const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 const SEED = 1;
+const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
+const HAUS = "haus"; // die Art des Teils 2
+const imTeil = (art, teil = TEIL) => (art === HAUS) === (teil === 2);
+// Die Ratschen-Zeilen eines Teils: Regler-Namen „kern:art:id", Quoten „art:Lk".
+const artDerZeile = (n) => (/^[^:]+:L\d+$/.test(n) ? n.split(":")[0] : n.split(":")[1]);
+const teilVon = (o, teil = TEIL) => Object.fromEntries(Object.entries(o || {}).filter(([n]) => imTeil(artDerZeile(n), teil)));
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
 // first-wins, danach der Primär-Kern): jeder Zweit-Kern mit Namensraum wird THREE-frei im vm gelesen (nur seine
 // PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto).
@@ -559,10 +568,10 @@ function ofenZeilen(ofen) {
     }
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
 async function messenAlle() {
-    const ofen = await imStamm((page) => ofenMessen(page, {}));
+    const ofen = TEIL === 1 ? await imStamm((page) => ofenMessen(page, {})) : { zeilen: [], arten: {} };
     let stufen = null;
     await runWithWorker(PORT, async (h) => {
-        stufen = await stufenMessen(h, { ohneArten: Object.keys(ofen.arten) });
+        stufen = await stufenMessen(h, TEIL === 2 ? { nurArt: HAUS } : { ohneArten: [...Object.keys(ofen.arten), HAUS] });
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
     return {
@@ -619,7 +628,14 @@ async function selbsttest() {
     const v2 = vergleich(["a:x:1", "a:x:2", "a:x:3"], r);
     const v3 = vergleich(["a:x:1"], r);
     const rein = v1.ok && !v2.ok && v2.neu[0] === "a:x:3" && !v3.ok && v3.geheilt[0] === "a:x:2";
-    console.log(`${rein ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt})`);
+    // Der Teil richtet nur seine Arten: Teil 1 ohne die Haus-Zeile ist grün, ungefiltert nennte er sie „geheilt".
+    const rt = { "fachwerk:haus:doppel": "", "porta:gate:glow": "", "gate:L1": "" };
+    const t1 = vergleich(["porta:gate:glow", "gate:L1"], { tot: teilVon(rt, 1) });
+    const t2 = vergleich(["fachwerk:haus:doppel"], { tot: teilVon(rt, 2) });
+    const teile = t1.ok && t2.ok && !vergleich(["porta:gate:glow", "gate:L1"], { tot: rt }).ok;
+    console.log(
+        `${rein && teile ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt}) · je Teil nur seine Arten (Teil 1 ${t1.ok ? "grün" : "rot"} · Teil 2 ${t2.ok ? "grün" : "rot"} · ungefiltert rot)`
+    );
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
@@ -706,19 +722,20 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
+    return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
     }
 (async () => {
     if (process.argv.includes("--selftest")) {
         const ok = await selbsttest();
         process.exit(ok ? 0 : 1);
     }
+    if (![1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
     const m = await messenAlle();
     const toteZ = m.zeilen.filter(tot);
     const brechend = m.zeilen.filter(bricht);
     const oa = Object.keys(m.ofenArten).sort();
     console.log(
-        `Regler-wirkt: ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
+        `Regler-wirkt Teil ${TEIL} (${TEIL === 2 ? HAUS : "ohne " + HAUS}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
     );
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
@@ -752,25 +769,26 @@ async function selbsttest() {
         process.exit(0);
     }
     const ratsche = ratscheLesen();
-    const v = vergleich(toteZ.map(name), ratsche);
+    const v = vergleich(toteZ.map(name), { tot: teilVon(ratsche.tot) });
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
     const soll = ratsche.soll;
     // Die Budget-Ratsche: ein Regler, dessen Rand-Wert die Stufe über ihre Budget-Zeile treibt (der Guss steht, das
     // Gesetz bricht) — neu rot, geheilt rot bis die Zeile fällt.
     const rb = budgetRatscheLesen();
-    const vB = vergleich(Object.keys(budget), { tot: rb.bruch });
+    const vB = vergleich(Object.keys(budget), { tot: teilVon(rb.bruch) });
     for (const n of vB.neu) console.log(`❌ NEU ÜBER BUDGET: ${n} — ${budget[n][0]}`);
     for (const n of vB.geheilt) console.log(`❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`);
     // Die Staffel (pipeline.K3): die Ratsche liegt höchstens auf ihr — die Klasse fällt im Rezept, nie am Regler-Rand.
-    const ueberStaffel = Object.keys(budget).length > rb.staffel;
+    const anderer = Object.keys(rb.bruch).length - Object.keys(teilVon(rb.bruch)).length;
+    const ueberStaffel = Object.keys(budget).length + anderer > rb.staffel;
     if (ueberStaffel)
         console.log(
-            `❌ STAFFEL: ${Object.keys(budget).length} Regler über Budget > Staffel ${rb.staffel} — ${Object.keys(budget).join(", ")}`
+            `❌ STAFFEL: ${Object.keys(budget).length} Regler über Budget + ${anderer} im anderen Teil (Ratsche) > Staffel ${rb.staffel} — ${Object.keys(budget).join(", ")}`
         );
     // Die Reduktion je Art (Staffel 2): eine Stufe über ihrer Quote ist beim Namen in der Ratsche reglerBudget.quote.
     const quote = quoteUeber(m.stufen);
-    const vQ = vergleich(Object.keys(quote), { tot: rb.quote });
+    const vQ = vergleich(Object.keys(quote), { tot: teilVon(rb.quote) });
     for (const n of vQ.neu)
         console.log(
             `❌ NEU ÜBER DER QUOTE: ${n} ${quote[n]} (Soll L1/L0 ≤ ${STUFEN_QUOTE[1]}, L2/L0 ≤ ${STUFEN_QUOTE[2]})`
@@ -783,7 +801,7 @@ async function selbsttest() {
     if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
-        `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
+        `✅ gate:regler-wirkt Teil ${TEIL}: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(teilVon(ratsche.tot)).length} von ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length - anderer} von ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
     );
     process.exit(0);
 })().catch((e) => {
