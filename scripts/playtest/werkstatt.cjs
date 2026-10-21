@@ -1607,6 +1607,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const out = {};
         const container = document.getElementById("status-abilities");
         out.containerInDom = !!container;
+        // der Spieler öffnet den Hof: nur dort schreibt der Status-Takt die Gesten (K2 Belegung)
+        r.toggleDrawer("kreaturen");
 
         // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
         //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
@@ -1623,7 +1625,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
-            r._statusRefs.lastTick = -Infinity;
         }
         r.updateStatusPanel(3001);
         const rows = container ? container.querySelectorAll(".ability-row") : [];
@@ -1666,7 +1667,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         //     Änderung darf das DOM nicht neu bauen — wir markieren
         //     einen unsichtbaren Wert und prüfen Persistenz.
         rows[0].setAttribute("data-test-marker", "preserved");
-        if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(3002);
         const rowAgain = container ? container.querySelector(".ability-row") : null;
         out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
@@ -1698,9 +1698,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         delete r.state.abilities.uiAbilityTest;
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
-            r._statusRefs.lastTick = -Infinity;
         }
         r.updateStatusPanel(3003);
+        r.closeAllDrawers();
 
         return out;
     });
