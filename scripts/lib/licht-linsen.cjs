@@ -2237,8 +2237,9 @@ function luftTiefe(o) {
             }
             const k = (s.y * t) / Hs;
             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
-            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
-            return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
+            const dr = z < 1 ? q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) : Infinity;
+            const szene = Math.abs(dr / t - 1) <= 0.15;
+            return { d: t, dr, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
         const bRef = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
         const uhr = (u) => {
@@ -2255,7 +2256,7 @@ function luftTiefe(o) {
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
             D.iv = new T.Matrix4().fromArray(D.ivp);
-            const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
+            const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [], px: [] }));
             const inS = [[], [], []];
             const gez = [];
             const fern = {};
@@ -2278,11 +2279,12 @@ function luftTiefe(o) {
                         b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
                     const dh = Math.abs(ton(L, i) - ton(S, i));
                     b.dh.push(Math.min(dh, 360 - dh));
+                    if (b.d === 8000) b.px.push(l0.concat(sa, bRef.map((x) => Math.exp(-x * t.g * t.dr))).map((x) => +x.toFixed(4)));
                 }
             const rand = med(Object.values(fern));
             return {
                 blende: k,
-                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh), px: b.px })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
             };
@@ -2409,15 +2411,22 @@ function tonSaett(c) {
     const h = !d ? 0 : 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
     return [Math.round(h), +(d / hi).toFixed(3)];
 }
+// der Ton im Bild der Linse aus linearem rgb, die Umkehrung von `roh` (Neutral-Kurve unter der Kompression, sRGB, 8 bit)
+function ton8(c) {
+    const m = Math.min(...c);
+    const o = m < 0.08 ? m - 6.25 * m * m : 0.04;
+    return tonSaett(c.map((x) => Math.round(255 * (x - o <= 0.0031308 ? 12.92 * (x - o) : 1.055 * (x - o) ** (1 / 2.4) - 0.055))))[0];
+}
 
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
-// Referenz, grau = 0) · FARBTON (8 km zur In-Streuung) · HIMMEL (die In-Streuung am Horizont gegen den Himmel der Referenz, Ton
+// Referenz, grau = 0) · FARBTON (8 km zur In-Streuung wie die Referenz-Luft über demselben Boden) · HIMMEL (die In-Streuung am Horizont gegen den Himmel der Referenz, Ton
 // und Sättigung) · SONNENSEITE · FERNES WEISS, K2-1 KANTE. Jede Sicht (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen.
 function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
     const liste = [];
     const zahlen = [];
+    const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     const dRef = R.rayleigh[2] - R.rayleigh[0];
     const gemessen = R.baenderM.map(() => 0);
     for (const u of R.uhren)
@@ -2428,7 +2437,20 @@ function luftTiefeUrteil(m, R) {
                 const q = b.q.map((x, c) => (x == null || Math.abs(x - 1) > B.T ? "RGB"[c] + " " + x : "")).filter(Boolean);
                 if (u === 0.5) gemessen[R.baenderM.indexOf(b.d)]++;
                 if (u === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
-                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
+                if (b.d !== 8000) continue;
+                // DER FARBTON rückt so weit zum Himmel wie unter der Luft der Referenz über DEMSELBEN Boden: je Pixel T_soll (im
+                // gezeichneten Abstand) · L0 + (1 − T_soll) · ihr Himmel in der Leuchtdichte der gemessenen In-Streuung. Ein festes ≤ 10° zum Himmel verlangte
+                // Boden-Albedo ≤ 0,06 — die Referenz-Luft rückt Grasland nur auf 22–27°, Fels auf 16–23° (himmel-ton).
+                const S0 = himmelReferenz(R, z.sonne, az, m.augeM);
+                const ref = (b.px || [])
+                    .map((p) => {
+                        const S = S0.map((x) => (x * Y(p.slice(3, 6))) / Y(S0));
+                        const d = Math.abs(ton8(p.slice(6).map((t, c) => t * p[c] + (1 - t) * S[c])) - ton8(S));
+                        return Math.min(d, 360 - d);
+                    })
+                    .sort((x, y) => x - y)[(b.px || []).length >> 1];
+                zahlen.push(`${wo}: Farbton 8 km ${b.dh}° zur In-Streuung, die Referenz-Luft ${ref}°`);
+                if (!(Math.abs(b.dh - ref) <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° zur In-Streuung, die Referenz-Luft über demselben Boden ${ref}° (±${B.dh}°)`);
             }
             // ein fast graues Soll (Sättigung < `grau`) trägt keinen Ton: dort zählt allein, dass die Messung grau bleibt
             const [h, s] = z.himmel ? tonSaett(z.himmel) : [];
@@ -2451,7 +2473,6 @@ function luftTiefeUrteil(m, R) {
     });
     // DIE SONNENSEITE (die Mie-Keule): zu Mittag Y der In-Streuung zur Sonne / gegen sie, gegen dasselbe Verhältnis der Referenz
     const [z0, z1] = [0, 180].map((az) => m.zeilen.find((x) => x.uhr === 0.5 && x.az === az && x.himmel));
-    const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     const seite = z0 && z1 && +(Y(z0.himmel) / Y(z1.himmel)).toFixed(3);
     const seiteRef = z0 && +(Y(himmelReferenz(R, z0.sonne, 0, m.augeM)) / Y(himmelReferenz(R, z0.sonne, 180, m.augeM))).toFixed(3);
     const weiss = m.weiss && m.weiss.RB;
@@ -2467,7 +2488,7 @@ function luftTiefeUrteil(m, R) {
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
     const blau = (az) => himmelReferenz(R, 60, az, 120);
-    const sichten = (dk, C, n = 50, himmel = blau) =>
+    const sichten = (dk, C, n = 50, himmel = blau, dh = 5) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
@@ -2475,7 +2496,7 @@ function luftTiefeSelbsttest(R) {
                 az,
                 rand: { km: 20, C },
                 himmel: n && himmel(az),
-                baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
+                baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh, px: n ? [[0.3, 0.3, 0.3, ...himmel(az), 0.25, 0.25, 0.25]] : [] })),
             }))
         );
     const urteil = (zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, augeM: 120, weiss }, R);
@@ -2491,6 +2512,7 @@ function luftTiefeSelbsttest(R) {
         rot(sichten(k, 0.005, 50, () => [0.06, 0.066, 0.0605]), /HIMMEL/) || "ein grüner Horizont ist nicht ROT",
         rot(sichten(k, 0.005, 50, (az) => blau(az).map((x) => (az ? x : 0.8 * x))), /SONNENSEITE/) || "die Sonnenseite 0,8 × Referenz ist nicht ROT",
         rot(sichten(k, 0.005), /FERNES WEISS/, null) || "ein ungemessenes fernes Weiß ist nicht ROT",
+        rot(sichten(k, 0.005, 50, blau, 30), /FARBTON/) || "ein Farbton 30° neben der Referenz-Luft ist nicht ROT",
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
     ].filter((x) => x !== true);
