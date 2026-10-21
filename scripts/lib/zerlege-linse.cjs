@@ -133,19 +133,26 @@ function passUhr() {
             if (uhr.messen && uid && uid[0] === "r") uhr.uidPass.set(uid, uhr.stapel[uhr.stapel.length - 1] || "?");
         })
     );
+    // DAS BUCH DER STEMPEL: der Regler leert die Stempel-Karte des Pools nach jedem Auflösen (`_perfGpuResolveKick`) —
+    // solange die Uhr steht, schreibt jedes Auflösen seine Stempel auch in ihr Buch.
+    const pool = be.timestampQueryPool && be.timestampQueryPool.render, buch = new Map();
+    if (pool) ab.push(haken(pool.timestamps, "set", function (k, v) {
+        buch.set(k, v);
+        return Map.prototype.set.call(this, k, v);
+    }));
     uhr.lesen = async () => {
-        const pool = be.timestampQueryPool && be.timestampQueryPool.render;
         if (!pool) return null;
         await rend.resolveTimestampsAsync("render");
         const je = {};
         for (const [uid, pass] of uhr.uidPass) {
-            const ms = pool.timestamps.get(uid);
+            const ms = buch.get(uid);
             if (!Number.isFinite(ms)) continue;
             const f = uid.slice(uid.lastIndexOf(":f") + 2);
             const e = je[pass] || (je[pass] = {});
             e[f] = (e[f] || 0) + ms;
         }
         uhr.uidPass.clear();
+        buch.clear();
         return je;
     };
     uhr.nullen = () => Object.values(uhr.zaehl).forEach((z) => (z.an = z.aus = 0));
@@ -202,7 +209,10 @@ function zweiGipfelSelbsttest() {
 // Kopf f2904a72 (Radeon, Mess-Wiese Ego stehend) trug er je Bild p50 7,74 ms bei einem Takt von 3,8 ms — rund 4 ms ohne
 // Namen. Der Lauf markiert je Takt Anfang und Ende (`performance.mark`), die Spur (CDP-Trace, `BELEGUNG_SPUR`) trägt jede
 // Aufgabe des Fadens; je 10-µs-Zelle gewinnt das innerste Ereignis (Name) bzw. das innerste mit Klasse, der Takt zuletzt.
-// Ein Bild reicht vom Anfang eines gerenderten Takts zum nächsten. Pflicht ist alles außerhalb des Takts außer Zeitgeber/
+// DER TAKT IST SEINE HÜLLE: die Marken tragen die Seiten-Uhr, ohne Isolation auf 100 µs vergröbert mit Zufalls-Schwelle — ihr
+// eigener Preis (55–80 µs je Marke unter der Spur) fiel so zum Teil vor und hinter den Takt, in die Pflicht. Die Grenzen
+// des Takts sind die des rAF-Rückrufs, der seine Marken trägt (`FunctionCall`, Spur-Uhr): r184-Hülle, Geschirr und
+// Spiel-Takt darin sind Takt; ein Takt ohne Hülle ist ROT. Ein Bild reicht vom Anfang eines gerenderten Takts zum nächsten. Pflicht ist alles außerhalb des Takts außer Zeitgeber/
 // Idle (vertagbar) — der zählt nur in Bildern, deren Belegung das Bild-Fenster überzieht — und außer dem BODEN des
 // Takt-Rahmens (`browser`: die Aufgabe ohne Kind-Ereignis): eine LEERE WebGPU-Leinwand (Klar-Pass je rAF, gleiches Chrome,
 // Radeon, 120 Hz) trägt ihn mit `BROWSER_BODEN_MS` 0,27 ms je Takt — der Boden jedes rAF. Was ein Bild darüber trägt (Boden ×
@@ -214,6 +224,7 @@ const BELEGUNG_KLASSEN = [ // [Klasse, Muster auf den Ereignis-Namen] — die er
     ["gc", /GC|Scavenge|Sweep|Mark(ing|Compact)/],
     ["zeitgeber", /^(TimerFire|FireIdleCallback)$/],
     ["nachrichten", /^(EventDispatch:message|HandlePostMessage|v8\.deserialize)$/],
+    ["rueckruf", /^(Receive mojo (message|reply)|BlinkScheduler_PerformMicrotaskCheckpoint)$/], // GPU-/IDB-Rückkehr + Fortsetzung
     ["lebenszyklus", /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|UpdateLayer|HitTest|IntersectionObserverController::computeIntersections)$/],
     ["praesentation", /GPUCanvasContext|CanvasResource|SwapBuffers|PresentFrame|SharedImage/],
 ];
@@ -241,14 +252,19 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         if (k >= 0) klasse.fill(k + 3, i, j);
         else for (let c = i; c < j; c++) if (klasse[c] < 3) klasse[c] = /RunTask$/.test(nm) ? klasse[c] || 2 : 1;
     }
-    const bilder = [], takte = [];
+    const bilder = [], takte = [], huellen = auf.filter((e) => e.ph === "X" && e.name === "FunctionCall");
+    let hi = 0, ohneHuelle = 0;
     marken.forEach((m, i) => {
         const ende = msg(m) === "anazh-takt" && marken.slice(i + 1, i + 3).find((x) => msg(x) !== "anazh-takt");
         if (!ende) return;
-        klasse.fill(TAKT, zelle(m.ts), zelle(ende.ts));
-        takte.push(m.ts);
-        if (msg(ende) === "anazh-bild") bilder.push(m.ts);
+        while (hi < huellen.length && huellen[hi].ts + huellen[hi].dur < ende.ts - 100) hi++;
+        const h = huellen[hi];
+        if (!h || h.ts > m.ts + 100) return void ohneHuelle++;
+        klasse.fill(TAKT, zelle(h.ts), zelle(h.ts + h.dur));
+        takte.push(h.ts);
+        if (msg(ende) === "anazh-bild") bilder.push(h.ts);
     });
+    if (ohneHuelle) return { urteil: "ROT", befund: `${ohneHuelle} Takte ohne Hülle (rAF-FunctionCall) in der Spur` };
     const ZG = KL.indexOf("zeitgeber"), jeBild = [], fremdName = new Float64Array(namen.length);
     for (let i = 0, ti = 0; i + 1 < bilder.length; i++) {
         const z = new Float64Array(KL.length);
@@ -282,19 +298,20 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
             anteil.sort((a, b) => b[1].mittel - a[1].mittel).map(([k, z]) => `${k} p95 ${z.p95} (Mittel ${z.mittel})`).join(" · "),
     };
 }
-// Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): eine synthetische Spur, 300 Bilder zu 16,7 ms, Takt 4 ms in der
-// rAF-Aufgabe, ein fremder Faden voll Last. Eine Pflicht-Last je Bild (Layout 1,5 ms nach dem Takt) wird ROT beim Namen
+// Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): eine synthetische Spur, 300 Bilder zu 16,7 ms, Takt 4 ms in seiner
+// Hülle (4,08 ms), ein fremder Faden voll Last; ohne Hülle ist er ROT. Eine Pflicht-Last je Bild (Layout 1,5 ms nach dem Takt) wird ROT beim Namen
 // „lebenszyklus", ein vertagbarer Zeitgeber (3 ms, eigene Aufgabe) bleibt GRÜN — bis das Bild-Fenster kleiner ist als die
 // Belegung; dann ist er Pflicht und ROT beim Namen „zeitgeber". Der Takt-Rahmen des Browsers über seinem Boden (1,5 ms Aufgabe
 // ohne Kind je Bild) wird ROT beim Namen „browser"; am Boden (zwei Takte je Bild, ein leerer darunter, je 0,25 ms) bleibt er GRÜN.
 function belegungSelbsttest() {
-    const spur = ({ layout = 0, zeit = 0, rahmen = 0, leerTakt = false, bildMs }) => {
+    const spur = ({ layout = 0, zeit = 0, rahmen = 0, leerTakt = false, huelle = true, rueck = 0, bildMs }) => {
         const ev = [{ pid: 2, tid: 9, ph: "X", name: "RunTask", ts: 0, dur: 1e9 }];
         const X = (name, ts, dur) => ev.push({ pid: 1, tid: 1, ph: "X", name, ts, dur });
         const M = (name, ts) => ev.push({ pid: 1, tid: 1, ph: "R", cat: "blink.user_timing", name, ts });
         const takt = (a, ms, ende) => {
             X("RunTask", a, ms + 200 + rahmen);
             X("FireAnimationFrame", a + 50, ms + 100);
+            X(huelle ? "FunctionCall" : "v8.callFunction", a + 60, ms + 80);
             M("anazh-takt", a + 100);
             M(ende, a + 100 + ms);
         };
@@ -304,14 +321,17 @@ function belegungSelbsttest() {
             if (layout) X("Layout", a + 4200, layout);
             if (zeit) X("RunTask", a + 8000, zeit);
             if (zeit) X("TimerFire", a + 8000, zeit);
+            if (rueck) X("Receive mojo message", a + 9000, rueck);
         }
         return belegungAuswerten(ev, { bildMs });
     };
     const faelle = [{}, { layout: 1500 }, { zeit: 3000 }, { zeit: 3000, bildMs: 7 }, { rahmen: 1500 }, { rahmen: 150, leerTakt: true }];
-    const [leer, last, zeit, ueber, rahmen, boden] = faelle.map(spur);
+    const [leer, last, zeit, ueber, rahmen, boden, nackt, rueck] = [...faelle, { huelle: false }, { rueck: 1200 }].map(spur);
     const f = [];
-    if (leer.urteil !== "GRÜN" || leer.jeKlasse.takt.p50 !== 4 || leer.pflichtMs.p95 !== 0.1) f.push(`ohne Last: ${JSON.stringify(leer)}`);
-    if (rahmen.urteil !== "ROT" || !/— browser p95 1.33 /.test(rahmen.befund)) f.push(`Browser über dem Boden: ${JSON.stringify(rahmen)}`);
+    if (leer.urteil !== "GRÜN" || leer.jeKlasse.takt.p50 !== 4.08 || leer.pflichtMs.p95 !== 0.02) f.push(`ohne Last: ${JSON.stringify(leer)}`);
+    if (nackt.urteil !== "ROT" || !/Takte ohne Hülle/.test(nackt.befund)) f.push(`Takt ohne Hülle: ${JSON.stringify(nackt)}`);
+    if (rueck.urteil !== "ROT" || !/— rueckruf p95 1\.2 /.test(rueck.befund)) f.push(`Rückruf je Bild: ${JSON.stringify(rueck)}`);
+    if (rahmen.urteil !== "ROT" || !/— browser p95 1\.33 /.test(rahmen.befund)) f.push(`Browser über dem Boden: ${JSON.stringify(rahmen)}`);
     if (boden.urteil !== "GRÜN" || boden.takteJeBild !== 2 || boden.jeKlasse.browser.p50 !== 0.5) f.push(`Browser am Boden: ${JSON.stringify(boden)}`);
     if (last.urteil !== "ROT" || !/— lebenszyklus p95 1\.5 /.test(last.befund) || !/^Layout 1\.50$/.test(last.taeterMsJeBild[0]))
         f.push(`Layout je Bild: ${JSON.stringify(last)}`);

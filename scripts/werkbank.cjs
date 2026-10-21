@@ -406,8 +406,7 @@ function lauf(k) {
         const ort = st.playerMesh.position.clone(), yaw0 = st.yaw;
         let snap = H && Object.assign({}, H.acc), tWand = null, probeTakt = 0;
         rend.setAnimationLoop((t) => {
-            // DIE BELEGUNG: der ganze Rückruf (Spiel-Takt + Geschirr) zwischen zwei Marken der Spur — `performance.mark`
-            // kostet µs, `console.timeStamp` ~90 µs je Marke (die CDP-Konsole reist mit) und trug das in den Rest.
+            // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
             const spur = messen && k.spur;
             if (spur) performance.mark("anazh-takt");
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
