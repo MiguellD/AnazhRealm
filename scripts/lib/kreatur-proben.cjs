@@ -2879,6 +2879,10 @@ async function kreaturProben(r, T, opts) {
         const letzte = new Map();
         for (const b of L) letzte.set(b, { x: b.position.x, z: b.position.z });
         let sprungN = 0;
+        let wandN = 0;
+        // Täter (Selbsttest): der Weg geradeaus zum Ziel, durch jedes Haus
+        if (taeter === "bewohner-wand") r._bewohnerStrecke = (S0, von, ziel) => [ziel];
+        restore.push(() => delete r._bewohnerStrecke);
         let sprungMax = 0;
         let alsLeibMax = alsLeibStart;
         let schmiede10 = null;
@@ -2896,12 +2900,35 @@ async function kreaturProben(r, T, opts) {
         const tStart = s.timeOfDay * 24;
         const schritte = Math.round(24 / SCHRITT_H);
         const tTag = performance.now();
+        const TAG_DECKEL_MS = 240000; // der Zeitraffer hat seine Wand: ein Takt, der den Tag nicht trägt, ist ein Befund
+        let abgebrochen = null;
+        let taktMs = 0;
+        let taktMax = 0;
+        let taktN = 0;
         for (let i = 1; i <= schritte; i++) {
             const stunde = (tStart + i * SCHRITT_H) % 24;
             r._uhrSetzen(stunde / 24, "regler");
+            if (performance.now() - tTag > TAG_DECKEL_MS) {
+                abgebrochen = Math.round(stunde * 10) / 10;
+                break;
+            }
             for (let k = 0; k < takte; k++) {
+                const tk = performance.now();
                 r._tickBewohner(DT);
+                const dk = performance.now() - tk;
+                taktMs += dk;
+                taktMax = Math.max(taktMax, dk);
+                taktN++;
                 // Täter (Selbsttest): der Teleport an den Soll-Ort — jeder Leib steht im Takt an seinem Ziel
+                // die Wand: wer geht, steht nie im Grundriss eines Hauses — auf dem Bein zwischen Tür und Stand nie in einem fremden
+                for (const b of liste) {
+                    const g = b.leib;
+                    if (!b.weg || !gezeichnet(g)) continue;
+                    const o = b.orte;
+                    const q = b.weg[b.wi];
+                    const bein = q === o.tuer || (q === o.vor && b.wi === 0 && b.stand === o.tuer);
+                    if (r._imGrundriss(g.position.x, g.position.z, 0, 0, bein ? o.tuer.haus : null) === "haus") wandN++;
+                }
                 if (taeter === "bewohner-sprung")
                     for (const b of liste)
                         if (b.ziel && b.leib) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
@@ -2922,7 +2949,7 @@ async function kreaturProben(r, T, opts) {
             }
             alsLeibMax = Math.max(alsLeibMax, L.filter((b) => b.visible).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs zum Soll (sein Weg
-            // schrumpfte seit dem letzten Ereignis um mindestens die Hälfte dessen, was sein Gang-Tempo in der Zeit trägt)
+            // schrumpft, siehe unten)
             if (planFn)
                 for (const b of liste) {
                     const sh = (stunde + verschub) % 24;
@@ -2933,16 +2960,19 @@ async function kreaturProben(r, T, opts) {
                     const ziel = soll.drinnen ? b.orte.tuer : soll.ort;
                     const dist = Math.hypot(g.position.x - ziel.x, g.position.z - ziel.z);
                     const rest = Number.isFinite(b.wegRest) ? b.wegRest : null;
+                    // unterwegs: sein Weg zu DIESEM Soll begann seit dem letzten Ereignis, oder er schrumpfte seitdem um die Hälfte
+                    // dessen, was sein Gang-Tempo in der Zeit trägt
                     const alt = wegVorher.get(b);
                     const unterwegs =
                         b.ziel === ziel &&
                         rest !== null &&
-                        Number.isFinite(alt) &&
-                        alt - rest >= 0.5 * (b.tempo || 1) * takte * DT;
+                        (!alt || alt.ziel !== ziel
+                            ? true
+                            : Number.isFinite(alt.rest) && alt.rest - rest >= 0.5 * (b.tempo || 1) * takte * DT);
                     const da = soll.drinnen ? dist < 1.5 && !gezeichnet(g) : dist < 1.5 && gezeichnet(g);
                     if (da || unterwegs) treffer.set(b, (treffer.get(b) || 0) + 1);
                     proben.set(b, (proben.get(b) || 0) + 1);
-                    wegVorher.set(b, rest);
+                    wegVorher.set(b, { ziel: b.ziel, rest });
                 }
             if (Math.abs(stunde - 10) < SCHRITT_H / 2) {
                 schmiede10 = anStation();
@@ -2976,7 +3006,14 @@ async function kreaturProben(r, T, opts) {
             nahLeiber: A.BEWOHNER.nahLeiber,
             plan: !!planFn,
             planGleich,
-            tag: { ereignisse: schritte, takte, sek: tagSek },
+            tag: {
+                ereignisse: schritte,
+                takte,
+                sek: tagSek,
+                abgebrochen,
+                taktMs: taktN ? Math.round((taktMs / taktN) * 1000) / 1000 : null,
+                taktMaxMs: Math.round(taktMax * 10) / 10,
+            },
             bewohner: liste.length,
             bewegtN: L.filter(gegangen).length,
             wegMedianM: Math.round((quantil(wege, 0.5) || 0) * 10) / 10,
@@ -2988,6 +3025,7 @@ async function kreaturProben(r, T, opts) {
             schmiede10,
             schmiede2,
             sprungN,
+            wandN,
             sprungMaxM: Math.round(sprungMax * 100) / 100,
             stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
@@ -3050,6 +3088,10 @@ function urteil(name, z) {
         soll(z.plan, "kein Tagesplan: koerper-core trägt kein tagesPlan (VERHALTEN) — der Bewohner kennt keinen Tag");
         soll(z.planGleich, "der Tagesplan ist bei gleichem Samen nicht bit-gleich");
         soll(
+            z.tag.abgebrochen === null,
+            `Zeitraffer abgebrochen um ${z.tag.abgebrochen} Uhr: der Bewohner-Takt trug den Tag nicht in 240 s (${z.tag.taktMs} ms je Takt, max ${z.tag.taktMaxMs})`
+        );
+        soll(
             z.bewegtN === z.leiber,
             `${z.leiber - z.bewegtN} von ${z.leiber} Bewohnern ohne Bewegung im Tag (Weg-Median ${z.wegMedianM} m)`
         );
@@ -3060,6 +3102,10 @@ function urteil(name, z) {
         soll(z.stationen > 0, "keine Station Schmiede im Start-Dorf (kein Bewohner mit Rolle schmiede)");
         soll(z.schmiede10 > 0, `Station Schmiede um 10 Uhr leer (${z.schmiede10} am Werk)`);
         soll(z.schmiede2 === 0, `Station Schmiede um 2 Uhr besetzt (${z.schmiede2} am Werk)`);
+        soll(
+            z.wandN === 0,
+            `durch die Hauswand: ${z.wandN} Takte, in denen ein Gehender im Grundriss eines Hauses stand`
+        );
         soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame (max ${z.sprungMaxM} m)`);
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
@@ -3462,6 +3508,7 @@ const TAETER = {
         ["bewohner-menge", /Leiber als Leib gezeichnet/],
         ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
         ["bewohner-sprung", /Sprung im Nahbereich/],
+        ["bewohner-wand", /durch die Hauswand/],
     ],
 };
 

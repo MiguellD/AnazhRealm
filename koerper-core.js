@@ -1356,6 +1356,84 @@
         rubber: Object.freeze([24, 0.03]),
     });
 
+    // ── VERHALTEN (Meisterkarte mensch.K2, rein additiv; die Form des Kapitels VERHALTEN in tetrapoda-core) — DER TAG EINES
+    //    MENSCHEN als REINE Funktion der Uhr: wer er ist (sein Same, die Rolle seines Hauses aus dem Fachwerk-Plan) und
+    //    welche Stunde schlägt, ergibt, wo er sein soll und was er dort tut. Kein Zustand, kein Zufall: derselbe Same und
+    //    dieselbe Stunde ⇒ dasselbe Wort (bit-gleich). TAGES_GESETZ trägt die Wenden des Tags in Stunden (0–24): aufstehen
+    //    (wach), zum Werk (werk[0]), Mittag (mittag), Feierabend (werk[1]), zu Bett (ruhe); jeder Mensch verschiebt jede
+    //    Wende um bis zu ±streuH (aus seinem Samen — das Dorf wacht nicht im selben Atemzug). Die Rollen der Häuser mit
+    //    eigenem Werk (die Schmiede, die Kirche, das Gasthaus) tragen ihre eigenen Stunden; im Wohnhaus wählt der Same den
+    //    Beruf nach `berufe` (markt: der Stand auf dem Platz · feld: der Acker · hof: der eigene Hof). Mittags und abends geht
+    //    der Anteil platzMittag / platzAbend auf den Platz. Das Tempo des Gangs ist das Gesetz des Leibs (tetrapoda
+    //    tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und gate:kreatur-takt bewohner. ──
+    var TAGES_GESETZ = Object.freeze({
+        wach: 6.5,
+        werk: Object.freeze([8, 17]),
+        mittag: Object.freeze([12, 13]),
+        ruhe: 22,
+        streuH: 0.5,
+        platzMittag: 0.45,
+        platzAbend: 0.4,
+        gang: 1.3,
+        rollen: Object.freeze({
+            schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
+            kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
+            gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+        }),
+        berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
+    });
+    // die Zahl des Samens zu einem Wort: [0, 1), rein (der Same ist eine ganze Zahl, das Wort benennt die Wende)
+    function _tagZahl(same, wort) {
+        var h = ((same >>> 0) ^ 0x9e3779b9) >>> 0;
+        for (var i = 0; i < wort.length; i++) {
+            h = Math.imul(h ^ wort.charCodeAt(i), 0x85ebca6b);
+            h ^= h >>> 13;
+        }
+        h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+        h ^= h >>> 16;
+        return (h >>> 0) / 4294967296;
+    }
+    // DER BERUF: das Werk der Rolle seines Hauses (schmiede · kirche · gasthaus), im Wohnhaus aus dem Samen nach `berufe`
+    function berufVon(same, rolle) {
+        if (Object.prototype.hasOwnProperty.call(TAGES_GESETZ.rollen, rolle)) return rolle;
+        var u = _tagZahl(same, "beruf");
+        var B = TAGES_GESETZ.berufe;
+        var a = 0;
+        for (var k in B) {
+            a += B[k];
+            if (u < a) return k;
+        }
+        return "hof";
+    }
+    // DER PLAN DER STUNDE: heim / werk / platz sind die Orte des Menschen (der Wirt reicht sie; ohne Werk ist der Hof das
+    // Werk, ohne Platz das Heim der Platz). Liefert { ort, wo, akt, drinnen } — ort ist einer der gereichten Orte, akt eines
+    // von schlaf · morgen · arbeit · mittag · abend; drinnen = der Mensch ist in seinem Haus (an der Tür ungezeichnet).
+    function tagesPlan(same, rolle, heim, werk, stunde, platz) {
+        var G = TAGES_GESETZ;
+        var R = G.rollen[rolle] || {};
+        var h = ((Number(stunde) % 24) + 24) % 24;
+        var j = function (wort) {
+            return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
+        };
+        var wach = G.wach + j("wach");
+        var w0 = (R.werk || G.werk)[0] + j("werk0");
+        var w1 = (R.werk || G.werk)[1] + j("werk1");
+        var m0 = G.mittag[0] + j("mittag");
+        var m1 = m0 + (G.mittag[1] - G.mittag[0]);
+        var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
+        var w = werk || heim;
+        var p = platz || heim;
+        var aus = function (wo, akt, drinnen) {
+            return { ort: wo === "werk" ? w : wo === "platz" ? p : heim, wo: wo, akt: akt, drinnen: !!drinnen };
+        };
+        if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
+        if (h < w0) return aus("heim", "morgen", false);
+        if (h >= m0 && h < m1 && !R.mittagAmWerk)
+            return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("werk", "mittag", false);
+        if (h < w1) return aus("werk", "arbeit", false);
+        return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
@@ -1391,6 +1469,10 @@
         PARAMS_BY_KIND: { koerper: PARAMS },
         LEIB: LEIB,
         WEBE: WEBE,
+        // mensch.K2 — DER TAG (VERHALTEN): das Gesetz, der Beruf, der Plan der Stunde (Leser: _bewohnerListe, _tickBewohner)
+        TAGES_GESETZ: TAGES_GESETZ,
+        berufVon: berufVon,
+        tagesPlan: tagesPlan,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
