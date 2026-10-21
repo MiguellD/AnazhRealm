@@ -39,11 +39,9 @@ const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
-
 const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 const SEED = 1;
-
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
 // first-wins, danach der Primär-Kern): jeder Zweit-Kern mit Namensraum wird THREE-frei im vm gelesen (nur seine
 // PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto).
@@ -62,8 +60,7 @@ function kernVonArt() {
         for (const art of Object.keys(pbk)) if (!(art in aus)) aus[art] = c.id;
     }
     return aus;
-}
-
+    }
 // ── DER OFEN-KANAL (Q0: die Linse misst, wo der Regler WIRKT). Die Werkstatt-Vorschau `_workshopStudioPreviewFrom`
 // fragt zuerst den Host-Ofen (`_workshopOvenPreview`): die MESHFREI-Arten (Vertrag §8 — kein Mesh aus dem Kern) gießt
 // der Stamm selbst, der Regler-Wert reist aus `ws.studioOv[preset]` in den Guss (koerper: `_buildHumanGroup(ov)` →
@@ -76,7 +73,6 @@ function kernVonArt() {
 // ausfällt, rauscht (beides rot). Eine Ofen-Art ohne Gestalt-Bäcker (`BAKERS_BY_KIND[art]` fehlt, Vertrag §8.4) gießt
 // nichts: ihre Regler sind tot mit diesem Grund (Ratsche).
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
-
 async function imStamm(cb) {
     const server = statikServer();
     await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
@@ -88,13 +84,7 @@ async function imStamm(cb) {
             window.__anazhHeadlessNullRenderer = true;
         });
         const seitenFehler = [];
-        page.on("pageerror", (e) =>
-            seitenFehler.push(
-                String((e && e.message) || e)
-                    .split("\n")[0]
-                    .slice(0, 160)
-            )
-        );
+        page.on("pageerror", (e) => seitenFehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
         await page.goto(`http://127.0.0.1:${OFEN_PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
         // geladen und der Boot-Prefetch der Gattungen ist durch.
@@ -102,17 +92,7 @@ async function imStamm(cb) {
             () => {
                 const r = window.anazhRealm;
                 const f = r && r._foundry;
-                return !!(
-                    f &&
-                    f.ready &&
-                    f.recipes &&
-                    f.paramsByKind &&
-                    Object.keys(f.paramsByKind).length &&
-                    !f._vorrat &&
-                    globalThis.BAKERS_BY_KIND &&
-                    window.__koerperCore &&
-                    window.__tetrapodaCore
-                );
+                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
             },
             { timeout: 240000, polling: 250 }
         );
@@ -124,8 +104,7 @@ async function imStamm(cb) {
         await browser.close();
         server.close();
     }
-}
-
+    }
 // Im Stamm: je Ofen-Art die Zeilen über die echte Vorschau-Quelle. `taeter`: "ohneOv" (der Ofen verliert den Wert:
 // `_buildHumanGroup` ohne dialsOv — der alte Kanal-Defekt), {bruch: id, wert} (der Mensch-Bäcker wirft bei diesem Wert).
 function ofenMessen(page, opts) {
@@ -253,8 +232,7 @@ function ofenMessen(page, opts) {
         if (o.taeter && o.taeter.bruch) {
             r.constructor._tierOfenMemo && r.constructor._tierOfenMemo.clear();
             B.koerper = function (core, id, seed, lod, ov) {
-                if (ov && ov.dials && ov.dials[o.taeter.bruch] === o.taeter.wert)
-                    throw new Error("Täter: der Mensch-Bäcker wirft");
+                if (ov && ov.dials && ov.dials[o.taeter.bruch] === o.taeter.wert) throw new Error("Täter: der Mensch-Bäcker wirft");
                 return altBaecker.apply(this, arguments);
             };
         }
@@ -275,28 +253,14 @@ function ofenMessen(page, opts) {
                 if (r._workshopOvenPreview(f.recipes[rezepte[0]], rezepte[0], null, lod) === undefined) continue;
                 const baecker = typeof B[art] === "function";
                 aus.arten[art] = { lod, baecker, rezepte: rezepte.length };
-                const zeilen = f.paramsByKind[art].map((d) => ({
-                    art,
-                    id: d.id,
-                    min: d.min,
-                    max: d.max,
-                    rezepte,
-                    lod,
-                    wirkt: false,
-                    an: null,
-                    bricht: [],
-                    budget: [],
-                    keinGuss: false,
-                    gusse: 0,
-                }));
+                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], keinGuss: false, gusse: 0 }));
                 for (const p of rezepte) {
                     const offen = zeilen.filter((z) => !z.wirkt);
                     if (!offen.length) break;
                     const b0 = guss(p, lod, null);
                     const bB = bruch(b0);
                     if (bB) {
-                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker)
-                            offen.forEach((z) => (z.keinGuss = true));
+                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker) offen.forEach((z) => (z.keinGuss = true));
                         else offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
                         continue;
                     }
@@ -316,8 +280,7 @@ function ofenMessen(page, opts) {
                             }
                         }
                     const b1 = guss(p, lod, null);
-                    if (b1.hash !== b0.hash)
-                        offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
+                    if (b1.hash !== b0.hash) offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
                 }
                 aus.zeilen.push(...zeilen);
             }
@@ -327,8 +290,7 @@ function ofenMessen(page, opts) {
         }
         return aus;
     }, opts || {});
-}
-
+    }
 // DER GEBROCHENE BAU: 0 Teile (der Bäcker wirft — die Brücke fängt und liefert [] — oder liefert nichts) oder
 // nicht-endliche Zahlen in einem Fließkomma-Puffer (der Bäcker rechnet mit einem Wert, den er nicht rechnen kann).
 // Ein gebrochener Bau hat einen anderen Hash als die Basis, aber er WIRKT nicht: er ist ein benannter Fehler (rot).
@@ -336,8 +298,7 @@ function bauBruch(r) {
     if (!r || !r.teile) return "0 Teile (der Bau wirft oder liefert nichts)";
     if (r.nichtEndlich) return r.nichtEndlich + " nicht-endliche Werte (NaN/Inf) in den Puffern";
     return null;
-}
-
+    }
 // DIE WIRKUNG aus den Bauten der Stufen-Probe (unten): je Zeile von PARAMS_BY_KIND an der ersten Stufe jedes Rezepts der
 // Bau-Hash ohne ov gegen den Bau mit {id: min} bzw. {id: max}; der Regler wirkt am ersten Rezept, an dem er den Hash bewegt.
 // Die Täter des Selbsttests (in `stufenMessen`): `ohneOv` (der alte Brücken-Defekt W-A1: die Bau-Nachricht trägt den
@@ -389,8 +350,7 @@ function wirkenAus(st) {
             zeilen.push(z);
         }
     return zeilen;
-}
-
+    }
 // ── DIE STUFEN-PROBE (pipeline.K3, Kosten am Asset, Studio-Vertrag B2c): jede Stufe jeder Art mit Budget-Zeile, je Rezept
 // ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke — Dreiecke und Befehle gegen ihre Zeile
 // (PORTAL_RENDER_CONFIG.lod.budget[art][stufe]); dazu die REDUKTION je Art: das Höchste über Rezepte × Rand von
@@ -486,7 +446,6 @@ const quoteUeber = (st) =>
                 .map(([s, v]) => [`${art}:L${s}`, `${v.q.toFixed(3)} an ${v.wo}`])
         )
     );
-
 // ── DIE WURF-PROBE (1110-9, docs/studio-vertrag.md N5): DIE KOSTEN-REGEL DES WIRTS am Regler-Rand. Wirft die erste Stufe
 // einer Art über ihre NUR-WURF-Stufe (B2c `schatten` → eine Stufe mit `nurWurf`), nimmt der Wirt deren Zwilling nur, wo er
 // weniger Dreiecke wirft als die werfenden Teile der Stufe selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; das
@@ -514,8 +473,7 @@ function stammRegel() {
 function budgetVonArt(rc, art) {
     const L = (rc && rc.lod) || {};
     if (L.budget && L.budget[art]) return L.budget[art];
-    for (const k in L.zusatzBudget || {})
-        if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
+    for (const k in L.zusatzBudget || {}) if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
     return null;
 }
 function wurfAus(st, regel) {
@@ -563,12 +521,9 @@ function wurfUrteil(zeilen) {
     const rot = [];
     for (const z of zeilen) {
         if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
-        else if (z.von !== "zwilling" && z.von !== "selbst")
-            rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
+        else if (z.von !== "zwilling" && z.von !== "selbst") rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
         else if (z.wirft > Math.min(z.eigen, z.zwilling))
-            rot.push(
-                `${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`
-            );
+            rot.push(`${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`);
     }
     return rot;
 }
@@ -580,50 +535,25 @@ function wurfBericht(w) {
         `WURF (Kosten-Regel des Wirts, N5): ${w.zeilen.length} Bauten-Paare über die Regler-Hülle (${w.arten.join(", ")}) · ${w.builds} Bauten · die Stufe wirft selbst an ${selbst.length} · die NUR-WURF-Stufe über ihrer Zeile an ${ueber.length}`
     );
     for (const z of selbst)
-        console.log(
-            `  WURF ${z.art} ${z.wo}: Stufe ${z.lod} wirft (${tausend(z.eigen)} Dreiecke; der Zwilling trüge ${tausend(z.zwilling)})`
-        );
+        console.log(`  WURF ${z.art} ${z.wo}: Stufe ${z.lod} wirft (${tausend(z.eigen)} Dreiecke; der Zwilling trüge ${tausend(z.zwilling)})`);
     for (const z of ueber.filter((x) => x.von === "zwilling"))
-        console.log(
-            `  WURF ${z.art} ${z.wo}: der Zwilling wirft (${tausend(z.zwilling)} über der Zeile, billiger als Stufe ${z.lod} mit ${tausend(z.eigen)})`
-        );
-}
-
+        console.log(`  WURF ${z.art} ${z.wo}: der Zwilling wirft (${tausend(z.zwilling)} über der Zeile, billiger als Stufe ${z.lod} mit ${tausend(z.eigen)})`);
+    }
 // Die Zeilen des Ofen-Kanals in die gemeinsame Form (Kern je Art wie die Brücke sie sammelt).
 function ofenZeilen(ofen) {
     const kerne = kernVonArt();
     return ofen.zeilen.map((z) => {
-        const n = {
-            kern: kerne[z.art] || "phyto",
-            art: z.art,
-            id: z.id,
-            d: { min: z.min, max: z.max },
-            rezepte: z.rezepte,
-            lod: z.lod,
-            kanal: "Ofen",
-            wirkt: z.wirkt,
-            an: z.an,
-            bricht: z.bricht,
-            budget: z.budget,
-            grund: "",
-        };
+        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, grund: "" };
         n.grund = z.bricht.length
             ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
             : z.wirkt
               ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt)"
               : z.keinGuss
                 ? "kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser"
-                : "bewegt den Ofen-Guss an keinem der " +
-                  z.rezepte.length +
-                  " Rezepte (min " +
-                  z.min +
-                  " · max " +
-                  z.max +
-                  ")";
+                : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
         return n;
     });
-}
-
+    }
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
 async function messenAlle() {
     const ofen = await imStamm((page) => ofenMessen(page, {}));
@@ -640,13 +570,11 @@ async function messenAlle() {
         wurf: wurfAus(stufen, stammRegel()),
         stufen,
     };
-}
-
+    }
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
 // Drei Urteile je Zeile: wirkt · bricht (ein Bau mit diesem Regler ist gebrochen — immer rot, nie Ratsche) · tot.
 const bricht = (z) => z.bricht.length > 0;
 const tot = (z) => !z.wirkt && !bricht(z);
-
 // Das Urteil gegen die Ratsche (rein, ohne Browser): neu tot = rot, geheilt = rot bis die Zeile fällt.
 function vergleich(tot, ratsche) {
     const bekannt = new Set(Object.keys((ratsche && ratsche.tot) || {}));
@@ -654,19 +582,16 @@ function vergleich(tot, ratsche) {
     const neu = [...jetzt].filter((n) => !bekannt.has(n)).sort();
     const geheilt = [...bekannt].filter((n) => !jetzt.has(n)).sort();
     return { neu, geheilt, ok: !neu.length && !geheilt.length };
-}
-
+    }
 function ratscheLesen() {
     const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
-    if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object")
-        throw new Error("ratsche.json ohne Block reglerBudget.bruch");
+    if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object") throw new Error("ratsche.json ohne Block reglerBudget.bruch");
     return r.reglerTot;
 }
 function budgetRatscheLesen() {
     return JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8")).reglerBudget;
-}
-
+    }
 function bericht(zeilen) {
     const jeKern = {};
     for (const z of zeilen) {
@@ -683,8 +608,7 @@ function bericht(zeilen) {
         );
     }
     return jeKern;
-}
-
+    }
 async function selbsttest() {
     // (a) das Urteil rein: ein neuer Toter und ein Geheilter sind beide rot, die gleiche Liste ist grün.
     const r = { tot: { "a:x:1": "", "a:x:2": "" } };
@@ -692,9 +616,7 @@ async function selbsttest() {
     const v2 = vergleich(["a:x:1", "a:x:2", "a:x:3"], r);
     const v3 = vergleich(["a:x:1"], r);
     const rein = v1.ok && !v2.ok && v2.neu[0] === "a:x:3" && !v3.ok && v3.geheilt[0] === "a:x:2";
-    console.log(
-        `${rein ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt})`
-    );
+    console.log(`${rein ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt})`);
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
@@ -713,31 +635,16 @@ async function selbsttest() {
     const tTot = taeter.zeilen.filter(tot).map(name);
     const hTot = heil.zeilen.filter(tot).map(name);
     const ratsche = ratscheLesen();
-    const vT = vergleich(tTot, {
-        tot: Object.fromEntries(
-            Object.keys(ratsche.tot)
-                .filter((n) => n.includes(":vehicle:"))
-                .map((n) => [n, ""])
-        ),
-    });
-    const kanal =
-        taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
+    const vT = vergleich(tTot, { tot: Object.fromEntries(Object.keys(ratsche.tot).filter((n) => n.includes(":vehicle:")).map((n) => [n, ""])) });
+    const kanal = taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
     console.log(
         `${kanal ? "✅" : "❌"} SELBST-TEST Täter (ov erreicht die Brücke nicht): ${tTot.length}/${taeter.zeilen.length} Regler der Art vehicle tot → rot (neu tot: ${vT.neu.slice(0, 3).join(", ")}${vT.neu.length > 3 ? " …" : ""}) · ohne Täter ${hTot.length} tot`
     );
     const zB = brecher.zeilen.find((z) => z.id === "radstand");
     const andereB = brecher.zeilen.filter((z) => z !== zB && bricht(z)).map(name);
-    const bruchArten = zB
-        ? new Set(zB.bricht.map((b) => (/0 Teile/.test(b) ? "leer" : /nicht-endliche/.test(b) ? "nan" : "?")))
-        : new Set();
+    const bruchArten = zB ? new Set(zB.bricht.map((b) => (/0 Teile/.test(b) ? "leer" : /nicht-endliche/.test(b) ? "nan" : "?"))) : new Set();
     const bruchOk =
-        !!zB &&
-        bricht(zB) &&
-        !zB.wirkt &&
-        bruchArten.has("leer") &&
-        bruchArten.has("nan") &&
-        !andereB.length &&
-        !heil.zeilen.some(bricht);
+        !!zB && bricht(zB) && !zB.wirkt && bruchArten.has("leer") && bruchArten.has("nan") && !andereB.length && !heil.zeilen.some(bricht);
     console.log(
         `${bruchOk ? "✅" : "❌"} SELBST-TEST Täter (ein Regler bricht den Bau): ${zB ? name(zB) + " " + (bricht(zB) ? "BRICHT" : zB.wirkt ? "„wirkt“" : "tot") : "fehlt"} — ${zB ? zB.bricht.slice(0, 2).join(" · ") : ""} · andere BRICHT ${andereB.length} · ohne Täter BRICHT ${heil.zeilen.filter(bricht).length}`
     );
@@ -751,10 +658,7 @@ async function selbsttest() {
         oHeil = await ofenMessen(page, { nurArt: "koerper" });
         oOhne = await ofenMessen(page, { nurArt: "koerper", taeter: "ohneOv" });
         const hMax = oHeil.zeilen.find((z) => z.id === "height");
-        oBruch = await ofenMessen(page, {
-            nurArt: "koerper",
-            taeter: { bruch: "height", wert: hMax ? hMax.max : null },
-        });
+        oBruch = await ofenMessen(page, { nurArt: "koerper", taeter: { bruch: "height", wert: hMax ? hMax.max : null } });
     });
     const zH = ofenZeilen(oHeil);
     const zO = ofenZeilen(oOhne);
@@ -762,21 +666,13 @@ async function selbsttest() {
     const imOfen = !!oHeil.arten.koerper;
     const heilWirkt = zH.filter((z) => z.wirkt && !bricht(z)).length;
     const vO = vergleich(zO.filter(tot).map(name), ratsche);
-    const ofenKanal =
-        imOfen &&
-        zH.length > 0 &&
-        heilWirkt === zH.length &&
-        zO.filter(tot).length === zO.length &&
-        vO.neu.length === zO.length;
+    const ofenKanal = imOfen && zH.length > 0 && heilWirkt === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === zO.length;
     console.log(
         `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
     );
     const hB = zB2.find((z) => z.id === "height");
-    const ofenBruch =
-        !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
-    console.log(
-        `${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`
-    );
+    const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
+    console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
     // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
     // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, von Hand neben die Regel gesetzt) wirft am
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
@@ -805,8 +701,7 @@ async function selbsttest() {
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
     return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
-}
-
+    }
 (async () => {
     if (process.argv.includes("--selftest")) {
         const ok = await selbsttest();
@@ -853,20 +748,14 @@ async function selbsttest() {
     const ratsche = ratscheLesen();
     const v = vergleich(toteZ.map(name), ratsche);
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
-    for (const n of v.geheilt)
-        console.log(
-            `❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`
-        );
+    for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
     const soll = ratsche.soll;
     // Die Budget-Ratsche: ein Regler, dessen Rand-Wert die Stufe über ihre Budget-Zeile treibt (der Guss steht, das
     // Gesetz bricht) — neu rot, geheilt rot bis die Zeile fällt.
     const rb = budgetRatscheLesen();
     const vB = vergleich(Object.keys(budget), { tot: rb.bruch });
     for (const n of vB.neu) console.log(`❌ NEU ÜBER BUDGET: ${n} — ${budget[n][0]}`);
-    for (const n of vB.geheilt)
-        console.log(
-            `❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`
-        );
+    for (const n of vB.geheilt) console.log(`❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`);
     // Die Staffel (pipeline.K3): die Ratsche liegt höchstens auf ihr — die Klasse fällt im Rezept, nie am Regler-Rand.
     const ueberStaffel = Object.keys(budget).length > rb.staffel;
     if (ueberStaffel)

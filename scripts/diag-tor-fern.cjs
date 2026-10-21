@@ -299,7 +299,9 @@ const FERN = {
 };
 FERN.rest = FERN.klasse - FERN.fest;
 const STUFE_NACH_GRENZEN = Function(
-    "return function _stufeNachGrenzen(d, cur, G, s) {" + methodeAus(STAMM, "_stufeNachGrenzen").rumpf + "};"
+    "return function _stufeNachGrenzen(d, cur, G, s) {" +
+        methodeAus(STAMM, "_stufeNachGrenzen").rumpf +
+        "};"
 )();
 function stufeBei(K, d) {
     const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
@@ -396,9 +398,7 @@ check(
 );
 if (SELBST) {
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
-    const K5 = Object.assign({}, PC, {
-        buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov),
-    });
+    const K5 = Object.assign({}, PC, { buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov) });
     const f5 = fernStufe(K5);
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
@@ -424,7 +424,11 @@ if (SELBST) {
     // S1: ein Leser, dessen Rollen-Filter "wurf" durchlässt (die Fernform läse jedes Teil)
     const leck = (h, rolle, q) => huelleVon(h, rolle, q).concat(h.teile.filter((t) => t.rolle === "wurf"));
     const s1 = kosten(leck, null, true).bruch.some((b) => /wurf-Teile im Fernbild|Teile > 24/.test(b));
-    check("SELBSTTEST K: ein Leser, der wurf ins Fernbild lässt, wird rot", s1, "");
+    check(
+        "SELBSTTEST K: ein Leser, der wurf ins Fernbild lässt, wird rot",
+        s1,
+        ""
+    );
     // S2: 25 Teile "sicht"
     const s2 = kosten(
         huelleVon,
