@@ -321,8 +321,8 @@ function wasserKoerper(opts) {
             // KAMERA unter dem Spiegel liegt — nie nach den Augen des Körpers. Zwei Fälle über der See-Mitte: (a) Kamera
             // 3 m unter dem Spiegel, die Augen des Körpers in der Luft; (b) Kamera 10 m darüber, die Augen getaucht.
             const cam = st.camera;
-            const luft = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
-            if (cam && luft && luft.U && luft.U.hoehe) {
+            const luft = r._luftEnsure();
+            if (cam) {
                 const camAlt = cam.position.clone();
                 const augenAlt = st.playerEyesUnderwater;
                 const modus = (camY, augen) => {
@@ -475,8 +475,8 @@ function wasserLicht(opts) {
         // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
         // der Spiegel des Wassers) am Horizont vor dem Tauchen und danach — der Tauchgang darf sie nicht färben.
         const camL = st.camera;
-        const luftL = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
-        if (camL && luftL && luftL.U && luftL.U.farbe) {
+        const luftL = r._luftEnsure();
+        if (camL) {
             const camAltL = camL.position.clone();
             const zeitAlt = st.timeOfDay;
             const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;

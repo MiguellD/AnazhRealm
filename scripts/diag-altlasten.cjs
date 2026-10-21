@@ -358,6 +358,8 @@ const FORBIDDEN = [
     { token: "_detailViewDistance", fiel: "V18.530" },
     { token: "hazeFar", fiel: "V18.530 — kein Höhen-Melt neben der Luft" },
     { token: "hazeNear", fiel: "V18.530" },
+    { token: "heightWeight", fiel: "V18.530 — kein Höhen-Melt in AERIAL" },
+    { token: "heightCap", fiel: "V18.530" },
     { token: "setFogDistance", fiel: "V18.530 — der tote Fog-Distanz-Regler" },
     { token: "fogDistance", fiel: "V18.530" },
     { token: "slider-fog", fiel: "V18.530" },

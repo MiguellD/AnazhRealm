@@ -586,11 +586,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const atmoU = r._atmoLutBau().U;
         const mE = atmoU.mondE.value;
-        out.fogColorSet =
-            !!r.state.luft &&
-            typeof r.state.luft.farbe === "function" &&
-            atmoU.licht.value > 0 &&
-            mE.x + mE.y + mE.z > 0;
+        out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
