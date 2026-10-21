@@ -2023,12 +2023,7 @@ async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const t0 = performance.now();
-        while (performance.now() - t0 < 60000) {
-            const r = window.anazhRealm;
-            if (r && r.state && typeof r._weatherFieldFor === "function") break;
-            await sleep(30);
-        }
+        await window.__weltDa((r) => typeof r._weatherFieldFor === "function");
         const r = window.anazhRealm;
         if (!r || typeof r._weatherFieldFor !== "function") return { err: "keine Instanz / _weatherFieldFor fehlt" };
         // Keine laufende Transition — die Wort-Vorgabe führt.

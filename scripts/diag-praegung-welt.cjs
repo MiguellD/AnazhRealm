@@ -77,18 +77,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat =====
-        const dl0 = performance.now() + 150000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (
-                f &&
+        await window.__weltDa(() => f &&
                 f.ready &&
                 f.recipes &&
                 f.recipes.langschwert &&
@@ -96,11 +89,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 r.state.blueprints &&
                 r.state.blueprints.klinge_langschwert &&
                 r.state.blueprints.fahrzeug_gt &&
-                !f._vorrat
-            )
-                break;
-            await sleep(120);
-        }
+                !f._vorrat);
         res.warm.ready = !!(f && f.ready);
         res.warm.langschwert = !!(f && f.recipes && f.recipes.langschwert);
         res.warm.gt = !!(f && f.recipes && f.recipes.gt);
@@ -117,8 +106,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // ===== (N-WELT) geprägtes Fahrzeug-Entry formt im Welt-Flatten anders =====
         const flatFor = async (entry) => {
             let flat = r._foundryFlattenFor(entry, "gt", 0);
-            const dl = performance.now() + 60000;
-            while (!(flat && flat.leaves) && performance.now() < dl) {
+            for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat && flat.leaves) && weiter(); ) {
                 await sleep(200);
                 flat = r._foundryFlattenFor(entry, "gt", 0);
             }
@@ -186,8 +174,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             delete bp.studioOv;
             const heldFor = async (name) => {
                 let g = r._heldFoundryGroup(name);
-                const dl = performance.now() + 60000;
-                while ((g === "pending" || !g) && performance.now() < dl) {
+                for (const weiter = window.__deckel(`die Hand ${name}`, 300); (g === "pending" || !g) && weiter(); ) {
                     await sleep(200);
                     g = r._heldFoundryGroup(name);
                 }

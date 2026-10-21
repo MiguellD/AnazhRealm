@@ -85,9 +85,9 @@ function scheinNurPlatz() {
 async function bereit(page) {
     return page.evaluate(async () => {
         const t0 = performance.now();
-        while (performance.now() - t0 < 120000) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function" && r.state && r.state.worldMeta) {
+        {
+            const r = await window.__weltDa((w) => w.state && w.state.worldMeta);
+            {
                 const snap = JSON.stringify(r.buildStateSnapshot());
                 const chat = document.getElementById("chat-output");
                 return {
@@ -100,9 +100,7 @@ async function bereit(page) {
                     chat: chat ? chat.textContent.slice(-600) : "",
                 };
             }
-            await new Promise((res) => setTimeout(res, 50));
         }
-        return { ok: false };
     });
 }
 

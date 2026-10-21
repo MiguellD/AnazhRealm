@@ -1395,6 +1395,7 @@ class AnazhRealm_dienst {
                 leer: 0,
                 ruht: 0,
                 arbeit: 0,
+                offen: false,
             };
             W.takte.set(name, t);
         }
@@ -1425,7 +1426,11 @@ class AnazhRealm_dienst {
             t.stempel = s;
             t.leer = 0;
         }
-        if (t.leer >= Math.max(1, runde | 0)) {
+        // die Runde, die er geht, ehe er schläft — so lange steht die Welt nicht (`_standGeht`). Ohne Einheit (0) ist sie
+        // gegangen: bis K-WANDUHR hieß sie 1, ein Gang über 0 Zellen meldete 0 — die Streu einer leeren Bühne ging für immer
+        // „0/1", die Welt stand nie (CI 39510089436 schatten-terminator, der Leib wärmte nie vor)
+        t.runde = runde | 0;
+        if (t.leer >= t.runde) {
             t.ruht++;
             return true;
         }
@@ -1433,11 +1438,12 @@ class AnazhRealm_dienst {
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
-    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach). Beides beginnt seine Runde neu.
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
+        t.offen = !!offen;
         if (gewirkt) {
             t.leer = 0;
             if (t.bau) this._bauRegt();

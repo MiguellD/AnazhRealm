@@ -35,21 +35,7 @@ const MUTIERER = /^(add|delete|clear|set|push|pop|splice|shift|unshift|sort|reve
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f, eltern) => {
-        f(n, eltern);
-        for (const k of kinder(n)) lauf(k, f, n);
-    };
+    const lauf = (n, f, eltern) => (f(n, eltern), stammLib.kinder(n, (c) => lauf(c, f, n)));
     const befunde = [];
     const methoden = new Map();
     lauf(ast, (m) => {
@@ -534,15 +520,7 @@ function urteil(S, Q, pageErrors) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.player ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.player);
     });
     const S = await page.evaluate(probe);
     await browser.close();

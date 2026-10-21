@@ -100,12 +100,7 @@ function ladeLeser(knoten, aus) {
             for (const a of n.arguments) geh(a, feld && /Function/.test(a.type));
             return;
         }
-        for (const k of Object.keys(n)) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) for (const c of v) geh(c, false);
-            else if (v && typeof v.type === "string") geh(v, false);
-        }
+        stammLib.kinder(n, (c) => geh(c, false));
     };
     geh(knoten, false); // eine Funktions-Deklaration oben läuft nicht beim Laden
     return out;

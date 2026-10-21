@@ -29,14 +29,7 @@ async function bootPage(browser, nullRenderer) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                typeof window.anazhRealm._foundryEnsureImpostorRecord !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && typeof r._foundryEnsureImpostorRecord === "function");
     });
     return { page, pageErrors };
 }
@@ -91,14 +84,12 @@ async function installiereBacke(page) {
                 const q = r._impostorBakeQueue || [];
                 if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
                 z._weltNeu = true;
-                const bis = performance.now() + 240000;
-                for (;;) {
+                for (const weiter = window.__deckel(`der Bake von ${z.key}`, 4800); weiter(); ) {
                     if (at.fmt !== "bc" || r._karteRechner()) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
                     }
-                    if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
                     await new Promise((ok) => setTimeout(ok, 50));
                 }
             } finally {
@@ -117,7 +108,7 @@ async function driveImpostor(page) {
         try {
             const f = r._ensureAssetFoundry();
             const dl = performance.now() + 60000;
-            while (f && !f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+            await window.__weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
@@ -128,8 +119,7 @@ async function driveImpostor(page) {
                 rec2 = null,
                 flat1 = null,
                 flat2 = null;
-            const dl2 = performance.now() + 45000;
-            while (performance.now() < dl2) {
+            for (const weiter = window.__deckel("die Impostor-Rekorde", 1500); weiter(); ) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}

@@ -113,22 +113,12 @@ function staticLaws(q) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, d: {}, p: {}, e: {}, f: {}, h: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipes.langschwert && rc && rc.lod && rc.lod.kindStages) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.langschwert && rc && rc.lod && rc.lod.kindStages; });
         const rc = A._studioRenderConfig;
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
@@ -246,9 +236,7 @@ function staticLaws(q) {
                 };
             };
             // Welt-bereit (Spieler-Mesh baut parallel zum Foundry-Handshake).
-            const dlh = performance.now() + 60000;
-            while ((!r.state.playerMesh || !r.state.player) && performance.now() < dlh)
-                await new Promise((r2) => setTimeout(r2, 150));
+            await window.__weltDa(() => !(!r.state.playerMesh || !r.state.player));
             const pm = r.state.playerMesh;
             res.h.playerReady = !!(pm && r.state.player);
             if (res.h.playerReady) {
@@ -263,8 +251,7 @@ function staticLaws(q) {
                     hm0.children.length > 0 &&
                     !(hm0.userData && hm0.userData.foundryHeld)
                 );
-                const dls = performance.now() + 45000;
-                while (performance.now() < dls) {
+                for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -273,8 +260,7 @@ function staticLaws(q) {
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
                 // (2) WARM: langschwert equipen, auf die Studio-Gestalt warten, Zahlen messen.
                 r.equipHeld("klinge_langschwert");
-                const dlw = performance.now() + 45000;
-                while (performance.now() < dlw) {
+                for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -384,8 +370,7 @@ function staticLaws(q) {
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
-                const dlp = performance.now() + 45000;
-                while (probe === "pending" && performance.now() < dlp) {
+                for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
                     await new Promise((r2) => setTimeout(r2, 150));
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }

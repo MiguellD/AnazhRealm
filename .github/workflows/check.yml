@@ -124,7 +124,7 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
               # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
               env:
                   WACHSTUM_VORHER: ${{ github.event.before }}

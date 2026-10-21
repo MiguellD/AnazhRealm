@@ -398,8 +398,7 @@ const SELBST = process.argv.includes("--selftest");
                     r._foundry = null;
                     const f = r._ensureAssetFoundry();
                     const t0 = performance.now();
-                    while (f && !f.worker && performance.now() - t0 < 15000)
-                        await new Promise((res) => setTimeout(res, 20));
+                    await window.__weltDa(() => !!(!(f && !f.worker)));
                     aus10.geboren = !!(f && f.worker);
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);

@@ -40,18 +40,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._foundryWorldScaleMatrix !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._foundryWorldScaleMatrix !== "function"));
         const r = window.anazhRealm;
         const A = r.constructor;
         // Worker + Config abwarten (get-render-config folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("die Render-Konfiguration", 625); weiter(); ) {
             const rc = A._studioRenderConfig;
             if (f && f.ready && rc && rc.placement && rc.placement.scale) break;
             await new Promise((res2) => setTimeout(res2, 80));

@@ -63,8 +63,7 @@ const server = statikServer();
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        const s0 = performance.now();
-        while (performance.now() - s0 < 90000) {
+        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter(); ) {
             const r0 = window.anazhRealm;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
@@ -79,7 +78,7 @@ const server = statikServer();
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         const t0 = performance.now();
-        while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+        await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundryReady = !!(f && f.ready);
         for (let it = 0; it < 350; it++) {
             r.state._frameOverBudget = false;
@@ -98,12 +97,17 @@ const server = statikServer();
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
             const tS = performance.now();
-            while (f.pending && f.pending.size > 0 && performance.now() - tS < 20000) {
-                try {
-                    r._gameLoopTick && r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(50);
-            }
+            await window
+                .__gebautNach("noch: f.pending && f.pending.size > 0", {
+                    fertig: () => !!(!(f.pending && f.pending.size > 0)),
+                    takt: async () => {
+                    try {
+                        r._gameLoopTick && r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await sleep(50);
+                    },
+                    max: 400,
+                });
         }
 
         // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer

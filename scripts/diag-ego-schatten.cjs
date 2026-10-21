@@ -544,12 +544,7 @@ function buehne(arg) {
                     pm.userData._gelenk.nahStufe === stufe &&
                     (stufe === 1 || !!st._weltbildDa) &&
                     pm.children.some((c) => c.userData && c.userData._creatureSkin);
-                let r = window.anazhRealm;
-                while (!(r && r._gameLoopTick && r.state.rendererReady && r.state.renderer.backend)) {
-                    if (performance.now() - t0 > 240000) return { ok: false };
-                    await new Promise((res) => setTimeout(res, 50));
-                    r = window.anazhRealm;
-                }
+                let r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer.backend);
                 const st = r.state;
                 const ok = await new Promise((res) => {
                     const frist = setTimeout(() => res(false), 240000);

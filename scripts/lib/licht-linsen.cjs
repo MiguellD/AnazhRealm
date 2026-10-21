@@ -1222,9 +1222,8 @@ function nahFernSicht(opts) {
                 still = false,
                 laeufe = 0;
             const spur = [];
-            const frist = performance.now() + 20000;
             await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
-            for (let lauf = 0; ; lauf++) {
+            for (let lauf = 0, weiter = window.__deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
                 rend.setClearColor(0x000000, 0);
@@ -1246,7 +1245,6 @@ function nahFernSicht(opts) {
                     still = true;
                     break;
                 }
-                if (performance.now() > frist) break;
                 n = m;
                 yAlt = y;
                 // im Software-Holz übersetzt ein Programm über viele Läufe (gemessen: die ersten zwei Orte leer)

@@ -220,13 +220,12 @@ const SCHUSS_FN = async (kam) => {
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         let stable = 0,
             last = -1;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
             const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
@@ -239,8 +238,7 @@ const SCHUSS_FN = async (kam) => {
         const rend = r.state.renderer;
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
-        const dlB = performance.now() + 90000;
-        while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den
         // GPU-Puffer, oder eine offene updateRange über ein genulltes/kürzeres Array — Befund 30.09.:
         // entlassene Batch-Stagings), sprengt queue.writeBuffer („Number of bytes to write is too large")
@@ -306,11 +304,10 @@ const SCHUSS_FN = async (kam) => {
         const r = window.anazhRealm;
         const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const dl = performance.now() + 240000;
         let stable = 0,
             last = -1,
             takte = 0;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("die Mess-Wiese", 4000); weiter(); ) {
             try {
                 if (r.state.world) r.state.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
@@ -445,9 +442,8 @@ const SCHUSS_FN = async (kam) => {
         const zeit = [];
         let lueckeTakte = 0,
             takte = 0;
-        const dl = performance.now() + 120000;
         let fpSichtbarBei = null;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("das Einschwingen des Wolfs", 3000); weiter(); ) {
             setzeMittag();
             try {
                 r._gameLoopTick(performance.now());
@@ -558,8 +554,7 @@ const SCHUSS_FN = async (kam) => {
                     origRA = rend.renderAsync;
                 rend.render = function () {};
                 if (typeof origRA === "function") rend.renderAsync = () => Promise.resolve();
-                const dl = performance.now() + (voll ? 900000 : 240000);
-                let stable = 0,
+                                let stable = 0,
                     last = -1,
                     takte = 0,
                     offenVor = -1,
@@ -582,7 +577,7 @@ const SCHUSS_FN = async (kam) => {
                     Number.isFinite(ziel._lodLevel) &&
                     ziel._lodLevel > 0 &&
                     Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
-                while (performance.now() < dl) {
+                for (const weiter = window.__deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());

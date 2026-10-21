@@ -34,20 +34,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { r: {}, s: {}, d: {}, w: {} };
-        const dl0 = performance.now() + 150000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._restoreCreatureFromSnapshot !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._restoreCreatureFromSnapshot !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat) break;
-            await sleep(120);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
 
         // Leere Bühne + genug Kapazität.

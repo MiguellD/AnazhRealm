@@ -311,16 +311,9 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        while (performance.now() - t0 < 120000) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function" && r.state && r.state.worldMeta) {
-                const welt = r.state.worldMeta.worldId;
-                return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
-            }
-            await new Promise((res) => setTimeout(res, 50));
-        }
-        const r = window.anazhRealm;
-        return { ok: false, haengt: true, welt: r && r.state && r.state.worldMeta ? r.state.worldMeta.worldId : null };
+        const r = await window.__weltDa((w) => w.state && w.state.worldMeta);
+        const welt = r.state.worldMeta.worldId;
+        return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);
 }
 
@@ -592,7 +585,6 @@ async function fahreWeg(browser, weg, schein) {
         verzoegerung = 0;
         const b = await bereit(page, ziel);
         rep.boot.push(b.ms);
-        if (b.haengt) throw new Error(`die Seite erwachte nicht in 120 s (aktiv: ${b.welt})`);
         const start = await page.evaluate(() => window.__grenzeStart);
         if (tuer) {
             if (start.id !== ziel)

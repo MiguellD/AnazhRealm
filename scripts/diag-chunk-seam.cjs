@@ -43,8 +43,7 @@ const server = statikServer();
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {
         let stubbed = false;
-        const start = performance.now();
-        while (performance.now() - start < 60000) {
+        for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
             const r = window.anazhRealm;
             if (r && !stubbed && r.state && r.state.renderer) {
                 r.state.renderer.render = function () {};
