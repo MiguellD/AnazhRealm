@@ -2939,8 +2939,8 @@ class AnazhRealm_netz_p2p {
         if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
         if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
-        this._stepCharacter(FIXED_DT, ls.simT);
         this._loopPlayerMovement(ls.simT, FIXED_DT);
+        this._stepCharacter(FIXED_DT, ls.simT);
         this._rittSchritt(FIXED_DT); // der Ghost reitet nie (mountedArch null) — die Ordnung bleibt exakt
         ls.simT += FIXED_DT;
         // --- Ghost sichern ---
