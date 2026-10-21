@@ -210,10 +210,8 @@ function albedoSicht(opts) {
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
                 else if (ex.typ === "boden" && ex.wald) {
-                    // DER WALD-BODEN AN SEINER STELLE (A5; gemessen 16.10., Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
-                    // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
-                    // Kronen-Tafel (T2 f6fa9f63) von −48/−19 nach 0/36 (Welt-Y 0,0837 → 0,0739, der Stoff an der alten Stelle 0,0833 →
-                    // 0,0837; die ersten acht Wald-Stellen 0,071–0,110). Dort steht das Wald-Gesetz (`_forestCellDarts` →
+                    // DER WALD-BODEN AN SEINER STELLE (A5): der Boden ist ein Feld, die Ratsche misst ihn an EINER festen Stelle
+                    // (`stelle`, Welt-x/z) — eine Suche um den Spieler wanderte mit der Kronen-Tafel. Dort steht das Wald-Gesetz (`_forestCellDarts` →
                     // `_forestDartSteht` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
                     const W0 = ex.wald,
                         C = r.constructor.FOREST.cell,
@@ -239,9 +237,7 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
-            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
-            // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
-            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
             // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
             // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
             const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
@@ -329,9 +325,8 @@ function albedoSicht(opts) {
         };
         if (luftU) luftU.beta.value = 0;
         sc.environment = null;
-        // DIE SCHICHTEN (K63-n7; gemessen 15.10., Radeon: die Haut las „kein Pixel" — in der Ich-Sicht trägt der eigene Leib
-        // nur seinen Schatten-Zwilling, alle 14 Spieler-Meshes auf Schicht 2, die das Auge nie zeichnet): der Schuss zeichnet
-        // jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
+        // DIE SCHICHTEN (K63-n7; in der Ich-Sicht trägt der eigene Leib nur seinen Schatten-Zwilling auf Schicht 2): der Schuss
+        // zeichnet jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
         st.camera.layers.enableAll();
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
@@ -350,8 +345,7 @@ function albedoSicht(opts) {
             return out;
         };
         // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
-        // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
-        // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236 (gemessen 07.10.).
+        // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen.
         // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
         const lu = st.lodUniforms;
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
@@ -497,9 +491,8 @@ function albedoSicht(opts) {
                     const passt = (m) =>
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
-                    // DIE POSE DES LABORS (Karte WL; gemessen 16.10., Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
-                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0) — mitten im Schritt eingefroren las das
-                    // Fell je Phase 0,1746 bis 0,1862, im Stand 0,1849 bis 0,1853
+                    // DIE POSE DES LABORS (Karte WL): das Tier steht im Schuss in der Kern-STAND_POSE mit Gier 0
+                    // (`_tierBaumNeutralStance`; das Labor steht idle, stride 0)
                     if (ex.kreatur) {
                         ex.kreatur.rotation.y = 0;
                         r._tierBaumNeutralStance(ex.kreatur);
@@ -547,8 +540,7 @@ function albedoSicht(opts) {
                     cam.aspect = W / H;
                     cam.updateProjectionMatrix();
                     // DIE TAFEL-BLICKE (`TAFEL_BLICKE`, dieselben im Labor): vier Dreiviertel-Seiten und oben, die übrige Welt aus;
-                    // die Albedo ist das Mittel über alle Blicke — ein einziger Blick las den Wolf je nach seiner Wendung 0,17
-                    // oder 0,24 (Rücken gegen Bauch, gemessen 07.10. in zwei Welten).
+                    // die Albedo ist das Mittel über alle Blicke.
                     const stellungen = [];
                     if (w.blick === "oben") {
                         const y = r._voxelSurfaceY(um.x, um.z);
@@ -578,7 +570,7 @@ function albedoSicht(opts) {
                             }
                         }
                     // Die Ahnen der gewählten Züge stehen für den Schuss sichtbar: die Ich-Sicht verbirgt den eigenen Leib
-                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar — 0 Pixel, gemessen 07.10.).
+                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar).
                     for (const m of sel)
                         for (let a = m.parent; a && a !== sc; a = a.parent)
                             if (!ahnenAlt.has(a)) {
@@ -602,9 +594,7 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    // DIE STUFEN DES SCHUSSES (K63-n7; gemessen 15.10., Radeon: der Wagen gt des Lacks stand 11,3 m vor dem Spieler,
-                    // in der Blende L0/L1 — die Stufe 1 faltet die Stoffe ihrer Seh-Klasse, Chrom und Glas lasen im Lack, 0,0175
-                    // gegen 0,0066): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
+                    // DIE STUFEN DES SCHUSSES (K63-n7; die Stufe 1 faltet die Stoffe ihrer Seh-Klasse): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
                     const stufen = new Set();
                     for (const m of sel) {
                         const sk = /:L(\d+)$/.exec(kl.get(m) || "");
@@ -685,13 +675,12 @@ function albedoSicht(opts) {
 
 // DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
 // Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
-// und Renders am Stück lassen kein Versprechen reifen (gemessen 15.10., Radeon, frische Welt: die Licht-Bilanz las E 0 statt 9,51,
-// die Welt-Seite der Albedo-Tafel jede Zeile stumm und die Karte null). Die Linse schaltet ihren Frame, bis nichts mehr baut —
+// und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr baut —
 // dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
     // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
-    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
+    // über der Linse
     const zeichne = () => {
         window.anazhRealm._schattenAlleNeu();
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -1086,10 +1075,8 @@ function nahFernSicht(opts) {
             return aus.slice(0, opts.jeKlasse || 4);
         };
         // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
-        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden. Bis K53 lasen sie 0,9 und 0,7: die Zahlen der Geburt
-        // (`forestGeburt`), die das Dach bis K16 als Deckung las; seit K16 ist die Deckung der gepflanzte Bestand (phyto-core
-        // `forestKronenDeckung`, Matérn-II gesättigt bei 0,18) — die Linse fand keinen Wald-Ort mehr. Gemessen 14.10. in 2 km um die
-        // Mess-Wiese: Deckung p50 0,176 · max 0,178 an V18.545 (main 9fb869a5), 0,175 · 0,178 am Kopf — der Wald ging nicht verloren.
+        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden; die Deckung ist der gepflanzte Bestand (phyto-core
+        // `forestKronenDeckung`).
         const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
         const wald = waehle(dichte);
         const orte = wald
@@ -1266,9 +1253,7 @@ function nahFernSicht(opts) {
                 cam.updateMatrixWorld(true);
                 // DIE WIEDERHOLUNG: ein Paar (nah, fern) zählt erst, wenn die nächste Runde an derselben Stelle dieselben
                 // Bildpunkte und dieselbe Albedo (1 %) zeigt — höchstens vier Runden, sonst urteilt die Linse laut
-                // (`wiederholt` false). In frischen Sitzungen (Integration V18.542, Software-Holz unter Last, 2 von 16 Läufen)
-                // zeigte die ERSTE Runde am ersten Ort einen Leser falsch und still: der Boden-Satz Y 0,694 statt 0,053, der
-                // Fern-Ring 0,152 statt 0,063 — die Stille eines Schusses allein hielt ein falsches Bild für fertig.
+                // (`wiederholt` false): die Stille eines Schusses allein hielt in frischen Sitzungen ein falsches Bild für fertig.
                 const paar = async () => ({
                     nah: mittel(await schuss(istNah, Math.PI), await schuss(istNah, 0)),
                     fern: mittel(await schuss(istFern, Math.PI), await schuss(istFern, 0)),
@@ -1747,9 +1732,8 @@ function laubGegenlicht(opts) {
                     rand[0] = Math.max(rand[0], Math.abs(e.x));
                     rand[1] = Math.max(rand[1], Math.abs(e.y));
                 }
-                // ALLEIN DER EIGENE WURF (Licht K3): der Spieler steht für die Schüsse in l2 und l1, die Nachbarn wechseln dazwischen
-                // Stufe und Wurf (Radeon, Fichte Uhr 0,27: die Gestalt in fremdem Wurf 0,27 ihres Lichts, die Karte 0,76) — es wirft
-                // nur der Zwilling der Gestalt (Schuss 1, ihre Instanz), jeder andere Werfer ruht
+                // ALLEIN DER EIGENE WURF (Licht K3): zwischen den Schüssen (Spieler in l2, l1) wechseln die Nachbarn Stufe und Wurf —
+                // es wirft nur der Wurf der Gestalt (Schuss 1), jeder andere Werfer ruht
                 const ruhen = [];
                 let eigen = null;
                 if (!opts.boden && !opts.haus) {
@@ -1785,7 +1769,7 @@ function laubGegenlicht(opts) {
                 // dazu je allein das Richtlicht mit seinem Wurf (`S`, Sonne oder Mond), das Hemi-Licht gleich von oben und unten (`U`)
                 // und nur von oben (`H`): (H − E)/(U − E) = (1 + ȳ)/2 nennt die mittlere Normale, die die Stufe dem Himmel zeigt (Albedo
                 // und Deckung kürzen sich heraus). Der Himmel bleibt in S, U und H stehen — `scene.environmentIntensity` liest kein
-                // Stoff der Krone (Radeon 21.10.: U folgte der Uhr wie E)
+                // Stoff der Krone
                 if (!opts.boden) {
                     const hl = st.hemiLight, lichtAlt = [], hAlt = [hl.color.clone(), hl.groundColor.clone()];
                     sc.traverse((o) => o.isLight && lichtAlt.push([o, o.intensity]));
@@ -1873,7 +1857,7 @@ function laubGegenlicht(opts) {
                     if (o.isLight) lichter.push([o, o.intensity]);
                 });
                 // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
-                // jedes Programms — gemessen 15.10.: A 0,002–0,06 statt der Tafel 0,16), die übrigen Lichter und der Himmel still
+                // jedes Programms), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
                 let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
                 const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);

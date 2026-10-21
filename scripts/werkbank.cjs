@@ -3405,8 +3405,7 @@ async function starte() {
                 const anker = haus || boden ? dorf.spieler : wiese.spieler;
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
                 // DIE NAHT (Licht K3): die Karte steht im Spiel erst ab ihrer Schwelle — `--karte` schießt jede Krone ohne `--wechsel` an
-                // der Naht (das Auge im Wechsel-Abstand, ihre L1 gegen die Karte). Aus 8 m (`--wechsel 0`) sah die L0 von 30° unten ihre
-                // Unterseite, die waagrecht gebackene Karte nie (Radeon 21.10., Fichte: ȳ −0,61 gegen −0,40; an der Naht −0,435/−0,437)
+                // der Naht (das Auge im Wechsel-Abstand, ihre L1 gegen die Karte); aus 8 m (`--wechsel 0`) sah die L0 von unten ihre Unterseite
                 const wechsel = Number(opt("--wechsel", argv.includes("--karte") && !haus && !boden ? 1 : 0)) || 0;
                 const spiel = `wechsel: ${wechsel}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
                 const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
