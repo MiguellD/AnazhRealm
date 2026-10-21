@@ -172,33 +172,26 @@ function tafelPruefen(t) {
     return f;
 }
 
-// DER STAND DES ISTS (K63-n4; Prüfer K63 R3: die Wand las die Werte vom 07.10. und stand still grün): je Zeile und Seite die
-// EINE Regel der Soll-Tafel (abnahme-urteil `messStand`, K63-n8): jede Quelle der Zeile gegen den Code-Abdruck, den die Seite
-// beim Messen nahm (`gemessen.welt|labor` { version, sha, quellen } — der `kernStand` des Werkzeugs: jeder Kern und jede
-// Stamm-Zone). Ohne Version, Commit oder Abdruck → `ungeprüft` (ein Bruch der Tafel: das Werkzeug schreibt sie immer); ein
-// fremder Abdruck → `veraltet` „veraltet seit <Commit der Messung>: <Datei> geändert" — eine Kommentarzeile ändert keinen
-// Abdruck. `pruefsumme(d)` liest den Baum von heute.
+// DER STAND DES ISTS (K63-n4, K63-n8): je Zeile und Seite die EINE Regel der Soll-Tafel (`messStand`) gegen den `kernStand`
+// der Messung (`gemessen.welt|labor`): ohne Version, Commit oder Abdruck `ungeprüft`, ein fremder Abdruck `veraltet` — jeder
+// fremde beim Namen. `pruefsumme(d)` liest den Baum von heute.
 function tafelStand(t, pruefsumme) {
     const { messStand } = require("./abnahme-urteil.cjs");
     const rot = [];
     const g = t.gemessen || {};
     for (const z of t.zeilen || [])
         for (const seite of ["welt", "labor"]) {
+            const q = (g[seite] || {}).quellen || {};
             const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
+            const art = /^veraltet/.test(s) ? "veraltet" : "ungeprüft";
+            const fremd = art === "ungeprüft" ? [] : z.quellen.filter((d) => q[d] !== pruefsumme(d)).slice(1);
+            const auch = fremd.map((d) => `${d} (${q[d]} → ${pruefsumme(d)})`).join(", ");
             if (s)
-                rot.push({
-                    zeile: z.id,
-                    seite,
-                    art: /^veraltet/.test(s) ? "veraltet" : "ungeprüft",
-                    text: `${z.id}: das Ist der ${seite} — ${s}`,
-                });
+                rot.push({ zeile: z.id, seite, art, text: `${z.id}: das Ist der ${seite} — ${s}${auch && "; fremd auch " + auch}` });
         }
     return rot;
 }
-// DIE WAND DES STANDS (K63-n8; Koordinator 15.10.: die Stand-Wand sperrte jeden Merge, der eine Quelle berührte, und die
-// Neumessung brauchte die Radeon von Hand): `ungeprüft` ist ein Bruch der Tafel (das Werkzeug schreibt Version, Commit und
-// Abdruck immer — Exit 1); `veraltet` ist ROT „veraltet seit <Commit>" beim Namen der Zeile, nie GRÜN, und bricht keinen
-// Merge — die Neumessung fährt die Karte (`neu`: die Zeilen, die eine Welt + ihr Labor neu messen).
+// DIE WAND DES STANDS (K63-n8, H5-Gesetz 21.10.): ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
 function standWand(rot) {
     const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
     const veraltet = {};
