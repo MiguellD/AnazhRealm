@@ -2465,7 +2465,6 @@ async function checkBandR6Capability(ctx) {
             r.state.capabilityProposals = savedProps;
             r.state.grantedCapabilities = savedCaps;
             r._setWeather(savedWeather, "human");
-            else r.state.weather = savedWeather;
         }
         return out;
     });
