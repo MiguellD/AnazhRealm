@@ -1,0 +1,5 @@
+ego/gehen {"n":50,"fehlt":0,"p50":29.2,"p95":37.1,"max":38.4,"eingabe":0.3,"kette":11.9,"kurve":16.7,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":8.6,"p95":26.7,"max":38.2,"eingabe":0.3,"kette":7.9,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":30.4,"p95":42.6,"max":44.8,"eingabe":0.3,"kette":12.2,"kurve":16.8,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":7.7,"p95":20,"max":24.5,"eingabe":0.3,"kette":6.7,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 14.8 ms) 

@@ -1,0 +1,5 @@
+ego/gehen {"n":50,"fehlt":0,"p50":55.1,"p95":64.5,"max":90.5,"eingabe":0.3,"kette":29.6,"kurve":25,"takte":7}
+ego/wechsel {"n":50,"fehlt":0,"p50":7.9,"p95":24.2,"max":27.6,"eingabe":0.3,"kette":7.3,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":56.4,"p95":69.6,"max":93.3,"eingabe":0.3,"kette":29.4,"kurve":25,"takte":7}
+third/wechsel {"n":50,"fehlt":0,"p50":7.5,"p95":26.1,"max":33.5,"eingabe":0.3,"kette":7.3,"kurve":0,"takte":1}
+LATENZ ROT (Bild 14.7 ms) ego/gehen p95 64.5 ms > 50 (fehlt 0) — Täter kette 29.6 ms, 7 Takte · third/gehen p95 69.6 ms > 50 (fehlt 0) — Täter kette 29.4 ms, 7 Takte
