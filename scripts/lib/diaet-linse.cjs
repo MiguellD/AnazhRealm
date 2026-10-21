@@ -95,23 +95,22 @@ function diaetZaehler() {
         const v = rahmen("pruef", () => roh.refresh(obs, ro, frame, altNR));
         zaehle("pruef");
         if (frame) c && c.rids.add(frame.renderId);
-        if (v && c) offen.set(ro, { name: nameVon(ro), wirkung: 0 });
         if (v && c) {
+            offen.set(ro, { name: nameVon(ro), wirkung: 0 });
             zaehle("voll");
             c.grund[nameVon(ro)] = (c.grund[nameVon(ro)] || 0) + 1;
         }
         return v;
     });
     const bekannt = new WeakSet();
-    haken("vt", A, "_diaetVorTextur", function (...a) {
-        const ro = a[a.length - 1];
+    haken("vt", A, "_diaetVorTextur", function (ro) {
         zaehle("pruefVoll");
         if (c && ro._anazhObs === undefined && bekannt.has(ro)) {
             zaehle("ohneMeldung");
             c.ohneM[nameVon(ro)] = (c.ohneM[nameVon(ro)] || 0) + 1;
         }
         bekannt.add(ro);
-        return roh.vt.apply(this, a);
+        return roh.vt.call(this, ro);
     });
     haken("ruhig", A, "_diaetRuhig", function (obs, ro, rr, rid) {
         const v = roh.ruhig.call(this, obs, ro, rr, rid);

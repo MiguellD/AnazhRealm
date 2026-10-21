@@ -538,7 +538,7 @@ function scheinObjekt(extra) {
         {
             welt: 0,
             get matrixWorld() {
-                return { w: this.welt };
+                return { w: this.welt, elements: Array(16).fill(this.welt) };
             },
         },
         extra
