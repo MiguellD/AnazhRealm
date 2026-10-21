@@ -10,8 +10,8 @@
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
-//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn keine Lieferung aus A mehr
-//     unterwegs ist (`lieferungenLanden`); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
+//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn die Welt
+//     steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
@@ -233,14 +233,22 @@ async function driveImpostor(page) {
 // Teil A bestellte, legt bei ihrer Ankunft ihre Zelle in ihm an (`_foundryZug` → `nach` → `_foundryEnsureImpostorRecord`). Ab
 // der neunten wächst er, das rgba8-Ziel wächst leer und die Probe-Karten backen nie nach (der Null-Renderer der Welt backt
 // nicht): die Wand sah 0 px, je nachdem, wie viele Lieferungen der Läufer noch trug (Zelle der Eiche in A: Schicht 0 rot,
-// Schicht 10 grün). Teil C beginnt, wenn keine Lieferung mehr unterwegs ist — in Lieferungen gezählt, nie in Wanduhr.
-async function lieferungenLanden(page) {
+// Schicht 10 grün). Und jede Probe leiht der Welt den echten Renderer: eine Karte ihrer Schlange backt dann in den Probe-Atlas
+// (OMEN 21.10.: 5 fremde Karten nach {Züge 0, Foundry 0}). Teil C beginnt, wenn die Welt steht — die EINE Ruhe
+// (`__weltStehtNach`, A9), in Takten gezählt, nie in Wanduhr; Selbsttest am Stamm: eine wartende Karte hält sie.
+async function weltRuht(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const zuege = (r._foundry && r._foundry.zuege) || new Map();
-        let wellen = 0;
-        for (; zuege.size && wellen < 64; wellen++) await Promise.all([...zuege.values()]);
-        return { wellen, offen: zuege.size, foundry: r._weltOffen().foundry };
+        const takte = await window.__weltStehtNach(null, 1800);
+        const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
+        q.push("fimp:gateRuhe|1");
+        let gaenge = 0;
+        try {
+            for (const weiter = window.__deckel("die Ruhe-Probe", 3); weiter() && gaenge < 8; ) gaenge++;
+        } catch (_e) {}
+        const karte = { steht: r._weltSteht(), gaenge };
+        q.splice(q.indexOf("fimp:gateRuhe|1"), 1);
+        return { takte, karte };
     });
 }
 
@@ -814,7 +822,7 @@ async function windProbe(page) {
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
-    const ruhe = await lieferungenLanden(pageA);
+    const ruhe = await weltRuht(pageA);
     const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
     const C3 = await blickProbe(pageA);
@@ -892,8 +900,9 @@ async function windProbe(page) {
     }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
-    console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
-    if (ruhe.offen) errs.push(`C: ${ruhe.offen} Lieferungen blieben nach ${ruhe.wellen} Wellen unterwegs — die Welt kam nicht zur Ruhe`);
+    console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · eine wartende Karte: ${JSON.stringify(ruhe.karte)}`);
+    if (ruhe.karte.steht || ruhe.karte.gaenge < 8)
+        errs.push(`C: eine wartende Karte bricht die Ruhe nicht (steht ${ruhe.karte.steht}, der Deckel zählte ab Gang ${ruhe.karte.gaenge})`);
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
         console.log(

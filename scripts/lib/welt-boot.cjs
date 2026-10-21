@@ -1060,7 +1060,7 @@ async function selbsttest() {
         return akten.filter((a) => a.seite === id);
     };
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, die Foundry hat solange einen Auftrag offen —
+    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, eine Karte wartet solange auf ihren Bake —
     // das Warten hält; TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
     // REGLER: ein echter Renderer, der Regler atmet je Takt, solange er regelt — das Einschwingen hält ihn in jedem Pfad (die
     // Welt steht nach 30 stillen Takten) und gibt ihn danach frei.
@@ -1074,11 +1074,11 @@ async function selbsttest() {
             _archIsRendered: (e) => !!e.mesh,
         });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
-        r._weltOffen = () => ({ foundry: r.offen, chunks: 0, wald: 0 });
+        r._weltOffen = () => ({ foundry: 0, chunks: 0, wald: 0, karten: r.offen }); // das jüngste Feld: der Deckel zählt JEDES
         const takt = () => new Promise((ok) => setTimeout(ok, 10));
         const langsam = { type: "langsam", id: 1, ab: performance.now() + 3200 };
         const t0 = performance.now();
-        const takte = await window.__gebautNach(langsam, { max: 5, takt });
+        const takte = await window.__gebautNach(langsam, { max: 5, takt }).catch((x) => x.message);
         const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
         r.offen = 0;
         aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then(
@@ -1134,7 +1134,7 @@ async function selbsttest() {
         ],
         [
             !!bau && bau.langsam.steht && bau.langsam.ms >= 3000,
-            `Bau LANGSAM (3,2 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
+            `Bau LANGSAM (3,2 s, eine Karte offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
         [
             !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
