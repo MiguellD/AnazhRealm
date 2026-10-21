@@ -108,52 +108,55 @@ class AnazhRealm_feld_dsl {
     // Steht einer IRGENDWO im Tree, fällt der GANZE Broadcast — sonst änderte z. B. ["chain", weather,
     // player_speed] beim Empfänger den Speed mit.
     static get NON_BROADCASTABLE_OPS() {
-        return new Set([
-            "player_jump_power",
-            "player_speed",
-            "player_soul",
-            "set_visible",
-            // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
-            // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
-            // bekommen). Tod-Wandlung läuft lokal.
-            "damage",
-            "apply_boost",
-            // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
-            // (jeder hat sein eigenes Inventar + Ausrüstung).
-            "equip_tool",
-            "equip_armor",
-            "equip_weapon",
-            "unequip",
-            // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
-            // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
-            // einer frieden) — set_mode darf nicht über P2P weiterspringen.
-            "set_mode",
-            // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
-            // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
-            // (sonst könnte ein Peer das Inventar von anderen befüllen).
-            "add_to_inventory",
-            // Kreatur-Aufträge sind spieler-private Gesten: "die nächste Kreatur folgt mir" meint bei jedem
-            // Sender eine andere Kreatur.
-            "creature_task",
-            "creature_task_nearest",
-            "creature_task_all",
-            // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
-            // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
-            "damage_creature",
-            // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
-            // Aktion in Multi-User (jeder Spieler stattet seine eigenen
-            // Kreaturen aus, gleiche Disziplin wie creature_task).
-            "creature_equip_tool",
-            "creature_equip_armor",
-            "creature_unequip",
-            // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
-            // Spieler-private Geste (er „gibt" der Kreatur den Trank).
-            "creature_apply_boost",
-            // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
-            // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
-            // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
-            "set_time_of_day",
-        ]);
+        return this._einmal(
+            "NON_BROADCASTABLE_OPS",
+            new Set([
+                "player_jump_power",
+                "player_speed",
+                "player_soul",
+                "set_visible",
+                // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
+                // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
+                // bekommen). Tod-Wandlung läuft lokal.
+                "damage",
+                "apply_boost",
+                // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
+                // (jeder hat sein eigenes Inventar + Ausrüstung).
+                "equip_tool",
+                "equip_armor",
+                "equip_weapon",
+                "unequip",
+                // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
+                // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
+                // einer frieden) — set_mode darf nicht über P2P weiterspringen.
+                "set_mode",
+                // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
+                // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
+                // (sonst könnte ein Peer das Inventar von anderen befüllen).
+                "add_to_inventory",
+                // Kreatur-Aufträge sind spieler-private Gesten: "die nächste Kreatur folgt mir" meint bei jedem
+                // Sender eine andere Kreatur.
+                "creature_task",
+                "creature_task_nearest",
+                "creature_task_all",
+                // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
+                // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
+                "damage_creature",
+                // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
+                // Aktion in Multi-User (jeder Spieler stattet seine eigenen
+                // Kreaturen aus, gleiche Disziplin wie creature_task).
+                "creature_equip_tool",
+                "creature_equip_armor",
+                "creature_unequip",
+                // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
+                // Spieler-private Geste (er „gibt" der Kreatur den Trank).
+                "creature_apply_boost",
+                // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
+                // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
+                // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
+                "set_time_of_day",
+            ])
+        );
     }
 
     _dslContainsAnyOp(node, opSet) {
@@ -170,36 +173,39 @@ class AnazhRealm_feld_dsl {
     // Emotion/Kreaturen) — nie den frozen Worldgen (Determinismus/Multi-User-Seed), nie wiederholte
     // schwere Struktur-Spawns/Identitäts-Ops. Enthält der Effekt-AST IRGENDWO einen davon → abgelehnt.
     static get RULE_FORBIDDEN_EFFECT_OPS() {
-        return new Set([
-            // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
-            "terrain_steepness",
-            "terrain_base_height",
-            "voxel_carve",
-            "voxel_fill",
-            // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
-            "spawn_village",
-            "spawn_temple",
-            "spawn_waterfall",
-            "spawn_fractal",
-            "spawn_blueprint",
-            "spawn_island",
-            "spawn_ufo",
-            "spawn_tree",
-            "spawn_studio",
-            "remove_architecture",
-            // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
-            "define_blueprint",
-            "define_material",
-            "define_ability",
-            "register_tool",
-            "set_tool_meta",
-            "player_soul",
-            "set_portal",
-            "set_mode",
-            "gravity",
-            "apply_op",
-            "apply_connection",
-        ]);
+        return this._einmal(
+            "RULE_FORBIDDEN_EFFECT_OPS",
+            new Set([
+                // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
+                "terrain_steepness",
+                "terrain_base_height",
+                "voxel_carve",
+                "voxel_fill",
+                // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
+                "spawn_village",
+                "spawn_temple",
+                "spawn_waterfall",
+                "spawn_fractal",
+                "spawn_blueprint",
+                "spawn_island",
+                "spawn_ufo",
+                "spawn_tree",
+                "spawn_studio",
+                "remove_architecture",
+                // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
+                "define_blueprint",
+                "define_material",
+                "define_ability",
+                "register_tool",
+                "set_tool_meta",
+                "player_soul",
+                "set_portal",
+                "set_mode",
+                "gravity",
+                "apply_op",
+                "apply_connection",
+            ])
+        );
     }
 
     // Erlaubt, wenn der Effekt-AST KEINEN verbotenen Op enthält (_dslContainsAnyOp): reaktive Effekte

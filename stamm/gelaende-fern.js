@@ -1028,7 +1028,7 @@ class AnazhRealm_gelaende_fern {
     // Die Kronenfarbe reist sRGB-kodiert in 8 Bit (linear lägen 0,03–0,1 in 8–25 Stufen), die Deckung linear im Alpha.
     // Die Karte füllt sich im Fern-Farb-Budget und tauscht erst, wenn sie ganz steht (`bereit`); bis dahin mischt nichts.
     static get FERN_KRONE_NAH() {
-        return Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 });
+        return this._einmal("FERN_KRONE_NAH", Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 }));
     }
     _fernKroneNahEnsure() {
         const st = this.state;

@@ -1559,7 +1559,10 @@ class AnazhRealm_werkstatt_vorschau {
     // dunklen Preview-Hintergrund (#1a140a). Achsen-Konvention: X=rot,
     // Y=grün, Z=blau (Standard 3D-Editor + Three.js AxesHelper).
     static get WORKSHOP_GIZMO_COLORS() {
-        return Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 });
+        return this._einmal(
+            "WORKSHOP_GIZMO_COLORS",
+            Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 })
+        );
     }
     static get WORKSHOP_SNAP_TRANSLATE() {
         return 0.5;

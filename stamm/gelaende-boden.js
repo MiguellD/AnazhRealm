@@ -2844,7 +2844,6 @@ class AnazhRealm_gelaende_boden {
     // Grundton (`felsBasis`: die dunkle Lage und die helle Bank aus ihm), der Kante des Nah-Netzes (1,8 m: was es nicht trägt,
     // trägt sein Mittel) und dem Mittel für die Ferne (`felsMittel`). Ohne den Kern bricht der Boden laut (Kern-Pflicht).
     static get FELS_STOFF() {
-        if (AnazhRealm._felsStoffMemo) return AnazhRealm._felsStoffMemo;
         const GK = globalThis.__gelaendeCore;
         if (
             !GK ||
@@ -2857,24 +2856,26 @@ class AnazhRealm_gelaende_boden {
             AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
         const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
         const G = AnazhRealm.TERRAIN_GEOLOGY;
-        AnazhRealm._felsStoffMemo = Object.freeze({
-            gesetz: GK.FELS,
-            basis,
-            // die Kante des Nah-Netzes (1,8 m) lebt EINMAL in `netz.fuss` (bis K17-2 NB1 stand ein ungelesener Zwilling daneben)
-            // die Geologie des Boden-Netzes für gelaende-core `felsStoff` — der Stamm (Sync-Bau) und der voxel-worker (der
-            // Init-Schnappschuss `felsStoff`) lesen DIESELBEN Zahlen
-            netz: Object.freeze({
-                rockLo: G.rockLo,
-                rockHi: G.rockHi,
-                schuttKandidat: G.schuttKandidat,
-                schuttGitter: G.schuttGitter,
-                schutt: G.schutt,
-                fuss: 1.8,
-            }),
-            mittel: Object.freeze(GK.felsMittel(basis)),
-            mittelWerte: GK.felsMittelWerte(),
-        });
-        return AnazhRealm._felsStoffMemo;
+        return this._einmal(
+            "FELS_STOFF",
+            Object.freeze({
+                gesetz: GK.FELS,
+                basis,
+                // die Kante des Nah-Netzes (1,8 m) lebt EINMAL in `netz.fuss` (bis K17-2 NB1 stand ein ungelesener Zwilling daneben)
+                // die Geologie des Boden-Netzes für gelaende-core `felsStoff` — der Stamm (Sync-Bau) und der voxel-worker (der
+                // Init-Schnappschuss `felsStoff`) lesen DIESELBEN Zahlen
+                netz: Object.freeze({
+                    rockLo: G.rockLo,
+                    rockHi: G.rockHi,
+                    schuttKandidat: G.schuttKandidat,
+                    schuttGitter: G.schuttGitter,
+                    schutt: G.schutt,
+                    fuss: 1.8,
+                }),
+                mittel: Object.freeze(GK.felsMittel(basis)),
+                mittelWerte: GK.felsMittelWerte(),
+            })
+        );
     }
 
     // DER BODEN-UMZUG (K16, Schöpfer-Entscheid §5.4): ein Save einer anderen Boden-Generation (vor K16: keine) schrieb seine

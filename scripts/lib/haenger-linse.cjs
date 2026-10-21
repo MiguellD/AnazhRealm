@@ -1,16 +1,14 @@
 // haenger-linse.cjs — DIE HÄNGER-LINSE (Welle K): jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
-// Befund OMEN V18.534 (GTX 1060, Regler voll, Mess-Wiese): Einzel-Frames von 0,4–1,7 s, öfter als in V18.533 — der
-// Flugschreiber sah sie nur als „Frame max", die Hitch-Telemetrie (gate:hitch-telemetrie) zählt LongTasks, Pipelines
-// und Upload-Bytes je SEKUNDE, nie je Hänger, und keine Linse sagte, WER den Frame trug.
+// Die Hitch-Telemetrie (gate:hitch-telemetrie) zählt je SEKUNDE, nie je Hänger — diese Linse sagt, WER den Frame trug.
 //
 // Ein Hänger ist ein Abstand zweier GERENDERTER Frames über der Schwelle (dieselbe Größe wie `werkbank lauf` frameMs,
 // die der OMEN misst). Sein Fenster läuft vom Takt-Beginn des vorigen gerenderten Frames bis zum Takt-Beginn des
 // Hänger-Frames — der vorige Takt selbst gehört dazu (trägt er 900 ms, kommt der nächste rAF 900 ms später). Die Linse
 // zerlegt das Fenster in drei Zeiten des Haupt-Threads:
 //   TAKT   — im Spiel-Takt (`_gameLoopTick`, synchron): die Engstelle ist der tiefste Rahmen des Takt-Profils, der
-//            noch die Hälfte der Takt-Proben trägt (Chrome-Profiler, 1 ms), daneben die teuersten Selbst-Funktionen;
+//            noch die Hälfte der Takt-Proben trägt (Stichproben der Spur, 1 ms), daneben die teuersten Selbst-Funktionen;
 //   NEBEN  — außerhalb des Takts, aber auf dem Haupt-Thread (Worker-Antworten, Promise-Fortsetzungen, Zeitgeber): die
-//            Engstelle wie oben aus den Neben-Proben, dazu die Long-Animation-Frame-Skripte (Aufrufer beim Namen);
+//            Engstelle wie oben aus den Neben-Proben;
 //   GC     — der Garbage-Collector (Proben „(garbage collector)");
 //   GPU    — der Haupt-Thread wartet (Proben „(idle)", oder Takte ohne Render unter der GPU-Leine): die Ursache steht
 //            auf der GPU-Seite, die Linse nennt, was der Haupt-Thread ihr im Fenster aufgetragen hat — synchrone
@@ -18,11 +16,13 @@
 //            Stoff-Namen, Shader-Module, Upload-Bytes.
 // Die größte der vier Zeiten ist die Klasse; die Tabelle zählt Hänger je Ursache (Klasse · Engstelle).
 //
-//   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken und das LoAF-Ohr laufen nur, solange ein Lauf misst)
-//              der Lauf ist `werkbank lauf` (`k.haenger`): je Takt Beginn, Ende, Leine, Geräte-Aufträge → Rohdaten (Takte, LoAF)
+//   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken laufen nur, solange ein Lauf misst)
+//              der Lauf ist `werkbank lauf` (`k.haenger`): je Takt Beginn, Ende, Geräte-Aufträge → Rohdaten (Takte);
+//              die Stichproben trägt die EINE Spur des Laufs (`spurProfil`), ihre Takt-Marken legen sie auf die Takte
 //   Werkbank:  `haenger` und `takt` (die Takt-Spitze, unten) — Aufruf in der Hilfe von scripts/werkbank.cjs;
-//   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (250 ms im Takt in `__haengerProbeTakt`,
-//   250 ms neben dem Takt in `__haengerProbeNeben`) — die Linse muss beide beim Namen nennen, sonst Exit 1.
+//              `--selbsttest` (ohne Welt: die Auswertung gegen erfundene Hänger und Spitzen)
+//   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (`__haengerProbe` 250 ms im Takt und 250 ms
+//   neben dem Takt) — die Linse muss beide mit ihrer Klasse beim Namen nennen, sonst Exit 1.
 const stammLib = require("./stamm.cjs");
 
 // ── Seite ───────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ function haengerAn() {
         upKB: 0,
         texKB: 0,
     });
-    const H = (window.__haengerH = { acc: leer(), namen: [], loaf: [], an: false, loafDa: false });
+    const H = (window.__haengerH = { acc: leer(), namen: [], an: false });
     // Je Pipeline der Auftraggeber: das Objekt, das der Renderer gerade zeichnet (`_renderObjectDirect`), mit Pass und
     // Täter-Klasse — eine synchrone Pipeline im Schatten-Pass heißt „k0 tier:wolf", nicht nur „ShadowMaterial".
     const name = (art, d) => {
@@ -145,60 +145,15 @@ function haengerAn() {
             return cei.apply(this, arguments);
         };
     }
-    // DAS LoAF-OHR (Long Animation Frames, Chrome ≥ 123): je langem Frame die Skripte mit Aufrufer und Funktion — die
-    // Neben-Zeit beim Namen auch dort, wo der Profiler nur „(anonym)" sähe.
-    try {
-        if (PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")) {
-            H.loafDa = true;
-            new PerformanceObserver((l) => {
-                if (!H.an) return;
-                for (const e of l.getEntries())
-                    if (H.loaf.length < 5000)
-                        H.loaf.push({
-                            start: +e.startTime.toFixed(1),
-                            dauer: +e.duration.toFixed(1),
-                            block: +(e.blockingDuration || 0).toFixed(1),
-                            skripte: (e.scripts || []).map((s) => ({
-                                aufrufer: s.invoker,
-                                art: s.invokerType,
-                                fn: s.sourceFunctionName || "",
-                                datei: String(s.sourceURL || "")
-                                    .split("/")
-                                    .pop()
-                                    .split("?")[0],
-                                start: +s.startTime.toFixed(1),
-                                dauer: +s.duration.toFixed(1),
-                            })),
-                        });
-            }).observe({ type: "long-animation-frame", buffered: false });
-        }
-    } catch (_e) {
-        H.loafDa = false;
-    }
     return H;
 }
 
-// Die Eichmarke: eine benannte Schleife fester Dauer — ihre ersten Proben im Profil legen den Profiler-Takt auf die
-// Uhr der Seite (performance.now()).
-function haengerEichmarke(ms) {
-    const t0 = performance.now();
-    let x = 0;
-    while (performance.now() - t0 < ms) x += Math.sqrt(x + 1);
-    window.__haengerSenke = x;
-    return t0;
-}
-// Die Probe-Lasten (`--probe`): bekannte Ursachen mit Namen — die Uhr nur je 10 000 Schritte (sonst trug `now` die Hälfte der
-// Proben, die Engstelle hieß „now" statt der Probe: Radeon 21.10., Probe neben NICHT GENANNT).
-function __haengerProbeTakt(ms) {
+// Die Probe-Last (`--probe`): eine bekannte Ursache mit Namen, im Takt und neben ihm — die Uhr nur je 10 000 Schritte
+// (sonst trüge `now` die Proben und hieße die Engstelle).
+function __haengerProbe(ms) {
     const t0 = performance.now();
     let x = 0;
     while (performance.now() - t0 < ms) for (let i = 0; i < 1e4; i++) x += Math.sqrt(x + 2);
-    window.__haengerSenke = x;
-}
-function __haengerProbeNeben(ms) {
-    const t0 = performance.now();
-    let x = 0;
-    while (performance.now() - t0 < ms) for (let i = 0; i < 1e4; i++) x += Math.sqrt(x + 3);
     window.__haengerSenke = x;
 }
 
@@ -250,35 +205,48 @@ function profilLesen(p) {
         return s;
     };
     const fnName = (id) => knoten.get(id).n.callFrame.functionName || "";
-    return { zeiten, samples: p.samples, name, stapel, fnName };
+    return {
+        knoten,
+        zeiten,
+        samples: p.samples,
+        name,
+        stapel,
+        fnName,
+        intervallUs: p.samples.length > 1 ? (p.endTime - p.startTime) / p.samples.length : 1000,
+    };
 }
 
-// Die Eichung: die Proben der Eichmarke legen den Profiler-Takt (µs) auf die Seiten-Uhr (ms).
-function eichen(P, eich) {
-    const treffer = [];
-    for (let i = 0; i < P.samples.length; i++) {
-        const st = P.stapel(P.samples[i]);
-        if (st.some((id) => P.fnName(id) === "haengerEichmarke")) treffer.push(P.zeiten[i]);
+// DIE STICHPROBEN AUS DER EINEN SPUR (`lauf`, Kategorie `disabled-by-default-v8.cpu_profiler`, 1 ms; Leser: Hänger-Linse,
+// `profil`): das Profile auf dem Faden der Takt-Marken und seine ProfileChunks (Knoten mit Eltern) als EIN CDP-Profil auf der
+// Spur-Uhr, dazu die Takt-Marken (`anazh-takt`, Spur-Uhr) — je Takt eine, sie legen die Takte auf die Proben.
+function spurProfil(ev) {
+    const marken = ev.filter((e) => /user_timing/.test(e.cat) && e.name === "anazh-takt").sort((x, y) => x.ts - y.ts);
+    const kopf = marken[0] && ev.find((e) => e.name === "Profile" && e.pid === marken[0].pid && e.tid === marken[0].tid);
+    if (!kopf) return null;
+    const knoten = new Map(), samples = [], timeDeltas = [];
+    for (const e of ev.filter((x) => x.name === "ProfileChunk" && x.pid === kopf.pid && x.id === kopf.id).sort((x, y) => x.ts - y.ts)) {
+        const d = e.args.data, p = d.cpuProfile || {};
+        for (const n of p.nodes || []) knoten.set(n.id, Object.assign({ children: [] }, n));
+        for (const x of p.samples || []) samples.push(x);
+        for (const x of d.timeDeltas || []) timeDeltas.push(x);
     }
-    if (!treffer.length) return null;
-    // zwei Haufen (Anfang, Ende): der erste Treffer je Haufen
-    const erst = treffer[0];
-    const spaet = treffer.find((t) => t - erst > 1e6) || null;
-    const versatz = erst - eich[0] * 1000;
-    const drift = spaet != null && eich[1] != null ? +((spaet - eich[1] * 1000 - versatz) / 1000).toFixed(2) : null;
-    return { versatzUs: versatz, driftMs: drift, treffer: treffer.length };
+    for (const n of knoten.values()) if (knoten.has(n.parent)) knoten.get(n.parent).children.push(n.id);
+    const startTime = kopf.args.data.startTime, endTime = timeDeltas.reduce((t, x) => t + x, startTime);
+    const nodes = [...knoten.values()].sort((x, y) => x.id - y.id);
+    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts) };
 }
-// Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
-function quantil(werte) {
-    const s = werte.slice().sort((x, y) => x - y);
-    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
-    return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
+
+// Der Versatz Seite → Spur: der Median über die Takte (Marke gegen Takt-Beginn); ungleiche Zahl legt keine Probe.
+function versatzVon(spur, T, P) {
+    const nT = T.t.length;
+    if (!P || spur.marken.length !== nT) return null;
+    return spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((x, y) => x - y)[nT >> 1];
 }
-// Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms, geeicht).
-function probenIn(P, eich, von, bis) {
-    if (!P || !eich) return [];
-    const lo = von * 1000 + eich.versatzUs,
-        hi = bis * 1000 + eich.versatzUs;
+// Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms; ohne Versatz keine).
+function probenIn(P, versatz, von, bis) {
+    if (versatz == null) return [];
+    const lo = von * 1000 + versatz,
+        hi = bis * 1000 + versatz;
     let a0 = 0,
         b0 = P.zeiten.length;
     while (a0 < b0) {
@@ -289,6 +257,12 @@ function probenIn(P, eich, von, bis) {
     const out = [];
     for (let s = a0; s < P.zeiten.length && P.zeiten[s] < hi; s++) out.push(P.samples[s]);
     return out;
+}
+// Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
+function quantil(werte) {
+    const s = werte.slice().sort((x, y) => x - y);
+    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
+    return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
 }
 
 // Die Engstelle einer Proben-Menge über die NAMEN der Rahmen (V8 legt dieselbe Funktion je Code-Stufe — Bytecode,
@@ -375,18 +349,18 @@ function geraeteIn(roh, T, von, bis, t0, t1) {
 // Das Fenster besteht aus den rAF-Abständen seiner Takte: der erste (gerendert) zerfällt in die Takt-Zeit und die Zeit
 // außerhalb (nach Proben: NEBEN · GC · leer = GPU); jeder weitere Takt hat nicht gerendert — die GPU-Leine hielt ihn —,
 // dort zählt Haupt-Thread-Arbeit nur, soweit sie den Bild-Takt (Median der rAF-Abstände) übersteigt, der Rest ist GPU.
-function haengerAuswerten(roh, profil, opts) {
+function haengerAuswerten(roh, spur, opts) {
     const o = opts || {};
     const schwelle = o.schwelle || 100;
     const T = roh.takte;
-    const P = profil ? profilLesen(profil) : null;
-    const eich = P ? eichen(P, roh.eich) : null;
+    const P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null;
     const nT = T.t.length;
+    const versatz = versatzVon(spur, T, P);
     const abst = [];
     for (let q = 1; q < nT; q++) abst.push(T.c0[q] - T.c0[q - 1]);
     abst.sort((x, y) => x - y);
     const periode = abst.length ? abst[abst.length >> 1] : 16.7;
-    const proben = (von, bis) => probenIn(P, eich, von, bis);
+    const proben = (von, bis) => probenIn(P, versatz, von, bis);
     const gerendert = [];
     for (let i = 0; i < nT; i++) if (T.g[i]) gerendert.push(i);
     const dts = [];
@@ -407,7 +381,7 @@ function haengerAuswerten(roh, profil, opts) {
             const d = T.c0[q + 1] - T.c0[q];
             const cpu = T.c1[q] - T.c0[q];
             const teil = { TAKT: cpu, NEBEN: 0, GC: 0, GPU: Math.max(0, d - cpu) };
-            if (P && eich) {
+            if (versatz != null) {
                 const innen = proben(T.c0[q], T.c1[q]);
                 let gcInnen = 0;
                 for (const id of innen) {
@@ -479,13 +453,6 @@ function haengerAuswerten(roh, profil, opts) {
             else if (up > 4096) name = `Upload ${(up / 1024).toFixed(1)} MB`;
             else name = ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
         }
-        const loaf = (roh.loaf || [])
-            .filter((x) => x.start < w1 && x.start + x.dauer > w0)
-            .flatMap((x) => x.skripte)
-            .filter((s) => s.dauer >= 20)
-            .sort((x, y) => y.dauer - x.dauer)
-            .slice(0, 3)
-            .map((s) => `${s.aufrufer}${s.fn ? " → " + s.fn : ""} ${Math.round(s.dauer)} ms`);
         haenger.push({
             t: +(w0 - roh.tMess[0]).toFixed(0),
             dt: +dt.toFixed(1),
@@ -501,7 +468,6 @@ function haengerAuswerten(roh, profil, opts) {
             geraet: im.dev,
             geraetVorher: klasse === "GPU" ? vor.dev : null,
             pipelines: (klasse === "GPU" ? vor.pipes : im.pipes).slice(0, 12).map((x) => x.art + ":" + x.n),
-            loaf,
         });
     }
     // je Ursache: Zahl, Summe, Maximum
@@ -515,9 +481,9 @@ function haengerAuswerten(roh, profil, opts) {
     }
     // die Probe: jede geschmuggelte Last muss als Hänger mit ihrem Namen erscheinen
     const probe = (roh.probe || []).map((p) => {
-        const soll = p.art === "takt" ? "__haengerProbeTakt" : "__haengerProbeNeben";
+        const soll = (p.art === "takt" ? "TAKT" : "NEBEN") + ": __haengerProbe";
         const tRel = p.t - roh.tMess[0];
-        const h = haenger.find((x) => Math.abs(x.t - tRel) < 2000 && x.name.indexOf(soll) >= 0);
+        const h = haenger.find((x) => Math.abs(x.t - tRel) < 2000 && soll.startsWith(x.klasse) && x.name.indexOf("__haengerProbe") >= 0);
         return { art: p.art, soll, gefunden: !!h, als: h ? h.ursache : null };
     });
     // DER ZÄHLER DER KLASSE über den ganzen Lauf (unabhängig von der Schwelle und vom Gerät): jede Pipeline, die ein Frame
@@ -572,9 +538,8 @@ function haengerAuswerten(roh, profil, opts) {
             .map((e) => Object.assign(e, { summeMs: Math.round(e.summeMs), maxMs: Math.round(e.maxMs) }))
             .sort((x, y) => y.n - x.n || y.summeMs - x.summeMs),
         haenger,
-        eichung: eich ? { driftMs: eich.driftMs, treffer: eich.treffer } : null,
+        marken: spur ? spur.marken.length : 0,
         profil: !!P,
-        loafDa: !!roh.loafDa,
         probe,
         lauf: {
             regler: roh.k && roh.k.regler,
@@ -589,13 +554,11 @@ function haengerAuswerten(roh, profil, opts) {
     };
 }
 
-// Die Linse prüft sich: fehlt das Profil, die Eichung, oder nennt sie eine geschmuggelte Probe nicht, ist sie blind.
+// Die Linse prüft sich: fehlen die Proben, liegen sie nicht auf den Takten, oder nennt sie eine geschmuggelte Probe nicht, ist sie blind.
 function haengerLinsenBefunde(a) {
     const b = [];
-    if (!a.profil) b.push("kein CPU-Profil — TAKT und NEBEN ohne Engstelle");
-    if (a.profil && !a.eichung) b.push("Eichmarke nicht im Profil — die Proben liegen nicht auf der Seiten-Uhr");
-    if (a.eichung && a.eichung.driftMs != null && Math.abs(a.eichung.driftMs) > 5)
-        b.push(`Eich-Drift ${a.eichung.driftMs} ms > 5 ms — die Zuordnung der Proben ist unscharf`);
+    if (!a.profil) b.push("keine Stichproben in der Spur — TAKT und NEBEN ohne Engstelle");
+    if (a.profil && a.marken !== a.takte) b.push(`${a.marken} Takt-Marken für ${a.takte} Takte — die Proben liegen nicht auf den Takten`);
     for (const p of a.probe || []) if (!p.gefunden) b.push(`Probe ${p.art} (${p.soll}) nicht beim Namen genannt`);
     return b;
 }
@@ -609,9 +572,7 @@ function haengerTabelle(a) {
     );
     z.push(
         `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern} · ` +
-            `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Profil ${a.profil ? "ja" : "NEIN"}` +
-            (a.eichung ? ` (Eich-Drift ${a.eichung.driftMs} ms)` : "") +
-            ` · LoAF ${a.loafDa ? "ja" : "nein"}`
+            `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Proben ${a.profil ? "ja" : "NEIN"} (${a.marken} Takt-Marken)`
     );
     const pp = a.pipelines || {};
     z.push(
@@ -665,7 +626,6 @@ function haengerTabelle(a) {
                     `      Gerät${h.geraetVorher ? " (mit 3 Frames davor)" : ""}: ${g}` +
                         (h.pipelines.length ? " — " + h.pipelines.slice(0, 6).join(", ") : "")
                 );
-            if (h.loaf.length) z.push(`      LoAF: ${h.loaf.join(" · ")}`);
         }
     }
     for (const p of a.probe || [])
@@ -673,56 +633,143 @@ function haengerTabelle(a) {
     return z.join("\n");
 }
 
+// ── DIE TAKT-SPITZE (Profi-Band K1/K2 + PFLICHT E in Bewegung) ─────────────────────────────────────────────────────────
+// Befund OMEN Serie 1 (GTX, 21.10.): CPU-Takt p95 Genesis Third steht 5,78 ms, geht 19,7 ms — keine Linse nannte, WER die
+// Spitzen-Takte des Gehens trägt. Der echte Lauf geht die Bahn der OMEN-Zellen „geht" (`lauf`, `wandern: "bahn"`) mit den
+// Stichproben der Spur; die gerenderten Takte ab p95 (wie `lauf` cpuTaktMs) und die der Mitte (p40–p60) zerfallen je
+// Rahmen-Pfad unter der Spiel-Schleife (die Proben im Takt-Fenster teilen seine CPU-Zeit, je Takt gemittelt). TÄTER ist jeder
+// Rahmen, der in den Spitzen ≥ 1 ms MEHR trägt als in der Mitte, ohne dass ein Kind ≥ 1 ms es erklärt: was die Spitze zur
+// Spitze macht — der Boden, den jeder Takt zahlt, steht daneben gegen K2 (8 ms). ROT: ein Täter, oder die Linse ist blind.
+function spitzenAuswerten(roh, spur, o) {
+    const T = roh.takte,
+        P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null,
+        versatz = versatzVon(spur, T, P);
+    const cpu = (i) => T.c1[i] - T.c0[i];
+    const ids = [...T.t.keys()].filter((i) => T.g[i]);
+    const q = quantil(ids.map(cpu));
+    const r2 = (x) => +x.toFixed(2);
+    const gruppe = (lo, hi) => ids.filter((i) => cpu(i) >= lo && cpu(i) <= hi);
+    const spitze = gruppe(q(0.95), Infinity),
+        mitte = gruppe(q(0.4), q(0.6));
+    let gedeckt = 0;
+    const baum = (gr) => {
+        const w = { n: 0, k: new Map() };
+        for (const i of gr) {
+            const s = probenIn(P, versatz, T.c0[i], T.c1[i]);
+            if (gr === spitze && s.length) gedeckt++;
+            rahmenBaum(P, s, cpu(i) / s.length / gr.length, w);
+        }
+        return w;
+    };
+    const zeilen = [],
+        taeter = [];
+    // die Zeilen ab `zeige` ms; den Rest eines Rahmens erklären nur Kinder ≥ 1 ms
+    const geh = (k, km, pfad) => {
+        let rest = k.n,
+            restM = km ? km.n : 0;
+        for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= o.zeige).sort((a, b) => b[1].n - a[1].n)) {
+            const cm = km && km.k.get(nm);
+            zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
+            if (c.n >= 1) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
+            geh(c, cm, pfad.concat(nm));
+        }
+        const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
+        if (pfad.length && rest - restM >= 1) taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
+    };
+    geh(baum(spitze), baum(mitte), []);
+    taeter.sort((x, y) => y.spitzeMs - y.mitteMs - (x.spitzeMs - x.mitteMs));
+    return {
+        band: o.band,
+        cpuMs: q.zahl,
+        takte: T.t.length,
+        gerendert: ids.length,
+        spitzeN: spitze.length,
+        mitteN: mitte.length,
+        gedeckt,
+        marken: spur ? spur.marken.length : 0,
+        profil: !!P,
+        zeige: o.zeige,
+        zeilen,
+        taeter,
+        lauf: { bahn: roh.bahn || null, loadScale: roh.loadScale, chunks: roh.chunks },
+    };
+}
+// Blind ohne Proben, ohne Takt-Marken oder mit ungedeckten Spitzen-Takten; ROT mit jedem Täter beim Namen.
+function spitzenBefunde(a) {
+    const b = haengerLinsenBefunde(a);
+    if (a.gedeckt < 0.9 * a.spitzeN) b.push(`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`);
+    for (const t of a.taeter)
+        b.push(`Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, ${t.mitteMs} ms in der Mitte`);
+    return b;
+}
+function spitzenTabelle(a) {
+    const z = [
+        `TAKT-SPITZE: ${a.gerendert} gerenderte Takte, CPU-Takt p50/p95/p99/max ${a.cpuMs.p50}/${a.cpuMs.p95}/` +
+            `${a.cpuMs.p99}/${a.cpuMs.max} ms — ${a.spitzeN} Spitzen-Takte ab p95 (${a.gedeckt} mit Proben), Mitte ` +
+            `${a.mitteN} · Bahn ${JSON.stringify(a.lauf.bahn)} · loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · ` +
+            `K2 p95 ${a.cpuMs.p95 > a.band ? "über" : "unter"} ${a.band} ms`,
+        `  Spitze  Mitte  ms je Takt, Rahmen ≥ ${a.zeige} ms`,
+        ...a.zeilen.map(
+            (e) => `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`
+        ),
+        `TÄTER (Spitze − Mitte ≥ 1 ms): ${a.taeter.length ? "" : "keiner"}`,
+    ];
+    return z.concat(a.taeter.map((t) => `  ${t.name}  ${t.spitzeMs} · ${t.mitteMs}`)).join("\n");
+}
+// Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
+function linseWerten(roh, spur, b) {
+    const a = b.spitze
+        ? spitzenAuswerten(roh, spur, { band: Number(b.band) || 8, zeige: Number(b.zeige) || 0.25 })
+        : haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
+    const befunde = b.spitze ? spitzenBefunde(a) : haengerLinsenBefunde(a);
+    return Object.assign(a, { befunde, tabelle: b.spitze ? spitzenTabelle(a) : haengerTabelle(a) });
+}
+
 // DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit vier Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
-// GPU-Warten nach synchronen Pipelines) und einer Uhr, die gegen den Profiler versetzt ist — die Auswertung muss jeden
-// beim Namen nennen und keinen ruhigen Frame zählen.
+// GPU-Warten nach synchronen Pipelines) als Spur (Profile, zwei ProfileChunks, Takt-Marken auf einer gegen die Seite versetzten
+// Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
+// Die Takt-Spitze: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last ist Täter mit 3 ms,
+// A (in jedem Takt) keiner; ohne Last GRÜN, ohne eine Takt-Marke blind.
 function selbsttest() {
     const f = [];
-    // Profil-Knoten
+    // Profil-Knoten der Spur (je Knoten sein Eltern-Knoten)
     const nodes = [];
-    const knoten = (id, fn, url, kinder) =>
-        nodes.push({ id, callFrame: { functionName: fn, url: url || "", lineNumber: 0 }, children: kinder || [] });
-    knoten(1, "(root)", "", [2, 6, 7, 9, 10, 12]);
-    knoten(2, "", "werkbank", [3]);
+    const knoten = (id, fn, url, parent) => nodes.push({ id, callFrame: { functionName: fn, url: url || "", lineNumber: 0 }, parent });
+    const D = "http://x/stamm/dirigent-takt.js";
+    knoten(1, "(root)", "");
+    knoten(2, "", "werkbank", 1);
     // V8 legt dieselbe Funktion je Code-Stufe als Geschwister an (13/14 neben 4/5) — die Engstelle muss sie vereinen
-    knoten(3, "_gameLoopTick", "http://x/stamm/dirigent-takt.js", [4, 11, 13, 15, 16, 17, 18]);
-    knoten(4, "_loopRender", "http://x/stamm/dirigent-takt.js", [5]);
-    knoten(5, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(6, "(idle)", "");
-    knoten(7, "onmessage", "http://x/stamm/dirigent-takt.js", [8]);
-    knoten(8, "_nebenLast", "http://x/stamm/dirigent-takt.js");
-    knoten(9, "(garbage collector)", "");
-    knoten(10, "haengerEichmarke", "");
-    knoten(11, "_kleinImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(12, "(program)", "");
-    knoten(13, "_loopRender", "http://x/stamm/dirigent-takt.js", [14]);
-    knoten(14, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(15, "_teilA", "http://x/stamm/dirigent-takt.js");
-    knoten(16, "_teilB", "http://x/stamm/dirigent-takt.js");
-    knoten(17, "_teilC", "http://x/stamm/dirigent-takt.js");
-    knoten(18, "_spitzenLast", "http://x/stamm/dirigent-takt.js");
-    // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Profiler-Uhr = Seite + 5 000 000 µs
-    const V = 5e9 / 1000; // 5 000 000 µs
+    knoten(3, "_gameLoopTick", D, 2);
+    knoten(4, "_loopRender", D, 3);
+    knoten(5, "_lastImTakt", D, 4);
+    knoten(6, "(idle)", "", 1);
+    knoten(7, "onmessage", D, 1);
+    knoten(8, "_nebenLast", D, 7);
+    knoten(9, "(garbage collector)", "", 1);
+    knoten(11, "_kleinImTakt", D, 3);
+    knoten(12, "(program)", "", 1);
+    knoten(13, "_loopRender", D, 3);
+    knoten(14, "_lastImTakt", D, 13);
+    for (const [id, fn] of [[15, "_teilA"], [16, "_teilB"], [17, "_teilC"], [18, "_spitzenLast"]]) knoten(id, fn, D, 3);
+    // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Spur-Uhr = Seite + 5 000 000 µs
+    const V = 5e6;
     const samples = [],
         deltas = [];
-    let letzte = 0;
+    let letzte = V + 989e3;
     const probe = (tSeiteMs, id) => {
         const us = tSeiteMs * 1000 + V;
         samples.push(id);
-        deltas.push(samples.length === 1 ? 0 : us - letzte);
+        deltas.push(us - letzte);
         letzte = us;
     };
-    const T = { t: [], c0: [], c1: [], g: [], flug: [], innen: [], aussen: [] };
+    const T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
     const namen = [];
-    // Eichmarke bei 990 ms (8 ms) und am Ende
-    for (let x = 990; x < 998; x++) probe(x, 10);
     let t = 1000;
     const takt = (dauer, idImTakt, renderiert, innen) => {
         T.t.push(t);
         T.c0.push(t);
         T.c1.push(t + dauer);
         T.g.push(renderiert === false ? 0 : 1);
-        T.flug.push(1);
         T.innen.push(innen || 0);
         T.aussen.push(0);
         const ids = Array.isArray(idImTakt) ? idImTakt : [idImTakt || 11];
@@ -782,32 +829,22 @@ function selbsttest() {
         takt(4);
         luecke(t + 16.7);
     }
-    // DIE TAKT-SPITZE: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last steht als Täter mit
-    // 3 ms, A mit 2 ms, ROT über Band 6; ohne Last GRÜN ohne Befund
     const spitzen = [0, 3].map((last) => {
         const von = T.t.length;
         for (let i = 0; i < 200; i++) {
             takt(i % 10 === 9 ? 5 + last : 5, [15, 15, 16, 17, 17, 18, 18, 18]);
             luecke(t + 16.7);
         }
-        return Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von)]));
+        return [von, T.t.length];
     });
     const ende = t;
-    for (let x = ende + 5; x < ende + 13; x++) probe(x, 10);
-    const profil = { nodes, startTime: V + 989 * 1000, endTime: letzte, samples, timeDeltas: deltas };
-    // timeDeltas[0] relativ zu startTime
-    profil.timeDeltas[0] = 990 * 1000 + V - profil.startTime;
-    const roh = {
-        takte: T,
-        namen,
-        loaf: [],
-        loafDa: false,
-        eich: [990, ende + 5],
-        tMess: [1000, ende],
-        probe: [],
-        k: {},
-    };
-    const a = haengerAuswerten(roh, profil, { schwelle: 100 });
+    const roh = { takte: T, namen, tMess: [1000, ende], probe: [], k: {} };
+    const chunk = (von, bis, ts) => ({ name: "ProfileChunk", pid: 1, tid: 7, id: "0x1", ts, args: { data: {
+        cpuProfile: { nodes: nodes.slice(von, bis), samples: samples.slice(von * 300, bis * 300) },
+        timeDeltas: deltas.slice(von * 300, bis * 300) } } });
+    const ev = [chunk(8, 99, V + 2e6), { name: "Profile", pid: 1, tid: 1, id: "0x1", ts: V + 989e3, args: { data: { startTime: V + 989e3 } } },
+        chunk(0, 8, V + 1e6), ...T.c0.map((c) => ({ name: "anazh-takt", cat: "blink.user_timing", pid: 1, tid: 1, ts: c * 1000 + V + 40 }))];
+    const a = haengerAuswerten(roh, spurProfil(ev), { schwelle: 100 });
     const erwartet = [
         ["TAKT", "_loopRender › _lastImTakt"],
         ["NEBEN", "onmessage › _nebenLast"],
@@ -831,8 +868,8 @@ function selbsttest() {
             .join(",") !== "_teilA,_teilB,_teilC"
     )
         f.push("verteilter Takt nennt seine drei Zweige nicht: " + JSON.stringify(h5.zweige));
-    if (!a.eichung) f.push("Eichung nicht gefunden");
-    else if (Math.abs(a.eichung.driftMs) > 1) f.push(`Eich-Drift ${a.eichung.driftMs} ms im erfundenen Lauf`);
+    if (!haengerLinsenBefunde(haengerAuswerten(roh, spurProfil(ev.slice(0, -1)), { schwelle: 100 })).length)
+        f.push("eine fehlende Takt-Marke bleibt ohne Befund (die Proben lägen auf fremden Takten)");
     if (haengerLinsenBefunde(a).length) f.push("Befunde im erfundenen Lauf: " + haengerLinsenBefunde(a).join(" · "));
     // ohne Profil: die Zeiten-Zerlegung allein (Takt gegen Rest) bleibt und nennt TAKT ohne Engstelle
     const ohne = haengerAuswerten(roh, null, { schwelle: 100 });
@@ -840,142 +877,26 @@ function selbsttest() {
         f.push("ohne Profil: Takt-Hänger nicht als TAKT gezählt");
     if (!haengerLinsenBefunde(ohne).length)
         f.push("ohne Profil meldet die Linse keinen Befund (sie wäre blind und grün)");
-    spitzen.forEach((takte, last) => {
-        const sp = spitzenAuswerten({ takte, eich: roh.eich }, profil, 6);
-        const nennt = (re, ms) => sp.taeter.some((x) => re.test(x.name) && Math.abs(x.spitzeMs - ms) < 0.3);
-        if (last && (sp.urteil !== "ROT" || !nennt(/^_spitzenLast$/, 3) || !nennt(/^_teilA$/, 2)))
-            f.push(`Spitze: 3 ms je 10. Takt nicht ROT beim Namen:\n${spitzenTabelle(sp)}`);
-        if (!last && spitzenBefunde(sp).length) f.push(`Spitze: ohne Last nicht GRÜN:\n${spitzenTabelle(sp)}`);
+    const sp = spurProfil(ev);
+    spitzen.forEach(([von, bis], last) => {
+        const teil = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von, bis)]));
+        const s = linseWerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) }, { spitze: true });
+        const nennt = (nm, ms) => s.taeter.some((x) => x.name === nm && Math.abs(x.spitzeMs - x.mitteMs - ms) < 0.3);
+        if (last && (s.befunde.length !== 1 || !nennt("_spitzenLast", 3)))
+            f.push(`Spitze: 3 ms je 10. Takt nicht allein beim Namen:\n${s.tabelle}`);
+        if (!last && s.befunde.length) f.push(`Spitze: ohne Last nicht GRÜN:\n${s.tabelle}`);
+        const blind = { profil: sp.profil, marken: sp.marken.slice(von, bis - 1) };
+        if (!last && !linseWerten({ takte: teil }, blind, { spitze: true }).befunde.length)
+            f.push("Spitze: eine fehlende Takt-Marke bleibt ohne Befund (die Proben lägen auf fremden Takten)");
     });
     return f;
 }
 
-// ── DIE TAKT-SPITZE (Profi-Band K1/K2 + PFLICHT E in Bewegung) ─────────────────────────────────────────────────────────
-// Befund OMEN Serie 1 (GTX, 21.10.): CPU-Takt p95 Genesis Third steht 5,78 ms, geht 19,7 ms — keine Linse nannte, WER die
-// Spitzen-Takte des Gehens trägt. Der echte Lauf geht die Bahn der OMEN-Zellen (`__taktBahn`: 4 m/s geradeaus −z 0 → −60 m
-// und zurück, im Takt über `tickAffordances`) unter dem Profiler; die gerenderten Takte ab p95 (wie `lauf` cpuTaktMs) und die
-// der Mitte (p40–p60) zerfallen je Rahmen-Pfad unter der Spiel-Schleife (die Proben im Takt-Fenster teilen seine CPU-Zeit).
-// Täter: jeder Rahmen, der in den Spitzen ≥ 1 ms trägt, ohne dass ein Kind ≥ 1 ms es erklärt. ROT über dem Band (K2: 8 ms).
-function taktBahn(an) {
-    const r = window.anazhRealm,
-        g0 = window.__taktGeher,
-        pm = r.state.playerMesh.position;
-    // das Ende stellt an den Anfang zurück: jeder Gang einer Sitzung geht dieselbe Bahn
-    if (g0) {
-        delete r.tickAffordances;
-        window.__taktGeher = null;
-        pm.set(g0.x, pm.y, g0.z);
-    }
-    if (!an) return g0 && { wegM: Math.round(g0.weg), wege: g0.wege };
-    const P = Object.getPrototypeOf(r);
-    const g = (window.__taktGeher = { x: pm.x, z: pm.z, s: 0, dir: -1, wege: 0, weg: 0 });
-    r.tickAffordances = function (dt) {
-        if (Number.isFinite(dt) && dt > 0) {
-            const s0 = g.s;
-            g.s = Math.max(-60, Math.min(0, g.s + g.dir * 4 * Math.min(dt, 0.1)));
-            if (g.s === -60 || g.s === 0) {
-                g.dir = g.s === 0 ? -1 : 1;
-                g.wege++;
-            }
-            g.weg += Math.abs(g.s - s0);
-            pm.set(g.x, pm.y, g.z + g.s);
-        }
-        return P.tickAffordances.call(this, dt);
-    };
-}
-
-function spitzenAuswerten(roh, profil, band) {
-    const T = roh.takte,
-        P = profil ? profilLesen(profil) : null,
-        eich = P ? eichen(P, roh.eich) : null;
-    const cpu = (i) => T.c1[i] - T.c0[i];
-    const ids = [...T.t.keys()].filter((i) => T.g[i]);
-    const q = quantil(ids.map(cpu));
-    const r2 = (x) => +x.toFixed(2);
-    const gruppe = (lo, hi) => ids.filter((i) => cpu(i) >= lo && cpu(i) <= hi);
-    const spitze = gruppe(q(0.95), Infinity);
-    let gedeckt = 0;
-    // der Rahmen-Baum je Gruppe: jede Probe trägt cpu / Proben ihres Takts, je Takt gemittelt (ms)
-    const baum = (gr) => {
-        const w = { n: 0, k: new Map() };
-        for (const i of gr) {
-            const s = probenIn(P, eich, T.c0[i], T.c1[i]);
-            gedeckt += gr === spitze && s.length ? 1 : 0;
-            rahmenBaum(P, s, cpu(i) / s.length / gr.length, w);
-        }
-        return w;
-    };
-    const zeilen = [],
-        taeter = [];
-    const geh = (k, km, pfad) => {
-        let rest = k.n,
-            restM = km ? km.n : 0;
-        for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= 1).sort((a, b) => b[1].n - a[1].n)) {
-            const cm = km && km.k.get(nm);
-            zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
-            rest -= c.n;
-            restM -= cm ? cm.n : 0;
-            geh(c, cm, pfad.concat(nm));
-        }
-        // was kein Kind ≥ 1 ms erklärt, trägt der Rahmen selbst (verteilt oder Selbst-Zeit)
-        const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
-        if (pfad.length && rest >= 1) taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
-    };
-    geh(baum(spitze), baum(gruppe(q(0.4), q(0.6))), []);
-    taeter.sort((a, b) => b.spitzeMs - a.spitzeMs);
-    const urteil = q(0.95) > band ? "ROT" : "GRÜN";
-    const lauf = { bahn: roh.bahn || null, loadScale: roh.loadScale, chunks: roh.chunks };
-    return {
-        band,
-        cpuMs: q.zahl,
-        spitzeN: spitze.length,
-        takte: ids.length,
-        gedeckt,
-        profil: !!P,
-        eichung: eich,
-        zeilen,
-        taeter,
-        urteil,
-        lauf,
-    };
-}
-// Blind ohne Profil, ohne Eichung oder mit ungedeckten Spitzen-Takten — ROT über dem Band, mit den Tätern.
-function spitzenBefunde(a) {
-    const b = haengerLinsenBefunde(a);
-    if (a.gedeckt < 0.9 * a.spitzeN) b.push(`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`);
-    const t = a.taeter.map((x) => `${x.name} ${x.spitzeMs} ms (Mitte ${x.mitteMs})`).join(" · ") || "keiner ≥ 1 ms";
-    if (a.urteil === "ROT") b.push(`CPU-Takt p95 ${a.cpuMs.p95} ms > Band ${a.band} ms — Täter: ${t}`);
-    return b;
-}
-function spitzenTabelle(a) {
-    const z = [
-        `TAKT-SPITZE: ${a.takte} gerenderte Takte, CPU-Takt ${JSON.stringify(a.cpuMs)} ms, ${a.spitzeN} ab p95 · ` +
-            `${JSON.stringify(a.lauf)} · Urteil ${a.urteil} (Band ${a.band} ms)`,
-        `  Spitze  Mitte  ms je Takt, Rahmen ≥ 1 ms`,
-        ...a.zeilen.map(
-            (e) =>
-                `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`
-        ),
-        "TÄTER (Spitze · Mitte ms je Takt):",
-    ];
-    return z.concat(a.taeter.map((t) => `  ${t.name}  ${t.spitzeMs} · ${t.mitteMs}`)).join("\n");
-}
-// Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
-function linseWerten(roh, profil, b) {
-    const a = b.spitze
-        ? spitzenAuswerten(roh, profil, Number(b.band) || 8)
-        : haengerAuswerten(roh, profil, { schwelle: Number(b.schwelle) || 100 });
-    const befunde = b.spitze ? spitzenBefunde(a) : haengerLinsenBefunde(a);
-    return Object.assign(a, { befunde, tabelle: b.spitze ? spitzenTabelle(a) : haengerTabelle(a) });
-}
-
 module.exports = {
     linseWerten,
+    spurProfil,
     selbsttest,
     HAENGER_INSTALL:
         `window.__haengerAn = ${haengerAn.toString()};` +
-        `window.__haengerEichmarke = ${haengerEichmarke.toString()};` +
-        `window.__haengerProbeTakt = ${__haengerProbeTakt.toString()};` +
-        `window.__haengerProbeNeben = ${__haengerProbeNeben.toString()};` +
-        `window.__taktBahn = ${taktBahn.toString()};`,
+        `window.__haengerProbe = ${__haengerProbe.toString()};`,
 };
