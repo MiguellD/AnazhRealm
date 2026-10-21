@@ -632,6 +632,7 @@ class AnazhRealm_bild_himmel {
             const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
+            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -1658,16 +1659,7 @@ class AnazhRealm_bild_himmel {
         const himmelFarbe = (dir) =>
             texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
-        const passUmgebung = Fn(() => {
-            const q = uv();
-            const phi = q.x
-                .sub(0.5)
-                .mul(2 * PI)
-                .toVar();
-            const el = q.y.sub(0.5).mul(PI).toVar();
-            const ce = el.cos().toVar();
-            return vec4(himmelFarbe(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
-        });
+        const passUmgebung = Fn(() => vec4(himmelFarbe(this._umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
         // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
@@ -1742,6 +1734,14 @@ class AnazhRealm_bild_himmel {
             tafelnFrisch: false,
         };
         return st.atmoLut;
+    }
+
+    // DIE RICHTUNG DER EQUIREKT-LAGE (die Umkehr von r184 `equirectUV`): uv → Einheits-Richtung, φ = (u − ½)·2π, Höhe = (v − ½)·π
+    // — so malt die Umgebung (`passUmgebung`), so tastet die Himmels-Sonde des Lichts der Welt ab (`_weltLichtHimmel`).
+    _umgebungRichtung(q) {
+        const phi = q.x.sub(0.5).mul(2 * Math.PI);
+        const el = q.y.sub(0.5).mul(Math.PI);
+        return THREE.TSL.vec3(el.cos().mul(phi.cos()), el.sin(), el.cos().mul(phi.sin()));
     }
 
     // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
@@ -2100,7 +2100,7 @@ class AnazhRealm_bild_himmel {
     // DIE BELICHTUNG AUS DEM LICHT (V18.507, S7): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV (die Kamera-Konvention
     // der Profi-Engines, UE5-Belichtungs-Bias +1; `BELICHTUNG.zielKarte` aus der Tonkurve). Die Karte steht der Sonne zugewandt
     // (D3-N2, Sunny 16: die Blende folgt dem Durchlass, nie dem Sinus der Höhe) und liest L = 0,18/π · E.
-    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`, dieselbe, die das Wasser liest) plus das Richtlicht, das
+    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`) plus das Richtlicht, das
     // die Waagrechte nicht nimmt — der Himmel aus der Bestrahlungs-Tafel der EINEN Atmosphäre an der Sonne DIESER Anwendung.
     // Bis S7 las sie den Himmel aus der zurückgelesenen Umgebung (eine Lesung nach der Malung): nach jedem Sprung der Uhr trug
     // der erste Frame die Belichtung der vorigen Stunde (bis 0,57 EV, Uhr 0,75); die erste Runde von S7 setzte den Himmel als
@@ -2252,8 +2252,7 @@ class AnazhRealm_bild_himmel {
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
     // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
-    // die jedes Material liest. EINE Rechnung für die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum
-    // leuchten im Licht des Orts); null, solange der Himmel des Orts noch nicht steht.
+    // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2507,15 +2506,13 @@ class AnazhRealm_bild_himmel {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
-        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung); vor der ersten
-        // Bestrahlungs-Tafel (unter dem Ladeschirm) bleibt der Uniform unberührt.
-        const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
+        // Das Licht des Orts für Körper und Schaum ist das Licht der Welt (`_weltLicht`): sein Schreiber folgt der Uhr sofort
+        this._weltLichtTakt();
         // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            if (uniforms.irr && e) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
             // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
             const wu = this.state.windUniforms;
