@@ -165,6 +165,13 @@ const BASIS = {
         ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
+    // W10: der Stab trägt — die Kapsel steigt auf die Brüstung neben dem Lauf
+    stab: [
+        [
+            "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
+            "false;",
+        ],
+    ],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -2312,6 +2319,7 @@ function zeile(o) {
                 fernstufe: ["w6", "W6 Fernstufe"],
                 kern: ["w6", "W6 Kern-Hülle"],
                 bauwand: ["haus", "W7 Bau im Bau"],
+                stab: ["haus", "W10 Anti-Clip-Hub"],
                 grundkeller: ["grund", "W9 Dichte", "W9 Keller"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
