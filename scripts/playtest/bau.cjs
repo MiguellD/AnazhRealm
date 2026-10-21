@@ -510,12 +510,6 @@ async function checkBandWave10b(ctx) {
                 AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
                 AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
             out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
-            out.hasMagnifying = typeof r._isMagnifying === "function";
-            out.hasFocusing = typeof r._isFocusing === "function";
-            // 10b.2 — neue räumliche Helper
-            out.hasBbox = typeof r._compoundBBox === "function";
-            out.hasBelowMid = typeof r._partsBelowMidline === "function";
-            out.hasAxialAlignment = typeof r._axialAlignment === "function";
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
@@ -618,8 +612,6 @@ async function checkBandWave10b(ctx) {
                 r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
 
             // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
-            out.hasRadiating = typeof r._isRadiating === "function";
-            out.hasTickRadiating = typeof r._tickRadiatingAffordances === "function";
             out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
             out.radiatingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.radiating &&
@@ -708,7 +700,6 @@ async function checkBandWave10b(ctx) {
             r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
-            out.hasBroadcasting = typeof r._isBroadcasting === "function";
             out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
             out.broadcastingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
@@ -880,8 +871,6 @@ async function checkBandWave10b(ctx) {
             );
 
             // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
-            out.hasBalancing = typeof r._isBalancing === "function";
-            out.hasTickBalancing = typeof r._tickBalancingAffordances === "function";
             out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
             out.balancingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.balancing &&
@@ -983,7 +972,6 @@ async function checkBandWave10b(ctx) {
             emoR.chaos = chaosBefore0;
 
             // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
-            out.hasLifting = typeof r._isLifting === "function";
             out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
             out.liftingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.lifting &&
@@ -1140,14 +1128,6 @@ async function checkBandWave10b(ctx) {
             wave10bResults.thresholdsAreSpatial
         );
         check(
-            "Welle 10b.1: _isMagnifying + _isFocusing existieren (computeAffordances und _isMoveable fährt die Suite am Verhalten)",
-            wave10bResults.hasMagnifying && wave10bResults.hasFocusing
-        );
-        check(
-            "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
-            wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
-        );
-        check(
             "Welle 10b.1: leerer/null Bauplan → leere Affordances",
             wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
         );
@@ -1181,10 +1161,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. — radiating ──
         check(
-            "W10 ext.: _isRadiating + _tickRadiatingAffordances existieren, Label + Schwellen definiert",
-            wave10bResults.hasRadiating &&
-                wave10bResults.hasTickRadiating &&
-                wave10bResults.radiatingLabel &&
+            "W10 ext.: radiating trägt Label + Schwellen",
+            wave10bResults.radiatingLabel &&
                 wave10bResults.radiatingThresholds
         );
         check(
@@ -1206,8 +1184,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 2/4 — broadcasting ──
         check(
-            "W10 ext.: _isBroadcasting existiert, Label 'sendend' + Schwellen definiert",
-            wave10bResults.hasBroadcasting && wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
+            "W10 ext.: broadcasting trägt Label 'sendend' + Schwellen",
+            wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
         );
         check("W10 ext.: ein aufrechter leitfähiger Quarz-Mast → broadcasting=true", wave10bResults.mastIsBroadcasting);
         check(
@@ -1257,10 +1235,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 3/4 — balancing ──
         check(
-            "W10 ext.: _isBalancing + _tickBalancingAffordances existieren, Label 'gründend' + Schwellen",
-            wave10bResults.hasBalancing &&
-                wave10bResults.hasTickBalancing &&
-                wave10bResults.balancingLabel &&
+            "W10 ext.: balancing trägt Label 'gründend' + Schwellen",
+            wave10bResults.balancingLabel &&
                 wave10bResults.balancingThresholds
         );
         check(
@@ -1287,9 +1263,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 4/4 — lifting ──
         check(
-            "W10 ext.: _isLifting existiert, Label 'hebend' + Schwellen",
-            wave10bResults.hasLifting &&
-                wave10bResults.liftingLabel &&
+            "W10 ext.: lifting trägt Label 'hebend' + Schwellen",
+            wave10bResults.liftingLabel &&
                 wave10bResults.liftingThresholds
         );
         check(

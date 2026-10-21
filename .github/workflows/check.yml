@@ -1590,6 +1590,12 @@ jobs:
               # (spiegel0 bei Uhr 0,27: frische Welt 0,778, eingeschwungene 0,951) und fahren bis zu ihrer Heilung nur in der Werkbank.
               run: npm run gate:licht-weg:echt
 
+            - name: Naesse auf der Karte (Regen benetzt poroesen Boden 0,5-0,8, innen unter dem Dach +-5 %, dichte Stoffe unveraendert)
+              if: ${{ !cancelled() }}
+              # werkbank licht --naesse: Mess-Wiese und das naechste Haus im Dorf von innen durch die offene Tuer, klar / Regen frisch /
+              # Regen 10 min aus dem Ausgabe-Pfad; der Selbsttest macht die Basis (Naesse 1,0) und eine Naesse ohne Dach rot
+              run: npm run gate:naesse:echt
+
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}
               run: npm run gate:gpu-fehler

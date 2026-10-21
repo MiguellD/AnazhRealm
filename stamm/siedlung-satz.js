@@ -1910,12 +1910,12 @@ class AnazhRealm_siedlung_satz {
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         // Farbe je Instanz (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
-        const mat =
-            this._stlWegeMat ||
-            (this._stlWegeMat = this._leuchtStoff(
-                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
-                null
-            )); // der Licht-Pool (K11)
+        let mat = this._stlWegeMat;
+        if (!mat) {
+            mat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+            mat.userData.naesseFarbe = THREE.TSL.varyingProperty("vec3", "vInstanceColor"); // die Farbe ist die der Instanz
+            this._stlWegeMat = this._leuchtStoff(mat, null); // der Licht-Pool (K11) und die Nässe
+        }
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -2292,6 +2292,8 @@ class AnazhRealm_siedlung_satz {
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
         if (flat && flat.foundry && flat.huelle) this._hausHuelleSetzen(entry, flat.huelle);
+        // ein Bau ohne Haus-Hülle, dessen Form oben schließt (Marktstand · Brunnen · Tor), trägt seine Decke in den Dach-Pool
+        else if (flat && flat.foundry && entry._dachKasten === undefined) this._dachKastenSetzen(entry, flat.leaves);
         // Merker: aus dem Studio (Foundry) platziert → der LOD-Tick (`_switchArchitectureLOD`) serviert die
         // neue Stufe aus der Foundry statt aus `grown_..._lodN`. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot.
