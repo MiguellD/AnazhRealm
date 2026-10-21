@@ -137,6 +137,20 @@
                 "dreiecke": null
             }
         },
+        "bewohner": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
         "bau": {
             "haupt": {
                 "befehle": 8,

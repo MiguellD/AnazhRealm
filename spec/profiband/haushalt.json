@@ -419,6 +419,17 @@
             ]
         },
         {
+            "id": "bewohner",
+            "titel": "Bewohner (die Menschen der Siedlungen: je Gestalt ein Instanz-Satz `bewohner-satz` aus der Mengen-Stufe koerper L2, Haut · Rest · Wurf; die Befehle hängen nie an der Kopfzahl — 16 am Start-Dorf −4,−4, gemessen GTX 21.10. an 2160be58: 242k Dreiecke über 64 m, haupt 8 · k0 4 · k1 4)",
+            "befehle": 16,
+            "dreiecke": 80000,
+            "regeln": [
+                {
+                    "muster": "^bewohner-satz$"
+                }
+            ]
+        },
+        {
             "id": "bau",
             "titel": "Bau (Haus · Tor · Fahrzeug · Ausstattung: Feuerstelle, Marktstand, Brunnen · Fundament · Zaun; das Haus zeichnet im Bau-Satz seines Stoffs)",
             "befehle": 40,
@@ -516,7 +527,7 @@
         {
             "id": "reserve",
             "titel": "Reserve",
-            "befehle": 19,
+            "befehle": 3,
             "dreiecke": 4000,
             "regeln": []
         }
