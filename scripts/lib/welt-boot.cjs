@@ -43,8 +43,7 @@ async function seitenTakt() {
 // `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (die Ring-Zahl
 // steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
 // ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Der Regler hält, solange sie schwingt — in JEDEM
-// Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging (bis K-WANDUHR hielt
-// er nur headless; unter swiftshader atmete der PID am Genesis-Ring, die Welt stand nie, CI 39439645378). Der Deckel `max`
+// Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging. Der Deckel `max`
 // zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
 async function weltStehtNach(takt, max) {
     const r = window.anazhRealm;
@@ -76,8 +75,7 @@ async function weltStehtNach(takt, max) {
 // der Rewarm-Weg von Hand); `takt(n)` wie oben. `e` ist ein Eintrag oder der NAME dessen, was die Welt bauen soll (ein Asset,
 // eine Stufe, ein Chunk — `fertig` sagt, wann es steht). Der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat
 // (`_weltOffen`: Foundry, Chunks, Wald): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
-// nicht, wirft sie beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212,
-// und 130 Schleifen urteilten nach 3–300 s Wanduhr).
+// nicht, wirft sie beim Namen.
 async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
@@ -122,7 +120,7 @@ function deckel(name, max, offen) {
 }
 // DIE WELT IST DA (`await window.__weltDa((r) => bedingung)`): bis der Stamm lebt (`_gameLoopTick`) und die Bedingung gilt — ohne
 // Frist: hängt der Boot, nennt ihn die Stall-Akte samt der Bedingung, auf die er wartet (`__weltDaWartet`, im Puls jeder
-// Sekunde; bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
+// Sekunde).
 async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
@@ -867,8 +865,7 @@ async function buehne(page) {
     await page.evaluate(() => window.__buehne());
 }
 
-// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`
-// (bis 18.10. stand derselbe Fünfzeiler in 43 Linsen).
+// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`.
 function pruefer() {
     const errs = [];
     const check = (name, ok, detail) => {
@@ -922,8 +919,7 @@ async function eigenePorte(...variablen) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // wartet, bis `fn(...args)` in der Seite wahr ist (das Ereignis, je 150 ms gefragt), und gibt die Wartezeit zurück — ohne Frist:
-// ein Hänger endet an der Frist des Browsers (`frist` = protocolTimeout), die Stall-Akte nennt ihn mit `label` (bis K-WANDUHR
-// urteilte jeder Ruf an seiner eigenen Frist, 6–30 s)
+// ein Hänger endet an der Frist des Browsers (`frist` = protocolTimeout), die Stall-Akte nennt ihn mit `label`
 async function waitFor(page, fn, label, ...args) {
     const t0 = Date.now();
     await page.evaluate((l) => (window.__weltDaWartet = l), label).catch(() => {});
@@ -1065,9 +1061,9 @@ async function selbsttest() {
     };
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, die Foundry hat solange einen Auftrag offen —
-    // das Warten hält (bis dahin gab gate:fahr-leben nach 3 s auf); TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
+    // das Warten hält; TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
     // REGLER: ein echter Renderer, der Regler atmet je Takt, solange er regelt — das Einschwingen hält ihn in jedem Pfad (die
-    // Welt steht nach 30 stillen Takten) und gibt ihn danach frei (bis K-WANDUHR hielt es nur headless: DIE WELT STEHT NICHT).
+    // Welt steht nach 30 stillen Takten) und gibt ihn danach frei.
     // Sie läuft in der ruhigen Seite während ihrer 4,5 s (sie blockt nie: ihr Takt ist ein Versprechen).
     let bau = null;
     const bauProbe = async () => {
