@@ -2116,25 +2116,18 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // DER KÖRPER-HAUCH (Leben-Schau 07.10., Neu 1): ein DSL-Op wiegt Lauf-Tempo oder Sprungkraft nur INNERHALB des
-    // Gesetz-Bands des Leibs (`_koerperGesetzBand`) — der Wunsch jenseits des Bands landet an seinem Rand, benannt im
-    // Protokoll (Wunsch, gesetzt, Band, Quelle). Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s
-    // (Sprint 45 m/s) und Sprungkraft bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
+    // Gesetz-Bands des Leibs (`_koerperGesetzBand`); das Band hält `dslEval` (`AnazhRealm.DSL_WERTE`, KI H1): ein Wunsch
+    // jenseits fällt benannt und steht im Prompt der KI, statt still an den Rand zu rutschen, während der Chat den Wunsch
+    // meldete. Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s (Sprint 45 m/s) und Sprungkraft
+    // bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
     _koerperHauch(stat, wunsch, ctx) {
-        const w = Number(wunsch);
-        if (!Number.isFinite(w)) {
-            if (ctx && ctx.log) ctx.log.push({ event: "invalid_koerper_hauch", stat, wunsch });
-            return;
-        }
-        const b = this._koerperGesetzBand(stat);
-        const v = Math.min(b.max, Math.max(b.min, w));
+        const v = Number(wunsch);
         if (stat === "speed") this._applyPlayerSpeed(v);
         else if (stat === "jumpPower") this.state.jumpPower = v;
         else return;
         const quelle = (ctx && ctx.source) || "dsl";
-        if (ctx && ctx.log) ctx.log.push({ event: "koerper_hauch", stat, wunsch: w, gesetzt: v, band: [b.min, b.max] });
         this.log(
-            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)} ` +
-                `(Wunsch ${w.toFixed(2)}, Gesetz-Band ${b.min.toFixed(2)}–${b.max.toFixed(2)})`,
+            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)}`,
             "INFO"
         );
     }

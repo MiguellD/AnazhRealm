@@ -1641,7 +1641,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
-        out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function";
 
         // V18.224 — der Streu-Takt kehrt zurück (Test-Isolation aufräumen)
         delete r._tickScatterStreaming;
@@ -1723,7 +1722,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
-    check("T4a-2 (Wasser-CA): _tickWorldWaterCA existiert (Welt-Verdrahtung)", res.t4HasWorldTick);
 }
 
 // Worker-Density im Streaming-Pfad: (1) Worker-State nach Worldgen synced (`voxelWorkerSynced-

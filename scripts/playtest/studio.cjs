@@ -109,8 +109,7 @@ async function checkBandStoffSignatur(ctx) {
 
 // Co-Schöpfer spricht Studio: ein Satz an die KI (oder ohne Schlüssel in den Chat) wird über
 // DIESELBEN Tabellen wie die Werkstatt zu Studio-Bauplänen — geerdet, nie im Wasser. Beweist
-// Auflöser · Op · Satz-Parser · near_water · Prompt · KI-Pfad END-ZU-END (gestubbte Antwort →
-// maybeAnswerWithLlm → dslRun → spawnArchitecture).
+// Auflöser · Op · Satz-Parser · near_water · Prompt (den KI-Pfad mit echten Antworten trägt der Korpus, diag-v1-pfad --korpus).
 // (checkBandV18331ReplayDeterminism unten: gleicher Start + gleiche Input-Folge ⇒ bit-identisch;
 // sonst Math.random/Zeit/Float-Drift im Schritt-Pfad.)
 async function checkBandV18493CoSchoepferStudio(ctx) {
@@ -217,29 +216,6 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 !bHaiku.output_config &&
                 !bHaiku.fallbacks &&
                 !hHaiku["anthropic-beta"];
-            // Der KI-Pfad END-ZU-END (die Antwort ist gestubbt — der Container hat kein Netz zum LLM).
-            const llm = r.state.llm;
-            const altLlm = { enabled: llm.enabled, provider: llm.provider };
-            const origCall = r.llmCall;
-            llm.enabled = true;
-            llm.provider = "ollama";
-            r.llmCall = async () => ({
-                say: "Ich lasse Birken wachsen.",
-                program: ["spawn_studio", "birke", ["at", spot.x + 6, p.y, spot.z + 6], 4, 77],
-            });
-            const v3 = archs.length;
-            const said = [];
-            try {
-                await r.maybeAnswerWithLlm("pflanz mir ein paar birken", (t) => said.push(t));
-            } finally {
-                r.llmCall = origCall;
-                llm.enabled = altLlm.enabled;
-                llm.provider = altLlm.provider;
-            }
-            const neu3 = archs.slice(v3);
-            out.kiNeu = neu3.length;
-            out.kiBirke = neu3.length > 0 && neu3.every((e) => e.type === r._studioBlueprintForWord("birke"));
-            out.kiSagte = said.some((t) => /Birken/.test(t)) && said.some((t) => /Welt verändert/.test(t));
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -286,11 +262,6 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
     check(
         "V18.493 Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
         R.promptWoerter === true && R.ruleVerbot === true
-    );
-    check(
-        "V18.493 Co-Schöpfer: KI-Pfad END-ZU-END — Antwort → maybeAnswerWithLlm → 4 Birken aus dem Studio in der Welt",
-        R.kiNeu === 4 && R.kiBirke === true && R.kiSagte === true,
-        `neu=${R.kiNeu} birke=${R.kiBirke} sagte=${R.kiSagte}`
     );
     check(
         "V18.493 Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",

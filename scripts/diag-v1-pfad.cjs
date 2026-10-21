@@ -63,11 +63,20 @@
 //       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
 //       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
 //
+//   WORT (KI H1) — DER KORPUS (spec/abnahme/ki-korpus.json, 40 Sätze) über den echten Chat-Pfad: Fenster der KI →
+//     `maybeAnswerWithLlm` → `llmCall` → `dslRun`; je Satz das Soll am Welt-Abdruck, ein Negativ-Satz nur ohne Tat. --echt
+//     fragt den Anbieter (KI_ENDPUNKT, lokal ollama), --aufnahme schreibt den Mitschnitt Satz → Programm (spec/profiband/
+//     ratsche-ki-korpus.json, sinkt nie), ohne --echt spielt ihn die CI ab. Ohne Bild: das Bild-Prädikat fiel (21.10.: ohne
+//     Tat 10–17 % Pixel anders — blind), das Beweisbild nimmt die Werkbank. Befund 20.10.: gültig 11/40, Absicht 10/40, p95 64 s.
+//
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
+//   node scripts/diag-v1-pfad.cjs --korpus [--echt [--bild] [--aufnahme]]   (KI_ENDPUNKT, KI_MODELL)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
+const path = require("path");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -847,6 +856,71 @@ function wand(src) {
     ];
 }
 
+// ── WORT (KI H1) — das Soll am Welt-Abdruck, das Urteil über den Lauf (rein; Probe UND Selbsttest). ──
+const KORPUS_PFAD = path.join(root, "spec/abnahme/ki-korpus.json");
+const RATSCHE_PFAD = path.join(root, "spec/profiband/ratsche-ki-korpus.json");
+const KORPUS_SOLL = {
+    gueltig: 0.95,
+    absicht: 0.85,
+    p95Ms: 6000,
+    fensterMs: 10000,
+    gegenprobe: "http://localhost:9/",
+};
+// die feste Welt: ein Akt der KI, den ihr Satz nicht verlangt, ist ein Bruch
+const FESTE_WELT = /"(voxel_carve|voxel_fill|terrain_steepness|terrain_base_height|remove_architecture)"/;
+// Das Soll am Abdruck vor → nach (`wortTyp` Wort → Bauplan); null = kein Leser.
+function korpusPraedikat(soll, vor, nach, wortTyp) {
+    if (soll.wetter) return nach.wetter === soll.wetter;
+    if (soll.saison) return nach.saison === soll.saison;
+    if (soll.himmel) return nach.himmel !== vor.himmel;
+    if (soll.uhr) {
+        const [a, b] = soll.uhr;
+        return a <= b ? nach.uhr >= a && nach.uhr <= b : nach.uhr >= a || nach.uhr <= b;
+    }
+    const zahl = (x) =>
+        Object.entries(x.werke).reduce((s, [t, n]) => s + (soll.werk === "*" || soll.werk.some((w) => wortTyp[w] === t) ? n : 0), 0);
+    if (soll.werk) return zahl(nach) - zahl(vor) >= soll.min;
+    for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
+    for (const k of ["tempo", "sprung", "schwere"]) if (soll[k]) return nach[k] > vor[k];
+    return null;
+}
+// Ein Satz: gültig (JSON, das Programm läuft ohne Absage) · Absicht (das Soll) · Bruch. Ein Negativ-Satz nur ohne versuchte
+// Tat — auch eine, die `dslEval` abweist, ist ROT (20.10.: „bring mir einen kaffee“ → spawn_creature kaffee_machine).
+function korpusSatzUrteil(e, soll) {
+    const a = e.antwort || {};
+    const json = !!e.antwort && !a.error && !a.fallbackUsed;
+    const bruch = e.fehler > 0 || FESTE_WELT.test(JSON.stringify(a.program || null));
+    if (soll.still) return { gueltig: json && !a.program, absicht: json && !a.program && !!a.say, bruch, tat: !!a.program };
+    return { gueltig: json && Array.isArray(a.program) && e.lauf === true, absicht: e.praedikat === true, bruch };
+}
+// Das Urteil, die Täter beim Namen: echt gegen das Soll der Karte, der Mitschnitt gegen die Absicht des echten Laufs.
+function korpusVerdict(m) {
+    if (!m || !m.korpus) return ["Korpus fehlt (spec/abnahme/ki-korpus.json)"];
+    const [S, n, r, out] = [m.saetze, m.korpus.saetze.length, m.ratsche || {}, []];
+    if (S.length !== n) out.push(`${S.length} von ${n} Sätzen gelaufen`);
+    const nie = S.filter((e) => e.praedikat === null).map((e) => e.satz);
+    if (nie.length) out.push(`Prädikat nie geprüft: ${nie.slice(0, 3).join(" · ")}`);
+    if (!m.echt && !(r.anbieter && r.quote)) out.push("kein echter Anbieter: der Mitschnitt trägt keinen echten Lauf");
+    if (!(m.tueren || []).length) out.push("die Türen der CSP nie geprüft");
+    for (const [u, zu] of m.tueren || [])
+        if (zu !== (u === KORPUS_SOLL.gegenprobe))
+            out.push(zu ? `die CSP sperrt die Tür ${u}` : `die CSP-Probe ist blind: ${u} geht durch`);
+    if (m.sinkt) out.push(`die Aufnahme sänke die Ratsche (Absicht ${m.sinkt.join(" gegen ")} oder Täter) — nicht geschrieben`);
+    for (const e of S)
+        if (e.urteil.tat) out.push(`Negativ-Satz versucht eine Tat: „${e.satz}“ → ${JSON.stringify(e.antwort.program).slice(0, 80)}`);
+    const b = S.filter((e) => e.urteil.bruch).map((e) => e.satz);
+    if (b.length) out.push(`${b.length} Brüche: ${b.slice(0, 3).join(" · ")}`);
+    const q = (k) => S.filter((e) => e.urteil[k]).length / Math.max(1, S.length);
+    const pz = (x) => (100 * x).toFixed(1) + " %";
+    if (m.echt) {
+        for (const k of ["gueltig", "absicht"]) if (q(k) < KORPUS_SOLL[k]) out.push(`${k} ${pz(q(k))} < ${pz(KORPUS_SOLL[k])}`);
+        if (!(m.p95 <= KORPUS_SOLL.p95Ms)) out.push(`p95 Satz → Welt ${m.p95} ms > ${KORPUS_SOLL.p95Ms} ms`);
+    } else if (r.quote && q("absicht") < r.quote.absicht)
+        out.push(`Rückschritt am Mitschnitt: Absicht ${pz(q("absicht"))} < ${pz(r.quote.absicht)} des echten Laufs`);
+    return out;
+}
+
+
 const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
@@ -986,13 +1060,11 @@ async function probe(arg) {
             provider: llm.provider,
             ep: llm.providerConfig.ollama.endpoint,
             px: llm.providerConfig.ollama.useProxy,
-            last: llm.lastResponseAt,
         };
         llm.enabled = true;
         llm.provider = "ollama";
         llm.providerConfig.ollama.endpoint = "http://127.0.0.1:" + kiPort;
         llm.providerConfig.ollama.useProxy = false;
-        llm.lastResponseAt = -1e9;
         let antwort = null;
         try {
             antwort = await r.llmCall("hallo welt");
@@ -1001,7 +1073,6 @@ async function probe(arg) {
             llm.provider = alt.provider;
             llm.providerConfig.ollama.endpoint = alt.ep;
             llm.providerConfig.ollama.useProxy = alt.px;
-            llm.lastResponseAt = alt.last;
         }
         m.fehler = antwort && antwort.error ? String(antwort.error) : null;
         m.host = "127.0.0.1:" + kiPort;
@@ -1694,7 +1765,187 @@ async function probe(arg) {
     return out;
 }
 
+// ── WORT — DIE SEITE ──
+async function korpusAufbau(a) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
+    for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++) await window.__weltStehtNach();
+    // DER SPIELER STELLT DIE STIMME EIN, im Fenster der KI: Anbieter, Modell, Endpunkt, Proxy an (lokal geht er vorbei)
+    for (const [id, w] of [["llm-provider", "ollama"], ["llm-model", a.modell], ["llm-endpoint", a.endpunkt], ["llm-use-proxy", true]]) {
+        const el = document.getElementById(id);
+        el[w === true ? "checked" : "value"] = w;
+        el.dispatchEvent(new Event("change"));
+    }
+    document.getElementById("llm-toggle").click();
+    // Beobachtungs-Punkte: die Antwort an den Spieler und was der Lauf der KI setzte (nie, was die Welt selbst wachsen ließ)
+    const K = (window.__korpus = {});
+    const [ruf, lauf] = [r.llmCall, r.dslRun];
+    r.llmCall = async function (text, system, o) {
+        const p = await ruf.call(this, text, system, o);
+        if (!system && !(o && o.hintergrund)) K.antwort = p;
+        return p;
+    };
+    r.dslRun = function (p, o) {
+        const [na, nw] = [st.architectures.length, st.creatures.length];
+        const res = lauf.call(this, p, o);
+        if ((o && o.source) !== "llm:grok") return res;
+        K.werke.push(...st.architectures.slice(na));
+        K.wesen.push(...st.creatures.slice(nw));
+        K.lauf = res.ok && !res.log.some((x) => /^(sovereign|weltakt_gehalten)/.test(x.event));
+        return res;
+    };
+    K.abdruck = () => {
+        const [da, werke] = [new Set(st.architectures), {}];
+        for (const x of K.werke) if (da.has(x)) werke[x.type] = (werke[x.type] || 0) + 1;
+        return {
+            werke,
+            wesen: K.wesen.filter((c) => st.creatures.includes(c)).length,
+            traurig: st.creatures.filter((c) => ((c.userData && c.userData.emotions) || {}).sorrow >= 0.5).length,
+            wetter: st.weather,
+            uhr: st.timeOfDay,
+            saison: st.season,
+            himmel: st.skyTintTo ? st.skyTintTo.getHexString() : "",
+            schwere: st.gravity,
+            regel: (st.worldRules || []).filter((x) => /^llm:/.test(x.source)).length,
+            tempo: st.speed,
+            sprung: st.jumpPower,
+        };
+    };
+    // DER ORT DER SÄTZE: 45 m hinter der Lichtung im Land (auf ihr weicht jede Pflanzung benannt dem Platz)
+    const pm = st.playerMesh.position;
+    const platz = st.architectures.find((x) => x && x.type === "start_plattform");
+    const [P, R] = [platz.position, ((r._grundrissVon(platz) || {}).lichtung || 0) + 45];
+    const [x, z] = [[R, 0], [0, R], [-R, 0], [0, -R]]
+        .map(([dx, dz]) => [P.x + dx, P.z + dz])
+        .find(([x, z]) => r._landAt(x, z, 1)) || [P.x + R, P.z];
+    pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+    await window.__weltStehtNach();
+    // DER RÜCKBAU je Satz: was entstand, fällt; Ort, Leib, Schwere und Gemüt der Wesen stehen wie vorher
+    K.stand = () => ({
+        werke: new Set(st.architectures),
+        wesen: new Set(st.creatures),
+        gemuet: st.creatures.map((c) => [c, { ...(c.userData || {}).emotions }]),
+        leib: [pm.clone(), st.gravity, st.jumpPower, st.speed],
+    });
+    K.zurueck = (v) => {
+        for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
+        for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
+        for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
+        pm.copy(v.leib[0]);
+        [st.gravity, st.jumpPower] = v.leib.slice(1);
+        r._applyPlayerSpeed(v.leib[3]);
+    };
+    // DIE TÜREN: jeder Anbieter und der Proxy der Stimme gehen durch die CSP der Welt, die Gegenprobe nie (sonst ist sie blind)
+    const gesperrt = [];
+    document.addEventListener("securitypolicyviolation", (e) => gesperrt.push(e.blockedURI));
+    const tueren = [...Object.values(r.llmProviderDefs()).map((d) => d.endpoint("m", "", {})), r._llmProxyUrl(), a.gegenprobe];
+    for (const u of tueren) fetch(u, { method: "POST", signal: AbortSignal.timeout(50) }).catch(() => {});
+    await new Promise((ok) => setTimeout(ok, 500));
+    return {
+        wortTyp: Object.fromEntries(a.worte.map((w) => [w, r._studioBlueprintForWord(w)])),
+        tueren: tueren.map((u) => [u, gesperrt.some((g) => g.startsWith(new URL(u).origin))]),
+    };
+}
+
+async function korpusSatz(a) {
+    const r = window.anazhRealm;
+    const K = window.__korpus;
+    const praedikat = new Function(`return (${a.praedikat})`)();
+    if (K.vor) K.zurueck(K.vor);
+    // die Bühne: Mittag · Sonne · Sommer, dann löst sich ihr Halt — die KI darf handeln (`_messHalt`)
+    window.__buehne();
+    r.state.weatherEffectTime = 0;
+    await window.__weltStehtNach();
+    Object.assign(K, { vor: K.stand(), werke: [], wesen: [], lauf: null, antwort: null });
+    const [vor, f0, e] = [K.abdruck(), window.__seitenfehler || 0, { satz: a.satz }];
+    const t0 = performance.now();
+    await r.maybeAnswerWithLlm(a.satz, (z) => r._chatEcho(z));
+    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
+    for (const ende = t0 + a.fensterMs; !a.soll.still; ) {
+        e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
+        if (e.praedikat || performance.now() > ende) break;
+        await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
+    }
+    Object.assign(e, { weltMs: e.praedikat ? Math.round(performance.now() - t0) : null, lauf: K.lauf });
+    e.fehler = (window.__seitenfehler || 0) - f0;
+    return e;
+}
+
+// Der Mitschnitt-Anbieter der CI (die CSP erlaubt `connect-src 'self'`): das Programm des echten Laufs zum Satz (false: kein JSON).
+const mitschnitt = (ratsche) => (req) =>
+    new Promise((fertig) => {
+        let b = "";
+        req.on("data", (d) => (b += d));
+        req.on("end", () => {
+            const u = JSON.parse(b).messages.pop().content;
+            const p = (ratsche.mitschnitt || {})[u.slice(u.lastIndexOf("Spieler sagt: ") + 14)];
+            const inhalt = p === false ? "kein JSON" : JSON.stringify({ say: "Aus dem Mitschnitt.", program: p });
+            fertig(JSON.stringify(p === undefined ? { error: "kein Mitschnitt" } : { message: { role: "assistant", content: inhalt } }));
+        });
+    });
+
+async function korpusHaupt() {
+    const echt = process.argv.includes("--echt");
+    const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
+    const [roh, ratsche] = [lies(KORPUS_PFAD), lies(RATSCHE_PFAD) || {}];
+    const korpus = roh && { saetze: Object.entries(roh.saetze) };
+    const m = { korpus, ratsche, echt, saetze: [] };
+    const modell = process.env.KI_MODELL || ratsche.modell || "qwen3:4b-instruct";
+    const q = (k) => +(m.saetze.filter((e) => e.urteil[k]).length / Math.max(1, m.saetze.length)).toFixed(3);
+    if (korpus) {
+        const srv = statikServer({ seiten: echt ? null : { "/api/chat": mitschnitt(ratsche) } });
+        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
+        const browser = await starteBrowser({ art: "linse", frist: 900000 });
+        const page = await browser.newPage();
+        await nullRenderer(page, { foundry: true });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+        await warteAufWelt(page);
+        await page.evaluate(AUSGABE_INSTALL);
+        const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
+        const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
+        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe };
+        const auf = await page.evaluate(korpusAufbau, arg);
+        m.tueren = auf.tueren;
+        Object.assign(arg, { wortTyp: auf.wortTyp, fensterMs: KORPUS_SOLL.fensterMs, praedikat: korpusPraedikat.toString() });
+        for (const [satz, soll] of korpus.saetze) {
+            const e = await page.evaluate(korpusSatz, { ...arg, satz, soll });
+            e.urteil = korpusSatzUrteil(e, soll);
+            m.saetze.push(e);
+            const [u, a] = [e.urteil, e.antwort || {}];
+            const welt = `${e.antwortMs} ms → Welt ${e.weltMs == null ? "—" : e.weltMs + " ms"}`;
+            const prog = JSON.stringify(a.program || null).slice(0, 100) + (a.error ? ` — ${a.error}` : "");
+            console.log(`  ${u.absicht ? "✓" : "✗"}${u.gueltig ? "" : " ungültig"}${u.bruch ? " BRUCH" : ""} „${satz}“ ${welt} · ${prog}`);
+        }
+        await browser.close();
+        srv.close();
+        const welt = m.saetze.map((e) => e.weltMs).filter((x) => x != null);
+        m.p95 = welt.sort((x, y) => x - y)[Math.ceil(0.95 * welt.length) - 1];
+        // DIE RATSCHE SINKT NIE: ein schwächerer Lauf (weniger Absicht, eine Negativ-Tat, ein Bruch) wird nie der Maßstab der CI
+        if (echt && process.argv.includes("--aufnahme")) {
+            const quote = { gueltig: q("gueltig"), absicht: q("absicht"), p95: m.p95 };
+            const taeter = m.saetze.some((e) => e.urteil.tat || e.urteil.bruch);
+            if (taeter || quote.absicht < ((ratsche.quote || {}).absicht || 0)) m.sinkt = [quote.absicht, (ratsche.quote || {}).absicht];
+            const prog = (a) => (a && !a.error && !a.fallbackUsed ? a.program || null : false);
+            const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
+            const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
+            if (!m.sinkt) fs.writeFileSync(RATSCHE_PFAD, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
+        }
+    }
+    const v = korpusVerdict(m);
+    const ist = `${m.saetze.length} Sätze · ${modell} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
+    check(
+        `WORT der Korpus über den echten Chat-Pfad (${echt ? "echter Anbieter" : "Mitschnitt"}): das Soll, 0 Brüche, Negativ-Sätze ohne Tat`,
+        v.length === 0,
+        ist + (v.length ? " — Täter: " + v.join(" · ") : "")
+    );
+    console.log(errs.length ? `\n❌ ROT — ${errs.length} Verletzung(en).` : "\n✅ GRÜN — der Korpus hält sein Soll.");
+    process.exit(errs.length ? 1 : 0);
+}
+
+
 (async () => {
+    if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
@@ -2129,6 +2380,45 @@ async function probe(arg) {
         ]) {
             const v = sucheVerdict(bruch);
             check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+        // WORT — der Korpus: das Soll liest den Abdruck; ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
+        const kP = (soll, nach) => korpusPraedikat(soll, { werke: { baum_eiche: 1 } }, nach, { eiche: "baum_eiche" });
+        for (const [name, ist, soll] of [
+            ["zwei Eichen statt drei, ein Haus", kP({ werk: ["eiche"], min: 3 }, { werke: { baum_eiche: 3, haus: 1 } }), false],
+            ["ein Soll ohne Leser", kP({ farbe: 1 }, {}), null],
+        ])
+            check(`Selbst-Test WORT Prädikat: ${name} → ${soll}`, ist === soll, String(ist));
+        const kSaetze = [...Array(39)].map((_, i) => [`satz ${i}`, { wetter: "rainy" }]).concat([["kaffee", { still: 1 }]]);
+        const G = KORPUS_SOLL.gegenprobe;
+        const kLauf = (b = {}) => {
+            const S = kSaetze.map(([satz, soll]) => {
+                const antwort = { say: "Gern.", program: soll.still ? null : ["weather", "rainy"] };
+                const e = { satz, fehler: 0, praedikat: true, weltMs: 2000, lauf: true, antwort, ...(b.satz || {})[satz] };
+                return Object.assign(e, { urteil: korpusSatzUrteil(e, soll) });
+            });
+            const tueren = [["https://openrouter.ai/x", false], [G, true]];
+            return { korpus: { saetze: kSaetze }, ratsche: { anbieter: "h", quote: { absicht: 1 } }, echt: true, saetze: S, p95: 3000, tueren, ...b.m };
+        };
+        const sieben = (e) => Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((i) => [`satz ${i}`, e]));
+        const prog = (program) => ({ antwort: { say: "x", program } });
+        for (const [name, b, soll] of [
+            ["ein gesunder Lauf", {}, null],
+            ["der Negativ-Satz versucht eine Tat, die dslEval abweist", { satz: { kaffee: prog(["spawn_creature", "kaffee_machine"]) } }, "Negativ-Satz versucht"],
+            ["Korpus fehlt", { m: { korpus: null } }, "Korpus fehlt"],
+            ["Prädikat nie geprüft", { satz: { "satz 4": { praedikat: null } } }, "Prädikat nie"],
+            ["die KI gräbt ungefragt", { satz: { "satz 5": prog(["voxel_carve", 0, 0, 0]) } }, "1 Brüche"],
+            ["Plain-Text statt JSON", { satz: sieben({ antwort: { say: "Regen!", fallbackUsed: "plain-text" } }) }, "gueltig"],
+            ["die Absicht verfehlt", { satz: sieben({ praedikat: false }) }, "absicht"],
+            ["die Antwort zu langsam", { m: { p95: 9000 } }, "p95"],
+            ["Mitschnitt ohne echten Lauf", { m: { echt: false, ratsche: {} } }, "kein echter Anbieter"],
+            ["Rückschritt am Mitschnitt", { m: { echt: false }, satz: { "satz 2": { praedikat: false } } }, "Rückschritt"],
+            ["die CSP sperrt einen Anbieter", { m: { tueren: [["https://openrouter.ai/x", true], [G, true]] } }, "die CSP sperrt"],
+            ["die CSP-Probe ist blind", { m: { tueren: [[G, false]] } }, "die CSP-Probe ist blind"],
+            ["die Türen nie geprüft", { m: { tueren: [] } }, "nie geprüft"],
+            ["die Aufnahme sänke die Ratsche", { m: { sinkt: [0.7, 0.75] } }, "sänke die Ratsche"],
+        ]) {
+            const v = korpusVerdict(kLauf(b));
+            check(`Selbst-Test WORT: ‚${name}' → ${soll || "0 Täter"}`, soll ? v.some((t) => t.includes(soll)) : !v.length, v.join(" · "));
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");

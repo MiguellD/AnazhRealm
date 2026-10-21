@@ -15,8 +15,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const st = r.state;
         const out = {};
-        out.hasGate = typeof r._foliageChunkInRadius === "function";
-        out.hasGrowth = typeof r._tickFoliageGrowth === "function";
         // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
         out.headlessFull =
             !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r.constructor.PERF_FOLIAGE_RADIUS_MAX;
@@ -126,7 +124,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // V18.280 — DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
-        out.thinExists = typeof r._tickFoliageThin === "function";
         out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [st.playerMesh.position]);
         // CONSUM (behavioral; Hook SICHERN + WIEDERHERSTELLEN, nie löschen-und-vergessen): foundry-ON
         // ist Default → die eine Quelle liefert 1 trotz gesenktem Regler, Nach-Dünnen = No-op; foundry-aus
@@ -206,7 +203,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("V18.275: Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("V18.275: _foliageChunkInRadius + _tickFoliageGrowth existieren", res.hasGate && res.hasGrowth);
     check("V18.275: headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
     if (!res.skip) {
         check(
@@ -238,8 +234,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("V18.277 CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
     }
     check(
-        "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
-        res.thinExists && res.scatterReadsBuiltDensity && res.streamingCallsThin
+        "V18.280: Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
+        res.scatterReadsBuiltDensity && res.streamingCallsThin
     );
     if (res.oneSourceProbeError) {
         check("W1 CONSUM: Studio-Regime-Dichte-Probe lief ohne Fehler", false, res.oneSourceProbeError);
@@ -947,37 +943,31 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S1) K24: jede Kern-Art wächst aus dem Gesetzbuch — `_phytoArt` löst den Welt-Namen auf die Rezept-Zeile der
         // Studio-Tafel auf (die Stamm-Grammatik ist gefallen, der Richter liest treeParams der Art).
-        out.grammarExists = typeof r._phytoArt === "function";
-        if (out.grammarExists) {
-            out.sixSpecies = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
-                (sp) => {
-                    const a = r._phytoArt(sp);
-                    return !!(a && a.rec.kind === "tree" && Number.isFinite(a.rec.s.api));
-                }
-            );
-        }
+        out.sixSpecies = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
+            (sp) => {
+                const a = r._phytoArt(sp);
+                return !!(a && a.rec.kind === "tree" && Number.isFinite(a.rec.s.api));
+            }
+        );
 
         // (S2) `_growTreeBlueprintRich` existiert (Routing-Helfer-Trio).
-        out.richExists = typeof r._growTreeBlueprintRich === "function";
 
         // (S3) RICH-PFAD bei direktem Aufruf produziert ≥50 Parts (vs Legacy ~12).
         // 50 = sicherer Schwellenwert; gemessen 75-81 pro Art.
-        if (out.richExists && out.grammarExists) {
-            const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test");
-            out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
-            out.richPartsCount = richParts ? richParts.length : 0;
-            // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
-            out.richAllHolzOrLaub =
-                Array.isArray(richParts) && richParts.every((p) => p.material === "holz" || p.material === "laub");
-            // FOLIAGE AT TIPS: ≥ 80 % der laub-Parts sind vom Stamm-Sockel weg (|xz| > 0.4 oder y > 1.5); nicht
-            // 100 %, weil der Ω-K2-Fuß-Flare BEWUSST am Sockel sitzt (Wurzelanlauf-Disk, kein Kronen-Cluster).
-            const laub = richParts ? richParts.filter((p) => p.material === "laub") : [];
-            const atTipsCount = laub.filter((p) => {
-                const dist = Math.hypot(p.position.x, p.position.z);
-                return dist > 0.4 || p.position.y > 1.5;
-            }).length;
-            out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
-        }
+        const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test");
+        out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
+        out.richPartsCount = richParts ? richParts.length : 0;
+        // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
+        out.richAllHolzOrLaub =
+            Array.isArray(richParts) && richParts.every((p) => p.material === "holz" || p.material === "laub");
+        // FOLIAGE AT TIPS: ≥ 80 % der laub-Parts sind vom Stamm-Sockel weg (|xz| > 0.4 oder y > 1.5); nicht
+        // 100 %, weil der Ω-K2-Fuß-Flare BEWUSST am Sockel sitzt (Wurzelanlauf-Disk, kein Kronen-Cluster).
+        const laub = richParts ? richParts.filter((p) => p.material === "laub") : [];
+        const atTipsCount = laub.filter((p) => {
+            const dist = Math.hypot(p.position.x, p.position.z);
+            return dist > 0.4 || p.position.y > 1.5;
+        }).length;
+        out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
 
 
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
@@ -1006,12 +996,10 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         return out;
     });
 
-    check("K24 (S1a) _phytoArt: die Art liest das Gesetzbuch", res.grammarExists === true);
     check(
         "K24 (S1b) die 6 Kern-Arten (tanne/kiefer/buche/birke/eiche/erle) sind Baum-Zeilen der Tafel",
         res.sixSpecies === true
     );
-    check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
     check(
         `V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
         res.richProducesMany === true
@@ -1641,32 +1629,28 @@ async function checkBandV18218LODStufen(ctx) {
             Number.isFinite(A.LOD_DISTANCES.thresh01) &&
             Number.isFinite(A.LOD_DISTANCES.thresh12) &&
             Number.isFinite(A.LOD_DISTANCES.hysteresis);
-        out.buildVariantLODsExists = typeof r._buildVariantLODs === "function";
-        out.chooseLODExists = typeof r._chooseLODForDistance === "function";
 
         // ─── (B) Distanz-Chooser ───
         // Die Probe liest die Schwellen aus LOD_DISTANCES (thresh01/thresh12/hysteresis), keine festen Meter.
-        if (out.chooseLODExists) {
-            const t01r = A.LOD_DISTANCES.thresh01;
-            const t12r = A.LOD_DISTANCES.thresh12;
-            out.choose50 = r._chooseLODForDistance(t01r * 0.6) === 0; // klar unter thresh01 → LOD0
-            out.choose100 = r._chooseLODForDistance((t01r + t12r) / 2) === 1; // zwischen den Schwellen → LOD1
-            out.choose200 = r._chooseLODForDistance(t12r * 1.25) === 2; // klar über thresh12 → LOD2
-            out.choose0 = r._chooseLODForDistance(0) === 0;
-            const t01 = A.LOD_DISTANCES.thresh01;
-            const h = A.LOD_DISTANCES.hysteresis;
-            // Hysterese: cur=0 + dist=85m → bleibt 0 (innerhalb +h Buffer)
-            out.hyst0to1Below = r._chooseLODForDistance(t01 + h * 0.5, 0) === 0; // 85 → 0
-            out.hyst0to1Above = r._chooseLODForDistance(t01 + h * 2, 0) === 1; // 100 → 1
-            // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
-            out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
-            out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
-            // V18.526 — Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
-            // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
-            const t12 = A.LOD_DISTANCES.thresh12;
-            out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
-            out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
-        }
+        const t01r = A.LOD_DISTANCES.thresh01;
+        const t12r = A.LOD_DISTANCES.thresh12;
+        out.choose50 = r._chooseLODForDistance(t01r * 0.6) === 0; // klar unter thresh01 → LOD0
+        out.choose100 = r._chooseLODForDistance((t01r + t12r) / 2) === 1; // zwischen den Schwellen → LOD1
+        out.choose200 = r._chooseLODForDistance(t12r * 1.25) === 2; // klar über thresh12 → LOD2
+        out.choose0 = r._chooseLODForDistance(0) === 0;
+        const t01 = A.LOD_DISTANCES.thresh01;
+        const h = A.LOD_DISTANCES.hysteresis;
+        // Hysterese: cur=0 + dist=85m → bleibt 0 (innerhalb +h Buffer)
+        out.hyst0to1Below = r._chooseLODForDistance(t01 + h * 0.5, 0) === 0; // 85 → 0
+        out.hyst0to1Above = r._chooseLODForDistance(t01 + h * 2, 0) === 1; // 100 → 1
+        // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
+        out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
+        out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
+        // V18.526 — Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
+        // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
+        const t12 = A.LOD_DISTANCES.thresh12;
+        out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
+        out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
         // W1 — DIE FERNFORM IST KONSUM, nicht Quelltext: die Fels-Zellen einer NEU GEBAUTEN Region tragen jenseits der
         // EINEN Nah-Grenze (ANALOG_NAH_M), was das Studio-Budget sagt (B2c `rock.fernform`). Geflippt auf "boden"
         // stehen sie ohne Geometrie, zurück auf "gesetz" als Gesetz-Platz (headless `wartet`, die Gesetz-Bahn zeichnet
@@ -1719,30 +1703,28 @@ async function checkBandV18218LODStufen(ctx) {
         // ─── (C) LOD-Baupläne werden gebaut (3 Stufen) ───
         // Der Gate fährt foundry-ON; für Studio-bekannte Arten gäbe der _buildVariantLODs-Chokepoint null →
         // die Grammatik-LOD-Erzeugung prüft unter LOKALEM Hook (__withNoFoundry).
-        if (out.buildVariantLODsExists) {
-            window.__withNoFoundry(() => {
-                const keys = r._buildVariantLODs("baum_eiche", 0);
-                out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
-                if (keys) {
-                    out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
-                    out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
-                    out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
-                    out.bp0Exists = !!r.state.blueprints[keys[0]];
-                    out.bp1Exists = !!r.state.blueprints[keys[1]];
-                    out.bp2Exists = !!r.state.blueprints[keys[2]];
-                    if (out.bp1Exists && out.bp2Exists) {
-                        out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
-                        out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
-                        out.lodsShareVariantIndex =
-                            r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
-                            r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
-                        out.lodsShareSeed =
-                            r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
-                            r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
-                    }
+        window.__withNoFoundry(() => {
+            const keys = r._buildVariantLODs("baum_eiche", 0);
+            out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
+            if (keys) {
+                out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
+                out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
+                out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
+                out.bp0Exists = !!r.state.blueprints[keys[0]];
+                out.bp1Exists = !!r.state.blueprints[keys[1]];
+                out.bp2Exists = !!r.state.blueprints[keys[2]];
+                if (out.bp1Exists && out.bp2Exists) {
+                    out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
+                    out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
+                    out.lodsShareVariantIndex =
+                        r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
+                        r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
+                    out.lodsShareSeed =
+                        r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
+                        r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
                 }
-            });
-        }
+            }
+        });
 
         // ─── (D) Geometrie: LOD-Reduktion in Parts-Anzahl ────────────
         if (r._growTreeBlueprintRich) {
@@ -1792,8 +1774,6 @@ async function checkBandV18218LODStufen(ctx) {
 
     // (A) Source
     check("V18.218 (A1) AnazhRealm.LOD_DISTANCES (thresh01/thresh12/hysteresis)", res.lodDistancesExists === true);
-    check("V18.218 (A2) _buildVariantLODs Helper existiert", res.buildVariantLODsExists === true);
-    check("V18.218 (A3) _chooseLODForDistance Helper existiert", res.chooseLODExists === true);
 
     // (B) Distanz-Chooser
     check(`V18.218 (B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
@@ -1909,26 +1889,23 @@ async function checkBandV18219bisVollendung(ctx) {
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
-        out.canopyEnsureExists = typeof r._canopyEnsureChunk === "function";
         out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
-        if (out.canopyEnsureExists) {
-            const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
-            try {
-                r.state.atmosphere.canopyStreaming = true;
-                const mesh = r._canopyEnsureChunk(2, 3);
-                out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
-                if (mesh) {
-                    out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
-                    out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
-                    out.canopyMeshInMap = !!(r.state.canopyChunks && r.state.canopyChunks.has("2,3"));
-                }
-                const disposed = r._canopyDisposeChunkByKey("2,3");
-                out.canopyDisposed = disposed === true;
-                out.canopyMeshGoneFromMap = !!(r.state.canopyChunks && !r.state.canopyChunks.has("2,3"));
-            } finally {
-                if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
+        const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
+        try {
+            r.state.atmosphere.canopyStreaming = true;
+            const mesh = r._canopyEnsureChunk(2, 3);
+            out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
+            if (mesh) {
+                out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
+                out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
+                out.canopyMeshInMap = !!(r.state.canopyChunks && r.state.canopyChunks.has("2,3"));
             }
+            const disposed = r._canopyDisposeChunkByKey("2,3");
+            out.canopyDisposed = disposed === true;
+            out.canopyMeshGoneFromMap = !!(r.state.canopyChunks && !r.state.canopyChunks.has("2,3"));
+        } finally {
+            if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
         }
 
         return out;
@@ -1959,7 +1936,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
     // V18.222 Canopy chunk-streaming
-    check("V18.222 (C2) _canopyEnsureChunk Helper", res.canopyEnsureExists === true);
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
@@ -1984,31 +1960,25 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
         // ─── (A) Source + Config ──────────────────────────────────────
         out.scatterConfigExists = A.SCATTER && Number.isFinite(A.SCATTER.cellM) && Number.isFinite(A.SCATTER.promoteM);
-        out.pcg2dExists = typeof r._pcg2d === "function";
-        out.scatterRegionExists = typeof r._scatterRegion === "function";
-        out.promoteExists = typeof r._promoteScatterCell === "function";
-        out.tickExists = typeof r._tickScatterStreaming === "function";
         // KONSUM: der nächste Takt des Loops (Dispatcher-Takt Nr. 4: der Deko-Boden greift) ruft das Streu-Streaming
         r._schedFrameNo = 3;
         out.tickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickScatterStreaming", [performance.now()]);
 
         // ─── (B) pcg2d Determinismus (bit-identisch, P2P/GPU-Wand) ────
-        if (out.pcg2dExists) {
-            out.pcgDeterministic = r._pcg2d(12345, 67890) === r._pcg2d(12345, 67890);
-            out.pcgDistinct = r._pcg2d(1, 2) !== r._pcg2d(2, 1);
-            out.pcgIsUint = Number.isInteger(r._pcg2d(99, 99)) && r._pcg2d(99, 99) >= 0;
-            // _scatterCellTransform deterministisch
-            const t1 = r._scatterCellTransform(100, 200);
-            const t2 = r._scatterCellTransform(100, 200);
-            out.transformDeterministic =
-                t1 && t2 && t1.x === t2.x && t1.z === t2.z && t1.yaw === t2.yaw && t1.scale === t2.scale;
-            out.transformInCell =
-                t1 && t1.scale >= 0.7 && t1.scale <= 1.36 && t1.yaw >= 0 && t1.yaw <= Math.PI * 2 + 1e-6;
-        }
+        out.pcgDeterministic = r._pcg2d(12345, 67890) === r._pcg2d(12345, 67890);
+        out.pcgDistinct = r._pcg2d(1, 2) !== r._pcg2d(2, 1);
+        out.pcgIsUint = Number.isInteger(r._pcg2d(99, 99)) && r._pcg2d(99, 99) >= 0;
+        // _scatterCellTransform deterministisch
+        const t1 = r._scatterCellTransform(100, 200);
+        const t2 = r._scatterCellTransform(100, 200);
+        out.transformDeterministic =
+            t1 && t2 && t1.x === t2.x && t1.z === t2.z && t1.yaw === t2.yaw && t1.scale === t2.scale;
+        out.transformInCell =
+            t1 && t1.scale >= 0.7 && t1.scale <= 1.36 && t1.yaw >= 0 && t1.yaw <= Math.PI * 2 + 1e-6;
 
         // ─── (C) Scatter erzeugt ECHTE InstancedMesh-Instanzen ────────
         // Player an eine bekannte Position teleportieren, eine Region generieren.
-        if (out.scatterRegionExists && r.state.scene) {
+        if (r.state.scene) {
             // Sicherstellen: Pool + Bake bereit
             r._variantSeedsFor("baum_eiche");
             // V18.225 — die Dichte-Messung an der SPIELER-Region (vegetiert,
@@ -2087,17 +2057,15 @@ async function checkBandV18224ScatterPromotion(ctx) {
         // ─── (D) Determinismus: zwei Welten gleicher Seed → gleiche Streu ─
         // Wir prüfen die species/variant-Wahl an einer festen Cell (pure Funktion
         // des Hash → P2P-konsistent).
-        if (out.scatterRegionExists) {
-            const h = r._pcg2d(555, 777);
-            const sp1 = r._scatterSpeciesForCell(0.7, 0.3, h);
-            const sp2 = r._scatterSpeciesForCell(0.7, 0.3, h);
-            out.speciesDeterministic = sp1 === sp2;
-        }
+        const h = r._pcg2d(555, 777);
+        const sp1 = r._scatterSpeciesForCell(0.7, 0.3, h);
+        const sp2 = r._scatterSpeciesForCell(0.7, 0.3, h);
+        out.speciesDeterministic = sp1 === sp2;
 
         // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ───
         // Foundry-ON überspringt der Scatter die Baum-Schichten (kein promotable Cell) → die Grammatik-
         // Promotion prüft unter LOKALEM Hook; die Test-Region wird danach entsorgt.
-        if (out.promoteExists && r.state.scene) {
+        if (r.state.scene) {
             window.__withNoFoundry(() => {
                 // Eine frische Scatter-Cell bauen + promovieren
                 // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
@@ -2145,10 +2113,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
     // (A) Source + Config
     check("V18.224 (A1) AnazhRealm.SCATTER Config (cellM/promoteM)", res.scatterConfigExists === true);
-    check("V18.224 (A2) _pcg2d Integer-Hash Helper", res.pcg2dExists === true);
-    check("V18.224 (A3) _scatterRegion Generator Helper", res.scatterRegionExists === true);
-    check("V18.224 (A4) _promoteScatterCell Helper", res.promoteExists === true);
-    check("V18.224 (A5) _tickScatterStreaming Helper", res.tickExists === true);
     check("V18.224 (A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
 
     // (B) Determinismus

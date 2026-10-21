@@ -1303,7 +1303,8 @@ jobs:
               if: matrix.gruppe == 13
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
-              # bricht jede Stelle einzeln.
+              # bricht jede Stelle einzeln. WORT: der KI-Korpus (40 Saetze) mit dem Mitschnitt des echten Modells ueber den
+              # echten Chat-Pfad - der echte Lauf (--korpus --echt, lokales ollama) ist nicht CI-Pflicht.
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
