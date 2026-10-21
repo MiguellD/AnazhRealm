@@ -5635,8 +5635,8 @@
             // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
             // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
             // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
-            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
-            // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
+            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; es wacht
+            // das Golden von gate:settlement Teil N, das den ganzen Export einfriert). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
             roads: lay.roads,
