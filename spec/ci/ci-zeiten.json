@@ -448,13 +448,6 @@
       "lauf": "npm run gate:fernwald",
       "laeufe": ["39502455155", "39498582018", "39487231666", "39473381025", "39466503661", "39459212356", "39457318807"]
     },
-    "Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)": {
-      "s": 7,
-      "n": 7,
-      "gruppe": "voll 18",
-      "lauf": "npm run gate:luft-sicht",
-      "laeufe": ["39502455155", "39498582018", "39487231666", "39473381025", "39466503661", "39459212356", "39457318807"]
-    },
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {
       "s": 9,
       "n": 7,
@@ -1063,7 +1056,6 @@
           ["Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)", 13, 14],
           ["Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)", 16, 14],
           ["Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)", 17, 63],
-          ["Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)", 10, 7],
           ["Himmel-Tag (am Mittag steht kein Punkt am Himmel)", 12, 7],
           ["Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)", 16, 9],
           ["Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)", 16, 15],

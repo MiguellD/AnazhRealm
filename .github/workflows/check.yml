@@ -778,14 +778,6 @@ jobs:
               # Der Selbsttest macht den alten Weg (A, D) und einen injizierten Satz (B) rot.
               run: npm run gate:fernwald
 
-            - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
-              if: matrix.gruppe == 11
-              # V18.530: der Nebel war eine lineare Wand an der Wald-Kante (unter Last 60 m) und verdeckte die
-              # gebaute Fernform. Beweist headless an DENSELBEN Uniforms, die der Luft-Knoten liest: klarer
-              # Sommertag >= 5 km (Koschmieder 2 %), Regen/Sturm dichter, Hoehe weiter, Ring-Kante klar, die
-              # Nebel-Kulisse fort; der Selbsttest macht eine injizierte 80-m-Wand und einen THREE.Fog rot.
-              run: npm run gate:luft-sicht
-
             - name: Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)
               if: matrix.gruppe == 16
               # V18.530: Strassen, Feldwege, Platz und Aecker lagen als 0,14-m-Box-Streifen auf der Gesetz-Hoehe -
@@ -1513,9 +1505,11 @@ jobs:
               if: ${{ !cancelled() }}
               run: npm run gate:streu-fern
 
-            - name: Luft-Sicht auf der Karte (die Luftperspektive ist Physik, keine Nebel-Wand)
+            - name: Luft im Bild auf der Karte (Koschmieder je Kanal gegen die Referenz in spec, der Rand der Ferne ohne Kante)
               if: ${{ !cancelled() }}
-              run: npm run gate:luft-sicht
+              # werkbank licht --luft: vom Huegel 120 m ueber Genesis je Uhr 0,5/0,27 vier Azimute, drei Schuesse aus dem Ausgabe-Pfad
+              # (Luft, beta 0, beta 1); der Selbsttest macht einen grauen beta und die Kante 21 % rot — lokal 1,5 min samt Boot (Radeon)
+              run: npm run gate:luft-tiefe:echt
 
             - name: Chunk-Naht auf der Karte (kein ungedeckter Spalt)
               if: ${{ !cancelled() }}

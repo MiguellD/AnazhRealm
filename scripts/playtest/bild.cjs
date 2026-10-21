@@ -581,17 +581,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
-        out.fogExists = !!r.state.luft && !!r.state.scene.fogNode && !r.state.scene.fog;
         // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
         const atmoU = r._atmoLutBau().U;
         const mE = atmoU.mondE.value;
-        out.fogColorSet =
-            !!r.state.luft &&
-            typeof r.state.luft.farbe === "function" &&
-            atmoU.licht.value > 0 &&
-            mE.x + mE.y + mE.z > 0;
+        out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
@@ -683,7 +678,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v827Results && !v827Results.error) {
-        check("V8.27 → V18.530: die Luft steht (scene.fogNode, kein THREE.Fog)", v827Results.fogExists);
         check(
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
@@ -721,11 +715,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.starFieldHasMany = out.starCount > 1000;
         // Sidereal-Rotation: rotation ändert sich mit timeOfDay
         out.starFieldRotates = !!(sf && sf.rotation);
-
-        // --- Phase C: die Luft (V18.530) ---
-        // Die Luftperspektive ist Physik (`_luftEnsure` → scene.fogNode, Koschmieder aus dem Wetter-Feld; das Verhalten
-        // beweist gate:luft-sicht): kein Nebel-Regler mehr — der tote Fog-Distanz-Knopf ist mit dem Nebel gefallen.
-        out.fogSliderWorks = r.setFogDistance === undefined && !document.getElementById("slider-fog");
 
         // --- Phase D: Wind + Wolken + Wasser ---
         // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
@@ -916,10 +905,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
-        check(
-            "V8.28 C→V18.530: kein Nebel-Regler — die Luft ist Physik (setFogDistance + slider-fog fort, die Luft liest das Wetter)",
-            v828Results.fogSliderWorks
-        );
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
@@ -1270,17 +1255,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
 
-        // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
-        out.fogSliderTo300 = !document.getElementById("slider-fog");
-        out.fogDistanceTo3 = r.setFogDistance === undefined;
-
         return out;
     });
 
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
-        check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
-        check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
         check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
     }
@@ -1409,12 +1388,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
             out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
 
-            // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
-            // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
-            out.fogTripleRange = r.setFogDistance === undefined;
-            out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
-            out.fogHandlerTriples = window.__fehlt(r.slidersInitDOM, /slider-fog/);
-
             // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
             const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
             const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
@@ -1427,9 +1400,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
-        check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
-        check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
         check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
@@ -1860,12 +1830,10 @@ async function checkBandV18164WarumLicht(ctx) {
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum =
-            window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/) &&
-            r._smoothFogEdge === undefined;
+        out.ladeNebelKonsum = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
-        out.fogDeckel = !r.state.scene.fog && r.state._fogEdgeSmooth === undefined;
+        out.fogDeckel = !r.state.scene.fog;
         return out;
     });
     check(
@@ -1920,7 +1888,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const WF = r.constructor.WEATHER_FIELD;
         out.hazeNearWeather =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
-        out.hazeNearUniform = !!(r.state.luft && r.state.luft.U.beta && r.state.luft.U.hoehe);
 
         return out;
     });
@@ -1939,7 +1906,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
         res.hazeNearWeather === true
     );
-    check("Ω-OPSIS S5 (V3) die Luft-Uniforms existieren (β, Skalenhöhe)", res.hazeNearUniform === true);
 }
 
 // Der Schatten-Takt (V18.524; ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
@@ -2083,8 +2049,6 @@ async function checkBandLookPhysik(ctx) {
             meadow: K.MEADOW_GREEN,
             tints: K.WEATHER_TINTS,
             intensity: K.WEATHER_INTENSITY,
-            luft: K.LUFT,
-            luftBeta: r._luftBeta ? ["sunny", "rainy", "stormy"].map((w) => r._luftBeta(K.WEATHER_FIELD[w])) : null,
             toneMapping: rend ? rend.toneMapping : null,
             belichtung: K.BELICHTUNG ? { kurve: K.BELICHTUNG.kurve, zielKarte: K.BELICHTUNG.zielKarte } : null,
             kurveConst: K.BELICHTUNG && T[K.BELICHTUNG.kurve] != null ? T[K.BELICHTUNG.kurve] : null,
@@ -2101,14 +2065,6 @@ async function checkBandLookPhysik(ctx) {
     const wi = b.intensity || {};
     const tintOk = !!(t.sunny && t.rainy && t.stormy) && t.sunny.lightMul > t.rainy.lightMul && t.rainy.lightMul > t.stormy.lightMul && t.sunny.skyMul > t.rainy.skyMul && t.rainy.skyMul > t.stormy.skyMul;
     check("Look-Physik: Wetter dimmt Licht monoton (sunny > rainy > stormy), die Intensität monoton", tintOk && wi.sunny < wi.rainy && wi.rainy < wi.stormy, `intensity ${wi.sunny}/${wi.rainy}/${wi.stormy}`);
-    // 4) Luftperspektive (Koschmieder): Sicht = −ln(Kontrast)/β, Rayleigh 1,16·10⁻⁵/m, Sommertag ≥ 5 km, Grenzschicht 0,5–3 km
-    const L = b.luft;
-    const lb = b.luftBeta;
-    check(
-        "Look-Physik: Luftperspektive physikalisch (Koschmieder 2 %, Rayleigh-Basis, Sicht ≥ 5 km, Grenzschicht, Wetter monoton)",
-        !!(L && lb) && Math.abs(L.kontrast - 0.02) < 1e-9 && Math.abs(L.betaRayleigh / 1.16e-5 - 1) < 0.1 && -Math.log(L.kontrast) / lb[0] >= 5000 && L.skalenHoeheM >= 500 && L.skalenHoeheM <= 3000 && lb[0] < lb[1] && lb[1] < lb[2],
-        L && lb ? `Sicht ${lb.map((x) => Math.round(-Math.log(L.kontrast) / x)).join("/")} m · H ${L.skalenHoeheM} m` : "LUFT/_luftBeta fehlt"
-    );
     // 5) die Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV; 6) lineares Farb-Management
     const B = b.belichtung || {};
     const sollKarte = kartenEichung(B.kurve);
@@ -2169,7 +2125,6 @@ async function checkBandHimmelTag(ctx) {
         };
         const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
         st.scene.traverse((o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++);
-        out.planetenFort = st.planets === undefined && r._buildSkyPlanets === undefined;
         const zeitWar = st.timeOfDay;
         zeit(0.5);
         out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
@@ -2197,7 +2152,7 @@ async function checkBandHimmelTag(ctx) {
     const urteil = (S) => {
         const rot = [];
         if (!S) return ["keine Antwort der Seite"];
-        if (S.fremdeKoerper > 0 || !S.planetenFort) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz (planetenFort=${S.planetenFort})`);
+        if (S.fremdeKoerper > 0) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz`);
         if (!(S.punkte > 1000)) rot.push(`Sternfeld fehlt (${S.punkte} Punkte)`);
         if (S.mittag.n !== 0) rot.push(`2 MITTAG: ${S.mittag.n} Punkte sichtbar (Grenze ${S.mittag.grenze})`);
         if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05)) rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
