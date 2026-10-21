@@ -1936,13 +1936,15 @@ function lab(rgb) {
     return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
 }
 
-// DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %, waagrecht) im Licht der Welt-Stoffe (die Karte der Licht-Bilanz) und
-// im Licht eines Wegs, der sein Licht selbst rechnet — `panorama` (seine Textur grau), `feld` (ein grauer Kasten im Welt-March),
-// `wasser` (der Körper: das Bild mit minus
-// ohne sein Licht, ÷ R∞; Himmel und Glanz heben sich auf) — je Stunde, ohne Luft und Schatten; eine Zeile der Ferne (`paar`).
+// DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %) im Licht der Welt-Stoffe (eine MeshStandard-Karte gleicher Normale aus
+// demselben Auge) und im Licht eines Wegs, der den Baustein `_weltLicht` ruft — `panorama` (seine Textur grau), `feld` (ein grauer
+// Kasten im Welt-March), `spiegel` (die Spiegelung einer grauen Wand über Wasser), `wasser` (der Körper: das Bild mit minus ohne sein
+// Licht, ÷ R∞) — je Stunde, ohne Luft und Schatten. Eine Zahl am Namen (`feld0`, `spiegel180`) stellt die Fläche senkrecht, ihre
+// Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht. Das Urteil ist absolut (`weg`): 0,9–1,1.
 function lichtWeg(opts) {
     return (async () => {
         const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
+        const [, art, grad] = /^([a-z]+)(d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
@@ -1951,6 +1953,8 @@ function lichtWeg(opts) {
         r._weltLichtTakt();
         const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
         const W = 32, rt = new T.RenderTarget(W, W, { depthBuffer: true, type: T.HalfFloatType }), alle = [], dl = st.directionalLight, wurf = dl.castShadow;
+        // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
+        const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), ((+grad || 0) * Math.PI) / 180);
         sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
         const luftU = st.luft && st.luft.U, luftAlt = luftU && luftU.beta.value, kamAlt = [cam.position.clone(), cam.quaternion.clone()];
         const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
@@ -1980,18 +1984,18 @@ function lichtWeg(opts) {
         try {
             dl.castShadow = false;
             if (luftU) luftU.beta.value = 0;
-            let welt = await lies(karte, unten);
+            let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
             let weg;
-            if (opts.weg === "panorama") {
+            if (art === "panorama") {
                 for (let i = 0; i < fp.panoDaten.length; i += 4) fp.panoDaten.set([0.18, 0.18, 0.18, 3000], i);
                 fp.panoTex.needsUpdate = true;
                 weg = await lies(fp.mesh, new T.Vector3(1, -0.1, 0));
-            } else if (opts.weg === "spiegel") {
+            } else if (art === "spiegel") {
                 // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
                 // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
                 // Feld des Spiegel-Passes trägt ihn. Die Welt: dieselbe Karte senkrecht, mit derselben Normale, aus demselben Auge.
                 const S = r._spiegelFeld(), L = r._spiegelLeser(), K = r.constructor.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
-                const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), Math.PI / 4), H = see.position.y - S.bezug, fov = cam.fov;
+                const H = see.position.y - S.bezug, fov = cam.fov;
                 const I0 = Math.floor(o.x / K.texel) - n / 2, J0 = Math.floor(o.z / K.texel) - n / 2, w = (k, k0, a) => (k0 + ((((k - k0) % n) + n) % n) + 0.5) * K.texel - a;
                 S.hoechste.fill(-30000);
                 for (let j = 0; j < n; j++)
@@ -2005,7 +2009,6 @@ function lichtWeg(opts) {
                 [S.mitte, S.hMax, cam.fov] = [[o.x, o.z], H + 60, 20];
                 cam.updateProjectionMatrix();
                 try {
-                    welt = await lies(karte, nh.clone().negate().multiplyScalar(3), true);
                     cam.lookAt(o.clone().add(nh.clone().negate().setY(-Math.tan((25 * Math.PI) / 180))));
                     cam.updateProjectionMatrix();
                     cam.updateMatrixWorld(true);
@@ -2023,17 +2026,19 @@ function lichtWeg(opts) {
                     S.stand++;
                     cam.updateProjectionMatrix();
                 }
-            } else if (opts.weg === "feld") {
-                const h = r._weltKapselSpawn("lichtweg:karte", new T.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z), () => [{ box: true, c: new T.Vector3(), h: new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
-                weg = await lies(fp.march, unten).finally(() => r._weltFeldFrei(h));
+            } else if (art === "feld") {
+                // der graue Kasten: waagrecht 2,5 m unter dem Auge, senkrecht 12 m voraus mit der dünnen Achse auf `nh`
+                const m = senkrecht ? new T.Matrix4().makeRotationY(Math.atan2(-nh.z, nh.x)).setPosition(o.clone().addScaledVector(nh, -12)) : new T.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z);
+                const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
+                weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
                 const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
-                WL.forEach((u) => u.value.setScalar(0));
+                WL.forEach((u) => u.value.multiplyScalar(0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
             }
             const [lw, lk] = [window.__lab(welt), window.__lab(weg)];
-            return { art: opts.weg, stufe: "welt-stoff → " + opts.weg, paar: "weg/welt", karte: { gestalt: lw, karte: lk, verhaeltnis: +(lk.Y / lw.Y).toFixed(3), dL: +(lk.L - lw.L).toFixed(2), dC: +(lk.C - lw.C).toFixed(2) } };
+            return { art: opts.weg, stufe: "welt-stoff → " + opts.weg, weg: true, karte: { gestalt: lw, karte: lk, verhaeltnis: +(lk.Y / lw.Y).toFixed(3), dL: +(lk.L - lw.L).toFixed(2), dC: +(lk.C - lw.C).toFixed(2) } };
         } finally {
             fp.panoDaten.set(panoAlt);
             fp.panoFlug = false;
@@ -2073,7 +2078,7 @@ function laubLichtUrteil(messung, band) {
             }
             zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC, mittag: mittag ? mittag.karte.verhaeltnis : undefined });
             if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
-                befunde.push(`${w.paar ? "FERN" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+                befunde.push(`${w.paar ? "FERN" : w.weg ? "WEG" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : w.weg ? "Weg/Welt" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
             continue;
         }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {

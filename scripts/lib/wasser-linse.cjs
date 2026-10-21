@@ -1077,7 +1077,8 @@ function wasserBild(opts) {
         const lichtAlt = U.light.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
-            WL.forEach((u, i) => u.value.setScalar(i === 2 ? Math.PI : 0)); // das Licht der Welt E/π = 1 (allein Ambient π)
+            WL.forEach((u) => u.value.multiplyScalar(0));
+            r._weltLicht().U.sh0.value.elements.fill(1, 0, 3); // das Licht der Welt E/π = 1 (allein der Grad 0 der Entwicklung)
             U.light.value = 0;
             // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
             // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des

@@ -1037,6 +1037,11 @@ class AnazhRealm_dirigent_ankunft {
         // (`_belichtungAnker`, `_himmelsBestrahlung`) — bis dahin trüge das erste Bild die Belichtung des Ladens (1,0) und
         // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht).
         if (!st._belichtungSteht) luecke("licht", "das Licht des Orts wird gemessen", true);
+        // DAS LICHT DER WELT (Licht K3): Feld, Panorama, Spiegel und Wasser lesen den Himmel aus seiner Rücklesung
+        // (`_himmelsIrradianz`) — bis sie liegt, stünden sie ohne Himmel neben den Stoffen, die ihn schon tragen (der
+        // Null-Renderer malt keinen Himmel, Lehre 16)
+        else if (st.scene && st.scene.environment && !st.renderer._isHeadlessNull && !this._himmelsIrradianz())
+            luecke("licht", "das Licht des Orts wird gemessen", true);
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);

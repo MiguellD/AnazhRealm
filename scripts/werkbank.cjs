@@ -3393,8 +3393,9 @@ async function starte() {
         const dorf = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "dorf");
         for (const art of String(arten).split(",")) for (const uhr of uhren) {
             const zeile = uhr == null ? art : `${art}@${uhr}`;
-            // DER LICHTWEG (Licht K3): `panorama`, `feld` und `wasser` — die graue Fläche im Licht der Welt gegen das Licht des Wegs
-            if (["panorama", "feld", "spiegel", "wasser"].includes(art)) {
+            // DER LICHTWEG (Licht K3): `panorama`, `feld`, `spiegel` und `wasser` (eine Zahl stellt die Fläche senkrecht, Grad neben
+            // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
+            if (/^(panorama|feld|spiegel|wasser)d*$/.test(art)) {
                 welt[zeile] = (await rufe("/eval", { code: `return await window.__lichtWeg({ weg: "${art}", uhr: ${uhr} });` })).ergebnis;
                 continue;
             }

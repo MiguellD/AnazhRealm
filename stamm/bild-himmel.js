@@ -2100,7 +2100,7 @@ class AnazhRealm_bild_himmel {
     // DIE BELICHTUNG AUS DEM LICHT (V18.507, S7): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV (die Kamera-Konvention
     // der Profi-Engines, UE5-Belichtungs-Bias +1; `BELICHTUNG.zielKarte` aus der Tonkurve). Die Karte steht der Sonne zugewandt
     // (D3-N2, Sunny 16: die Blende folgt dem Durchlass, nie dem Sinus der Höhe) und liest L = 0,18/π · E.
-    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`, dieselbe, die das Wasser liest) plus das Richtlicht, das
+    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`) plus das Richtlicht, das
     // die Waagrechte nicht nimmt — der Himmel aus der Bestrahlungs-Tafel der EINEN Atmosphäre an der Sonne DIESER Anwendung.
     // Bis S7 las sie den Himmel aus der zurückgelesenen Umgebung (eine Lesung nach der Malung): nach jedem Sprung der Uhr trug
     // der erste Frame die Belichtung der vorigen Stunde (bis 0,57 EV, Uhr 0,75); die erste Runde von S7 setzte den Himmel als

@@ -1041,7 +1041,7 @@ class AnazhRealm {
                 v[k++] = x.isColor ? x.r : x.x;
                 v[k++] = x.isColor ? x.g : x.y;
                 v[k++] = x.isColor ? x.b : x.z;
-            }
+            } else if (x && x.isMatrix3) for (const q of x.elements) v[k++] = q; // das indirekte Licht (`_weltLicht`)
         }
         const a = sig.alt;
         let wach = !sig.da || sig.k !== k;
