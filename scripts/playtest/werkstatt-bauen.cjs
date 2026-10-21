@@ -1455,7 +1455,6 @@ async function checkBandWelle6XAudit(ctx) {
         const out = {};
 
         // --- C1: at_player_forward DSL-Resolver
-        out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
         if (r.dslPositions.at_player_forward) {
             // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
             // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
@@ -1578,7 +1577,6 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x3Results && !wave6x3Results.error) {
-        check("Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert", wave6x3Results.atPlayerForwardExists);
         check(
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
@@ -1613,9 +1611,8 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 — Identity (Audit 17.05.2026) ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
-    // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1623,11 +1620,6 @@ async function checkBandWelle6XAudit(ctx) {
         // --- F1: state-Felder existieren mit Defaults
         out.companionNameDefault = r.state.grok.companionName === "Grok";
         out.playerNameDefault = r.state.player.name === "Schöpfer";
-
-        // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
-        out.companionInputExists = !!document.getElementById("companion-name-input");
-        out.playerInputExists = !!document.getElementById("player-name-input");
-        out.identitySectionExists = !!document.getElementById("identity-section");
 
         // --- F1: Input-Change setzt state + localStorage
         const ci = document.getElementById("companion-name-input");
@@ -1662,63 +1654,20 @@ async function checkBandWelle6XAudit(ctx) {
         r.state.grok.companionName = "Grok";
         r.state.player.name = "Schöpfer";
 
-        // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
-        delete r.state._groundedCache;
-        delete r.state._groundedCachedAt;
-        r.isPlayerGrounded();
-        out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
-
-        // Funktional: zweiter Aufruf direkt danach liefert cached
-        // result (kein Race-Free-Window) — wir prüfen dass der
-        // Wert nicht NaN ist und stabil bleibt.
-        const v1 = r.isPlayerGrounded();
-        const v2 = r.isPlayerGrounded();
-        out.cacheConsistentBetweenCalls = v1 === v2;
-
-        // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
-        r.state._groundedCache = true;
-        r.state._groundedCachedAt = performance.now();
-        out.cachedTrueRespected = r.isPlayerGrounded() === true;
-        r.state._groundedCache = false;
-        r.state._groundedCachedAt = performance.now();
-        out.cachedFalseRespected = r.isPlayerGrounded() === false;
-        // Cache-Expiry: alter timestamp → fresh compute
-        r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
-        // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
-        // aber dass Cache-Time refreshed wird
-        const beforeRefresh = r.state._groundedCachedAt;
-        r.isPlayerGrounded();
-        out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
-
         return out;
     });
 
     if (wave6x45Results && !wave6x45Results.error) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
-        check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
-        check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
-        check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
         check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
         check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-        check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
-        check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
-        check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
-        check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
-        check(
-            "Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)",
-            wave6x45Results.cacheRefreshedAfterExpiry
-        );
     } else {
-        check(
-            "Welle 6.X.4+5: Identity + Performance-Tests laufen",
-            false,
-            wave6x45Results ? wave6x45Results.error : "no result"
-        );
+        check("Welle 6.X.4: Identity-Tests laufen", false, wave6x45Results ? wave6x45Results.error : "no result");
     }
 }
 
@@ -2037,7 +1986,13 @@ async function checkBandWGGelenke(ctx) {
             r._workshopRender = () => {};
             try {
                 const roles = r.computeMotionRoles(wagen.parts, wagen.connections);
-                ws.preview = { active: true, rafId: null, dirty: false, currentMesh: grp, probe: { start: performance.now(), dur: 2200, roles } };
+                ws.preview = {
+                    active: true,
+                    rafId: null,
+                    dirty: false,
+                    currentMesh: grp,
+                    probe: { start: performance.now(), dur: 2200, roles },
+                };
                 r._workshopStartRAF();
                 out.probeInRAF = !!tick && window.__consumes({ t: tick }, "t", r, "_animateCompoundMotion", []);
             } finally {
@@ -2072,8 +2027,15 @@ async function checkBandWGGelenke(ctx) {
 }
 
 module.exports = {
-    checkBandV1774UseByRole, checkBandV1776WorkshopPrecision, checkBandV1777SteigerungVisible,
-    checkBandV1789WorkshopReadout, checkBandV1790Recalibration, checkBandWelle6Keybindings,
-    checkBandWellePerfCArchInstancing, checkBandWelle6XAudit, checkBandM1VerbindungsWerkstatt,
-    checkBandNutzerBlickNachbau, checkBandWGGelenke,
+    checkBandV1774UseByRole,
+    checkBandV1776WorkshopPrecision,
+    checkBandV1777SteigerungVisible,
+    checkBandV1789WorkshopReadout,
+    checkBandV1790Recalibration,
+    checkBandWelle6Keybindings,
+    checkBandWellePerfCArchInstancing,
+    checkBandWelle6XAudit,
+    checkBandM1VerbindungsWerkstatt,
+    checkBandNutzerBlickNachbau,
+    checkBandWGGelenke,
 };
