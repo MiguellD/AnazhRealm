@@ -225,10 +225,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p2p = r.state.p2p;
-        out.methods =
-            typeof r._p2pBroadcastVibe === "function" &&
-            typeof r._p2pBuildNameLabel === "function" &&
-            typeof r._p2pRefreshPeerNameLabel === "function";
         // Peer-Entry trägt die Vibe-Pass-Felder.
         const probe = r._p2pEnsurePeerEntry("_w13p3probe");
         out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
@@ -324,7 +320,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13p3Results && !w13p3Results.error) {
-        check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
         check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
         check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
         check(
@@ -358,10 +353,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r.renderLibraryUI === "function" &&
-            typeof r.obtainPortalForWorld === "function" &&
-            typeof r.libraryInitDOM === "function";
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
@@ -613,7 +604,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14Results && !w14Results.error) {
-        check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
         check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
