@@ -1235,7 +1235,7 @@ class AnazhRealm_bild_himmel {
     // Sonne, Himmel, Umgebung und Luft lesen EIN Medium aus EINEM Gesetz (foundry-core `ATMO_GESETZ`, seine Rechnung
     // `ATMO_RECHNUNG` — dieselbe ruft das Labor phytogenesis): Rayleigh-Tiefe je Kanal, die EINE Luft (`LUFT` liest ihre Anker
     // dort; das Aerosol = `_luftBeta` des Wetters abzüglich ihres Rayleigh-Anteils), Mie-Phase g · Einfach-Albedo · Ozon-Zelt ·
-    // Radien, der Boden die gemessene Welt-Albedo (`ATMO_BODEN`). Einheiten des Mediums: km und 1/km (Hillaire), Höhen über
+    // Radien, der Boden das Grau der Erde unter der Luft (`ATMO_BODEN`). Einheiten des Mediums: km und 1/km (Hillaire), Höhen über
     // dem Bezug der Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne, die
     // Nebel-Kuppel, die Horizont-Farbe der Luft, die CPU-gemalte Umgebung 128×64) — das Verhältnis Sonne : Himmel war gesetzt
     // (4,2), nicht gerechnet (gerechnet 5,1; `diag-atmo-hillaire`).
@@ -2980,10 +2980,12 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     richtungen: Object.freeze([12, 24]),
     schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
 });
-// DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
-// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
-// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
-AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
+// DER BODEN DER ATMOSPHÄRE (D3, himmel-ton): die Erde unter der Luft — Hunderte Kilometer Wald, Feld, Fels und Wasser, aus
+// der Höhe Kronendach und Narbe (sichtbar 0,04–0,08), nie das einzelne Blatt — fast farblos: das Grau 0,1 von Bruneton und
+// Hillaire. Bis himmel-ton das Mittel aus Laub und Wald-Boden der Albedo-Tafel (G/B 3,1): Ψ_ms verstärkt den Boden im Dunst mit
+// 1/(1 − f_ms), der Horizont stand grün (Ton 120–135° statt 222°, `werkbank licht --luft` HIMMEL). Er trägt die
+// Mehrfachstreuung und die untere Hälfte der Umgebung.
+AnazhRealm.ATMO_BODEN = Object.freeze([0.1, 0.1, 0.1]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
