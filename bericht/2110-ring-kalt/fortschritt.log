@@ -1,0 +1,10 @@
+03:53:05 KALT START A=bbc97d8b B=57a9f2ab sha=6f4ba725b155/6f4ba725b155
+04:11:10 kalt-A1 start bbc97d8b gpu[62, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:11:48 kalt-A1 ende exit=1 gpu[70, 1733 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.46 s ab Navigation
+04:12:23 kalt-B1 start 57a9f2ab gpu[67, 810 MHz, 810 MHz, P5, 0x0000000000000001]
+04:12:59 kalt-B1 ende exit=1 gpu[72, 1721 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.77 s ab Navigation
+04:13:34 kalt-A2 start bbc97d8b gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:14:11 kalt-A2 ende exit=1 gpu[74, 1784 MHz, 4006 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.68 s ab Navigation
+04:14:46 kalt-B2 start 57a9f2ab gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:15:20 kalt-B2 ende exit=1 gpu[72, 923 MHz, 3802 MHz, P2, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 15.13 s ab Navigation
+04:15:50 KALT ENDE
