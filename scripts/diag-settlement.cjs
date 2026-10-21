@@ -80,6 +80,46 @@ function fingerprint(plan) {
     return sha(JSON.stringify(plan));
 }
 
+// ===== DAS ERSTE HAUS (siedlung.K5): vom Erwachen der Zelle (der Export) bis zum fertigen Bau des ersten Slots =====
+// Bau-Ereignisse statt Wanduhr: jede Geometrie, die der Kern baut, zählt — der Export misst je Haus seinen Mass-Bau (massBau →
+// ext, die das Layout liest). Bis K5 baute er dafür JEDEN Ziegel als eigene Box (2 422 Geometrien je Haus, nH 12). `bau` wirft
+// statt des Exports einen Mass-Bau ohne Hülle (der Täter beim Namen, Selbsttest). Die Zeit reist als Zahl mit.
+const ERSTES_HAUS_GEO = 500;
+function erstesHaus(FC, nH, bau) {
+    const T = globalThis.THREE,
+        alt = {},
+        z = { geo: 0 };
+    for (const k of Object.keys(T).filter((k) => /Geometry$/.test(k) && typeof T[k] === "function")) {
+        alt[k] = T[k];
+        T[k] = class extends alt[k] {
+            constructor(...a) {
+                super(...a);
+                z.geo++;
+            }
+        };
+    }
+    try {
+        const t0 = performance.now(),
+            n = FC.DORF({ seed: 7, nH }).houses.length;
+        const plan = bau ? null : FC.exportSettlement({ seed: 7, nH }),
+            s = plan ? plan.slots[0] : null;
+        if (bau) bau(FC.DORF({ seed: 7, nH }).houses[0]);
+        const geoJeHaus = Math.round(z.geo / (bau ? 1 : n)),
+            g = s && FC.buildInstance(s.kultur, s.seed, 0, s.ov),
+            h = crypto.createHash("sha256");
+        if (g) g.traverse((o) => o.geometry && h.update(Buffer.from(o.geometry.attributes.position.array.buffer)));
+        return {
+            nH,
+            haeuser: n,
+            geoJeHaus,
+            ms: Math.round(performance.now() - t0),
+            bauHash: g ? h.digest("hex").slice(0, 12) : null,
+        };
+    } finally {
+        Object.assign(T, alt);
+    }
+}
+
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
 // (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
@@ -783,6 +823,12 @@ const FIXTURES = [
         const b = JSON.parse(JSON.stringify(a));
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
+        // V3 (siedlung.K5): der Mass-Bau ohne Hülle — jeder Ziegel eine Box — fällt beim Namen
+        const t = erstesHaus(FC, 12, (h) => FC.stapelBau(Object.assign({}, h, { nur: FC.MASSNUR }), FC.LOD1F));
+        check(
+            `Selbst-Test 3: der Mass-Bau ohne Hülle reißt das erste Haus (${t.geoJeHaus} > ${ERSTES_HAUS_GEO} Geometrien)`,
+            t.geoJeHaus > ERSTES_HAUS_GEO
+        );
         // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
         // dem Grund und ein Haus ohne Weg fallen beim Namen; das Verdikt nennt jede verfehlte Zahl.
         const haus = (x, z, y) => ({
@@ -966,7 +1012,14 @@ const FIXTURES = [
     }
 
     console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
-    check("exportSettlement existiert im Kern (das exportDrive-Muster)", typeof FC.exportSettlement === "function");
+    for (const nH of [12, 300]) {
+        const e = erstesHaus(FC, nH);
+        check(
+            `ERSTES HAUS nH ${nH}: der Export baut je Haus ≤ ${ERSTES_HAUS_GEO} Geometrien (Mass-Hülle), dann steht der erste Bau`,
+            e.geoJeHaus <= ERSTES_HAUS_GEO && !!e.bauHash,
+            JSON.stringify(e)
+        );
+    }
     const plans = {};
     for (const dp of FIXTURES) {
         const key = JSON.stringify(dp);
