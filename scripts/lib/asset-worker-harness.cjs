@@ -26,8 +26,10 @@ const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifes
 const WORKER_SCRIPTS = (() => {
     const rel = [];
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
+    for (const core of CORES_MANIFEST)
+        if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
+    for (const core of CORES_MANIFEST)
+        if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
     return rel;
 })();
 // Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness, der
@@ -238,6 +240,7 @@ function pageHtml() {
         if (mitAbdruck && mitAbdruck[i]) {
           const a = await bauAbdruck(r.meshes || []);
           out[i].abdruck = a.teile > 0 ? a.hash : null;
+          out[i].bau = a;
         }
       }
     }));
@@ -322,7 +325,17 @@ async function runWithWorker(port, cb) {
                 bis == null ? null : bis,
                 fangen == null ? -1 : fangen
             );
-        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, probeLauf, pageErrors });
+        const out = await cb({
+            build,
+            kostenListe,
+            bauHashListe,
+            getData,
+            atlas,
+            atlasAlpha,
+            atlasBild,
+            probeLauf,
+            pageErrors,
+        });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {
@@ -348,15 +361,17 @@ function fingerprintMeshes(meshes) {
         const buf = Buffer.from(b64, "base64");
         return { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
     };
-    return (meshes || []).filter((m) => !istBeipack(m)).map((m) => {
-        const out = { kind: m.kind, mat: m.mat, attrs: {} };
-        for (const k of Object.keys(m.attrs || {}))
-            out.attrs[k] = Object.assign({ itemSize: m.attrs[k].itemSize }, sha(m.attrs[k].b64));
-        if (m.index) out.index = sha(m.index);
-        // Der Schatten-Teil (S3): nur wo das Studio ihn nennt (die Baum-L1) — jeder andere Fingerabdruck bleibt byte-alt.
-        if (m.teil !== undefined) out.teil = m.teil;
-        return out;
-    });
+    return (meshes || [])
+        .filter((m) => !istBeipack(m))
+        .map((m) => {
+            const out = { kind: m.kind, mat: m.mat, attrs: {} };
+            for (const k of Object.keys(m.attrs || {}))
+                out.attrs[k] = Object.assign({ itemSize: m.attrs[k].itemSize }, sha(m.attrs[k].b64));
+            if (m.index) out.index = sha(m.index);
+            // Der Schatten-Teil (S3): nur wo das Studio ihn nennt (die Baum-L1) — jeder andere Fingerabdruck bleibt byte-alt.
+            if (m.teil !== undefined) out.teil = m.teil;
+            return out;
+        });
 }
 
 // DIE DREI DATEN-KANÄLE des EINEN Umschlags (get-book) und ihre eingefrorenen JSONs (Feld der Antwort → Golden-Name).

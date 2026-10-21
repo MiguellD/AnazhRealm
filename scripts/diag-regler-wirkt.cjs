@@ -64,15 +64,6 @@ function kernVonArt() {
     return aus;
 }
 
-// Die niedrigste Stufe, die die Art trägt (die Werkstatt-Vorschau startet auf L0; eine Art ohne L0 baut ihre erste).
-function ersteStufe(rc, art) {
-    const ks = rc && rc.lod && rc.lod.kindStages;
-    const zks = (rc && rc.lod && rc.lod.zusatzKindStages) || {};
-    let st = ks && Array.isArray(ks[art]) ? ks[art] : null;
-    for (const kern in zks) if (!st && Array.isArray(zks[kern][art])) st = zks[kern][art];
-    return st && st.length ? Math.min(...st) : 0;
-}
-
 // ── DER OFEN-KANAL (Q0: die Linse misst, wo der Regler WIRKT). Die Werkstatt-Vorschau `_workshopStudioPreviewFrom`
 // fragt zuerst den Host-Ofen (`_workshopOvenPreview`): die MESHFREI-Arten (Vertrag §8 — kein Mesh aus dem Kern) gießt
 // der Stamm selbst, der Regler-Wert reist aus `ws.studioOv[preset]` in den Guss (koerper: `_buildHumanGroup(ov)` →
@@ -347,120 +338,57 @@ function bauBruch(r) {
     return null;
 }
 
-// Die Messung: je Art × Regler über die Rezepte der Art, bis einer den Hash bewegt. Die Täter des Selbsttests:
-// `ohneOv` (der alte Brücken-Defekt W-A1: die Bau-Nachricht trägt den Regler-Wert nicht) und `bruch` = id eines
-// Reglers, dessen Bau bricht (min: die Nachricht nennt ein Rezept, das das Buch nicht kennt — der Worker wirft, die
-// Brücke liefert 0 Teile; max: der Wert ist Text — der Bäcker rechnet NaN).
-async function messen(h, opts) {
-    const o = opts || {};
-    const env = await h.getData("get-book");
-    const buch = env.book || {};
-    const pbk = env.paramsByKind || {};
-    const rc = env.renderConfig || {};
-    const kerne = kernVonArt();
-    const ohne = new Set(o.ohneArten || []);
-    const arten = Object.keys(pbk)
-        .filter((a) => (!o.nurArt || a === o.nurArt) && !ohne.has(a))
-        .sort();
+// DIE WIRKUNG aus den Bauten der Stufen-Probe (unten): je Zeile von PARAMS_BY_KIND an der ersten Stufe jedes Rezepts der
+// Bau-Hash ohne ov gegen den Bau mit {id: min} bzw. {id: max}; der Regler wirkt am ersten Rezept, an dem er den Hash bewegt.
+// Die Täter des Selbsttests (in `stufenMessen`): `ohneOv` (der alte Brücken-Defekt W-A1: die Bau-Nachricht trägt den
+// Regler-Wert nicht) und `bruch` = id eines Reglers, dessen Bau bricht (min: die Nachricht nennt ein Rezept, das das Buch
+// nicht kennt — der Worker wirft, die Brücke liefert 0 Teile; max: der Wert ist Text — der Bäcker rechnet NaN).
+function wirkenAus(st) {
     const zeilen = [];
-    for (const art of arten) {
-        const rezepte = Object.keys(buch)
-            .filter((id) => buch[id] && buch[id].kind === art)
-            .sort();
-        const lod = ersteStufe(rc, art);
-        for (const d of pbk[art])
-            zeilen.push({
-                kern: kerne[art] || "phyto",
+    for (const [art, A] of Object.entries(st.arten))
+        for (const d of A.params) {
+            const z = {
+                kern: A.kern,
                 art,
                 id: d.id,
                 d,
-                rezepte,
-                lod,
+                rezepte: A.rezepte,
+                lod: A.lod,
                 kanal: "build-asset",
                 wirkt: false,
                 grund: "",
                 an: null,
                 bricht: [],
-            });
-    }
-    const msg = (preset, lod, ov) => {
-        const m = { presetId: preset, seed: SEED, lod };
-        if (ov && !o.ohneOv) m.ov = ov;
-        const k = ov && Object.keys(ov)[0];
-        if (k && o.bruch === k) {
-            const z = zeilen.find((x) => x.id === k);
-            if (ov[k] === z.d.min) m.presetId = "__taeter_unbekannt__";
-            else m.ov = { [k]: "kein-wert" };
+            };
+            for (const p of A.rezepte) {
+                const b = st.je.get(p + "|null|" + A.lod).bau;
+                // Der Grund-Bau einer Mesh-Art bricht: ein benannter Fehler an jeder Zeile, die ihn braucht.
+                if (bauBruch(b)) {
+                    z.bricht.push(`Grund-Bau ${p}: ${bauBruch(b)}`);
+                    continue;
+                }
+                for (const wert of [d.min, d.max]) {
+                    const k = st.je.get(p + "|" + [d.id, wert] + "|" + A.lod);
+                    if (k && bauBruch(k.bau)) z.bricht.push(`${d.id}=${wert} an ${p}: ${bauBruch(k.bau)}`);
+                    else if (k && k.bau.hash !== b.hash && !z.wirkt) [z.wirkt, z.an] = [true, p];
+                }
+            }
+            z.grund = z.bricht.length
+                ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
+                : z.wirkt
+                  ? "wirkt an " + z.an
+                  : !z.rezepte.length
+                    ? "kein Rezept der Art im Buch"
+                    : "bewegt den Bau an keinem der " +
+                      z.rezepte.length +
+                      " Rezepte (min " +
+                      d.min +
+                      " · max " +
+                      d.max +
+                      ")";
+            zeilen.push(z);
         }
-        return m;
-    };
-    // Runde je Rezept-Index: alle noch toten Zeilen am i-ten Rezept ihrer Art (die Basis je Rezept einmal).
-    const basis = new Map();
-    let builds = 0;
-    for (let ri = 0; ; ri++) {
-        const offen = zeilen.filter((z) => !z.wirkt && ri < z.rezepte.length);
-        if (!offen.length) break;
-        const liste = [];
-        const plan = [];
-        for (const z of offen) {
-            const p = z.rezepte[ri];
-            const bk = p + "|" + z.lod;
-            if (!basis.has(bk)) {
-                basis.set(bk, null);
-                plan.push({ basis: bk });
-                liste.push(msg(p, z.lod, null));
-            }
-            for (const wert of [z.d.min, z.d.max]) {
-                plan.push({ z, p, wert });
-                liste.push(msg(p, z.lod, { [z.id]: wert }));
-            }
-        }
-        const res = await h.bauHashListe(liste);
-        builds += liste.length;
-        plan.forEach((pl, i) => {
-            if (pl.basis) basis.set(pl.basis, res[i]);
-        });
-        plan.forEach((pl, i) => {
-            if (pl.basis) return;
-            const b = basis.get(pl.p + "|" + pl.z.lod);
-            // Der Grund-Bau einer Mesh-Art bricht: ein benannter Fehler an jeder Zeile, die ihn braucht (die Ofen-Arten
-            // misst der Ofen-Kanal; hier hat jede Art eine Gestalt).
-            const bB = bauBruch(b);
-            if (bB) {
-                const t = `Grund-Bau ${pl.p}: ${bB}`;
-                if (!pl.z.bricht.includes(t)) pl.z.bricht.push(t);
-                return;
-            }
-            const bruch = bauBruch(res[i]);
-            if (bruch) {
-                pl.z.bricht.push(`${pl.z.id}=${pl.wert} an ${pl.p}: ${bruch}`);
-                return;
-            }
-            if (res[i].hash !== b.hash && !pl.z.wirkt) {
-                pl.z.wirkt = true;
-                pl.z.an = pl.p;
-            }
-        });
-    }
-    for (const z of zeilen) {
-        if (z.wirkt) {
-            z.grund = "wirkt an " + z.an;
-            continue;
-        }
-        z.grund = !z.rezepte.length
-            ? "kein Rezept der Art im Buch"
-            : "bewegt den Bau an keinem der " +
-              z.rezepte.length +
-              " Rezepte (min " +
-              z.d.min +
-              " · max " +
-              z.d.max +
-              ")";
-    }
-    for (const z of zeilen)
-        if (z.bricht.length)
-            z.grund = "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "");
-    return { zeilen, builds };
+    return zeilen;
 }
 
 // ── DIE STUFEN-PROBE (pipeline.K3, Kosten am Asset, Studio-Vertrag B2c): jede Stufe jeder Art mit Budget-Zeile, je Rezept
@@ -483,14 +411,18 @@ async function stufenMessen(h, opts) {
             .map(Number);
         const lod = Math.min(...stufen);
         const s = B[lod].schatten;
+        const rezepte = Object.keys(buch)
+            .filter((id) => buch[id] && buch[id].kind === art && (!o.nurRezept || o.nurRezept === id))
+            .sort();
         arten[art] = {
             lod,
+            kern: kerne[art] || "phyto",
+            params: pbk[art],
+            rezepte,
             s: Number.isInteger(s) && s !== lod && B[s] && B[s].nurWurf === true ? s : null,
             quote: {},
         };
-        for (const p of Object.keys(buch)
-            .filter((id) => buch[id] && buch[id].kind === art && (!o.nurRezept || o.nurRezept === id))
-            .sort()) {
+        for (const p of rezepte) {
             const eigen = Object.assign({}, buch[p].s, buch[p].fx);
             const raender = [
                 null,
@@ -502,23 +434,35 @@ async function stufenMessen(h, opts) {
                     .filter((r) => eigen[r[0]] !== r[1]),
             ];
             for (const r of raender)
-                for (const st of stufen)
+                for (const st of o.nurErste ? [lod] : stufen)
                     plan.push({ art, p, r, s: st, zeile: B[st], lod: o.ohneReduktion === art ? lod : st });
         }
     }
-    const res = await h.kostenListe(
-        plan.map((pl) =>
-            Object.assign({ presetId: pl.p, seed: SEED, lod: pl.lod }, pl.r ? { ov: { [pl.r[0]]: pl.r[1] } } : {})
-        ),
-        null,
-        true
-    );
+    const msg = (pl) => {
+        const m = { presetId: pl.p, seed: SEED, lod: pl.lod };
+        if (pl.r && !o.ohneOv) m.ov = { [pl.r[0]]: o.bruch !== pl.r[0] ? pl.r[1] : "kein-wert" };
+        if (pl.r && o.bruch === pl.r[0] && pl.r[1] === pbk[pl.art].find((d) => d.id === pl.r[0]).min)
+            m.presetId = "__taeter_unbekannt__";
+        return m;
+    };
+    // der Bau-Abdruck (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder
+    const erste = new Set();
+    const liste = plan.map((pl) => {
+        const m = msg(pl);
+        if (pl.s === arten[pl.art].lod) erste.add(m);
+        return m;
+    });
+    const res = await h.kostenListe(liste, (c) => erste.has(c), true);
     const bruch = {};
     const je = new Map();
     plan.forEach((pl, i) => {
         pl.k = res[i] || {};
         je.set(pl.p + "|" + pl.r + "|" + pl.s, pl.k);
-        const zu = ["tris", "draws"].filter((f) => Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]));
+        // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A, 12.10.): am Regler-Rand richtet der WURF
+        const zu = ["tris", "draws"].filter(
+            (f) =>
+                Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)
+        );
         const n = `${kerne[pl.art] || "phyto"}:${pl.art}:${pl.r ? pl.r[0] : "(Rezept)"}`;
         if (zu.length)
             (bruch[n] = bruch[n] || []).push(
@@ -683,17 +627,19 @@ function ofenZeilen(ofen) {
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
 async function messenAlle() {
     const ofen = await imStamm((page) => ofenMessen(page, {}));
-    let m = null,
-        stufen = null,
-        wurf = null;
+    let stufen = null;
     await runWithWorker(PORT, async (h) => {
-        m = await messen(h, { ohneArten: Object.keys(ofen.arten) });
-        const st = await stufenMessen(h, { ohneArten: Object.keys(ofen.arten) });
-        stufen = st;
-        wurf = wurfAus(st, stammRegel());
+        stufen = await stufenMessen(h, { ohneArten: Object.keys(ofen.arten) });
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
-    return { zeilen: [...m.zeilen, ...ofenZeilen(ofen)], builds: m.builds, gusse, ofenArten: ofen.arten, wurf, stufen };
+    return {
+        zeilen: [...wirkenAus(stufen), ...ofenZeilen(ofen)],
+        builds: stufen.builds,
+        gusse,
+        ofenArten: ofen.arten,
+        wurf: wurfAus(stufen, stammRegel()),
+        stufen,
+    };
 }
 
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
@@ -755,12 +701,14 @@ async function selbsttest() {
         heil = null,
         brecher = null;
     await runWithWorker(PORT, async (h) => {
-        taeter = await messen(h, { nurArt: "vehicle", ohneOv: true });
-        heil = await messen(h, { nurArt: "vehicle" });
+        taeter = { zeilen: wirkenAus(await stufenMessen(h, { nurArt: "vehicle", nurErste: true, ohneOv: true })) };
+        heil = { zeilen: wirkenAus(await stufenMessen(h, { nurArt: "vehicle", nurErste: true })) };
         // (c) der Täter „ein Regler bricht den Bau" am echten Kanal: radstand min → der Worker wirft (0 Teile),
         // max → Text statt Zahl (NaN-Bau). Beide Bauten haben einen anderen Hash als die Basis — die Linse von vorher
         // zählte sie als „wirkt"; jetzt ist radstand BRICHT beim Namen und nie „wirkt".
-        brecher = await messen(h, { nurArt: "vehicle", bruch: "radstand" });
+        brecher = {
+            zeilen: wirkenAus(await stufenMessen(h, { nurArt: "vehicle", nurErste: true, bruch: "radstand" })),
+        };
     });
     const tTot = taeter.zeilen.filter(tot).map(name);
     const hTot = heil.zeilen.filter(tot).map(name);
@@ -869,7 +817,7 @@ async function selbsttest() {
     const brechend = m.zeilen.filter(bricht);
     const oa = Object.keys(m.ofenArten).sort();
     console.log(
-        `Regler-wirkt: ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, erste Stufe je Art) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
+        `Regler-wirkt: ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
     );
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
