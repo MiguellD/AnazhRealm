@@ -2235,6 +2235,14 @@ function luftTiefe(o) {
                 if (unter((a + t) / 2)) t = (a + t) / 2;
                 else a = (a + t) / 2;
             }
+            // DAS WASSER SPIEGELT DIE LUFT (himmel-ton): sein Bild hängt an β (der Spiegel-Pass dunstet den gespiegelten Strahl), L0
+            // ist dort nicht das Ziel ohne Luft — ein Fluss in 8 km Azimut 0 zog T/T_soll auf 0,5. Fluss, See und Meer im Fußabdruck
+            // des Pixels (± 2,4 % des Wegs) messen keine Koschmieder-Ferne.
+            const nass = (u) => {
+                const [x, z] = [gx + s.x * u, gz + s.z * u];
+                return r._hydroRiverAt(x, z) || r._hydrosphereLakeAt(x, z) || r._koerperWasser(x, z, gesetz(x, z)) > gesetz(x, z);
+            };
+            if ([-2, -1, 0, 1, 2].some((k) => nass(t * (1 + 0.012 * k)))) return null;
             const k = (s.y * t) / Hs;
             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
             const dr = z < 1 ? q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) : Infinity;
@@ -2257,7 +2265,6 @@ function luftTiefe(o) {
             const S = await schuss(1, k);
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [], px: [] }));
-            const inS = [[], [], []];
             const gez = [];
             const fern = {};
             for (let yy = 0; yy < H; yy += 2)
@@ -2268,8 +2275,7 @@ function luftTiefe(o) {
                     const l0 = roh(L0, i);
                     const sa = roh(S, i);
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
-                    gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
-                    sa.forEach((x, c) => inS[c].push(x));
+                    gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa), sa });
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
@@ -2282,11 +2288,13 @@ function luftTiefe(o) {
                     if (b.d === 8000) b.px.push(l0.concat(sa, bRef.map((x) => Math.exp(-x * t.g * t.dr))).map((x) => +x.toFixed(4)));
                 }
             const rand = med(Object.values(fern));
+            // der Rand der Ferne: Restkontrast und die In-Streuung, wie der Feld-Pass sie aus der EINEN Atmosphäre liest
+            const aussen = gez.filter((x) => x.d >= 0.9 * fern[x.x]);
             return {
                 blende: k,
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh), px: b.px })),
-                himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
-                rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
+                himmel: aussen.length >= R.mindest.n ? [0, 1, 2].map((c) => med(aussen.map((x) => x.sa[c]))) : null,
+                rand: { km: +(rand / 1000).toFixed(1), C: med(aussen.map((x) => x.C)) },
             };
         };
         const zeilen = [];
@@ -2438,14 +2446,13 @@ function luftTiefeUrteil(m, R) {
                 if (u === 0.5) gemessen[R.baenderM.indexOf(b.d)]++;
                 if (u === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
                 if (b.d !== 8000) continue;
-                // DER FARBTON rückt so weit zum Himmel wie unter der Luft der Referenz über DEMSELBEN Boden: je Pixel T_soll (im
-                // gezeichneten Abstand) · L0 + (1 − T_soll) · ihr Himmel in der Leuchtdichte der gemessenen In-Streuung. Ein festes ≤ 10° zum Himmel verlangte
-                // Boden-Albedo ≤ 0,06 — die Referenz-Luft rückt Grasland nur auf 22–27°, Fels auf 16–23° (himmel-ton).
-                const S0 = himmelReferenz(R, z.sonne, az, m.augeM);
+                // DER FARBTON rückt so weit zum Himmel wie unter der Luft der Referenz über DEMSELBEN Boden und Himmel: je Pixel
+                // T_soll (im gezeichneten Abstand) · L0 + (1 − T_soll) · S. Ein festes ≤ 10° verlangte Boden-Albedo ≤ 0,06 (spec
+                // `farbtonBeleg`); den Himmel urteilt HIMMEL — unter dem Himmel Hillaires trug FARBTON dessen Sättigung zweimal (Azimut 90:
+                // 33° Soll, mit dem Himmel der Welt 53°, gemessen 52,9°; himmel-ton).
                 const ref = (b.px || [])
                     .map((p) => {
-                        const S = S0.map((x) => (x * Y(p.slice(3, 6))) / Y(S0));
-                        const d = Math.abs(ton8(p.slice(6).map((t, c) => t * p[c] + (1 - t) * S[c])) - ton8(S));
+                        const d = Math.abs(ton8(p.slice(6).map((t, c) => t * p[c] + (1 - t) * p[c + 3])) - ton8(p.slice(3, 6)));
                         return Math.min(d, 360 - d);
                     })
                     .sort((x, y) => x - y)[(b.px || []).length >> 1];

@@ -30,5 +30,6 @@
         "ozonHalbKm": 15,
         "boden": [0.1, 0.1, 0.1]
     },
+    "farbtonBeleg": "Referenz-Luft 8 km, Sonne 74 Grad: Grasland 19-24 Grad zum Himmel, Fels 13-20, Grau 0-2",
     "weiss": { "m": 5000, "seite": 300 }
 }
