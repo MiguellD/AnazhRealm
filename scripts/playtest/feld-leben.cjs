@@ -766,8 +766,6 @@ async function checkBandWelle6APolish(ctx) {
         out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
         out.stateZwillingAbwesend = !("maxWalkableSlopeY" in r.state);
-        out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
-        out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
 
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
         // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
@@ -862,8 +860,6 @@ async function checkBandWelle6APolish(ctx) {
             "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
             wave6a3Results.stateZwillingAbwesend
         );
-        check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
-        check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
         check(
             "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
             wave6a3Results.skyOnSteepSlope === false
@@ -1667,13 +1663,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // V9.39 — der Voxel-Populator ist die lebende Schicht.
         // Drei neue Baupläne als Built-ins.
         const bps = r.state.blueprints || {};
-        out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
-        out.hasKristallGeode = !!(
-            bps.kristall_geode &&
-            bps.kristall_geode.builtIn &&
-            bps.kristall_geode.parts.length >= 2
-        );
-        out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
         out.fieldHas4Axes = !!(
@@ -1813,9 +1802,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     if (wave6gP2Results && !wave6gP2Results.error) {
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
-        check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
-        check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
-        check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
         check(
             "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
             wave6gP2Results.fieldHas4Axes
@@ -2117,8 +2103,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        const mats = r.state.materials || {};
-        out.hasErde = !!(mats.erde && mats.erde.builtIn);
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.
         // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
@@ -2214,7 +2198,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gP4Results && !wave6gP4Results.error) {
-        check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
         check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
         check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
         check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);

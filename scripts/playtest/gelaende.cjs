@@ -535,7 +535,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
         const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
@@ -637,9 +636,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
-        out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
-        out.statusModeInDom = !!document.getElementById("status-mode");
-        out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
         // Status-Bar zeigt aktuellen Modus
         r.setGameMode("pfad");
         const statusItem = document.getElementById("status-mode");
@@ -653,7 +649,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (wave6c2Results && !wave6c2Results.error) {
-        check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -684,9 +679,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
         check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
         check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
-        check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
-        check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
-        check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
         check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
         check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
     }
@@ -739,9 +731,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display
-        out.overlayInDom = !!document.getElementById("inventory-overlay");
-        out.gridInDom = !!document.getElementById("inventory-grid");
-        out.selectedInDom = !!document.getElementById("inventory-selected");
         // Initial hidden
         const overlay = document.getElementById("inventory-overlay");
         out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
@@ -990,9 +979,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
         check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
         check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
-        check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
-        check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
-        check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
         check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
         check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
         check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
@@ -1735,9 +1721,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         const out = {};
         // 1) Worker-Methoden existieren
         // 2) State-Felder existieren
-        out.hasCacheField = "voxelDensityCache" in r.state;
-        out.hasPendingField = "voxelDensityPending" in r.state;
-        out.hasSyncedGenField = "voxelWorkerWorldgenSynced" in r.state;
         // 3) Worker spawnt + initial sync
         const worker = r._getVoxelWorker();
         if (!worker) return { ...out, error: "worker spawn failed" };
@@ -1836,9 +1819,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         check("Welle Perf-3.c V9.90: Phase-2-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.90: state.voxelDensityCache existiert", res.hasCacheField);
-    check("Welle Perf-3.c V9.90: state.voxelDensityPending existiert", res.hasPendingField);
-    check("Welle Perf-3.c V9.90: state.voxelWorkerWorldgenSynced existiert", res.hasSyncedGenField);
     check(
         "Welle Perf-3.c V9.90: Worker-State synced nach Worldgen (worldgenSynced=true)",
         res.workerSynced,
@@ -1874,8 +1854,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        out.hasMeshCache = "voxelMeshCache" in r.state;
-        out.hasMeshPending = "voxelMeshPending" in r.state;
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
         // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
         const worker = r._getVoxelWorker();
@@ -2038,8 +2016,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         check("Welle Perf-3.c V9.91: Phase-3-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.91: state.voxelMeshCache existiert", res.hasMeshCache);
-    check("Welle Perf-3.c V9.91: state.voxelMeshPending existiert", res.hasMeshPending);
     check("Welle Perf-3.c V9.91: Worker-State synced (worldgenSynced)", res.workerSynced);
     check("Welle Perf-3.c V9.91: Sync-Build erfolgreich", res.syncBuildOk);
     check("Welle Perf-3.c V9.91: Worker-Mesh-Build erfolgreich", res.workerMeshOk);

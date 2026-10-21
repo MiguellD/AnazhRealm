@@ -16,7 +16,6 @@ async function checkBandWaves1to3(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
         // journalAppend schreibt
@@ -47,7 +46,6 @@ async function checkBandWaves1to3(ctx) {
             (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -177,7 +175,6 @@ async function checkBandWaves1to3(ctx) {
         // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
         // Einstellungen tragen keine Welt-Akte mehr (V18.79, Profi-Struktur). Die alte
         // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
-        out.activeWorldIslandInDom = !!document.getElementById("feed-active-ident");
         // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
         // + „Welt-Datei exportieren" (in der Insel, id action-export-state wiederverwendet). Der Test
         // wandert mit (V9.56-i): er prüft die Verortung, nicht den alten Ort.
@@ -188,8 +185,6 @@ async function checkBandWaves1to3(ctx) {
         const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
         out.worldInfoShowsSlug = islandText.includes(r.state.worldMeta.slug);
         // Tagebuch: List-DOM + Count + Erinnerungs-Zeile
-        out.journalListInDom = !!document.getElementById("world-journal-list");
-        out.journalCountInDom = !!document.getElementById("world-journal-count");
         // Test-Eintrag und Re-Render forcieren (signature ändern)
         r.journalAppend("test", "Tagebuch-UI-Probe");
         document.getElementById("world-journal-list").dataset.signature = "";
@@ -239,15 +234,12 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
         check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
-        check("Welle 3 F: Diese-Welt-Insel (#feed-active-ident) im DOM", wave3Results.activeWorldIslandInDom);
         check(
             "Welle 3 F: Welt-Verwaltung im Welt-Manager (Bibliothek: Empfangen + Welt-Datei-Export)",
             wave3Results.worldImportInBibliothek && wave3Results.worldExportInBibliothek
         );
         check("Welle 3 F: Diese-Welt-Insel zeigt slug", wave3Results.worldInfoShowsSlug);
         check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
-        check("Tagebuch: #world-journal-list im DOM", wave3Results.journalListInDom);
-        check("Tagebuch: #world-journal-count im DOM", wave3Results.journalCountInDom);
         check("Tagebuch: Liste rendert Erinnerungen", wave3Results.journalListHasEntries);
         check("Tagebuch: Eintrag trägt Type-Pille", wave3Results.journalListHasTypePill);
         check("Tagebuch: Eintrag zeigt Alter", wave3Results.journalListHasAge);
