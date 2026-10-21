@@ -20,7 +20,7 @@ und das Gedächtnis `memory/uebergabe-stand.md` + `memory/punkte-je-token.md`.
 | karte-licht | b92ebcdf | pausiert 40 % | Sonnen-Sicht richtungsblind geschnitten, aber tanne@0,27 Regression, Wurf-Wähler-Zwilling, portal-membran rot | worktrees/karte-licht/befund.md |
 | himmel-ton | 141105ba | pausiert | ATMO_BODEN Grau 0,1 ist ein echter Schnitt; die Linse wurde aufgeweicht (urteilt gegen den Welt-Himmel statt Hillaire) → Linse zurück auf externe Referenz, dann JE KANAL | worktrees/himmel-ton/befund.md |
 | b-abdruck | 78f6abe5 | geparkt (Grenze) | Gerät steht nach dem Buch (requestAdapter 0,8 s ab 0,6 s) → ≤ 0,3 s Weltbild | worktrees/b-abdruck/befund.md |
-| OMEN: bausatz-absage | (OMEN) | in Arbeit | 4 bauSatz-Render-Objekte warten auf abgesagte Pipeline, prüfen jeden Takt | koordination bericht/ des OMEN |
+| bausatz-absage (OMEN) | 7a97f1e7 (WIP) | in Arbeit | Befund korrigiert: der r184-Geometrie-Hörer bleibt an der ersten Geometrie, das Entsorgen löschte die Attribute des zeichnenden bauSatz/bodenSatz; Schnitt in `_renderObjektRegister` (setGeometry zieht den Hörer mit), Linse ATTRIBUTE GELÖSCHT 8 → 0, volle Prüfungen 9,1 → 1,2 je Frame; offen: Wände, takt-ABAB 2+2, [ci voll] | bericht/2110-bausatz-absage-uebergabe.md |
 
 ## OMEN (Remote-Control-Sitzung „Agent-Übersicht nach Abbruch“, GTX 1060)
 - Aufträge zuletzt: licht.K2 n = 3 (Kugel 5,01 / 0,1995 am Rand, ein gültiger Lauf), bausatz-absage, dann Zehen-Gelenk-Spike (leib.K2).
