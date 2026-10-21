@@ -1,0 +1,15 @@
+19:15:22 start kopf=1011d41d[0] FP=21a7e6bcc900bbdc 65 51
+19:16:22 eval ende {  "ergebnis": {   "ende": "ok",   "stand": {    "uhr": 0.5,    "wetter": "sunny",    "saison": "summer"   },   "puffer": [    1920,    1080   ],   "u8len": 8294400,   "kurve": 7,   "belicht": 0.9925,   "sonne": [    0,    0.962,    0.272   ],   "sonnenHoeheGrad": 74.2,   "spieler": [    -280.4,    
+19:16:27 ende status[0]
+19:18:17 start kopf=1011d41d[0] FP=21a7e6bcc900bbdc 65 51
+19:19:13 eval ende {  "ergebnis": {   "ende": "ok",   "stand": {    "uhr": 0.5,    "wetter": "sunny",    "saison": "summer"   },   "puffer": [    1920,    1080   ],   "u8len": 8294400,   "kurve": 7,   "belicht": 0.9925,   "csm": true,   "dlWirft": true,   "kaskaden": 2,   "sonne": [    0,    0.962,    0.272   ],   "so
+19:19:18 ende status[0]
+19:20:38 start kopf=1011d41d[0] FP=21a7e6bcc900bbdc 65 51
+19:21:33 eval ende {  "ergebnis": {   "ende": "ok",   "stand": {    "uhr": 0.5,    "wetter": "sunny",    "saison": "summer"   },   "puffer": [    1920,    1080   ],   "u8len": 8294400,   "kurve": 7,   "belicht": 0.9925,   "csm": true,   "dlWirft": true,   "kaskaden": 2,   "sonne": [    0,    0.962,    0.272   ],   "so
+19:21:38 ende status[0]
+19:22:48 start kopf=1011d41d[0] FP=21a7e6bcc900bbdc 65 51
+19:23:45 eval ende {  "ergebnis": {   "ende": "ok",   "stand": {    "uhr": 0.5,    "wetter": "sunny",    "saison": "summer"   },   "puffer": [    1920,    1080   ],   "u8len": 8294400,   "kurve": 7,   "belicht": 0.9925,   "csm": true,   "dlWirft": true,   "kaskaden": 2,   "sonne": [    0,    0.962,    0.272   ],   "so
+19:23:51 ende status[0]
+19:24:49 start kopf=1011d41d[0] FP=21a7e6bcc900bbdc 65 51
+19:25:47 eval ende {  "ergebnis": {   "ende": "ok",   "stand": {    "version": "18.546.47",    "uhr": 0.5,    "wetter": "sunny",    "saison": "summer"   },   "puffer": [    1920,    1080   ],   "u8len": 8294400,   "kurve": 7,   "belicht": 0.9925,   "csm": true,   "dlWirft": true,   "kaskaden": 2,   "sonne": [    0,   
+19:25:52 ende status[0]

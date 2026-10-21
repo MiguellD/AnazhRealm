@@ -1,0 +1,8 @@
+gepatcht sicht=third Δ=63
+-    const o = {};
++    const o = {}; r.setCameraMode("third");
+-        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
++        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0, sicht: s.cameraMode });
+-                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · ` +
++                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° ${o[ort].sicht} · ` +
+19:15:11 zurueck status[0]
