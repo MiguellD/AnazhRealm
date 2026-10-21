@@ -232,10 +232,10 @@ module.exports = {
       kriterien: [
         {
           name: "Die Taste bewegt den Leib im Bild: Eingabe-Latenz",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           messung: "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          beleg: "Bewegung ist nie am Render-Signal (Lehre 13), FIXED_DT 1/60 (`stamm/koerper-bewegung.js:2108`); die Latenz bis zum Pixel misst niemand.",
+          beleg: "GEMESSEN 21.10. an main 5951786f (anfahren: Sim bis zur Wanduhr, Bewegung vor Physik, kAcc 14 → 40), `werkbank latenz`, je 50 Proben: GTX (OMEN, bericht/2110-abab-anfahren.md) Gehen p95 Ego 64,5 → 37,1 ms, Third 69,6 → 42,6 ms, Wechsel 26,7/20,0 ms; Radeon warm Ego 42,3, Third 40,7, Wechsel 22,6/19,2 ms (frisch gebootet Ego 57,6 durch lange Aufgaben des Einschwingens) → Staffel 1; Staffel 2 (jedes Verb: springen, schwingen, einsteigen) ungemessen. Vorher: Bewegung ist nie am Render-Signal (Lehre 13), FIXED_DT 1/60 (`stamm/koerper-bewegung.js:2108`); die Latenz bis zum Pixel misst niemand.",
           schlupfloch: "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           aenderung: "Neu (V02)."
         },
@@ -259,10 +259,10 @@ module.exports = {
         },
         {
           name: "Die Kamera zu Fuß",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = Third nie im Fels oder in der Wand (0 Fels-Pixel im Nahbereich der Kamera), Ruck ≤ 0,02 m p95 beim Gehen, an einem Gerät · 2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte",
           messung: "Spielgang über Hang, Gasse und Haus in Third; Pixel-Probe auf Fels/Wand vor der Kamera, Ruck aus der Kamera-Bahn.",
-          beleg: "Kamera = EINE Kugel; der Kontakt-Löser trägt PM_ClipVelocity (`stamm/koerper-bewegung.js:238-325`); die Bild-Probe (Kamera im Fels) gibt es nicht.",
+          beleg: "GEMESSEN 21.10. an main 5951786f (kamera-fuss: der Kugel-Wurf hält vor der ersten Haut), gate:kamera-leib Teil gang (Stamm, Fels, Haus im echten Spiel-Takt, rückwärts heran + 360°-Orbit, Radeon): Kugel in der Wand 49 → 0 von 1096 Bildern, 0 Fels-/Rinde-Pixel im Nahbereich, Ruck p95 0,0077 m → Staffel 1; offen: Blick bei Arm 0, Tür-Flügel ohne Leib, Stamm durchsichtig statt Halt; Staffel 2 (Steilhang, Sprint, GTX) ungemessen. Vorher: Kamera = EINE Kugel; der Kontakt-Löser trägt PM_ClipVelocity (`stamm/koerper-bewegung.js:238-325`); die Bild-Probe (Kamera im Fels) gibt es nicht.",
           schlupfloch: "Eine weit hinausgeschobene Kamera vermeidet Fels und verliert den Leib: die Leib-Deckung im Bild hält in derselben Probe.",
           aenderung: "Aus Physik K2 umgezogen (V02)."
         },
