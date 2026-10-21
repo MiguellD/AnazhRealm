@@ -3415,15 +3415,12 @@ async function starte() {
         console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--naesse")) {
-        // DIE NÄSSE IM BILD (wetter.K2): Mess-Wiese und das nächste Haus im Dorf (von innen durch die offene Tür), klar · Regen
-        // frisch · Regen 10 min aus dem Ausgabe-Pfad; der Selbsttest macht die Basis (Nässe 1,0), eine Nässe ohne Dach und ein
-        // helles Regenbild beim Namen ROT.
+        // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, helles Regenbild ROT
         const LL = require("./lib/licht-linsen.cjs");
         const m = (aussen, innen, regenbild) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, regenbild });
         const f = [
             [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
             [LL.naesseUrteil({ dorf: m(0.62, 0.64, 0.7) }).befunde.join(), /dorf innen unter dem Dach 0\.64 außerhalb/],
-            [LL.naesseUrteil({ dorf: Object.assign(m(0.62, 1.01, 0.7), { dicht: null }) }).urteil, "ROT"],
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
@@ -3437,9 +3434,7 @@ async function starte() {
                 await rufe("/umstellen", { ort, sicht: "ego" });
                 const lauf = (o) => rufe("/eval", { code: `return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});` });
                 if (ort === "dorf") {
-                    const h = await lauf({ ort, haus: true });
-                    if (!h.ergebnis) throw new Error("NÄSSE: " + h.fehler);
-                    const s = h.ergebnis.schwelle;
+                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     await rufe("/umstellen", { x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });

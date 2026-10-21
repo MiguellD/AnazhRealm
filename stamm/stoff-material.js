@@ -73,6 +73,7 @@ class AnazhRealm_stoff_material {
             }
         }
 
+        mat.userData.poren = AnazhRealm.NAESSE.poren.grass; // der Halm trägt Wachs (die Nässe, `_naesseImStoff`)
         this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
@@ -557,6 +558,10 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
+            naesse: TSL.uniform(0),
+            dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () => TSL.uniform(new THREE.Vector4(0, 0, 1, 0))),
+            dachMass: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () => TSL.uniform(new THREE.Vector4(0, 0, -1e6, 0))),
             // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
             // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
             lichtGlut: Object.fromEntries(
@@ -1349,6 +1354,7 @@ class AnazhRealm_stoff_material {
         // Laub (pflanzenStoff) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts);
         // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
+        if (opts.pflanzenStoff && !opts.bark) mat.userData.poren = AnazhRealm.NAESSE.poren.foliage; // das Laub trägt Wachs
         this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
@@ -1417,6 +1423,7 @@ class AnazhRealm_stoff_material {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
+        this._naesseImStoff(mat, himmel);
         // EIN KNOTEN JE GRAPH UND DATUM: das Leuchten haengt an der Basis, der Himmels-Sicht und dem Licht-Datum des Stoffs
         // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool
         const ohne = this._leuchtOhne || (this._leuchtOhne = {});
@@ -1439,6 +1446,113 @@ class AnazhRealm_stoff_material {
         mat.emissiveNode = knoten[licht];
         mat.userData.lichtPool = true;
         return mat;
+    }
+
+    // DIE NÄSSE IM STOFF (wetter.K2) — an der Engstelle jedes beleuchteten Welt-Stoffs (`_leuchtStoff`: Boden, Fern-Ring, Fels,
+    // Werk, Studio- und Satz-Stoff, Gras, Wege): das Gesetz nasser Oberflächen (`_naesseGesetz`) mit dem Gewicht w = Nässe der
+    // Welt (`atmoUniforms.naesse`, EIN Schreiber `_naesseTakt`) × Himmels-Sicht (unter einer Decke des Dach-Pools 0, am Boden ×
+    // `aHimmel`) × Poren der Art (`NAESSE.poren`, Laub und Haut tragen Wachs bzw. Fett). Durchsichtiges (Glas, Rauch) bleibt;
+    // die Ausschnitt-Alpha bleibt in colorNode.a (Lehre 26). EIN KNOTEN JE GRAPH: dieselbe Farbe, Rauheit, Metall-Quelle,
+    // Himmels-Sicht und Poren-Zahl ergeben DENSELBEN Knoten — Stoffe einer Studio-Signatur behalten ihr Programm.
+    _naesseImStoff(mat, himmel) {
+        const ud = mat.userData || {};
+        const poren = ud.poren ?? AnazhRealm.NAESSE.poren[ud.foundryKind] ?? 1;
+        if (mat.transparent || !(poren > 0)) return;
+        const T = THREE.TSL;
+        const quellen = [mat.colorNode, mat.roughnessNode, mat.metalnessNode, himmel];
+        const schluessel = quellen.map((n) => (n ? n.id : "-")).join("|") + "|" + poren;
+        const karte = this._naesseKnoten || (this._naesseKnoten = new Map());
+        if (!karte.has(schluessel)) {
+            const farbe = mat.colorNode || T.vec4(T.materialColor, 1);
+            const w = this._ensureAtmoUniforms()
+                .naesse.mul(this._naesseHimmel(T))
+                .mul(himmel ? T.float(poren).mul(himmel) : T.float(poren));
+            const A = { k: (n) => T.float(n), mul: (a, b) => a.mul(b), sub: (a, b) => a.sub(b), mix: T.mix };
+            const n = AnazhRealm._naesseGesetz(
+                A,
+                farbe.rgb,
+                mat.roughnessNode || T.materialRoughness,
+                mat.metalnessNode || T.materialMetalness,
+                w
+            );
+            karte.set(schluessel, { farbe: T.vec4(n.albedo, farbe.a), rauh: n.rauh });
+        }
+        const k = karte.get(schluessel);
+        mat.colorNode = k.farbe;
+        mat.roughnessNode = k.rauh;
+    }
+
+    // DAS GESETZ NASSER OBERFLÄCHEN (Lagarde 2013, „Water drop 3b — Physically based wet surfaces"; Lekner & Dorf 1988): das
+    // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (dunkle Stoffe dunkeln
+    // stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
+    // im Stoff (`_naesseImStoff`), Zahlen in der Linse (`werkbank licht --naesse`: dicht) — EINE Formel.
+    static _naesseGesetz(A, albedo, rauh, metall, w) {
+        const N = AnazhRealm.NAESSE;
+        const p = A.mul(w, A.sub(A.k(1), metall));
+        return {
+            albedo: A.mix(albedo, A.mul(albedo, albedo), p),
+            rauh: A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p),
+        };
+    }
+
+    // DIE HIMMELS-SICHT DES REGENS (EIN Knoten je Seite): 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je
+    // Platz die Decke eines Hauses (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Fragment darunter und im Grundriss
+    // der Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
+    _naesseHimmel(T) {
+        if (this._naesseHimmelK) return this._naesseHimmelK;
+        const U = this._ensureAtmoUniforms();
+        const p = T.positionWorld;
+        let unter = T.float(0);
+        for (let k = 0; k < U.dachLage.length; k++) {
+            const L = U.dachLage[k];
+            const M = U.dachMass[k];
+            const d = p.xz.sub(L.xy);
+            const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
+            const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
+            unter = unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z)));
+        }
+        this._naesseHimmelK = T.float(1).sub(unter);
+        return this._naesseHimmelK;
+    }
+
+    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Häuser, die dem Auge am nächsten
+    // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges oder einem neuen Stand der Grundrisse. Die Decke
+    // eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens die Hälfte der größten trägt (die Decke über
+    // dem Erdgeschoss, über dem Obergeschoss, nie der Kamin) — gemerkt je Hülle. Ein leerer Platz hat die Kanten 0.
+    _dachTakt() {
+        const st = this.state;
+        const N = AnazhRealm.NAESSE;
+        const auge = st.camera && st.camera.position;
+        const stand = this._grundrissStand();
+        const w = this._dachWahl;
+        if (!auge || (w && w.stand === stand && Math.hypot(auge.x - w.x, auge.z - w.z) < N.dachSchrittM)) return;
+        this._dachWahl = { stand, x: auge.x, z: auge.z };
+        const decken = [];
+        for (const e of st.architectures || []) {
+            const hu = e._hausHuelle;
+            if (!hu || !e.position || Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
+            if (!e._dachDecke || e._dachDecke.hu !== hu) {
+                const b = (AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || []).filter((t) => t.art === "box");
+                const fl = (t) => t.h[0] * t.h[2];
+                const gross = Math.max(0, ...b.map(fl));
+                e._dachDecke = { hu, t: b.filter((t) => fl(t) >= gross / 2).sort((a, c) => c.c[1] + c.h[1] - a.c[1] - a.h[1])[0] };
+            }
+            const t = e._dachDecke.t;
+            if (!t) continue;
+            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            const [co, si] = [Math.cos(ry), Math.sin(ry)];
+            const x = e.position.x + (t.c[0] * co + t.c[2] * si) * k;
+            const z = e.position.z + (t.c[2] * co - t.c[0] * si) * k;
+            decken.push({ d: Math.hypot(x - auge.x, z - auge.z), x, z, co, si, ex: t.h[0] * k, ez: t.h[2] * k, y: e.position.y + (t.c[1] + t.h[1]) * k });
+        }
+        decken.sort((a, b) => a.d - b.d);
+        const U = this._ensureAtmoUniforms();
+        for (let i = 0; i < U.dachLage.length; i++) {
+            const d = decken[i];
+            U.dachLage[i].value.set(d ? d.x : 0, d ? d.z : 0, d ? d.co : 1, d ? d.si : 0);
+            U.dachMass[i].value.set(d ? d.ex : 0, d ? d.ez : 0, d ? d.y : -1e6, 0);
+        }
     }
 
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
@@ -2726,6 +2840,20 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
 AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+// DIE NÄSSE (wetter.K2, `_naesseTakt`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke (Wetter-Feld `rain` über
+// `regenAb`; Regen 0,6 nach 10 min 0,91), ohne Regen trocknet die Welt mit τ = `trocknenS` / max(Sonne, 0,2); voll nass geht die
+// Albedo zu ihrem Quadrat, die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs,
+// Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`.
+AnazhRealm.NAESSE = Object.freeze({
+    regenAb: 0.05,
+    benetzenS: 150,
+    trocknenS: 1500,
+    glatt: 0.5,
+    poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0 }),
+    dachPlaetze: 8,
+    dachUmkreisM: 64,
+    dachSchrittM: 4,
+});
 // Substanz-Antwort: microStrength = Oberflächen-Mikrostruktur, ao* = Kavitäts-AO. Default-Quelle in
 // `_ensureAtmoUniforms` (SUBSTANCE_RESPONSE-Antennen lesen daraus); die Luftperspektive ist `LUFT`.
 AnazhRealm.AERIAL = Object.freeze({

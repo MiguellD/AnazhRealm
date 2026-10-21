@@ -3034,10 +3034,9 @@ class AnazhRealm_studio_bruecke {
             for (const p of _plaetze) mat[p] = _graph[p];
         }
         mat.userData.foundrySignatur = _sig;
+        mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
         this._leuchtStoff(mat, mp);
-        mat.userData = mat.userData || {};
-        mat.userData.foundryKind = kind;
         mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen
         // Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).

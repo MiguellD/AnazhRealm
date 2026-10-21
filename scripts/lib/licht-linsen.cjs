@@ -2395,11 +2395,9 @@ function kartenEichung(kurve) {
     return 2 * lo;
 }
 
-// DIE NÄSSE IM BILD (wetter.K2, Grok R11 WE-10): dieselbe Pose, dieselbe Bühne — klar (Nässe 0), Regen frisch (das Licht des
-// Regens, Nässe 0) und Regen nach 10 min (`_naesseTakt(600)`, der EINE Zustand). Je Bildpunkt das Verhältnis Regen 10 min /
-// Regen frisch: es trennt die Nässe vom Licht. Im Dorf zielt der Strahl jedes Rasterpunkts gegen die feste Hülle des nächsten
-// Hauses und den gezeichneten Boden (`_bodenSichtAt`): trifft er im Raum unter der Decke, ist er „innen", sonst „aussen".
-// `haus: true` gibt nur die Schwelle vor der Tür zurück (der Spieler öffnet sie, die Werkbank stellt ihn dorthin).
+// DIE NÄSSE IM BILD (wetter.K2): eine Pose unter der Bühne klar · Regen frisch · Regen 10 min (`naesse: 600`); je Rasterpunkt
+// nass/frisch trennt die Nässe vom Licht. Im Dorf trifft der Strahl Hülle, Tür-Flügel oder Boden: unter der Decke „innen".
+// `haus`: nur die Schwelle, an die der Spieler tritt (die Tür öffnet).
 function naesseSicht(o) {
     return (async () => {
         const r = window.anazhRealm;
@@ -2418,8 +2416,6 @@ function naesseSicht(o) {
         const decke = boxen.filter((t) => fl(t) >= 0.5 * Math.max(...boxen.map(fl))).sort((a, b) => b.c[1] + b.h[1] - a.c[1] - a.h[1])[0];
         const t = e && e.tuer;
         if (o.haus) return { schwelle: welt(t.x + 1.3, 0, t.z - 0.8).toArray() };
-        // die offenen Flügel der Tür (je Flügel Angel hx/zf und Winkel `offen`, der Satz der Gruppe): ihr Kasten zu beiden Seiten
-        // der Tür-Ebene — ein Strahl, der einen Flügel trifft, zählt nicht (der Flügel steht unter dem Dach)
         for (const f of ((e && e.instSlots) || []).map((s) => s.tuer || (st.archInstanceGroups.get(s.key) || {}).tuer).filter((f) => f && Math.abs(f.zf - t.z) < 0.5)) {
             const L = Math.abs(t.x - f.hx);
             const [bx, bz] = [L * Math.cos(f.offen) * Math.sign(t.x - f.hx), Math.abs(L * Math.sin(f.offen))];
@@ -2433,14 +2429,12 @@ function naesseSicht(o) {
         }
         const W = 320;
         const H = 180;
-        const tropf = (sek) => typeof r._naesseTakt === "function" && r._naesseTakt(sek);
-        const schuss = async (wetter, sek) => {
-            window.__buehne({ wetter });
-            tropf(sek);
+        const schuss = async (wetter, naesse) => {
+            window.__buehne({ wetter, naesse });
             return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
         };
         const klar = await schuss("sunny", 1e6);
-        await schuss("rainy", 0); // der Himmel des Regens schwingt ein (der erste Schuss nach dem Wechsel liegt 19–33 % dunkler)
+        await schuss("rainy", 0); // der Regen-Himmel schwingt ein (sein erster Schuss 19–33 % dunkler)
         const frisch = await schuss("rainy", 0);
         const nass = await schuss("rainy", 600);
         const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
@@ -2486,7 +2480,7 @@ function naesseSicht(o) {
         };
         const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
-        const dicht = typeof r.constructor._naesseStoff === "function" ? r.constructor._naesseStoff(A, 0.4, 0.3, 1, 1) : null;
+        const dicht = typeof r.constructor._naesseGesetz === "function" ? r.constructor._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
         return {
             ort: o.ort,
             haus: e && e.type,
@@ -2504,8 +2498,7 @@ function naesseSicht(o) {
     })();
 }
 
-// DAS URTEIL DER NÄSSE (wetter.K2): porös draußen 0,5–0,8 × trocken, innen unter dem Dach ±5 %, dichte Stoffe (Metall, das
-// Gesetz `_naesseStoff`) unverändert, das Regenbild nie heller als die Sonne; je Ort ≥ 100 Rasterpunkte je gemessener Klasse.
+// DAS URTEIL: draußen 0,5–0,8, innen ±5 %, Metall (`_naesseGesetz`) ±5 %, Regenbild ≤ Sonne, je Klasse ≥ 100 Punkte.
 function naesseUrteil(welt) {
     const befunde = [];
     const band = (n, wert, lo, hi) => (wert == null || wert < lo || wert > hi) && befunde.push(`${n} ${wert} außerhalb [${lo}, ${hi}]`);

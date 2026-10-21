@@ -898,6 +898,7 @@ class AnazhRealm_bild_himmel {
     }
     _tickRain() {
         const st = this.state;
+        this._naesseTakt(); // der Regen benetzt die Welt, die Sonne trocknet sie (wetter.K2)
         const wf = this._weatherFieldFor(st.weather);
         if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
@@ -2764,6 +2765,28 @@ class AnazhRealm_bild_himmel {
     _weatherIsWet(w) {
         const word = typeof w === "string" ? w : this.state.weather;
         return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
+    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt, also
+    // dieselbe Nässe nach 600 Takten wie nach einem Schritt von 600 s (die Bühne der Linse `werkbank licht --naesse`). Ohne `dt`
+    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
+    // `atmoUniforms.naesse`; den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
+    _naesseTakt(dt) {
+        const st = this.state;
+        const N = AnazhRealm.NAESSE;
+        if (dt == null) {
+            dt = Number.isFinite(this._naesseUhr) ? st.spielZeit - this._naesseUhr : 0;
+            this._naesseUhr = st.spielZeit;
+        }
+        const wf = this._weatherFieldFor(st.weather);
+        const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
+        const ziel = wf.rain > N.regenAb ? 1 : 0;
+        const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
+        st.naesse = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        this._ensureAtmoUniforms().naesse.value = st.naesse;
+        this._dachTakt();
+        return st.naesse;
     }
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
