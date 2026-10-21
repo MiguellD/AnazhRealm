@@ -141,14 +141,7 @@ class AnazhRealm_gelaende_boden {
         if (!(w > 0)) return null;
         if (!E.surfMapZiel) {
             const g = E.mesh.geometry;
-            const k = this._bodenKarteAusMesh(
-                g.attributes.aMorphTarget.array,
-                g.index ? g.index.array : null,
-                g.attributes.color ? g.attributes.color.array : null,
-                ax,
-                az,
-                E.lod || 0
-            );
+            const k = this._bodenKarteNaht(g, ax, az, E.lod || 0, g.attributes.aMorphTarget.array, "ziel");
             E.surfMapZiel = k && k.hoehe;
             if (!E.surfMapZiel) return null;
         }
@@ -1583,7 +1576,10 @@ class AnazhRealm_gelaende_boden {
     // Gesetzes-Höhe steckte so halb im sichtbaren Boden. Wer etwas AUF den sichtbaren Boden stellt (Gras,
     // Streu, Deko), liest diese Karte; Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz
     // (`_voxelSurfaceY`, deterministisch für den Lockstep — die Karte hängt am Streaming-Zustand).
-    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod) {
+    // DER TEIL (gehen-takt, `_bodenKarteNaht`): `teil.ohne` (je Dreieck 1) lässt die Rand-Dreiecke aus und merkt je Punkt den
+    // Sieger — das Innere als Basis; `teil.nur` (Dreiecks-Offsets) rastert nur sie über `teil.basis`. Gleiche Höhe gewinnt das
+    // frühere Dreieck des Netzes (sein Grün), wie im Ganzen: Basis + Teil ist byte-gleich mit der ganzen Karte.
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, teil = null) {
         if (!pos || !idx || idx.length < 3) return null;
         const cfg = this._voxelChunkConfig(lod || 0);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
@@ -1591,10 +1587,16 @@ class AnazhRealm_gelaende_boden {
         const M = T * (cfg.dim + 3) + 1;
         const ox = cx * cfg.span - cfg.step;
         const oz = cz * cfg.span - cfg.step;
-        const map = new Float32Array(M * M).fill(NaN);
-        const gruen = new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        const B = teil && teil.basis;
+        const nur = teil && teil.nur;
+        const ohne = teil && teil.ohne;
+        const map = B ? new Float32Array(B.hoehe) : new Float32Array(M * M).fill(NaN);
+        const gruen = B ? new Uint8Array(B.gruen) : new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        const sieger = !teil ? null : B ? new Int32Array(B.sieger) : new Int32Array(M * M);
         const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
-        for (let t = 0; t + 2 < idx.length; t += 3) {
+        for (let q = 0, nT = nur ? nur.length : Math.floor(idx.length / 3); q < nT; q++) {
+            if (ohne && ohne[q]) continue;
+            const t = nur ? nur[q] : q * 3;
             const a = idx[t] * 3;
             const b = idx[t + 1] * 3;
             const c = idx[t + 2] * 3;
@@ -1632,25 +1634,23 @@ class AnazhRealm_gelaende_boden {
                     if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
                     const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
                     const m = k * M + i;
-                    if (map[m] >= y) continue;
+                    if (map[m] >= y && !(sieger && map[m] === y && t < sieger[m])) continue;
                     map[m] = y;
+                    if (sieger) sieger[m] = t;
                     // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
                     // `_terrainGeologyAlbedo`: smoothstep(0, gruenSchwelle, g − (r+b)/2)) aus der Vertex-Farbe.
                     if (col) {
                         let g = 0;
-                        for (const [w, o] of [
-                            [w1, a],
-                            [w2, b],
-                            [w3, c],
-                        ])
-                            g += w * (col[o + 1] - 0.5 * (col[o] + col[o + 2]));
+                        g += w1 * (col[a + 1] - 0.5 * (col[a] + col[a + 2]));
+                        g += w2 * (col[b + 1] - 0.5 * (col[b] + col[b + 2]));
+                        g += w3 * (col[c + 1] - 0.5 * (col[c] + col[c + 2]));
                         const t2 = Math.max(0, Math.min(1, g / gs));
                         gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
                 }
             }
         }
-        return { hoehe: map, gruen };
+        return { hoehe: map, gruen, sieger };
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
