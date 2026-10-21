@@ -1316,6 +1316,8 @@ class AnazhRealm_siedlung_bauten {
         if (!bg) {
             bg = new THREE.BundleGroup();
             bg.name = "regionBundle:" + regionKey;
+            // STATISCH (E-Bauart): das Bündel rückt nie — es fällt aus dem Matrix-Gang und dem Lage-Vergleich der Diät
+            bg.matrixAutoUpdate = false;
             bg.userData.regionKey = regionKey;
             // Analytische Region-Kugel für den Frame-Cull (ersetzt das im Replay eingefrorene three-Culling).
             // Keys: "x,z" · Super-Region "s:x,z". Über-Inklusion ist sicher (nur GPU-Preis), Unter-Inklusion
@@ -1637,6 +1639,7 @@ class AnazhRealm_siedlung_bauten {
         const spec = s.spec;
         const mesh = new THREE.Mesh(s.geom, spec.mat);
         mesh.name = spec.name;
+        mesh.matrixAutoUpdate = false; // STATISCH (E-Bauart): die Lage des Satzes liegt in seinen Vertices
         mesh.frustumCulled = false;
         mesh.castShadow = spec.schatten;
         mesh.receiveShadow = spec.empfang;

@@ -9,7 +9,7 @@
 //   (e) STAND — je Pfad vier Frames ohne Änderung: kein Voll-Refresh (auch nicht für einen Ausschnitt je Pass, K71), kein
 //       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
 //       Bürger einmal auf, der Frame danach nicht.
-//   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: nie-Refresh < 0,98.
+//   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: gemuteter Melder < 0,98.
 //   (g) VERSCHACHTELT — nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät wie der
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
@@ -19,6 +19,7 @@
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
@@ -89,10 +90,12 @@ function urteil(z) {
         );
     for (const pfad of ["direkt", "replay"]) {
         const r = s[pfad] || {};
-        if (!(r.pruef > 0)) v.push(`STAND ${pfad}: keine Diät-Prüfung gezählt — die Probe ist blind`);
-        if (r.voll !== 0)
+        const zl = r.zahl || {};
+        // die Ruhe urteilt die Diät-Linse
+        for (const u of diaetUrteil({ modus: "ruhe", frames: 4, zahl: zl, ohneMeldung: r.ohneMeldung })) v.push(`STAND ${pfad}: ${u}`);
+        if ((zl.voll || 0) !== 0)
             v.push(
-                `STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0: ${namen(r.vollWer)}) — ein Refresh je Frame ohne Änderung`
+                `STAND ${pfad}: ${zl.voll} Voll-Refreshs je Render ohne Änderung (Soll 0: ${namen(r.vollWer)}) — ein Refresh je Frame ohne Änderung`
             );
         const e1 = r.einmal || {};
         if (!(e1.erst > 0)) v.push(`EINMAL ${pfad}: die Attribut-Änderung der Kiste frischt nichts auf — die Probe ist blind`);
@@ -100,16 +103,12 @@ function urteil(z) {
             v.push(
                 `EINMAL ${pfad}: der Frame nach einer Attribut-Änderung frischt ${e1.danach}× ein zweites Mal auf (Soll 0: ${namen(e1.wer)}) — ein Refresh ohne Änderung, die Geometrie zweimal geprüft`
             );
-        if (r.wiederholt !== 0)
-            v.push(
-                `STAND ${pfad}: ${r.wiederholt} wiederholte Gänge je Render (${JSON.stringify(r.wer || {})}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL`
-            );
-        if (r.uploads !== 0) v.push(`STAND ${pfad}: ${r.uploads} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
+        if ((zl.uploadGeteilt || 0) !== 0) v.push(`STAND ${pfad}: ${zl.uploadGeteilt} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
         const a = (s.aenderung || {})[pfad] || {};
         if (!(a.diaet >= BILD_SOLL))
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
-            v.push(`ÄNDERUNG ${pfad}: eine Diät, die nie refresht, zeichnet ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+            v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
         const n = (s.verschachtelt || {})[pfad] || {};
         if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
@@ -125,7 +124,7 @@ function urteil(z) {
 }
 
 function selbsttest() {
-    const ruhig = { pruef: 13, voll: 0, vollWer: {}, uploads: 0, wiederholt: 0, wer: {}, einmal: { erst: 2, danach: 0, wer: {} } };
+    const ruhig = { zahl: { pruef: 13, pruefVoll: 2 }, vollWer: {}, ohneMeldung: [], einmal: { erst: 2, danach: 0, wer: {} } };
     const gruen = {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
@@ -159,10 +158,10 @@ function selbsttest() {
         { name: "Stapel-Probe blind", z: mit("bild", { ohneStapel: 1 }), muss: /die Stapel-Probe ist blind/ },
         { name: "Override-Probe blind", z: mit("bild", { schattenBundle: 1 }), muss: /die Override-Probe ist blind/ },
         { name: "Bühne blind", z: mit("bild", { xGegenY: 0.99 }), muss: /die Bühne ist blind/ },
-        { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
+        { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt.zahl", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
         {
             name: "Ausschnitt je Pass frischt auf (K71)",
-            z: mit("stand.replay", { voll: 2, vollWer: { SATZ: 2 } }),
+            z: mit("stand.replay", { zahl: { pruef: 13, voll: 2 }, vollWer: { SATZ: 2 } }),
             muss: /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/,
         },
         {
@@ -171,8 +170,9 @@ function selbsttest() {
             muss: /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/,
         },
         { name: "Einmal-Probe blind", z: mit("stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }), muss: /EINMAL replay: .* die Probe ist blind/ },
-        { name: "Gang je Programm (Replay)", z: mit("stand.replay", { wiederholt: 31, wer: { k: 28, g: 3 } }), muss: /STAND replay: 31 wiederholte Gänge/ },
-        { name: "Upload ohne Änderung", z: mit("stand.direkt", { uploads: 1 }), muss: /1 Uploads geteilter Gruppen/ },
+        { name: "Gang je Programm (Replay)", z: mit("stand.replay.zahl", { wiederholtKnoten: 28, wiederholtGruppe: 3 }), muss: /STAND replay: RUHE: 31 wiederholte Gänge/ },
+        { name: "Upload ohne Änderung", z: mit("stand.direkt.zahl", { uploadGeteilt: 1 }), muss: /1 Uploads geteilter Gruppen/ },
+        { name: "Prüfung ohne Meldung", z: mit("stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }), muss: /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/ },
         { name: "vergessener Refresh", z: mit("stand.aenderung.replay", { diaet: 0.9 }), muss: /ÄNDERUNG replay: .* ein vergessener Refresh/ },
         { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
@@ -186,7 +186,7 @@ function selbsttest() {
         { name: "Welt ohne Render-Objekt", z: mit("schluessel", { geprueft: 0 }), muss: /die Welt zeichnete kein Render-Objekt/ },
         { name: "alphaTest-0,5-Werfer verliert discard", z: mit("wurf.werfer.1", { wurf: false }), muss: /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/ },
         { name: "Farb-Graph im Wurf", z: mit("wurf.werfer.0", { farbe: true }), muss: /WURF: wurf:voll — ohne Ausschnitt/ },
-        { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
+        { name: "Stand blind", z: mit("stand.direkt.zahl", { pruef: 0 }), muss: /STAND direkt: DIÄT: keine Diät-Prüfung/ },
         {
             name: "Stempel überlebt den verschachtelten Render",
             z: mit("stand.verschachtelt.replay", { diaet: 0.1099 }),
@@ -277,6 +277,7 @@ function buehne() {
         szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 0.35));
         const gruppe = new T.BundleGroup();
         gruppe.name = "kamera-treue:BUEHNE";
+        gruppe.matrixAutoUpdate = false;
         szene.add(gruppe);
         const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
         const boden = new T.Mesh(
@@ -330,6 +331,9 @@ function buehne() {
             const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
             kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
+            // die erste Kiste ist STATISCH (rückt über updateMatrix)
+            kiste.matrixAutoUpdate = i > 0;
+            kiste.updateMatrix();
             kiste.castShadow = true;
             kiste.receiveShadow = true;
             kiste.frustumCulled = false;
@@ -471,90 +475,33 @@ function buehne() {
             rend._renderScene = zaehlUm(nurStapel);
             const bSchatten = await replay(fremderStoff);
             rend._renderScene = zaehlUm(spielSzene);
-            // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt.
+            // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt — der Zähler der Diät-Linse.
             const A = r.constructor;
-            const diaetRoh = A._diaetRefresh,
-                schreibRoh = A._diaetGeteiltSchreiben;
-            const nfP = Object.getPrototypeOf(nf);
-            const buRoh = rend._bindings._update;
-            const be = rend.backend;
-            const ubEigen = Object.prototype.hasOwnProperty.call(be, "updateBinding");
-            const ubRoh = be.updateBinding;
-            let messen = false,
-                imSchreib = false,
-                sammle = null;
-            const zs = { pruef: 0, voll: 0, besuche: new Map(), uploads: 0, wer: {} };
-            const besuch = (art, id) => {
-                const k = nf.renderId + ":" + rend.info.calls + ":" + art + id;
-                zs.besuche.set(k, (zs.besuche.get(k) || 0) + 1);
-            };
-            A._diaetRefresh = function (obs, ro, frame, altNR) {
-                const v = diaetRoh(obs, ro, frame, altNR);
-                if (messen) {
-                    zs.pruef++;
-                    if (v) {
-                        zs.voll++;
-                        const nm = (ro.object && ro.object.name) || (ro.object && ro.object.type) || "?";
-                        zs.wer[nm] = (zs.wer[nm] || 0) + 1;
-                    }
-                }
-                // (d) TEILEN: die geteilten Gruppen je Karten-Programm im Hauptbild
-                if (sammle && ro.material && ro.material.isShadowPassMaterial !== true && karten.includes(ro.object)) {
-                    const ids = [];
-                    for (const g of ro.getBindings()) if (g.bindings[0] && g.bindings[0].groupNode && g.bindings[0].groupNode.shared === true) ids.push(g.id);
-                    sammle.set(ro.getNodeBuilderState(), ids);
-                }
-                return v;
-            };
-            A._diaetGeteiltSchreiben = function (rr, ro, rid) {
-                imSchreib = true;
+            const schreibRoh = A._diaetGeteiltSchreiben;
+            const Z = window.__diaetZaehler();
+            const gezaehlt = async (fn) => {
+                const z = Z.an();
                 try {
-                    return schreibRoh(rr, ro, rid);
+                    await fn();
                 } finally {
-                    imSchreib = false;
+                    Z.aus();
                 }
-            };
-            nf.updateNode = function (n) {
-                if (messen && imSchreib) besuch("k", n.id);
-                return nfP.updateNode.call(this, n);
-            };
-            nf.updateBeforeNode = function (n) {
-                if (messen && imSchreib) besuch("v", n.id);
-                return nfP.updateBeforeNode.call(this, n);
-            };
-            rend._bindings._update = function (g, alle) {
-                if (messen && imSchreib) besuch("g", g.id);
-                return buRoh.call(this, g, alle);
-            };
-            be.updateBinding = function (b) {
-                if (messen && b && b.groupNode && b.groupNode.shared === true) zs.uploads++;
-                return ubRoh.call(this, b);
-            };
-            // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) ist nie der Gang; (g) zählt ihn.
-            const szeneMitGang = rend._renderScene;
-            let tiefe = 0,
-                verschachtelteRenders = 0;
-            rend._renderScene = function (sc, c, f) {
-                const alt = imSchreib;
-                imSchreib = false;
-                if (tiefe > 0) verschachtelteRenders++;
-                tiefe++;
-                try {
-                    return szeneMitGang.call(this, sc, c, f);
-                } finally {
-                    tiefe--;
-                    imSchreib = alt;
-                }
+                return z;
             };
             const stand = {};
             try {
                 // (d) TEILEN: ein Hauptbild (direkter Pfad) sammelt die geteilten Gruppen der acht Karten-Programme.
                 gruppe.isBundleGroup = false;
                 blick(1);
-                sammle = new Map();
-                await schuss();
+                const sammle = new Map();
+                const pruefRoh = A._diaetRefresh;
+                A._diaetRefresh = function (obs, ro, frame, altNR) {
+                    if (!ro.material.isShadowPassMaterial && karten.includes(ro.object))
+                        sammle.set(ro.getNodeBuilderState(), ro.getBindings().filter((g) => g.bindings[0]?.groupNode?.shared === true).map((g) => g.id));
+                    return pruefRoh(obs, ro, frame, altNR);
+                };
+                await schuss().finally(() => (A._diaetRefresh = pruefRoh));
                 const jeProgramm = [...sammle.values()];
-                sammle = null;
                 const alle = new Set();
                 for (const ids of jeProgramm) for (const id of ids) alle.add(id);
                 stand.teilen = { programme: jeProgramm.length, gruppenJeProgramm: jeProgramm.length ? jeProgramm[0].length : 0, gruppen: alle.size };
@@ -564,49 +511,32 @@ function buehne() {
                     gruppe.needsUpdate = true;
                     await schuss();
                     await schuss();
-                    Object.assign(zs, { pruef: 0, voll: 0, uploads: 0, wer: {} });
-                    zs.besuche.clear();
-                    messen = true;
-                    for (let i = 0; i < 4; i++) await schuss();
-                    messen = false;
-                    let wiederholt = 0;
-                    const wer = {};
-                    for (const [k, n] of zs.besuche)
-                        if (n > 1) {
-                            wiederholt += n - 1;
-                            const art = k.split(":")[2][0];
-                            wer[art] = (wer[art] || 0) + n - 1;
-                        }
-                    for (const k in wer) wer[k] /= 4;
-                    const vollWer = {};
-                    for (const k in zs.wer) vollWer[k] = zs.wer[k] / 4;
-                    const still = { pruef: zs.pruef / 4, voll: zs.voll / 4, vollWer, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
-                    // EINMAL JE ÄNDERUNG (K71): ein Attribut hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
+                    const z = await gezaehlt(async () => {
+                        for (let i = 0; i < 4; i++) await schuss();
+                    });
+                    const still = { zahl: {}, vollWer: {}, ohneMeldung: Object.keys(z.ohneM) };
+                    for (const k in z.n) still.zahl[k] = z.n[k] / 4;
+                    for (const k in z.grund) still.vollWer[k] = z.grund[k] / 4;
+                    // EINMAL JE ÄNDERUNG (K71): ein Attribut, das jeder Pass liest, hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
                     kisten[2].name = "KISTE";
-                    kisten[2].geometry.attributes.uv.needsUpdate = true;
-                    Object.assign(zs, { voll: 0, wer: {} });
-                    messen = true;
-                    await schuss();
-                    const erst = zs.voll;
-                    Object.assign(zs, { voll: 0, wer: {} });
-                    await schuss();
-                    messen = false;
-                    still.einmal = { erst, danach: zs.voll, wer: Object.assign({}, zs.wer) };
+                    kisten[2].geometry.attributes.position.needsUpdate = true;
+                    const erst = await gezaehlt(schuss);
+                    const danach = await gezaehlt(schuss);
+                    still.einmal = { erst: erst.n.voll || 0, danach: danach.n.voll || 0, wer: danach.grund };
                     return still;
                 };
                 stand.direkt = await ruhe(false);
                 stand.replay = await ruhe(true);
                 // (f) ÄNDERUNG IM STAND: eine Kiste rückt, ein Blatt dreht — das Bild der Diät gleicht dem Bild, in dem jedes
-                // Objekt voll refresht (die Wahrheit ohne Diät); eine Täter-Diät, die nie refresht, weicht ab (Lauf-Kontrolle).
+                // Objekt voll refresht (die Wahrheit ohne Diät); mit gemutetem Melder weicht sie ab (Lauf-Kontrolle).
                 const immer = () => true;
-                const nie = (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : altNR.call(obs, ro, frame));
                 const m4 = new T.Matrix4();
                 let schritt = 0;
                 const aendere = () => {
                     schritt++;
                     kisten[0].position.x += 1.5;
-                    kisten[0].updateMatrixWorld(true);
-                    m4.makeRotationX(-Math.PI / 2 + 0.3 * schritt).setPosition(0, 3.5, -4);
+                    kisten[0].updateMatrix();
+                    m4.makeRotationX(-Math.PI / 2 + 0.6 * schritt).setPosition(0, 3.5, -4);
                     laub.setMatrixAt(1, m4);
                     laub.instanceMatrix.needsUpdate = true;
                 };
@@ -628,8 +558,11 @@ function buehne() {
                     aendere();
                     const diaetBild = await mitDiaet(null);
                     const wahr = await mitDiaet(immer);
+                    // der Täter: der Melder schweigt
+                    const regt = A._regt;
+                    A._regt = () => 0;
                     aendere();
-                    const taeterBild = await mitDiaet(nie);
+                    const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
                     const wahr2 = await mitDiaet(immer);
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
@@ -693,9 +626,8 @@ function buehne() {
                     gruppe2.isBundleGroup = bundle;
                     gruppe2.needsUpdate = true;
                     for (let i = 0; i < 3; i++) await schuss(szene2);
-                    const r0 = verschachtelteRenders;
-                    const diaetBild = await mit2(null, null);
-                    const renders = verschachtelteRenders - r0;
+                    let diaetBild = null;
+                    const renders = (await gezaehlt(async () => (diaetBild = await mit2(null, null)))).n.schattenRenders || 0;
                     const wahr = await mit2(immer, null);
                     const taeterBild = await mit2(null, taeterGang);
                     const wahr2 = await mit2(immer, null);
@@ -703,14 +635,7 @@ function buehne() {
                 }
                 stand.verschachtelt = verschachtelt;
             } finally {
-                A._diaetRefresh = diaetRoh;
-                A._diaetGeteiltSchreiben = schreibRoh;
-                delete nf.updateNode;
-                delete nf.updateBeforeNode;
-                rend._bindings._update = buRoh;
-                rend._renderScene = szeneMitGang;
-                if (ubEigen) be.updateBinding = ubRoh;
-                else delete be.updateBinding;
+                Z.zurueck();
             }
             // (h) DIE SENKE (1410-1): zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei)
             // und wie r184s InstancedMesh derselben Matrizen; ohne die Senke weicht das Bild ab.
@@ -867,6 +792,7 @@ function buehne() {
         });
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
         log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
+        await page.evaluate(DIAET_INSTALL);
         out = await page.evaluate(buehne);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
@@ -896,7 +822,7 @@ function buehne() {
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
-            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
 })();
