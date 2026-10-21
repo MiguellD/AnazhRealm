@@ -3,7 +3,7 @@
   "kopf": "d3a626ee",
   "version": "V18.546.40",
   "skala": "2.0",
-  "summe": 25,
+  "summe": 26,
   "max": 330,
   "gruppen": [
     {
@@ -66,7 +66,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 4,
+      "summe": 5,
       "max": 70,
       "bereiche": [
         "tore",
@@ -3072,7 +3072,7 @@
       "key": "fahrzeug",
       "titel": "Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung",
       "gruppe": "wege",
-      "punkte": 3,
+      "punkte": 4,
       "pfad": "v1 (benutzen: fahren)",
       "dateien": "`vehicle-core.js` (fahrSchritt, chaseKamera, LACK_GESETZ) · `stamm/koerper-fahrt.js` · `stamm/koerper-bewegung.js` (FIXED_DT, `_loopCamera`) · `worlds/garage` · `scripts/diag-fahr-leben.cjs`",
       "aaaa": "Ein Wagen aus dem Gesetz (vehicle-core) fährt auf dem Wegenetz durch Wiese, Wald und Dorf, ohne steckenzubleiben. Die Reifen haben eine Kurve mit Spitze bei 6–10° und ≥ 15 % Abfall und greifen auf Weg, Gras, Schotter, Nässe und Schnee anders (Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×), aus derselben Stoff-Zeile, die den Boden malt; der Kern rechnet mit ≥ 240 Hz. Die Rig-Kamera aus dem Kern atmet das Tempo (FOV +≥ 8°, Arm +≥ 15 %, Azimut auf dem Fahrtvektor), jeder Übergang — Ego↔Third, Auf- und Absteigen in Fahrt, Hang — bleibt ohne Sprung. Klang, Federung, Spur, Staub, Spritzwasser und Rumble lesen denselben Fahr-Zustand. Lücken und Tempo-Decke richtet Streaming, das Band Profiband. **Wo wir die Besten schlagen:** Forza und BeamNG tunen jeden Wagen und jede Strecke einzeln; bei uns folgen Kamera und Grip aus den Maßen und dem Boden-Gesetz — jedes prozedurale Fahrzeug ist ab dem ersten Bild getunt.",
@@ -3103,10 +3103,10 @@
         },
         {
           "name": "Die Kamera atmet das Tempo — EIN Rig aus dem Kern",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen · 2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber",
           "messung": "Garage G7 + gate:fahr-leben (Familie kamera), Welt und Garage; der Leser-Grep über `window.__codeOf` zählt die FOV-Schreiber.",
-          "beleg": "Seit kamera-tempo (Merge fac65067, main 57a9f2ab) trägt der Kern das Tempo: FAHR.kamera fovV/distV/tempoEase/driftFolge/rueckS (additiv, vehicle-contract byte-gleich), chaseKamera(c, g, s, dt, K, z, vmax) mit chaseGreif für Garage und Welt, `_kamFov` der EINE FOV-Schreiber. Gemessen am Kopf 57a9f2ab an der Radeon: WELT (werkbank --echt, Ausgabe-Pfad 1920×1080, Third, der GT auf freier Bahn bei −160/−1046, Vollgas): Ruhe FOV 75° · Arm 9,89 m → bei 15,09 m/s (0,94 vmax 16,0) FOV 84,40° (+9,4°) · Arm 11,69 m (+18,2 %); GARAGE (gate:garage-labor G7 + Messung bei vmax, r184 WebGPU): Ruhe 34° · 9,89 m → bei 15,21 m/s (0,95 vmax) 43,07° (+9,1°) · 11,68 m (+18,1 %), camera.fov = Ruhe + Tempo (zeigt 0), Orbit 25°, Rückkehr 1,06 s. gate:fahr-leben (Null-Renderer, echter `_gameLoopTick`): T5 Kern fovMax +10°, Arm +0,2, Drift 9°, Knick 0,08, Ritt fov bei 10 m/s +4,78°, zeigt 0,005°, Orbit 69°, Rückkehr 1,08 s, Schreiber [`_kamFov`]; T4 Ruck p95 0,016 m, FOV-Sprung beim Sicht-Wechsel 0,41° je Bild. Alles im Soll der 2 — es fehlt das zweite Gerät (M27). Ein erster Welt-Lauf an der Mess-Wiese fuhr bei 13,4 m/s in den Wald (+7,6° · +14,9 %, verworfen: keine freie Bahn). Roh: koordination `bericht/2110-mk-kopf/tempo-welt-*`, `garage-mk.log`, `fahr-leben.log`.",
+          "beleg": "GEMESSEN 21.10. an beiden Geräten: GTX (OMEN, aff61247 = Kamera-Stand von main d3a626ee, --echt 1920×1080, bericht/2110-gtx-messschuld.md) Welt FOV +9,42°, Arm +18,3 %, Drift ≤ 10,9° zur Fahrtrichtung, Rückkehr nach 69° Maus-Orbit 1,10 s; Radeon (mk-2110) FOV +9,4°, Arm +18,2 %, Garage +9,1°/+18,1 %, Rückkehr 1,06–1,08 s, Ruck p95 0,016 m, EIN FOV-Schreiber → Staffel 2. Vorher: Seit kamera-tempo (Merge fac65067, main 57a9f2ab) trägt der Kern das Tempo: FAHR.kamera fovV/distV/tempoEase/driftFolge/rueckS (additiv, vehicle-contract byte-gleich), chaseKamera(c, g, s, dt, K, z, vmax) mit chaseGreif für Garage und Welt, `_kamFov` der EINE FOV-Schreiber. Gemessen am Kopf 57a9f2ab an der Radeon: WELT (werkbank --echt, Ausgabe-Pfad 1920×1080, Third, der GT auf freier Bahn bei −160/−1046, Vollgas): Ruhe FOV 75° · Arm 9,89 m → bei 15,09 m/s (0,94 vmax 16,0) FOV 84,40° (+9,4°) · Arm 11,69 m (+18,2 %); GARAGE (gate:garage-labor G7 + Messung bei vmax, r184 WebGPU): Ruhe 34° · 9,89 m → bei 15,21 m/s (0,95 vmax) 43,07° (+9,1°) · 11,68 m (+18,1 %), camera.fov = Ruhe + Tempo (zeigt 0), Orbit 25°, Rückkehr 1,06 s. gate:fahr-leben (Null-Renderer, echter `_gameLoopTick`): T5 Kern fovMax +10°, Arm +0,2, Drift 9°, Knick 0,08, Ritt fov bei 10 m/s +4,78°, zeigt 0,005°, Orbit 69°, Rückkehr 1,08 s, Schreiber [`_kamFov`]; T4 Ruck p95 0,016 m, FOV-Sprung beim Sicht-Wechsel 0,41° je Bild. Alles im Soll der 2 — es fehlt das zweite Gerät (M27). Ein erster Welt-Lauf an der Mess-Wiese fuhr bei 13,4 m/s in den Wald (+7,6° · +14,9 %, verworfen: keine freie Bahn). Roh: koordination `bericht/2110-mk-kopf/tempo-welt-*`, `garage-mk.log`, `fahr-leben.log`.",
           "schlupfloch": "Ein FOV-Sprung misst +8° und ruckelt; ein fünfter FOV-Schreiber streitet mit Kampf und Fernglas: Ruck-p95, Azimut-Fehler und die Ein-Schreiber-Regel.",
           "aenderung": "Die 1 der Synthese war „chaseKamera im Kern“ (Existenz, B58) → 0. Am Kopf 57a9f2ab in Welt UND Garage bei 0,94–0,95 vmax gemessen → 1; die 2 wartet auf die GTX (M27)."
         },
@@ -4776,10 +4776,10 @@
     {
       "stand": "2026-10-21",
       "kopf": "d3a626ee",
-      "summe": 25,
+      "summe": 26,
       "max": 330,
       "skala": "2.0",
-      "was": "main-Vorlauf 57a9f2ab..d3a626ee (belegung, ferne-luft, licht-weg; OMEN Bündel 3 nicht langsamer, GPU Genesis +0,58 ms durch die Luft je Kanal, −0,64 durch den Belegungs-Schnitt): Ferne K1 0 → 1 (Koschmieder 0,88–1,07), Ferne K2 0 → 1 (Rand 17–22 km, Restkontrast ≤ 1,2 %)"
+      "was": "GTX-Messschuld des OMEN (bericht/2110-gtx-messschuld.md): Fahrzeug K3 1 → 2 (Tempo-Rig an beiden Geräten im Soll); Gelände K5 bleibt 1 (Fuß 3,4 cm an der GTX), Ferne K1/K2 Staffel 1 an der GTX bestätigt"
     }
   ],
   "text": {
