@@ -2886,10 +2886,168 @@ async function kreaturProben(r, T, opts) {
             L.filter(
                 (g) => gezeichnet(g) && stationen.some((o) => Math.hypot(g.position.x - o.x, g.position.z - o.z) < 1.5)
             ).length;
+        // DER GANG IM SATZ (Schlupf wie gate:tier-gang): je Takt der Fuß jedes gehenden Satz-Bewohners aus dem, was die GPU
+        // zeichnet — jede Senke `bewohner-satz`, die ihn trägt: die Vorlage (ohne Gang-Puffer `userData.gang` die stehende
+        // Geometrie) an der Phase seiner Instanz (`aGang`: Phase, Gewicht; Puffer je Phase und Vertex vec4, die letzte
+        // Phase ist der Stand), durch seine Instanz-Matrix. Ferse und Ballen je Seite (die Sohle der stehenden Vorlage), der
+        // tiefere trägt; Stand = die untersten 5 % der Beinlänge über der Sohle im Raum des Leibs.
+        const saetze = () => s.scene.children.filter((o) => o && o.name === "bewohner-satz" && o.isInstancedMesh);
+        const fussMemo = new WeakMap();
+        const fussIx = (geo) => {
+            if (fussMemo.has(geo)) return fussMemo.get(geo);
+            const P = geo.attributes.position;
+            let ymin = Infinity;
+            for (let v = 0; v < P.count; v++) ymin = Math.min(ymin, P.getY(v));
+            const seite = [
+                [-1, Infinity, -1, -Infinity],
+                [-1, Infinity, -1, -Infinity],
+            ];
+            for (let v = 0; v < P.count; v++) {
+                if (P.getY(v) > ymin + 0.03) continue;
+                const q = seite[P.getX(v) < 0 ? 0 : 1];
+                if (P.getZ(v) < q[1]) q.splice(0, 2, v, P.getZ(v));
+                if (P.getZ(v) > q[3]) q.splice(2, 2, v, P.getZ(v));
+            }
+            const ix = { ymin, fuss: seite.map((q) => [q[0], q[2]]) };
+            fussMemo.set(geo, ix);
+            return ix;
+        };
+        const lokal = (m, inst, v, out) => {
+            const geo = m.geometry;
+            const G = m.userData.gang;
+            if (!G) return out.fromBufferAttribute(geo.attributes.position, v);
+            const vid = Math.abs(geo.attributes.aVid.getX(v)) - 1;
+            const ph = geo.attributes.aGang.getX(inst);
+            const w = geo.attributes.aGang.getY(inst);
+            const f = (((ph % 1) + 1) % 1) * G.n;
+            const k0 = Math.floor(f) % G.n;
+            const k1 = (k0 + 1) % G.n;
+            const t = f - Math.floor(f);
+            const D = G.puffer.array;
+            const at = (k, c) => D[(k * G.nv + vid) * 4 + c];
+            const c3 = (c) => at(G.n, c) + w * (at(k0, c) + t * (at(k1, c) - at(k0, c)) - at(G.n, c));
+            return out.set(c3(0), c3(1), c3(2));
+        };
+        const m4 = new T.Matrix4();
+        const vL = new T.Vector3();
+        const spuren = new Map();
+        const gangMessen = (SZ) => {
+            const gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
+            if (!gehend.length) return;
+            for (const m of SZ) {
+                const A = m.instanceMatrix.array;
+                for (const b of gehend) {
+                    const g = b.leib;
+                    let inst = -1;
+                    for (let i = 0; i < m.count; i++)
+                        if (
+                            Math.abs(A[i * 16 + 12] - g.position.x) < 1e-3 &&
+                            Math.abs(A[i * 16 + 14] - g.position.z) < 1e-3
+                        ) {
+                            inst = i;
+                            break;
+                        }
+                    const key = m.uuid + "|" + b.same;
+                    let sp = spuren.get(key);
+                    if (inst < 0) {
+                        if (sp) sp.luecke = true;
+                        continue;
+                    }
+                    if (!sp)
+                        spuren.set(key, (sp = { reihe: [], luecke: false, bein: (b.beinL || 0.9) / (b.groesse || 1) }));
+                    if (sp.reihe.length >= 400) continue;
+                    if (sp.luecke) sp.reihe.push(null);
+                    sp.luecke = false;
+                    m4.fromArray(A, inst * 16);
+                    const ix = fussIx(m.geometry);
+                    const fuss = ix.fuss.map((paar) =>
+                        paar.map((v) => {
+                            lokal(m, inst, v, vL);
+                            const y = vL.y - ix.ymin;
+                            const w = vL.applyMatrix4(m4);
+                            return { y, x: w.x, z: w.z };
+                        })
+                    );
+                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z });
+                }
+            }
+        };
+        const schlupfVon = () => {
+            let wegFuss = 0;
+            let wegLeib = 0;
+            let stand = 0;
+            for (const sp of spuren.values()) {
+                const R = sp.reihe;
+                for (let j = 0; j < 2; j++) {
+                    let ymin = Infinity;
+                    for (const e of R) if (e) ymin = Math.min(ymin, e.fuss[j][0].y, e.fuss[j][1].y);
+                    for (let i = 1; i < R.length; i++) {
+                        const a0 = R[i - 1];
+                        const a1 = R[i];
+                        if (!a0 || !a1) continue;
+                        const k = a1.fuss[j][1].y < a1.fuss[j][0].y - 1e-4 ? 1 : 0;
+                        const p = a0.fuss[j][k];
+                        const q = a1.fuss[j][k];
+                        if (p.y > ymin + 0.05 * sp.bein || q.y > ymin + 0.05 * sp.bein) continue;
+                        stand++;
+                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
+                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                    }
+                }
+            }
+            return {
+                schlupf: wegLeib > 0 ? Math.round((wegFuss / wegLeib) * 1000) / 1000 : null,
+                wegLeib: Math.round(wegLeib * 10) / 10,
+                standTakte: stand,
+                spuren: spuren.size,
+            };
+        };
+        // DER BLICK DER STEHENDEN (mensch.K2): wer an seinem Ort steht, schaut auf sein Ziel — am Platz zur Mitte, vor der
+        // Tür vom Haus fort (die Gasse, das Gegenüber); gemessen an der Drehung, die der Satz zeichnet (die des Leibs)
+        const blicke = { n: 0, treffer: 0, sektor: new Map(), aus: [] };
+        const blickMessen = () => {
+            for (const b of liste) {
+                const g = b.leib;
+                if (!g || !b.da || b.drinnen || !gezeichnet(g) || !b.ziel) continue;
+                const o = b.orte;
+                let soll = null;
+                if (b.ziel === o.platz) soll = Math.atan2(pc.x - g.position.x, pc.z - g.position.z);
+                else if (b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt"))
+                    soll = Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z);
+                const th = taeter === "bewohner-nord" ? 0 : g.rotation.y;
+                if (taeter === "bewohner-nord") g.rotation.y = 0;
+                const sk = Math.round((((th % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / (Math.PI / 6)) % 12;
+                blicke.sektor.set(sk, (blicke.sektor.get(sk) || 0) + 1);
+                if (soll === null) continue;
+                blicke.n++;
+                let d = th - soll;
+                d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+                if (Math.abs(d) <= 1.3) blicke.treffer++;
+                else if (blicke.aus.length < 4)
+                    blicke.aus.push(
+                        `${b.beruf}@${b.ziel === o.platz ? "platz" : "tuer"} ${Math.round((d * 180) / Math.PI)}°`
+                    );
+            }
+        };
+        // DER PLATZ (mensch.K2): wem das Gesetz den Platz gibt (Mittag, Abend, der Markt), der hat dort einen Stand — am
+        // Platz, seinem Rand oder dem Rand seiner Gassen (≤ 12 m vom Rand des Platzes), nie daheim statt dort
+        if (taeter === "bewohner-daheim") for (const b of liste.slice(0, 6)) b.orte.platz = null;
+        const platzFern = (o) => {
+            if (!o) return Infinity;
+            const c = Math.cos(pz.phi || 0);
+            const sn = Math.sin(pz.phi || 0);
+            const dx = o.x - pc.x;
+            const dz = o.z - pc.z;
+            const lx = dx * c - dz * sn;
+            const lz = dx * sn + dz * c;
+            return Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez));
+        };
+        const ohnePlatz = liste.filter((b) => !(platzFern(b.orte.platz) <= 12));
         const tTag = performance.now();
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             r._uhrSetzen(stunde / 24, "regler");
+            const SZ = saetze();
             for (let k = 0; k < takte; k++) {
                 r._tickBewohner(DT);
                 // Täter (Selbsttest): der Teleport an den Soll-Ort
@@ -2923,6 +3081,13 @@ async function kreaturProben(r, T, opts) {
                     v.x = g.position.x;
                     v.z = g.position.z;
                 }
+                // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 mit Gewicht 0 (der Stand)
+                if (taeter === "bewohner-gleiten")
+                    for (const m of SZ) {
+                        const a = m.geometry.attributes.aGang;
+                        if (a) for (let q = 0; q < a.count; q++) a.setXY(q, 0, 0);
+                    }
+                gangMessen(SZ);
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs: sein Weg zu DIESEM
@@ -2948,6 +3113,8 @@ async function kreaturProben(r, T, opts) {
                 z.schmiede10 = anStation();
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
             }
+            if (Math.abs(stunde - 10) < 0.05 || Math.abs(stunde - 12.5) < 0.05 || Math.abs(stunde - 19) < 0.05)
+                blickMessen();
             if (Math.abs(stunde - 2) < 0.05) z.schmiede2 = anStation();
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
@@ -2978,6 +3145,21 @@ async function kreaturProben(r, T, opts) {
                 .map((b) => `${b.rolle}/${b.beruf} #${b.heim}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
             unterN: unter.length,
             stationen: stationen.length,
+            satzGang: schlupfVon(),
+            blick: {
+                n: blicke.n,
+                quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
+                sektorMax: q3(
+                    Math.max(0, ...blicke.sektor.values()) /
+                        Math.max(
+                            1,
+                            [...blicke.sektor.values()].reduce((a, x) => a + x, 0)
+                        )
+                ),
+                aus: blicke.aus,
+            },
+            ohnePlatz: ohnePlatz.length,
+            ohnePlatzWer: ohnePlatz.slice(0, 4).map((b) => `${b.rolle}/${b.beruf} #${b.heim}`),
             stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
         });
@@ -3051,6 +3233,20 @@ function urteil(name, z) {
             `durch die Hauswand: ${z.wandN} Takte, in denen ein Gehender im Grundriss eines Hauses stand`
         );
         soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame`);
+        // DER GANG IM SATZ, DER BLICK, DER PLATZ (mensch.K1/K2 Staffel 2)
+        const sg = z.satzGang || {};
+        soll(
+            sg.schlupf !== null && sg.schlupf <= 0.05 && sg.wegLeib >= 10,
+            `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m Weg in ${sg.standTakte} Stand-Takten (${sg.spuren} Spuren; Soll ≤ 0,05 über ≥ 10 m wie gate:tier-gang)`
+        );
+        soll(
+            z.blick.n >= 10 && z.blick.quote >= 0.9 && z.blick.sektorMax <= 0.5,
+            `der Blick der Stehenden: ${z.blick.quote} von ${z.blick.n} schauen auf ihr Ziel (Soll ≥ 0,9), ${z.blick.sektorMax} in einer Richtung (Soll ≤ 0,5)${z.blick.aus.length ? ": " + z.blick.aus.join(" · ") : ""}`
+        );
+        soll(
+            z.ohnePlatz === 0,
+            `ohne Platz: ${z.ohnePlatz} Bewohner ohne Stand am Platz, seinem Rand oder seinen Gassen (${z.ohnePlatzWer.join(" · ")})`
+        );
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "geburt") {
@@ -3453,6 +3649,9 @@ const TAETER = {
         ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
         ["bewohner-sprung", /Sprung im Nahbereich/],
         ["bewohner-wand", /durch die Hauswand/],
+        ["bewohner-gleiten", /der Satz gleitet/],
+        ["bewohner-nord", /der Blick der Stehenden/],
+        ["bewohner-daheim", /ohne Platz/],
     ],
 };
 
