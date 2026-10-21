@@ -16,7 +16,9 @@ class AnazhRealm_koerper_bewegung {
 
     // Decken-Probe: freie Höhe über dem Body-Top (feld-nativer Raycast → Terrain-Dichtefeld UND
     // Struktur-AABBs); Infinity = freier Himmel. Start knapp über der Body-Box (halfExtent 0.5), damit
-    // der Strahl nicht den eigenen Körper trifft.
+    // der Strahl nicht den eigenen Körper trifft. DER STAND-FIXPUNKT (K2 Belegung): die Ego-Kamera fragt je Bild — im Stand
+    // dieselbe Decke; der Strahl marschiert das Feld nur, wenn Leib, Welt (`_weltRegung`), Edits (`_editGenZaehler`) oder
+    // Bestand (Zahl, Ordnung, Neubau des Blocker-Netzes) sich regen, nie während ein Werk wandert (`beweger`).
     _ceilingHeadroom() {
         const pm = this.state.playerMesh;
         if (!pm) return Infinity;
@@ -24,13 +26,22 @@ class AnazhRealm_koerper_bewegung {
         const x = pm.position.x,
             y0 = pm.position.y + 0.55,
             z = pm.position.z;
+        const N = this._blockerNetz(),
+            D = this._deckeStand || (this._deckeStand = {});
+        const welt = this._weltRegung | 0,
+            edit = this._editGenZaehler | 0,
+            n = N.liste ? N.liste.length : 0;
+        const steht = D.x === x && D.y === y0 && D.z === z && D.sf === sf && D.welt === welt && D.edit === edit;
+        if (steht && D.n === n && D.gen === N.gen && D.seq === N.seq && !N.beweger.size) return D.h;
         const rs = this.setVec(this.state.tmpVec1, x / sf, y0 / sf, z / sf);
         const re = this.setVec(this.state.tmpVec2, x / sf, (y0 + 4.5) / sf, z / sf);
         const hitY = this._runRaycast(rs, re, (cb, hit) => {
             if (!hit) return null;
             return cb.get_m_hitPointWorld().y() * sf;
         });
-        return hitY === null ? Infinity : Math.max(0, hitY - y0);
+        const h = hitY === null ? Infinity : Math.max(0, hitY - y0);
+        Object.assign(D, { x, y: y0, z, sf, welt, edit, n, gen: N.gen, seq: N.seq, h });
+        return h;
     }
 
     // DIE EINE DECKEN-KLEMME (für handleJump + _parkourLuftsprung): unter niedriger Decke (< 3.4 m

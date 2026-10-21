@@ -419,19 +419,25 @@ class AnazhRealm_vegetation_wiese {
     // seines Stoffs, das Frustum jedes Passes wählt je Pflanze (`_streuSatzArt`). Jenseits des Rings trägt der Boden
     // (Boden-Farbe) und die Strauch-/Blumen-Schicht der Streu-Regionen.
     static get NAH_STREU() {
-        return Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 });
+        return this._einmal(
+            "NAH_STREU",
+            Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 })
+        );
     }
 
     // Was eine Boden-Art beim Pflücken gibt — Spieler-Ökonomie, keine Gestalt: je Studio-kind.
     static get STREU_ERNTE() {
-        return Object.freeze({
-            fern: "kraut",
-            reed: "kraut",
-            brush: "kraut",
-            flower: "kraut",
-            rock: "stein",
-            deadwood: "holz",
-        });
+        return this._einmal(
+            "STREU_ERNTE",
+            Object.freeze({
+                fern: "kraut",
+                reed: "kraut",
+                brush: "kraut",
+                flower: "kraut",
+                rock: "stein",
+                deadwood: "holz",
+            })
+        );
     }
 
     // Die Arten der Nah-Streu: die Boden-Zeilen mit ring "nah", deren Preset das LIVE-Buch trägt, nach Namen

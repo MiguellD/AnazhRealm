@@ -104,8 +104,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const savedRenderer = r.state.renderer;
             const savedReady = r.state.rendererReady;
             let resolveCalls = 0;
+            const stempel = new Map([["r:0:0:f0", 1]]); // r184 hält jeden Pass-Stempel — nach dem Auflösen fällt die Karte
             r.state.renderer = {
-                backend: { trackTimestamp: true },
+                backend: { trackTimestamp: true, timestampQueryPool: { render: { timestamps: stempel } } },
                 resolveTimestampsAsync: (typ) => {
                     resolveCalls++;
                     res.resolveTyp = typ; // muss "render" sein (THREE.TimestampQuery.RENDER)
@@ -122,13 +123,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             res.torOhneFeature = resolveCalls === 0 && r._gpuTsLast === undefined;
             r.state.renderer.backend.trackTimestamp = true;
             r._gpuTsLast = undefined;
-            r._gpuTsAtMs = undefined;
+            r._gpuTsAtMs = r._gpuTsKickMs = undefined;
             r._gpuTsPending = false;
             r._perfGpuResolveKick(); // fire-and-forget — blockt nie
             res.kickSynchronNichtGelandet = !Number.isFinite(r._gpuTsLast); // der Wert landet ASYNC
             await Promise.resolve(); // eine Microtask = „der nächste Frame"
             res.echtWertGelandet = r._gpuTsLast === 7.5;
+            r._perfGpuResolveKick(); // der nächste Bild-Kick im Takt des Lesers (PERF_GPU_TS_TAKT_MS) ruft nichts
+            await Promise.resolve();
             res.resolveCalls = resolveCalls;
+            res.karteGefallen = stempel.size === 0;
             // der Fake verlässt die Welt VOR den Folds (der gelandete Messwert genügt —
             // genau die EINE Quelle-Wahrheit: "echt" gibt es nur aus einer echten Landung):
             r.state.renderer = savedRenderer;
@@ -197,9 +201,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         (out.grid || "").replace(/\s+/g, " ").slice(0, 90)
     );
     check(
-        "(4) die Echt-Leitung: Kick blockt nie (Wert landet ASYNC, nicht im Kick-Frame)",
-        out.kickSynchronNichtGelandet === true && out.echtWertGelandet === true && out.resolveCalls === 1,
-        `resolveCalls=${out.resolveCalls} · gelandet=${out.echtWertGelandet}`
+        "(4) die Echt-Leitung: Kick blockt nie (Wert landet ASYNC), der nächste Kick im Takt des Lesers ruft nichts, die Stempel-Karte fällt",
+        out.kickSynchronNichtGelandet && out.echtWertGelandet && out.resolveCalls === 1 && out.karteGefallen,
+        `resolveCalls=${out.resolveCalls} · gelandet=${out.echtWertGelandet} · Karte gefallen=${out.karteGefallen}`
     );
     check(
         `(4) resolveTimestampsAsync wird mit "render" gerufen (THREE.TimestampQuery.RENDER)`,

@@ -1008,7 +1008,7 @@ async function checkBandWelle6APolish(ctx) {
             source: "test",
             createdAt: 0,
         });
-        if (typeof r.renderAbilitiesList === "function") r.renderAbilitiesList();
+        r.renderAbilitiesList();
         const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
         out.lazyComputed = !!(legacyAfter && legacyAfter.description);
         r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
@@ -2135,7 +2135,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const origRay = r._raycastWorldHit;
             const origPick = r._pickArchitectureAtCrosshair;
             const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
-            if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
+            r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;
             const digY = 5;
@@ -2192,7 +2192,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 cam.quaternion.copy(savedQuat);
                 cam.updateMatrixWorld(true);
             }
-            if (typeof r.setGameMode === "function") r.setGameMode(origMode);
+            r.setGameMode(origMode);
         }
         return out;
     });

@@ -135,7 +135,7 @@ async function checkBandWaves1to3(ctx) {
         delete r.state.blueprints["cycle-a"];
         delete r.state.blueprints["cycle-b"];
         r.state.dsl.abilities = (r.state.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
