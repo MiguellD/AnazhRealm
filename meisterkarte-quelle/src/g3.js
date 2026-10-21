@@ -30,10 +30,10 @@ module.exports = {
         },
         {
           name: "Licht-Bilanz an einer Kugel in der Szene: Sonne zu Himmel je Stunde und Wetter",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
           messung: "Spielgang-Station Mess-Wiese: eine 18-%- und eine Weiß-Kugel als Proben-Leib über das EINE Stoff-Programm der Welt (Albedo-Zeile der Tafel; ein eigenes MeshStandardMaterial auf der Kugel ist im Selbsttest ROT); aus der Luma von Sonnen- und Schattenseite im Ausgabe-Bild Licht-Verhältnis, Schatten-Anteil und Himmels-Azimut. Soll (Liu & Jordan 1960): klar mittags 5–12,5, Schatten-Anteil 0,08–0,20, Himmel zur Sonne ≥ 1,2; Sonne 10° ≥ 2,5; bedeckt ≤ 1,5.",
-          beleg: "Tafel himmel-licht 5,188 · 0,193 · 1,272 (Radeon, cbc222cc), am Kopf veraltet; gelesen aus `_waagrechtIrradianz` in `_dayNightApplyBelichtung` (`stamm/bild-himmel.js:2038-2056`) — derselben Größe, aus der die Belichtung rechnet (SYSTEMKARTE W9: der Richter im Gerichteten). Uhr und Wetter: 0 Proben.",
+          beleg: "GEMESSEN 21.10. an der GTX (OMEN, bericht/2110-messschuld2.md): 18-%-Kugel über den Welt-Stoff, klar Mittag, Mess-Wiese, n = 3 gültige Läufe (Spielcode = main 32b37933 bzw. 97d8ee94): Verhältnis Sonne/Himmel 5,013, Schatten-Anteil 0,1995 dreimal bit-gleich → Staffel 1, an der UNTEREN Kante (ohne Scheiben-Verdeckung 4,89 / 0,2045 je ~2 % außerhalb); Weiß-Kugel in der Schulter der Tonkurve zählt nicht; Himmels-Azimut ungemessen. Vorher: Tafel himmel-licht 5,188 · 0,193 · 1,272 (Radeon, cbc222cc), am Kopf veraltet; gelesen aus `_waagrechtIrradianz` in `_dayNightApplyBelichtung` (`stamm/bild-himmel.js:2038-2056`) — derselben Größe, aus der die Belichtung rechnet (SYSTEMKARTE W9: der Richter im Gerichteten). Uhr und Wetter: 0 Proben.",
           schlupfloch: "Wer die Rechnung misst, misst sich selbst: ein Fehler hinter der Rechnung (Stoff-Antwort, Ton-Kurve, Schatten-Knoten) bliebe grün. Eine Kugel mit eigenem Stoff mäße die Probe statt der Welt (B35).",
           aenderung: "Karte 1.0 gab Licht K1 „Mittag GRÜN“ aus der Rechnung der Belichtung → 0; die Kugel muss über den Welt-Stoff zeichnen (B35)."
         },
