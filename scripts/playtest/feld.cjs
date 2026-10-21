@@ -40,7 +40,7 @@ async function checkRing2Dsl(ctx) {
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
         // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
-        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon und landen an seinem Rand).
+        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon; dslEval weist sie benannt ab).
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
         const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
@@ -1262,9 +1262,7 @@ async function checkBandV1740LlmRules(ctx) {
         }
         out.llmFires = r.state.weather === "sunny";
 
-        // --- (4) der LLM-Prompt KENNT die Regel-Grammatik (rule-Op + Feld-Bedingung) ---
-        const prompt = r.llmBuildSystemPrompt();
-        out.promptGrammar = /\["rule"/.test(prompt) && /field_below/.test(prompt) && /STEHENDES GESETZ/i.test(prompt);
+        // die Regel-Grammatik im Prompt der KI (rule-Op + Feld-Bedingungen) wacht gate:weltakt-wache (K)
 
         // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
         r.state.worldRules.length = 0;
@@ -1291,7 +1289,6 @@ async function checkBandV1740LlmRules(ctx) {
         res.llmEphemeral
     );
     check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
-    check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
     check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
 }
 

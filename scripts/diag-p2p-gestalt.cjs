@@ -79,17 +79,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
 
         // ── Warm-Anker: Boot → f.ready → mensch-Rezept ──
-        const dl0 = performance.now() + 150000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._p2pMsgSoul !== "function") && performance.now() < dl0)
-            await sleep(100);
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._p2pMsgSoul !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat) break;
-            await sleep(120);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };
         const kc = window.__koerperCore;
         if (!kc) return { fatal: "koerper-Core fehlt" };

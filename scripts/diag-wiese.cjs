@@ -113,12 +113,7 @@ const RENDER_FN = async (kam, W, H, png) => {
         page.evaluate(
             async (x, z) => {
                 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-                const dl0 = performance.now() + 300000;
-                while (
-                    (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-                    performance.now() < dl0
-                )
-                    await sleep(200);
+                await window.__weltDa();
                 const r = window.anazhRealm;
                 if (!r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);

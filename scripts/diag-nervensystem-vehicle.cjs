@@ -89,22 +89,12 @@ function staticLaws(q) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {}, e: {}, f: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipes.gt && rc && rc.lod && rc.lod.kindStages) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.gt && rc && rc.lod && rc.lod.kindStages; });
         const rc = A._studioRenderConfig;
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der Merge KOMMEN AN =====

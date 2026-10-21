@@ -774,23 +774,18 @@ function buehne() {
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 240000) {
-                const r = window.anazhRealm;
-                if (r && r.state && r.state.rendererReady && r.state._weltbildDa && r.state.renderer && r.state.renderer.backend) {
-                    r.state.renderer.setAnimationLoop(null);
-                    const be = r.state.renderer.backend;
-                    return {
-                        ok: true,
-                        ms: Math.round(performance.now() - t0),
-                        wahrheit: !!r.state.renderer.__anazhBundleWahrheit,
-                        webgpu: be.isWebGPUBackend === true,
-                    };
-                }
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
+            const r = await window.__weltDa((r) => {
+                return !!(r && r.state && r.state.rendererReady && r.state._weltbildDa && r.state.renderer && r.state.renderer.backend);
+            });
+            r.state.renderer.setAnimationLoop(null);
+            const be = r.state.renderer.backend;
+            return {
+                ok: true,
+                ms: Math.round(performance.now() - t0),
+                wahrheit: !!r.state.renderer.__anazhBundleWahrheit,
+                webgpu: be.isWebGPUBackend === true,
+            };
         });
-        if (!bereit.ok) throw new Error("das erste Weltbild stand nach 240 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
         log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         await page.evaluate(DIAET_INSTALL);

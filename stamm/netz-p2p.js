@@ -1395,7 +1395,8 @@ class AnazhRealm_netz_p2p {
             respond({ error: "not_sharing" });
             return;
         }
-        // Rate-Limit pro anfragendem Peer — ein fremder Prompt kostet meine Token. Sentinel "noch nie
+        // Rate-Limit pro anfragendem Peer — ein fremder Prompt kostet meine Token; an der Tür (`llmCall`) ist er ein Ruf im
+        // Hintergrund: die Ruhe-Lücke gilt, der eigene Spieler hat Vorrang. Sentinel "noch nie
         // bedient" = -Infinity, NICHT 0 — sonst wäre jede Anfrage in den ersten COOLDOWN-ms rate-limited.
         const now = typeof performance !== "undefined" ? performance.now() : Date.now();
         const last = p2p._voiceServedAt.has(peerId) ? p2p._voiceServedAt.get(peerId) : -Infinity;
@@ -1412,7 +1413,7 @@ class AnazhRealm_netz_p2p {
         this.log(`Geteilte Stimme: Anfrage von ${peerId.slice(0, 12)}… wird beantwortet`, "INFO");
         let reply;
         try {
-            reply = await this.llmCall(prompt);
+            reply = await this.llmCall(prompt, null, { hintergrund: true });
         } catch (err) {
             reply = { error: (err && err.message) || "LLM-Fehler" };
         }

@@ -26,14 +26,7 @@ const server = statikServer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                typeof window.anazhRealm._workshopFoundryPreviewGroup !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && typeof r._workshopFoundryPreviewGroup === "function");
     });
 
     const out = await page.evaluate(async () => {
@@ -43,7 +36,7 @@ const server = statikServer();
         try {
             const f = r._ensureAssetFoundry();
             const dl = performance.now() + 40000;
-            while (f && !f.ready && performance.now() < dl) await new Promise((res2) => setTimeout(res2, 50));
+            await window.__weltDa(() => !(f && !f.ready));
             res.behavior.foundryReady = !!(f && f.ready);
             // Einen Baum-Bauplan finden (die grammatik-gewachsenen Built-ins baum_*).
             const bps = r.state.blueprints || {};
@@ -52,8 +45,7 @@ const server = statikServer();
             if (treeBp) {
                 bps[treeBp]._recipeLod = 2; // die Werkstatt-L2-Stufe
                 let grp = null;
-                const dl2 = performance.now() + 40000;
-                while (performance.now() < dl2) {
+                for (const weiter = window.__deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}

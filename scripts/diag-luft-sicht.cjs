@@ -145,15 +145,7 @@ function urteil(S) {
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.luft ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.luft);
     });
     const S = await page.evaluate(probe, null);
     let selbst = null;

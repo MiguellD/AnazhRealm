@@ -765,18 +765,12 @@ async function probeBahn(B) {
         uhr.t = t;
     };
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const dl0 = performance.now() + 120000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
-        await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    const dl = performance.now() + 90000;
-    while (performance.now() < dl) {
-        if (f && f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt) break;
-        await sleep(100);
-    }
+    await window.__weltDa(() => f && f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt);
     if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { err: "Buch ohne fahrzeug_gt" };
     // DER TAKT: echte Frames (`_gameLoopTick`), feste Schritte — die Zahl der Frames ist die Uhr.
     let tMs = performance.now();
@@ -823,12 +817,8 @@ async function probeBahn(B) {
         st._fieldVy = 0;
         takt(20);
     };
-    const gebaut = async (e) => {
-        for (let i = 0; i < 60 && e && !e.instanced && !e.mesh; i++) {
-            r._rebuildArchitectureMesh(e);
-            await sleep(50);
-        }
-    };
+    // der Körper steht, bevor die Probe ihn braucht (das EINE Warten auf den Bau, welt-boot `__gebautNach`, im Takt der Bahn)
+    const gebaut = async (e) => e && window.__gebautNach(e, { takt: frame });
     const fahrtGier = (e) => (Number.isFinite(e.rotationY) ? e.rotationY : 0) + Math.PI / 2; // Studio-Wagen: Bug +x
     const wagenWeg = (e) => {
         if (!e) return;
@@ -979,16 +969,19 @@ async function probeBahn(B) {
     };
     const M = r._genesisMitte();
     const vorschau = async () => {
-        const dlV = performance.now() + 30000;
         let e = null;
-        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte)
-        for (let t = 0; performance.now() < dlV; t++) {
-            r._genesisPortalRing(st.playerMesh.position);
-            r._portalApproachPrefetch(st.playerMesh.position);
-            e = st.architectures.find((a) => a && a.id === "portal-preview-garage");
-            if (e) break;
-            if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
-        }
+        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte); das EINE
+        // Warten (welt-boot `__gebautNach`) zählt Takte ohne Offenes, nie Sekunden
+        await window
+            .__gebautNach("die Vorschau der Garage", {
+                fertig: () => !!(e = st.architectures.find((a) => a && a.id === "portal-preview-garage")),
+                takt: async (t) => {
+                    r._genesisPortalRing(st.playerMesh.position);
+                    r._portalApproachPrefetch(st.playerMesh.position);
+                    if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
+                },
+                max: 3000,
+            });
         return e;
     };
 

@@ -30,12 +30,11 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, startProc, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { spawn } = require("child_process");
 
 // Port über PERSISTENCE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4326.
 const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
@@ -95,23 +94,15 @@ async function serverLauf(quelle, tod) {
     fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
     fs.writeFileSync(path.join(dir, "k23-haken.js"), HAKEN, "utf8");
     fs.writeFileSync(ziel, JSON.stringify({ marker: "alt", n: 1 }), "utf8");
-    const proc = spawn(process.execPath, ["-r", path.join(dir, "k23-haken.js"), path.join(dir, "save-server.js")], {
-        cwd: dir,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: Object.assign({}, process.env, { PORT: String(SERVER_PORT), K23_TOD: String(tod) }),
-    });
+    // der Start urteilt am Ereignis (welt-boot `startProc`: bereit oder beendet, nie eine Frist)
+    const proc = await startProc(
+        path.join(dir, "save-server.js"),
+        /Save-Server/i,
+        { PORT: String(SERVER_PORT), K23_TOD: String(tod) },
+        { vor: ["-r", path.join(dir, "k23-haken.js")], cwd: dir }
+    );
     let tot = false;
     const beendet = new Promise((r) => proc.on("exit", () => r((tot = true))));
-    await new Promise((resolve, reject) => {
-        const t = setTimeout(() => reject(new Error("save-server-Kopie startete nicht in 8 s")), 8000);
-        proc.stdout.on("data", (c) => {
-            if (/Save-Server/i.test(String(c))) {
-                clearTimeout(t);
-                resolve();
-            }
-        });
-        proc.on("exit", () => reject(new Error("save-server-Kopie endete beim Start")));
-    });
     const blob = [];
     for (let i = 0; i < 9000; i++) blob.push(`zeile-${i}-` + "x".repeat(96));
     const body = JSON.stringify({ state: { marker: "neu", blob } });
@@ -158,11 +149,8 @@ async function cacheProbe(quelle) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
     fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
     fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 1;\n", "utf8");
-    const proc = spawn(process.execPath, [path.join(dir, "save-server.js")], {
-        cwd: dir,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: Object.assign({}, process.env, { PORT: String(SERVER_PORT) }),
-    });
+    // der Start urteilt am Ereignis (welt-boot `startProc`: bereit oder beendet, nie eine Frist)
+    const proc = await startProc(path.join(dir, "save-server.js"), /Save-Server/i, { PORT: String(SERVER_PORT) }, { cwd: dir });
     const hole = (weg, kopf) =>
         new Promise((resolve) => {
             const req = http.request(
@@ -184,16 +172,6 @@ async function cacheProbe(quelle) {
             req.end();
         });
     try {
-        await new Promise((resolve, reject) => {
-            const t = setTimeout(() => reject(new Error("save-server-Kopie startete nicht in 8 s")), 8000);
-            proc.stdout.on("data", (c) => {
-                if (/Save-Server/i.test(String(c))) {
-                    clearTimeout(t);
-                    resolve();
-                }
-            });
-            proc.on("exit", () => reject(new Error("save-server-Kopie endete beim Start")));
-        });
         const a = await hole("/probe.js?v=1");
         const b = a.etag ? await hole("/probe.js?v=1", { "If-None-Match": a.etag }) : { status: null };
         fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 2;\n", "utf8");
@@ -253,24 +231,22 @@ const server = statikServer();
         // (L) DIE LÖCHER NACH DEM RELOAD: 300 Kugeln über den Spielpfad, Save, echter Reload, zählen.
         // Die Welt steht (der Null-Renderer treibt den Takt nicht selbst: die Probe tickt ihn wie gate:worker-dichte).
         const weltSteht = async () => {
-            const ok = await page.evaluate(async () => {
-                const start = performance.now();
-                while (performance.now() - start < 120000) {
-                    const r = window.anazhRealm;
-                    if (r && typeof r._gameLoopTick === "function") {
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {
-                            /* der Boot reift */
-                        }
-                        const s = r.state;
-                        if (s && s.worldMeta && s.voxelChunks && s.voxelChunks.size > 4) return true;
-                    }
-                    await new Promise((res) => setTimeout(res, 16));
-                }
-                return false;
+            // das EINE Warten (welt-boot `__gebautNach`): Takt um Takt, Deckel nur in Takten ohne Offenes; steht sie nicht, wirft es beim Namen
+            await page.evaluate(async () => {
+                const r = await window.__weltDa();
+                await window.__gebautNach("die Welt mit 5 Chunks", {
+                        fertig: () => !!(r.state.worldMeta && r.state.voxelChunks && r.state.voxelChunks.size > 4),
+                        takt: async () => {
+                            try {
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {
+                                /* der Boot reift */
+                            }
+                            await new Promise((res) => setTimeout(res, 16));
+                        },
+                        max: 2000,
+                    });
             });
-            if (!ok) throw new Error("(L) die Welt stand nach 120 s nicht");
         };
         await weltSteht();
         const lVorher = await page.evaluate((n) => {

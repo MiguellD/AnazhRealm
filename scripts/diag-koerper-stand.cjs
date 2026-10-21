@@ -953,10 +953,7 @@ async function rollen(n) {
             { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
             { silent: true, precise: true, rotationY: quer - Math.PI / 2 }
         );
-        for (let k = 0; e && k < 200 && !e.instanced && !e.mesh; k++) {
-            r._rebuildArchitectureMesh(e);
-            await new Promise((q) => setTimeout(q, 100));
-        }
+        if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
         if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
             for (let k = 0; k < 15; k++) takt();
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;

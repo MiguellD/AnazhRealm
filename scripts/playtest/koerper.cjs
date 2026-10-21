@@ -18,8 +18,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
         const savedMode = r.getGameMode();
         const savedSoul = p.soul;
 
-        out.methods = typeof r.forgeAvatar === "function" && typeof r.embodyBlueprint === "function";
-
         // ein körper-geformter Bauplan, role="soul" + ein Nicht-Soul
         blu.__soul = {
             name: "__soul",
@@ -93,7 +91,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.64 S5: forgeAvatar + embodyBlueprint existieren", res.methods);
     check("V17.64 S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
     check(
         "V17.64 S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",

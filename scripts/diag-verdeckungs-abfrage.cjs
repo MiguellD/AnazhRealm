@@ -490,8 +490,7 @@ async function verdeckungPhase(opts) {
             const bereit = () =>
                 f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
             const tOrt = performance.now();
-            const dlW = performance.now() + (opts.ortMs || 180000);
-            while (performance.now() < dlW && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit())) {
+            for (const weiter = window.__deckel("das Wasser am Ort", (opts.ortMs || 180000) / 20); weiter() && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit()); ) {
                 for (let i = 0; i < 5; i++) takt();
                 await warte(20);
             }
@@ -514,13 +513,7 @@ async function verdeckungPhase(opts) {
                 if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
                 r.removeArchitecture(e);
             });
-            const dlB = performance.now() + (opts.wagenMs || 90000);
-            while (!e.instanced && !e.mesh && performance.now() < dlB) {
-                r._rebuildArchitectureMesh(e);
-                if (e.instanced || e.mesh) break;
-                takt();
-                await warte(50);
-            }
+            await window.__gebautNach(e, { takt });
             const tasten = (w, sb) => {
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
                 st.keys.w = !!w;
@@ -606,8 +599,8 @@ async function verdeckungPhase(opts) {
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
-    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (≤ 30 s: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
-    for (const t0 = performance.now(); await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && performance.now() - t0 < 30000; );
+    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
+    for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
@@ -640,14 +633,9 @@ async function verdeckungPhase(opts) {
         });
         const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 300000) {
-                const r = window.anazhRealm;
-                const st = r && r.state;
-                // Renderer UND Welt: `init()` wartet nach dem Spieler-Anker auf `_idbPreload` und rechnet erst dann die Welt
-                // (`generateNewWorld` → Hydrosphäre), der Renderer steht parallel — ohne die Hydrosphäre fände der Ablauf
-                // keinen Bach (CI integ-probe d85a4edc, Gruppe 2: Renderer nach 0 s, „kein Bach … (keine Hydrosphäre)").
-                if (
-                    st &&
+            const r = await window.__weltDa((r) => {
+                const st = r.state;
+                return !!(st &&
                     st.rendererReady &&
                     st.renderer &&
                     st.renderer.backend &&
@@ -655,18 +643,10 @@ async function verdeckungPhase(opts) {
                     st.playerMesh &&
                     st.hydrosphere &&
                     st.hydrosphere.ready &&
-                    (st._weltbildDa || !karte) // die Karte taktet schneller als LADE_BILD_MS: unter dem Ladeschirm zeichnen 8 von 29 Takten
-                )
-                    return {
-                        ok: true,
-                        ms: Math.round(performance.now() - t0),
-                        webgpu: st.renderer.backend.isWebGPUBackend === true,
-                    };
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
+                    (st._weltbildDa || !karte));
+            });
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
         }, linsenGpu() === "hardware");
-        if (!bereit.ok) throw new Error("Renderer und Welt (Hydrosphäre) standen nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Linse liest WebGPU-Validierung, sie wäre blind");
         log(`Renderer und Welt bereit nach ${Math.round(bereit.ms / 1000)} s`);
         // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`); die Stoffe der Stationen bauen mit

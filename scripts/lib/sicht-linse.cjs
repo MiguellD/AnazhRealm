@@ -1232,5 +1232,5 @@ module.exports = {
         `window.__sichtArbeitOhne = ${sichtArbeitOhne.toString()};` +
         `window.__sichtPhase = ${sichtPhase.toString()};` +
         `window.__sichtLauf = ${sichtLauf.toString()};` +
-        `window.__weltStehtNach = ${require("./welt-boot.cjs").weltStehtNach};`, // die Werkbank bootet ohne welt-boot
+        require("./welt-boot.cjs").WARTEN_SEITE, // die Werkbank bootet ohne welt-boot
 };

@@ -5,21 +5,12 @@
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {
     const res = {};
-    const dl0 = performance.now() + 60000;
-    while (
-        (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
     const r = window.anazhRealm;
     const st = r.state;
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    const dl = performance.now() + 50000;
-    while (performance.now() < dl) {
-        if (f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt) break;
-        await new Promise((r2) => setTimeout(r2, 80));
-    }
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     const P = Object.getPrototypeOf(r);
     const DT = 1 / 60;
     // KONSUM am Zähl-Spion: der Versorger o[k] zählt, während lauf() den Leser einmal ruft (ein Wurf danach entwertet ihn nicht)
@@ -212,12 +203,7 @@ async function probeLeben(expected) {
             { silent: true, precise: true, rotationY: rotY }
         );
         if (!e) return null;
-        const dlB = performance.now() + 45000;
-        while (!e.instanced && !e.mesh && performance.now() < dlB) {
-            r._rebuildArchitectureMesh(e);
-            if (e.instanced || e.mesh) break;
-            await new Promise((r3) => setTimeout(r3, 200));
-        }
+        await window.__gebautNach(e);
         if (vorAufsitzen) vorAufsitzen(e);
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
@@ -1598,12 +1584,7 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: gasse.fahrt - Math.PI / 2 }
                 );
                 if (!e) return null;
-                const dlP = performance.now() + 45000;
-                while (!e.instanced && !e.mesh && performance.now() < dlP) {
-                    r._rebuildArchitectureMesh(e);
-                    if (e.instanced || e.mesh) break;
-                    await new Promise((r4) => setTimeout(r4, 200));
-                }
+                await window.__gebautNach(e);
                 return e.blockerAABBs && e.blockerAABBs.length ? e : null;
             },
             lage: (e) => ({ x: e.position.x, z: e.position.z }),
@@ -1656,12 +1637,7 @@ async function probeLeben(expected) {
                     { x, y: hh(x, zz) + 0.5, z: zz },
                     { silent: true, precise: true, rotationY: rotY }
                 );
-                const dlG = performance.now() + 45000;
-                while (e && !e.instanced && !e.mesh && performance.now() < dlG) {
-                    r._rebuildArchitectureMesh(e);
-                    if (e.instanced || e.mesh) break;
-                    await new Promise((r5) => setTimeout(r5, 200));
-                }
+                if (e) await window.__gebautNach(e);
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
             // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse im Rahmen

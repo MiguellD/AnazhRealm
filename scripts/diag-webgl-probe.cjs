@@ -35,8 +35,7 @@ const server = statikServer();
     page.on("console", (m) => consoleLines.push(m.text()));
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (!(window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true) && performance.now() < dl) await new Promise((r) => setTimeout(r, 200)); // prettier-ignore
+        await window.__weltDa(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet
         const st = window.anazhRealm && window.anazhRealm.state, rend = st && st.renderer, be = rend && rend.backend; // prettier-ignore
         if (!be || !be.gl) return;

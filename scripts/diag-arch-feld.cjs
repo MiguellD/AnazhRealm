@@ -97,16 +97,10 @@ function kartenGesetz(buch, zelleF) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 300000;
-        while (
-            (!window.anazhRealm || !window.anazhRealm.state || typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(200);
+        await window.__weltDa((r) => r.state);
         const r = window.anazhRealm;
         if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
-        const dlB = performance.now() + 90000;
-        while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
         // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
         let taktFehlerN = 0,

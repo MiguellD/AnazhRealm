@@ -448,20 +448,11 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl0
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const st = r.state;
     const f = r._ensureAssetFoundry();
-    const dlF = performance.now() + 60000;
-    while (performance.now() < dlF) {
-        if (f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt) break;
-        await new Promise((res) => setTimeout(res, 100));
-    }
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     if (st.renderer) {
         st.renderer.render = function () {};
         if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
@@ -473,6 +464,13 @@ async function probe(A) {
     const frame = () => {
         tMs += MUSTER[nFrame++ % MUSTER.length];
         r._gameLoopTick(tMs);
+    };
+    // der Takt des Warten auf einen Bau: 30 Bilder (`__gebautNach`)
+    const takte30 = () => {
+        for (let i = 0; i < 30; i++)
+            try {
+                frame();
+            } catch (_e) {}
     };
     // Das Wasser über dem Boden an (x, z), wo es über ihm steht (sonst −Infinity): das gezeichnete (`_wasserBildAt`) und —
     // `gesetz` — das des Gesetzes, aus dem das Bild wird (`_atlasWaterLevelAt` über dem Boden: ein Fern-Chunk zeichnet einen
@@ -605,7 +603,6 @@ async function probe(A) {
         return null;
     };
     const werkeMessen = async () => {
-        const dl = performance.now() + A.huelleMs;
         const fertig = (w) =>
             w.done ||
             !st.architectures.includes(w.e) ||
@@ -614,14 +611,9 @@ async function probe(A) {
                 : /^haus_/.test(w.e.type)
                   ? !!w.e._hausHuelle
                   : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
-        while (performance.now() < dl && !werke.every(fertig)) {
-            for (let i = 0; i < 30; i++)
-                try {
-                    frame();
-                } catch (_e) {}
-            for (const w of werke) if (!fertig(w)) r._rebuildArchitectureMesh(w.e);
-            await new Promise((res) => setTimeout(res, 50));
-        }
+        // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
+        for (const w of werke)
+            await window.__gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
         for (const w of werke) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
@@ -742,20 +734,17 @@ async function probe(A) {
     // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
     const stroemen = async (X, Z, nachlauf) => {
         st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Ort", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             try {
                 frame();
             } catch (_e) {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         for (let i = 0; i < nachlauf; i++) {
@@ -1437,9 +1426,8 @@ async function probe(A) {
                         (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
                     ).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
-                    const dl = performance.now() + A.dorfMs;
                     let echo = "";
-                    while (performance.now() < dl) {
+                    for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
@@ -1616,18 +1604,11 @@ async function probe(A) {
                     zensus.quelle = "strom";
                     // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
                     const haeuser = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
-                    const dlH = performance.now() + A.huelleMs;
-                    while (
-                        performance.now() < dlH &&
-                        !haeuser.every((e) => e._hausHuelle || !st.architectures.includes(e))
-                    ) {
-                        for (let i = 0; i < 30; i++)
-                            try {
-                                frame();
-                            } catch (_e) {}
-                        for (const e of haeuser) if (!e._hausHuelle) r._rebuildArchitectureMesh(e);
-                        await new Promise((res2) => setTimeout(res2, 50));
-                    }
+                    for (const e of haeuser)
+                        await window.__gebautNach(e, {
+                            fertig: () => !!e._hausHuelle || !st.architectures.includes(e),
+                            takt: takte30,
+                        }).catch(() => null);
                     // die Chunks am Rand entstehen neu (wie beim Wieder-Strömen): 5 × 5 um das Haus am Rand, dann die Takte
                     await neuBauen();
                 } finally {
@@ -1794,12 +1775,7 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl0
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     if (!r) return { fehler: "die Welt bootete nicht" };
     const st = r.state;
@@ -1824,18 +1800,15 @@ async function dammProbe(A) {
         }
     };
     const stroemen = async (X, Z) => {
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Strom", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             frame();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         await takte(120);
@@ -2408,12 +2381,7 @@ function selbsttest() {
 // Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
 // Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
 async function weltOrte(A) {
-    const dl = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const G = window.__gelaendeCore;
     const [MX, MZ] = A.mess;
@@ -2594,7 +2562,6 @@ async function lauf() {
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
-            huelleMs: 60000,
             wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,
@@ -2635,14 +2602,7 @@ async function lauf() {
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
-                    const t0 = performance.now();
-                    while (
-                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
-                        performance.now() - t0 < 120000
-                    )
-                        await new Promise((res) => setTimeout(res, 200));
-                    const r = window.anazhRealm;
-                    if (!r || !r.importWorldBeside) return null;
+                    const r = await window.__weltDa((w) => typeof w.importWorldBeside === "function");
                     const res = r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);

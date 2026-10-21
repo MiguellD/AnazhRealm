@@ -46,21 +46,7 @@ const BOX_ELEMENT = new Set(["find", "filter", "slice", "at", "concat", "findLas
 function boxWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f) => {
-        f(n);
-        for (const k of kinder(n)) lauf(k, f);
-    };
+    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const name = (m) =>
         m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
     const befunde = [];
@@ -888,15 +874,7 @@ function urteil(S, pageErrors) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.player ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.player);
     });
     const S = await page.evaluate(probe);
     await browser.close();

@@ -1260,7 +1260,6 @@ class AnazhRealm_gelaende_fern {
                 rows++;
             fr.zoneVerts = rows * F.winkel;
         }
-        if (!fr.zoneVerts) return;
         // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
         // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
         // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
@@ -1287,6 +1286,7 @@ class AnazhRealm_gelaende_fern {
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
         // schläft die Wache.
+        // ohne Saum-Punkt ist die Runde 0 und gegangen (`_standRuht`) — auch der leere Saum geht durch die Wache
         if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;

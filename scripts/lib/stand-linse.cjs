@@ -319,7 +319,7 @@ function standUrteil(b) {
         for (const n of namen) {
             const t = ph && ph.takte[n];
             if (!t || t.runde === undefined) v.push(`LEER: die Treue-Phase ${wo} nennt die Runde von ${n} nicht`);
-            else if (!(t.gang >= Math.max(1, t.runde)))
+            else if (!(t.gang >= t.runde))
                 v.push(
                     `TREUE-LÜCKE: ${n} (${TAKTE[n]}) ging ${wo} ${t.gang} von ${t.runde} Einheiten seiner Runde — die ` +
                         `Treue sah nur einen Teil der Welt`
@@ -597,6 +597,27 @@ function standUrteil(b) {
             `NACHSCHUB: ${N.warten.length} Streu-Regionen warten, obwohl die Schlange des Walds leer ist und kein Asset ` +
                 `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
         );
+    // (W) WACH: ein Fege-Takt mit Offenem hält die Welt wach, beim Namen
+    if (!/Fege-Takt[^]*archCull/.test(b.wach || "")) v.push(`WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${b.wach || "—"})`);
+    // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
+    // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
+    if (b.fixWach !== false)
+        v.push(
+            `FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend (${b.fixWach}) — Stufen-Wahl und Streu ` +
+                "gingen mitten in ihren Runden"
+        );
+    const fix = b.fix || [];
+    if (!fix.length) v.push("LEER: keine Fixpunkt-Phase");
+    else if (!fix.some((F) => F.wirkte > 0 || F.fehler)) v.push("LEER: der Regler-Schritt wirkte nicht — die Fixpunkt-Phase ist stumpf");
+    for (const F of fix)
+        if (F.fehler) v.push(`FIXPUNKT: nach dem Regler-Schritt steht die Welt nie — ${F.fehler}`);
+        else
+            for (const [n, t] of Object.entries(F.nach.takte))
+                if (t.summe > 0)
+                    v.push(
+                        `FIXPUNKT: die Welt stand nach ${F.takte} Takten, danach ging ${n} (${TAKTE[n]}) ohne Eingabe noch ${t.summe} ` +
+                            `Einheiten in ${t.mitArbeit} von ${F.nach.frames} Takten (${t.wirkt} Wirkungen) — „steht" mitten in seiner Runde`
+                    );
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
