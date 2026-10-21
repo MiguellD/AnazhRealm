@@ -1977,7 +1977,7 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
 //   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug, der
-//                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`),
+//                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`), die Siedlungen der Bewohner (`_bewohnerSiedlungen`),
 //                die Lichter: das wache Tor, der Licht-Pool, der die Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
@@ -1993,6 +1993,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
         "_ortPlaene",
+        "_bewohnerSiedlungen",
         "_portalLeuchte",
         "_leuchtPool",
     ]),

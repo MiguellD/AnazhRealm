@@ -5507,6 +5507,25 @@
       else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
       return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
     }
+    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das META-GESETZ von der anderen Seite: dort emergiert die
+    //    Größe eines Hauses aus Personen und Wohlstand, hier wohnen in einem gebauten Haus (die Zeile hp des Plans, `slot.ov`)
+    //    so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
+    //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
+    //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
+    //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
+    //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2 } };
+    function leuteVon(hp) {
+        if (!hp || typeof hp !== "object") return 0;
+        var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
+        if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
+        var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
+        var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
+        if (!(W > 0 && D > 0)) return 1;
+        var fl = W * D * (st >= 1 ? st : 1) * LEUTE_GESETZ.nutz;
+        var jeP = LEUTE_GESETZ.flaeche + LEUTE_GESETZ.wohlFlaeche * wohl;
+        return Math.max(1, Math.min(LEUTE_GESETZ.max, Math.round(fl / jeP)));
+    }
 
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
     //    N6.2: die EINE Lab-Formel exportiert ABGELEITETE Daten, kein Duplikat).
@@ -6265,6 +6284,8 @@
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
+        LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
+        leuteVon: leuteVon,
         DORF: DORF,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,

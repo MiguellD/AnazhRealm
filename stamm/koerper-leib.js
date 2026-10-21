@@ -1,28 +1,51 @@
 class AnazhRealm_koerper_leib {
     // ===== ATLAS · Koerper/leib — Rig · Gang und IK · Ofen-Guss · Tier-Animation =====
     // Genom-Roller: aus EINEM Seed ein deterministisches Körper-Genom (Geschlecht · Statur · Muskel ·
-    // Kopf-Verhältnis · Größe · Haut/Haar-Ton) — gleicher Seed → gleicher Körper auf allen Peers.
+    // Kopf-Verhältnis · Größe · Haut · Haar · Kleid) — gleicher Seed → gleicher Körper auf allen Peers.
+    // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core SKIN_TONES · HAIR_COLORS · CLOTH_COLORS): der Roller
+    // PICKT ihre SCHLÜSSEL, die Dials tragen sie in den EINEN Farb-Münzer (`_menschGussFarben`) und den Guss — kein Hex-Zwilling.
+    // Das Haar der Natur: die Töne, deren Farbton im Braun-Orange liegt (≤ 50°) oder die kaum gesättigt sind (Schwarz, Grau,
+    // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Bewohner
+    // (`_bewohnerGestalt`). Kalter Kern → lauter Bruch (fail-closed).
     _rollHumanoidGenome(seed) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
-        // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core.SKIN_TONES/
-        // HAIR_COLORS): der Roller PICKT aus der Lab-Wahrheit, kein Zwilling mehr.
         const core = typeof window !== "undefined" && window.__koerperCore;
-        const skinTones =
-            core && core.SKIN_TONES ? Object.keys(core.SKIN_TONES).map((k) => core.SKIN_TONES[k].hex) : [0xc48566];
-        const hairTones =
-            core && core.HAIR_COLORS ? Object.keys(core.HAIR_COLORS).map((k) => core.HAIR_COLORS[k].base) : [0x2a1a10];
+        if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS)
+            return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS");
+        const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
+            const c = core.HAIR_COLORS[k].base >>> 0;
+            const r = (c >> 16) & 255,
+                gr = (c >> 8) & 255,
+                b = c & 255;
+            const hi = Math.max(r, gr, b),
+                lo = Math.min(r, gr, b);
+            const d = hi - lo;
+            const hell = (hi + lo) / 510;
+            if (d === 0 || d / 255 / (1 - Math.abs(2 * hell - 1)) < 0.2) return true;
+            const ton =
+                hi === r
+                    ? (((gr - b) / d) * 60 + 360) % 360
+                    : hi === gr
+                      ? ((b - r) / d) * 60 + 120
+                      : ((r - gr) / d) * 60 + 240;
+            return ton <= 50;
+        });
         return {
             sex: g.axis("sex"),
             build: g.axis("build"),
             muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
             headRatio: g.range("head", 0.92, 1.16),
             kh: g.range("height", 0.195, 0.235), // Welt-Höhe ~1.56–1.88 m
-            skinColor: g.pick("skin", skinTones),
-            hairColor: g.pick("hair", hairTones),
+            skinTone: g.pick("skin", Object.keys(core.SKIN_TONES)),
+            hairColor: g.pick("hair", natur),
+            topColor: g.pick("top", Object.keys(core.CLOTH_COLORS)),
+            bottomColor: g.pick("bottom", Object.keys(core.CLOTH_COLORS)),
+            shoeColor: g.pick("schuh", Object.keys(core.CLOTH_COLORS)),
         };
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
-    // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit.
+    // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit; die Paletten-Schlüssel des
+    // Genoms (Haut, Haar, Kleid) reisen als die String-Wahlen des Studios.
     _dialsAusGenom(g) {
         const core = typeof window !== "undefined" && window.__koerperCore;
         const start = core.START_PARAMS;
@@ -37,6 +60,8 @@ class AnazhRealm_koerper_leib {
                 d[row.dial] = (g[row.axis] - row.base) / row.mul;
             }
         }
+        for (const k of ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor"])
+            if (typeof g[k] === "string") d[k] = g[k];
         return d;
     }
 

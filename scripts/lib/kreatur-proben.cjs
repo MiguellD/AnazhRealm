@@ -2744,11 +2744,12 @@ async function kreaturProben(r, T, opts) {
         const wm = s.worldMeta;
         const t0 = performance.now();
         if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
-        while (
-            (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start)) &&
-            performance.now() - t0 < 120000
+        // das EINE Warten (`__deckel`): gezählt wird nur ein Gang, in dem die Welt nichts mehr offen hat und kein Export unterwegs ist
+        for (
+            const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
+            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
         )
-            await schlaf(100);
+            await schlaf(50);
         for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
             r._tickAutoSettlement(pm);
             await schlaf(0);
@@ -2772,35 +2773,55 @@ async function kreaturProben(r, T, opts) {
             kultur: sl.kultur,
             soll: gesetz ? FC.leuteVon(sl.ov) : null,
         }));
-        // der Dorfplatz: der Spieler am Rand des Platzes, der Blick längs seiner langen Achse über ihn
+        // der Dorfplatz: der Spieler am Rand des Platzes (die Blick-Wahl sucht freie Sicht, Lehre 17: zuerst die Enden der langen
+        // Achse, dann die Seiten, dann die Diagonalen — der erste Stand außerhalb jedes Grundrisses), der Blick zur Mitte
         const pz = plan.platz;
         const pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
-        const lang = pz.ex >= pz.ez;
-        const ax = lang ? Math.cos(pz.phi || 0) : Math.sin(pz.phi || 0);
-        const az = lang ? -Math.sin(pz.phi || 0) : Math.cos(pz.phi || 0);
-        const rand = Math.max(pz.ex, pz.ez) + 2;
-        const stand = { x: pc.x - ax * rand, z: pc.z - az * rand };
+        const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
+        let stand = null;
+        for (const da of [
+            0,
+            Math.PI,
+            Math.PI / 2,
+            -Math.PI / 2,
+            Math.PI / 4,
+            (3 * Math.PI) / 4,
+            -Math.PI / 4,
+            (-3 * Math.PI) / 4,
+        ])
+            for (const plus of [2, 5, 9]) {
+                if (stand) break;
+                const a = (pz.phi || 0) + lang + da;
+                const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
+                const x = pc.x - Math.cos(a) * ex;
+                const z = pc.z + Math.sin(a) * ex;
+                const g = r._imGrundriss(x, z, 0.5);
+                if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
+            }
+        if (!stand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
+        const sl0 = Math.hypot(pc.x - stand.x, pc.z - stand.z) || 1;
+        const ax = (pc.x - stand.x) / sl0;
+        const az = (pc.z - stand.z) / sl0;
         const hS = r.getTerrainHeightAt(stand.x, stand.z);
         pm.set(stand.x, (Number.isFinite(hS) ? hS : pm.y) + A.PLAYER_FOOT_OFFSET, stand.z);
         // DER SPIEL-TAKT: der Leib jedes Bewohners entsteht, wie das Spiel ihn baut (Vorlagen im Faden, Geburt im Takt)
         const leiber = () =>
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        let ruhig = 0;
-        let letzt = -1;
-        const t1 = performance.now();
-        while (performance.now() - t1 < 90000) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {
-                /* der Takt meldet selbst */
+        // der Takt läuft, bis jeder Leib steht — oder bis die Welt nichts mehr offen hat und kein Leib mehr kommt (`__deckel`:
+        // dann bleibt die Zahl, wie sie ist, und das Urteil nennt sie)
+        let stall = null;
+        try {
+            for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && leiber().length < sollSumme;) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    /* der Takt meldet selbst */
+                }
+                await schlaf(16);
             }
-            const n = leiber().length;
-            ruhig = n === letzt ? ruhig + 1 : 0;
-            letzt = n;
-            if (n > 0 && n >= sollSumme && ruhig > 30) break;
-            if (!gesetz && performance.now() - t1 > 20000) break;
-            await schlaf(16);
+        } catch (e) {
+            stall = String((e && e.message) || e).slice(0, 160);
         }
         // Täter (Selbsttest): ein Haus ohne seine Bewohner — die Leiber des ersten bewohnten Hauses fallen aus der Szene
         if (taeter === "bewohner-haus") {
@@ -2855,6 +2876,7 @@ async function kreaturProben(r, T, opts) {
         const third = blickZaehlen("third");
         return {
             dorf: plan.name,
+            stand: { x: Math.round(stand.x * 10) / 10, z: Math.round(stand.z * 10) / 10 },
             haeuser: haeuser.length,
             slots: plan.slots.length,
             gesetz,
@@ -2865,6 +2887,7 @@ async function kreaturProben(r, T, opts) {
             leerN: leer.length,
             abw: abw.slice(0, 6),
             imBlick: { ego, third },
+            stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
         };
     });
