@@ -2323,6 +2323,24 @@ class AnazhRealm_bild_himmel {
         return L.betaRayleigh + Math.max(0, f.fog) * dunst + Math.max(0, f.rain) * regen;
     }
 
+    // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
+    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) über dem grauen Aerosol: blau
+    // verlischt zuerst, die Ferne nimmt den Farbton des Himmels an, der sie überstreut. Unter Wasser das Spektrum des
+    // Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis ferne-luft löschte die Luft grau (EIN Skalar β), ihr
+    // Himmel streute je Kanal (Linse: `werkbank licht --luft`, Δβ blau−rot 0 gegen die Referenz in spec).
+    _luftSpektrum(beta, unterWasser, out) {
+        if (unterWasser) {
+            const wK = (
+                AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+                AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ")
+            ).wK;
+            return out.set(wK[0] / wK[1], 1, wK[2] / wK[1]);
+        }
+        const M = this._atmoMedium(beta);
+        const k = 1000 * beta;
+        return out.set((M.betaR[0] + M.mieExt) / k, (M.betaR[1] + M.mieExt) / k, (M.betaR[2] + M.mieExt) / k);
+    }
+
     // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
     // der CPU-Leser DERSELBEN Uniforms, die der Knoten liest (Linsen, Fern-Wasser-Reichweite); ohne Szene das Gesetz
     // selbst (`_luftBeta` auf dem Bezugsniveau). Eine fehlende Augenhöhe ist ein Aufrufer-Fehler, nie 0.
@@ -2338,9 +2356,10 @@ class AnazhRealm_bild_himmel {
     }
 
     // Die Luft-Knoten (EINMAL je Szene): Uniforms in der geteilten renderGroup (Observer-Diät-Pflicht-Paar),
-    // `faktor(auge, punkt)` = 1 − e^{−τ} mit τ = β·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (k = Δy/H, k→0: 1 − k/2),
-    // `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung. `scene.fogNode` ist der Leser jedes
-    // Materials (r184 `getFogNode`), der Feld-Pass ruft dieselben Fn.
+    // `faktor(auge, punkt)` = 1 − e^{−τ} JE KANAL mit τ = β·s·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (s = `_luftSpektrum`,
+    // k = Δy/H, k→0: 1 − k/2), `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung.
+    // `scene.fogNode` ist der Leser jedes Materials (r184 `getFogNode`: es liest `output`), der Feld-Pass ruft dieselben
+    // Fn; r184 `fog()` mischt mit `factor.toFloat()` — darum mischt der Knoten selbst, je Kanal.
     _luftEnsure() {
         const st = this.state;
         if (st.luft) return st.luft;
@@ -2348,12 +2367,14 @@ class AnazhRealm_bild_himmel {
         const T = THREE.TSL;
         // Die Luft ist Pflicht jeder Szene: fehlen die TSL-Organe, ist der Vendor alt — laut, nie ein stiller Klar-Himmel
         // ohne Luft (und ohne Feld-Pass, der dieselben Knoten liest).
-        if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
-            throw new Error("Die Luft: THREE.TSL trägt fog/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
+        if (!T || !T.output || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
+            throw new Error("Die Luft: THREE.TSL trägt output/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
         const L = AnazhRealm.LUFT;
         const A = this._atmoLutBau();
+        const klar = this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny);
         const U = this._uniformHeimatTeilen({
-            beta: T.uniform(this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny)),
+            beta: T.uniform(klar),
+            spektrum: T.uniform(this._luftSpektrum(klar, false, new THREE.Vector3())),
             hoehe: T.uniform(L.skalenHoeheM),
             bezugY: T.uniform(0),
             farbe: T.uniform(new THREE.Color(0, 0, 0)),
@@ -2371,8 +2392,8 @@ class AnazhRealm_bild_himmel {
                 T.float(1).sub(T.exp(kSicher.negate())).div(kSicher)
             );
             const hoehenTerm = T.exp(auge.y.sub(U.bezugY).div(U.hoehe).negate());
-            const tau = U.beta.mul(hoehenTerm).mul(d).mul(fk);
-            return T.float(1).sub(T.exp(tau.negate()));
+            const tau = U.beta.mul(U.spektrum).mul(hoehenTerm).mul(d).mul(fk);
+            return T.vec3(1).sub(T.exp(tau.negate()));
         });
         // DIE IN-STREUUNG ist der Himmel selbst (D3): die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung — zur Sonne hin
         // trägt sie die Mie-Keule des Aerosols aus der Phase (g des Gesetzes), am Horizont das Blau der Rayleigh-Streuung;
@@ -2383,7 +2404,10 @@ class AnazhRealm_bild_himmel {
             const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
         });
-        st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
+        st.scene.fogNode = T.vec4(
+            T.mix(T.output.rgb, farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld)),
+            T.output.a
+        );
         st.luft = { U, faktor, farbe };
         return st.luft;
     }
@@ -2458,6 +2482,12 @@ class AnazhRealm_bild_himmel {
             } else {
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
+            }
+            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung)
+            const fuer = kameraUnterWasser ? -1 : U.beta.value;
+            if (luft.spektrumFuer !== fuer) {
+                this._luftSpektrum(U.beta.value, kameraUnterWasser, U.spektrum.value);
+                luft.spektrumFuer = fuer;
             }
         }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
