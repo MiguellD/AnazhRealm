@@ -1,22 +1,22 @@
-# ÜBERGABE 21.10.2026 (Koordinator, Woche 94 % → Notbremse bei 98 %; Reset 27.10. 08:00)
+# ÜBERGABE 21.10.2026 (Koordinator, NOTBREMSE bei 98 % um ~21:30; Reset 27.10. 08:00)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Dann `auftrag/2210-wochenplan.md` (Regeln + Reihe der neuen Woche)
 und das Gedächtnis `memory/uebergabe-stand.md` + `memory/punkte-je-token.md`.
 
 ## Köpfe
-- **main = 32b37933** (V18.546.49+): + gehen-takt, Belegungs-Fertigsteller, Ufer-Warte, e-bauart, ruhe-karten, albedo-frische, latenz-Linse.
-  Entscheid trotz Genesis Third steht CPU-Takt p95 +0,2 ms (n = 4, kein Täter) — `bericht/2110-abab-main.md` Nachtrag; erster Posten E.
-- **integ-probe = 0ed95c00** (V18.546.51) = main + e-bauart-spitze (OMEN) + kamera-fuss. CI lief beim Schreiben. Für den main-Vorlauf:
-  EIN OMEN-ABAB 2+2 (Genesis Third steht, Wiese Ego geht) gegen 32b37933, dann FF; danach Meisterkarte leib.K4 0 → 1 buchen
-  (Kugel in der Wand 49 → 0 von 1096 Bildern, Ruck p95 0,0077 m, gate:kamera-leib).
-- **Meisterkarte 26/330** (koordination, Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2, Quelle meisterkarte-quelle/,
-  `node meisterkarte-quelle/gen.cjs build|check`, Ansicht `node meisterkarte-quelle/ansicht.cjs meisterkarte.json <html>`).
+- **main = 5951786f** (V18.546.52): … + e-bauart-spitze, kamera-fuss, anfahren (OMEN-ABAB nicht langsamer, bericht/2110-abab-anfahren.md;
+  Wiese-GPU +0,15 benannt; Genesis +0,2 aus dem Vorlauf davor benannt unter E).
+- **integ-probe = 816f26b4** (V18.546.53) = main + erstes-haus (massBau 46,9 → 7,7 ms je Haus, byte-gleich). CI lief beim Bremsen —
+  zuerst lesen (ci-lesen.sh 816f26b4…), dann OMEN-ABAB 2+2 → main-FF.
+- **Meisterkarte 29/330** (Licht K2, Leib K1, Leib K4 neu; Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2).
 
 ## Zweige
 | Zweig | Kopf | Zustand | nächster Schritt | Notiz |
 |---|---|---|---|---|
-| bewohner | d9ffbfcf6 | in Arbeit 55 %, WIP [skip ci] | Bewohner stehen (81 Leiber, Quote 1,000, Dorfplatz 46/45 im Blick, Linse grün) — aber Kosten über dem Band (Dorf Befehle 47 → 218, CPU p95 → 10–11 ms) und Decke scripts +2611: stehende Bewohner ab ~8 m als Instanz-Senken (`_instanzMesh` je Gestalt+Teil, Kontrapost einmal gebacken), nah ≤ 4 animiert, Mengen-Stufe in koerper-core (additiv, Byte-Beweis); Decke bezahlen; integ mergen; [ci voll] | worktrees/bewohner/befund.md |
-| anfahren | (läuft) | Karte leib.K1 gehen p95 ≤ 50 ms (Basis 77/70 ms: Interpolation einen Sim-Schritt hinterher + Gang-Kurve kAcc 14) | Stand in worktrees/anfahren/befund.md lesen | — |
+| bewohner | 212730ad | in Arbeit (Notbremse) | Mengen-Stufe im Ofen-Vertrag (Golden 460 → 496 Klassen, mensch-L2) und integ 816f26b4 gemergt; Rest laut befund.md: Instanz-Senken ab ~8 m, nah ≤ 4 animiert, Profi-Band Dorf gegen Basis, Decke ≤ 0, [ci voll] | worktrees/bewohner/befund.md |
+| haus-innen | f2c89b4e (WIP) | in Arbeit (Notbremse) | Linse W10 trägt W1-Gang/W3-Treppe/W9-Keller (6705848f [ci voll]); WIP danach ungeprüft — befund.md lesen | worktrees/haus-innen/befund.md |
+| naesse | 74b460a4 | 70 %, gepusht, keine CI | Nässe-Zustand + EIN Stoff-Term (Wiese 1,000 → 0,772, Dorf draußen 0,759, innen 1,000); offen: gate:naesse:echt + Frost/Ego-Schatten/licht-weg auf echter GPU, gpu-bank, [ci voll]; Dächer ohne Hülle | worktrees/naesse/befund.md |
+| anfahren | abe3f4b7 | GEMERGT (main) | — | — |
 | karte-licht | b92ebcdf | pausiert 40 % | Sonnen-Sicht richtungsblind geschnitten, aber tanne@0,27 Regression, Wurf-Wähler-Zwilling, portal-membran rot | worktrees/karte-licht/befund.md |
 | himmel-ton | 141105ba | pausiert | ATMO_BODEN Grau 0,1 ist ein echter Schnitt; die Linse wurde aufgeweicht (urteilt gegen den Welt-Himmel statt Hillaire) → Linse zurück auf externe Referenz, dann JE KANAL | worktrees/himmel-ton/befund.md |
 | b-abdruck | 78f6abe5 | geparkt (Grenze) | Gerät steht nach dem Buch (requestAdapter 0,8 s ab 0,6 s) → ≤ 0,3 s Weltbild | worktrees/b-abdruck/befund.md |
