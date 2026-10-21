@@ -925,12 +925,10 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         }
         if (hat("profil")) {
             const prof = await schritt("profil", () =>
-                R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
+                R("/haenger", { spitze: true, sek: P.profilSek, ein: 2, regler: "voll", tiere: "frei" })
             );
             aus.kurz.profil = mitTieren(
-                prof && !abbruchVon(prof)
-                    ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) }
-                    : null
+                prof && !abbruchVon(prof) ? { cpuMs: prof.cpuMs, taeter: prof.taeter.slice(0, 12) } : null
             );
             if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
                 aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
@@ -976,8 +974,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             `  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel}) · ` +
                 tierZeile(aus.kurz.band.tiere)
         );
-    if (aus.kurz.profil && aus.kurz.profil.frames != null)
-        console.log(`  profil: ${aus.kurz.profil.frames} Frames · ${tierZeile(aus.kurz.profil.tiere)}`);
+    if (aus.kurz.profil && aus.kurz.profil.cpuMs)
+        console.log(`  profil: CPU-Takt p95 ${aus.kurz.profil.cpuMs.p95} ms · ${tierZeile(aus.kurz.profil.tiere)}`);
     console.log(`  Werkbank-Ende: ${aus.werkbankEnde}`);
     return {
         code: abbruch ? 2 : aus.befunde.length ? 1 : 0,
