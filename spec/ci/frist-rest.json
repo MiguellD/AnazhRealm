@@ -5,7 +5,7 @@
   "scripts/diag-hitch-telemetrie.cjs": 2,
   "scripts/diag-klang-zensus.cjs": 3,
   "scripts/playtest/feld-leben.cjs": 1,
-  "scripts/lib/haenger-linse.cjs": 3,
+  "scripts/lib/haenger-linse.cjs": 1,
   "scripts/lib/gpu-fehler.cjs": 1
  },
  "Scheibe: die Seite antwortet dem Protokoll je 4 s, das Warten geht in der nächsten weiter": { "scripts/diag-idle-gpu-churn.cjs": 1 },

@@ -88,13 +88,13 @@
 //                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
 //                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
 //   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
-//                                                           DAS CPU-PROFIL des echten Laufs (Chrome-Profiler,
-//                                                           200 µs): Selbst- und Gesamtzeit je Funktion — wer
+//                                                           DAS CPU-PROFIL des echten Laufs (Stichproben der
+//                                                           Spur, 1 ms): Selbst- und Gesamtzeit je Funktion — wer
 //                                                           den Takt trägt, beim Namen (nach einem `lauf`)
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern kreis]
 //                                     [--schwelle ms] [--probe] [--json datei] | haenger --selbsttest
 //                                                           DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte
-//                                                           Lauf unter dem Chrome-Profiler (1 ms), je Frame über der
+//                                                           Lauf mit den Stichproben der Spur (1 ms), je Frame über der
 //                                                           Schwelle (100 ms) die Ursache beim Namen — TAKT (die Engstelle
 //                                                           im Spiel-Takt) · NEBEN (Haupt-Thread außerhalb des Takts) ·
 //                                                           GC · GPU (der Haupt-Thread wartet: synchrone Pipelines mit
@@ -394,11 +394,11 @@ function lauf(k) {
         // Haken zählt je gerendertem Frame die Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, fertigVor = r._gpuLeine ? r._gpuLeine.fertig : 0;
-        // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert,
-        // die Leine und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `wandern: "kreis"` hält W und dreht den Blick
+        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
+        // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
+        // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `wandern: "kreis"` hält W und dreht den Blick
         // 0,08 rad/s, `probe` schmuggelt 250 ms in den Takt.
-        const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], flug: [], innen: [], aussen: [] };
+        const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
             for (const x in a) if (a[x] !== (b[x] || 0)) o[x] = +(a[x] - (b[x] || 0)).toFixed(2);
@@ -407,8 +407,7 @@ function lauf(k) {
         const ort = st.playerMesh.position.clone(), yaw0 = st.yaw;
         let snap = H && Object.assign({}, H.acc), tWand = null, probeTakt = 0;
         rend.setAnimationLoop((t) => {
-            // DIE BELEGUNG: der ganze Rückruf (Spiel-Takt + Geschirr) zwischen zwei Marken der Spur — `performance.mark`
-            // kostet µs, `console.timeStamp` ~90 µs je Marke (die CDP-Konsole reist mit) und trug das in den Rest.
+            // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
             const spur = messen && k.spur;
             if (spur) performance.mark("anazh-takt");
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
@@ -424,7 +423,10 @@ function lauf(k) {
             }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
-                if (probeTakt > 0) [window.__haengerProbeTakt(probeTakt), (probeTakt = 0)];
+                if (probeTakt > 0) {
+                    window.__haengerProbe(probeTakt);
+                    probeTakt = 0;
+                }
                 r._gameLoopTick(t);
             } finally {
                 uhr.frameZ = null;
@@ -438,7 +440,7 @@ function lauf(k) {
                 return;
             }
             const p = { cpu: c1 - c0, gerendert };
-            if (H) [t, c0, c1, gerendert ? 1 : 0, r._gpuLeine ? r._gpuLeine.imFlug : -1, innen, aussen]
+            if (H) [t, c0, c1, gerendert ? 1 : 0, innen, aussen]
                 .forEach((x, i) => Object.values(T)[i].push(typeof x === "number" ? +x.toFixed(2) : x));
             if (gerendert) {
                 p.dtRender = tRenderVor == null ? null : t - tRenderVor;
@@ -451,9 +453,14 @@ function lauf(k) {
             }
             // DIE GPU-WAHRHEIT: die Pass-Stempel sahen nur einen Teil (das Wasser bricht den Hauptpass für die
             // Tiefen-Kopie, der Neustart überschreibt die Stempel; Arbeit außerhalb der Pässe fehlt ganz). Der
-            // Abstand der GPU-Fertig-Zeitpunkte ist der echte Durchsatz — die Leine des Spiels zählt sie (`fertig`).
+            // Abstand der Zeitpunkte, an denen die GPU ein Bild abgearbeitet hat, ist der echte Durchsatz — die Leine
+            // des Spiels zählt sie (`erledigt`).
             const L = r._gpuLeine;
-            if (L && L.fertig !== fertigVor) [p.fertig, p.gpuFertig, fertigVor] = [L.fertig - fertigVor, L.fertigMs, L.fertig];
+            if (L && L.erledigt !== erledigtVor) {
+                p.erledigt = L.erledigt - erledigtVor;
+                p.gpuErledigt = L.erledigtMs;
+                erledigtVor = L.erledigt;
+            }
             proben.push(p);
             if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
         });
@@ -503,20 +510,28 @@ function lauf(k) {
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["bauN", "bauMs", "verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
-            const erst0 = E && ERST.map((x) => E[x] || 0), probe = [], eich0 = H && window.__haengerEichmarke(8);
+            const erst0 = E && ERST.map((x) => E[x] || 0), probe = [];
             const tMess0 = performance.now();
-            if (H) [(H.loaf.length = 0), (H.namen.length = 0), (H.an = true)];
+            if (H) {
+                H.namen.length = 0;
+                H.an = true;
+            }
             if (H && k.probe) {
-                setTimeout(() => [probe.push({ art: "takt", t: performance.now() }), (probeTakt = 250)], (k.sek * 1000) / 3);
-                setTimeout(() => [probe.push({ art: "neben", t: performance.now() }), window.__haengerProbeNeben(250)], (k.sek * 2000) / 3);
+                setTimeout(() => {
+                    probe.push({ art: "takt", t: performance.now() });
+                    probeTakt = 250;
+                }, (k.sek * 1000) / 3);
+                setTimeout(() => {
+                    probe.push({ art: "neben", t: performance.now() });
+                    window.__haengerProbe(250);
+                }, (k.sek * 2000) / 3);
             }
             messen = uhr.messen = true;
             await sleep(k.sek * 1000);
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
-                takte: T, namen: H.namen.slice(), loaf: H.loaf.slice(), loafDa: H.loafDa, probe, k, tMess: [tMess0, performance.now()],
-                eich: [eich0, window.__haengerEichmarke(8)], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
+                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 spielerEnde: [st.playerMesh.position.x, st.playerMesh.position.z].map((x) => +x.toFixed(1)),
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
@@ -570,8 +585,8 @@ function lauf(k) {
                     : null,
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
                 gpuDurchsatzMs: (() => {
-                    const g = proben.filter((p) => p.fertig);
-                    return zahl(g.slice(1).map((p, i) => (p.gpuFertig - g[i].gpuFertig) / p.fertig));
+                    const g = proben.filter((p) => p.erledigt);
+                    return zahl(g.slice(1).map((p, i) => (p.gpuErledigt - g[i].gpuErledigt) / p.erledigt));
                 })(),
                 // DIE PASS-ZAHL (Befund G8, OMEN 18.10.): die Pascal-Pass-Stempel tragen präsentations-gebundene
                 // Fremdzeit (GTX k0 +0,41 ms in 2–56 % der Pässe), der p50 kippt bei Anteil 0,5. ABAB-Urteile über
@@ -631,48 +646,12 @@ function lauf(k) {
             uhr.ab();
             st.perfTargetMs = decke;
             st.keys.w = false;
-            if (k.wandern === "kreis") [st.playerMesh.position.copy(ort), (st.yaw = yaw0)];
+            if (k.wandern === "kreis") {
+                st.playerMesh.position.copy(ort);
+                st.yaw = yaw0;
+            }
         }
     })();
-}
-
-// Das CPU-Profil verdichten: Selbstzeit je Funktion (Name + Datei:Zeile) und Gesamtzeit (jede Funktion
-// einmal je Stapel gezählt, Rekursion doppelt nie). Prozent beziehen sich auf die gesampelte Wanduhr.
-function profilAuswerten(p, top) {
-    const knoten = new Map(p.nodes.map((n) => [n.id, n]));
-    const selbst = new Map();
-    for (let i = 0; i < p.samples.length; i++) {
-        const id = p.samples[i];
-        selbst.set(id, (selbst.get(id) || 0) + (p.timeDeltas[i] || 0));
-    }
-    const gesamtUs = p.timeDeltas.reduce((a, b) => a + Math.max(0, b), 0) || 1;
-    const name = (n) => {
-        const c = n.callFrame;
-        const datei = (c.url || "").split("/").pop().split("?")[0];
-        return `${c.functionName || "(anonym)"} ${datei}:${c.lineNumber + 1}`;
-    };
-    const jeSelbst = new Map();
-    const jeGesamt = new Map();
-    const lauf = (id, stapel) => {
-        const n = knoten.get(id);
-        const k = name(n);
-        const s = selbst.get(id) || 0;
-        jeSelbst.set(k, (jeSelbst.get(k) || 0) + s);
-        const neu = stapel.has(k) ? stapel : new Set(stapel).add(k);
-        const summe = (n.children || []).reduce((a, c) => a + lauf(c, neu), s);
-        if (!stapel.has(k)) jeGesamt.set(k, (jeGesamt.get(k) || 0) + summe);
-        return summe;
-    };
-    lauf(p.nodes[0].id, new Set());
-    const liste = (m) =>
-        [...m.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, top)
-            .map(
-                ([k, us]) =>
-                    `${((100 * us) / gesamtUs).toFixed(1).padStart(5)} %  ${(us / 1000).toFixed(0).padStart(6)} ms  ${k}`
-            );
-    return { gesampeltMs: Math.round(gesamtUs / 1000), selbst: liste(jeSelbst), gesamt: liste(jeGesamt) };
 }
 
 // DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
@@ -2934,48 +2913,41 @@ async function starte() {
                         if (last && !last.weg) await page.evaluate((k) => window.__zerlegeLast(k), { an: false });
                     }
                 }
-                if (req.url === "/lauf") {
-                    // DIE BELEGUNG (`belegungAuswerten`, scripts/lib/zerlege-linse.cjs): die Spur (CDP-Trace) nur im Mess-Fenster
+                // DIE EINE SPUR (CDP-Trace) um den Lauf, nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
+                // `belegungAuswerten`), Profil und Hänger-Linse lesen Stichproben aus derselben Spur (`HL.spurProfil`) — nie ein
+                // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken und Stichproben (der Faden voll sprengt den Puffer).
+                const laufMitSpur = async (k, kategorien) => {
                     const cdp = await page.target().createCDPSession(), ev = [];
                     cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
                     let an = false, o;
-                    spur.an = () =>
-                        cdp.send("Tracing.start", { traceConfig: { includedCategories: ZL.BELEGUNG_SPUR } }).then(() => (an = true));
+                    spur.an = () => cdp.send("Tracing.start", { traceConfig: { includedCategories: kategorien } }).then(() => (an = true));
                     try {
-                        o = await page.evaluate(lauf, {
-                            sek: Number(b.sek) || 20,
-                            ein: b.ein != null ? Number(b.ein) : 30,
-                            ruhe: Number(b.ruhe) || 0,
-                            regler: b.regler || "frei",
-                            tiere: b.tiere || "halten",
-                            spur: true,
-                        });
+                        o = await page.evaluate(lauf, Object.assign({ regler: b.regler || "voll", tiere: b.tiere || "halten", spur: true }, k));
                     } finally {
                         spur.an = null;
-                        const fertig = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
-                        if (an) await cdp.send("Tracing.end").then(() => fertig);
+                        const komplett = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+                        if (an) await cdp.send("Tracing.end").then(() => komplett);
                         await cdp.detach();
                     }
+                    return { o, ev };
+                };
+                const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"];
+                if (req.url === "/lauf") {
+                    const { o, ev } = await laufMitSpur(
+                        { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei" },
+                        ZL.BELEGUNG_SPUR
+                    );
                     o.belegung = ZL.belegungAuswerten(ev);
                     if (o.stempel) o.stempel.warnung = stempelWarnung.n;
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/profil") {
-                    const cdp = await page.target().createCDPSession();
-                    await cdp.send("Profiler.enable");
-                    await cdp.send("Profiler.setSamplingInterval", { interval: 200 });
-                    await cdp.send("Profiler.start");
-                    const l = await page.evaluate(lauf, {
-                        sek: Number(b.sek) || 8,
-                        ein: 2,
-                        regler: b.regler || "voll",
-                        tiere: b.tiere || "halten",
-                    });
-                    const { profile } = await cdp.send("Profiler.stop");
-                    await cdp.detach();
+                    const { o: l, ev } = await laufMitSpur({ sek: Number(b.sek) || 8, ein: 2 }, PROBEN);
+                    const sp = HL.spurProfil(ev);
+                    if (!sp) return send({ fehler: "keine Stichproben in der Spur", ms: Date.now() - t0 });
                     return send(
-                        Object.assign(profilAuswerten(profile, Number(b.top) || 30), {
+                        Object.assign(HL.profilTop(sp.profil, Number(b.top) || 30), {
                             fps: l.fps,
                             // die Frames des Fensters (die ms je Frame = gesampelt / Frames) und die Wetter-Wache des Laufs
                             frames: l.frames,
@@ -2984,37 +2956,26 @@ async function starte() {
                         })
                     );
                 }
-                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`lauf`, `k.haenger`) unter dem Chrome-Profiler
-                // (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle).
+                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`lauf`, `k.haenger`) mit den Stichproben der
+                // Spur (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle).
                 if (req.url === "/haenger") {
-                    const cdp = await page.target().createCDPSession();
-                    await cdp.send("Profiler.enable");
-                    await cdp.send("Profiler.setSamplingInterval", { interval: 1000 });
-                    await cdp.send("Profiler.start");
-                    let roh = null,
-                        profile = null;
-                    try {
-                        roh = (await page.evaluate(lauf, {
-                            sek: Number(b.sek) || 120,
-                            ein: b.ein != null ? Number(b.ein) : 10,
-                            regler: b.regler || "voll",
-                            tiere: b.tiere || "frei",
-                            wandern: b.wandern || "aus",
-                            probe: !!b.probe,
-                            haenger: true,
-                        })).haenger;
-                    } finally {
-                        profile = (await cdp.send("Profiler.stop")).profile;
-                        await cdp.detach();
-                    }
-                    const a = HL.haengerAuswerten(roh, profile, { schwelle: Number(b.schwelle) || 100 });
+                    const { o: l, ev } = await laufMitSpur({
+                        sek: Number(b.sek) || 120,
+                        ein: b.ein != null ? Number(b.ein) : 10,
+                        tiere: b.tiere || "frei",
+                        wandern: b.wandern || "aus",
+                        probe: !!b.probe,
+                        haenger: true,
+                    }, PROBEN);
+                    const roh = l.haenger, sp = HL.spurProfil(ev);
+                    const a = HL.haengerAuswerten(roh, sp, { schwelle: Number(b.schwelle) || 100 });
                     const befunde = HL.haengerLinsenBefunde(a);
                     const datei = path.resolve(
                         b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`)
                     );
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
-                    // Das ROHE (Takte + Profil) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
-                    fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, profile }));
+                    // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
+                    fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     fs.writeFileSync(
                         datei,
                         JSON.stringify(
@@ -3765,14 +3726,14 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Eichung legt den Profiler auf die Seiten-Uhr"
+                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte"
             );
             process.exit(f.length ? 1 : 0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
-            const { roh, profile } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const a = HL.haengerAuswerten(roh, profile, { schwelle: Number(opt("--schwelle", 100)) });
+            const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
+            const a = HL.haengerAuswerten(roh, spur, { schwelle: Number(opt("--schwelle", 100)) });
             const befunde = HL.haengerLinsenBefunde(a);
             console.log(HL.haengerTabelle(a));
             if (befunde.length) console.log("\nLINSE ROT:\n  " + befunde.join("\n  "));
@@ -3863,7 +3824,9 @@ async function starte() {
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));
-    if (o && o.fehler) process.exit(1);
+    // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
+    // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
+    process.exit(o && typeof o.fehler === "string" ? 1 : 0);
 })().catch((e) => {
     console.error("WERKBANK-FEHLER:", (e && e.message) || e);
     process.exit(1);
