@@ -2591,14 +2591,17 @@ class AnazhRealm_gelaende_chunks {
             this._tickFoliageGrowth();
             return 0;
         }
-        const tStart = performance.now();
         // DAS BILD DER ANKUNFT ZUERST (B-Blick): unter dem Ladeschirm geht der Ring erst die Stücke im Bild (`_rangImBild`, mit der
-        // halben Diagonale wie der Boden-Term) mit der Frist des Lade-Frames, danach die übrigen nur mit der Kappe des Spiels (ohne
-        // Frist, `_kappeOffen(…, false)`) — die Frist gehört dem Bild, der Ring steht trotzdem rundum, wie lange der Ladeschirm auch
-        // steht. Bis B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        // halben Diagonale wie der Boden-Term) mit der Frist des Lade-Frames, danach die übrigen mit der Kappe des Spiels (ohne
+        // Frist, `_kappeOffen(…, false)`) — die Frist gehört dem Bild. JEDE HÄLFTE TRÄGT IHRE EIGENE KAPPE: Zähler und Uhr beginnen
+        // mit ihr, und wie die Hälfte im Bild endet, nimmt der Hälfte außer Bild nie ihren Takt — der Ring steht rundum, wie lange
+        // der Ladeschirm auch steht. Bis dahin teilten beide Zähler und Uhr (jeder Neu-Ruf eines Stücks im Flug zählt), und nach
+        // dem Umstellen verhungerte der Ring hinter dem Spieler (integ-CI 39514723735: wiese Ring 0 von 2 nach 2224 Takten). Bis
+        // B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        let [haelfte, n, t0, satt] = [null, 0, 0, false];
         const weiter = (frist) =>
-            this._kappeOffen(built, MAX_PER_FRAME, frist) &&
-            this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS, frist);
+            this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
+            this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist);
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
         for (let r = 0; r <= ringRadius; r++)
             for (let dz = -r; dz <= r; dz++)
@@ -2610,7 +2613,8 @@ class AnazhRealm_gelaende_chunks {
                 }
         if (lade) zellen.sort((a, b) => b[2] - a[2]); // stabil: im Bild zuerst, je Hälfte in Ring-Reihe
         for (const [cx, cz, bild] of zellen) {
-            if (!bild && !weiter(false)) break; // außer Bild nur mit der Kappe des Spiels
+            if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
+            if (satt) continue;
             const key = `${cx},${cz}`;
             // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
             // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
@@ -2625,15 +2629,15 @@ class AnazhRealm_gelaende_chunks {
                 if (currentLod !== desiredLod && !existing.empty) {
                     this._rebuildVoxelChunk(cx, cz, desiredLod);
                     built++;
-                    if (!weiter(bild)) break;
+                    satt = !weiter(bild);
                 }
                 continue;
             }
             this._ensureVoxelChunkAt(cx, cz, desiredLod);
             built++;
             // Soft-Budget nach jedem Build (inkl. des letzten `_ensureVoxelChunkAt`): mindestens ein Chunk je
-            // Frame auch über Budget — sonst friert das Streaming ein.
-            if (!weiter(bild)) break;
+            // Frame und Hälfte auch über Budget — sonst friert das Streaming ein.
+            satt = !weiter(bild);
         }
         this._pruneDistantVoxelChunks(playerPos);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
