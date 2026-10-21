@@ -1817,7 +1817,11 @@ class AnazhRealm_koerper_bewegung {
                 const kz = tz + (camZ - tz) * arm;
                 const ky = ty + (camY - ty) * arm;
                 camera.position.set(kx, Math.max(ky, boden(kx, kz, ky)), kz);
-                camera.lookAt(tx, ty, tz);
+                // DER EINGEZOGENE ARM (K4): steht die Linse am Blickziel (der Rücken an der Wand, der Arm 0), blickt sie längs
+                // des Wunsch-Arms — lookAt auf den eigenen Ort hatte keine Richtung, die Linse starrte nach −z (die Wand füllte
+                // den Schirm, werkbank an der Mess-Wiese, Radeon)
+                if (camera.position.distanceToSquared(this._kamP.set(tx, ty, tz)) > 1e-4) camera.lookAt(tx, ty, tz);
+                else camera.lookAt(kx + tx - camX, ky + ty - camY, kz + tz - camZ);
                 const KD = AnazhRealm.KAMERA_DURCHSICHT;
                 // Das Ziel ist der Blickpunkt T (Integration V18.536, Gelb 1 der dritten v1-Gegenprüfung): die Ebene des
                 // Fadenkreuz-Strahls steht senkrecht zum Blick und der Strahl beginnt bei jedem Arm an T. Mit der Brust B als
