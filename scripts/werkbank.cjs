@@ -3417,7 +3417,7 @@ async function starte() {
     } else if (cmd === "licht" && argv.includes("--naesse")) {
         // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus, nasser Marktstand, helles Regenbild ROT
         const LL = require("./lib/licht-linsen.cjs");
-        const m = (aussen, innen, regenbild, ri = 0, dach = 2) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9, raum: 400 }, dachBauten: { n: 2, trocken: dach }, regenbild });
+        const m = (aussen, innen, regenbild, ri = 0, dach = 2) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
         const f = [
             [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
             [LL.naesseUrteil({ dorf: m(0.62, 0.64, 0.7) }).befunde.join(), /dorf innen unter dem Dach 0\.64 außerhalb/],
@@ -3446,7 +3446,7 @@ async function starte() {
                 const a = await lauf({ ort, png: !!opt("--bilder") });
                 welt[ort] = Object.assign(a.ergebnis || { fehler: a.fehler || "kein Ergebnis" }, dach && { dachBauten: dach });
                 for (const [i, png] of (welt[ort].png || []).entries())
-                    fs.writeFileSync(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass", "raum"][i]}.png`), Buffer.from(png.split(",")[1], "base64"));
+                    fs.writeFileSync(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), Buffer.from(png.split(",")[1], "base64"));
                 delete welt[ort].png;
             }
         } finally {

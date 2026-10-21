@@ -16,10 +16,6 @@ async function checkBandV1757HeldSlot(ctx) {
         const p = r.state.player;
         const savedHeld = p.equipped ? p.equipped.held : null;
 
-        // (0) der held-Slot + HELD_STAT_WEIGHT
-        out.slotExists = !!p.equipped && "held" in p.equipped;
-        out.weightExists = r.constructor.HELD_STAT_WEIGHT > 0;
-
         // (1) ein hartes Gerät konstruieren (härteste Form × Material)
         const FTA = r.constructor.FORM_TAG_ACTIVATION;
         let hardShape = "box";
@@ -95,7 +91,6 @@ async function checkBandV1757HeldSlot(ctx) {
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.57 W2-B: der held-Equip-Slot + HELD_STAT_WEIGHT existieren", res.slotExists && res.weightExists);
     check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
     check(
         "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",

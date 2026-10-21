@@ -973,11 +973,8 @@ async function checkBandV18196ManaSymmetry(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (M1) STAT_FROM_TAGS.manaMax existiert
-        out.hasManaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-
         // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
-        if (out.hasManaMaxFn) {
+        {
             const fn = A.STAT_FROM_TAGS.manaMax;
             out.manaBase = fn({});
             out.manaFullMag = fn({ magieleitung: 1 });
@@ -1047,7 +1044,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
         return out;
     });
 
-    check("V18.196 (M1) STAT_FROM_TAGS.manaMax existiert", res.hasManaMaxFn === true);
     check(
         `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
         res.manaFormulaOk === true

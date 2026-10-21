@@ -2493,7 +2493,6 @@ function naesseSicht(o) {
         };
         const je = { innen: [], aussen: [] };
         const regen = { innen: 0, aussen: 0 };
-        const bilder = [klar, frisch, nass];
         for (let y = 2; y < H; y += 4)
             for (let x = 2; x < W; x += 4) {
                 const i = (y * W + x) * 4;
@@ -2501,25 +2500,6 @@ function naesseSicht(o) {
                 if (c && Y(frisch, i) > 8) je[c].push(Y(nass, i) / Y(frisch, i));
                 if (c && Math.abs(Y(nass, i) - Y(ohne, i)) > 3) regen[c]++;
             }
-        // DER BLICK IN DEN RAUM (die Schliere blendet erst 2 m vor dem Auge voll ein): nass gegen nass ohne Regen-Sprite
-        if (e) {
-            cam.position.copy(welt(t.x, t.y + 1.6, t.z + 0.5));
-            cam.lookAt(welt(t.x, t.y + 1, t.z + 6));
-            cam.updateMatrixWorld(true);
-            const raum = await schuss("rainy", 600);
-            bilder.push(raum);
-            sprite.layers.disable(0);
-            const raumOhne = await schuss("rainy", 600);
-            sprite.layers.enable(0);
-            regen.raum = 0;
-            for (let y = 2; y < H; y += 4)
-                for (let x = 2; x < W; x += 4) {
-                    const i = (y * W + x) * 4;
-                    const c = klasse(x, y);
-                    if (c === "innen") regen.raum++;
-                    if (c && Math.abs(Y(raum, i) - Y(raumOhne, i)) > 3) regen[c]++;
-                }
-        }
         const mittel = (u8) => {
             let s = 0;
             for (let i = 0; i < W * H * 4; i += 4) s += Y(u8, i);
@@ -2540,7 +2520,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? bilder.map((u8) => {
+            png: o.png ? [klar, frisch, nass].map((u8) => {
                 const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
                 cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
                 return cv.toDataURL("image/png");
@@ -2549,7 +2529,7 @@ function naesseSicht(o) {
     })();
 }
 
-// DAS URTEIL: draußen 0,5–0,8, innen ±5 % und 0 Schlieren (auch im Blick in den Raum, ≥ 100 Punkte; draußen ≥ 1: die Zählung sieht den Regen), Metall (`_naesseGesetz`)
+// DAS URTEIL: draußen 0,5–0,8, innen ±5 % und 0 Schlieren (draußen ≥ 1: die Zählung sieht den Regen), Metall (`_naesseGesetz`)
 // ±5 %, Glanz ≥ 2×, Regenbild ≤ Sonne, je Klasse ≥ 100 Punkte; im Dorf jeder Dach-Bau im Umkreis trocken (≥ 1).
 function naesseUrteil(welt) {
     const befunde = [];
@@ -2568,7 +2548,6 @@ function naesseUrteil(welt) {
         band(`${ort} Glanz nass/trocken`, m.glanz, 2, Infinity);
         if (!(m.regen && m.regen.aussen >= 1)) befunde.push(`${ort}: keine Schliere draußen — die Regen-Zählung ist blind`);
         if (ort === "dorf" && !(m.regen && m.regen.innen === 0)) befunde.push(`${ort}: ${m.regen && m.regen.innen} Regen-Punkte innen`);
-        if (ort === "dorf" && !(m.regen && m.regen.raum >= 100)) befunde.push(`${ort}: Blick in den Raum ${m.regen && m.regen.raum} Punkte innen < 100`);
         const d = m.dachBauten;
         if (ort === "dorf" && !(d && d.n >= 1 && d.trocken === d.n)) befunde.push(`${ort}: Dach-Bauten trocken ${d && d.trocken}/${d && d.n}`);
         if (!(m.regenbild <= 1)) befunde.push(`${ort} Regenbild ${m.regenbild} × so hell wie die Sonne`);

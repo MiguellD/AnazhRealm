@@ -1474,8 +1474,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
             const r = window.anazhRealm;
-            const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
-            if (out.hasIslandDensity) {
+            const out = {};
+            {
                 // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
                 // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
                 const dummyNoise = { noise2D: () => 0 };
@@ -1498,7 +1498,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 })();
             return out;
         });
-        check("V9.42-a: _islandDensityAt existiert", r42a.hasIslandDensity);
         check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
         check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
         check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
@@ -1562,7 +1561,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // grün-oben/erdig-unten per Vertex-Normale.
         const r42c = await page.evaluate(() => {
             const r = window.anazhRealm;
-            const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
+            const out = {};
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
@@ -1575,7 +1574,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             return out;
         });
-        check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
             `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
