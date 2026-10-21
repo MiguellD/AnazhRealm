@@ -94,15 +94,15 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 460,
-            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut)",
+            "faelle": 496,
+            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut; mensch.K1: die Mengen-Stufe mensch-L2 bringt 36 Klassen, davon kippen cos 10 und sin 12 - die 460 alten Klassen stehen byte-gleich)",
             "kippt": {
-                "cos": 253,
-                "sin": 202
+                "cos": 263,
+                "sin": 214
             },
             "taeter": {
-                "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",
-                "sin": "tetrapoda-core.js:2018 sin (femVec, der Oberschenkel-Winkel)"
+                "cos": "tetrapoda-core.js:2209 cos (frontYReach, die Reichweite des Vorderlaufs)",
+                "sin": "tetrapoda-core.js:2505 sin (femVec, der Oberschenkel-Winkel)"
             },
             "soll": "0 - EIN Byte-Raster am Ofen-Ausgang; es kommt mit dem W3c-Akt (Kreatur-Grobstufe geskinnt), pow ist seit S1 an skullR und legMuscle gerastert"
         }

@@ -1227,7 +1227,6 @@ async function checkBandWelle6DSoul(ctx) {
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
 
         // (2) Chat-Pattern für damage

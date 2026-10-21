@@ -1657,6 +1657,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         // V9.39 — der Voxel-Populator ist die lebende Schicht.
+        const bps = r.state.blueprints || {};
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
         out.fieldHas4Axes = !!(
