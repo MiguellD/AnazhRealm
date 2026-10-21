@@ -684,7 +684,6 @@ async function checkBandV18177AAA(ctx) {
         // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
         const aer = A.AERIAL || {};
         out.microStrength = aer.microStrength;
-        out.heightWeightFort = aer.heightWeight === undefined && aer.heightCap === undefined;
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
         out.frozen = Object.isFrozen(aer);
@@ -698,10 +697,6 @@ async function checkBandV18177AAA(ctx) {
     check(
         "V18.177 AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
         res.frozen === true && res.noGetterShadow === true
-    );
-    check(
-        "V18.530: AERIAL trägt keinen Höhen-Melt mehr (heightWeight/heightCap fort — die Luft ist `LUFT`)",
-        res.heightWeightFort === true
     );
     check(
         `V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,

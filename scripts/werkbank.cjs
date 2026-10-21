@@ -42,6 +42,7 @@
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
 //                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
+//   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
 //                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
@@ -3293,6 +3294,30 @@ async function starte() {
         console.log(JSON.stringify(u.kurven, null, 1));
         console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
+    } else if (cmd === "licht" && argv.includes("--luft")) {
+        // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr
+        // der Referenz, das Urteil `luftTiefeUrteil` gegen die externe Referenz spec/farbe/luft-referenz.json.
+        const LL = require("./lib/licht-linsen.cjs");
+        const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
+        const fehl = LL.luftTiefeSelbsttest(ref);
+        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT");
+        if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
+        const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        let m;
+        try {
+            await rufe("/umstellen", { ort: opt("--ort", "genesis"), sicht: "ego" });
+            const o = { ref, augeM: 120 };
+            const a = await rufe("/eval", { code: `return await (${LL.luftTiefe.toString()})(${JSON.stringify(o)});` });
+            m = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
+        } finally {
+            if (halt) await halt();
+        }
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
+        if (m.fehler) throw new Error("LUFT: " + m.fehler);
+        const u = LL.luftTiefeUrteil(m, ref);
+        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) console.log("  " + b);
+        console.log(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
         // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
@@ -3368,71 +3393,85 @@ async function starte() {
         // DIE FERNE JE STUNDE (F6): zwei Namen der Liste gehen den Weg der Karte (dasselbe Auge, zwei Stufen) — `ring` Boden-Satz
         // gegen Fern-Ring am Messort, `haus` L0 gegen L2 im Spiel-Abstand am Messort dorf (der Dorf-Zug baut es beim Spieler)
         const dorf = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "dorf");
-        for (const art of String(arten).split(",")) for (const uhr of uhren) {
-            const zeile = uhr == null ? art : `${art}@${uhr}`;
-            const [haus, boden] = [art === "haus", art === "ring"];
-            const anker = haus || boden ? dorf.spieler : wiese.spieler;
-            if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
-            const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
-            const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
-            // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
-            await rufe("/umstellen", { x: anker[0], z: anker[1] });
-            const ein = () => argv.includes("--karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
-            // die Stufen der Gestalten schwingen ein: nach dem Umstellen fand der Plan der Karte bis zu einem Lauf lang keine Laub-Senke
-            let plan = null;
-            for (let i = 0; i < (argv.includes("--karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
-                plan = (await rufe("/eval", {
-                    // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
-                    code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
-                })).ergebnis;
-            if (!plan || plan.fehler) {
-                welt[zeile] = plan || { fehler: "kein Plan" };
-                continue;
-            }
-            await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
-            await ein();
-            // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
-            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden && n === 2 ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
-            // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
-            // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
-            const stufen = async (t12, t01) => {
-                const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
-                await rufe("/eval", { code: t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 == null ? `Math.min(window.__karteD[0], ${t12} / 2)` : t01}; D.thresh12 = ${t12}; return 1;` });
+        // `--eigen` die Wand der Karte (gate:licht-weg:echt): die Welt als Kind, gestoppt nach der letzten Zeile
+        const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        try {
+            for (const art of String(arten).split(",")) for (const uhr of uhren) {
+                const zeile = uhr == null ? art : `${art}@${uhr}`;
+                // DER LICHTWEG (Licht K3): `panorama`, `feld`, `spiegel` und `wasser` (eine Zahl stellt die Fläche senkrecht, Grad neben
+                // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
+                if (/^(panorama|feld|spiegel|wasser)\d*$/.test(art)) {
+                    if (!Object.keys(welt).length) await rufe("/umstellen", { ort: "dorf" }); // der Feld-Pass steht erst im Takt
+                    welt[zeile] = (await rufe("/eval", { code: `return await window.__lichtWeg({ weg: "${art}", uhr: ${uhr} });` })).ergebnis;
+                    continue;
+                }
+                const [haus, boden] = [art === "haus", art === "ring"];
+                const anker = haus || boden ? dorf.spieler : wiese.spieler;
+                if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
+                const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
+                const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+                // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+                await rufe("/umstellen", { x: anker[0], z: anker[1] });
+                const ein = () => argv.includes("--karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
+                // die Stufen der Gestalten schwingen ein: nach dem Umstellen fand der Plan der Karte bis zu einem Lauf lang keine Laub-Senke
+                let plan = null;
+                for (let i = 0; i < (argv.includes("--karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
+                    plan = (await rufe("/eval", {
+                        // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                        code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
+                    })).ergebnis;
+                if (!plan || plan.fehler) {
+                    welt[zeile] = plan || { fehler: "kein Plan" };
+                    continue;
+                }
+                await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
                 await ein();
-            };
-            if (argv.includes("--karte")) {
-                if (haus) await stufen(plan.l1, plan.l1);
-                else if (opt("--wechsel") && !boden) await stufen(plan.l1);
-                // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
-                for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
-                if (!boden) await stufen(0.6);
-            }
-            const w = argv.includes("--karte")
-                ? (await k(2)).ergebnis
-                : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
-            if (argv.includes("--karte") && !boden) await stufen(null);
-            if (w && w.karte && opt("--ordner"))
-                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
-            if (w && w.karte) delete w.karte.png;
-            const ordner = opt("--ordner");
-            if (w && w.oben && w.oben.png) {
-                if (ordner)
-                    fs.writeFileSync(
-                        path.join(ordner, `krone-${art}-oben.png`),
-                        Buffer.from(w.oben.png.split(",")[1], "base64")
-                    );
-                delete w.oben.png;
-            }
-            if (w && w.gegen)
-                for (const k of ["gegen", "auf"]) {
+                // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
+                // — auch der Boden: Boden-Satz und Fern-Ring aus dem fernen Auge der Naht (zwei Augen maßen den Blickwinkel mit, Licht K3)
+                const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
+                // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
+                // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
+                const stufen = async (t12, t01) => {
+                    const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
+                    await rufe("/eval", { code: t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 == null ? `Math.min(window.__karteD[0], ${t12} / 2)` : t01}; D.thresh12 = ${t12}; return 1;` });
+                    await ein();
+                };
+                if (argv.includes("--karte")) {
+                    if (haus) await stufen(plan.l1, plan.l1);
+                    else if (opt("--wechsel") && !boden) await stufen(plan.l1);
+                    // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
+                    for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
+                    if (!boden) await stufen(0.6);
+                }
+                const w = argv.includes("--karte")
+                    ? (await k(2)).ergebnis
+                    : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
+                if (argv.includes("--karte") && !boden) await stufen(null);
+                if (w && w.karte && opt("--ordner"))
+                    w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
+                if (w && w.karte) delete w.karte.png;
+                const ordner = opt("--ordner");
+                if (w && w.oben && w.oben.png) {
                     if (ordner)
                         fs.writeFileSync(
-                            path.join(ordner, `laub-${art}-${k}.png`),
-                            Buffer.from(w[k].png.split(",")[1], "base64")
+                            path.join(ordner, `krone-${art}-oben.png`),
+                            Buffer.from(w.oben.png.split(",")[1], "base64")
                         );
-                    delete w[k].png;
+                    delete w.oben.png;
                 }
-            welt[zeile] = w;
+                if (w && w.gegen)
+                    for (const k of ["gegen", "auf"]) {
+                        if (ordner)
+                            fs.writeFileSync(
+                                path.join(ordner, `laub-${art}-${k}.png`),
+                                Buffer.from(w[k].png.split(",")[1], "base64")
+                            );
+                        delete w[k].png;
+                    }
+                welt[zeile] = w;
+            }
+        } finally {
+            if (halt) await halt();
         }
         if (oben) {
             const u = LL.kronenObenUrteil({ welt });
