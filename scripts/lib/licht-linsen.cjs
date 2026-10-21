@@ -1736,11 +1736,46 @@ function laubGegenlicht(opts) {
                 cam.far = auge.distanceTo(mitte) + rxz;
                 cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
+                // die Kaskade je Fragment wählt die CSM aus camera.near/far (vendor `_setupFade`): sie rechnet im Auge des Spiels, nie
+                // in der Scheibe (die legte die Gestalt vorn in Kaskade 0, die Karte im Kern in Kaskade 1)
+                const csm = st.csmNode,
+                    csmCam = csm && csm.camera;
+                if (csmCam) (csm.camera = cam.clone()), ([csm.camera.near, csm.camera.far] = nfAlt), csm.camera.updateProjectionMatrix();
                 const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
                 for (let k = 0; k < 8; k++) {
                     const e = new T.Vector3(k & 1 ? ziel.box.max.x : ziel.box.min.x, k & 2 ? ziel.box.max.y : ziel.box.min.y, k & 4 ? ziel.box.max.z : ziel.box.min.z).project(cam);
                     rand[0] = Math.max(rand[0], Math.abs(e.x));
                     rand[1] = Math.max(rand[1], Math.abs(e.y));
+                }
+                // ALLEIN DER EIGENE WURF (Licht K3): der Spieler steht für die Schüsse in l2 und l1, die Nachbarn wechseln dazwischen
+                // Stufe und Wurf (Radeon, Fichte Uhr 0,27: die Gestalt in fremdem Wurf 0,27 ihres Lichts, die Karte 0,76) — es wirft
+                // nur der Zwilling der Gestalt (Schuss 1, ihre Instanz), jeder andere Werfer ruht
+                const ruhen = [];
+                let eigen = null;
+                if (!opts.boden && !opts.haus) {
+                    sc.traverse((o) => o.isMesh && o.castShadow && (ruhen.push(o), (o.castShadow = false)));
+                    if (opts.karte === 1) {
+                        // der Wurf der Gestalt, wie die Welt ihn wählt (`_foundryWurfWahl`): die Teile ihrer Stufe an ihrer Lage
+                        const g = [...r._instanzWahlGruppen()].find((x) => x.mesh === ziel.o);
+                        const e = g && g.slotEntry[ziel.i],
+                            kids = g && g._foundrySrc ? g._foundrySrc.children.filter((c) => c.isMesh) : [];
+                        const wahl = e ? r._foundryWurfWahl(r._foundryPresetForEntry(e), e._lodLevel, kids.map((c) => c.userData.__teil)).wahl : [];
+                        if (!wahl.length) {
+                            for (const o of ruhen) o.castShadow = true;
+                            [cam.near, cam.far] = nfAlt;
+                            if (csmCam) csm.camera = csmCam;
+                            return { fehler: "die Gestalt trägt keinen Wurf" };
+                        }
+                        eigen = new T.Group();
+                        ziel.o.getMatrixAt(ziel.i, eigen.matrix);
+                        eigen.matrix.premultiply(ziel.o.matrixWorld);
+                        eigen.matrixAutoUpdate = false;
+                        for (const k of wahl) eigen.add(Object.assign(new T.Mesh(kids[k].geometry, kids[k].material), { castShadow: true }));
+                        eigen.traverse((o) => o.layers.set(r.constructor.SHADOW_TWIN_LAYER));
+                        sc.add(eigen);
+                        eigen.updateMatrixWorld(true);
+                    }
+                    bundles();
                 }
                 const wurf = dl.castShadow;
                 dl.castShadow = wurf && !opts.boden; // der Boden ohne Schatten: die Kaskaden folgen dem Auge, die ferne Stelle läge außerhalb
@@ -1777,6 +1812,10 @@ function laubGegenlicht(opts) {
                     b.maske = Uint8Array.from(o.Yp, (y, i) => +(y !== -1 && b.Yp[i] >= 0 && Math.hypot(o.Cp[i * 3], o.Cp[i * 3 + 2]) <= 6));
                 }
                 [cam.near, cam.far] = nfAlt;
+                if (csmCam) csm.camera = csmCam;
+                if (eigen) sc.remove(eigen);
+                for (const o of ruhen) o.castShadow = true;
+                if (ruhen.length) bundles();
                 cam.fov = fovAlt;
                 cam.updateProjectionMatrix();
                 const stufeJetzt = opts.boden ? (opts.karte === 1 ? "bodenSatz" : "fern-ring") : opts.haus ? "f:" + ziel.preset + ":L" + ziel.e._lodLevel : r._taeterKlasse(ziel.o);
