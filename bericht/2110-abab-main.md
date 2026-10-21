@@ -29,3 +29,9 @@ Status ZWISCHENSTAND + Übergabe: Messung fertig. Die OMEN hält an (Budget), Ü
   - Sitzungs-Terme ohne Code-Bezug: `updateCreatures` nur an B (0,36, Tiere nah), `_arenaTakt` nur an A (0,27).
   - `_weltSteht` (ruhe-karten) erscheint nicht.
   - Hinweis: Den Befehl `werkbank profil` gibt es am Kopf nicht mehr, `takt` ist sein Nachfolger.
+
+## Koordinator-Entscheid 21.10. abends
+main d3a626ee → 32b37933 (Spielcode = 1011d41d; danach nur albedo-frische, latenz, CI-Zeiten — scripts/spec und ?v=). Bewusst trotz
+Genesis Third STEHEND CPU-Takt p95 +0,2 ms (n = 4, t 3,5): kein Täter beim Namen (e-bauart-spitze: die Spitzen-Takte sind takt-weit
+~1,4× langsamer, kein Diät-Term), Wiese Ego schneller (steht 4,5 → 4,3, geht 18,9 → 18,6), Frame/GPU/Belegung nirgends langsamer.
+Das Minus steht benannt unter PFLICHT E (Soll 5,8: B 3/4) und ist der erste Posten der E-Karte der neuen Woche (takt-weite Spitzen).
