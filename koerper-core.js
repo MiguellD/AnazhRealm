@@ -37,7 +37,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { koerper: [0, 1] },
+            kindStages: { koerper: [0, 1, 2] },
             budget: {
                 koerper: {
                     // 1310-15 (Lehre 19, Re-Mint deklariert): die Stufe erreicht ihr Band, das Feld `band` fällt und `tris`
@@ -47,6 +47,10 @@
                     // feinen (das alte Ziel 8 000 ließ den Wurf-Zwilling den Umriss nur noch zu 0,92 decken).
                     0: { tris: 40000, draws: 8, schatten: 1 },
                     1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
+                    // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
+                    // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
+                    // auf die Zeile; sie wirft selbst (der Satz IST ihr Wurf).
+                    2: { tris: 4000, draws: 6, schatten: 2 },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,
@@ -566,13 +570,15 @@
                         // LUFTKONTROLLE (Zensus 17.07., rein additive DATEN-Zeile):
                         // die vier C5-Gefuehls-Hebel der Beschleunigungs-/Brems-
                         // Kurven als Gesetzbuch-Daten (exp-Lerp 1-e^(-k*dt):
-                        // kAcc Boden-Beschleunigung ~70 ms bis 63 %, kAccLuft die
-                        // schwaechere Luftkontrolle, kBrake der Boden-Schlitter
-                        // ~110 ms, kBrakeLuft laesst den Sprung-Bogen ballistisch).
-                        // Byte-gleiche Zahlen des historischen Host-Satzes; der
-                        // Wirt liest fail-soft (_bewegungsBlock): Kern kalt ->
-                        // seine Literale.
-                        luft: { kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
+                        // kAcc Boden-Beschleunigung 25 ms bis 63 %, 98 % des Tempos
+                        // in 0,1 s (die Anfahr-Rampe der Spiele, Source/Quake;
+                        // leib.K1: kAcc 14 brauchte ~31 ms Sim bis 1 cm Gang, die
+                        // Taste bis zum bewegten Leib im Bild p95 > 50 ms),
+                        // kAccLuft die schwaechere Luftkontrolle, kBrake der
+                        // Boden-Schlitter ~110 ms, kBrakeLuft laesst den Sprung-
+                        // Bogen ballistisch). Der Wirt liest fail-closed
+                        // (_bewegungsBlock).
+                        luft: { kAcc: 40, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
                         // SPRUNG-FENSTER (Zensus 17.07., rein additiv): die zwei
                         // Plattformer-Toleranzen -- coyoteSec (Sprung kurz NACH
                         // der Kante) + bufferSec (Space kurz VOR der Landung

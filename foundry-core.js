@@ -6057,6 +6057,13 @@ function __huelleKollaps(geo, ziel) {
     return ng;
 }
 
+// DAS RASTER EINER KUGEL folgt ihrer GRÖSSE (V18.497; Tier-Guss und Mengen-Stufe des Menschen): eine 7-mm-Kralle trug
+// dieselben 20×14 wie der Brustkorb (520 Dreiecke je Kralle). Voll ab r·max(sc) ≥ 0.1·H, darunter ∝ √Größe, nie unter min.
+function __kugelRaster(r, sc, H, segW, segH, minW, minH) {
+    const q = Math.min(1, Math.sqrt((r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1)) / (0.1 * H)));
+    return [Math.max(minW, Math.round(segW * q)), Math.max(minH, Math.round(segH * q))];
+}
+
 // DER TIER-GUSS: baut den bauTier-Baum des Gattungs-Kerns mit ECHTEN THREE-
 // Fabriken, bäckt jede Mesh-Geometrie in den LOKAL-Raum ihres nächsten
 // ANIMIERTEN Gelenks und mergt je (Gelenk × Material-Klasse) → wenige Meshes,
@@ -6146,11 +6153,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const F = {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
-            // Segmente folgen der GRÖSSE (V18.497): eine 7-mm-Kralle trug dieselben 20×14 wie der
-            // Brustkorb (520 Dreiecke je Kralle). Voll ab r·max(sc) ≥ 0.1·H, darunter ∝ √Größe.
-            const q = Math.min(1, Math.sqrt((r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1)) / (0.1 * (P.size || 2.4))));
-            const w = Math.max(fein ? 5 : 8, Math.round(segW * q)),
-                h = Math.max(fein ? 4 : 6, Math.round(segH * q));
+            const [w, h] = __kugelRaster(r, sc, P.size || 2.4, segW, segH, fein ? 5 : 8, fein ? 4 : 6);
             const m = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) m.scale.set(sc[0], sc[1], sc[2]);
             return m;
@@ -7101,6 +7104,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     });
     const fein = (lod | 0) >= 1;
     let leibV = 0; // das Volumen der geschlossenen Haut (1310-15), der Beipack trägt es zur Masse
+    // die Mengen-Stufe (lod 2, mensch.K1): jede Kugel im Raster ihrer Größe (`__kugelRaster`, das Gesetz des Tiers; die Lab-Höhe
+    // des Menschen ~6 Einheiten) — Stufe 0 und 1 byte-gleich
+    const menge = (lod | 0) >= 2;
     const segW = fein ? 8 : 20,
         segH = fein ? 6 : 14,
         segZ = fein ? 6 : 14;
@@ -7139,7 +7145,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
             // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
             const AR = !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket") ? kern.MENSCH_GESTALT.augeRaster : null;
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, AR ? AR.w : segW, AR ? AR.h : segH), matFuer(k));
+            const [w, h] = AR ? [AR.w, AR.h] : menge ? __kugelRaster(r, sc, 6, segW, segH, 4, 3) : [segW, segH];
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
             return mesh;
         },
@@ -7727,7 +7734,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt. Ohne Zeile kein Mensch (fail-closed).
     {
         const zeilen = kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
-        const zeile = zeilen && zeilen.koerper && zeilen.koerper[fein ? 1 : 0];
+        const zeile = zeilen && zeilen.koerper && zeilen.koerper[(lod | 0) >= 2 ? 2 : fein ? 1 : 0]; // die Mengen-Stufe (2) additiv
         const ziel = zeile ? (Number.isInteger(zeile.band) ? zeile.band : zeile.tris) : null;
         if (!(ziel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
         const huellen = [];

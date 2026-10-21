@@ -445,16 +445,17 @@ function latenzAn(k) {
 }
 
 // Das Urteil der Latenz je Sicht × Verb: p50/p95 (Rang), die Zerlegung im Median, ROT über `soll` ms oder bei einer Probe
-// ohne Bewegung — beim Namen der größten Stufe (eingabe · warten · bild) und der Takte bis zur Bewegung.
+// ohne Bewegung — beim Namen der größten Stufe (eingabe · kette bis 1 mm · kurve 1 mm → 1 cm) und der Takte bis zur Bewegung.
 function latenzUrteil(proben, bildMs, soll = 50) {
     const rang = (v, q) => (v.length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
         const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]).sort((a, b) => a - b), 0.5);
         const ms = ok.map((p) => p.ms).sort((a, b) => a - b);
-        const z = { eingabe: med("eingabe"), warten: med("warten"), bild: med("bild") };
+        for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
+        const z = { eingabe: med("eingabe"), kette: med("kette"), kurve: med("kurve") };
         const e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
-        Object.assign(e, z, { takte: med("takte"), regung: med("regung") });
+        Object.assign(e, z, { takte: med("takte") });
         if (e.fehlt || !(e.p95 <= soll)) {
             const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
             rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);

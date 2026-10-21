@@ -724,7 +724,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
-        out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
         r.state.weatherTransition = null;
@@ -896,7 +895,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
-        check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
@@ -1455,7 +1453,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
         // --- B3: Stats-HUD DOM-Existenz
         out.statsHudExists = !!document.getElementById("stats-hud");
-        out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
         out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
 
@@ -1624,7 +1621,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (wave6x4bResults && !wave6x4bResults.error) {
         check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-        check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
         check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);

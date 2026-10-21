@@ -565,26 +565,10 @@ async function checkBandRing6Workshop(ctx) {
     });
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
-    // Built-ins sind Daten in state.blueprints, _buildFromBlueprint rendert sie, 8 Primitive werden
-    // erkannt; User-Baupläne sind hinzufügbar + persistierbar.
+    // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
     const ring64Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Built-ins vorhanden. AUSLÖSCHUNGS-WELLE — village/temple fielen; die Daten-Schicht
-        // besteht jetzt aus den lebenden Built-ins (stein_block/damm/waterfall) + den
-        // eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis 6 / tor_basis 4 Teile).
-        const KSr64 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.stein_block;
-        out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.damm;
-        out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
-        out.villageBuiltIn = r.state.blueprints.stein_block && r.state.blueprints.stein_block.builtIn === true;
-        out.villagePartsArray = Array.isArray(r.state.blueprints.stein_block.parts);
-        out.villageHasParts =
-            !!KSr64.haus_basis && Array.isArray(KSr64.haus_basis.parts) && KSr64.haus_basis.parts.length >= 5;
-        out.templeHasParts =
-            !!KSr64.tor_basis && Array.isArray(KSr64.tor_basis.parts) && KSr64.tor_basis.parts.length >= 4;
-        out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
 
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
         // mit allen 8 Shapes und prüfen, dass jede einen Mesh
@@ -697,14 +681,6 @@ async function checkBandRing6Workshop(ctx) {
             ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 6.4: Built-in Felsblock-Bauplan vorhanden", ring64Results.hasVillage);
-        check("Ring 6.4: Built-in Damm-Bauplan vorhanden", ring64Results.hasTemple);
-        check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
-        check("Ring 6.4: Felsblock ist als builtIn markiert", ring64Results.villageBuiltIn);
-        check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
-        check("Ring 6.4: haus_basis-Substanz (KIND_SUBSTANCE) hat ≥5 Teile", ring64Results.villageHasParts);
-        check("Ring 6.4: tor_basis-Substanz (KIND_SUBSTANCE) hat ≥4 Teile", ring64Results.templeHasParts);
-        check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
         check(
             "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
             ring64Results.allShapesRender

@@ -2723,6 +2723,152 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── bewohner (Klassen: das leere Dorf und die Menge als Leib, mensch.K1): das Start-Dorf wächst wie im Spiel, der Spiel-Takt
+    // läuft, bis jeder Bewohner seinen Leib trägt; je stehendem Haus die Leiber (`userData.heim`) gegen `leuteVon`, am Dorfplatz
+    // (Ego, Third) die Menschen im Blick (Frustum, gezeichnet als Leib, Satz oder Feld, Sichtlinie frei von Grundrissen), und
+    // höchstens `nahLeiber` zeichnen als Leib.
+    await buehne("bewohner", async (restore) => {
+        const W = window;
+        const altHook = W.__anazhAutoSettlement;
+        restore.push(() => {
+            if (altHook === undefined) delete W.__anazhAutoSettlement;
+            else W.__anazhAutoSettlement = altHook;
+        });
+        W.__anazhAutoSettlement = true;
+        const schlaf = (ms) => new Promise((z) => setTimeout(z, ms));
+        const FC = globalThis.__fachwerkCore;
+        const wm = s.worldMeta;
+        const t0 = performance.now();
+        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
+        for (
+            const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
+            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
+        )
+            await schlaf(50);
+        for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
+            r._tickAutoSettlement(pm);
+            await schlaf(0);
+        }
+        const zelle = wm.settlementCells && wm.settlementCells.start;
+        if (!zelle) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
+        const plan = [...(r._ortPlaene || new Map()).values()].find(
+            (v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5
+        );
+        if (!plan) return { fehler: "der Plan v2 des Start-Dorfs fehlt (_ortPlaene)" };
+        const steht = (sl) =>
+            s.architectures.some(
+                (e) =>
+                    e &&
+                    e.seed >>> 0 === sl.seed >>> 0 &&
+                    Math.hypot(e.position.x - (plan.ort.x + sl.x), e.position.z - (plan.ort.z + sl.z)) < 1
+            );
+        const haeuser = plan.slots.filter(steht).map((sl) => ({
+            seed: sl.seed >>> 0,
+            rolle: sl.rolle,
+            kultur: sl.kultur,
+            soll: FC.leuteVon(sl.ov),
+        }));
+        // der Spieler am Rand des Dorfplatzes (Lehre 17: Enden der langen Achse, Seiten, Diagonalen — frei von Grundrissen)
+        const pz = plan.platz;
+        const pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
+        const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
+        let stand = null;
+        for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
+            for (const plus of [2, 5, 9]) {
+                if (stand) break;
+                const da = (k * Math.PI) / 4;
+                const a = (pz.phi || 0) + lang + da;
+                const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
+                const x = pc.x - Math.cos(a) * ex;
+                const z = pc.z + Math.sin(a) * ex;
+                const g = r._imGrundriss(x, z, 0.5);
+                if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
+            }
+        if (!stand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
+        const sl0 = Math.hypot(pc.x - stand.x, pc.z - stand.z) || 1;
+        const ax = (pc.x - stand.x) / sl0;
+        const az = (pc.z - stand.z) / sl0;
+        const hS = r.getTerrainHeightAt(stand.x, stand.z);
+        pm.set(stand.x, (Number.isFinite(hS) ? hS : pm.y) + A.PLAYER_FOOT_OFFSET, stand.z);
+        const leiber = () =>
+            s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
+        const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
+        let stall = null;
+        try {
+            for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && leiber().length < sollSumme;) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    /* der Takt meldet selbst */
+                }
+                await schlaf(16);
+            }
+        } catch (e) {
+            stall = String((e && e.message) || e).slice(0, 160);
+        }
+        // Täter (Selbsttest): ein Haus ohne seine Bewohner — die Leiber des ersten bewohnten Hauses fallen aus der Szene
+        if (taeter === "bewohner-haus") {
+            const h = haeuser.find((x) => x.soll > 0);
+            for (const b of leiber()) if (h && b.userData.heim === h.seed) s.scene.remove(b);
+        }
+        const L = leiber();
+        // Täter (Selbsttest): die Menge als Leib — jeder Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
+        if (taeter === "bewohner-menge") for (const b of L) b.visible = true;
+        const jeHaus = new Map();
+        for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
+        const leer = haeuser
+            .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
+            .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
+        const cam = s.camera;
+        const blickZaehlen = (sicht) => {
+            const auge =
+                sicht === "ego"
+                    ? new T.Vector3(pm.x, pm.y + 0.9, pm.z)
+                    : new T.Vector3(pm.x - ax * 4.5, pm.y + 2.6, pm.z - az * 4.5);
+            cam.position.copy(auge);
+            cam.lookAt(pc.x, pm.y + 0.6, pc.z);
+            cam.updateMatrixWorld(true);
+            if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+            const fr = new T.Frustum().setFromProjectionMatrix(
+                new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
+            );
+            let n = 0;
+            for (const b of L) {
+                const gezeichnet = b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
+                if (!gezeichnet) continue;
+                const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
+                if (!fr.containsPoint(brust)) continue;
+                const d = auge.distanceTo(brust);
+                if (d > cam.far) continue;
+                let frei = true;
+                for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) {
+                    const k = t / d;
+                    const x = auge.x + (brust.x - auge.x) * k;
+                    const z = auge.z + (brust.z - auge.z) * k;
+                    if (r._imGrundriss(x, z, 0) === "haus") frei = false;
+                }
+                if (frei) n++;
+            }
+            return n;
+        };
+        const ego = blickZaehlen("ego");
+        const third = blickZaehlen("third");
+        return {
+            dorf: plan.name,
+            haeuser: haeuser.length,
+            sollSumme,
+            leiber: L.length,
+            quote: sollSumme > 0 ? Math.round((L.length / sollSumme) * 1000) / 1000 : null,
+            leer: leer.slice(0, 6),
+            leerN: leer.length,
+            imBlick: { ego, third },
+            alsLeib: L.filter((b) => b.visible).length,
+            nahLeiber: A.BEWOHNER.nahLeiber,
+            stall,
+            sek: Math.round((performance.now() - t0) / 100) / 10,
+        };
+    });
+
     return aus;
 }
 
@@ -2751,6 +2897,7 @@ const PROBEN = [
     "querhang",
     "ferngang",
     "gestalt",
+    "bewohner",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2759,6 +2906,22 @@ function urteil(name, z) {
     const soll = (bed, text) => {
         if (!bed) f.push(text);
     };
+    if (name === "bewohner") {
+        soll(z.leiber > 0, `0 Bewohner im Start-Dorf ${z.dorf} (${z.haeuser} Häuser, Σ leute ${z.sollSumme})`);
+        soll(
+            z.quote !== null && Math.abs(z.quote - 1) <= 0.05,
+            `Bewohner-Quote ${z.quote} (${z.leiber} Leiber ÷ Σ leute ${z.sollSumme}; Soll 1,0 ±0,05)`
+        );
+        soll(z.leerN === 0, `${z.leerN} Haus ohne Bewohner: ${z.leer.join(" · ")}`);
+        soll(
+            z.imBlick.ego >= 10 && z.imBlick.third >= 10,
+            `Dorfplatz: ${z.imBlick.ego} (Ego) / ${z.imBlick.third} (Third) Menschen im Blick (Soll ≥ 10)`
+        );
+        soll(
+            z.alsLeib <= z.nahLeiber,
+            `${z.alsLeib} Leiber als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber}: die Menge steht im Satz)`
+        );
+    }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "geburt") {
         soll(z.geburten >= 10, `nur ${z.geburten} Geburten`);
@@ -3154,6 +3317,10 @@ const TAETER = {
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
     gestalt: [["gestalt", /hängt am ersten Tier/]],
+    bewohner: [
+        ["bewohner-haus", /Haus ohne Bewohner/],
+        ["bewohner-menge", /Leiber als Leib gezeichnet/],
+    ],
 };
 
 module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };

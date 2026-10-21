@@ -1509,6 +1509,7 @@ class AnazhRealm_siedlung_ort {
     // Rezepts); unkonsumiert (export-stripped): mauer/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
+        this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
         if (so && so.nurWege) return;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
@@ -1607,6 +1608,487 @@ class AnazhRealm_siedlung_ort {
             if (entry) t++;
         }
     }
+    // ═══ DIE BEWOHNER (Meisterkarte mensch.K1): der Plan des Fachwerk-Studios wird Leib ═══
+    // Jede Siedlung meldet sich, wo ihr Erlebnis steht (`_spawnSettlementErlebnis`: der Akt, der Dorf-Zug, der Wege-Rebuild nach
+    // dem Reload — die EINE Stelle, an der die Welt eine Siedlung je Sitzung kennt). Ihre Bewohner sind eine FUNKTION des Plans
+    // und keine Save-Byte: je stehendem Haus so viele, wie das Gesetzbuch nennt (fachwerk-core `leuteVon`), jeder aus dem
+    // Genom-Roller (`_rollGenome`, Same „Plan:Haus:Person") und einer der Gestalten seiner Siedlung (`_bewohnerGestalten`); der
+    // Leib ist der EINE Mensch-Bau (`_buildHumanGroup`: Mensch-Ofen, Gelenk-Gestalt mit Grobstufe, Rig) wie Spieler und
+    // Mitspieler. Ihr Budget ist der Plan (Σ leute), nie der Tier-Deckel `maxCreatures`.
+    _bewohnerMelden(plan, origin, key) {
+        if (!plan || !Array.isArray(plan.slots) || !origin || !key) return;
+        const B = this._bewohnerSiedlungen || (this._bewohnerSiedlungen = new Map());
+        if (B.has(key)) return;
+        B.set(key, { key, plan, ox: origin.x, oz: origin.z, liste: null, gestalten: null });
+    }
+
+    // DIE GESTALTEN EINER SIEDLUNG: `BEWOHNER.gestalten` Genome aus dem Samen des Plans (beide Geschlechter im Wechsel), je
+    // Gestalt die Dials des Bauplans (`_koerperStudioDials` ohne die Übergabe des Spielers — der Sentinel des Mitspielers)
+    // unter dem Genom, ihre Farben aus dem EINEN Farb-Münzer und die Ofen-Schlüssel beider Stufen — derselbe Merge wie der
+    // Bau (`_buildHumanGroup` → `_buildHumanoidRig`), damit die Geburt das Memo warm trifft.
+    _bewohnerGestalten(S) {
+        const kc = window.__koerperCore;
+        if (!kc || !kc.START_PARAMS) return AnazhRealm._kernPflichtBruch("koerper:START_PARAMS");
+        const alt = this._activePeerUebergabe;
+        this._activePeerUebergabe = {};
+        let buch;
+        try {
+            buch = this._koerperStudioDials();
+        } finally {
+            this._activePeerUebergabe = alt;
+        }
+        const aus = [];
+        for (let gi = 0; gi < AnazhRealm.BEWOHNER.gestalten; gi++) {
+            const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`);
+            gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
+            const ov = this._dialsAusGenom(gen);
+            const dB = Object.assign({}, buch || {}, ov);
+            const dK = Object.assign({}, kc.START_PARAMS, dB);
+            const f = this._menschGussFarben(dB);
+            const keys = [0, 1, 2].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
+            aus.push({ ov, dK, f, keys, bestellt: [false, false, false], satz: null });
+        }
+        return aus;
+    }
+
+    // DIE LISTE DER BEWOHNER (einmal je Siedlung, wenn ihre Häuser stehen): je stehendem Haus (der Bau mit dem Samen des
+    // Slots an seinem Ort) `leuteVon` Personen; wen sein Same auf den Platz schickt (`BEWOHNER.platzAnteil`), der steht auf
+    // dem Dorfplatz des Plans, zur Mitte gewandt, sonst vor seiner Haustür (vom Grundriss fort). Jeder Ort ist frei: kein
+    // Grundriss eines Baus (`_imGrundriss`, mit dem Saum des Leibs), Land (`_landAt`) und der persönliche Raum
+    // (`BEWOHNER.raumM`) zu jedem anderen; wer im Ring um die Tür keinen findet, steht weiter draußen — nie still weg.
+    _bewohnerListe(S) {
+        const FC = globalThis.__fachwerkCore;
+        if (!FC || typeof FC.leuteVon !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:leuteVon");
+        const BW = AnazhRealm.BEWOHNER;
+        const plan = S.plan;
+        const belegt = [];
+        const frei = (x, z) => {
+            for (const p of belegt) if ((p.x - x) ** 2 + (p.z - z) ** 2 < BW.raumM * BW.raumM) return false;
+            const g = this._imGrundriss(x, z, BW.saumM);
+            return g !== "haus" && g !== "bau" && this._landAt(x, z, 0.2);
+        };
+        const steht = new Set();
+        for (const e of this.state.architectures || [])
+            if (e && Number.isFinite(e.seed))
+                steht.add(`${e.seed >>> 0}@${Math.round(e.position.x)},${Math.round(e.position.z)}`);
+        const pz = plan.platz && Number.isFinite(plan.platz.cx) ? plan.platz : null;
+        const liste = [];
+        plan.slots.forEach((sl, si) => {
+            const wx = S.ox + sl.x;
+            const wz = S.oz + sl.z;
+            if (!steht.has(`${sl.seed >>> 0}@${Math.round(wx)},${Math.round(wz)}`)) return; // kein Haus, keine Leute
+            const n = FC.leuteVon(sl.ov);
+            if (!(n > 0)) return;
+            const c = Math.cos(sl.phi || 0);
+            const s = Math.sin(sl.phi || 0);
+            const tu = sl.tuer || { x: 0, z: 0 };
+            const tx = wx + tu.x * c + tu.z * s;
+            const tz = wz - tu.x * s + tu.z * c;
+            const mx = sl.obb ? S.ox + sl.obb.cx : wx;
+            const mz = sl.obb ? S.oz + sl.obb.cz : wz;
+            const ul = Math.hypot(tx - mx, tz - mz) || 1;
+            const ux = (tx - mx) / ul;
+            const uz = (tz - mz) / ul;
+            for (let k = 0; k < n; k++) {
+                const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
+                let ort = null;
+                let blick = 0;
+                if (pz && g.chance("platz", BW.platzAnteil)) {
+                    const pc = Math.cos(pz.phi || 0);
+                    const ps = Math.sin(pz.phi || 0);
+                    for (let v = 0; v < 16 && !ort; v++) {
+                        const lx = (g.axis("px" + v) * 2 - 1) * pz.ex;
+                        const lz = (g.axis("pz" + v) * 2 - 1) * pz.ez;
+                        const x = S.ox + pz.cx + lx * pc + lz * ps;
+                        const z = S.oz + pz.cz - lx * ps + lz * pc;
+                        if (frei(x, z)) ort = { x, z };
+                    }
+                    if (ort)
+                        blick = Math.atan2(S.ox + pz.cx - ort.x, S.oz + pz.cz - ort.z) + (g.axis("dreh") - 0.5) * 2.4;
+                }
+                for (let v = 0; v < 40 && !ort; v++) {
+                    const vor = 1.2 + (v >> 3) * 1.5 + g.axis("vor" + v) * 2;
+                    const quer = (g.axis("quer" + v) * 2 - 1) * (2 + (v >> 3));
+                    const x = tx + ux * vor - uz * quer;
+                    const z = tz + uz * vor + ux * quer;
+                    if (frei(x, z)) {
+                        ort = { x, z };
+                        blick = Math.atan2(ux, uz) + (g.axis("dreh") - 0.5) * 1.6;
+                    }
+                }
+                if (!ort) {
+                    this._bruchMelden(
+                        `BEWOHNER: ${sl.rolle} #${sl.seed >>> 0} in „${plan.name || "?"}" — kein freier Stand vor der Tür`
+                    );
+                    continue;
+                }
+                belegt.push(ort);
+                liste.push({
+                    heim: sl.seed >>> 0,
+                    gestalt: g.int("gestalt", 0, BW.gestalten - 1),
+                    x: ort.x,
+                    z: ort.z,
+                    blick,
+                    groesse: 0.96 + g.axis("groesse") * 0.08,
+                    atem: g.axis("atem") * 10,
+                    leib: null,
+                    uhr: 0,
+                    takt: 0,
+                });
+            }
+        });
+        return liste;
+    }
+
+    // DIE VORLAGEN DER GESTALTEN im Faden (der Mensch-Ofen der Foundry, nah zuerst — nie ein Guss im Haupt-Faden): je Stufe
+    // EIN Auftrag; die Antwort legt die Vorlage `fest` ins Memo (die Geburt bindet sie, `_bewohnerFort` gibt sie frei).
+    _bewohnerVorlagen(S, wo) {
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        for (const G of S.gestalten)
+            for (let lod = 0; lod < G.keys.length; lod++) {
+                const key = G.keys[lod];
+                if (G.bestellt[lod] || memo.has(key)) continue;
+                G.bestellt[lod] = true;
+                this._foundryRequest(
+                    "mensch",
+                    0,
+                    lod,
+                    { dials: G.dK, skinColor: G.f.skin, hairColor: G.f.hair },
+                    this._foundryRang(wo, false)
+                ).then((meshes) => {
+                    if (!meshes || !meshes.length) {
+                        G.bestellt[lod] = false;
+                        return this._bruchMelden(`BEWOHNER: der Mensch-Ofen lieferte die Gestalt nicht (lod ${lod})`);
+                    }
+                    if (S.gestalten === null) return; // die Siedlung ging, bevor die Vorlage kam
+                    this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
+                });
+            }
+    }
+
+    // DIE GEBURT EINES BEWOHNERS: der EINE Mensch-Bau unter den Dials seiner Gestalt (die Übergabe des Spielers ruht — der
+    // Sentinel des Mitspielers), die Marke seines Hauses (`heim`), der Fern-Satz je Gestalt (`gattung`), sein Stand auf dem
+    // Gesetz (Lehre 22: die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs). Er hält seine Haltung jenseits der
+    // Stufen-Grenze (`haltungFest`: kein Sprung in die A-Pose der Vorlage); die Glieder der Gestalt (`_tierBaum`: Teile, Hülle,
+    // Ruhe) trägt der Glieder-Satz des Welt-March (`_kzLeib`).
+    _bewohnerGeburt(S, b) {
+        const G = S.gestalten[b.gestalt];
+        const alt = this._activePeerUebergabe;
+        this._activePeerUebergabe = {};
+        let g = null;
+        try {
+            g = this._buildHumanGroup(G.ov);
+        } finally {
+            this._activePeerUebergabe = alt;
+        }
+        const gl = g && g.userData._gelenk;
+        if (!g || !g.userData.rig || !gl) {
+            b.leib = false;
+            if (g) this._disposeSoulGroup(g);
+            return this._bruchMelden(`BEWOHNER: der Mensch-Bau lieferte keinen Leib („${S.plan.name || "?"}")`);
+        }
+        g.name = "bewohner";
+        g.userData.heim = b.heim;
+        g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
+        g.scale.setScalar(b.groesse);
+        const h = this._koerperBodenUnter(b.x, NaN, b.z); // der Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach)
+        g.position.set(b.x, (Number.isFinite(h) ? h : 0) + AnazhRealm.PLAYER_FOOT_OFFSET * b.groesse, b.z);
+        g.rotation.y = b.blick;
+        gl.haltungFest = true;
+        const teile = {};
+        gl.nah.traverse((n) => {
+            if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
+        });
+        const ruhe = {};
+        for (const [k, p, q, s] of gl.ruhe || []) if (k.name) ruhe[k.name] = { position: p, quaternion: q, scale: s };
+        g.userData._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
+        // DER STEHENDE LEIB (die Klasse der Ruhe, K59: `_ruhendeWurzel`): ein Bewohner bewegt sich nie — seine Matrizen stehen
+        // einmal, der Szenen-Gang überspringt ihn; was ihn bewegt (der Atem), zieht sie selbst nach (`_leibMatrix`)
+        g.updateMatrixWorld(true);
+        g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
+        // DER WURF IST DER SATZ (`_bewohnerSatz`): kein Teil des Leibs wirft, auch der nahe nicht — die Kaskaden zeichnen jeden
+        // Bewohner im Nah-Kreis aus dem Wurf-Satz seiner Gestalt; sichtbar wird der Leib erst durch die Nah-Wahl (`_tickBewohner`)
+        g.traverse((n) => {
+            if (n.isMesh) n.castShadow = false;
+        });
+        g.visible = false;
+        this.state.scene.add(g);
+        b.leib = g;
+        if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
+    }
+
+    // DER SATZ EINER GESTALT (Lehre 23: WebGPU zieht jeden Draw einzeln — die Kosten der Menge hängen nie an der Kopfzahl): die
+    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) im Stand des ersten Leibs dieser Gestalt — der Kontrapost des Atems
+    // (`_animateHuman` bei 0), EINMAL auf der CPU geskinnt (je Vertex die gewichtete Matrix seiner Knochen: Pose × Inverse der
+    // Vorlage × Bindung, in den Raum des Leibs) — als drei Instanz-Senken über den EINEN Zeichner (`_instanzMesh`): die Haut
+    // in ihrem Stoff, jeder andere Teil (Kleid, Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits der
+    // Armlänge ist ein Auge < 3 px), und der Wurf (`wurf.seh` der Grobstufen-Zeile) nur auf der Wurf-Ebene. Ein Bewohner
+    // im Satz ist eine Matrix (`_bewohnerSatzSchreiben`); der Satz geht mit seiner Siedlung (`_bewohnerFort`).
+    _bewohnerSatz(S, G, b) {
+        const T = THREE;
+        const g = b.leib;
+        const t2 = this._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 2);
+        const z1 = this._ofenZeile(window.__koerperCore, "koerper", 1).zeile;
+        if (!t2 || !t2.root || !z1 || !z1.wurf) {
+            this._bruchMelden(`BEWOHNER: die Mengen-Stufe der Gestalt fehlt („${S.plan.name || "?"}")`);
+            return false;
+        }
+        const teile = g.userData._tierBaum.teile;
+        this._animateHuman(g, 0, 0, false, false, null);
+        this._leibMatrix(g);
+        const inv = new T.Matrix4().copy(g.matrixWorld).invert();
+        const zu = { haut: null, rest: null, wurf: null };
+        const teilVon = { haut: [], rest: [], wurf: [] };
+        let groesst = 0;
+        t2.root.traverse((m) => {
+            if (!m.isSkinnedMesh) return;
+            const seh = (m.material.userData && m.material.userData.__seh) || m.userData.__seh;
+            const ziel = seh === "haut" ? "haut" : "rest";
+            const tris = m.geometry.index.count / 3;
+            if (ziel === "haut") zu.haut = m.material;
+            else if (seh === "stoff" && tris > groesst) {
+                groesst = tris;
+                zu.rest = m.material;
+            }
+            teilVon[ziel].push(m);
+            if (z1.wurf.seh.indexOf(seh) >= 0) teilVon.wurf.push(m);
+        });
+        zu.wurf = zu.rest;
+        if (!zu.haut || !zu.rest) {
+            this._bruchMelden(`BEWOHNER: die Mengen-Stufe trägt Haut und Kleid nicht („${S.plan.name || "?"}")`);
+            return false;
+        }
+        const e = new Float32Array(16);
+        const v = new T.Vector3();
+        const n = new T.Vector3();
+        const geos = {};
+        for (const k of Object.keys(zu)) {
+            const P = [];
+            const N = [];
+            const C = [];
+            const I = [];
+            for (const m of teilVon[k]) {
+                const a = m.geometry.attributes;
+                const ix = m.geometry.index.array;
+                const K = m.userData.__skinJoints.map((nm, j) =>
+                    new T.Matrix4()
+                        .multiplyMatrices(inv, teile[nm].matrixWorld)
+                        .multiply(m.skeleton.boneInverses[j])
+                        .multiply(m.bindMatrix)
+                );
+                const basis = P.length / 3;
+                for (let i = 0; i < a.position.count; i++) {
+                    e.fill(0);
+                    for (let c = 0; c < 4; c++) {
+                        const w = a.skinWeight.getComponent(i, c);
+                        if (w === 0) continue;
+                        const ke = K[a.skinIndex.getComponent(i, c)].elements;
+                        for (let q = 0; q < 16; q++) e[q] += w * ke[q];
+                    }
+                    v.fromBufferAttribute(a.position, i);
+                    n.fromBufferAttribute(a.normal, i);
+                    const nx = n.x * e[0] + n.y * e[4] + n.z * e[8];
+                    const ny = n.x * e[1] + n.y * e[5] + n.z * e[9];
+                    const nz = n.x * e[2] + n.y * e[6] + n.z * e[10];
+                    const l = Math.hypot(nx, ny, nz) || 1;
+                    P.push(
+                        v.x * e[0] + v.y * e[4] + v.z * e[8] + e[12],
+                        v.x * e[1] + v.y * e[5] + v.z * e[9] + e[13],
+                        v.x * e[2] + v.y * e[6] + v.z * e[10] + e[14]
+                    );
+                    N.push(nx / l, ny / l, nz / l);
+                    C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
+                }
+                for (let t = 0; t < ix.length; t++) I.push(basis + ix[t]);
+                // ein beidseitiger Teil (die Strähnen-Kreuzquads des Haars) trägt im Satz seine Rückseite als eigene Fläche
+                if (m.material.side === T.DoubleSide && k !== "wurf") {
+                    const b2 = P.length / 3;
+                    for (let i = basis * 3; i < b2 * 3; i++) {
+                        P.push(P[i]);
+                        N.push(-N[i]);
+                        C.push(C[i]);
+                    }
+                    for (let t = 0; t < ix.length; t += 3) I.push(b2 + ix[t], b2 + ix[t + 2], b2 + ix[t + 1]);
+                }
+            }
+            const geo = new T.BufferGeometry();
+            const nv = P.length / 3;
+            geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
+            geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(N), 3));
+            geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
+            for (const nm of ["aLodLevel", "aH0", "aH0L"])
+                geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(nv), 1));
+            geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), nv), 1));
+            geo.computeBoundingSphere();
+            geos[k] = geo;
+        }
+        const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
+        const satz = { geos: Object.values(geos) };
+        for (const k of Object.keys(zu)) {
+            const m = AnazhRealm._instanzMesh(geos[k], zu[k], cap);
+            m.name = "bewohner-satz";
+            m.userData.inventar = "bewohner";
+            m.receiveShadow = k !== "wurf";
+            m.layers.mask = k === "wurf" ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
+            m.castShadow = k === "wurf";
+            AnazhRealm._instanzZahl(m, 0);
+            this.state.scene.add(m);
+            satz[k] = m;
+        }
+        return satz;
+    }
+
+    // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge jeder
+    // Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis; jenseits trägt das Feld (`_kzLeib`).
+    // Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird.
+    _bewohnerSatzSchreiben(S) {
+        const m4 = this._bewohnerM4 || (this._bewohnerM4 = new THREE.Matrix4());
+        S.gestalten.forEach((G, gi) => {
+            const Z = G.satz;
+            if (!Z) return;
+            let na = 0;
+            let nw = 0;
+            for (const b of S.liste) {
+                if (b.gestalt !== gi || !b.leib) continue;
+                const g = b.leib;
+                g.userData._satz = !!b.kreis && !b.nah;
+                if (!b.kreis) continue;
+                m4.compose(g.position, g.quaternion, g.scale);
+                Z.wurf.setMatrixAt(nw++, m4);
+                if (b.nah) continue;
+                Z.haut.setMatrixAt(na, m4);
+                Z.rest.setMatrixAt(na++, m4);
+            }
+            for (const m of [Z.haut, Z.rest, Z.wurf]) {
+                const zahl = m === Z.wurf ? nw : na;
+                AnazhRealm._instanzZahl(m, zahl);
+                if (zahl > 0) {
+                    m.instanceMatrix.needsUpdate = true;
+                    m.boundingSphere = null;
+                }
+            }
+        });
+    }
+
+    // DER BEWOHNER-TAKT (Lehre 13: im Frame-Takt der Wesen, nie am Render-Signal): je gemeldeter Siedlung nahe dem Spieler
+    // (`AUTO_SETTLEMENT.nearM`, die Nähe des Dorf-Zugs) die Liste, sobald ihre Häuser stehen, die Vorlagen im Faden und je
+    // Takt höchstens `BEWOHNER.geburtenJeTakt` Geburten; jenseits nearM × `fernFaktor` gehen die Leiber (`_bewohnerFort`).
+    // Je Leib: jenseits der Nah-Grenze der Glieder-Satz (`_kzLeib`, echte GPU), diesseits der Satz seiner Gestalt
+    // (`_bewohnerSatzSchreiben`) — nur die Nah-Wahl lebt als Leib: der Stufen-Schalter (`_gelenkStufe`) und der Atem des
+    // Stands (`_animateHuman`, Ruhe-Pose mit Kontrapost) auf der Raten-Leiter (`_creatureAnimDiv`).
+    _tickBewohner(delta) {
+        const st = this.state;
+        const pm = st.playerMesh;
+        const alle = this._bewohnerSiedlungen;
+        if (!pm || !alle || !alle.size || !st.scene) return;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const BW = AnazhRealm.BEWOHNER;
+        const p = pm.position;
+        const echt = !(st.renderer && st.renderer._isHeadlessNull);
+        const memo = AnazhRealm._tierOfenMemo;
+        let geburten = 0;
+        for (const S of alle.values()) {
+            const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
+            if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
+                if (S.liste) this._bewohnerFort(S);
+                continue;
+            }
+            if (!S.liste) {
+                if (d2 > A.nearM * A.nearM) continue;
+                const q = this._autoSettlementQueue;
+                if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
+                S.gestalten = this._bewohnerGestalten(S);
+                S.liste = this._bewohnerListe(S);
+            }
+            this._bewohnerVorlagen(S, p);
+            const nah = this._bewohnerNah || (this._bewohnerNah = []);
+            nah.length = 0;
+            let anders = false;
+            for (const b of S.liste) {
+                if (!b.leib) {
+                    if (b.leib === false || geburten >= BW.geburtenJeTakt) continue;
+                    const G = S.gestalten[b.gestalt];
+                    if (!memo || G.keys.some((k) => !memo.has(k))) continue;
+                    this._bewohnerGeburt(S, b);
+                    geburten++;
+                    if (!b.leib) continue;
+                }
+                const g = b.leib;
+                const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
+                // der Glieder-Satz fragt nur, wer seine Seite wechseln kann oder noch keinen Satz trägt — die Knochen eines
+                // stehenden Leibs ruhen, seine Glieder stehen nach dem ersten Schreiben (Lehre 25: der Takt kostet, was ihn betrifft)
+                const u = g.userData;
+                const N = AnazhRealm.KREATUR_NAH_MESH;
+                if (
+                    echt &&
+                    (u._kzNah === undefined ||
+                        (u._kzNah === true ? bd2 >= N.aus * N.aus : bd2 < N.ein * N.ein || !u._kzVersuch))
+                )
+                    this._kzLeib(g, p);
+                // DER NAH-KREIS (diesseits trägt kein Feld; ohne Bild jeder): darin der Satz, die Nächsten leben (`nahM`)
+                const kreis = !echt || u._kzNah === true;
+                if (kreis !== b.kreis) anders = true;
+                b.kreis = kreis;
+                const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
+                if (kreis && bd2 < rN * rN) nah.push(b);
+            }
+            // DIE NAH-WAHL: höchstens `nahLeiber` der Nächsten leben (Atem, Stufen, Blick des Leibs) — jeder andere im Nah-Kreis
+            // steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
+            nah.sort((a, b) => a.d2 - b.d2);
+            if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
+            for (const b of S.liste) {
+                const g = b.leib;
+                if (!g) continue;
+                const istNah = nah.indexOf(b) >= 0;
+                if (istNah !== !!b.nah) {
+                    b.nah = istNah;
+                    g.visible = istNah;
+                    anders = true;
+                }
+                if (!istNah || this._gelenkStufe(g, b.d2)) continue;
+                const bd2 = b.d2;
+                const u = g.userData;
+                b.uhr += delta;
+                const div = this._creatureAnimDiv(Math.sqrt(bd2), u._gelenk.abM * g.scale.x, 0, delta, false);
+                if (div === 0 || (b.takt = (b.takt + 1) % div) !== 0) continue;
+                this._animateHuman(g, b.uhr + b.atem, 0, false, false, null);
+                this._leibMatrix(g);
+            }
+            if (anders) this._bewohnerSatzSchreiben(S);
+        }
+    }
+
+    // DIE BEWOHNER GEHEN (die Siedlung fern, die Welt wechselt): jeder Leib verlässt Feld und Szene über die EINEN Abschiede
+    // (`_kreaturZiegelTod`, `_disposeSoulGroup`), die Vorlagen der Gestalten verlieren `fest` — das Memo räumt sie, sobald kein
+    // Leib sie hält. Die Liste fällt mit: kehrt der Spieler zurück, entsteht sie neu aus dem Plan (dieselbe Funktion).
+    _bewohnerFort(S) {
+        for (const b of S.liste || []) {
+            const g = b.leib;
+            if (!g) continue;
+            this._kreaturZiegelTod(g);
+            if (g.parent) g.parent.remove(g);
+            this._disposeSoulGroup(g);
+        }
+        const memo = AnazhRealm._tierOfenMemo;
+        for (const G of S.gestalten || []) {
+            for (const m of G.satz ? [G.satz.haut, G.satz.rest, G.satz.wurf] : []) {
+                if (m.parent) m.parent.remove(m);
+                this._instanzAbschied(m);
+            }
+            for (const geo of G.satz ? G.satz.geos : []) geo.dispose();
+            for (const key of G.keys) {
+                const v = memo && memo.get(key);
+                if (v && v.__ofen) v.__ofen.fest = false;
+            }
+        }
+        S.liste = null;
+        S.gestalten = null;
+        this._ofenMemoRaeumen();
+    }
+    _bewohnerFortAlle() {
+        if (this._bewohnerSiedlungen) for (const S of this._bewohnerSiedlungen.values()) this._bewohnerFort(S);
+    }
+
     _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
@@ -2575,6 +3057,23 @@ AnazhRealm.WERK_LAND_M = 0.2;
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
 // (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
+// DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
+// Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon) · platzAnteil = so viele
+// stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
+// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
+// nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
+// im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl).
+AnazhRealm.BEWOHNER = Object.freeze({
+    gestalten: 4,
+    platzAnteil: 0.45,
+    raumM: 1.1,
+    saumM: 0.45,
+    geburtenJeTakt: 2,
+    fernFaktor: 1.25,
+    nahM: 8,
+    nahHystM: 1,
+    nahLeiber: 4,
+});
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nearM: 260,
     spawnClearM: 320,

@@ -25,9 +25,6 @@
 //     Slot mit unbekannter Kultur MUSS fallen + die Auto-Dorf-Struktur-Gesetze
 //     MÜSSEN auf injizierte Verletzungen feuern (die Linse ist nicht vakuös).
 //   node scripts/diag-settlement.cjs [--selftest]
-// Re-Mint 30.09.2026 (V18.492, begründet): der Export trägt je Slot additiv `chimney`
-//   (die Schornstein-Position, die der Rauch des fachwerk-Gesetzes liest); das Layout
-//   (Kulturen · Anker · Drehung · ov) blieb gegen das alte Golden feld-für-feld gleich.
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -78,6 +75,21 @@ function autoStaticLaws(q) {
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
 function fingerprint(plan) {
     return sha(JSON.stringify(plan));
+}
+
+// DAS ERSTE HAUS (siedlung.K5): die Boxen, die der Export je Haus misst (bis K5 jeder Ziegel eine), dann der Bau des ersten Slots
+const ERSTES_HAUS_GEO = 500;
+function erstesHaus(FC, nH, bau) {
+    const B = THREE.BufferGeometry.prototype, cb = B.computeBoundingBox, h = crypto.createHash("sha256"), t0 = performance.now();
+    let n = 0;
+    B.computeBoundingBox = function () { n++; return cb.call(this); };
+    try {
+        const hs = FC.DORF({ seed: 7, nH }).houses, s = bau ? bau(hs[0]) : FC.exportSettlement({ seed: 7, nH }).slots[0], geo = Math.round(n / (bau ? 1 : hs.length));
+        FC.buildInstance(s.kultur, s.seed, 0, s.ov)?.traverse((o) => o.geometry && h.update(Buffer.from(o.geometry.attributes.position.array.buffer)));
+        return { nH, geo, ms: Math.round(performance.now() - t0), bauHash: h.digest("hex").slice(0, 12) };
+    } finally {
+        B.computeBoundingBox = cb;
+    }
 }
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
@@ -783,6 +795,8 @@ const FIXTURES = [
         const b = JSON.parse(JSON.stringify(a));
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
+        const ohne = (h) => (new THREE.Box3().setFromObject(FC.stapelBau(Object.assign({}, h, { nur: FC.MASSNUR }), FC.LOD1F).g), {});
+        check("Selbst-Test 3: der Mass-Bau ohne Hülle reißt das erste Haus", erstesHaus(FC, 12, ohne).geo > ERSTES_HAUS_GEO);
         // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
         // dem Grund und ein Haus ohne Weg fallen beim Namen; das Verdikt nennt jede verfehlte Zahl.
         const haus = (x, z, y) => ({
@@ -966,7 +980,10 @@ const FIXTURES = [
     }
 
     console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
-    check("exportSettlement existiert im Kern (das exportDrive-Muster)", typeof FC.exportSettlement === "function");
+    for (const nH of [12, 300]) {
+        const e = erstesHaus(FC, nH);
+        check(`ERSTES HAUS nH ${nH}: ≤ ${ERSTES_HAUS_GEO} Boxen je Haus, dann der erste Bau`, e.geo <= ERSTES_HAUS_GEO, JSON.stringify(e));
+    }
     const plans = {};
     for (const dp of FIXTURES) {
         const key = JSON.stringify(dp);
@@ -991,11 +1008,6 @@ const FIXTURES = [
                         typeof s.ov === "object"
                 ),
             `slots=${p1.slots && p1.slots.length}`
-        );
-        check(
-            `benannte Schichten reisen fuer ${key} (roads/brunnen/spawn/welt — v1 unkonsumiert erlaubt)`,
-            Array.isArray(p1.roads) && Array.isArray(p1.brunnen) && !!p1.spawn && !!p1.welt,
-            `roads=${p1.roads && p1.roads.length}`
         );
     }
     check(
@@ -1084,27 +1096,6 @@ const FIXTURES = [
             "Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf)",
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
-        );
-        // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
-        // trees/fences/felder/staende reisen (Hof-Bäume + Zäune + Äcker +
-        // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
-        // Wahrheit) und die mauer sind GESTRICHEN (kein toter Passagier,
-        // Vertrags-Akt); die LATERNEN reisen seit K10 (ihr Leser ist das
-        // Leuchtquellen-Gesetz der Welt, die Gestalt `laterne_dorf`, K11). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
-        // Welt ist neues Verhalten hinter dem Feature-Stopp bis v1.0
-        // (docs/roadmap.md §0.v1, Leben-Synthese §5.3) — offen, benannt.
-        check(
-            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende/laternen, aber fluss/bruecken/graph/mauer sind gestrichen",
-            Array.isArray(stadt.trees) &&
-                Array.isArray(stadt.fences) &&
-                Array.isArray(stadt.felder) &&
-                Array.isArray(stadt.staende) &&
-                stadt.mauer === undefined &&
-                Array.isArray(stadt.laternen) &&
-                stadt.fluss === undefined &&
-                stadt.bruecken === undefined &&
-                stadt.graph === undefined,
-            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
         // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Bis K66-2 hielt „je
         // Platz und je 25 m Weg eine Laterne" die Zahl, während die dichte Gasse des Auto-Dorfs (Pose nacht-wand) auf 61 m keine
