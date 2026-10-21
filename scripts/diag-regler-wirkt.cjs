@@ -17,7 +17,9 @@
 // fällt (die Zahl sinkt, sie wächst nie still zurück). Das Soll steht daneben (Synthese W4: „Regler-wirkt-Probe grün"
 // = 0 tote Regler).
 //
-// DER WURF (1110-9, unten `wurfMessen`): die NUR-WURF-Stufe richtet am Regler-Rand die Kosten-Regel des Wirts, nie ihre
+// DIE STUFEN (pipeline.K3, unten `stufenMessen`): jede Stufe jeder Budget-Art, jedes Rezept, jeder Regler-Rand über die
+// echte Brücke gegen die Budget-Zeile (Ratsche reglerBudget mit Staffel) und die Reduktion je Art (L1/L0, L2/L0).
+// DER WURF (1110-9, unten `wurfAus`): die NUR-WURF-Stufe richtet am Regler-Rand die Kosten-Regel des Wirts, nie ihre
 // Zeile (die ist das Rezept-Maß) — die Linse nennt jede Stelle, an der die gezeigte Stufe selbst wirft, mit den Kosten,
 // und ist rot, wo die Regel des Stamms von der teureren Stufe würfe.
 //
@@ -95,7 +97,13 @@ async function imStamm(cb) {
             window.__anazhHeadlessNullRenderer = true;
         });
         const seitenFehler = [];
-        page.on("pageerror", (e) => seitenFehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
+        page.on("pageerror", (e) =>
+            seitenFehler.push(
+                String((e && e.message) || e)
+                    .split("\n")[0]
+                    .slice(0, 160)
+            )
+        );
         await page.goto(`http://127.0.0.1:${OFEN_PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
         // geladen und der Boot-Prefetch der Gattungen ist durch.
@@ -103,7 +111,17 @@ async function imStamm(cb) {
             () => {
                 const r = window.anazhRealm;
                 const f = r && r._foundry;
-                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
+                return !!(
+                    f &&
+                    f.ready &&
+                    f.recipes &&
+                    f.paramsByKind &&
+                    Object.keys(f.paramsByKind).length &&
+                    !f._vorrat &&
+                    globalThis.BAKERS_BY_KIND &&
+                    window.__koerperCore &&
+                    window.__tetrapodaCore
+                );
             },
             { timeout: 240000, polling: 250 }
         );
@@ -244,7 +262,8 @@ function ofenMessen(page, opts) {
         if (o.taeter && o.taeter.bruch) {
             r.constructor._tierOfenMemo && r.constructor._tierOfenMemo.clear();
             B.koerper = function (core, id, seed, lod, ov) {
-                if (ov && ov.dials && ov.dials[o.taeter.bruch] === o.taeter.wert) throw new Error("Täter: der Mensch-Bäcker wirft");
+                if (ov && ov.dials && ov.dials[o.taeter.bruch] === o.taeter.wert)
+                    throw new Error("Täter: der Mensch-Bäcker wirft");
                 return altBaecker.apply(this, arguments);
             };
         }
@@ -265,14 +284,28 @@ function ofenMessen(page, opts) {
                 if (r._workshopOvenPreview(f.recipes[rezepte[0]], rezepte[0], null, lod) === undefined) continue;
                 const baecker = typeof B[art] === "function";
                 aus.arten[art] = { lod, baecker, rezepte: rezepte.length };
-                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], keinGuss: false, gusse: 0 }));
+                const zeilen = f.paramsByKind[art].map((d) => ({
+                    art,
+                    id: d.id,
+                    min: d.min,
+                    max: d.max,
+                    rezepte,
+                    lod,
+                    wirkt: false,
+                    an: null,
+                    bricht: [],
+                    budget: [],
+                    keinGuss: false,
+                    gusse: 0,
+                }));
                 for (const p of rezepte) {
                     const offen = zeilen.filter((z) => !z.wirkt);
                     if (!offen.length) break;
                     const b0 = guss(p, lod, null);
                     const bB = bruch(b0);
                     if (bB) {
-                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker) offen.forEach((z) => (z.keinGuss = true));
+                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker)
+                            offen.forEach((z) => (z.keinGuss = true));
                         else offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
                         continue;
                     }
@@ -292,7 +325,8 @@ function ofenMessen(page, opts) {
                             }
                         }
                     const b1 = guss(p, lod, null);
-                    if (b1.hash !== b0.hash) offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
+                    if (b1.hash !== b0.hash)
+                        offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
                 }
                 aus.zeilen.push(...zeilen);
             }
@@ -335,7 +369,19 @@ async function messen(h, opts) {
             .sort();
         const lod = ersteStufe(rc, art);
         for (const d of pbk[art])
-            zeilen.push({ kern: kerne[art] || "phyto", art, id: d.id, d, rezepte, lod, kanal: "build-asset", wirkt: false, grund: "", an: null, bricht: [], budget: [] });
+            zeilen.push({
+                kern: kerne[art] || "phyto",
+                art,
+                id: d.id,
+                d,
+                rezepte,
+                lod,
+                kanal: "build-asset",
+                wirkt: false,
+                grund: "",
+                an: null,
+                bricht: [],
+            });
     }
     const msg = (preset, lod, ov) => {
         const m = { presetId: preset, seed: SEED, lod };
@@ -390,7 +436,6 @@ async function messen(h, opts) {
                 pl.z.bricht.push(`${pl.z.id}=${pl.wert} an ${pl.p}: ${bruch}`);
                 return;
             }
-            if (res[i].budgetBruch) pl.z.budget.push(`${pl.z.id}=${pl.wert} an ${pl.p} L${pl.z.lod}: ${res[i].budgetBruch}`);
             if (res[i].hash !== b.hash && !pl.z.wirkt) {
                 pl.z.wirkt = true;
                 pl.z.an = pl.p;
@@ -404,19 +449,107 @@ async function messen(h, opts) {
         }
         z.grund = !z.rezepte.length
             ? "kein Rezept der Art im Buch"
-            : "bewegt den Bau an keinem der " + z.rezepte.length + " Rezepte (min " + z.d.min + " · max " + z.d.max + ")";
+            : "bewegt den Bau an keinem der " +
+              z.rezepte.length +
+              " Rezepte (min " +
+              z.d.min +
+              " · max " +
+              z.d.max +
+              ")";
     }
-    for (const z of zeilen) if (z.bricht.length) z.grund = "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "");
+    for (const z of zeilen)
+        if (z.bricht.length)
+            z.grund = "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "");
     return { zeilen, builds };
 }
+
+// ── DIE STUFEN-PROBE (pipeline.K3, Kosten am Asset, Studio-Vertrag B2c): jede Stufe jeder Art mit Budget-Zeile, je Rezept
+// ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke — Dreiecke und Befehle gegen ihre Zeile
+// (PORTAL_RENDER_CONFIG.lod.budget[art][stufe]); dazu die REDUKTION je Art: das Höchste über Rezepte × Rand von
+// tris(L1)/tris(L0) und tris(L2)/tris(L0) gegen STUFEN_QUOTE. Ein Rand, der den Wert des Rezepts trägt (s/fx), ist der
+// Grund-Bau und fällt aus der Liste. Selbsttest-Täter `ohneReduktion`: die Art baut jede Stufe als ihre erste.
+const STUFEN_QUOTE = { 1: 0.5, 2: 0.15 };
+async function stufenMessen(h, opts) {
+    const o = opts || {};
+    const env = await h.getData("get-book");
+    const [buch, pbk, rc, kerne] = [env.book || {}, env.paramsByKind || {}, env.renderConfig || {}, kernVonArt()];
+    const plan = [];
+    const arten = {};
+    for (const art of Object.keys(pbk).sort()) {
+        const B = budgetVonArt(rc, art);
+        if (!B || (o.ohneArten || []).includes(art) || (o.nurArt && art !== o.nurArt)) continue;
+        const stufen = Object.keys(B)
+            .filter((k) => /^\d+$/.test(k))
+            .map(Number);
+        const lod = Math.min(...stufen);
+        const s = B[lod].schatten;
+        arten[art] = {
+            lod,
+            s: Number.isInteger(s) && s !== lod && B[s] && B[s].nurWurf === true ? s : null,
+            quote: {},
+        };
+        for (const p of Object.keys(buch)
+            .filter((id) => buch[id] && buch[id].kind === art && (!o.nurRezept || o.nurRezept === id))
+            .sort()) {
+            const eigen = Object.assign({}, buch[p].s, buch[p].fx);
+            const raender = [
+                null,
+                ...pbk[art]
+                    .flatMap((d) => [
+                        [d.id, d.min],
+                        [d.id, d.max],
+                    ])
+                    .filter((r) => eigen[r[0]] !== r[1]),
+            ];
+            for (const r of raender)
+                for (const st of stufen)
+                    plan.push({ art, p, r, s: st, zeile: B[st], lod: o.ohneReduktion === art ? lod : st });
+        }
+    }
+    const res = await h.kostenListe(
+        plan.map((pl) =>
+            Object.assign({ presetId: pl.p, seed: SEED, lod: pl.lod }, pl.r ? { ov: { [pl.r[0]]: pl.r[1] } } : {})
+        ),
+        null,
+        true
+    );
+    const bruch = {};
+    const je = new Map();
+    plan.forEach((pl, i) => {
+        pl.k = res[i] || {};
+        je.set(pl.p + "|" + pl.r + "|" + pl.s, pl.k);
+        const zu = ["tris", "draws"].filter((f) => Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]));
+        const n = `${kerne[pl.art] || "phyto"}:${pl.art}:${pl.r ? pl.r[0] : "(Rezept)"}`;
+        if (zu.length)
+            (bruch[n] = bruch[n] || []).push(
+                `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${pl.k[f]} > ${pl.zeile[f]}`).join(", ")}`
+            );
+    });
+    for (const pl of plan) {
+        const t0 = (je.get(pl.p + "|" + pl.r + "|0") || {}).tris;
+        const q = arten[pl.art].quote;
+        if (pl.s in STUFEN_QUOTE && !pl.zeile.nurWurf && t0 > 0 && !(q[pl.s] && q[pl.s].q >= pl.k.tris / t0))
+            q[pl.s] = { q: pl.k.tris / t0, wo: pl.p + (pl.r ? " " + pl.r.join("=") : "") };
+    }
+    return { bruch, arten, plan, je, builds: plan.length };
+}
+// Die Quoten über ihrem Soll beim Namen (art:L1 · art:L2), Wert = Quote und Ort.
+const quoteUeber = (st) =>
+    Object.fromEntries(
+        Object.entries(st.arten).flatMap(([art, a]) =>
+            Object.entries(a.quote)
+                .filter(([s, v]) => v.q > STUFEN_QUOTE[s])
+                .map(([s, v]) => [`${art}:L${s}`, `${v.q.toFixed(3)} an ${v.wo}`])
+        )
+    );
 
 // ── DIE WURF-PROBE (1110-9, docs/studio-vertrag.md N5): DIE KOSTEN-REGEL DES WIRTS am Regler-Rand. Wirft die erste Stufe
 // einer Art über ihre NUR-WURF-Stufe (B2c `schatten` → eine Stufe mit `nurWurf`), nimmt der Wirt deren Zwilling nur, wo er
 // weniger Dreiecke wirft als die werfenden Teile der Stufe selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; das
-// Wurf-Recht je Teil `_teilWirft`). Die Probe liest BEIDE Regeln aus der Quelle des Stamms, baut je Rezept der Art die
-// erste Stufe und die NUR-WURF-Stufe ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke und richtet: die
-// Regel wirft nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am
-// Regler-Rand richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
+// Wurf-Recht je Teil `_teilWirft`). Die Probe liest BEIDE Regeln aus der Quelle des Stamms und richtet je Rezept × Rand
+// das Paar aus den Bauten der Stufen-Probe (erste Stufe, NUR-WURF-Stufe; die volle Regler-Hülle jeder Art): die Regel wirft
+// nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am Regler-Rand
+// richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
 const stammLib = require("./lib/stamm.cjs");
 // Die Methode am NAMEN (gate:apparat Klinge 3), ihre Parameter liest die Probe aus dem Kopf — nie eine eigene Liste.
 function statischeMethode(src, name) {
@@ -437,70 +570,41 @@ function stammRegel() {
 function budgetVonArt(rc, art) {
     const L = (rc && rc.lod) || {};
     if (L.budget && L.budget[art]) return L.budget[art];
-    for (const k in L.zusatzBudget || {}) if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
+    for (const k in L.zusatzBudget || {})
+        if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
     return null;
 }
-// DER ABSTAND (proportional): eine Art, deren Zwilling am Grund-Bau JEDES Rezepts und an jedem Regler-Rand ihres ersten
-// Rezepts höchstens ein Zehntel der werfenden Stufe trägt, ist mit Abstand entschieden (gemessen 12.10.: das Haus 96 gegen
-// ≥ 30 000 Dreiecke, höchstens 0,3 %; die volle Hülle des Hauses wären 2 752 Bauten, ~2,5 min lokal); jede andere Art fährt
-// die volle Regler-Hülle (alle Rezepte × min/max — das Tor: 385 Paare).
-const WURF_ABSTAND = 0.1;
-async function wurfMessen(h, opts) {
-    const o = opts || {};
-    const regel = o.regel || stammRegel();
-    const env = await h.getData("get-book");
-    const buch = env.book || {};
-    const pbk = env.paramsByKind || {};
-    const rc = env.renderConfig || {};
+function wurfAus(st, regel) {
     const kosten = (teile) => (teile || []).reduce((a, t) => a + (regel.teilWirft(t) ? t.tris : 0), 0);
-    let builds = 0;
-    const paare = async (plan) => {
-        const liste = [];
-        for (const pl of plan)
-            for (const st of [pl.lod, pl.s]) liste.push(Object.assign({ presetId: pl.p, seed: SEED, lod: st }, pl.ov ? { ov: pl.ov } : {}));
-        const res = liste.length ? await h.kostenListe(liste, null, true) : [];
-        builds += liste.length;
-        return plan.map((pl, i) => {
-            const a = res[2 * i],
-                b = res[2 * i + 1];
-            const bruch = !a || !a.teile || !a.teile.length ? "die Stufe " + pl.lod + " baut 0 Teile" : !b || !b.teile || !b.teile.length ? "die NUR-WURF-Stufe " + pl.s + " baut 0 Teile" : null;
-            return Object.assign({}, pl, { eigen: kosten(a && a.teile), zwilling: kosten(b && b.teile), bruch, ueberZeile: !!(b && b.budgetBruch) });
+    const zeilen = [];
+    for (const pl of st.plan) {
+        const A = st.arten[pl.art];
+        if (A.s == null || pl.s !== A.lod) continue;
+        const a = pl.k,
+            b = st.je.get(pl.p + "|" + pl.r + "|" + A.s) || {};
+        const bruch =
+            !a.teile || !a.teile.length
+                ? "die Stufe " + A.lod + " baut 0 Teile"
+                : !b.teile || !b.teile.length
+                  ? "die NUR-WURF-Stufe " + A.s + " baut 0 Teile"
+                  : null;
+        zeilen.push({
+            art: pl.art,
+            p: pl.p,
+            lod: A.lod,
+            s: A.s,
+            wo: pl.p + (pl.r ? " " + pl.r.join("=") : ""),
+            eigen: kosten(a.teile),
+            zwilling: kosten(b.teile),
+            bruch,
+            ueberZeile: !!b.budgetBruch,
         });
-    };
-    const arten = [];
-    for (const art of Object.keys(pbk).sort()) {
-        if (o.nurArt && art !== o.nurArt) continue;
-        const lod = ersteStufe(rc, art);
-        const B = budgetVonArt(rc, art);
-        const s = B && B[lod] ? B[lod].schatten : null;
-        if (!Number.isInteger(s) || s === lod || !(B[s] && B[s].nurWurf === true)) continue;
-        const rezepte = Object.keys(buch)
-            .filter((id) => buch[id] && buch[id].kind === art && (!o.nurRezept || o.nurRezept === id))
-            .sort();
-        const raender = pbk[art].flatMap((d) => [[d.id, d.min], [d.id, d.max]]);
-        const pl = (p, r) => ({ art, p, ov: r ? { [r[0]]: r[1] } : null, lod, s, wo: p + (r ? " " + r[0] + "=" + r[1] : "") });
-        arten.push({ art, lod, s, rezepte, raender, pl });
     }
-    // Runde 1: der Grund-Bau jedes Rezepts, jeder Rand am ersten Rezept.
-    const runde1 = [];
-    for (const a of arten) {
-        for (const p of a.rezepte) runde1.push(a.pl(p, null));
-        if (a.rezepte.length) for (const r of a.raender) runde1.push(a.pl(a.rezepte[0], r));
-    }
-    const zeilen = await paare(runde1);
-    // Runde 2: die volle Regler-Hülle jeder Art ohne Abstand.
-    const runde2 = [];
-    for (const a of arten) {
-        const eigene = zeilen.filter((z) => z.art === a.art && !z.bruch);
-        a.verhaeltnis = eigene.reduce((m, z) => Math.max(m, z.eigen > 0 ? z.zwilling / z.eigen : Infinity), 0);
-        a.voll = a.verhaeltnis > WURF_ABSTAND || eigene.length < zeilen.filter((z) => z.art === a.art).length;
-        if (a.voll) for (const p of a.rezepte.slice(1)) for (const r of a.raender) runde2.push(a.pl(p, r));
-    }
-    zeilen.push(...(await paare(runde2)));
+    const arten = Object.keys(st.arten).filter((art) => st.arten[art].s != null);
     return {
         zeilen: wurfRichten(zeilen, regel),
-        arten: arten.map((a) => `${a.art} L${a.lod}→${a.s} ${a.voll ? "volle Hülle" : "mit Abstand (Zwilling ≤ " + (100 * a.verhaeltnis).toFixed(1) + " % der Stufe)"}`),
-        builds,
+        arten: arten.map((art) => `${art} L${st.arten[art].lod}→${st.arten[art].s}`),
+        builds: 0,
     };
 }
 // Die Regel des Stamms entscheidet je Paar, wer wirft (der Selbsttest richtet dieselben Bauten mit dem Täter neu).
@@ -515,9 +619,12 @@ function wurfUrteil(zeilen) {
     const rot = [];
     for (const z of zeilen) {
         if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
-        else if (z.von !== "zwilling" && z.von !== "selbst") rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
+        else if (z.von !== "zwilling" && z.von !== "selbst")
+            rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
         else if (z.wirft > Math.min(z.eigen, z.zwilling))
-            rot.push(`${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`);
+            rot.push(
+                `${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`
+            );
     }
     return rot;
 }
@@ -529,23 +636,46 @@ function wurfBericht(w) {
         `WURF (Kosten-Regel des Wirts, N5): ${w.zeilen.length} Bauten-Paare über die Regler-Hülle (${w.arten.join(", ")}) · ${w.builds} Bauten · die Stufe wirft selbst an ${selbst.length} · die NUR-WURF-Stufe über ihrer Zeile an ${ueber.length}`
     );
     for (const z of selbst)
-        console.log(`  WURF ${z.art} ${z.wo}: Stufe ${z.lod} wirft (${tausend(z.eigen)} Dreiecke; der Zwilling trüge ${tausend(z.zwilling)})`);
+        console.log(
+            `  WURF ${z.art} ${z.wo}: Stufe ${z.lod} wirft (${tausend(z.eigen)} Dreiecke; der Zwilling trüge ${tausend(z.zwilling)})`
+        );
     for (const z of ueber.filter((x) => x.von === "zwilling"))
-        console.log(`  WURF ${z.art} ${z.wo}: der Zwilling wirft (${tausend(z.zwilling)} über der Zeile, billiger als Stufe ${z.lod} mit ${tausend(z.eigen)})`);
+        console.log(
+            `  WURF ${z.art} ${z.wo}: der Zwilling wirft (${tausend(z.zwilling)} über der Zeile, billiger als Stufe ${z.lod} mit ${tausend(z.eigen)})`
+        );
 }
 
 // Die Zeilen des Ofen-Kanals in die gemeinsame Form (Kern je Art wie die Brücke sie sammelt).
 function ofenZeilen(ofen) {
     const kerne = kernVonArt();
     return ofen.zeilen.map((z) => {
-        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, grund: "" };
+        const n = {
+            kern: kerne[z.art] || "phyto",
+            art: z.art,
+            id: z.id,
+            d: { min: z.min, max: z.max },
+            rezepte: z.rezepte,
+            lod: z.lod,
+            kanal: "Ofen",
+            wirkt: z.wirkt,
+            an: z.an,
+            bricht: z.bricht,
+            budget: z.budget,
+            grund: "",
+        };
         n.grund = z.bricht.length
             ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
             : z.wirkt
               ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt)"
               : z.keinGuss
                 ? "kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser"
-                : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
+                : "bewegt den Ofen-Guss an keinem der " +
+                  z.rezepte.length +
+                  " Rezepte (min " +
+                  z.min +
+                  " · max " +
+                  z.max +
+                  ")";
         return n;
     });
 }
@@ -554,13 +684,16 @@ function ofenZeilen(ofen) {
 async function messenAlle() {
     const ofen = await imStamm((page) => ofenMessen(page, {}));
     let m = null,
+        stufen = null,
         wurf = null;
     await runWithWorker(PORT, async (h) => {
         m = await messen(h, { ohneArten: Object.keys(ofen.arten) });
-        wurf = await wurfMessen(h);
+        const st = await stufenMessen(h, { ohneArten: Object.keys(ofen.arten) });
+        stufen = st;
+        wurf = wurfAus(st, stammRegel());
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
-    return { zeilen: [...m.zeilen, ...ofenZeilen(ofen)], builds: m.builds, gusse, ofenArten: ofen.arten, wurf };
+    return { zeilen: [...m.zeilen, ...ofenZeilen(ofen)], builds: m.builds, gusse, ofenArten: ofen.arten, wurf, stufen };
 }
 
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
@@ -580,7 +713,8 @@ function vergleich(tot, ratsche) {
 function ratscheLesen() {
     const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
-    if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object") throw new Error("ratsche.json ohne Block reglerBudget.bruch");
+    if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object")
+        throw new Error("ratsche.json ohne Block reglerBudget.bruch");
     return r.reglerTot;
 }
 function budgetRatscheLesen() {
@@ -612,7 +746,9 @@ async function selbsttest() {
     const v2 = vergleich(["a:x:1", "a:x:2", "a:x:3"], r);
     const v3 = vergleich(["a:x:1"], r);
     const rein = v1.ok && !v2.ok && v2.neu[0] === "a:x:3" && !v3.ok && v3.geheilt[0] === "a:x:2";
-    console.log(`${rein ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt})`);
+    console.log(
+        `${rein ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt})`
+    );
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
@@ -629,16 +765,31 @@ async function selbsttest() {
     const tTot = taeter.zeilen.filter(tot).map(name);
     const hTot = heil.zeilen.filter(tot).map(name);
     const ratsche = ratscheLesen();
-    const vT = vergleich(tTot, { tot: Object.fromEntries(Object.keys(ratsche.tot).filter((n) => n.includes(":vehicle:")).map((n) => [n, ""])) });
-    const kanal = taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
+    const vT = vergleich(tTot, {
+        tot: Object.fromEntries(
+            Object.keys(ratsche.tot)
+                .filter((n) => n.includes(":vehicle:"))
+                .map((n) => [n, ""])
+        ),
+    });
+    const kanal =
+        taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
     console.log(
         `${kanal ? "✅" : "❌"} SELBST-TEST Täter (ov erreicht die Brücke nicht): ${tTot.length}/${taeter.zeilen.length} Regler der Art vehicle tot → rot (neu tot: ${vT.neu.slice(0, 3).join(", ")}${vT.neu.length > 3 ? " …" : ""}) · ohne Täter ${hTot.length} tot`
     );
     const zB = brecher.zeilen.find((z) => z.id === "radstand");
     const andereB = brecher.zeilen.filter((z) => z !== zB && bricht(z)).map(name);
-    const bruchArten = zB ? new Set(zB.bricht.map((b) => (/0 Teile/.test(b) ? "leer" : /nicht-endliche/.test(b) ? "nan" : "?"))) : new Set();
+    const bruchArten = zB
+        ? new Set(zB.bricht.map((b) => (/0 Teile/.test(b) ? "leer" : /nicht-endliche/.test(b) ? "nan" : "?")))
+        : new Set();
     const bruchOk =
-        !!zB && bricht(zB) && !zB.wirkt && bruchArten.has("leer") && bruchArten.has("nan") && !andereB.length && !heil.zeilen.some(bricht);
+        !!zB &&
+        bricht(zB) &&
+        !zB.wirkt &&
+        bruchArten.has("leer") &&
+        bruchArten.has("nan") &&
+        !andereB.length &&
+        !heil.zeilen.some(bricht);
     console.log(
         `${bruchOk ? "✅" : "❌"} SELBST-TEST Täter (ein Regler bricht den Bau): ${zB ? name(zB) + " " + (bricht(zB) ? "BRICHT" : zB.wirkt ? "„wirkt“" : "tot") : "fehlt"} — ${zB ? zB.bricht.slice(0, 2).join(" · ") : ""} · andere BRICHT ${andereB.length} · ohne Täter BRICHT ${heil.zeilen.filter(bricht).length}`
     );
@@ -652,7 +803,10 @@ async function selbsttest() {
         oHeil = await ofenMessen(page, { nurArt: "koerper" });
         oOhne = await ofenMessen(page, { nurArt: "koerper", taeter: "ohneOv" });
         const hMax = oHeil.zeilen.find((z) => z.id === "height");
-        oBruch = await ofenMessen(page, { nurArt: "koerper", taeter: { bruch: "height", wert: hMax ? hMax.max : null } });
+        oBruch = await ofenMessen(page, {
+            nurArt: "koerper",
+            taeter: { bruch: "height", wert: hMax ? hMax.max : null },
+        });
     });
     const zH = ofenZeilen(oHeil);
     const zO = ofenZeilen(oOhne);
@@ -660,20 +814,41 @@ async function selbsttest() {
     const imOfen = !!oHeil.arten.koerper;
     const heilWirkt = zH.filter((z) => z.wirkt && !bricht(z)).length;
     const vO = vergleich(zO.filter(tot).map(name), ratsche);
-    const ofenKanal = imOfen && zH.length > 0 && heilWirkt === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === zO.length;
+    const ofenKanal =
+        imOfen &&
+        zH.length > 0 &&
+        heilWirkt === zH.length &&
+        zO.filter(tot).length === zO.length &&
+        vO.neu.length === zO.length;
     console.log(
         `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
     );
     const hB = zB2.find((z) => z.id === "height");
-    const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
-    console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
+    const ofenBruch =
+        !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
+    console.log(
+        `${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`
+    );
     // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
     // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, von Hand neben die Regel gesetzt) wirft am
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
-    let wHeil = null;
+    let wHeil = null,
+        sHeil = null,
+        sTaeter = null;
     await runWithWorker(PORT, async (h) => {
-        wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
+        wHeil = wurfAus(await stufenMessen(h, { nurArt: "gate", nurRezept: "kathedrale" }), stammRegel());
+        // (f) DIE STUFEN-PROBE: der Täter „die Stufe reduziert nicht" (die Ausstattung baut jede Stufe als L0) ist rot beim
+        // Namen — die Stufe 1 über ihrer Zeile und ihre Quote über dem Soll; ohne Täter hält jede Stufe ihr Rezept-Maß.
+        sHeil = await stufenMessen(h, { nurArt: "ausstattung" });
+        sTaeter = await stufenMessen(h, { nurArt: "ausstattung", ohneReduktion: "ausstattung" });
     });
+    const sT = (sTaeter.bruch["fachwerk:ausstattung:(Rezept)"] || []).filter((b) => / L1: tris/.test(b));
+    const qT = quoteUeber(sTaeter)["ausstattung:L1"];
+    const stufenOk =
+        !sHeil.bruch["fachwerk:ausstattung:(Rezept)"] && !quoteUeber(sHeil)["ausstattung:L1"] && sT.length > 0 && !!qT;
+    console.log(
+        `${stufenOk ? "✅" : "❌"} SELBST-TEST STUFEN (Täter: die Stufe reduziert nicht): ${sT.length} Rezepte über der Zeile L1 (${sT[0] || "—"}) · Quote ausstattung:L1 ${qT || "im Soll"} · ohne Täter ${Object.keys(sHeil.bruch).length} Regler über Budget, kein Rezept`
+    );
     const wTaeter = wurfRichten(wHeil.zeilen, { teilWirft: stammRegel().teilWirft, vonBilligerer: () => "zwilling" });
     const rotHeil = wurfUrteil(wHeil.zeilen);
     const rotTaeter = wurfUrteil(wTaeter);
@@ -681,7 +856,7 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk;
+    return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
 }
 
 (async () => {
@@ -699,8 +874,27 @@ async function selbsttest() {
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
     for (const z of brechend) console.log(`❌ BRICHT ${name(z)} — ${z.grund}`);
-    const budgetZ = m.zeilen.filter((z) => z.budget && z.budget.length);
-    for (const z of budgetZ) console.log(`  BUDGET ${name(z)} — ${z.budget.slice(0, 2).join(" · ")}`);
+    const budget = Object.assign(
+        {},
+        m.stufen.bruch,
+        ...m.zeilen.filter((z) => z.budget && z.budget.length).map((z) => ({ [name(z)]: z.budget }))
+    );
+    console.log(
+        `STUFEN (B2c, pipeline.K3): ${m.stufen.builds} Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget ${Object.keys(budget).length} · Reduktion je Art ${Object.entries(
+            m.stufen.arten
+        )
+            .map(
+                ([a, x]) =>
+                    a +
+                    " " +
+                    Object.entries(x.quote)
+                        .map(([s, v]) => "L" + s + "/L0 " + v.q.toFixed(2))
+                        .join(" ")
+            )
+            .join(" · ")}`
+    );
+    for (const n of Object.keys(budget))
+        console.log(`  BUDGET ${n} (${budget[n].length}) — ${budget[n].slice(0, 2).join(" · ")}`);
     wurfBericht(m.wurf);
     const wurfRot = wurfUrteil(m.wurf.zeilen);
     for (const r of wurfRot.slice(0, 12)) console.log(`❌ WURF ${r}`);
@@ -711,18 +905,41 @@ async function selbsttest() {
     const ratsche = ratscheLesen();
     const v = vergleich(toteZ.map(name), ratsche);
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
-    for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
+    for (const n of v.geheilt)
+        console.log(
+            `❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`
+        );
     const soll = ratsche.soll;
     // Die Budget-Ratsche: ein Regler, dessen Rand-Wert die Stufe über ihre Budget-Zeile treibt (der Guss steht, das
     // Gesetz bricht) — neu rot, geheilt rot bis die Zeile fällt.
     const rb = budgetRatscheLesen();
-    const vB = vergleich(budgetZ.map(name), { tot: rb.bruch });
-    for (const n of vB.neu) console.log(`❌ NEU ÜBER BUDGET: ${n} — ${budgetZ.find((z) => name(z) === n).budget[0]}`);
-    for (const n of vB.geheilt) console.log(`❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`);
-    if (!v.ok || !vB.ok || brechend.length || wurfRot.length) process.exit(1);
+    const vB = vergleich(Object.keys(budget), { tot: rb.bruch });
+    for (const n of vB.neu) console.log(`❌ NEU ÜBER BUDGET: ${n} — ${budget[n][0]}`);
+    for (const n of vB.geheilt)
+        console.log(
+            `❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`
+        );
+    // Die Staffel (pipeline.K3): die Ratsche liegt höchstens auf ihr — die Klasse fällt im Rezept, nie am Regler-Rand.
+    const ueberStaffel = Object.keys(budget).length > rb.staffel;
+    if (ueberStaffel)
+        console.log(
+            `❌ STAFFEL: ${Object.keys(budget).length} Regler über Budget > Staffel ${rb.staffel} — ${Object.keys(budget).join(", ")}`
+        );
+    // Die Reduktion je Art (Staffel 2): eine Stufe über ihrer Quote ist beim Namen in der Ratsche reglerBudget.quote.
+    const quote = quoteUeber(m.stufen);
+    const vQ = vergleich(Object.keys(quote), { tot: rb.quote });
+    for (const n of vQ.neu)
+        console.log(
+            `❌ NEU ÜBER DER QUOTE: ${n} ${quote[n]} (Soll L1/L0 ≤ ${STUFEN_QUOTE[1]}, L2/L0 ≤ ${STUFEN_QUOTE[2]})`
+        );
+    for (const n of vQ.geheilt)
+        console.log(
+            `❌ QUOTE GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.quote)`
+        );
+    if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
-        `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${budgetZ.length} = Ratsche ${Object.keys(rb.bruch).length} (Soll ${rb.soll}) · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
+        `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
     );
     process.exit(0);
 })().catch((e) => {
