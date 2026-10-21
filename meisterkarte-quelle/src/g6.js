@@ -177,9 +177,9 @@ module.exports = {
           punkte: 0,
           staffel: "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
           messung: "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
-          beleg: "Zuletzt hielt die GPU-Seite im Stand am 14.10./18.10. (VRAM 99,6–111,2 MB, Befehle 75–191, Dreiecke 286k–587k; GTX-Ratsche V18.546.2 vom 16.10.; Radeon VRAM 50 MB, GPU p50 8,35–8,4 ms am 19.10.). Das ABAB vom 20.10. zählte weder Befehle noch Dreiecke noch VRAM, und seither änderten S6, f1-rest, E-Diät und der Karten-Bake den Render-Pfad: am Kopf veraltet. In Bewegung zählt niemand.",
+          beleg: "Zuletzt hielt die GPU-Seite im Stand am 14.10./18.10. (VRAM 99,6–111,2 MB, Befehle 75–191, Dreiecke 286k–587k; GTX-Ratsche V18.546.2 vom 16.10.; Radeon VRAM 50 MB, GPU p50 8,35–8,4 ms am 19.10.). Das ABAB vom 20.10. zählte weder Befehle noch Dreiecke noch VRAM, und seither änderten S6, f1-rest, E-Diät und der Karten-Bake den Render-Pfad: am Kopf veraltet. Gemessen 21.10. (Messschuld M13, `werkbank band --ort` je Ort × Sicht, --echt, 1920×1080), ROT an beiden Geräten: GTX an main 2160be58 (OMEN, koordination `bericht/2110-gtx-messschuld-3.md` § M13) Befehle 90–139 und Dreiecke 284k–658k halten (Dorf Third 0,97×), VRAM reißt an Genesis Third 118,9 > 118 MB, GPU je Bild an 4 von 6 Zellen 12,47–13,13 > 12 ms; Linse ROT an 5 von 6 Zellen (baum haupt über der Ratsche vom 16.10., VRAM gebunden +3…+6 MB, im Dorf `bewohner-satz` 16 Befehle ohne Haushalt-Klasse, +220k…+240k Dreiecke). Radeon an main 816f26b4 (`bericht/2110-messschuld-radeon-2.md` § M13) 2 von 6 Zellen im Band (Wiese Ego/Third), VRAM Genesis und Dorf 122–123 MB lastfrei ROT, GPU 26,9–30,1 ms unter Fremdlast. Seither änderte bausatz-absage den Render-Pfad (Diät-Prüfungen 8 → 1 je Frame, ATTRIBUTE GELÖSCHT 7 → 0, 53cf0438); der Tor-Atlas rgb9e5 der OMEN (Zweig profiband-k3) ist ungemergt und zählt nicht. In Bewegung zählt niemand.",
           schlupfloch: "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
-          aenderung: "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung am Kopf ist Messschuld M13 (sie stellt wieder her, sie gewinnt nicht)."
+          aenderung: "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung (M13, 21.10.) stellte ihn nicht wieder her: ROT an beiden Geräten — das Vorher."
         },
         {
           name: "Glätte: keine Hänger",
@@ -194,7 +194,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = an einem Gerät · 2 = an beiden",
           messung: "Spielgang 20 min am Stück (ankommen, gehen, fahren, bauen, Tor, Nacht, Weg ≥ 5 km): p95 der letzten 5 min ≤ p95 der ersten 5 min × 1,05; VRAM-Drift ≤ 2 MB zurück am Start; `buf:ruhend` und `buf:verwaist` = 0 (`werkbank puffer`); Takt und Drossel beim Namen.",
-          beleg: "Ungemessen; die längste Band-Messung ist 30 s Lauf plus 300 s Ruhe; Lecks werden nur am Ort gezählt (gate:profiband, Lehre 27).",
+          beleg: "Gemessen 21.10. am Kopf main 816f26b4 (Radeon, Messschuld M14, koordination `bericht/2110-messschuld-radeon-2.md` § M14): 21 min am Stück im Fenster mit Spiel-Loop und Klang (ankommen, 10 min gehen mit gebundenem Tier, GT aufsitzen und 6 min, Mitternacht per Chat, ein Bau, 4 min gehen, zurück): JS-Heap nach GC 186 → 1 118 MB (+932 MB, eigene Spuren ≈ 12 MB, Täter unbenannt), VRAM 113,9 → 127,0 MB (+13,1 MB), Puffer ruhend 0 und verwaist 0, 0 Aussetzer; Frame p95 erste 5 min 16,2, letzte 5 min 42,3 ms (×2,61, unter Fremdlast, Nacht und Fahrt gemischt) — Heap und VRAM lastfrei ROT. Der Spielgang ist unvollständig: E nahm den GT nicht (`mountArchitecture`, v ≈ 0, 86 m), kein Tor, Weg ≪ 5 km. Lecks zählt sonst nur der Ort (gate:profiband, Lehre 27).",
           schlupfloch: "Die Sitzung im Stand verbringen: feste Stationen mit Pflicht-Weg."
         }
       ],
@@ -232,12 +232,12 @@ module.exports = {
         },
         {
           name: "Gesehen = gehört",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
           messung: "`werkbank bild --zeit` und Klang-Abgriff in derselben Sitzung (60 s, Wiese, Böen frei); Mindest-Varianz beider Signale.",
-          beleg: "Die Quelle ist EINE: `_windBoeAt` (`stamm/klang.js:251`) liest dieselbe WIND_BOE wie `_windSwayOffset` (`stoff-material.js:87`); die Kopplung ist nie gemessen.",
+          beleg: "GEMESSEN 21.10. am Kopf main 816f26b4 (Radeon 890M, Messschuld M15, koordination `bericht/2110-messschuld-radeon-2.md` § M15 Klang K2): 60 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, Klang über den Knopf „Klang“ (CDP-Klick); Bild = CDP-Screencast des präsentierten Fensters (499 Bilder, mittlere |ΔLuma| im Boden-Ausschnitt je 0,5-s-Fenster), Ohr = Analyser am Gain der Wind-Stimme (Bandpass 210 Hz, 1 231 Proben): r = 0,80 bei Lag 0 (n 119 Fenster), Lag ±3 s nur 0,25–0,36; Variationskoeffizient Bild 0,23, Ohr 0,53 (die Mindest-Varianz hält) → Staffel 1. Frisch: `git log 816f26b4..b9537781` über `stamm/klang.js`, `klang-core.js`, `stoff-material.js` und die Wiese ist leer. Für die 2 fehlen das Ufer (Pegel ↔ Strömung), der Regen und die GTX. Die Quelle ist EINE: `_windBoeAt` (`stamm/klang.js:251`) liest dieselbe WIND_BOE wie `_windSwayOffset` (`stoff-material.js:87`).",
           schlupfloch: "Den Wind konstant setzen: Mindest-Varianz beider Signale und die Böen-Zeitskala aus dem Gesetz.",
-          aenderung: "EIN Heim der Kopplung Bild ↔ Ohr (Vegetation K2 trägt sie nicht mehr; B16, V25)."
+          aenderung: "EIN Heim der Kopplung Bild ↔ Ohr (Vegetation K2 trägt sie nicht mehr; B16, V25); gemessen 21.10. 0 → 1 (M15)."
         },
         {
           name: "Raum: Richtung, Verdeckung und Hall aus der Welt",
@@ -250,26 +250,26 @@ module.exports = {
         },
         {
           name: "Der Körper klingt aus Stoff und Bewegung",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
           messung: "Station gang + fahrt mit Klang-Abgriff: Schritte über Erde, Stein, Holz, Wasser; GT-Motor über die Drehzahl; Vorbeifahrt.",
-          beleg: "SCHRITT_TIMBRE (Farnell, `klang-core.js:308`) über `_schrittKlangTick` (`stamm/klang.js:484`); Motor und Abrollen aus FAHRT (`klang-core.js:1212-1260`); Treffer und Wasser über `_substanzKlang` (`stamm/klang.js:455`) — gebaut und gelesen, am Ausgang nichts spektral gemessen; Doppler fehlt.",
+          beleg: "GEMESSEN 21.10. am Kopf main 816f26b4 (Radeon 890M, Messschuld M15, koordination `bericht/2110-messschuld-radeon-2.md` § M15 Klang K4): je Stoff 10 s Gehen mit W gehalten an einem Ort, den `_terrainMaterialAt` im Umkreis von 10 m einheitlich nennt; Analyser an jedem Schritt-Gain (gefunden über den Stapel `_playSchrittOneShot`), je Burst der Spektral-Schwerpunkt nach dem Stoff des Schritts: Median erde 359 Hz (n 19, p10–p90 228–463), glut 1 721 Hz (n 22, 1 531–1 896), stein 2 404 Hz (n 23, 2 115–2 538) — kleinster Abstand 682 Hz, die Bänder überlappen nicht → Staffel 1 (≥ 300 Hz je Stoff). Frisch: `git log 816f26b4..b9537781` über `stamm/klang.js` und `klang-core.js` ist leer. Für die 2 fehlen Holz und Wasser, der Motor über die Drehzahl, die Landung, der Doppler und die GTX. SCHRITT_TIMBRE (Farnell, `klang-core.js:308`) über `_schrittKlangTick` (`stamm/klang.js:484`); Motor und Abrollen aus FAHRT (`klang-core.js:1212-1260`).",
           schlupfloch: "Ein Rausch-Burst je Schritt ohne Stoff-Bezug: die spektrale Distanz je Stoff.",
-          aenderung: "Die 1 der Synthese war die Existenz der Leser (B70) → 0."
+          aenderung: "Die 1 der Synthese war die Existenz der Leser (B70) → 0; am Abgriff gemessen 21.10. 0 → 1 (M15)."
         },
         {
           name: "Kosten am Hörbaren, null Aussetzer",
           punkte: 1,
           staffel: "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           messung: "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          beleg: "(K) im Zensus: die Welt-Abfragen bleiben gleich bei 4000 fernen Bauten und 200 Fluss-Läufen (gate am Kopf); Stimmen und Tier-Rufe rechnet die Klang-Werkstatt im eigenen Worker, die Puffer kommen zero-copy (`stamm/klang.js:112-135`); ms in Bewegung und Aussetzer ungemessen.",
+          beleg: "(K) im Zensus: die Welt-Abfragen bleiben gleich bei 4000 fernen Bauten und 200 Fluss-Läufen (`diag-klang-zensus` GRÜN am Kopf 816f26b4, bauten 167 → 0); Stimmen und Tier-Rufe rechnet die Klang-Werkstatt im eigenen Worker, die Puffer kommen zero-copy (`stamm/klang.js:112-135`). Gemessen 21.10. am Kopf 816f26b4 (Radeon, im 21-min-Spielgang von M14, Messschuld M15): Klang-ms je Bild p95 (`symphonyTick` + `_schrittKlangTick` + `_tierRuf`) gehen 0,1 ms (max 6,3), Fahrt-Phase 0,3, gehen nachts 0,5 ms (max 11,2); 0 Aussetzer in 1 270 s Wiedergabe (`AudioContext.playbackStats`, underrunEvents 0). Die 2 bricht schon an der Radeon (0,3/0,5 > 0,2 ms in Bewegung), die GTX ist ungemessen — die 1 bleibt.",
           schlupfloch: "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung."
         }
       ],
       hebel: [
         { name: "Raum aus Gelände und Grundriss: HRTF, Verdeckung, Hall-Klasse", k: ["klang.K3+2"], t: [2, 3], wurzel: "`klang-core.js` RAUM (`:355`, heute nur Musik-Hall) wird EIN Raum-Gesetz: Verdeckung = Strahl Ohr → Quelle gegen hoehe (gelaende-core) und Grundriss; Hall-Klasse aus Kronen-Deckung (`_kronenStreuAt`), Bau-Dichte und Höhle; HRTF-Panner je Punkt-Quelle in `stamm/klang.js:_umweltKlangBauen` (`:73`) und `_tierRuf` (`:356`).", pflicht: "—", v1: false },
-        { name: "Doppler und Landung aus dem Gesetz", k: ["klang.K4+1"], t: [1, 1], wurzel: "`klang-core.js` FAHRT (`:1212`: Doppler-Faktor aus der Radialgeschwindigkeit) und SCHRITT_TIMBRE (`:308`: Landung nach Aufprall); vorher Messschuld M15 (spektral am Abgriff).", pflicht: "—", v1: false },
-        { name: "Klang-Takt in Bewegung und Aussetzer-Zähler", k: ["klang.K5+1"], t: [0.5, 0.5], wurzel: "Klang-Takt in `stamm/klang.js` plus ein Aussetzer-Zähler am AudioContext; Schnitt am Täter, falls die Messung ROT steht.", pflicht: "—", v1: false }
+        { name: "Doppler und Landung aus dem Gesetz", k: ["klang.K4+1"], t: [1, 1], wurzel: "`klang-core.js` FAHRT (`:1212`: Doppler-Faktor aus der Radialgeschwindigkeit) und SCHRITT_TIMBRE (`:308`: Landung nach Aufprall); das Vorher steht (M15, 21.10.: Schritte erde 359 · glut 1 721 · stein 2 404 Hz am Abgriff), der Rest ist Motor, Landung und Doppler.", pflicht: "—", v1: false },
+        { name: "Klang-Takt in Bewegung unter 0,2 ms", k: ["klang.K5+1"], t: [0.5, 0.5], wurzel: "Das Vorher steht (M15, 21.10., Radeon: p95 gehen 0,1 · Fahrt 0,3 · nachts 0,5 ms, 0 Aussetzer in 1 270 s): Schnitt am Täter in `stamm/klang.js` (`symphonyTick`, `_schrittKlangTick`, `_tierRuf` nachts und in Fahrt), dann die GTX.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Kein Wellen-Feststecken: der Zensus wurde gebaut und hält im Stand zu Mittag; Nacht, Regen, Bewegung und Raum maß nie jemand, und die Wiese klingt nach einem Vogel, den es nicht gibt.",
@@ -294,7 +294,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
           messung: "gate:persistence (S), erweitert um den Tab-Tod: im 10-min-Spielgang wird der Prozess an 20 Punkten getötet (Vorlade-Haken an jedem Schreib-Aufruf plus zufällige Punkte), dann neu geladen — auf einem Host ohne save-server, wie der Spieler über den Link.",
-          beleg: "Der save-server schreibt ganz: SIGKILL an jedem Schreib-Punkt, danach liegt der alte ODER der neue Stand ganz da, `.bak` hält den Stand davor (`scripts/diag-persistence.cjs` (S), `save-server.js:913-964`). Aber abseits des lokalen Hosts wird der Auto-Save „übersprungen (kein lokaler save-server)“ (`stamm/werkstatt-sozial.js:474-490`): der Spieler über den Link speichert in localStorage/IDB mit `.bak` „best-effort“ (`stamm/dienst.js:1199-1206`). Der Tab-Tod ist ungemessen.",
+          beleg: "Der save-server schreibt ganz: SIGKILL an jedem Schreib-Punkt, danach liegt der alte ODER der neue Stand ganz da, `.bak` hält den Stand davor (`scripts/diag-persistence.cjs` (S), `save-server.js:913-964`). Aber abseits des lokalen Hosts wird der Auto-Save „übersprungen (kein lokaler save-server)“ (`stamm/werkstatt-sozial.js:474-490`): der Spieler über den Link speichert in localStorage/IDB mit `.bak` „best-effort“ (`stamm/dienst.js:1199-1206`). Gemessen 21.10. am Kopf 816f26b4 (Radeon, Host :7960 ohne save-server-Pfad, Messschuld M16, koordination `bericht/2110-messschuld-radeon-2.md` § M16 K1): 20 harte Tode des Browser-Prozesses (10 am Schreib-Haken — je 2 nach .bak, Platz, Versionen, IDB-put und Index —, 10 zu zufälliger Zeit 6–36 s), Neustart mit demselben Profil: Welt-ID 20/20 gleich, 0 korrupt; aber das Alter des Stands ist an jedem Haken 10,00–10,01 s (die Schreiber vor dem Tod gehen ganz verloren, localStorage und IDB) und zufällig einmal 30,77 s (7,8 m Weg) — 5 von 20 > 10 s: ROT, das Vorher von Speicher H1. Edits und Bauten liefen nicht mit, „halbe Welt“ ist nur an der Welt-ID geprüft.",
           schlupfloch: "Nur zwischen den Schreibern töten: Haken an jedem Schreib-Aufruf; den Server-Pfad prüfen, den der Spieler nie hat: der Host ohne save-server.",
           aenderung: "Die 1 der Synthese stand auf dem Server-Pfad, den der Spieler über den Link nicht hat (B71) → 0."
         },
@@ -303,9 +303,9 @@ module.exports = {
           punkte: 1,
           staffel: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           messung: "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          beleg: "In den Frames ab p95 kostet `saveState` 0,12 ms (GTX, frische Welt, `bericht/1910-b-e-gtx.md` E; `stamm/dienst.js` seither unberührt) — dazu kommen 0,17 ms `saveToProjectFolder`, die nur der lokale Host zahlt (`stamm/werkstatt-sozial.js:474-490`). saveState baut den ganzen Stand (`buildStateSnapshot`, `speicher-welten.js:791`) und schreibt per JSON.stringify und bis zu 3 localStorage-Schreibern synchron im Haupt-Faden (`stamm/dienst.js:1186-1213`). Die große Welt ist ungemessen.",
+          beleg: "In den Frames ab p95 kostet `saveState` 0,12 ms (GTX, frische Welt, `bericht/1910-b-e-gtx.md` E; `stamm/dienst.js` seither unberührt) — dazu kommen 0,17 ms `saveToProjectFolder`, die nur der lokale Host zahlt (`stamm/werkstatt-sozial.js:474-490`). saveState baut den ganzen Stand (`buildStateSnapshot`, `speicher-welten.js:791`) und schreibt per JSON.stringify und bis zu 3 localStorage-Schreibern synchron im Haupt-Faden (`stamm/dienst.js:1186-1213`). Gemessen 21.10. am Kopf 816f26b4 auf dem Pfad des Spielers (Radeon, Host :7960, 90 s gehen, Hülle um `saveState` und CPU-Profil 100 µs als Gegenprobe, Messschuld M16): je Bild p95 0 ms und p99 0 ms (5 324 Bilder, 10 mit Save, Mittel 0,014 ms) → die 1 hält; je Ruf aber p50 6,6 ms, max 14,6 ms (Stand 210 kB) — der Save-Frame selbst ist ein Hänger-Kandidat. Für die 2 fehlen 0,1 ms nach 2 h und 10 000 Edits und die GTX.",
           schlupfloch: "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
-          aenderung: "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server steht als Messschuld M16."
+          aenderung: "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1."
         },
         {
           name: "Die Datei wächst mit den Änderungen, nie mit dem Weg",
@@ -320,7 +320,7 @@ module.exports = {
           punkte: 1,
           staffel: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
           messung: "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
-          beleg: "gate:persistence (L) am Kopf: 300 Schnitz-Kugeln stehen nach echtem Reload wieder (vorher 256 von 300); (K): ein Studio-Haus übersteht den Restore mit kaltem Buch; (U): der Boden-Umzug. Einen Bild-Rundlauf gibt es nicht.",
+          beleg: "gate:persistence (L) am Kopf: 300 Schnitz-Kugeln stehen nach echtem Reload wieder (vorher 256 von 300); (K): ein Studio-Haus übersteht den Restore mit kaltem Buch; (U): der Boden-Umzug — am Kopf 816f26b4 `diag-persistence` 14/14, (L) 300/300. Bild-Rundlauf gemessen 21.10. am Kopf 816f26b4 (Radeon, Messschuld M16): Third, ein Stein-Block und ein Edit im Blick, Bühne Mittag, Ausgabe-Bild 1920×1080, `saveState`, frischer Prozess mit demselben Profil, dieselbe Pose (dPose 0): 6,75 % der Pixel mit |ΔLuma| > 8 (Mittel 2,43) — Bau und Grube stehen wieder, aber das Wasser der Edit-Grube kommt nach dem Reload nicht zurück, fernes Geröll ist dichter: die 2 bricht an der Radeon, die 1 bleibt.",
           schlupfloch: "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild."
         },
         {
@@ -328,7 +328,7 @@ module.exports = {
           punkte: 1,
           staffel: "1 = eine Migrations-Klasse bewiesen · 2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe",
           messung: "Korpus-Lauf über alle Stände; Bauten, Edits und Inventar gezählt. Der Bauplan zwischen Geräten zählt Tore K5.",
-          beleg: "`_migrateLegacySingleWorld` (`stamm/speicher-welten.js:292`); (U) lädt alte Böden durch loadState (gate am Kopf); es gibt keinen Korpus alter Stände.",
+          beleg: "`_migrateLegacySingleWorld` (`stamm/speicher-welten.js:292`); (U) lädt alte Böden durch loadState — am Kopf 816f26b4 (Messschuld M16): 25 Bauten auf neuem Boden, Abweichung 0 m, Gegenprobe ohne Umzug; es gibt keinen Korpus alter Stände (er ist ein Bau im Baum, kein Messgegenstand) — die 1 bleibt.",
           schlupfloch: "Nur den letzten Stand testen: der Korpus wächst mit jeder Versions-Stufe.",
           aenderung: "Der Rundlauf zwischen Geräten wohnt in Tore K5 (V17)."
         }

@@ -111,7 +111,7 @@ module.exports = {
           punkte: 1,
           staffel: "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           messung: "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05) + NEUE Gangart-Linse: Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Tastgrad Schritt 0,6–0,7, Galopp ≈ 0,3; im Labor worlds/tetrapoda dieselbe Fußfolge (Phasen-Diff ≤ 0,05 Zyklus); Kreuz-Probe Stimmung × Tempo.",
-          beleg: "Der Fuß steht: Schlupf ≤ 0,05 in gate:tier-gang an jedem Push (die 1). Seit main f2904a72 (tiere-kreislauf, 5bef501f/5244293a) wählt die Froude-Zahl die Fußfolge (GANG_FOLGE, Schritt lateral → Trab → Dreh-Galopp, Hysterese), die Stimmung trägt nur die Haltung: gate:tier-gang Gangart je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor 32/32 (Basis 0/24, die Stimmungs-Folge im Selbsttest ROT; CI 39498582018 grün an f2904a72); der CPG-Pass-Zweig fiel. Für die 2 fehlen: Tastgrad im Band als Urteil (tastgradLauf 0,3 ist eine Zeile, kein Ist), der Querhang 20° (gemessen Querhang-Schlupf 0,028/0,029 ohne benannte Neigung) und das Third-Bild aus 10 m auf beiden Geräten (Messschuld M25).",
+          beleg: "Der Fuß steht: Schlupf ≤ 0,05 in gate:tier-gang an jedem Push (die 1). Seit main f2904a72 (tiere-kreislauf, 5bef501f/5244293a) wählt die Froude-Zahl die Fußfolge (GANG_FOLGE, Schritt lateral → Trab → Dreh-Galopp, Hysterese), die Stimmung trägt nur die Haltung: gate:tier-gang Gangart je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor 32/32 (Basis 0/24, die Stimmungs-Folge im Selbsttest ROT; CI 39498582018 grün an f2904a72); der CPG-Pass-Zweig fiel. Für die 2 fehlen: Tastgrad im Band als Urteil (tastgradLauf 0,3 ist eine Zeile, kein Ist), der Querhang 20° (gemessen Querhang-Schlupf 0,028/0,029 ohne benannte Neigung) und das Third-Bild aus 10 m auf beiden Geräten (Messschuld M25). Gelesen 21.10. an main 2160be58 (GTX, koordination `bericht/2110-gtx-messschuld-3.md` § M25): das Werkzeug fehlt — gate:tier-gang (GRÜN, Schlupf 0,002–0,013) hat weder ein Tastgrad-Urteil noch einen Querhang 20°; der Stand-Anteil im Schritt liegt bei 0,50–0,55 (Wolf, Fuchs, Bär, Wesen; das Gesetz `gangSchritt` setzt 0,500) unter der REF ≥ 0,6 — als Urteil wäre das ROT; Trab 0,4–0,5 hält, der Galopp fällt mit Fr auf 0,14–0,20; das Third-Bild ist nicht gemacht. Die 1 bleibt.",
           schlupfloch: "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text."
         },
         {
@@ -194,12 +194,12 @@ module.exports = {
         },
         {
           name: "Bindung und Ansteckung",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse · 2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
           messung: "Spielgang über 10 Spielminuten mit einem gebundenen Tier; Mutation bond = 0 als Gegenlauf.",
-          beleg: "`_tickEmotionContagion` (`stamm/feld-sprache.js:1031`), bond wächst in follow_player (das-lebendige-feld §4.4); im Spiel ungemessen.",
+          beleg: "GEMESSEN 21.10. am Kopf main 816f26b4 (Radeon 890M, Fenster, Messschuld M19, koordination `bericht/2110-messschuld-radeon-2.md` § M19): ab der Mess-Wiese ein Tier 4 m hinter dem Spieler, „folge mir“ im Chat (Enter, Text, Enter per CDP) → „die nächste Kreatur folgt mir“, Aufgabe `follow_player`, bond 0,14; danach 10 min gehen (W gehalten, alle 20 s ein Schwenk der Gier), je Sekunde der Abstand: 597 Proben, 0 fehlend, die Aufgabe die ganze Zeit `follow_player`, Abstand p50 3,56 m, p95 3,57 m, max 14,1 m (98,5 % ≤ 10 m), bond 0,14 → 1,0; der Weg am Gesetz geprüft: 684 m, Höhe 27,6–101,7 m, Hang bis 44°, 160 s am Hang > 15°, 14 s im Wasser → Staffel 1. Frisch: `git log 816f26b4..b9537781` über Chat-DSL, feld-sprache, Verhalten und Hof ist leer (kreatur-leben trägt nur einen Kommentar). Offen: der Wald am Weg ungezählt, |dy| bis 18,4 m ungeklärt; für die 2 fehlen der Gegenlauf bond = 0 (Ansteckung), der Reload und die GTX. `_tickEmotionContagion` (`stamm/feld-sprache.js:1031`).",
           schlupfloch: "Ein Tier, das per Leinen-Skript folgt, ohne bond zu lesen, fällt an der Mutation bond = 0.",
-          aenderung: "Neu (V13)."
+          aenderung: "Neu (V13); gemessen 21.10. 0 → 1 (M19)."
         }
       ],
       hebel: [
@@ -207,7 +207,7 @@ module.exports = {
         { name: "Fraß schreibt negativ ins Feld, Kaskade über ≥ 8 Seeds (nach H1)", k: ["oekologie.K1+2"], t: [1.5, 1.5], wurzel: "Fraß über `_depositLife` negativ (erlaubt: §4.2 verbietet nur die positive Rückkopplung); Zeitraffer-Linse mit Mutante.", pflicht: "—", v1: false },
         { name: "EIN Furcht-Gesetz: Erinnerung ⊕ Feld-Furcht", k: ["oekologie.K3+2"], t: [1, 1], wurzel: "tetrapoda-core VERHALTEN: furcht(wesen, ort) = Erinnerung des Wesens ⊕ Feld-Furcht am Ort; Leser im Flucht- und Neugier-Zweig von updateCreatures (`stamm/kreatur-verhalten.js`); `_creatureRemember` (`stamm/kreatur-leben.js:1088`) mit Typen geschlagen/gefüttert; ein Riss deponiert über `_depositEmotion`.", pflicht: "—", v1: false },
         { name: "Der Spieler als Beute, der Affekt antwortet", k: ["oekologie.K4+1"], t: [1, 1], wurzel: "Pirsch auf den Spieler über `_scentAt` (steht) → Emotion-Achsen über `_playerSituationWohl` (`stamm/feld-sprache.js`).", pflicht: "—", v1: false },
-        { name: "Die Bindung lenkt den Schritt", k: ["oekologie.K5+1"], t: [1, 1], wurzel: "bond aus `stamm/feld-sprache.js` im Folge-Zweig von updateCreatures; Bindung im Speicher.", pflicht: "—", v1: false }
+        { name: "Die Ansteckung gegen bond = 0, die Bindung über den Reload", k: ["oekologie.K5+1"], t: [1, 1], wurzel: "Das Folgen steht (M19, 21.10.: 10 min, p95 3,6 m); der Rest: `_tickEmotionContagion` (`stamm/feld-sprache.js:1031`) verschiebt die Stimmung des Spielers gegen den Gegenlauf bond = 0, bond reist im Speicher, beide Geräte.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie begonnen: die Teile stehen einzeln (Jagd auf den Spieler, `_creatureRemember`, `_depositEmotion`, bond), aber kein Leser verbindet sie, und der Deckel FAUNA_MAX 20 macht jede Bestands-Frage zu Rauschen.",
