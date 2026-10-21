@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.48",
+    "version": "18.546.49",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -59,7 +59,6 @@
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "cut-method": "node scripts/cut-method.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
-        "diag:foundry-parity": "node scripts/diag-foundry-parity.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
         "gate:pflanzen-nah": "node scripts/diag-pflanzen-nah.cjs",
