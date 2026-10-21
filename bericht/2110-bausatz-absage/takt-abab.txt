@@ -1,0 +1,16 @@
+A1n: CPU p95 6.2 p50 4.8 fps 80.1 | takt CPU-Takt {"p50":5.6,"p95":7,"p99":9.1,"max":27.4} ms (K2 8 ms), 88 Tak
+   AnazhRealm._diaetRefresh: 0.71/0.58  0.72/0.5  (Spitze/Mitte; erst direkt, dann Bündel)
+   o.needsRefresh: 0.73/0.6  0.72/0.5  (Spitze/Mitte; erst direkt, dann Bündel)
+   AnazhRealm._diaetGeteiltSchreiben: 0.34/0.29  0.4/0.25  (Spitze/Mitte; erst direkt, dann Bündel)
+B1n: CPU p95 6.3 p50 4.8 fps 80 | takt CPU-Takt {"p50":5.7,"p95":7.2,"p99":9.2,"max":30} ms (K2 8 ms), 82 Tak
+   AnazhRealm._diaetRefresh: 0.67/0.53  0.61/0.51  (Spitze/Mitte; erst direkt, dann Bündel)
+   o.needsRefresh: 0.7/0.54  0.62/0.52  (Spitze/Mitte; erst direkt, dann Bündel)
+   AnazhRealm._diaetGeteiltSchreiben: 0.27/0.28  0.26/0.26  (Spitze/Mitte; erst direkt, dann Bündel)
+A2n: CPU p95 7.1 p50 5.5 fps 79.6 | takt CPU-Takt {"p50":6.4,"p95":8,"p99":10.1,"max":33.6} ms (K2 8 ms), 88 Ta
+   AnazhRealm._diaetRefresh: 0.86/0.59  0.7/0.59  (Spitze/Mitte; erst direkt, dann Bündel)
+   o.needsRefresh: 0.88/0.61  0.71/0.59  (Spitze/Mitte; erst direkt, dann Bündel)
+   AnazhRealm._diaetGeteiltSchreiben: 0.51/0.33  0.35/0.27  (Spitze/Mitte; erst direkt, dann Bündel)
+B2n: CPU p95 6.3 p50 4.8 fps 80.1 | takt CPU-Takt {"p50":5.7,"p95":7.1,"p99":9.6,"max":30.3} ms (K2 8 ms), 94 T
+   AnazhRealm._diaetRefresh: 0.61/0.55  0.65/0.49  (Spitze/Mitte; erst direkt, dann Bündel)
+   o.needsRefresh: 0.61/0.56  0.66/0.49  (Spitze/Mitte; erst direkt, dann Bündel)
+   AnazhRealm._diaetGeteiltSchreiben: 0.34/0.3  0.3/0.21  (Spitze/Mitte; erst direkt, dann Bündel)

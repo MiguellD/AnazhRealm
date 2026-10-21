@@ -1,0 +1,54 @@
+{
+ "modus": "ruhe",
+ "tiere": "halten",
+ "frames": 60,
+ "zahl": {
+  "szenen": 3.067,
+  "writeBuffer": 84.483,
+  "writeBufferBytes": 20374.2,
+  "replayBuerger": 24,
+  "gangVorher": 5.167,
+  "schattenRenders": 0.667,
+  "gangKnoten": 24.667,
+  "gangGruppe": 25.667,
+  "uploadGeteilt": 42.167,
+  "lageVergleich": 36.833,
+  "pruef": 84.5,
+  "lageStatisch": 47.667,
+  "gangFremd": 12,
+  "uploadEigen": 17.133,
+  "pruefVoll": 8.017,
+  "geloescht": 7,
+  "voll": 0.017,
+  "renders": 1.7
+ },
+ "netto": {
+  "gang": 0.953,
+  "pruef": 0.447,
+  "schattenRender": 0.435,
+  "replay": 0.057,
+  "objektGang": 0.37,
+  "szene": 1.878,
+  "vollGeo": 0.008,
+  "vollKnoten": 0.027,
+  "vollBindung": 0.083,
+  "cpu": 5.648
+ },
+ "schattenPfad": [
+  "szene › szene › szene › replay › pruef › gang: 0.7"
+ ],
+ "vollGrund": [
+  "Schatten Shadow Map [ ID: 76 ]/bodenSatz: 0"
+ ],
+ "ohneAenderung": [],
+ "ohneMeldung": [],
+ "regungOhne": [],
+ "geloescht": [
+  "bauSatz: 6",
+  "bodenSatz: 1"
+ ],
+ "urteil": [
+  "ATTRIBUTE GELÖSCHT: 7 je Frame (bauSatz: 6,bodenSatz: 1) — zeichnet, prüft voll"
+ ],
+ "ms": 932
+}

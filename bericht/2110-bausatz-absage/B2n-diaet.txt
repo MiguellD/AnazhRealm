@@ -1,0 +1,48 @@
+{
+ "modus": "ruhe",
+ "tiere": "halten",
+ "frames": 60,
+ "zahl": {
+  "szenen": 3.05,
+  "writeBuffer": 84.467,
+  "writeBufferBytes": 20472.333,
+  "replayBuerger": 24,
+  "gangVorher": 5.167,
+  "schattenRenders": 0.667,
+  "gangKnoten": 24.667,
+  "gangGruppe": 25.667,
+  "uploadGeteilt": 42.15,
+  "lageVergleich": 36.833,
+  "pruef": 84.5,
+  "lageStatisch": 47.667,
+  "gangFremd": 12,
+  "uploadEigen": 17.133,
+  "pruefVoll": 1.033,
+  "voll": 0.017,
+  "renders": 1.7
+ },
+ "netto": {
+  "gang": 0.93,
+  "pruef": 0.492,
+  "schattenRender": 0.483,
+  "replay": 0.06,
+  "objektGang": 0.417,
+  "szene": 2.102,
+  "vollGeo": 0.013,
+  "vollKnoten": 0.018,
+  "vollBindung": 0.062,
+  "cpu": 6
+ },
+ "schattenPfad": [
+  "szene › szene › szene › replay › pruef › gang: 0.7"
+ ],
+ "vollGrund": [
+  "Schatten Shadow Map [ ID: 76 ]/bodenSatz: 0"
+ ],
+ "ohneAenderung": [],
+ "ohneMeldung": [],
+ "regungOhne": [],
+ "geloescht": [],
+ "urteil": [],
+ "ms": 935
+}
