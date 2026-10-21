@@ -2764,6 +2764,22 @@ class AnazhRealm_stoff_instanz {
             const ro = roh.apply(this, a);
             const o = ro && ro.object;
             if (!o) return ro;
+            // DER HÖRER ZIEHT MIT (bausatz-absage): r184 hängt `onGeometryDispose` an die ERSTE Geometrie des Render-Objekts, und
+            // `setGeometry` lässt ihn dort — tauscht ein Satz die Geometrie am selben Mesh (`_chunkSatzGeometrie`), löscht das
+            // Entsorgen der alten die Attribute des LEBENDEN Render-Objekts: es zeichnet aus `vertexBuffers` weiter, aber die
+            // Diät prüft es jeden Takt voll (Genesis Third: 4 bauSatz + bodenSatz), und die alte Geometrie hält es fest.
+            const RO = Object.getPrototypeOf(ro);
+            if (RO.__anazhHoerer !== true && typeof RO.setGeometry === "function") {
+                RO.__anazhHoerer = true;
+                const setze = RO.setGeometry;
+                RO.setGeometry = function (g) {
+                    if (this.geometry && this.geometry !== g) {
+                        this.geometry.removeEventListener("dispose", this.onGeometryDispose);
+                        g.addEventListener("dispose", this.onGeometryDispose);
+                    }
+                    return setze.call(this, g);
+                };
+            }
             const liste = o.__renderObjekte || (o.__renderObjekte = []);
             liste.push(ro);
             // r184 löst ein Render-Objekt selbst (ein neuer Schlüssel, ein entsorgter Stoff): es verlässt das Register.
