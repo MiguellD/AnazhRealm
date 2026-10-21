@@ -508,7 +508,12 @@ class AnazhRealm_dirigent_ankunft {
             this._applyDayNightToScene();
         }
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(
+            AnazhRealm.KAM_FOV_GRAD,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
         this.state.camera = camera;
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");
@@ -988,13 +993,29 @@ class AnazhRealm_dirigent_ankunft {
             luecke("welt", "die Welt entsteht");
             return out;
         }
-        const ring = this._builtRingRadius();
-        const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
-        if (!(ring != null && ring >= ringSoll))
+        // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale
+        const ding = AnazhRealm.ERSTER_BLICK.dingM;
+        const imBlick = (x, z, r) => !!rundum || this._imErstenBlick(x, z, r > 0 ? r : ding);
+        const { span } = this._voxelChunkConfig();
+        const chunkImBlick = (cx, cz) => imBlick((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2);
+        // DER BODEN IM BILD (B-Blick): der Ring bis zum Existenz-Boden, soweit die Ankunft ihn sieht — der Chunk des Spielers
+        // immer, rundum (der Nachlauf) jeder; was dahinter liegt, baut der Ring danach mit der Kappe des Spiels (`_tickVoxelChunkStreaming`).
+        // Bis B-Blick wartete das Bild auf den Boden hinter dem Spieler (GTX kalt: 40 von 122 Ring-Rufen und 10 von 44 Einbauten
+        // außer Blick, 0,8 s Haupt-Faden; p3/n2010/blick/f5.txt).
+        const pc = st.lastPlayerVoxelChunk;
+        const F = AnazhRealm.RING_EXIST_FLOOR;
+        let boden = pc ? 0 : 1;
+        for (let dz = -F; pc && dz <= F; dz++)
+            for (let dx = -F; dx <= F; dx++) {
+                const e = st.voxelChunks && st.voxelChunks.get(`${pc.cx + dx},${pc.cz + dz}`);
+                if (!(e && (e.mesh || e.empty)) && (!(dx || dz) || chunkImBlick(pc.cx + dx, pc.cz + dz))) boden++;
+            }
+        if (boden)
             luecke(
                 "boden",
-                `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`,
-                st.voxelWorkerPending && st.voxelWorkerPending.size > 0
+                `der Boden wächst (${boden} Stücke im Bild)`,
+                st.voxelWorkerPending && st.voxelWorkerPending.size > 0,
+                boden
             );
         // DER HORIZONT (K60): der Fern-Ring zeigt seine Schalen erst ganz (`fr.ready`), das Feld-Panorama die Ferne erst
         // gemalt (`panoLaeufe`). Seit K60 zeichnet unter dem Ladeschirm die Scheibe den Ring allein (`_tickFernRing`) —
@@ -1027,9 +1048,6 @@ class AnazhRealm_dirigent_ankunft {
         }
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
-        // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale
-        const ding = AnazhRealm.ERSTER_BLICK.dingM;
-        const imBlick = (x, z, r) => !!rundum || this._imErstenBlick(x, z, r > 0 ? r : ding);
         let ungebaut = 0;
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
@@ -1068,8 +1086,6 @@ class AnazhRealm_dirigent_ankunft {
         // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
         // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
         // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
-        const { span } = this._voxelChunkConfig();
-        const chunkImBlick = (cx, cz) => imBlick((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2);
         let saat = 0;
         for (const key of st.pendingFoliageChunks || []) {
             const ci = key.indexOf(",");

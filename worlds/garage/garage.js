@@ -9,7 +9,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x070b10);scene.fog=new THREE.FogExp2(0x070b10,0.020);
-const cam=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,0.1,200);cam.position.set(6.2,3.1,7.4);
+const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,0.1,200);cam.position.set(6.2,3.1,7.4);
 // DIE EINE ENGINE (18.10.): die Werkstatt rendert auf der Engine der Welt — three r184 WebGPU (vendor/three-bootstrap.js),
 // Ausgabe sRGB mit der Tonkurve der Welt (BELICHTUNG.kurve, Khronos PBR Neutral); die Farben sind sRGB-Absichten
 // (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
@@ -364,8 +364,13 @@ function updateVehicle(dt,t){
 const camOrb={az:0,el:FAHR.kamera.el,elF:FAHR.kamera.el,follow:true};  // der Zustand des Gesetzes (az: Gier des Kerns, Bug +x)
 // Welle L: der Zug-Zustand der Maus steht im CODE (er stand im Kommentar hinter camOrb — jede Mausbewegung warf ReferenceError)
 let dragging=false,_lpx=0,_lpy=0;
+// H3 (20.10.) — DIE KAMERA ATMET DAS TEMPO wie im Welt-Ritt: das Gesetz liest den Fahr-Zustand und vmax des Lab-Gesetzes (Arm,
+// FOV, Azimut auf den Fahrtvektor); der Zug der Maus greift über chaseGreif, losgelassen kehrt sie in rueckS zurück. Das FOV
+// schreibt EINER (camFov): die Ruhe CAM_FOV, in der Fahrt dazu fovPlus.
+function camFov(plus){const f=CAM_FOV+plus;if(cam.fov!==f){cam.fov=f;cam.updateProjectionMatrix();}}
 function updateChaseCam(dt,snap){
-  const v=VC.chaseKamera(camOrb,camOrb.follow?car.yaw:NaN,car.steig,snap?0:dt,FAHR.kamera);
+  const v=VC.chaseKamera(camOrb,camOrb.follow?car.yaw:NaN,car.steig,snap?0:dt,FAHR.kamera,car,fahrGesetzLab().vmax);
+  camFov(v.fovPlus);
   const by=Number.isFinite(car.y)?car.y:bodenY(car.x,car.z);
   cam.position.set(car.x+v.x,by+v.y,car.z+v.z);
   cam.lookAt(car.x,by+FAHR.kamera.blickHoehe,car.z);
@@ -385,7 +390,7 @@ function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
   key.position.set(5,9,4);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
-  werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
+  camFov(0);werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
 
 // Tastatur — Fahren liest Tasten kontinuierlich; Werkstatt-Hotkeys nur in der Werkstatt
 const keys={};
@@ -425,7 +430,7 @@ R.domElement.addEventListener('pointerdown',e=>{finger.set(e.pointerId,{x:e.clie
 addEventListener('pointermove',e=>{if(finger.has(e.pointerId))finger.set(e.pointerId,{x:e.clientX,y:e.clientY});const m=finger.size?_mitte():{x:e.clientX,y:e.clientY};
   const dx=m.x-_lpx,dy=m.y-_lpy;_lpx=m.x;_lpy=m.y;
   if(m.d&&oc.kneif&&mode==='werkstatt')oc.dist=Math.max(3.5,Math.min(16,oc.dist*oc.kneif/m.d));oc.kneif=m.d;
-  if(dragging){camOrb.az+=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));}
+  if(dragging)VC.chaseGreif(camOrb,dx*0.006,dy*0.006,FAHR.kamera);
   else if(oc.zug===0){const k=2*Math.PI/R.domElement.clientHeight;oc.vAz+=dx*k;oc.vEl+=dy*k;}
   else if(oc.zug===2){const k=2*oc.dist*Math.tan(cam.fov*Math.PI/360)/R.domElement.clientHeight;   // ein Pixel am Schirm = ein Pixel am Ziel
     oc.ziel.addScaledVector(_cr.setFromMatrixColumn(cam.matrix,0),-dx*k).addScaledVector(_cr.setFromMatrixColumn(cam.matrix,1),dy*k);}});

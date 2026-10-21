@@ -40,11 +40,18 @@ class AnazhRealm_studio_gestalt {
         return teile;
     }
 
-    // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte) — nur, solange eine
-    // Region streut (`_streuSammler`); jeder andere Leser fragt wie bisher.
+    // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur,
+    // solange eine Region streut (`_streuSammler`); jeder andere Leser fragt wie bisher. Die Zusage trägt den Rang ihres
+    // nächsten wartenden Lesers in der Region (`_foundryRang`/`_foundryNaeher` — derselbe Datensatz wie in der Pumpe): der Ort
+    // der Zelle (`_streuZelleOrt`), ohne Zelle 0 (die Region selbst, im Bild). Der Wecker fragt mit ihm das Bild der Ankunft.
     _streuWartetAuf(zusage) {
         const s = this._streuSammler;
-        if (s && zusage && typeof zusage.then === "function") s.add(zusage);
+        if (!s || !zusage || typeof zusage.then !== "function") return;
+        const wo = this._streuZelleOrt || 0;
+        const rang = s.get(zusage);
+        if (rang) this._foundryNaeher(rang, wo);
+        else s.set(zusage, this._foundryRang(wo));
+        this._streuZusagen = (this._streuZusagen | 0) + 1;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel

@@ -1623,11 +1623,13 @@ class AnazhRealm_koerper_bewegung {
             // Azimut und Elevation ihres Blicks (der Orbit steht dann `cameraThirdDistance` hinter der Brust, so hoch, dass er aus
             // derselben Elevation auf sie blickt — am Steilhang über dem Hang, nie im Boden). Bis hier sprang sie beim Abstieg in
             // voller Fahrt 14,4 m (Third, auf die alte Gier der Maus) bzw. 1,55 m (Ego, vom Sitz neben den Wagen) in einem Bild
-            // (gate:fahr-leben T4). Ein Sicht-Wechsel bleibt ein Schnitt.
+            // (gate:fahr-leben T4). Ein Sicht-Wechsel bleibt ein Schnitt des Orts; das Sichtfeld gleitet bei JEDEM Wechsel des
+            // Rigs (`_kamFov`) — Ego → Third in voller Fahrt setzte das Tempo-FOV sonst in einem Bild (T4 sichtfeld).
             if (this.state._kamRig !== rig) {
                 const gleiten = String(this.state._kamRig).startsWith(this.state.cameraMode + ":");
                 this.state._kamVon = gleiten ? (this.state._kamVon || new THREE.Vector3()).copy(camera.position) : null;
-                this.state._kamVersatz = null;
+                this.state._kamFovVon = this._kamFovSoll; // was `_kamFov` zuletzt schrieb (eine Sonde mit eigenem FOV bleibt)
+                this.state._kamVersatz = this.state._kamFovVersatz = null;
                 const blick =
                     gleiten &&
                     !_fahrRitt &&
@@ -1643,6 +1645,7 @@ class AnazhRealm_koerper_bewegung {
                 this.state._kamRig = rig;
                 this.state._kamArm = this.state._kamChase = this.state._kamT = this.state._smoothBodyY = undefined;
             }
+            let tempoFov = 0; // das Tempo der Chase-Cam (H3), nur im Ritt in Third
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
                 const kamT = this.state._kamT;
@@ -1650,8 +1653,8 @@ class AnazhRealm_koerper_bewegung {
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
                 // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: das EINE Gesetz des Kerns (`chaseKamera`, die Probefahrt der Garage
-                // liest es auch) — hinter dem Wagen, Azimut-Ease auf die Gier, Elevation über der Fahrbahn, feste Distanz; Boden-Clamp
-                // + Kollision unten gelten gleich.
+                // liest es auch) — hinter dem Wagen, Azimut-Ease auf den Fahrtvektor, Elevation über der Fahrbahn, Arm und FOV atmen das
+                // Tempo (H3); Boden-Clamp + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
@@ -1669,13 +1672,27 @@ class AnazhRealm_koerper_bewegung {
                     // Dämpfer (zwei Stufen) trägt der Kern. Gier des Kerns = Fahrt − π/2 (Studio-Wagen: Bug +x).
                     const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
                     const c = (this.state._kamChase = this.state._kamChase || {});
-                    const v = AnazhRealm._fahrSchrittGesetz().vc.chaseKamera(
+                    // DIE MAUS IM RITT (H3): was das mousemove seit dem letzten Bild an state.yaw/pitch drehte, greift das Rig
+                    // (`chaseGreif`, dieselbe Klemme wie die Probefahrt), in diesem Bild folgt der Azimut nicht (Gier NaN); lässt sie
+                    // los, kehrt es in `rueckS` zurück. Die Welt reicht Fahr-Zustand und vmax IHRES Gesetzes (`_fahrSatz`).
+                    const vc = AnazhRealm._fahrSchrittGesetz().vc;
+                    const mausDa = Number.isFinite(c.maus);
+                    const gAz = mausDa ? this.state.yaw - c.maus : 0;
+                    const gEl = mausDa ? c.mausP - this.state.pitch : 0;
+                    c.maus = this.state.yaw;
+                    c.mausP = this.state.pitch;
+                    const greift = gAz !== 0 || gEl !== 0;
+                    if (greift) vc.chaseGreif(c, gAz, gEl, K);
+                    const v = vc.chaseKamera(
                         c,
-                        yawF - Math.PI / 2,
+                        greift ? NaN : yawF - Math.PI / 2,
                         ent._fahr ? ent._fahr.steig : 0,
                         kDt,
-                        K
+                        K,
+                        ent._fahr,
+                        ent._fahrSatz && ent._fahrSatz.vmax
                     );
+                    tempoFov = v.fovPlus;
                     camX = ent.position.x + v.x;
                     camZ = ent.position.z + v.z;
                     camY = ent.position.y + v.y;
@@ -1868,6 +1885,7 @@ class AnazhRealm_koerper_bewegung {
                 const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
                 this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
+            this._kamFov(tempoFov, currentTime);
             this._lodAugeGesetzt(); // das Rig setzte das Auge der Stufen (K36): die Maske und die Wahl messen von hier
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -1876,6 +1894,38 @@ class AnazhRealm_koerper_bewegung {
                 );
             }
         }
+    }
+
+    // DAS EINE SICHTFELD (H3): der EINZIGE Schreiber von camera.fov in der Welt, je Bild aus dem Rig gerufen — die Ruhe
+    // KAM_FOV_GRAD, dazu das Tempo der Chase-Cam (`chaseKamera` → fovPlus) und der Bogen-Auszug (fovZug − fovRuhe) × Anteil;
+    // das Fernglas (`_zoomActive`) steht auf ZOOM_FOV_DEG. Vorher schrieben `_tickBogenZug`, `_bogenRelease` und `setZoomActive`
+    // je ihr FOV und stellten eine gemerkte Ruhe zurück. Er schreibt nur, wenn sein Soll (auf 0,01° gerastert) sich ändert —
+    // eine Sonde, die für einen Schuss ein FOV setzt, behält es — und stellt die Kaskaden nach (CSMShadowNode: updateFrustums
+    // nach jeder Änderung der Kamera, wie der resize). DER ÜBERGANG (F1 b wie der Ort): wechselt das Rig (Auf- und Abstieg,
+    // der Sicht-Wechsel), gleitet der Versatz zwischen dem Sichtfeld, das die Kamera trug (`_kamFovVon`), und dem Soll des
+    // neuen Rigs mit dem Gesetz des Übergangs (`_kamRest`, höchstens fovGradS je Sekunde) — beim Abstieg in voller Fahrt
+    // fiel das Tempo-FOV in EINEM Bild auf die Ruhe (gate:fahr-leben T4: 5,06° je Bild bei 8,4 m/s, Third).
+    _kamFov(tempo, t) {
+        const st = this.state;
+        const d = st.player && st.player._bogenDraw;
+        const A = d && Number.isFinite(d.frac) ? AnazhRealm._arenaGesetz().bogen : null;
+        let roh = st._zoomActive
+            ? AnazhRealm.ZOOM_FOV_DEG
+            : AnazhRealm.KAM_FOV_GRAD + (tempo || 0) + (A ? (A.fovZug - A.fovRuhe) * d.frac : 0);
+        if (Number.isFinite(st._kamFovVon)) st._kamFovVersatz = { f: st._kamFovVon - roh, t };
+        st._kamFovVon = null;
+        const g = st._kamFovVersatz;
+        const rest = g ? this._kamRest(g, Math.abs(g.f), t, AnazhRealm.KAMERA_UEBERGANG.fovGradS) : 0;
+        if (!(rest > 0.01)) st._kamFovVersatz = null;
+        else {
+            g.f = Math.sign(g.f) * rest;
+            roh += g.f;
+        }
+        const soll = Math.round(roh * 100) / 100;
+        if (soll === this._kamFovSoll) return;
+        this._kamFovSoll = st.camera.fov = soll;
+        st.camera.updateProjectionMatrix();
+        if (st.csmNode && st.csmNode.camera) st.csmNode.updateFrustums();
     }
 
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem
@@ -1887,17 +1937,24 @@ class AnazhRealm_koerper_bewegung {
         if (st._kamVon) {
             const o = st._kamVon.clone().sub(p);
             st._kamVersatz = o.length() <= U.maxM ? { o, t } : null; // weiter ist ein Sprung des Spielers: ein Schnitt
+            if (!st._kamVersatz) st._kamFovVon = null; // der Schnitt gilt dem Sichtfeld mit (`_kamFov` gleitet nur mit dem Ort)
             st._kamVon = null;
         }
         const g = st._kamVersatz;
         if (!g) return p;
-        const dt = Math.min(0.1, Math.max(0, t - g.t));
-        g.t = t;
         const l = g.o.length();
-        const rest = l - Math.min(U.vMax * dt, l * (1 - Math.exp(-dt / U.ruheS)));
+        const rest = this._kamRest(g, l, t, U.vMax);
         if (!(rest > 0.01)) st._kamVersatz = null;
         else p.add(g.o.multiplyScalar(rest / l));
         return p;
+    }
+
+    // DAS GESETZ DES ÜBERGANGS (F1 b), EINES für Ort (`_kamGleiten`, vMax m/s) und Sichtfeld (`_kamFov`, fovGradS °/s): der
+    // Rest eines Versatzes der Länge l fällt seit seinem Stempel g.t je `ruheS` auf 1/e, höchstens deckel × dt (dt ≤ 0,1 s).
+    _kamRest(g, l, t, deckel) {
+        const dt = Math.min(0.1, Math.max(0, t - g.t));
+        g.t = t;
+        return l - Math.min(deckel * dt, l * (1 - Math.exp(-dt / AnazhRealm.KAMERA_UEBERGANG.ruheS)));
     }
 
     // DAS ERSTE WELTBILD ALS EREIGNIS: wer darauf wartet (der Vorrat, K30), wartet auf dieses Versprechen, nie auf die Uhr.
@@ -2108,9 +2165,10 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 AnazhRealm.FIXED_DT = 1 / 60;
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
-// Der Übergang des Rigs (`_kamGleiten`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
-// der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt.
-AnazhRealm.KAMERA_UEBERGANG = Object.freeze({ ruheS: 0.15, vMax: 6, maxM: 20 });
+// Der Übergang des Rigs (`_kamRest`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
+// der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt;
+// das Sichtfeld gleitet mit dem Deckel fovGradS (°/s: 0,4° im längsten Bild von 33 ms, ein Tempo-FOV von 9° in ~0,8 s).
+AnazhRealm.KAMERA_UEBERGANG = Object.freeze({ ruheS: 0.15, vMax: 6, maxM: 20, fovGradS: 12 });
 
 // Kapsel-Maße des Spielers, am 1-m-Box-Collider geeicht: footDrop = halbe Box-Höhe (Füße =
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
