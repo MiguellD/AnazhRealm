@@ -163,8 +163,9 @@ const BASIS = {
         ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand
+    // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
     kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
+    wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
     stab: [
         [
             "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
@@ -347,7 +348,10 @@ async function proben(phasen) {
                 return hs.call(this, en, hu);
             };
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
-            if (e) await window.__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 }).catch(() => null);
+            if (e)
+                await window
+                    .__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 })
+                    .catch(() => null);
             if (e && e._hausHuelle) return e;
         }
         return null;
@@ -395,7 +399,10 @@ async function proben(phasen) {
                 // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
                 let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                 const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
-                if (s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
+                if (
+                    s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec &&
+                    dn < -Math.SQRT1_2 * Math.hypot(dx, dz)
+                )
                     [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];
                 s.yaw = Math.atan2(dx, dz);
                 const y0 = pm.position.y;
@@ -411,7 +418,9 @@ async function proben(phasen) {
             const fuss = pm.position.y - FUSS - base;
             // wer nie in eine Wand drückt, klettert nie
             if (rest > 0.4 || Math.abs(fuss - soll) > 0.35 || kl)
-                g.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`);
+                g.fehlt.push(
+                    `${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`
+                );
             g.z = lz;
         };
         // W1 TÜR: vom Podest-Rand vor der Tür 1,8 m nach innen, an der Zarge entlang (der Körper streift sie)
@@ -525,6 +534,18 @@ async function proben(phasen) {
                     ziel(`rand ${f.atLevel} ${v}`, xm(f) + v, oben(f), f.base + f.N * f.rise);
                 }
         }
+        // DIE WAND: frontal gegen die Wand neben der Tür klettert der Körper (gewolltes Klettern trägt)
+        const wx = tu.x + (tu.x < 0 ? 1 : -1) * (tu.w / 2 + 0.7);
+        const [wv, wz] = [welt(e, wx, tu.z - 0.7), welt(e, wx, tu.z + 1)];
+        stell(wv.x, base + 0.75 + FUSS, wv.z);
+        let [wy, wmax] = [0, -Infinity];
+        for (let k = 0; k < 120; k++) {
+            [s.keys.w, s.yaw] = [k >= 30, Math.atan2(wz.x - wv.x, wz.z - wv.z)];
+            r._stepFixedSim((t += DT), DT);
+            if (k === 29) wy = pm.position.y;
+            if (k >= 29) wmax = Math.max(wmax, pm.position.y);
+        }
+        [s.keys.w, g.wand] = [false, Math.round((wmax - wy) * 100) / 100];
     }
     // W9 DAS GRUND-DATUM (S4): je Haus des Drehbuch-Dorfs und je Box seines Körper-Satzes die Büschel der Nah-Wiese, deren
     // Halme in die Box reichen, Erde 5 cm über der Diele (Raster 0,25 m); `--bild`: je Box
@@ -1699,7 +1720,14 @@ async function proben(phasen) {
                 const weg = welt(e, fu.ox, fu.oz - abstand);
                 stell(weg.x, (r0(weg.x, weg.z) || e.position.y) + 3, weg.z);
                 const soll = abstand > 40 ? 2 : 1;
-                await window.__gebautNach(e, { fertig: () => e._hausHuelle && e._servedLod === soll, bau: () => {}, takt: () => pumpe(10), max: 60 }).catch(() => null);
+                await window
+                    .__gebautNach(e, {
+                        fertig: () => e._hausHuelle && e._servedLod === soll,
+                        bau: () => {},
+                        takt: () => pumpe(10),
+                        max: 60,
+                    })
+                    .catch(() => null);
                 w.fern.push({ stufe: e._servedLod, huelle: huelleVon(e), drinM: anlauf(e) });
             }
         }
@@ -1854,6 +1882,9 @@ function urteil(o) {
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
+        const wand = gang.filter((h) => !(h.gang.wand > 0.5));
+        if (wand.length)
+            f.push(`W10 Wand: ${wand.map((h) => h.typ + " " + h.gang.wand).join(" · ")} m geklettert (Soll > 0,5)`);
         const zu = gang.filter((h) => h.gang.fehlt.length);
         if (zu.length)
             f.push(
@@ -2205,6 +2236,7 @@ function zeile(o) {
                 bauwand: ["haus", "W7 Bau im Bau"],
                 stab: ["haus", "W10 Anti-Clip-Hub"],
                 kletter: ["haus", "W10 Spielgang"],
+                wand: ["haus", "W10 Wand"],
                 grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],

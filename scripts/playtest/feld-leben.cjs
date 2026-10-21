@@ -772,7 +772,7 @@ async function checkBandWelle6APolish(ctx) {
         const _savedY = r.state.playerMesh.position.y;
         const _savedZ = r.state.playerMesh.position.z;
 
-        // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält 33 ms
+        // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält zwei Schritte
         // und trüge sonst einen stale Wert der alten Spieler-Position.
         // BÜHNE: der Himmel 5 km über jedem Boden
         r.state.playerMesh.position.set(0, 5000, 0);

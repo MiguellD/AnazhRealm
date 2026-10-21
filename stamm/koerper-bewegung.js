@@ -964,7 +964,7 @@ class AnazhRealm_koerper_bewegung {
         s.onSteepSlope =
             grounded && groundNormalY < AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         s._groundedCache = grounded;
-        s._groundedCachedAt = performance.now();
+        s._groundedCachedAt = s._simZeit;
         s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
         // DER TRÄGER dieses Schritts — die Sicht-Schicht liest ihn (`_gaitBodenY` → `_standSicht`): die Fläche unter den
         // Füßen (Gelände, in der Höhle ihr Boden) bzw. das Bauwerk; in der Luft keiner (die Fuß-IK ruht).
@@ -1994,12 +1994,13 @@ class AnazhRealm_koerper_bewegung {
         // der 9-Ray-Fallback (jetzt feld-nativer `_runRaycast`) greift nur, falls der Cache fehlt.
         if (!this.state.playerMesh) return false;
 
-        // Erdungs-Cache (2-Frame-TTL, auf state): isPlayerGrounded wird mehrfach je Frame gerufen (Bewegung,
-        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat (kein Mid-Frame-Drift), 1/3 Raycasts.
-        const now = performance.now();
+        // Erdungs-Cache (2 Sim-Schritte, auf state): isPlayerGrounded wird mehrfach je Schritt gerufen (Bewegung,
+        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat, 1/3 Raycasts. Die Uhr ist die des Schritts
+        // (`_simZeit`): Replay, Lockstep und ein Nachhol-Frame treffen dieselbe Entscheidung wie der erste Lauf.
+        const now = this.state._simZeit;
         if (
             typeof this.state._groundedCachedAt === "number" &&
-            now - this.state._groundedCachedAt < 33 // ~2 Frames bei 60 fps
+            now - this.state._groundedCachedAt < 2 * AnazhRealm.FIXED_DT
         ) {
             // Side-effect bestNormalY + onSteepSlope wurden beim ersten Call
             // dieses Frames bereits gesetzt — keine Notwendigkeit zu wiederholen.
