@@ -898,14 +898,32 @@ class AnazhRealm_dirigent_takt {
         s.playerVel.setValue(rec.start.vx, rec.start.vy, rec.start.vz);
         s._fieldVy = rec.start.fieldVy;
         s.yaw = rec.start.yaw;
-        // Die Bewegungs-/Erdungs-Hilfszustände auf einen sauberen Start setzen, damit
-        // zwei Replays vom selben Start wirklich bit-gleich laufen (kein Carry-over).
-        const savedKeys = s.keys;
-        const savedLastMove = s._lastMoveT;
-        const savedWasGrounded = s._fieldWasGrounded;
-        s._fieldWasGrounded = false;
+        // Die Bewegungs-/Erdungs-Hilfszustände auf den Start eines frischen Leibs (die Werte des Konstruktors), damit zwei
+        // Replays vom selben Start bit-gleich laufen (kein Carry-over): die Bewegung liest sie VOR dem ersten Feld-Schritt
+        // (leib.K1) — der Sprung-Puffer des Vor-Replays sprang sonst im ersten Schritt des nächsten.
+        const frisch = {
+            keys: s.keys,
+            _lastMoveT: 0,
+            _fieldWasGrounded: false,
+            isInAir: false,
+            onSteepSlope: false,
+            groundNormalY: 1,
+            lastGroundedTime: 0,
+            isJumping: false,
+            _jumpPressedAt: undefined,
+            _spaceWasDown: undefined,
+            _cWasDown: false,
+            _parkourSlide: null,
+            _parkourKletter: 0,
+            _wandKontaktAt: null,
+            playerUnderwater: false,
+            playerEyesUnderwater: false,
+            _groundedCache: undefined,
+            _groundedCachedAt: undefined,
+        };
+        const gerettet = {};
+        for (const k in frisch) ((gerettet[k] = s[k]), (s[k] = frisch[k]));
         let t = 0;
-        s._lastMoveT = 0;
         for (let i = 0; i < rec.frames.length; i++) {
             const f = rec.frames[i];
             s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
@@ -918,9 +936,7 @@ class AnazhRealm_dirigent_takt {
             this._rittSchritt(f.dt);
         }
         const end = this._replaySnapshotState();
-        s.keys = savedKeys;
-        s._lastMoveT = savedLastMove;
-        s._fieldWasGrounded = savedWasGrounded;
+        Object.assign(s, gerettet);
         return end;
     }
 
