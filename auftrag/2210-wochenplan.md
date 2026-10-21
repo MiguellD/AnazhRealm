@@ -37,3 +37,14 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.
 - Wiese/Wald am Hügel: dichtes Gras, gutes Licht — das stärkste Bild.
 - Gehen: W 4 s gehalten = 4,5 m (≈ 1,1 m/s) — prüfen, ob gewollt (Gehen 1,4 m/s real, Spiele 4–6 m/s).
 - Eine Stadt gibt es in der Standard-Welt nicht (nur Messort mit dorfZug) — siedlung.K2.
+
+## Für den OMEN (GTX-Messplatz, eigene Sitzung — lies das beim Start der neuen Woche)
+1. Immer EINE Sache zur Zeit; der Koordinator gibt die Reihenfolge, keine Serie ohne Auftrag.
+2. Nie ci-lokal (die ganze CI-Batterie lokal) — die GitHub-CI fährt sie am Zweig-Kopf. Lokal nur check + playtest:fast + die echt-Wände,
+   deren Mechanik der Schnitt berührt.
+3. Je main-Vorlauf EIN ABAB 2+2 (Genesis Third steht, Wiese Ego geht: Frame p95, gpu-bank, CPU-Takt p95, Belegung); bei knappem Urteil n = 4,
+   dann Entscheid — keine Bisektion, keine Folge-Serien, wenn „nicht langsamer“.
+4. Sonst Messschuld, die bucht: EINE Messung je Meisterkarte-Kriterium am Kopf (Zahl + Rohdatei + Bericht), kein A/B.
+5. Ein Spike sagt „trägt nicht“ → sofort stoppen und mit Zahl melden. Ein Täter erst „beim Namen“, wenn er über ≥ 2 Boots je Seite steht.
+6. Das GPU-Schloss nur je einzelnem echten Lauf halten; ein echt-Rot erst nachstellen (allein auf der Maschine), bevor eine Karte daraus wird.
+7. Vollgas bis 98 % des Kontos (die OMEN-Sitzung zählt mit), dann WIP pushen + Übergabe im Startordner + bericht/…-uebergabe.md.
