@@ -1577,12 +1577,16 @@ class AnazhRealm_stoff_material {
     // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`
     // (Marktstand · Brunnen · Tor) trägt keine Hülle mit Decke, seine Form schließt oben über ihrem Grundriss (die Plane, das
     // Schindeldach, das Gewölbe) — seine Decke ist der Kasten der gezeichneten Teile im Raum des Eintrags (`leaf.localMatrix` ×
-    // Geometrie-Kasten, die Welt-Matrix `_archEntryWorldMatrix`: Skala und 0,5 m unter der Lage), einmal je Eintrag.
+    // Geometrie-Kasten, die Welt-Matrix `_archEntryWorldMatrix`: Skala und 0,5 m unter der Lage), einmal je Eintrag (null: ohne Dach).
     _dachKastenSetzen(entry, leaves) {
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
         const arten = AnazhRealm.NAESSE.dachArten;
-        if (!rec || !(arten.includes(preset) || arten.includes(rec.kind))) return;
+        if (!rec) return; // das Buch ist kalt: der nächste Platz fragt wieder
+        if (!(arten.includes(preset) || arten.includes(rec.kind))) {
+            entry._dachKasten = null; // kein Dach: nie wieder gefragt
+            return;
+        }
         const b = new THREE.Box3();
         const t = new THREE.Box3();
         for (const lf of leaves || []) {
