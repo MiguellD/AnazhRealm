@@ -422,7 +422,7 @@ class AnazhRealm_siedlung_ort {
     // benannt ohne Panorama führt (`ohne`: die sandgesicherten Welten ohne Skript), zeigt keins; eine, die er nicht kennt, bricht
     // laut beim Namen (`_bruchMelden`).
     static get TOR_ZIEL() {
-        return { w: 512, h: 256, format: 1, karte: "worlds/tor-ziele.json" };
+        return this._einmal("TOR_ZIEL", { w: 512, h: 256, format: 1, karte: "worlds/tor-ziele.json" });
     }
 
     // Die Ziel-Welt eines Tors: dieselbe Auflösung wie das Betreten (`enterPortal`: Eintrag vor Bauplan, `_sanitizePortalMeta`).

@@ -1434,7 +1434,14 @@ class AnazhRealm_werkstatt_hof {
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
     static get HOF_SECTION_LABELS() {
-        return { wesen: "Hirsche", wolf: "Wölfe", fuchs: "Füchse", baer: "Bären", gather: "Sammler", build: "Bauer" };
+        return this._einmal("HOF_SECTION_LABELS", {
+            wesen: "Hirsche",
+            wolf: "Wölfe",
+            fuchs: "Füchse",
+            baer: "Bären",
+            gather: "Sammler",
+            build: "Bauer",
+        });
     }
 
     // Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat): Chips aus den LEBENDEN Profilen
