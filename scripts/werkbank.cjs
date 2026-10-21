@@ -393,7 +393,7 @@ function lauf(k) {
         // Haken zählt je gerendertem Frame die Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, fertigVor = r._gpuLeine ? r._gpuLeine.fertig : 0;
+        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert,
         // die Leine und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `wandern: "kreis"` hält W und dreht den Blick
         // 0,08 rad/s, `probe` schmuggelt 250 ms in den Takt.
@@ -423,7 +423,10 @@ function lauf(k) {
             }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
-                if (probeTakt > 0) [window.__haengerProbeTakt(probeTakt), (probeTakt = 0)];
+                if (probeTakt > 0) {
+                    window.__haengerProbeTakt(probeTakt);
+                    probeTakt = 0;
+                }
                 r._gameLoopTick(t);
             } finally {
                 uhr.frameZ = null;
@@ -450,9 +453,14 @@ function lauf(k) {
             }
             // DIE GPU-WAHRHEIT: die Pass-Stempel sahen nur einen Teil (das Wasser bricht den Hauptpass für die
             // Tiefen-Kopie, der Neustart überschreibt die Stempel; Arbeit außerhalb der Pässe fehlt ganz). Der
-            // Abstand der GPU-Fertig-Zeitpunkte ist der echte Durchsatz — die Leine des Spiels zählt sie (`fertig`).
+            // Abstand der Zeitpunkte, an denen die GPU ein Bild abgearbeitet hat, ist der echte Durchsatz — die Leine
+            // des Spiels zählt sie (`erledigt`).
             const L = r._gpuLeine;
-            if (L && L.fertig !== fertigVor) [p.fertig, p.gpuFertig, fertigVor] = [L.fertig - fertigVor, L.fertigMs, L.fertig];
+            if (L && L.erledigt !== erledigtVor) {
+                p.erledigt = L.erledigt - erledigtVor;
+                p.gpuErledigt = L.erledigtMs;
+                erledigtVor = L.erledigt;
+            }
             proben.push(p);
             if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
         });
@@ -504,10 +512,19 @@ function lauf(k) {
             const ERST = ["bauN", "bauMs", "verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = E && ERST.map((x) => E[x] || 0), probe = [], eich0 = H && window.__haengerEichmarke(8);
             const tMess0 = performance.now();
-            if (H) [(H.loaf.length = 0), (H.namen.length = 0), (H.an = true)];
+            if (H) {
+                H.loaf.length = H.namen.length = 0;
+                H.an = true;
+            }
             if (H && k.probe) {
-                setTimeout(() => [probe.push({ art: "takt", t: performance.now() }), (probeTakt = 250)], (k.sek * 1000) / 3);
-                setTimeout(() => [probe.push({ art: "neben", t: performance.now() }), window.__haengerProbeNeben(250)], (k.sek * 2000) / 3);
+                setTimeout(() => {
+                    probe.push({ art: "takt", t: performance.now() });
+                    probeTakt = 250;
+                }, (k.sek * 1000) / 3);
+                setTimeout(() => {
+                    probe.push({ art: "neben", t: performance.now() });
+                    window.__haengerProbeNeben(250);
+                }, (k.sek * 2000) / 3);
             }
             messen = uhr.messen = true;
             await sleep(k.sek * 1000);
@@ -569,8 +586,8 @@ function lauf(k) {
                     : null,
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
                 gpuDurchsatzMs: (() => {
-                    const g = proben.filter((p) => p.fertig);
-                    return zahl(g.slice(1).map((p, i) => (p.gpuFertig - g[i].gpuFertig) / p.fertig));
+                    const g = proben.filter((p) => p.erledigt);
+                    return zahl(g.slice(1).map((p, i) => (p.gpuErledigt - g[i].gpuErledigt) / p.erledigt));
                 })(),
                 // DIE PASS-ZAHL (Befund G8, OMEN 18.10.): die Pascal-Pass-Stempel tragen präsentations-gebundene
                 // Fremdzeit (GTX k0 +0,41 ms in 2–56 % der Pässe), der p50 kippt bei Anteil 0,5. ABAB-Urteile über
@@ -630,7 +647,10 @@ function lauf(k) {
             uhr.ab();
             st.perfTargetMs = decke;
             st.keys.w = false;
-            if (k.wandern === "kreis") [st.playerMesh.position.copy(ort), (st.yaw = yaw0)];
+            if (k.wandern === "kreis") {
+                st.playerMesh.position.copy(ort);
+                st.yaw = yaw0;
+            }
         }
     })();
 }
@@ -2951,8 +2971,8 @@ async function starte() {
                         });
                     } finally {
                         spur.an = null;
-                        const fertig = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
-                        if (an) await cdp.send("Tracing.end").then(() => fertig);
+                        const komplett = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+                        if (an) await cdp.send("Tracing.end").then(() => komplett);
                         await cdp.detach();
                     }
                     o.belegung = ZL.belegungAuswerten(ev);
@@ -3820,7 +3840,9 @@ async function starte() {
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));
-    if (o && o.fehler) process.exit(1);
+    // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
+    // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
+    process.exit(o && typeof o.fehler === "string" ? 1 : 0);
 })().catch((e) => {
     console.error("WERKBANK-FEHLER:", (e && e.message) || e);
     process.exit(1);

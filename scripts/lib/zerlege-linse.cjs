@@ -203,10 +203,12 @@ function zweiGipfelSelbsttest() {
 // Namen. Der Lauf markiert je Takt Anfang und Ende (`performance.mark`), die Spur (CDP-Trace, `BELEGUNG_SPUR`) trägt jede
 // Aufgabe des Fadens; je 10-µs-Zelle gewinnt das innerste Ereignis (Name) bzw. das innerste mit Klasse, der Takt zuletzt.
 // Ein Bild reicht vom Anfang eines gerenderten Takts zum nächsten. Pflicht ist alles außerhalb des Takts außer Zeitgeber/
-// Idle (vertagbar) — der zählt nur in Bildern, deren Belegung das Bild-Fenster überzieht — und außer dem Takt-Rahmen des
-// Browsers (`browser`: die Aufgabe ohne Kind-Ereignis, kein Spiel-Code läuft in ihr): eine LEERE WebGPU-Leinwand (Klar-Pass
-// je rAF, gleiches Chrome, Radeon, 120 Hz) trägt ihn mit 0,27 ms je Takt, die Mess-Wiese mit 0,27 (0,42 je Bild bei 1,57
-// Takten) — er ist der Boden jedes rAF, das Spiel zahlt ihn je Takt. ROT: Pflicht p95 > 1,0 ms je Bild.
+// Idle (vertagbar) — der zählt nur in Bildern, deren Belegung das Bild-Fenster überzieht — und außer dem BODEN des
+// Takt-Rahmens (`browser`: die Aufgabe ohne Kind-Ereignis): eine LEERE WebGPU-Leinwand (Klar-Pass je rAF, gleiches Chrome,
+// Radeon, 120 Hz) trägt ihn mit `BROWSER_BODEN_MS` 0,27 ms je Takt — der Boden jedes rAF. Was ein Bild darüber trägt (Boden ×
+// Takte des Bilds), ist Pflicht: die Klasse bewegt sich mit dem Spiel (Schneider A 0,58 → B 0,40 ms je Bild). ROT: Pflicht
+// p95 > 1,0 ms je Bild.
+const BROWSER_BODEN_MS = 0.27;
 const BELEGUNG_SPUR = ["toplevel", "devtools.timeline", "v8", "gpu", "blink.user_timing"];
 const BELEGUNG_KLASSEN = [ // [Klasse, Muster auf den Ereignis-Namen] — die erste passende gewinnt
     ["gc", /GC|Scavenge|Sweep|Mark(ing|Compact)/],
@@ -239,23 +241,27 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         if (k >= 0) klasse.fill(k + 3, i, j);
         else for (let c = i; c < j; c++) if (klasse[c] < 3) klasse[c] = /RunTask$/.test(nm) ? klasse[c] || 2 : 1;
     }
-    const bilder = [];
+    const bilder = [], takte = [];
     marken.forEach((m, i) => {
         const ende = msg(m) === "anazh-takt" && marken.slice(i + 1, i + 3).find((x) => msg(x) !== "anazh-takt");
         if (!ende) return;
         klasse.fill(TAKT, zelle(m.ts), zelle(ende.ts));
+        takte.push(m.ts);
         if (msg(ende) === "anazh-bild") bilder.push(m.ts);
     });
     const ZG = KL.indexOf("zeitgeber"), jeBild = [], fremdName = new Float64Array(namen.length);
-    for (let i = 0; i + 1 < bilder.length; i++) {
+    for (let i = 0, ti = 0; i + 1 < bilder.length; i++) {
         const z = new Float64Array(KL.length);
         for (let c = zelle(bilder[i]), d = zelle(bilder[i + 1]); c < d; c++) {
             z[klasse[c]]++;
             if (klasse[c] && klasse[c] < TAKT) fremdName[nameZ[c]]++;
         }
+        let nt = 0;
+        for (; ti < takte.length && takte[ti] < bilder[i + 1]; ti++) nt += takte[ti] >= bilder[i];
         const ms = z.map((v) => v / 100), belegt = ms.reduce((s, v) => s + v, 0) - ms[0];
-        const pf = ms.map((v, k) => (k && k !== 2 && k < TAKT && (k !== ZG || belegt > bildMs) ? v : 0)); // die Pflicht je Klasse
-        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((s, v) => s + v, 0) });
+        // die Pflicht je Klasse: der Takt-Rahmen über seinem Boden × Takte des Bilds, der Zeitgeber nur über dem Bild-Fenster
+        const pf = ms.map((v, k) => (k === 2 ? Math.max(0, v - nt * BROWSER_BODEN_MS) : k && k < TAKT && (k !== ZG || belegt > bildMs) ? v : 0));
+        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((s, v) => s + v, 0), nt });
     }
     const q = (a, f) => {
         const s = [...a].sort((x, y) => x - y);
@@ -267,7 +273,7 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
     const anteil = KL.map((k, i) => [k, zahl(jeBild.map((b) => b.pf[i]))]).filter(([, z]) => z.mittel >= 0.05);
     const rot = !(pflicht.p95 <= schwelle);
     return {
-        bilder: jeBild.length, belegungMs: zahl(jeBild.map((b) => b.belegt)),
+        bilder: jeBild.length, takteJeBild: q([jeBild.reduce((s, b) => s + b.nt, 0) / nb], 0), belegungMs: zahl(jeBild.map((b) => b.belegt)),
         ausserTaktMs: zahl(jeBild.map((b) => b.belegt - b.ms[TAKT])), pflichtMs: pflicht, jeKlasse,
         taeterMsJeBild: [...fremdName.keys()].filter((i) => fremdName[i] >= 5 * nb).sort((a, b) => fremdName[b] - fremdName[a])
             .slice(0, 12).map((i) => `${namen[i]} ${(fremdName[i] / 100 / nb).toFixed(2)}`),
@@ -279,23 +285,34 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
 // Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): eine synthetische Spur, 300 Bilder zu 16,7 ms, Takt 4 ms in der
 // rAF-Aufgabe, ein fremder Faden voll Last. Eine Pflicht-Last je Bild (Layout 1,5 ms nach dem Takt) wird ROT beim Namen
 // „lebenszyklus", ein vertagbarer Zeitgeber (3 ms, eigene Aufgabe) bleibt GRÜN — bis das Bild-Fenster kleiner ist als die
-// Belegung; dann ist er Pflicht und ROT beim Namen „zeitgeber". Der Takt-Rahmen des Browsers (1,5 ms Aufgabe ohne Kind) bleibt GRÜN.
+// Belegung; dann ist er Pflicht und ROT beim Namen „zeitgeber". Der Takt-Rahmen des Browsers über seinem Boden (1,5 ms Aufgabe
+// ohne Kind je Bild) wird ROT beim Namen „browser"; am Boden (zwei Takte je Bild, ein leerer darunter, je 0,25 ms) bleibt er GRÜN.
 function belegungSelbsttest() {
-    const spur = ({ layout = 0, zeit = 0, rahmen = 0, bildMs }) => {
+    const spur = ({ layout = 0, zeit = 0, rahmen = 0, leerTakt = false, bildMs }) => {
         const ev = [{ pid: 2, tid: 9, ph: "X", name: "RunTask", ts: 0, dur: 1e9 }];
         const X = (name, ts, dur) => ev.push({ pid: 1, tid: 1, ph: "X", name, ts, dur });
         const M = (name, ts) => ev.push({ pid: 1, tid: 1, ph: "R", cat: "blink.user_timing", name, ts });
+        const takt = (a, ms, ende) => {
+            X("RunTask", a, ms + 200 + rahmen);
+            X("FireAnimationFrame", a + 50, ms + 100);
+            M("anazh-takt", a + 100);
+            M(ende, a + 100 + ms);
+        };
         for (let a = 1000; a < 5e6; a += 16667) {
-            [X("RunTask", a, 4200 + layout + rahmen), X("FireAnimationFrame", a + 50, 4100), M("anazh-takt", a + 100), M("anazh-bild", a + 4100)];
+            takt(a, 4000, "anazh-bild");
+            if (leerTakt) takt(a + 12000, 1000, "anazh-leer");
             if (layout) X("Layout", a + 4200, layout);
-            if (zeit) [X("RunTask", a + 8000, zeit), X("TimerFire", a + 8000, zeit)];
+            if (zeit) X("RunTask", a + 8000, zeit);
+            if (zeit) X("TimerFire", a + 8000, zeit);
         }
         return belegungAuswerten(ev, { bildMs });
     };
-    const [leer, last, zeit, ueber, rahmen] = [{}, { layout: 1500 }, { zeit: 3000 }, { zeit: 3000, bildMs: 7 }, { rahmen: 1500 }].map(spur);
+    const faelle = [{}, { layout: 1500 }, { zeit: 3000 }, { zeit: 3000, bildMs: 7 }, { rahmen: 1500 }, { rahmen: 150, leerTakt: true }];
+    const [leer, last, zeit, ueber, rahmen, boden] = faelle.map(spur);
     const f = [];
     if (leer.urteil !== "GRÜN" || leer.jeKlasse.takt.p50 !== 4 || leer.pflichtMs.p95 !== 0.1) f.push(`ohne Last: ${JSON.stringify(leer)}`);
-    if (rahmen.urteil !== "GRÜN" || rahmen.jeKlasse.browser.p50 !== 1.6) f.push(`Browser-Rahmen: ${JSON.stringify(rahmen)}`);
+    if (rahmen.urteil !== "ROT" || !/— browser p95 1.33 /.test(rahmen.befund)) f.push(`Browser über dem Boden: ${JSON.stringify(rahmen)}`);
+    if (boden.urteil !== "GRÜN" || boden.takteJeBild !== 2 || boden.jeKlasse.browser.p50 !== 0.5) f.push(`Browser am Boden: ${JSON.stringify(boden)}`);
     if (last.urteil !== "ROT" || !/— lebenszyklus p95 1\.5 /.test(last.befund) || !/^Layout 1\.50$/.test(last.taeterMsJeBild[0]))
         f.push(`Layout je Bild: ${JSON.stringify(last)}`);
     if (zeit.urteil !== "GRÜN" || zeit.jeKlasse.zeitgeber.p50 !== 3) f.push(`Zeitgeber im Fenster: ${JSON.stringify(zeit)}`);
@@ -1720,6 +1737,7 @@ module.exports = {
     zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
+    BROWSER_BODEN_MS,
     belegungAuswerten,
     belegungSelbsttest,
     ZERLEGE_INSTALL:
