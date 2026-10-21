@@ -1,0 +1,44 @@
+{
+ "rows": [
+  {
+   "datei": "kalt-1.json",
+   "tWeltbildS": 8.83,
+   "blockiertBisBildS": 4.79,
+   "laengsteMs": 653,
+   "aufgaben": 21
+  },
+  {
+   "datei": "kalt-2.json",
+   "tWeltbildS": 8.79,
+   "blockiertBisBildS": 4.6,
+   "laengsteMs": 668,
+   "aufgaben": 19
+  },
+  {
+   "datei": "kalt-3.json",
+   "tWeltbildS": 8.54,
+   "blockiertBisBildS": 4.82,
+   "laengsteMs": 585,
+   "aufgaben": 21
+  },
+  {
+   "datei": "kalt-4.json",
+   "tWeltbildS": 9.68,
+   "blockiertBisBildS": 5.01,
+   "laengsteMs": 688,
+   "aufgaben": 18
+  },
+  {
+   "datei": "kalt-5.json",
+   "tWeltbildS": 8.75,
+   "blockiertBisBildS": 4.7,
+   "laengsteMs": 613,
+   "aufgaben": 16
+  }
+ ],
+ "median": {
+  "tWeltbildS": 8.79,
+  "blockiertBisBildS": 4.79,
+  "laengsteMs": 653
+ }
+}

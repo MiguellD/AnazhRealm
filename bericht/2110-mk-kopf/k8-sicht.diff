@@ -1,0 +1,31 @@
+diff --git a/scripts/diag-koerper-stand.cjs b/scripts/diag-k8-first.cjs
+index 4d513257a..f3598e922 100644
+--- a/scripts/diag-koerper-stand.cjs
++++ b/scripts/diag-k8-first.cjs
+@@ -868,7 +868,7 @@ async function rollen(n) {
+         }
+         return a;
+     };
+-    const o = {};
++    const o = {}; r.setCameraMode("first");
+     const W = window.__messWiese;
+     // der 25°-Hang: der nächste trockene Hang 24–26° um die Wiese (das Gesetz über ± 4 m, die EINE Orts-Suche `__weltOrt`)
+     const hang = window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });
+@@ -884,7 +884,7 @@ async function rollen(n) {
+             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+         };
+         await window.__weltStehtNach(() => (setz(), takt()));
+-        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
++        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0, sicht: s.cameraMode });
+         // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
+         const fein = [];
+         let saat = 7;
+@@ -1097,7 +1097,7 @@ const zeileK8 = (o) =>
+     ["wiese", "hang"]
+         .map((ort) =>
+             o && o[ort]
+-                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · ` +
++                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° ${o[ort].sicht} · ` +
+                   Object.keys(K8_ROLLEN)
+                       .map(
+                           (k) =>

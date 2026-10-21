@@ -1,0 +1,21 @@
+diff --git a/scripts/diag-garage-labor.cjs b/scripts/diag-garage-mk.cjs
+index 694c1d2e9..55b19d312 100644
+--- a/scripts/diag-garage-labor.cjs
++++ b/scripts/diag-garage-mk.cjs
+@@ -152,6 +152,7 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
+     const sf = await schilder();
+     m.schilderFahrt = sf.length;
+     m.schilderNamen = sf.slice(0, 4).join(", ");
++    m.mkRuhe = await page.evaluate(() => ({ fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v: Math.abs(car.speed) }));
+     // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames.
+     await page.keyboard.down("KeyW");
+     // bis der Wagen fährt (> 3 m/s) — nie eine feste Uhr: auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames
+@@ -175,6 +176,8 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
+                 )
+         )
+     );
++    m.mkTop = await page.evaluate(() => new Promise((res) => { const vm = fahrGesetzLab().vmax; let best = null, t0 = performance.now(), last = []; const tick = () => { const v = Math.abs(car.speed); const p = { fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v, vmax: vm }; if (!best || v > best.v) best = p; last.push(v); if (last.length > 60) last.shift(); const stabil = last.length === 60 && Math.max(...last) - Math.min(...last) < 0.05; if (v >= 0.95 * vm || stabil || performance.now() - t0 > 60000) res(Object.assign(best, { nach: +((performance.now() - t0) / 1000).toFixed(1), stabil })); else requestAnimationFrame(tick); }; tick(); }));
++    console.log("MK2110 " + JSON.stringify({ ruhe: m.mkRuhe, top: m.mkTop }));
+     await page.keyboard.up("KeyW");
+     m.tempo = await page.evaluate(() => (window.__m7.ende(), Object.assign(window.__m7, { fov: undefined })));
+     await page.keyboard.press("Escape");

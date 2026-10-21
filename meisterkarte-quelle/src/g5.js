@@ -110,12 +110,12 @@ module.exports = {
         },
         {
           name: "Die Kamera atmet das Tempo — EIN Rig aus dem Kern",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen · 2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber",
           messung: "Garage G7 + gate:fahr-leben (Familie kamera), Welt und Garage; der Leser-Grep über `window.__codeOf` zählt die FOV-Schreiber.",
-          beleg: "chaseKamera liegt im Kern und wird von Garage und Welt gelesen (`vehicle-core.js:3054`; `stamm/koerper-bewegung.js:_loopCamera` `:1579`), Fahrbahn-Elevation G7 grün. Distanz und FOV sind fest (FAHR.kamera dist 9,6, el 0,34, `vehicle-core.js:2293-2300`; kein v-Term in `:3054-3077`); der Azimut folgt der Gier; das FOV hat 4 Schreiber (kampf.js:857/869/908, koerper-fahrt.js:1416).",
+          beleg: "Seit kamera-tempo (Merge fac65067, main 57a9f2ab) trägt der Kern das Tempo: FAHR.kamera fovV/distV/tempoEase/driftFolge/rueckS (additiv, vehicle-contract byte-gleich), chaseKamera(c, g, s, dt, K, z, vmax) mit chaseGreif für Garage und Welt, `_kamFov` der EINE FOV-Schreiber. Gemessen am Kopf 57a9f2ab an der Radeon: WELT (werkbank --echt, Ausgabe-Pfad 1920×1080, Third, der GT auf freier Bahn bei −160/−1046, Vollgas): Ruhe FOV 75° · Arm 9,89 m → bei 15,09 m/s (0,94 vmax 16,0) FOV 84,40° (+9,4°) · Arm 11,69 m (+18,2 %); GARAGE (gate:garage-labor G7 + Messung bei vmax, r184 WebGPU): Ruhe 34° · 9,89 m → bei 15,21 m/s (0,95 vmax) 43,07° (+9,1°) · 11,68 m (+18,1 %), camera.fov = Ruhe + Tempo (zeigt 0), Orbit 25°, Rückkehr 1,06 s. gate:fahr-leben (Null-Renderer, echter `_gameLoopTick`): T5 Kern fovMax +10°, Arm +0,2, Drift 9°, Knick 0,08, Ritt fov bei 10 m/s +4,78°, zeigt 0,005°, Orbit 69°, Rückkehr 1,08 s, Schreiber [`_kamFov`]; T4 Ruck p95 0,016 m, FOV-Sprung beim Sicht-Wechsel 0,41° je Bild. Alles im Soll der 2 — es fehlt das zweite Gerät (M27). Ein erster Welt-Lauf an der Mess-Wiese fuhr bei 13,4 m/s in den Wald (+7,6° · +14,9 %, verworfen: keine freie Bahn). Roh: koordination `bericht/2110-mk-kopf/tempo-welt-*`, `garage-mk.log`, `fahr-leben.log`.",
           schlupfloch: "Ein FOV-Sprung misst +8° und ruckelt; ein fünfter FOV-Schreiber streitet mit Kampf und Fernglas: Ruck-p95, Azimut-Fehler und die Ein-Schreiber-Regel.",
-          aenderung: "Die 1 der Synthese war „chaseKamera im Kern“ (Existenz, B58) → 0."
+          aenderung: "Die 1 der Synthese war „chaseKamera im Kern“ (Existenz, B58) → 0. Am Kopf 57a9f2ab in Welt UND Garage bei 0,94–0,95 vmax gemessen → 1; die 2 wartet auf die GTX (M27)."
         },
         {
           name: "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
@@ -139,7 +139,6 @@ module.exports = {
       hebel: [
         { name: "Reifen mit Spitze, μ aus der EINEN Stoff-Zeile, 240 Hz in 4 Unter-Schritten (nach Stoffe H1)", k: ["fahrzeug.K1+2"], t: [1.5, 2], wurzel: "`vehicle-core.js:fahrKraefte` (`:2863`, Seitenkraft `:2913-2914`) → D·sin(C·atan(B·α)); fahrSchritt (`:3003/:3015`) mit e.mu aus der Stoff-Zeile unter `_bodenSichtAt` × der EINEN Nässe; `stamm/koerper-bewegung.js` FIXED_DT `:2108`; Golden-Re-Mint als Vertrags-Akt (Lehre 11).", pflicht: "—", v1: true },
         { name: "Die Station fahrt auf dem Wegenetz ROT, dann der Täter", k: ["fahrzeug.K2+1"], t: [1.5, 1.5], wurzel: "Fahrer-Skript nach dem Wegenetz des Gesetzes (`fachwerk-core.js` roads/feldwege); Täter am Weg-Rand, an der Furt oder am Hang-Grip beim Namen.", pflicht: "—", v1: true },
-        { name: "Die Kamera atmet das Tempo: chaseKamera bekommt v und vlat, EIN FOV-Schreiber", k: ["fahrzeug.K3+2"], t: [1, 1], wurzel: "`vehicle-core.js:chaseKamera` (`:3054`) + FAHR.kamera (`:2293`, additiv, Byte-Beweis vehicle-contract) + `stamm/koerper-bewegung.js:_loopCamera` (`:1579`); Maus-Orbit mit Rückkehr nach 1,2 s; `_kamFov` als EINER Schreiber.", pflicht: "—", v1: true },
         { name: "Spur, Staub, Spritzwasser und Rumble aus dem EINEN Fahr-Zustand", k: ["fahrzeug.K5+2"], t: [2, 2], wurzel: "`stamm/koerper-fahrt.js:_rittSchritt` (`:1090`) als einziger Ausgang des Fahr-Zustands; die Garage-Spur (worlds/garage) fällt in den Kern.", pflicht: "—", v1: false }
       ],
       feststeck: {
@@ -245,7 +244,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät · 2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte",
           messung: "werkbank eval + bild: Fuß gegen das gezeichnete Mesh (`_bodenSichtAt`) an 200 Kontakten, Gang über Hang und Treppe.",
-          beleg: "Der Spieler hat eine eigene Boden-Probe (`stamm/koerper-bewegung.js:857-887` ⇄ `stamm/kreatur-leben.js:1357`); SYSTEMKARTE D5 schätzt den Spieler-Leib auf ~75 % — ungemessen.",
+          beleg: "Seit boden-rolle (Merge c393726c) steht der Schuh flach auf dem Fuß (Ofen-Akt, 2/460 Klassen), die Leib-Sohle auf der Kapsel-Sohle (`PLAYER_FOOT_OFFSET`), die Sohle kippt mit dem Boden (`_gaitSohlenKipp`). Gemessen am Kopf 57a9f2ab an der Radeon (gate:koerper-stand K8, der tiefste gezeichnete Schuh-Vertex im Fuß-Lock des Gangs gegen `__gezeichnet`, 200 Kontakte) in drei Läufen (Standard/Ego/Third): 25°-Hang 3,1/2,8/2,9 cm, Mess-Wiese 3,4/3,2/3,2 cm — am Hang auf der Grenze und ±0,3 cm je Lauf (soleH misst die Pose des ersten Takts), Stufen und der Spielgang ungemessen: ROT. Täter beim Namen (befund boden-rolle): der starre Fuß rollt über den Ballen, die Schuh-Spitze taucht im Abrollen 3–5,7 cm ein — es fehlt das Zehen-Gelenk. Roh: koordination `bericht/2110-mk-kopf/k8-*.log`.",
           schlupfloch: "Ein Offset am Fuß schiebt den Mittelwert: p95 am Hang; ein fester Sprung-Wert besteht die Höhe: die Mutation verlangt das Gesetz.",
           aenderung: "Der Spieler-Teil aus Gelände K5 (V02)."
         },
@@ -278,6 +277,7 @@ module.exports = {
         }
       ],
       hebel: [
+        { name: "Das Zehen-Gelenk: der Fuß rollt über den Ballen statt durch den Boden (der Rest von Gelände H5), dann Stufen und Spielgang im K8", k: ["leib.K2+1"], t: [1.5, 2], wurzel: "`koerper-core.js` Bein-Baum (Zehen-Glied) → Ofen skinJoints, Rig und `_gaitIKPrep` (soleH aus der Ruhe-Pose statt aus dem ersten Takt), tetrapoda gangRolle 0,46 E; Studio-Kern unter Byte-Beweis (Lehre 11). Linse: gate:koerper-stand K8 fuss (Ratsche 4,5/4,2) mit einer Treppe am Hang.", pflicht: "—", v1: true },
         { name: "Schwimmen und Tauchen aus der EINEN Wasser-Wahrheit", k: ["leib.K3+1"], t: [2, 2], wurzel: "Übergang am Spiegel (`_waterLevelAt`), Unterwasser-Sicht über die Luft-Formel mit Wasser-β (`stamm/bild-himmel.js` Luft-Knoten).", pflicht: "—", v1: false },
         { name: "Die Kamera zu Fuß: EIN Rig wie in Fahrt", k: ["leib.K4+1"], t: [1, 1], wurzel: "`stamm/koerper-bewegung.js:_loopCamera` (`:1579`): Kugel mit Kollision gegen Fels und Blocker, Glättung wie chaseKamera.", pflicht: "—", v1: true },
         { name: "Gamepad analog für jedes Verb", k: ["leib.K5+2"], t: [1.5, 1.5], wurzel: "Eingabe-Schicht in `stamm/koerper-bewegung.js` (Tastatur und Achsen über EINE Verb-Tafel), Rumble aus dem Fahr- und Treffer-Zustand.", pflicht: "—", v1: true }

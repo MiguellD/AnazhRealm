@@ -1,0 +1,12 @@
+[linse-gpu] amd/rdna-3
+=== G — DIE GARAGE IM KOPFLOS-BROWSER (r184 WebGPU, echte Seite) ===
+  ✅ G1 Maus ziehen in Werkstatt und Probefahrt ohne Seitenfehler — 0 Fehler
+  ✅ G2 der Fahr-HUD ist ein Flex-Band (Einheit getrennt von der Tastenhilfe) — display flex · Abstand 33 px
+  ✅ G3 der Tacho zeigt km/h (×3,6 aus FAHR.kmh) — Anzeige 12 bei 3.37 m/s = 12.1 km/h
+  ✅ G4 Preset-Wechsel und erstes Laden: P == DEFAULT_P + Preset + Kultur, Regler == Modell — kein Leck
+  ✅ G5 die Kultur lässt sich abwählen (zweiter Klick)
+  ✅ G7 die Probefahrt atmet das Tempo wie der Ritt: camera.fov = Ruhe + Tempo aus Fahr-Zustand und vmax, Orbit zurück in 1–1,25 s — {"n":196,"zeigt":0,"quelle":true,"orbit":25,"rueck":1.06}
+  ✅ G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück — Fahrt 0 Schilder · Werkstatt 6
+
+✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren.
+EXIT=0

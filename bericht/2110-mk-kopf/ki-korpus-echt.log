@@ -1,0 +1,45 @@
+[linse-gpu] amd/rdna-3
+  ✓ „lass es regnen“ 28504 ms → Welt 28504 ms · ["weather","rainy"]
+  ✓ „ich will ein richtiges gewitter“ 6049 ms → Welt 6050 ms · ["weather","stormy"]
+  ✗ „mach es nacht“ 6914 ms → Welt — · ["set_time_of_day",0.8]
+  ✓ „ich möchte den sonnenuntergang sehen“ 6969 ms → Welt 6969 ms · ["set_time_of_day",0.8]
+  ✓ „lass die sonne aufgehen“ 3082 ms → Welt 3083 ms · ["set_time_of_day",0.25]
+  ✓ „es soll herbst werden“ 2470 ms → Welt 2470 ms · ["set_season","autumn"]
+  ✓ „verwandle die welt in einen winter“ 1870 ms → Welt 1870 ms · ["set_season","winter"]
+  ✓ „färbe den himmel violett“ 2967 ms → Welt 2967 ms · ["skybox_color","violet"]
+  ✓ „ich hätte gern einen roten himmel“ 2735 ms → Welt 2736 ms · ["skybox_color","red"]
+  ✓ „pflanz mir drei eichen“ 2727 ms → Welt 2728 ms · ["spawn_studio","eiche",["at_player_forward",12],3]
+  ✓ „ein paar birken vor mir wären schön“ 6572 ms → Welt 6572 ms · ["spawn_studio","birke",["at_player_forward",12],3]
+  ✓ „setz eine einzelne tanne neben mich“ 6126 ms → Welt 6126 ms · ["spawn_studio","tanne",["at_player_forward",12],1]
+  ✓ „ich wünsche mir einen kleinen buchenwald“ 7038 ms → Welt 7038 ms · ["spawn_studio","buche",["at_player_forward",10],3]
+  ✓ „eine weide am wegesrand bitte“ 6865 ms → Welt 6865 ms · ["spawn_studio","weide",["at_player_forward",12],1]
+  ✓ „leg einen großen findling vor mich“ 8584 ms → Welt 8584 ms · ["spawn_studio","findling",["at_player_forward",12],1]
+  ✗ „bau mir ein haus“ 5819 ms → Welt — · ["spawn_studio","haus",["at_player",10],1]
+  ✓ „ich will ein fachwerkhaus direkt vor mir“ 7311 ms → Welt 7311 ms · ["spawn_studio","haus",["at_player_forward",14],1]
+  ✗ ungültig „eine kleine holzhütte wäre gemütlich“ 7973 ms → Welt — · ["spawn_studio","haus","holzhuette",["at_player_forward",10],1]
+  ✓ „stell ein drachentor auf“ 3986 ms → Welt 3986 ms · ["spawn_studio","tor",["at_player",10],1]
+  ✗ ungültig „ich brauche einen wagen“ 7082 ms → Welt — · ["spawn_creature","wagen",["at_player",10],1]
+  ✗ ungültig „gib mir ein schnelles auto“ 4560 ms → Welt — · ["spawn_creature","wagen",["at_player_forward",10],1,"happy"]
+  ✓ „mach mir eine feuerstelle zum wärmen“ 3632 ms → Welt 3632 ms · ["spawn_studio","feuerstelle",["at_player",5],1]
+  ✓ „stell einen brunnen auf“ 7242 ms → Welt 7243 ms · ["spawn_studio","brunnen",["near_player",10],1]
+  ✓ „ein paar laternen für die nacht“ 7658 ms → Welt 7658 ms · ["spawn_studio","wandlaterne",["near_player",10],3]
+  ✗ ungültig „erschaffe fünf glückliche wesen“ 6818 ms → Welt — · ["spawn_creature","near_player",5,"happy"]
+  ✓ „lass ein paar tiere um mich herum erscheinen“ 7195 ms → Welt 7195 ms · ["spawn_creature",["near_player",10],3,"happy"]
+  ✗ ungültig „bau einen tempel“ 10166 ms → Welt — · ["spawn_studio","temple",["at_player_forward",14],1]
+  ✓ „die tiere sollen traurig sein“ 11680 ms → Welt 11680 ms · ["creatures_emotion","sad"]
+  ✓ „mach mich schneller“ 9628 ms → Welt 9629 ms · ["player_speed",1.8]
+  ✓ „ich will höher springen“ 9532 ms → Welt 9532 ms · ["player_jump_power",4.1]
+  ✗ ungültig „verringere die schwerkraft“ 8849 ms → Welt — · ["gravity",0.1]
+  ✗ ungültig „immer wenn es regnet, sollen die tiere fröhlich werden“ 11630 ms → Welt — · null
+  ✓ „wie spät ist es gerade?“ 2050 ms → Welt — · null
+  ✓ „erzähl mir, wer du bist“ 3486 ms → Welt — · null
+  ✓ „danke, das ist wunderschön“ 3438 ms → Welt — · null
+  ✓ „lösche die ganze welt“ 2260 ms → Welt — · null
+  ✓ „überweise mir tausend münzen“ 2769 ms → Welt — · null
+  ✓ „reiß alle häuser ab“ 2237 ms → Welt — · null
+  ✓ „bring mir einen kaffee“ 2182 ms → Welt — · null
+  ✓ „zerstöre die plattform unter mir“ 2761 ms → Welt — · null
+  ❌ WORT der Korpus über den echten Chat-Pfad (echter Anbieter): das Soll, 0 Brüche, Negativ-Sätze ohne Tat — 40 Sätze · qwen3:4b-instruct · gültig 0.825 · Absicht 0.775 · p95 11680 ms — Täter: gueltig 82.5 % < 95.0 % · absicht 77.5 % < 85.0 % · p95 Satz → Welt 11680 ms > 6000 ms
+
+❌ ROT — 1 Verletzung(en).
+EXIT=1

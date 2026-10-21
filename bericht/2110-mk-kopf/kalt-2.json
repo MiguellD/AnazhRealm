@@ -1,0 +1,750 @@
+{
+ "proben": [
+  {
+   "t": 229
+  },
+  {
+   "t": 779,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 823,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 1410,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 1605,
+   "fehlt": [
+    "der Boden wächst (1 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 1625,
+   "fehlt": [
+    "der Boden wächst (1 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 2232,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 13 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 2429,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "5 wartend · 9 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 2622,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 2821,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 3025,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 3225,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "35 Bäume und Bauten wachsen",
+    "16 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    144,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 3593,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 34 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 3627,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 34 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 3827,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 29 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 4032,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 4227,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 23 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 4429,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 4623,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 4824,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 5024,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (94 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "60 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    13,
+    178,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 5757,
+   "fehlt": [
+    "der Boden wächst (12 Stücke im Bild)",
+    "der Horizont wird gemalt",
+    "das Licht des Orts wird gemessen",
+    "55 Bäume und Bauten wachsen",
+    "46 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    20,
+    425,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 6284,
+   "fehlt": [
+    "der Boden wächst (2 Stücke im Bild)",
+    "der Horizont wird gemalt",
+    "44 Bäume und Bauten wachsen",
+    "107 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    27,
+    546,
+    7
+   ],
+   "da": 0
+  },
+  {
+   "t": 6840,
+   "fehlt": [
+    "46 Bäume und Bauten wachsen",
+    "161 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    36,
+    728,
+    10
+   ],
+   "da": 0
+  },
+  {
+   "t": 7076,
+   "fehlt": [
+    "43 Bäume und Bauten wachsen",
+    "153 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    37,
+    762,
+    11
+   ],
+   "da": 0
+  },
+  {
+   "t": 7357,
+   "fehlt": [
+    "41 Bäume und Bauten wachsen",
+    "155 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    860,
+    9
+   ],
+   "da": 0
+  },
+  {
+   "t": 7539,
+   "fehlt": [
+    "68 Bäume und Bauten wachsen",
+    "110 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    860,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 7698,
+   "fehlt": [
+    "62 Bäume und Bauten wachsen",
+    "106 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    860,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 7962,
+   "fehlt": [
+    "107 Bäume und Bauten wachsen",
+    "46 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    928,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 8125,
+   "fehlt": [
+    "134 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 4 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    928,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 8338,
+   "fehlt": [
+    "101 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    928,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 8458,
+   "fehlt": [
+    "42 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    928,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8623,
+   "fehlt": [],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    928,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8823,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "26 wartend · 48 im Werk · 0 im Bäcker",
+   "erst": [
+    47,
+    973,
+    2
+   ],
+   "da": 8789
+  },
+  {
+   "t": 9116,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "25 wartend · 48 im Werk · 0 im Bäcker",
+   "erst": [
+    47,
+    973,
+    2
+   ],
+   "da": 8789
+  }
+ ],
+ "lang": [
+  [
+   36,
+   129
+  ],
+  [
+   303,
+   71
+  ],
+  [
+   418,
+   331
+  ],
+  [
+   1653,
+   570
+  ],
+  [
+   3077,
+   103
+  ],
+  [
+   3319,
+   272
+  ],
+  [
+   5084,
+   668
+  ],
+  [
+   5786,
+   495
+  ],
+  [
+   6376,
+   461
+  ],
+  [
+   6853,
+   217
+  ],
+  [
+   7076,
+   275
+  ],
+  [
+   7374,
+   160
+  ],
+  [
+   7539,
+   155
+  ],
+  [
+   7698,
+   260
+  ],
+  [
+   7965,
+   158
+  ],
+  [
+   8126,
+   74
+  ],
+  [
+   8201,
+   91
+  ],
+  [
+   8364,
+   51
+  ],
+  [
+   8727,
+   70
+  ],
+  [
+   8823,
+   96
+  ],
+  [
+   9004,
+   50
+  ]
+ ],
+ "ev": [
+  [
+   1604,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   3078,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "kosten": {
+  "Bauten": {
+   "1": 22.600000023841858,
+   "2": 5.999999970197678,
+   "3": 17.600000143051147,
+   "5": 53.599999994039536,
+   "6": 15.299999922513962,
+   "7": 35.099999874830246,
+   "8": 31.399999886751175
+  },
+  "Buch": {
+   "1": 15.400000005960464
+  },
+  "Streu": {
+   "1": 148.30000001192093,
+   "3": 22.099999994039536,
+   "5": 7.299999982118607,
+   "6": 102.30000004172325,
+   "7": 270.2000000178814,
+   "8": 122.69999995827675
+  },
+  "Ort-Wahl": {
+   "3": 79.30000001192093
+  },
+  "Dorf": {
+   "3": 31.19999998807907
+  },
+  "Gruppen-Bau": {
+   "3": 26.59999993443489,
+   "5": 22.099999994039536,
+   "6": 25.400000005960464,
+   "7": 12.10000005364418,
+   "8": 6.700000077486038
+  },
+  "Boden": {
+   "5": 31.80000001192093,
+   "6": 2.7000000178813934,
+   "7": 2.199999988079071,
+   "8": 0.5
+  }
+ },
+ "auftrag": 1594,
+ "buchDa": 1603,
+ "weltbildDa": 8789,
+ "holz": "voll",
+ "version": "18.546.40",
+ "adapter": "amd rdna-3",
+ "ohne": [],
+ "zweit": false
+}
