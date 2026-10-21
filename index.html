@@ -352,8 +352,10 @@
                 background: rgba(255, 248, 230, 0.95);
                 box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
             }
-            body:has(.drawer[data-drawer]:not([hidden])) #fadenkreuz,
-            body:has(#inventory-overlay:not([hidden])) #fadenkreuz {
+            /* Kind-Kombinator (K2 Belegung): ein `body:has(X)` über alle Nachfahren ließ JEDE Text-Änderung im HUD die
+               Stil-Invalidierung über den ganzen Body (2304 Elemente) laufen; Drawer, Ich und Fadenkreuz sind Kinder des Body. */
+            body:has(> .drawer[data-drawer]:not([hidden])) > #fadenkreuz,
+            body:has(> #inventory-overlay:not([hidden])) > #fadenkreuz {
                 display: none;
             }
             /* Konsole — fusioniertes Chat + Log + Input, einklappbar.
@@ -2345,15 +2347,26 @@
                 color: var(--parch-ink);
                 transition:
                     transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
-                    opacity 0.32s ease;
+                    opacity 0.32s ease,
+                    display 0.32s allow-discrete;
                 transform: translateX(0);
                 opacity: 1;
             }
+            /* K2 Belegung (21.10.): geschlossen verlässt der Drawer das Rendering — als display:block lagen alle vier mit
+               2548 Layout-Objekten im Baum, ihr pulsierendes „⚡ feuert" trug Stil + Layout + Paint in JEDES Bild
+               (Radeon, Mess-Wiese: lebenszyklus p95 4,4 ms). Das Ausschieben hält display bis zum Ende der Transition
+               (allow-discrete), das Einschieben beginnt am @starting-style. */
             .drawer[hidden] {
-                display: block !important;
+                display: none;
                 transform: translateX(110%);
                 opacity: 0;
                 pointer-events: none;
+            }
+            @starting-style {
+                .drawer:not([hidden]) {
+                    transform: translateX(110%);
+                    opacity: 0;
+                }
             }
             .drawer > * {
                 position: relative;

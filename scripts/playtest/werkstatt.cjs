@@ -605,8 +605,8 @@ async function checkBandCadWorkshop(ctx) {
             // h2 ist ebenfalls direktes child (bleibt oben fest)
             const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
             out.h2DirectChildOfDrawer = !!w2;
-            // overflow:hidden + display:flex sind nur am SICHTBAREN Drawer prüfbar (.drawer[hidden] erzwingt
-            // display:block!important) → Werkstatt-Tab kurz öffnen, danach alles zurück.
+            // overflow:hidden + display:flex sind nur am SICHTBAREN Drawer prüfbar (der geschlossene
+            // ist display:none, K2 Belegung) → Werkstatt-Tab kurz öffnen, danach alles zurück.
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             if (werkstatt) {
