@@ -125,7 +125,7 @@ function wasserKanalParitaet(opts) {
         const r = window.anazhRealm;
         const st = r.state;
         const h = st.hydrosphere;
-        if (!h || !h.ready || typeof r._voxelWorkerComputeDensity !== "function") return { fehler: "kein Worker-Pfad" };
+        if (!h || !h.ready) return { fehler: "kein Worker-Pfad" };
         if (!r._getVoxelWorker()) return { fehler: "kein Worker" };
         await r._voxelWorkerSyncState({ op: "init" });
         const cfg = r._voxelChunkConfig(0);
@@ -793,7 +793,7 @@ function wasserUferFarbe(opts) {
         // (Licht, Feuchte, Fels, Hang bleiben leer: ihre eigenen Grenzen sind Gesetz, nicht Bezug). Sprung = Gewicht-Stufe
         // > 0,1 zwischen zwei 2-cm-Nachbarn (stetig höchstens 0,05: das Band läuft über 0,3 m aus).
         const core = globalThis.__phytoCore;
-        const arten = typeof r._nahStreuArten === "function" ? r._nahStreuArten() : null;
+        const arten = r._nahStreuArten();
         const schilfA = arten ? arten.find((A) => A.zeile && A.zeile.ufer) : null;
         const schilfW = (x, z, y) => {
             const uf = { see: 0, fluss: null, ufer: 0 };
@@ -869,7 +869,7 @@ function wasserUferFarbe(opts) {
         // mischt der Worker den Fels-Stoff in seine Farbe (der Stamm setzt nur die Attribute); der Leser komponiert, was die
         // Farbe heute bedeutet (bis K17-2 verglich er nur die Spalten-Farbe: 529/2579 Ufer-Vertices „abweichend").
         let paritaet = null;
-        if (typeof r._voxelWorkerComputeChunkMesh === "function" && r._getVoxelWorker() && proben.length) {
+        if (r._getVoxelWorker() && proben.length) {
             await r._voxelWorkerSyncState({ op: "init" });
             const T = window.THREE;
             const span = r._voxelChunkConfig(0).span;
@@ -1065,8 +1065,8 @@ function wasserBild(opts) {
         const himmelMittag = (zeit, welt) => {
             st.timeOfDay = zeit;
             if (st.world && welt !== undefined) st.world.timeOfDay = welt;
-            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-            if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(true);
+            r._applyDayNightToScene();
+            r._ensureSkyEnvironment(true);
         };
         himmelMittag(0.5, 0.5);
         // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld): je nach Boot-Dauer
@@ -1284,7 +1284,6 @@ function wasserHoehle(opts) {
         const r = window.anazhRealm;
         const st = r.state;
         const A = r.constructor;
-        if (typeof r._koerperWasser !== "function") return { fehler: "kein _koerperWasser (Stand vor der Welle L)" };
         const cfg = r._voxelChunkConfig(0);
         const { dim, dimY, step, span, floorDrop } = cfg;
         const oy = (st.terrainBaseHeight || 0) - floorDrop;
@@ -1343,15 +1342,13 @@ function wasserHoehle(opts) {
         // obersten Fläche: im Höhlen-Boden unter dem See die volle Tiefe des Sees (kein Vortrieb).
         let wagenNass = 0,
             wagenMax = 0;
-        const wagenLeser = typeof r._fahrTiefe === "function";
-        if (wagenLeser)
-            for (const h of hoehlen) {
-                const t = r._fahrTiefe({ x: h.x, z: h.z, y: h.boden });
-                if (t > 0.05) {
-                    wagenNass++;
-                    if (t > wagenMax) wagenMax = t;
-                }
+        for (const h of hoehlen) {
+            const t = r._fahrTiefe({ x: h.x, z: h.z, y: h.boden });
+            if (t > 0.05) {
+                wagenNass++;
+                if (t > wagenMax) wagenMax = t;
             }
+        }
         // Die Pfade der Leser an Höhlen mit Kopf-Raum (zwei Luft-Zellen über dem Boden): Spieler, Kamera, Tier.
         const raum = hoehlen.filter((h) => h.luft);
         const wahl = [];
@@ -1433,7 +1430,7 @@ function wasserHoehle(opts) {
             spieler: { proben: wahl.length, schritte: wahl.length * 20, schwimmFrames },
             kamera: { proben: st.camera ? wahl.length : 0, unterWasser: kameraUnter },
             tier: { proben: tierProben, schwimmt: tierSchwimmt },
-            wagen: wagenLeser ? { proben: hoehlen.length, nass: wagenNass, maxM: R(wagenMax) } : null,
+            wagen: { proben: hoehlen.length, nass: wagenNass, maxM: R(wagenMax) },
         };
     })();
 }
@@ -1742,9 +1739,8 @@ function wasserSichtNetz() {
     // Körper-Wassers (`koerperM`), des gezeichneten (`bildM`), der Phantome (`phantomM`) und des Unsichtbaren
     // (`unsichtbarM`). Liegt das gezeichnete Mesh über dem Wasser des Körpers, ist es VERDECKT (`verdeckt`, Lehre 22: das
     // 1,8-m-Mesh trägt die Feinform des Gesetzes nicht — die Boden-Domäne, gezählt, nicht geurteilt).
-    // der Körper liest die EINE Wahrheit (`_koerperWasser`); vor ihr (cf9a07ba) den Spiegel des Gesetzes über seinem Boden
-    const koerper = (x, z, y) =>
-        typeof r._koerperWasser === "function" ? r._koerperWasser(x, z, y) : r._atlasWaterLevelAt(x, z, y);
+    // der Körper liest die EINE Wahrheit (`_koerperWasser`)
+    const koerper = (x, z, y) => r._koerperWasser(x, z, y);
     // `eigen(px, pz)` (optional): liegt der Punkt im Kanal DIESES Flusses (bis zu seiner Krone)? Dann ist das Körper-Wasser dort
     // das Wasser des Flusses selbst (`kQ`); ohne `eigen` das Wasser, dessen Spiegel der des Flusses an diesem Ort ist.
     const quer = (x, z, nx, nz, halb, eigen) => {
@@ -1928,7 +1924,7 @@ function wasserQuelle(opts) {
     const koerperNass = (x, z) => {
         const y = r._voxelSurfaceY(x, z);
         if (!Number.isFinite(y)) return false;
-        const w = typeof r._koerperWasser === "function" ? r._koerperWasser(x, z, y) : r._atlasWaterLevelAt(x, z, y);
+        const w = r._koerperWasser(x, z, y);
         return w > y + 0.05;
     };
     let quellen = 0,
@@ -2270,7 +2266,7 @@ function wasserBach(opts) {
     const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : window.__wasserOrte({}).bach;
     const ZX = bachOrt ? bachOrt.x : o.x,
         ZZ = bachOrt ? bachOrt.z : o.z;
-    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(ZX, ZZ, 64);
+    r._ensureHydroTilesAround(ZX, ZZ, 64);
     const h = r._hydroFor(ZX, ZZ);
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
     let rv = null,
@@ -2357,7 +2353,7 @@ function wasserFlora(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
     const sicht = o.sicht || window.__wasserSichtNetz();
-    const arten = typeof r._nahStreuArten === "function" ? r._nahStreuArten() : null;
+    const arten = r._nahStreuArten();
     if (!arten) return { fehler: "die Nah-Streu hat keine Arten (das Buch fehlt)" };
     const R2 = (v) => Math.round(v * 100) / 100;
     let x0, z0, x1, z1, imGebiet;
@@ -2729,7 +2725,7 @@ function wasserOrte(opts) {
         return w > g ? w - g : -Infinity;
     };
     const aus = { mess: [MX, MZ], see: null, fluss: null, bach: null, kueste: null };
-    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(MX, MZ, 1024);
+    r._ensureHydroTilesAround(MX, MZ, 1024);
     // 1) der See
     const L = r._gelaende();
     const kand = G.benannteSeen(L, -12000, -12000, 64, 375)

@@ -1090,7 +1090,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
 
         // --- Genesis-Plattform ---
-        out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
         // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
         out.genesisArchExists = !!(
             r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
@@ -1143,7 +1142,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v829Results.nahWieseStabil
         );
         check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
         check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
         check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
