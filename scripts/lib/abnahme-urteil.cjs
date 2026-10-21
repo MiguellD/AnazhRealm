@@ -1667,7 +1667,9 @@ function codeAbdruck(text, datei) {
     if (/\.(c|m)?js$/.test(datei)) {
         const acorn = require("acorn");
         const opt = { ecmaVersion: "latest", sourceType: /\.mjs$/.test(datei) ? "module" : "script", allowHashBang: true };
-        for (const tok of acorn.tokenizer(text, opt)) h.update(text.slice(tok.start, tok.end) + "\u0000");
+        // die Versions-Stufe ist kein Code (K63-n8; 21.10.: `AnazhRealm.VERSION` allein machte jede Albedo-Zeile veraltet)
+        const ohneStufe = text.replace(/(\.VERSION\s*=\s*)"[^"]*"/, '$1""');
+        for (const tok of acorn.tokenizer(ohneStufe, opt)) h.update(ohneStufe.slice(tok.start, tok.end) + "\u0000");
     } else if (/\.json$/.test(datei)) h.update(JSON.stringify(JSON.parse(text)));
     else throw new Error(`Code-Abdruck: ${datei} ist keine Code-Datei (js, cjs, mjs, json)`);
     return "c:" + h.digest("hex").slice(0, 16);

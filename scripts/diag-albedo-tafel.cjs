@@ -261,6 +261,8 @@ async function selbsttest() {
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
         const kommentar = AT.tafelStand(S0, mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n"));
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
+        const dk = "stamm/dirigent-kern.js";
+        const stufe = AU.codeAbdruck(fs.readFileSync(path.join(__dirname, "..", dk), "utf8").replace(/VERSION = "/, "$&0."), dk);
         const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
         const altForm = AT.tafelStand(S0, pruefsumme);
@@ -269,9 +271,10 @@ async function selbsttest() {
         const s0q = JSON.parse(JSON.stringify(T0));
         delete s0q.zeilen[0].quellen;
         t(
-            "Stand: heute gemessen → kein Befund; eine Kommentarzeile → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
+            "Stand: heute gemessen → kein Befund; eine Kommentarzeile oder Versions-Stufe → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
             frisch.length === 0 &&
                 kommentar.length === 0 &&
+                stufe === pruefsumme(dk) &&
                 code.length === 2 * mitD0 &&
                 code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
                 altForm.some((r) => r.zeile === S0.zeilen[0].id && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
