@@ -3964,14 +3964,14 @@
             4
           ],
           "p_je_tag": 0.57,
-          "wurzel": "`stamm/bild-kosten.js:_configureRenderer` (Erst-Bau, ERST_BAU_MS `:3437`): die WGSL-Ausgabe des r184-NodeBuilder je Stoff-Signatur unter dem Gesetz-SHA auf der Platte und als abgeleitetes Artefakt im Build — der Cache des EINEN Bauers, kein Zwilling; Byte-Beweis Abdruck = Lauf, eine Abweichung meldet laut (`_bruchMelden`) und baut über denselben Bauer neu. Spart an der GTX ≈ 3,0 s Knoten-Bau; zusammen mit H1 und Pipeline H4 erreicht K1 die 1 (Radeon ≤ 5, GTX ≤ 10).",
+          "wurzel": "`stamm/bild-kosten.js:_configureRenderer` (Erst-Bau, ERST_BAU_MS `:3437`): die WGSL-Ausgabe des r184-NodeBuilder je Stoff-Signatur unter dem Gesetz-SHA auf der Platte und als abgeleitetes Artefakt im Build — der Cache des EINEN Bauers, kein Zwilling; Byte-Beweis Abdruck = Lauf, eine Abweichung meldet laut (`_bruchMelden`) und baut über denselben Bauer neu. Spart an der GTX ≈ 3,0 s Knoten-Bau; zusammen mit H1 und Pipeline H4 erreicht K1 die 1 (Radeon ≤ 5, GTX ≤ 10). GEMESSEN 21.10. (Spike b-abdruck 78f6abe5, Radeon kalt 11 Läufe, diag-boot-stage --abdruck): 48 Signaturen, stabil je Gesetz-Stand, ALLE nach dem Buch; das Gerät steht 0,03–0,23 s NACH dem Buch, weil requestAdapter 0,76–0,88 s wartet und erst bei 0,6 s gefragt wird — die Boot-Lücke trägt 0 ms, großzügig verschiebbar 0,64–0,89 s Erst-Bau = ≤ 0,3 s Weltbild. Der Weg trägt so nicht; geparkt.",
           "pflicht": "B",
           "v1": true
         }
       ],
       "feststeck": {
         "versucht": "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. (b-blick), 15,33 s an 8ba1510d (Bündel 2 mit b-strom-faden und b-programme) — ≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
-        "anders": "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (H2) und die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
+        "anders": "Nicht schneller bauen, sondern bei der Ankunft nicht bauen. Der Programm-Abdruck (H2) ist gemessen und trägt so nicht (Gerät erst nach dem Buch, ≤ 0,3 s); offen bleiben die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
       }
     },
     {
@@ -4838,7 +4838,7 @@
       [
         "B · die Ankunft an der GTX",
         "≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme): 28 s (13.10.) → 16,6 (18.10.) → 15,87 (19.10.) → 15,25 s (20.10.) → 15,33 s am Bündel 2 (8ba1510d: b-strom-faden, b-programme; gegen 16,08 an dc6702ab); jede zog 0,3–1 s ab, keine brachte einen Punkt; freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt, der B-Plan rechnet selbst eine Untergrenze ≈ 8 s auf EINEM Faden; der Richter liest die Eigenmeldung `_weltbildDa`",
-        "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (Ankunft H2) und der Welt-Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, die Zahl ist Haupt-Faden-ms und t(Bild) an der GTX); der Richter misst von außen (M10). Ehrlich: erst B-Plan + Abdruck + Welt-Faden zusammen reichen rechnerisch an 5 s auf der GTX."
+        "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (Ankunft H2) und der Welt-Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, die Zahl ist Haupt-Faden-ms und t(Bild) an der GTX); der Richter misst von außen (M10). GEMESSEN 21.10. (Spike b-abdruck 78f6abe5, Radeon kalt 11 Läufe, diag-boot-stage --abdruck): 48 Signaturen, stabil je Gesetz-Stand, ALLE nach dem Buch; das Gerät steht 0,03–0,23 s NACH dem Buch, weil requestAdapter 0,76–0,88 s wartet und erst bei 0,6 s gefragt wird — die Boot-Lücke trägt 0 ms, großzügig verschiebbar 0,64–0,89 s Erst-Bau = ≤ 0,3 s Weltbild. Der Weg trägt so nicht; geparkt. Neu offen: die Adapter-Frage beim ersten Byte der Seite (die 0,8 s Warten beginnen erst bei 0,6 s)."
       ],
       [
         "E · der CPU-Takt der GTX",
