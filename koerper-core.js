@@ -37,7 +37,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { koerper: [0, 1] },
+            kindStages: { koerper: [0, 1, 2] },
             budget: {
                 koerper: {
                     // 1310-15 (Lehre 19, Re-Mint deklariert): die Stufe erreicht ihr Band, das Feld `band` fällt und `tris`
@@ -47,6 +47,10 @@
                     // feinen (das alte Ziel 8 000 ließ den Wurf-Zwilling den Umriss nur noch zu 0,92 decken).
                     0: { tris: 40000, draws: 8, schatten: 1 },
                     1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
+                    // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
+                    // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
+                    // auf die Zeile; sie wirft selbst (der Satz IST ihr Wurf).
+                    2: { tris: 4000, draws: 6, schatten: 2 },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,

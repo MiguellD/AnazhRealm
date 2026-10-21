@@ -2829,6 +2829,8 @@ async function kreaturProben(r, T, opts) {
             for (const b of leiber()) if (h && b.userData.heim === h.seed) s.scene.remove(b);
         }
         const L = leiber();
+        // Täter (Selbsttest): die Menge als Leib — jeder Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
+        if (taeter === "bewohner-menge") for (const b of L) b.visible = true;
         const jeHaus = new Map();
         for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
         const leer = [];
@@ -2855,7 +2857,7 @@ async function kreaturProben(r, T, opts) {
             );
             let n = 0;
             for (const b of L) {
-                const gezeichnet = b.visible || (typeof r._kzBesitztFeld === "function" && r._kzBesitztFeld(b));
+                const gezeichnet = b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
                 if (!gezeichnet) continue;
                 const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
                 if (!fr.containsPoint(brust)) continue;
@@ -2887,6 +2889,8 @@ async function kreaturProben(r, T, opts) {
             leerN: leer.length,
             abw: abw.slice(0, 6),
             imBlick: { ego, third },
+            alsLeib: L.filter((b) => b.visible).length,
+            nahLeiber: A.BEWOHNER.nahLeiber,
             stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
         };
@@ -2940,6 +2944,10 @@ function urteil(name, z) {
         soll(
             z.imBlick.ego >= 10 && z.imBlick.third >= 10,
             `Dorfplatz: ${z.imBlick.ego} (Ego) / ${z.imBlick.third} (Third) Menschen im Blick (Soll ≥ 10)`
+        );
+        soll(
+            z.alsLeib <= z.nahLeiber,
+            `${z.alsLeib} Leiber als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber}: die Menge steht im Satz)`
         );
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
@@ -3337,7 +3345,10 @@ const TAETER = {
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
     gestalt: [["gestalt", /hängt am ersten Tier/]],
-    bewohner: [["bewohner-haus", /Haus ohne Bewohner/]],
+    bewohner: [
+        ["bewohner-haus", /Haus ohne Bewohner/],
+        ["bewohner-menge", /Leiber als Leib gezeichnet/],
+    ],
 };
 
 module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };
