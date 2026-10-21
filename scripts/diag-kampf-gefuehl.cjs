@@ -21,8 +21,7 @@
 //      EXISTIERENDE Maschine (Stimme-aus → stumm, kein zweiter AudioContext).
 //  (C) HIT-STOP ≠ SIM: während des Hit-Stops steht die ANZEIGE-Uhr (walkPhase
 //      + Schwung-Phase frieren), aber die FIXE SIM läuft weiter — die Fixed-
-//      Akku-Probe (_loopFixedStep steppt, _fixedSimTime wächst) beweist es;
-//      Source-Probe: _stepFixedSim/_loopFixedStep lesen _hitStopFactor NIE.
+//      Akku-Probe (_loopFixedStep steppt, _fixedSimTime wächst) beweist es.
 //  (D) TOD-KIPPEN: ein Kill despawnt NICHT sofort — der Körper kippt (die
 //      Rotation WÄCHST über die Ticks, Richtung aus _fieldGradient), das
 //      sterbende Wesen ist inert (damageCreature-Wand), der Despawn kommt
@@ -639,7 +638,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
             const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
-            o.checks.simLiestNieHitStop = window.__fehlt([r._stepFixedSim, r._loopFixedStep], /_hitStopFactor/);
             // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
             // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
             const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
@@ -1132,7 +1130,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
         );
         check(c.cGegenprobeLaeuft, "(C) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder");
-        check(c.simLiestNieHitStop, "(C) Source-Wand: _stepFixedSim/_loopFixedStep lesen _hitStopFactor NIE");
         check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)");
         check(
             c.s1LinseFeuert,

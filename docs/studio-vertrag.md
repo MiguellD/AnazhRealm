@@ -668,7 +668,7 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 
 1. **Kern-Split:** die generative Substanz der Vorlage wandert in
    `<domäne>-core.js` (G2.1); die Labor-Shell liest den Kern (Beweis:
-   `diag:foundry-parity`-Klasse, byte-identisch vor/nach Split).
+   byte-identisch vor/nach Split wie P0, der Harness im Archiv: `git show 1011d41d:scripts/diag-foundry-parity.cjs`).
 2. **Manifest:** der Kern trägt B1+B2 (+ deklarierte SOLL-Blöcke) +
    `STUDIO_VERTRAG = 1`.
 3. **Andocken:** der EINE Foundry-Worker lädt den Kern zusätzlich
