@@ -326,7 +326,7 @@ class AnazhRealm_dirigent_takt {
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben, nichts mehr baut (`_weltOffen`: kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr) und jeder geweckte Fege-Takt der Stand-Wache seine Runde
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr, keine Karte wartet auf ihren Bake) und jeder geweckte Fege-Takt der Stand-Wache seine Runde
     // zu Ende ging (`_standGeht`; A9 Zweit-Boot an der Mess-Wiese: die Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh,
     // als die Stempel schon 30 Takte standen — boden-nah 2,418 statt 1,830). So ist „steht" ein FIXPUNKT: ohne Eingabe wirkt
     // danach nichts mehr (gate:stand-takt FIXPUNKT; K-WANDUHR zählte kurz nur die Wirkung — nach einem Dichte-Schritt stand die
@@ -360,7 +360,9 @@ class AnazhRealm_dirigent_takt {
                           ? `Chunks offen ${o.chunks}`
                           : o.wald
                             ? `Wald offen ${o.wald}`
-                            : null;
+                            : o.karten
+                              ? `Karten offen ${o.karten}`
+                              : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -381,11 +383,12 @@ class AnazhRealm_dirigent_takt {
     }
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
-    // Pflanz-Gänge, die wartenden Pflanzungen, K69) — jede Linse liest SIE, nie die Marken.
+    // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
+    // zur Lieferung in den Atlas) — jede Linse liest SIE, nie die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
-        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0 }); // je Takt, ohne Müll
+        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -399,6 +402,7 @@ class AnazhRealm_dirigent_takt {
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
+        o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         return o;
     }
     _weltSteht() {
@@ -407,8 +411,7 @@ class AnazhRealm_dirigent_takt {
         // live: eine Regung oder ein Auftrag seit dem letzten Takt (der Loop ruht, ein Bild weckte) zählt sofort
         if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
             return false;
-        const o = this._weltOffen();
-        return o.foundry + o.chunks + o.wald === 0 && !this._standGeht();
+        return !Object.values(this._weltOffen()).some(Boolean) && !this._standGeht();
     }
 
     // ═══ DIE GPU-LEINE ═══
