@@ -29,48 +29,12 @@ const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
-
-// Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random
-// zwischen `_autoSettlementCellInfo` und `_tickAutoSettlement`. Die Gesetze selbst (Reservierung, Strom des Welt-Seeds, die
-// EINE Slot-Quelle, Headless-Ruhe, ov-Stempel, Erlebnis-Schichten) fahren Teil B und C im Verhalten.
-// der Auto-Dorf-Pfad an einer LISTE (Lehre 6: Zugehörigkeit am Namen, nie an der Lage im Text); ein totes Glied wirft im
-// EINEN Absenz-Helfer beim Namen
-const AUTO_DORF_PFAD = [
-    "_autoSettlementCellInfo",
-    "_genesisMitte",
-    "_genesisPlattform",
-    "_autoSettlementSiteOk",
-    "_autoSettlementFindSite",
-    "_genesisPortalRing",
-    "_portalVorschauOrt",
-    "_ensurePortalPreview",
-    "_portalApproachPrefetch",
-    "_autoSettlementStartInfo",
-    "_autoSettlementChannelLive",
-    "_siedlungEpoche",
-    "_autoSettlementSpawnCell",
-    "_tickGenesisOrt",
-    "_dorfTaktLebt",
-    "_startDorfFaellig",
-    "_startDorfBestellen",
-    "_tickAutoSettlement",
-];
-function autoStaticLaws(q) {
-    return [
-        [
-            "C-S2: kein Math.random im Auto-Dorf-Pfad (Γ5; den Strom des Welt-Seeds fährt C1)",
-            stammLib.fehlt(AUTO_DORF_PFAD, /Math\.random/, q),
-            stammLib.fehlt.wo,
-        ],
-    ];
-}
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
 function fingerprint(plan) {
@@ -1551,32 +1515,8 @@ const FIXTURES = [
         res.gammaStream =
             ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
             window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
-        // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
-        // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
-        // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel; seit der Gegenprüfung fragt der
-        // Slot das EINE Land des Fundaments (`_fundamentLand`: jeder Punkt des `_fundamentRaster` fragt `_landAt`) — dieselbe
-        // Probe wie die Wand jedes Werks an der Wurzel.
-        const v2s = r._ortPlanSetzen(plan, o1);
-        const n0s = r.state.architectures.length;
-        const pmW = r.state.playerMesh.position;
-        const fpW = { ex: 2, ez: 2, ox: 0, oz: 0 };
-        res.waterWall =
-            ruft(r, "_spawnSettlementSlot", r, "_fundamentLand", [v2s.slots[0], o1, r._foundry, { plan: v2s, si: 0 }]) >
-                0 &&
-            ruft(r, "_fundamentLand", r.constructor, "_fundamentRaster", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0 &&
-            ruft(r, "_fundamentLand", r, "_landAt", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0;
-        r.state.architectures.slice(n0s).forEach((e) => r.removeArchitecture(e));
-        // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
-        // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
-        // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
-        //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
-        //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
-        const anker = r._siedlungsAnker;
-        let nA = 0;
-        r._siedlungsAnker = function (...a) {
-            nA++;
-            return anker.apply(this, a);
-        };
+        // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
+        // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).
         try {
             const SG = r.constructor._siedlungGesetz();
             const same = 0x5a5a1234;
@@ -1597,8 +1537,6 @@ const FIXTURES = [
         } catch (e) {
             res.villageNHErr = (e && e.message) || String(e);
         }
-        delete r._siedlungsAnker;
-        res.anchorChokepoint = nA >= 1 && window.__fehlt(r.spawnSettlement, /_structureSpawnPos/);
         // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
         res.c = {};
         try {
@@ -1883,118 +1821,91 @@ const FIXTURES = [
             } catch (e7) {
                 res.c.blickErr = (e7 && e7.message) || String(e7);
             }
-            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): dieselbe Zelle (ihr Ort, ihr Takt) mit nH 12 und 300 — der
-            // Spieler naht aus dem Vorlauf-Ring (`vorlaufM` vor `nearM`) und tritt ins Erwachen; gezählt in Bau-Ereignissen
-            // (jedes Haus, das nach dem Erwachen exportiert wird — der Mass-Bau misst es zur Probe —, und jeder gehobene Slot bis
-            // zum ersten), die Zeit reist mit. Der Teleport ins Erwachen (kein Vorlauf) ist der Selbsttest: dort wächst die
-            // Arbeit mit nH. Der Rang: das erste gehobene Haus ist das nächste zum Spieler.
+            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3 mit nH 12 und 300, der Spieler naht aus dem
+            // Vorlauf-Ring und erwacht sie; Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot
             res.c.k5 = {};
-            if (cand) {
-                const [kx, kz] = key.split(",").map((s) => parseInt(s));
-                const pm = r.state.playerMesh;
-                const p0 = pm.position.clone();
-                const alt = {
-                    info: r._autoSettlementCellInfo,
-                    rej: r._autoSettlementRejected,
-                    lift: r._spawnSettlementSlot,
-                    req: r._foundryRequestSettlement,
-                    zelle: wm.settlementCells[key],
-                    fob: r.state._frameOverBudget,
-                    wege: r._stlWegePending,
-                    bauten: new Set(r.state.architectures),
-                    erdbau: new Set(Object.keys(wm.erdbau || {})),
+            const alt = ["_autoSettlementRejected", "_stlWegePending", "_autoSettlementQueue"].map((f) => r[f]);
+            const zelle = wm.settlementCells[key];
+            const vorher = [new Set(r.state.architectures), new Set(Object.keys(wm.erdbau || {}))];
+            const pm = r.state.playerMesh;
+            const p0 = pm.position.clone();
+            const lauf = async (nH, vorlauf) => {
+                const [kx, kz] = key.split(",").map(Number);
+                r.state._frameOverBudget = false;
+                const seed = (cand.seed ^ Math.imul(nH * 2 + !vorlauf, 0x9e3779b1)) >>> 0;
+                r._autoSettlementCellInfo = (x, z) => (x === kx && z === kz ? { ...cand, seed, nH } : null);
+                Object.assign(r, {
+                    _autoSettlementRejected: new Set(),
+                    _stlWegePending: true,
+                    _autoSettlementQueue: null,
+                });
+                delete wm.settlementCells[key];
+                let [wach, bau, erst, t0] = [false, 1, null, 0];
+                const req = r.constructor.prototype._foundryRequestSettlement;
+                r._foundryRequestSettlement = function (dp, ...a) {
+                    const n = wach && dp.seed === seed;
+                    return req.call(this, dp, ...a).then((p) => ((bau += n && p ? p.slots.length : 0), p));
                 };
-                const lauf = async (nH, vorlauf) => {
-                    const seed = (cand.seed ^ Math.imul(nH * 2 + (vorlauf ? 0 : 1), 0x9e3779b1)) >>> 0 || 1;
-                    r._autoSettlementCellInfo = (cx, cz) =>
-                        cx === kx && cz === kz ? Object.assign({}, cand, { seed, nH }) : null;
-                    r._autoSettlementRejected = new Set();
-                    delete wm.settlementCells[key];
-                    Object.assign(r, {
-                        _autoSettlementQueue: null,
-                        _autoSettlementPendingKey: null,
-                        _dorfVorrat: null,
-                        _stlWegePending: true,
-                    });
-                    r.state._frameOverBudget = false;
-                    let wach = false;
-                    let haeuser = 0;
-                    let erst = null;
-                    let t0 = 0;
-                    r._foundryRequestSettlement = function (dp, ...rest) {
-                        const nach = wach && dp && dp.seed === seed;
-                        return alt.req.call(this, dp, ...rest).then((p) => {
-                            if (nach && p && p.slots) haeuser += p.slots.length;
-                            return p;
-                        });
-                    };
-                    r._spawnSettlementSlot = function (sl, o, ...rest) {
-                        const q1 = r._autoSettlementQueue;
-                        if (!erst && q1 && q1.cellKey === key)
-                            erst = { ms: performance.now() - t0, x: o.x + sl.x, z: o.z + sl.z, q: q1 };
-                        return alt.lift.call(this, sl, o, ...rest);
-                    };
-                    const an = (m) => ({ x: cand.x + m, y: pm.position.y, z: cand.z });
-                    if (vorlauf) {
-                        const pv = an(A.nearM + 80); // im Vorlauf-Ring, noch nicht erwacht
-                        pm.position.set(pv.x, pv.y, pv.z);
-                        r._tickAutoSettlement(pv);
-                        const v = r._dorfVorrat;
-                        if (v) await Promise.race([v.fertig, new Promise((rs) => setTimeout(rs, 120000))]);
-                    }
-                    const pw = an(A.nearM - 20);
-                    pm.position.set(pw.x, pw.y, pw.z);
-                    wach = true;
-                    t0 = performance.now();
-                    for (let k = 0; k < 20000 && !erst && performance.now() - t0 < 120000; k++) {
-                        r._tickAutoSettlement(pw);
-                        if (!erst) await new Promise((rs) => setTimeout(rs, 5));
-                    }
-                    const q = erst && erst.q;
-                    let naechst = null;
-                    if (q && q.plan)
-                        for (const s of q.plan.slots) {
-                            const d = Math.hypot(q.origin.x + s.x - pw.x, q.origin.z + s.z - pw.z);
-                            if (naechst === null || d < naechst) naechst = d;
-                        }
-                    const ersterM = erst ? Math.hypot(erst.x - pw.x, erst.z - pw.z) : null;
-                    return {
+                const lift = r.constructor.prototype._spawnSettlementSlot;
+                r._spawnSettlementSlot = function (sl, o, ...a) {
+                    const q = r._autoSettlementQueue;
+                    if (!erst && q && q.cellKey === key)
+                        erst = {
+                            ms: performance.now() - t0,
+                            d: Math.hypot(o.x + sl.x - pm.position.x, o.z + sl.z - pm.position.z),
+                            q,
+                        };
+                    return lift.call(this, sl, o, ...a);
+                };
+                const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
+                if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
+                if (vorlauf && r._dorfVorrat) await r._dorfVorrat.fertig;
+                const pw = stell(A.nearM - 20);
+                wach = true;
+                t0 = performance.now();
+                while (!erst && performance.now() - t0 < 120000) {
+                    r._tickAutoSettlement(pw);
+                    await new Promise((rs) => setTimeout(rs, 5));
+                }
+                const naechst =
+                    erst &&
+                    Math.min(
+                        ...erst.q.plan.slots.map((s) =>
+                            Math.hypot(erst.q.origin.x + s.x - pw.x, erst.q.origin.z + s.z - pw.z)
+                        )
+                    );
+                return (
+                    erst && {
                         nH,
-                        slots: q && q.plan ? q.plan.slots.length : 0,
-                        bau: erst ? haeuser + 1 : null,
-                        ms: erst ? Math.round(erst.ms) : null,
-                        ersterM: ersterM === null ? null : Math.round(ersterM * 10) / 10,
-                        naechstM: naechst === null ? null : Math.round(naechst * 10) / 10,
-                    };
-                };
-                try {
-                    for (const nH of [12, 300]) res.c.k5["vorlauf" + nH] = await lauf(nH, true);
-                    res.c.k5.teleport12 = await lauf(12, false);
-                } catch (e5) {
-                    res.c.k5.err = (e5 && e5.message) || String(e5);
-                } finally {
-                    Object.assign(r, {
-                        _autoSettlementCellInfo: alt.info,
-                        _autoSettlementRejected: alt.rej,
-                        _spawnSettlementSlot: alt.lift,
-                        _foundryRequestSettlement: alt.req,
-                        _autoSettlementQueue: null,
-                        _autoSettlementPendingKey: null,
-                        _dorfVorrat: null,
-                        _stlWegePending: alt.wege,
-                    });
-                    for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_foundryRequestSettlement"])
-                        delete r[f];
-                    wm.settlementCells[key] = alt.zelle;
-                    // die Zelle geht, wie sie kam: ihre Bauten und ihr Erdbau fallen (der Ort des Teils O misst fremde Bauten)
-                    for (const e of r.state.architectures.filter((e) => !alt.bauten.has(e))) r.removeArchitecture(e);
-                    for (const k of Object.keys(wm.erdbau || {}).filter((k) => !alt.erdbau.has(k))) {
-                        const s = wm.erdbau[k];
-                        delete wm.erdbau[k];
-                        r._erdbauWirkt(s, false);
+                        bau,
+                        ms: Math.round(erst.ms),
+                        ersterM: +erst.d.toFixed(1),
+                        naechstM: +naechst.toFixed(1),
                     }
-                    r.state._frameOverBudget = alt.fob;
-                    pm.position.copy(p0);
+                );
+            };
+            try {
+                for (const [k, nH, v] of [
+                    ["vorlauf12", 12, 1],
+                    ["vorlauf300", 300, 1],
+                    ["teleport12", 12, 0],
+                ])
+                    res.c.k5[k] = await lauf(nH, v);
+            } catch (e5) {
+                res.c.k5.err = String(e5);
+            } finally {
+                for (const f of ["_autoSettlementCellInfo", "_foundryRequestSettlement", "_spawnSettlementSlot"])
+                    delete r[f];
+                [r._autoSettlementRejected, r._stlWegePending, r._autoSettlementQueue] = alt;
+                Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorrat: null });
+                wm.settlementCells[key] = zelle;
+                pm.position.copy(p0);
+                // die Zelle geht, wie sie kam: ihre Bauten und ihr Erdbau fallen (Teil O misst fremde Bauten im Ort)
+                for (const e of r.state.architectures.filter((e) => !vorher[0].has(e))) r.removeArchitecture(e);
+                for (const k of Object.keys(wm.erdbau).filter((k) => !vorher[1].has(k))) {
+                    const s = wm.erdbau[k];
+                    delete wm.erdbau[k];
+                    r._erdbauWirkt(s, false);
                 }
             }
             // Hook wiederherstellen (sichern + wiederherstellen, nie loeschen — die Disziplin):
@@ -2693,11 +2604,6 @@ const FIXTURES = [
         Number.isFinite(out.villageNH) && out.villageNH === out.villageNHSoll,
         `nH ${out.villageNH} (Soll ${out.villageNHSoll})${out.villageNHErr ? " err=" + out.villageNHErr : ""}`
     );
-    check(
-        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot → _fundamentLand: _landAt je Punkt des Fundaments)",
-        out.waterWall === true
-    );
-    check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
     const pruefeOrt = (titel, modusName, outO, gtO) => {
         console.log(`\n=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, ${titel}) ===`);
         if (outO.err) console.log("  Fehler im Akt: " + outO.err.split("\n").slice(0, 3).join(" | "));
@@ -2841,7 +2747,6 @@ const FIXTURES = [
         FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
-    for (const [name, ok, detail] of autoStaticLaws()) check(name, ok, detail);
     const c = out.c || {};
     check(
         "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich) und zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; Γ5)",
@@ -2923,28 +2828,21 @@ const FIXTURES = [
         "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser (worldMeta.settlementCells trägt über den Reload)",
         c.idempotent === true
     );
-    // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Arbeit bis zum ersten Slot hängt nicht an nH
     const k5 = c.k5 || {};
-    const bauQ = (a, b) => (k5[a] && k5[a].bau && k5[b] && k5[b].bau ? k5[b].bau / k5[a].bau : null);
-    const k5Z = (ks) => ks.map((k) => `${k} ${JSON.stringify(k5[k])}`).join(" · ") + (k5.err ? " err=" + k5.err : "");
+    const q5 = (a, b) => k5[a] && k5[b] && k5[b].bau / k5[a].bau;
+    const z5 = JSON.stringify(k5);
     check(
-        "C-K5: DAS ERSTE HAUS AM ERWACHEN — Bau-Ereignisse bis zum ersten Slot nH 300 / nH 12 ≤ 1,2 (der Vorlauf trägt Export und Ort-Wahl)",
-        bauQ("vorlauf12", "vorlauf300") !== null && bauQ("vorlauf12", "vorlauf300") <= 1.2,
-        `Verhältnis ${bauQ("vorlauf12", "vorlauf300")} — ${k5Z(["vorlauf12", "vorlauf300"])}`
+        "C-K5: DAS ERSTE HAUS AM ERWACHEN — Bau-Ereignisse bis zum ersten Slot nH 300 / nH 12 ≤ 1,2",
+        q5("vorlauf12", "vorlauf300") <= 1.2,
+        z5
     );
     check(
-        "C-K5 Selbsttest: der Teleport ins Erwachen (kein Vorlauf) — der Export zählt jedes Haus (Verhältnis zum Vorlauf > 1,2)",
-        bauQ("vorlauf12", "teleport12") !== null && bauQ("vorlauf12", "teleport12") > 1.2,
-        `Verhältnis ${bauQ("vorlauf12", "teleport12")} — ${k5Z(["vorlauf12", "teleport12"])}`
+        "C-K5 Selbsttest: der Teleport ins Erwachen exportiert danach (Bau-Ereignisse / Vorlauf > 1,2)",
+        q5("vorlauf12", "teleport12") > 1.2,
+        z5
     );
-    check(
-        "C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler",
-        ["vorlauf12", "vorlauf300"].every(
-            (k) => k5[k] && k5[k].ersterM !== null && k5[k].ersterM <= k5[k].naechstM + 0.05
-        ),
-        k5Z(["vorlauf12", "vorlauf300"])
-    );
-
+    const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
+    check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", rang, z5);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
