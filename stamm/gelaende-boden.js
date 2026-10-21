@@ -1576,10 +1576,11 @@ class AnazhRealm_gelaende_boden {
     // Gesetzes-Höhe steckte so halb im sichtbaren Boden. Wer etwas AUF den sichtbaren Boden stellt (Gras,
     // Streu, Deko), liest diese Karte; Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz
     // (`_voxelSurfaceY`, deterministisch für den Lockstep — die Karte hängt am Streaming-Zustand).
-    // DER TEIL (gehen-takt, `_bodenKarteNaht`): `teil.ohne` (je Dreieck 1) lässt die Rand-Dreiecke aus und merkt je Punkt den
-    // Sieger — das Innere als Basis; `teil.nur` (Dreiecks-Offsets) rastert nur sie über `teil.basis`. Gleiche Höhe gewinnt das
-    // frühere Dreieck des Netzes (sein Grün), wie im Ganzen: Basis + Teil ist byte-gleich mit der ganzen Karte.
-    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, teil = null) {
+    // DIE NAHT (gehen-takt, `_bodenKarteNaht`): `basis` ist die vorige Karte derselben Geometrie (`hoehe`, `gruen`, ihre Lage
+    // `ref`, je Dreieck sein Zellen-Rechteck `zellen`). Neu gerastert werden nur die Zellen unter den Dreiecken, die gegen `ref`
+    // ihre Lage ändern (ihr Rechteck alt und neu), dort jedes Dreieck mit markierter Zelle in der Reihe des Netzes; jede andere
+    // Zelle sieht dieselben Dreiecke in derselben Lage — byte-gleich mit der ganzen Karte.
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, basis = null) {
         if (!pos || !idx || idx.length < 3) return null;
         const cfg = this._voxelChunkConfig(lod || 0);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
@@ -1587,16 +1588,79 @@ class AnazhRealm_gelaende_boden {
         const M = T * (cfg.dim + 3) + 1;
         const ox = cx * cfg.span - cfg.step;
         const oz = cz * cfg.span - cfg.step;
-        const B = teil && teil.basis;
-        const nur = teil && teil.nur;
-        const ohne = teil && teil.ohne;
+        const nT = Math.floor(idx.length / 3);
+        const B = basis;
         const map = B ? new Float32Array(B.hoehe) : new Float32Array(M * M).fill(NaN);
         const gruen = B ? new Uint8Array(B.gruen) : new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
-        const sieger = !teil ? null : B ? new Int32Array(B.sieger) : new Int32Array(M * M);
+        const zl = B ? new Int16Array(B.zellen) : new Int16Array(4 * nT);
         const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
-        for (let q = 0, nT = nur ? nur.length : Math.floor(idx.length / 3); q < nT; q++) {
-            if (ohne && ohne[q]) continue;
-            const t = nur ? nur[q] : q * 3;
+        // das Zellen-Rechteck [i0, i1, k0, k1] des Dreiecks q in `pos` (leer, wo es neben der Karte liegt)
+        const zellen = (q) => {
+            const a = idx[q * 3] * 3,
+                b = idx[q * 3 + 1] * 3,
+                c = idx[q * 3 + 2] * 3;
+            zl[4 * q] = Math.min(M, Math.max(0, Math.ceil((Math.min(pos[a], pos[b], pos[c]) - ox) / h)));
+            zl[4 * q + 1] = Math.max(-1, Math.min(M - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) - ox) / h)));
+            zl[4 * q + 2] = Math.min(
+                M,
+                Math.max(0, Math.ceil((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+            );
+            zl[4 * q + 3] = Math.max(
+                -1,
+                Math.min(M - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+            );
+        };
+        // DIE MASKE: ein Dreieck mit bewegter Ecke markiert sein altes und sein neues Rechteck; die Summen-Tafel `S` sagt in vier
+        // Zugriffen, ob unter einem Rechteck eine markierte Zelle liegt — ein Dreieck ohne fällt vor jeder Rechnung
+        let maske = null,
+            S = null;
+        const M1 = M + 1;
+        if (B) {
+            const ref = B.ref;
+            const neu = new Uint8Array(Math.min(pos.length, ref.length) / 3);
+            for (let v = 0; v < neu.length; v++)
+                neu[v] =
+                    pos[v * 3] !== ref[v * 3] || pos[v * 3 + 1] !== ref[v * 3 + 1] || pos[v * 3 + 2] !== ref[v * 3 + 2];
+            maske = new Uint8Array(M * M);
+            const markiere = (o) => {
+                for (let k = zl[o + 2]; k <= zl[o + 3]; k++)
+                    for (let i = zl[o]; i <= zl[o + 1]; i++) {
+                        maske[k * M + i] = 1;
+                        map[k * M + i] = NaN;
+                        gruen[k * M + i] = 0;
+                    }
+            };
+            let bewegt = 0;
+            for (let q = 0; q < nT; q++) {
+                if (!(neu[idx[q * 3]] || neu[idx[q * 3 + 1]] || neu[idx[q * 3 + 2]])) continue;
+                bewegt++;
+                markiere(4 * q);
+                zellen(q);
+                markiere(4 * q);
+            }
+            if (!bewegt) return { hoehe: map, gruen, zellen: zl };
+            S = new Int32Array(M1 * M1);
+            for (let k = 0; k < M; k++)
+                for (let i = 0; i < M; i++)
+                    S[(k + 1) * M1 + i + 1] =
+                        maske[k * M + i] + S[k * M1 + i + 1] + S[(k + 1) * M1 + i] - S[k * M1 + i];
+        }
+        for (let q = 0; q < nT; q++) {
+            const o = 4 * q;
+            if (!S) zellen(q);
+            else if (
+                S[(zl[o + 3] + 1) * M1 + zl[o + 1] + 1] -
+                    S[zl[o + 2] * M1 + zl[o + 1] + 1] -
+                    S[(zl[o + 3] + 1) * M1 + zl[o]] +
+                    S[zl[o + 2] * M1 + zl[o]] <=
+                0
+            )
+                continue;
+            const i0 = zl[o],
+                i1 = zl[o + 1],
+                k0 = zl[o + 2],
+                k1 = zl[o + 3];
+            const t = q * 3;
             const a = idx[t] * 3;
             const b = idx[t + 1] * 3;
             const c = idx[t + 2] * 3;
@@ -1620,13 +1684,10 @@ class AnazhRealm_gelaende_boden {
             if (!(Math.abs(ny) >= 0.3 * nl)) continue;
             const d = (bz - qz) * (ax - qx) + (qx - bx) * (az - qz);
             if (Math.abs(d) < 1e-9) continue;
-            const i0 = Math.max(0, Math.ceil((Math.min(ax, bx, qx) - ox) / h));
-            const i1 = Math.min(M - 1, Math.floor((Math.max(ax, bx, qx) - ox) / h));
-            const k0 = Math.max(0, Math.ceil((Math.min(az, bz, qz) - oz) / h));
-            const k1 = Math.min(M - 1, Math.floor((Math.max(az, bz, qz) - oz) / h));
             for (let k = k0; k <= k1; k++) {
                 const pz = oz + k * h;
                 for (let i = i0; i <= i1; i++) {
+                    if (maske && !maske[k * M + i]) continue;
                     const px = ox + i * h;
                     const w1 = ((bz - qz) * (px - qx) + (qx - bx) * (pz - qz)) / d;
                     const w2 = ((qz - az) * (px - qx) + (ax - qx) * (pz - qz)) / d;
@@ -1634,9 +1695,8 @@ class AnazhRealm_gelaende_boden {
                     if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
                     const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
                     const m = k * M + i;
-                    if (map[m] >= y && !(sieger && map[m] === y && t < sieger[m])) continue;
+                    if (map[m] >= y) continue;
                     map[m] = y;
-                    if (sieger) sieger[m] = t;
                     // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
                     // `_terrainGeologyAlbedo`: smoothstep(0, gruenSchwelle, g − (r+b)/2)) aus der Vertex-Farbe.
                     if (col) {
@@ -1650,7 +1710,7 @@ class AnazhRealm_gelaende_boden {
                 }
             }
         }
-        return { hoehe: map, gruen, sieger };
+        return { hoehe: map, gruen, zellen: zl };
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,

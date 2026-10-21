@@ -65,11 +65,9 @@
 //                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
 //                                                           Empfänger) ist abgezogen und beim Pfad genannt
 //                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
-//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|aus] [--band ms] [--zeige ms] [--json datei]
-//                                 | takt --auswerten <x.roh.json> | takt --selbsttest
-//                                                           DIE TAKT-LINSE (scripts/lib/haenger-linse.cjs): die Takt-
-//                                                           Spitze des Gehens je Methode — Exit 1 bei einem Rahmen, der
-//                                                           ab p95 ≥ 1 ms mehr trägt als in der Mitte (Spitzen-Täter)
+//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|aus] [--json datei] | takt --auswerten <x.roh.json>
+//                                                           DIE TAKT-SPITZE des Gehens je Methode (scripts/lib/haenger-
+//                                                           linse.cjs); Exit 1 bei einem Spitzen-Täter
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
 //                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
 //                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
@@ -396,8 +394,8 @@ function lauf(k) {
         let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
-        // DIE BAHN (`wandern: "bahn"`, die OMEN-Zellen „geht"): der Spieler geht 4 m/s geradeaus −z 0 → −60 m und zurück, je
-        // Takt vor dem Spiel-Takt (ab dem Einschwingen); das Ende stellt an den Anfang zurück — jeder Gang geht dieselbe Bahn.
+        // DIE BAHN (`wandern: "bahn"`, die OMEN-Zellen „geht"): 4 m/s −z 0 → −60 m und zurück, je Takt vor dem Spiel-Takt; das
+        // Ende stellt an den Anfang zurück — jeder Gang geht dieselbe Bahn.
         const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
@@ -405,7 +403,7 @@ function lauf(k) {
             return Object.keys(o).length ? o : 0;
         };
         const ort = st.playerMesh.position.clone();
-        const bahn = k.wandern === "bahn" ? { s: 0, dir: -1, wege: 0, weg: 0, t: null } : null;
+        const bahn = k.wandern === "bahn" ? { t0: null, weg: 0 } : null;
         let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         rend.setAnimationLoop((t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
@@ -418,12 +416,8 @@ function lauf(k) {
             const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
             if (bahn) {
-                const s0 = bahn.s, dt = bahn.t == null ? 0 : Math.min(0.1, (t - bahn.t) / 1000);
-                bahn.t = t;
-                bahn.s = Math.max(-60, Math.min(0, bahn.s + bahn.dir * 4 * dt));
-                if (dt > 0 && (bahn.s === -60 || bahn.s === 0)) [(bahn.dir = bahn.s === 0 ? -1 : 1), bahn.wege++];
-                bahn.weg += Math.abs(bahn.s - s0);
-                st.playerMesh.position.set(ort.x, st.playerMesh.position.y, ort.z + bahn.s);
+                bahn.weg = (4 * (t - (bahn.t0 ??= t))) / 1000;
+                st.playerMesh.position.set(ort.x, st.playerMesh.position.y, ort.z - 60 + Math.abs((bahn.weg % 120) - 60));
             }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
@@ -641,7 +635,7 @@ function lauf(k) {
                     buch: window.__wetterBuch(wetterVor.seq).buch,
                 },
                 saison: st.season,
-                bahn: bahn && { wegM: Math.round(bahn.weg), wege: bahn.wege },
+                bahnM: bahn && Math.round(bahn.weg),
                 haenger,
             };
         } finally {
@@ -2947,7 +2941,7 @@ async function starte() {
                         probe: !!b.probe,
                         haenger: true,
                     }, PROBEN);
-                    const roh = Object.assign(l.haenger, { bahn: l.bahn, wetterHalt: wetterUrteil(l.wetterHalt) });
+                    const roh = Object.assign(l.haenger, { bahnM: l.bahnM, wetterHalt: wetterUrteil(l.wetterHalt) });
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
                     const datei = path.resolve(
@@ -3696,7 +3690,7 @@ async function starte() {
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
             const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), band: opt("--band"), zeige: opt("--zeige") });
+            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle") });
             console.log(w.tabelle);
             if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
             process.exit(w.befunde.length ? 1 : 0);
@@ -3709,8 +3703,6 @@ async function starte() {
             tiere: opt("--tiere", "frei"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
-            band: opt("--band"),
-            zeige: opt("--zeige"),
             probe: argv.includes("--probe"),
             json: opt("--json"),
         });

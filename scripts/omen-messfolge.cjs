@@ -923,7 +923,6 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                     : null
             );
         }
-        // das Profil: `werkbank takt --wandern aus`
         if (hat("profil")) {
             const prof = await schritt("profil", () =>
                 R("/haenger", { spitze: true, sek: P.profilSek, ein: 2, regler: "voll", tiere: "frei" })
