@@ -2380,12 +2380,7 @@ async function starte() {
                     });
                 }
                 if (req.url === "/diaet") {
-                    const o = await page.evaluate((k) => window.__diaetLauf(k), {
-                        frames: Number(b.frames) || 90,
-                        modus: b.modus || "ruhe",
-                        grad: Number(b.grad) || 1,
-                        tiere: b.tiere || "halten",
-                    });
+                    const o = await page.evaluate((k) => window.__diaetLauf(k), b);
                     return send(Object.assign(o, { urteil: DIAET.diaetUrteil(o), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/takt") {

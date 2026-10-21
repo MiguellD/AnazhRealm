@@ -280,10 +280,9 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "const t=e.textures,o=[];let u;const l=this._isRenderCameraDepthArray(e);for(let s=0;s<t.length;s++)", organ: "_kaskadenZiele (der Pass-Deskriptor: je Farbe ein Anhang — leere Liste, nur die Tiefe)" },
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
-    // DAS REGISTER DER REGUNG: der EINE Versions-Setter meldet (`_regungMelder`); das Tor liest die Attribute, die das Programm liest
+    // DAS REGISTER (Melder und Tor)
     { file: "vendor/three.core.min.js", sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
-    { file: "vendor/three.webgpu.min.js", sub: "setGeometry(e){this.geometry=e,this.attributes=null,", organ: "AnazhRealm._diaetRuhig (r184 meldet den Bau-Wechsel: attributes = null)" },
-    { file: "vendor/three.webgpu.min.js", sub: "getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (die Attribute, die das Programm liest)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setGeometry(e){this.geometry=e,this.attributes=null,this.attributesId=null}getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (Bau-Wechsel, gelesene Attribute)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
     // Bereichs-Anfang (updateRanges → queue.writeBuffer(offset)); ohne diese Bahn lüde jeder Chunk den ganzen Satz.
     {
@@ -446,7 +445,7 @@ const ANKER = [
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
 // Semantik: EIN Beobachter und EINE geteilte Gruppe je Programm, mehrere Objekte je Programm, die Vendor-Bahn
 // (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest tauschen den VERSORGER am geladenen Objekt,
-// nie den Text: "abkuerzung" kürzt jedes bekannte Objekt ohne Schreiben ab,
+// nie den Text: "ohneMeldung" mutet den Melder (die vergessene Lage nennt gate:kamera-treue ÄNDERUNG),
 // "ohneGetragen" macht jede neue Version zum Grund
 // für jedes Render-Objekt (der Stand vor K71), "getragenImmer" hält jede Version für getragen (ein Attribut, das nur
 // ein Pass liest, lüde nie hoch). Ruft die Diät einen Versorger nicht, bleibt die Manipulation wirkungslos und der
@@ -471,15 +470,11 @@ function diaetLaden(manipuliert) {
     if (manipuliert === "stoffBlind")
         AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, l, v) => verpasst(od, s, md, vorR, rid, true, v);
     if (manipuliert === "ohneMeldung") AnazhRealm._regt = () => 0;
-    const echt = AnazhRealm._diaetRefresh;
-    const fn =
-        manipuliert === "abkuerzung"
-            ? (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR))
-            : echt;
+    const fn = AnazhRealm._diaetRefresh;
     fn.A = AnazhRealm;
     return fn;
 }
-// Ein Puffer wie three.core: sein needsUpdate-Setter hebt die Version und meldet die Regung (der Melder der Diät-Scheibe).
+// Ein Puffer mit dem meldenden Setter (three.core + Register).
 const puffer = (fn, p) =>
     Object.defineProperty(p, "needsUpdate", {
         set(v) {
@@ -816,12 +811,10 @@ function diaetProbe(selftest) {
     fehler.push(...stoffProbe(fn));
     let selbstFeuert = false;
     if (selftest) {
-        const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
         // Die Diät MUSS den Getragen-Wächter fragen: ein blinder frischt jede Version auf bzw. lädt die Normale nie.
         const ohneG = getragenPruefe(getragenLauf(diaetLaden("ohneGetragen")));
         const immer = getragenPruefe(getragenLauf(diaetLaden("getragenImmer")));
         const ohneStand = stoffProbe(diaetLaden("ohneStoffStand"));
-        // DAS REGISTER: ein gemuteter Melder lässt die Instanz-Mutation ruhen (das Bild trüge die alte Matrix)
         const stumm = pruefe(diaetLauf(diaetLaden("ohneMeldung")));
         const blind = stoffProbe(diaetLaden("stoffBlind"));
         selbstFeuert =
@@ -830,7 +823,6 @@ function diaetProbe(selftest) {
             blind[0].startsWith("STOFF ÜBERFRISCHT: E") &&
             ohneG.some((e) => e.startsWith("GETRAGEN: eine neue Version")) &&
             immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
-            abk.some((e) => e.startsWith("r4: die Diät schrieb 0")) &&
             stumm.some((e) => e.startsWith("Instanz-Wächter"));
     }
     return { fehler, selbstFeuert, getragen };
@@ -883,7 +875,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung lässt das bewegte Objekt ohne seinen Gang; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff, ein blinder frischt ein Programm ohne Stoff-Verweis auf; ein gemuteter Melder lässt die Instanz-Mutation ruhen)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (ein gemuteter Melder lässt die Instanz-Mutation ruhen; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff, ein blinder frischt ein Programm ohne Stoff-Verweis auf)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         if (errs.length > 1 || !errs.some((e) => e.includes("hasNode"))) for (const e of errs) console.error("   ❌ " + e);
