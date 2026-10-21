@@ -335,14 +335,7 @@ function albedoSicht(opts) {
         st.camera.layers.enableAll();
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -759,14 +752,7 @@ function lichtBilanz() {
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -1113,14 +1099,7 @@ function nahFernSicht(opts) {
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
-        const half = (h) => {
-            const s = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const rt = new T.RenderTarget(W, HH, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lies = async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH);
@@ -1636,14 +1615,7 @@ function laubGegenlicht(opts) {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
-        const half = (h) => {
-            const sg = (h & 0x8000) >> 15,
-                e = (h & 0x7c00) >> 10,
-                f = h & 0x03ff;
-            if (e === 0) return (sg ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
-            if (e === 31) return f ? NaN : Infinity;
-            return (sg ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
-        };
+        const half = T.DataUtils.fromHalfFloat;
         const bundles = () =>
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
@@ -1962,6 +1934,127 @@ function laubGegenlicht(opts) {
     })();
 }
 
+// DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %, waagrecht) im Licht der Welt-Stoffe (die Karte der Licht-Bilanz) und
+// im Licht eines Wegs, der sein Licht selbst rechnet — `panorama` (seine Textur grau), `wasser` (der Körper: das Bild mit minus
+// ohne sein Licht, ÷ R∞; Himmel und Glanz heben sich auf) — je Stunde, ohne Luft und Schatten; eine Zeile der Ferne (`paar`).
+function lichtWeg(opts) {
+    return (async () => {
+        const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass, HU = st.hydroSurfaceUniforms;
+        rend.setAnimationLoop(null);
+        if (window.__buehne) window.__buehne();
+        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
+        await r._himmelFrisch();
+        if (!fp || !HU) return { fehler: "kein Feld-Pass oder kein Wasser-Stoff" };
+        r._feldLichtSync(fp.U);
+        const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
+        const W = 32, rt = new T.RenderTarget(W, W, { depthBuffer: true, type: T.HalfFloatType }), alle = [], dl = st.directionalLight, wurf = dl.castShadow;
+        sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
+        const luftU = st.luft && st.luft.U, luftAlt = luftU && luftU.beta.value, kamAlt = [cam.position.clone(), cam.quaternion.clone()];
+        const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
+        const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
+        const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
+        [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
+        karte.position.copy(o).y -= 2;
+        see.position.copy(karte.position);
+        sc.add(karte, see);
+        const lies = async (ding, blick, wand) => {
+            cam.position.copy(o);
+            cam.lookAt(o.clone().add(blick));
+            cam.updateMatrixWorld(true);
+            // der Takt des Feld-Passes für DIESES Auge (Strahl, Stellvertreter), ohne neues Panorama
+            [fp.panoFlug, fp.mesh.visible] = [true, true];
+            r._tickFeldPass(st.fernRing);
+            for (const [m] of alle) m.visible = m === ding;
+            [karte, see].forEach((m) => (m.visible = m === ding));
+            if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
+            sc.traverse((g) => g.isBundleGroup && (g.needsUpdate = true));
+            await window.__linseRuhe(rend, rt, sc, cam, "der Lichtweg");
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, W), schritt = px.length > W * W * 4 ? Math.ceil((W * 8) / 256) * 128 : W * 4, s = [0, 0, 0];
+            for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;
+            return s;
+        };
+        const lab = (c) => {
+            const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116), [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
+            return { Y: +(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+        };
+        const panoAlt = fp.panoDaten.slice(), irrAlt = HU.irr.value.clone();
+        try {
+            dl.castShadow = false;
+            if (luftU) luftU.beta.value = 0;
+            let welt = await lies(karte, unten);
+            let weg;
+            if (opts.weg === "panorama") {
+                for (let i = 0; i < fp.panoDaten.length; i += 4) fp.panoDaten.set([0.18, 0.18, 0.18, 3000], i);
+                fp.panoTex.needsUpdate = true;
+                weg = await lies(fp.mesh, new T.Vector3(1, -0.1, 0));
+            } else if (opts.weg === "spiegel") {
+                // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
+                // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
+                // Feld des Spiegel-Passes trägt ihn. Die Welt: dieselbe Karte senkrecht, mit derselben Normale, aus demselben Auge.
+                const S = r._spiegelFeld(), L = r._spiegelLeser(), K = r.constructor.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
+                const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), Math.PI / 4), H = see.position.y - S.bezug, fov = cam.fov;
+                const I0 = Math.floor(o.x / K.texel) - n / 2, J0 = Math.floor(o.z / K.texel) - n / 2, w = (k, k0, a) => (k0 + ((((k - k0) % n) + n) % n) + 0.5) * K.texel - a;
+                S.hoechste.fill(-30000);
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++) {
+                        const istWand = -(w(i, I0, o.x) * nh.x + w(j, J0, o.z) * nh.z) > 30, h = istWand ? H + 60 : H - 0.6, b = Math.floor(j / K.block) * S.nb + Math.floor(i / K.block);
+                        S.daten.set([T.DataUtils.toHalfFloat(h), S.leer, S.leer, 0], (j * n + i) * 4);
+                        S.stoff.set(istWand ? [108, 108, 108, 0] : [0, 0, 0, 1], (j * n + i) * 4);
+                        S.hoechste[b] = Math.max(S.hoechste[b], h);
+                    }
+                [S.tex, S.stoffTex, S.hTex].forEach((t) => (t.needsUpdate = true));
+                [S.mitte, S.hMax, cam.fov] = [[o.x, o.z], H + 60, 20];
+                cam.updateProjectionMatrix();
+                try {
+                    welt = await lies(karte, nh.clone().negate().multiplyScalar(3), true);
+                    cam.lookAt(o.clone().add(nh.clone().negate().setY(-Math.tan((25 * Math.PI) / 180))));
+                    cam.updateProjectionMatrix();
+                    cam.updateMatrixWorld(true);
+                    [karte.visible, see.visible] = [false, true];
+                    // das Feld lädt seine Texturen erst im Bild hoch: die Erst-Ruhe, dann drei Läufe (an der Basis las der erste 0)
+                    const lauf = () => (st.postProcessing.render(), r._spiegelPassRechne(L));
+                    await window.__erstRuhe(lauf, {}, "der Spiegel");
+                    for (let k = 0; k < 3; k++) lauf(), await new Promise((q) => setTimeout(q, 200));
+                    const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = px.length / Hr;
+                    weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
+                } finally {
+                    [S.daten, S.stoff, S.hoechste].forEach((d, k) => d.set(alt[k]));
+                    [S.tex, S.stoffTex, S.hTex].forEach((t) => (t.needsUpdate = true));
+                    [S.mitte, S.hMax, cam.fov] = [alt[3], alt[4], fov];
+                    S.stand++;
+                    cam.updateProjectionMatrix();
+                }
+            } else if (opts.weg === "feld") {
+                const h = r._weltKapselSpawn("lichtweg:karte", new T.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z), () => [{ box: true, c: new T.Vector3(), h: new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
+                weg = await lies(fp.march, unten).finally(() => r._weltFeldFrei(h));
+            } else {
+                const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
+                HU.irr.value.setRGB(0, 0, 0);
+                const ohne = await lies(see, unten);
+                weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
+            }
+            const [lw, lk] = [lab(welt), lab(weg)];
+            return { art: opts.weg, stufe: "welt-stoff → " + opts.weg, paar: "weg/welt", karte: { gestalt: lw, karte: lk, verhaeltnis: +(lk.Y / lw.Y).toFixed(3), dL: +(lk.L - lw.L).toFixed(2), dC: +(lk.C - lw.C).toFixed(2) } };
+        } finally {
+            fp.panoDaten.set(panoAlt);
+            fp.panoFlug = false;
+            fp.panoTex.needsUpdate = true;
+            HU.irr.value.copy(irrAlt);
+            for (const [m, v] of alle) m.visible = v;
+            sc.remove(karte, see);
+            karte.geometry.dispose();
+            karte.material.dispose();
+            see.geometry.dispose();
+            dl.castShadow = wurf;
+            if (luftU) luftU.beta.value = luftAlt;
+            cam.position.copy(kamAlt[0]);
+            cam.quaternion.copy(kamAlt[1]);
+            cam.updateMatrixWorld(true);
+            rt.dispose();
+        }
+    })();
+}
+
 function laubLichtUrteil(messung, band) {
     band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
@@ -2086,7 +2179,8 @@ module.exports = {
         `window.__albedoSicht = ${albedoSicht.toString()};` +
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};` +
-        `window.__tagKurve = ${tagKurve.toString()};`,
+        `window.__tagKurve = ${tagKurve.toString()};` +
+        `window.__lichtWeg = ${lichtWeg.toString()};`,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,

@@ -3393,6 +3393,11 @@ async function starte() {
         const dorf = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "dorf");
         for (const art of String(arten).split(",")) for (const uhr of uhren) {
             const zeile = uhr == null ? art : `${art}@${uhr}`;
+            // DER LICHTWEG (Licht K3): `panorama`, `feld` und `wasser` — die graue Fläche im Licht der Welt gegen das Licht des Wegs
+            if (["panorama", "feld", "spiegel", "wasser"].includes(art)) {
+                welt[zeile] = (await rufe("/eval", { code: `return await window.__lichtWeg({ weg: "${art}", uhr: ${uhr} });` })).ergebnis;
+                continue;
+            }
             const [haus, boden] = [art === "haus", art === "ring"];
             const anker = haus || boden ? dorf.spieler : wiese.spieler;
             if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
@@ -3415,7 +3420,7 @@ async function starte() {
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
             await ein();
             // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
-            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden && n === 2 ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
+            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
             // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
             // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
             const stufen = async (t12, t01) => {
