@@ -3,7 +3,6 @@
 // geht über den Sim-Schritt (`_stepFixedSim`, W-Taste):
 //   W1  TÜR: vom Podest vor der Haustür geht der Körper 1 m hinter die Schwelle — je Haus, gedrehte eingeschlossen
 //   W2  DIELE: drinnen steht der Fuß auf der Diele des Gesetzbuchs (± 3 cm; das Gesetzbuch rechnet die Probe selbst)
-//   W3  TREPPE: der Lauf EG→OG (die Flights des Gesetzbuchs) trägt den Körper ins Obergeschoss
 //   W4  GRUNDRISS: keine Natur (die Arten des Terrain-Studios) im Grundriss eines Hauses des Drehbuch-Dorfs, keine Natur
 //       (Eintrag, Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker des Dorfs (die Wege-Karte).
 //   W4b DAS FERNE DORF: ein Dorf entsteht 300 m vom Spieler — keine lebende Streu-Zelle in seinen Häusern, auch nicht, wenn
@@ -20,10 +19,9 @@
 //       Kachel-Pflanze; der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er
 //       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
-//   W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen von vor der Tür durch den Keller bis auf den Dachboden und jeder
-//       Lauf an beiden Spur-Rändern; ROT bei einem Hub > 0,3 m in einem Sim-Schritt (Anti-Clip-Hub) oder einem verfehlten Ziel.
+//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
-//       hineinreichen, keine Erde über der Diele, der Leib erreicht den Kellerboden; `--bild`: Halm- und Boden-Pixel je Box 0.
+//       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
 //       der Zug des Start-Dorfs überlebt Sperre und Reload, Brunnen, Laternen und Stände stehen am Ort des Plans.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
@@ -165,7 +163,7 @@ const BASIS = {
         ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // W10: der Stab trägt — die Kapsel steigt auf die Brüstung neben dem Lauf
+    // W10: der Stab (die Brüstung) trägt
     stab: [
         [
             "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
@@ -220,7 +218,7 @@ async function proben(phasen) {
     const s = r.state;
     const A = r.constructor;
     const FC = window.__fachwerkCore;
-    // DIE PHASEN: haus (W1 W2 W3 W4c W5 je Haus), sohle, lichtung, bau (W8), w4, w4b, w6 — der Hauptlauf fährt alle, ein
+    // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), sohle, lichtung, bau (W8), w4, w4b, w6 — der Hauptlauf fährt alle, ein
     // Selbsttest nur die seines Täters
     const P = new Set(phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"]);
     const o = { haeuser: [], phasen: [...P] };
@@ -314,20 +312,6 @@ async function proben(phasen) {
         const dz = z - e.position.z;
         return { x: dx * c - dz * sn, z: dx * sn + dz * c };
     };
-    // geht n Schritte (W-Taste) auf das Ziel zu; gibt den tiefsten Stand des Körpers auf dem Weg (W9 Keller)
-    const geh = (n, zielX, zielZ) => {
-        s.keys = s.keys || {};
-        let tief = Infinity;
-        for (let k = 0; k < n; k++) {
-            s.yaw = Math.atan2(zielX - pm.position.x, zielZ - pm.position.z);
-            s.keys.w = true;
-            r._stepFixedSim((t += DT), DT);
-            tief = Math.min(tief, pm.position.y);
-        }
-        s.keys.w = false;
-        for (let k = 0; k < 10; k++) r._stepFixedSim((t += DT), DT);
-        return tief;
-    };
     const stell = (x, y, z) => {
         pm.position.set(x, y, z);
         s._fieldVy = 0;
@@ -362,10 +346,7 @@ async function proben(phasen) {
                 return hs.call(this, en, hu);
             };
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
-            if (e)
-                await window
-                    .__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 })
-                    .catch(() => null);
+            if (e) await window.__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 }).catch(() => null);
             if (e && e._hausHuelle) return e;
         }
         return null;
@@ -386,13 +367,49 @@ async function proben(phasen) {
         }
         const tu = e.tuer;
         const base = e.position.y - 0.5;
+        // W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen, je Sim-Schritt der Hub, je Ziel Rest und Fuß
+        const dm = Hh.dims || {};
+        const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
+        const kf = fls.find((f) => f.atLevel === "keller");
+        const auf = fls
+            .filter((f) => f !== kf)
+            .sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic"));
+        const g = (h.gang = {
+            hub: 0,
+            fehlt: [],
+            keller: !!kf,
+            dach: auf.some((f) => f.atLevel === "attic"),
+        });
+        s.keys = s.keys || {};
+        const eg = dm.levelsY[0];
+        const xm = (f) => (f.x0 + f.x1) / 2;
+        const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.8);
+        const seite = (rechts) => (rechts ? dm.stairX1 + 0.6 : dm.stairX0 - 0.6);
+        const ziel = (name, lx, lz, soll) => {
+            const w = welt(e, lx, lz);
+            for (let k = 0, ruhe = 0; ruhe < 10; k++) {
+                s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                if (!s.keys.w) ruhe++;
+                s.yaw = Math.atan2(w.x - pm.position.x, w.z - pm.position.z);
+                const y0 = pm.position.y;
+                r._stepFixedSim((t += DT), DT);
+                if (pm.position.y - y0 > g.hub)
+                    [g.hub, g.wo] = [
+                        pm.position.y - y0,
+                        `${name}: Fuß ${(y0 - FUSS - base).toFixed(2)} → ${(pm.position.y - FUSS - base).toFixed(2)} m`,
+                    ];
+            }
+            const rest = Math.hypot(w.x - pm.position.x, w.z - pm.position.z);
+            const fuss = pm.position.y - FUSS - base;
+            if (rest > 0.4 || Math.abs(fuss - soll) > 0.35)
+                g.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}`);
+            g.z = lz;
+        };
         // W1 TÜR: vom Podest-Rand vor der Tür 1,8 m nach innen
         const vor = welt(e, tu.x, tu.z - 0.25);
-        const innen = welt(e, tu.x, tu.z + 1.8);
         stell(vor.x, base + 0.75 + FUSS, vor.z);
-        geh(150, innen.x, innen.z);
+        ziel("tür", tu.x, tu.z + 1.8, NaN);
         const l = lokal(e, pm.position.x, pm.position.z);
-        h.tuerDrinM = Math.round((l.z - tu.z) * 100) / 100;
         // W2 DIELE: der Fuß steht auf einer Fläche des Gesetzbuchs — die nächste Solid-Oberkante, deren Grundfläche den
         // Kapsel-Kreis trifft (das Gesetzbuch rechnet sie selbst, nie die Blocker der Welt)
         const fussL = pm.position.y - FUSS - base;
@@ -472,126 +489,36 @@ async function proben(phasen) {
                 }
             h.optikProzent = n ? Math.round((gleich / n) * 1000) / 10 : null;
         }
-        // W3 TREPPE: der Lauf EG→OG
-        const fl = ((Hh.dims && Hh.dims.flights) || []).find((f) => f.atLevel === 1 && f.x1 - f.x0 > 0.3);
-        if (fl) {
-            const xm = (fl.x0 + fl.x1) / 2;
-            const a = welt(e, xm, fl.zFoot - fl.dir * 0.5);
-            const z2 = welt(e, xm, fl.zFoot + fl.dir * (fl.N * fl.go + 0.8));
-            stell(a.x, base + fl.base + 0.1 + FUSS, a.z);
-            const y0 = pm.position.y;
-            geh(300, z2.x, z2.z);
-            h.treppeSteigM = Math.round((pm.position.y - y0) * 100) / 100;
-            h.treppeSollM = Math.round(fl.N * fl.rise * 100) / 100;
-        }
-        // W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen — von 1 m vor der Tür hinein, um den Schacht, die
-        // Keller-Treppe hinab und hinauf, dann jeder Lauf des Gesetzbuchs bis auf den Dachboden; je Sim-Schritt der Hub
-        // des Körpers (|Δy| > 0,3 m in einem Schritt = der Anti-Clip-Hub), je Ziel der Rest-Abstand und der Boden
-        const dm = Hh.dims || {};
-        const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
-        const auf = fls
-            .filter((f) => f.atLevel !== "keller")
-            .sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic"));
-        const kf = fls.find((f) => f.atLevel === "keller");
-        if (auf.length && tu && Number.isFinite(dm.stairZ0)) {
-            const g = {
-                hubAuf: 0,
-                hubAb: 0,
-                wo: null,
-                z: 0,
-                ziele: [],
-                keller: !!kf,
-                dach: auf.some((f) => f.atLevel === "attic"),
-            };
-            const xm = (f) => (f.x0 + f.x1) / 2;
-            const sx = kf && xm(kf) < (dm.stairX0 + dm.stairX1) / 2 ? dm.stairX0 - 0.6 : dm.stairX1 + 0.6;
-            const zv = dm.stairZ0 - 0.6;
-            const zh = dm.stairZ1 + 0.7;
-            const egY = (dm.levelsY || [0])[0];
-            const schritt = (name) => {
-                const y0 = pm.position.y;
-                r._stepFixedSim((t += DT), DT);
-                const dy = pm.position.y - y0;
-                if (dy > g.hubAuf) {
-                    const l = lokal(e, pm.position.x, pm.position.z);
-                    [g.hubAuf, g.wo] = [
-                        dy,
-                        `${name} @${l.x.toFixed(2)}/${l.z.toFixed(2)} y ${(y0 - FUSS - base).toFixed(2)} → ${(pm.position.y - FUSS - base).toFixed(2)}`,
-                    ];
+        if (auf.length) {
+            // jenseits des Schachts: um ihn herum, auf der Seite mit mehr Raum
+            const hin = (name, lx, lz, soll) => {
+                const sr = seite(dm.W / 2 - dm.stairX1 > dm.stairX0 + dm.W / 2);
+                if (g.z < dm.stairZ0 !== lz < dm.stairZ0) {
+                    ziel(name + "-um", sr, g.z, NaN);
+                    ziel(name + "-um", sr, lz, NaN);
                 }
-                if (dy < g.hubAb) g.hubAb = dy;
+                ziel(name, lx, lz, soll);
             };
-            const ziel = (name, lx, lz, soll) => {
-                const w = welt(e, lx, lz);
-                for (let k = 0; k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2; k++) {
-                    s.yaw = Math.atan2(w.x - pm.position.x, w.z - pm.position.z);
-                    s.keys.w = true;
-                    schritt(name);
-                }
-                s.keys.w = false;
-                for (let k = 0; k < 10; k++) schritt(name);
-                const rest = Math.hypot(w.x - pm.position.x, w.z - pm.position.z);
-                g.z = lz;
-                const yL = pm.position.y - FUSS - base;
-                g.ziele.push({
-                    name,
-                    restM: Math.round(rest * 100) / 100,
-                    yM: Math.round(yL * 100) / 100,
-                    sollM: soll == null ? null : Math.round(soll * 100) / 100,
-                });
-            };
-            const v0 = welt(e, tu.x, tu.z - 1.0);
-            stell(v0.x, Math.max(r.getTerrainHeightAt(v0.x, v0.z), base + 0.75) + FUSS + 0.05, v0.z);
-            s.keys = s.keys || {};
-            ziel("tür", tu.x, tu.z + 1.0, egY);
-            ziel("flur", sx, zv, egY);
             if (kf) {
                 const kt = kf.zFoot + kf.dir * (kf.N * kf.go + 0.4);
-                ziel("schacht", sx, zh, egY);
-                ziel("keller-kopf", xm(kf), kt, egY);
+                hin("keller-kopf", xm(kf), kt, eg);
                 ziel("keller", xm(kf), kf.zFoot - kf.dir * 0.6, kf.base + 0.12);
-                ziel("keller-auf", xm(kf), kt, egY);
-                ziel("schacht-zurück", sx, zh, egY);
-                ziel("flur-zurück", sx, zv, egY);
+                ziel("keller-auf", xm(kf), kt, eg);
             }
-            // liegt der Antritt des nächsten Laufs jenseits des Schachts, geht der Körper um ihn (die Seite mit mehr Raum)
-            const sr = dm.W / 2 - dm.stairX1 > dm.stairX0 + dm.W / 2 ? dm.stairX1 + 0.6 : dm.stairX0 - 0.6;
             for (const f of auf) {
-                const n = f.atLevel === "attic" ? "dachboden" : "og" + f.atLevel;
-                const zf = f.zFoot - f.dir * 0.6;
-                if (g.z < dm.stairZ0 !== zf < dm.stairZ0) {
-                    ziel(n + "-um", sr, g.z, f.base);
-                    ziel(n + "-um2", sr, zf, f.base);
-                }
-                ziel(n + "-fuß", xm(f), zf, f.base);
-                ziel(n, xm(f), f.zFoot + f.dir * (f.N * f.go + 0.8), f.base + f.N * f.rise);
+                hin(`fuß ${f.atLevel}`, xm(f), f.zFoot - f.dir * 0.6, f.base);
+                ziel(`lauf ${f.atLevel}`, xm(f), oben(f), f.base + f.N * f.rise);
             }
-            // DIE SPUR-RÄNDER: jeder Lauf 0,12 m links und rechts seiner Mitte hinauf (der Spieler geht nie auf der Linie)
             for (const f of kf ? [kf, ...auf] : auf)
                 for (const v of [-0.12, 0.12]) {
                     const a = welt(e, xm(f) + v, f.zFoot - f.dir * 0.5);
                     stell(a.x, base + f.base + 0.1 + FUSS, a.z);
-                    ziel(
-                        `rand-${f.atLevel}${v < 0 ? "L" : "R"}`,
-                        xm(f) + v,
-                        f.zFoot + f.dir * (f.N * f.go + 0.8),
-                        f.base + f.N * f.rise
-                    );
+                    ziel(`rand ${f.atLevel} ${v}`, xm(f) + v, oben(f), f.base + f.N * f.rise);
                 }
-            s.keys.w = false;
-            g.hubAuf = Math.round(g.hubAuf * 100) / 100;
-            g.hubAb = Math.round(g.hubAb * 100) / 100;
-            g.laeufe = auf.map((f) =>
-                [f.atLevel, f.tr, f.base, f.N, f.rise, f.go, f.zFoot, f.dir, f.x0, f.x1].map((v) =>
-                    typeof v === "number" ? Math.round(v * 1000) / 1000 : v
-                )
-            );
-            g.masz = [dm.W, dm.D, dm.eaveY, dm.ridgeY, dm.stairZ0, dm.stairZ1, dm.stairX0, dm.stairX1];
-            h.gang = g;
         }
     }
     // W9 DAS GRUND-DATUM (S4): je Haus des Drehbuch-Dorfs und je Box seines Körper-Satzes die Büschel der Nah-Wiese, deren
-    // Halme in die Box reichen, Erde 5 cm über der Diele (Raster 0,25 m) und der Leib auf der Keller-Treppe; `--bild`: je Box
+    // Halme in die Box reichen, Erde 5 cm über der Diele (Raster 0,25 m); `--bild`: je Box
     // zwei Blicke aus dem Ausgabe-Pfad, Halm-Pixel (gegen das Bild ohne die Büschel der Box) und Boden-Pixel (die Maske des
     // Boden-Satzes, deren Strahl den Boden in der Box trifft), die Bilder unter artifacts/haus-welt/grund-*.png
     // das Grund-Datum eines Hauses (fachwerk `grundVon`): die Boxen des Körper-Satzes (`traegt` 0: der Grund ist ihr Boden)
@@ -664,7 +591,7 @@ async function proben(phasen) {
         }
         for (const e of HS) {
             const { Hh, sc, base, kasten: boxen } = grundDes(e);
-            const h = { typ: e.type, spieler: e === sbE, sc: Math.round(sc * 1000) / 1000, koerper: [], keller: null };
+            const h = { typ: e.type, spieler: e === sbE, sc: Math.round(sc * 1000) / 1000, koerper: [] };
             o.w9.haeuser.push(h);
             const solids = Hh.solids || [];
             // die Diele des Gesetzbuchs an (lx, lz) haus-lokal: die Oberkante der Solids bis 1,2 m; -Infinity, wo keiner trägt
@@ -686,7 +613,7 @@ async function proben(phasen) {
                 const [lx, lz] = [l.x / sc, l.z / sc];
                 return lx > m.x0 + rand && lx < m.x1 - rand && lz > m.z0 + rand && lz < m.z1 - rand;
             };
-            // der Spieler steht im Haupthaus, bis die Hülle der Stufe 0 (ihre Keller-Treppe) und die Boden-Karten um das Haus
+            // der Spieler steht im Haupthaus, bis die Hülle der Stufe 0 und die Boden-Karten um das Haus
             // stehen, mit `--bild` dazu die Nah-Wiese
             const ecken = boxen.flatMap((m) => [
                 welt(e, m.x0 * sc, m.z0 * sc),
@@ -837,23 +764,6 @@ async function proben(phasen) {
                 const ohne = alle.length ? await schuss([], alle) : G;
                 h.gegenprobe = 0;
                 for (let k = 0; k < G.length; k += 4) if (anders(G, ohne, k)) h.gegenprobe++;
-            }
-            // DER KELLER: Erde im Raum des Gesetzbuchs (0,3 und 1,5 m über seinem Boden), der Leib geht die Keller-Treppe hinab
-            const ke = Hh.cellar;
-            const fl = ((Hh.dims && Hh.dims.flights) || []).find((f) => f.atLevel === "keller");
-            if (ke && fl) {
-                const k = { boden: Math.round(ke.floorY * 100) / 100, erde: 0, proben: 0 };
-                for (let lx = ke.x0 + 0.25; lx < ke.x1; lx += 0.5)
-                    for (let lz = ke.z0 + 0.25; lz < ke.z1; lz += 0.5)
-                        for (const dy of [0.3, 1.5])
-                            [k.proben, k.erde] = [k.proben + 1, k.erde + erde(lx, ke.floorY + dy, lz)];
-                const xm = (fl.x0 + fl.x1) / 2;
-                const oben = welt(e, xm * sc, (fl.zFoot + fl.dir * (fl.N * fl.go + 0.3)) * sc);
-                const unten = welt(e, xm * sc, (fl.zFoot - fl.dir * 0.6) * sc);
-                stell(oben.x, base + (fl.base + fl.N * fl.rise + 0.1) * sc + FUSS, oben.z);
-                k.startM = Math.round(((pm.position.y - FUSS - base) / sc) * 100) / 100;
-                k.tiefM = Math.round(((geh(420, unten.x, unten.z) - FUSS - base) / sc) * 100) / 100;
-                h.keller = k;
             }
         }
         if (BILD) r._tickNahWiese = tick;
@@ -1780,14 +1690,7 @@ async function proben(phasen) {
                 const weg = welt(e, fu.ox, fu.oz - abstand);
                 stell(weg.x, (r0(weg.x, weg.z) || e.position.y) + 3, weg.z);
                 const soll = abstand > 40 ? 2 : 1;
-                await window
-                    .__gebautNach(e, {
-                        fertig: () => e._hausHuelle && e._servedLod === soll,
-                        bau: () => {},
-                        takt: () => pumpe(10),
-                        max: 60,
-                    })
-                    .catch(() => null);
+                await window.__gebautNach(e, { fertig: () => e._hausHuelle && e._servedLod === soll, bau: () => {}, takt: () => pumpe(10), max: 60 }).catch(() => null);
                 w.fern.push({ stufe: e._servedLod, huelle: huelleVon(e), drinM: anlauf(e) });
             }
         }
@@ -1924,11 +1827,6 @@ function urteil(o) {
         const nichtL0 = hs.filter((h) => h.stufe !== 0 || h.huelle !== 0);
         if (nichtL0.length)
             f.push(`Aufbau: ${nichtL0.length} Häuser ohne Stufe 0 / Hülle 0 (${nichtL0.map((h) => h.typ).join(" ")})`);
-        const zu = hs.filter((h) => !(h.tuerDrinM >= 1.0));
-        if (zu.length)
-            f.push(
-                `W1 Tür: ${hs.length - zu.length} von ${hs.length} Häusern betreten (${zu.map((h) => h.typ + "@" + h.gierGrad + "°:" + h.tuerDrinM).join(" ")})`
-            );
         const ohneSchwelle = hs.filter((h) => h.vorplatzUeberM === null || h.vorplatzUeberM === undefined);
         if (ohneSchwelle.length)
             f.push(`W1 Tür: ${ohneSchwelle.length} Häuser ohne Diele hinter der Schwelle im Gesetzbuch (Vorbedingung)`);
@@ -1937,32 +1835,21 @@ function urteil(o) {
             f.push(
                 `W1 Tür: ${begraben.length} von ${hs.length} Türen liegen im Boden — der Vorplatz steht über der Diele (${begraben.map((h) => h.typ + "@" + h.gierGrad + "°:+" + h.vorplatzUeberM + " m").join(" ")}; Soll ≤ 0,2 m)`
             );
-        const diele = hs.filter((h) => h.tuerDrinM >= 1.0 && !(Math.abs(h.dieleCm) <= 3));
+        const diele = hs.filter((h) => !(Math.abs(h.dieleCm) <= 3));
         if (diele.length)
             f.push(
                 `W2 Diele: ${diele.length} Häuser mit dem Fuß neben der Diele (${diele.map((h) => h.typ + ":" + h.dieleCm + " cm").join(" ")})`
             );
-        // W10 DER SPIELGANG: mindestens ein Gang bis in den Keller und einer bis auf den Dachboden, kein Hub > 0,3 m, jedes Ziel
         const gang = hs.filter((h) => h.gang);
-        if (!gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
-            f.push(`W10 Aufbau: ${gang.length} Gänge, keiner bis in den Keller und auf den Dachboden (Soll je ≥ 1)`);
-        const hub = gang.filter((h) => !(h.gang.hubAuf <= 0.3));
+        if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
+            f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
+        const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length)
+            f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
+        const zu = gang.filter((h) => h.gang.fehlt.length);
+        if (zu.length)
             f.push(
-                `W10 Anti-Clip-Hub: ${hub.length} von ${gang.length} Häusern heben den Körper in einem Schritt > 0,3 m (${hub.map((h) => h.typ + " " + h.gang.hubAuf + " m " + h.gang.wo).join(" · ")})`
-            );
-        const fehlt = (z) => z.restM > 0.4 || (z.sollM != null && Math.abs(z.yM - z.sollM) > 0.35);
-        const verfehlt = gang.filter((h) => h.gang.ziele.some(fehlt));
-        if (verfehlt.length)
-            f.push(
-                `W10 Spielgang: ${verfehlt.map((h) => h.typ + " " + h.gang.ziele.filter(fehlt).map((z) => z.name + " " + z.restM + " m neben, Fuß " + z.yM + "/" + z.sollM)).join(" · ")}`
-            );
-        const mitTreppe = hs.filter((h) => Number.isFinite(h.treppeSollM));
-        if (!(mitTreppe.length >= 3)) f.push(`Aufbau: ${mitTreppe.length} Häuser mit EG→OG-Lauf (Soll ≥ 3)`);
-        const unten = mitTreppe.filter((h) => !(h.treppeSteigM >= 0.9 * h.treppeSollM));
-        if (unten.length)
-            f.push(
-                `W3 Treppe: ${mitTreppe.length - unten.length} von ${mitTreppe.length} Läufen tragen ins OG (${unten.map((h) => h.typ + ":" + h.treppeSteigM + "/" + h.treppeSollM).join(" ")})`
+                `W10 Spielgang: ${zu.map((h) => h.typ + "@" + h.gierGrad + "° " + h.gang.fehlt.join(", ")).join(" · ")}`
             );
         const optik = hs.filter((h) => !(h.optikProzent >= 97));
         if (optik.length)
@@ -2147,11 +2034,10 @@ function urteil(o) {
     if (P.has("grund")) {
         const w9 = o.w9 || {};
         const hs = w9.haeuser || [];
-        const [boxen, mitK] = [hs.flatMap((h) => h.koerper), hs.filter((h) => h.keller)];
+        const boxen = hs.flatMap((h) => h.koerper);
         const summe = (feld) => boxen.reduce((a, b) => a + (b[feld] || 0), 0);
         const je = (w) => JSON.stringify(boxen.reduce((m, b) => (w(b) && (m[b.art] = (m[b.art] || 0) + w(b)), m), {}));
         const mit = (w) => `in ${hs.filter((h) => h.koerper.some(w)).length} von ${hs.length} Häusern ${je(w)}`;
-        const oben = mitK.filter((h) => !(h.keller.tiefM <= h.keller.boden + 0.15));
         const gesehen = boxen.filter((b) => b.blicke > 0);
         const bildW = (b) => (b.halm + b.boden > 20 ? b.halm + b.boden : 0);
         if (!boxen.length || !hs.some((h) => h.ring > 0))
@@ -2162,11 +2048,6 @@ function urteil(o) {
         if (summe("dichte"))
             f.push(
                 `W9 Dichte: Erde in ${summe("dichte")} von ${summe("proben")} Zellen über der Diele ${mit((b) => b.dichte)}`
-            );
-        if (!mitK.length) f.push("W9 Keller: blind — kein Keller-Lauf");
-        else if (oben.length)
-            f.push(
-                `W9 Keller: ${oben.length} von ${mitK.length} Leibern über dem Boden ${oben[0].keller.boden} m (Fuß ${oben.map((h) => h.keller.tiefM).join("/")} m, Erde ${mitK.map((h) => h.keller.erde).join("/")})`
             );
         if (w9.bild && !gesehen.length) f.push("W9 Bild: blind — kein freies Auge in einer Box");
         else if (w9.bild && !hs.some((h) => h.gegenprobe > 0))
@@ -2202,11 +2083,10 @@ function urteil(o) {
     return f;
 }
 
-// die Zahlen des Grund-Datums: Summen über die Boxen, Keller-Fuß, Gegenprobe, Abbau vorher/nachher, Waise und Zug
+// die Zahlen des Grund-Datums: Summen über die Boxen, Gegenprobe, Abbau vorher/nachher, Waise und Zug
 const w9Zeile = (w) => ({
     haeuser: w.haeuser.length,
     weite: w.weite,
-    keller: w.haeuser.filter((h) => h.keller).map((h) => h.keller.tiefM),
     summe: ["bueschel", "dichte", "halm", "boden", "blicke"].map((k) =>
         w.haeuser.reduce((a, h) => a + h.koerper.reduce((q, b) => q + b[k], 0), 0)
     ),
@@ -2220,15 +2100,11 @@ function zeile(o) {
     const hs = o.haeuser.filter((h) => !h.fehler);
     return (
         `${o.dorfOrt ? `Dorf-Ort ${o.dorfOrt.x}/${o.dorfOrt.z} (Gefälle ${o.dorfOrt.hang}, der Spieler bei ${o.startOrt.x}/${o.startOrt.z}) · ` : "Dorf-Ort am Start (kein Hang) · "}` +
-        `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 Tür ${hs.filter((h) => h.tuerDrinM >= 1).length}/${hs.length} (Vorplatz über der Diele ${hs.map((h) => h.vorplatzUeberM).join("/")} m)` +
-        ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm · W3 Treppe ${hs
-            .filter((h) => Number.isFinite(h.treppeSollM))
-            .map((h) => h.treppeSteigM + "/" + h.treppeSollM)
-            .join(" ")} m` +
+        `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 (Vorplatz über der Diele ${hs.map((h) => h.vorplatzUeberM).join("/")} m)` +
+        ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm` +
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4 Weg ${o.w4weg ? o.w4weg.aufWeg + "/" + o.w4weg.natur + " auf " + o.w4weg.formen + " Formen" : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
-        ` · W10 Hub ${hs.map((h) => (h.gang ? h.gang.hubAuf + (h.gang.keller ? "K" : "") + (h.gang.dach ? "D" : "") : "-")).join("/")} m` +
         (o.w9 ? ` · W9 ${JSON.stringify(w9Zeile(o.w9))}` : "") +
         ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
@@ -2300,7 +2176,7 @@ function zeile(o) {
             // je Täter: die Phase seiner Welt (sie fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle),
             // dann die Proben, die er rot macht
             const soll = {
-                huelle: ["haus", "W3 Treppe", "W5 Kollision"],
+                huelle: ["haus", "W10 Spielgang", "W5 Kollision"],
                 obb: ["haus", "W5 Kollision"],
                 grundriss: ["w4", "W4 Grundriss"],
                 streu: ["w4b", "W4b Fern-Streu"],
@@ -2320,7 +2196,7 @@ function zeile(o) {
                 kern: ["w6", "W6 Kern-Hülle"],
                 bauwand: ["haus", "W7 Bau im Bau"],
                 stab: ["haus", "W10 Anti-Clip-Hub"],
-                grundkeller: ["grund", "W9 Dichte", "W9 Keller"],
+                grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
