@@ -1667,6 +1667,7 @@ function codeAbdruck(text, datei) {
     if (/\.(c|m)?js$/.test(datei)) {
         const acorn = require("acorn");
         const opt = { ecmaVersion: "latest", sourceType: /\.mjs$/.test(datei) ? "module" : "script", allowHashBang: true };
+        text = text.replace(/\.VERSION = "[^"]*"/, ".VERSION");
         for (const tok of acorn.tokenizer(text, opt)) h.update(text.slice(tok.start, tok.end) + "\u0000");
     } else if (/\.json$/.test(datei)) h.update(JSON.stringify(JSON.parse(text)));
     else throw new Error(`Code-Abdruck: ${datei} ist keine Code-Datei (js, cjs, mjs, json)`);
