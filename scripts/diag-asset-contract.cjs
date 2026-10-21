@@ -3,7 +3,7 @@
 // (die EINE Harness), baut jeden Golden-Fall neu, fingerabdruckt die Puffer (sha256 je Attribut,
 // die geteilte fingerprintMeshes) und vergleicht sha256 + Byte-Länge + prüft das Schema (cv,
 // Pflichtfelder). Dazu die drei Daten-Kanäle (recipes/world-params/render-config) gegen ihre
-// eingefrorenen JSONs. Der exakte Byte-Offset einer Divergenz kommt aus diag-foundry-parity.
+// eingefrorenen JSONs.
 //
 // GRÜN ⇒ der Vertrag hält, kein stiller Drift möglich. ROT ⇒ die erste Divergenz mit Ort
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
@@ -84,7 +84,7 @@ function meshDiff(tag, gold, live) {
             if (av.itemSize !== bv.itemSize) return `${tag} Mesh${i}.${k}: itemSize ${av.itemSize} vs ${bv.itemSize}`;
             if (av.bytes !== bv.bytes) return `${tag} Mesh${i}.${k}: Byte-Länge ${av.bytes} vs ${bv.bytes}`;
             if (av.sha256 !== bv.sha256)
-                return `${tag} Mesh${i}.${k}: sha256-Divergenz (Byte-Offset via diag-foundry-parity)`;
+                return `${tag} Mesh${i}.${k}: sha256-Divergenz`;
         }
         if (((a.index || null) !== null) !== ((b.index || null) !== null))
             return `${tag} Mesh${i}: index nur auf einer Seite`;
