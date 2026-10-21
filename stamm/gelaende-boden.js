@@ -753,7 +753,9 @@ class AnazhRealm_gelaende_boden {
         }
         return false;
     }
-    *_ortWahl(plan, origin) {
+    // `legen` false (der Vorlauf des Dorfs, `_dorfBereiten`): die Wahl rechnet, ihr Erdbau liegt erst, wenn der Ort Welt wird —
+    // der Ruf, der legt, findet sie im Gedächtnis des Orts und legt sie (`_erdbauSetzen` je Schlüssel einmal)
+    *_ortWahl(plan, origin, legen = true) {
         if (plan && plan.version === 2) return plan;
         // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
         const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
@@ -801,9 +803,9 @@ class AnazhRealm_gelaende_boden {
                     "WARN"
                 );
             }
-            this._erdbauSetzen(key, v2.erdbau);
             ple.set(key, v2);
         }
+        if (legen) this._erdbauSetzen(key, v2.erdbau);
         const dx = v2.ort.x - origin.x;
         const dz = v2.ort.z - origin.z;
         origin.x = v2.ort.x;

@@ -1901,6 +1901,8 @@ const FIXTURES = [
                     zelle: wm.settlementCells[key],
                     fob: r.state._frameOverBudget,
                     wege: r._stlWegePending,
+                    bauten: new Set(r.state.architectures),
+                    erdbau: new Set(Object.keys(wm.erdbau || {})),
                 };
                 const lauf = async (nH, vorlauf) => {
                     const seed = (cand.seed ^ Math.imul(nH * 2 + (vorlauf ? 0 : 1), 0x9e3779b1)) >>> 0 || 1;
@@ -1967,7 +1969,7 @@ const FIXTURES = [
                 };
                 try {
                     for (const nH of [12, 300]) res.c.k5["vorlauf" + nH] = await lauf(nH, true);
-                    for (const nH of [12, 300]) res.c.k5["teleport" + nH] = await lauf(nH, false);
+                    res.c.k5.teleport12 = await lauf(12, false);
                 } catch (e5) {
                     res.c.k5.err = (e5 && e5.message) || String(e5);
                 } finally {
@@ -1984,6 +1986,13 @@ const FIXTURES = [
                     for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_foundryRequestSettlement"])
                         delete r[f];
                     wm.settlementCells[key] = alt.zelle;
+                    // die Zelle geht, wie sie kam: ihre Bauten und ihr Erdbau fallen (der Ort des Teils O misst fremde Bauten)
+                    for (const e of r.state.architectures.filter((e) => !alt.bauten.has(e))) r.removeArchitecture(e);
+                    for (const k of Object.keys(wm.erdbau || {}).filter((k) => !alt.erdbau.has(k))) {
+                        const s = wm.erdbau[k];
+                        delete wm.erdbau[k];
+                        r._erdbauWirkt(s, false);
+                    }
                     r.state._frameOverBudget = alt.fob;
                     pm.position.copy(p0);
                 }
@@ -2924,9 +2933,9 @@ const FIXTURES = [
         `Verhältnis ${bauQ("vorlauf12", "vorlauf300")} — ${k5Z(["vorlauf12", "vorlauf300"])}`
     );
     check(
-        "C-K5 Selbsttest: der Teleport ins Erwachen (kein Vorlauf) — die Arbeit wächst mit nH (Verhältnis > 1,2)",
-        bauQ("teleport12", "teleport300") !== null && bauQ("teleport12", "teleport300") > 1.2,
-        `Verhältnis ${bauQ("teleport12", "teleport300")} — ${k5Z(["teleport12", "teleport300"])}`
+        "C-K5 Selbsttest: der Teleport ins Erwachen (kein Vorlauf) — der Export zählt jedes Haus (Verhältnis zum Vorlauf > 1,2)",
+        bauQ("vorlauf12", "teleport12") !== null && bauQ("vorlauf12", "teleport12") > 1.2,
+        `Verhältnis ${bauQ("vorlauf12", "teleport12")} — ${k5Z(["vorlauf12", "teleport12"])}`
     );
     check(
         "C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler",

@@ -585,7 +585,7 @@ async function probe(arg) {
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
             const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
-            fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: { plan: dorfPlan, origin: { x: pm.x, z: pm.z }, idx: 0, cellKey: "start" } }]);
+            fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: r._dorfZug(dorfPlan, { x: pm.x, z: pm.z }, "start") }]);
             // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
             const wmD = st.worldMeta || (st.worldMeta = {});
             const ohneStart = Object.assign({}, wmD.settlementCells || {});

@@ -333,7 +333,7 @@ const SELBST = process.argv.includes("--selftest");
                         await null;
                         ort("ortAufgabe"); // die nächste Scheibe der Ort-Wahl (`_ortPlanWarten`, setTimeout) ohne Frame des Loops
                         await null;
-                        r._autoSettlementQueue = { plan: { slots: Array(12).fill({}) }, origin: { x: 0, z: 0 }, idx: 0, cellKey: "-" }; // prettier-ignore
+                        r._autoSettlementQueue = r._dorfZug({ slots: Array(12).fill({}) }, { x: 0, z: 0 }, "-");
                         r._tickAutoSettlement({ x: 0, y: 0, z: 0 });
                         aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
                         await null;

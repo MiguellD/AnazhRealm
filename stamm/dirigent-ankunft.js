@@ -1066,7 +1066,7 @@ class AnazhRealm_dirigent_ankunft {
             let haeuser = 0;
             if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
                 for (let i = q.idx; i < q.plan.slots.length; i++) {
-                    const s = q.plan.slots[i];
+                    const s = q.plan.slots[q.reihe[i]];
                     const hx = s && q.origin.x + s.x;
                     const hz = s && q.origin.z + s.z;
                     if (s && (hx - p.x) ** 2 + (hz - p.z) ** 2 <= R * R && imBlick(hx, hz)) haeuser++;

@@ -222,7 +222,7 @@ function seitenPruefer() {
             r._portalPreviewFertig = Object.assign(Object.create(null), { fachwerk: true });
             r._autoSettlementRejected = new Set([T]);
             r._autoSettlementStartHopeless = true;
-            r._autoSettlementQueue = { plan: { slots: [], name: T }, origin: { x: 0, z: 0 }, idx: 0, cellKey: T };
+            r._autoSettlementQueue = r._dorfZug({ slots: [], name: T }, { x: 0, z: 0 }, T);
             r._stlWegeKeys = new Set([T]);
             // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
             // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
