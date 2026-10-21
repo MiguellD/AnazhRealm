@@ -78,7 +78,9 @@ async function installiereBacke(page) {
                     const mat = new T.MeshStandardNodeMaterial({ color: 0x3ca028, side: T.DoubleSide });
                     const anker = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
                     const g = new T.Group();
-                    g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat));
+                    // der Wurf-Teil, den das Budget der Baum-L1 nennt (`_foundryWurfWahl`, fail-closed): der Anker, ohne Fläche
+                    const wurf = Object.assign(new T.Mesh(anker, mat), { userData: { __teil: "schatten" } });
+                    g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat), wurf);
                     r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._foundryServierStufe(z.preset, 1), z.ov), g);
                 }
                 const q = r._impostorBakeQueue || [];
