@@ -1171,11 +1171,14 @@ jobs:
               # der Host-Ofen der echten Heimat (Null-Renderer, der Wert aus ws.studioOv), die übrigen baut die echte
               # Foundry-Brücke (asset-worker-harness, ov {id: min|max}). Tot = bewegt an keinem Rezept seiner Art den Hash;
               # BRICHT (rot) = der Bau wirft, bleibt leer, trägt NaN oder den Not-Körper. Ratschen (spec/vertraege/ratsche.json):
-              # reglerTot 18 von 113 → Soll 0 · reglerBudget (Rand-Wert über der Budget-Zeile) 9 → Soll 0. --selftest zuerst:
+              # reglerTot 17 von 112 → Soll 0 · reglerBudget (ein Rand treibt eine Stufe über ihre Zeile) 3, Staffel 3 → Soll 0 ·
+              # quote (L1/L0 ≤ 0,5, L2/L0 ≤ 0,15) 3. Die STUFEN-Probe (pipeline.K3) baut jede Stufe × Rezept × Regler-Rand
+              # (6 527 Bauten); Wirkung und WURF lesen dieselben Bauten, eine Stufe ohne Teile ist rot. --selftest zuerst:
               # die Brücke ohne ov → jeder vehicle-Regler tot; ein Regler-Bau, der wirft bzw. NaN rechnet → BRICHT; der Ofen
-              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT. WURF (1110-9): die
-              # NUR-WURF-Stufe am Regler-Rand richtet die Kosten-Regel des Wirts (Tor: volle Regler-Hülle, 385 Paare; Haus mit
-              # Abstand); der Täter „der Zwilling wirft immer" → rot an kathedrale.
+              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT; die Ausstattung ohne
+              # Reduktion → brunnen L1 über der Zeile und der Quote, ohne Teile → LEER. WURF (1110-9): die NUR-WURF-Stufe am
+              # Regler-Rand richtet die Kosten-Regel des Wirts (volle Regler-Hülle, 1 324 Paare); der Täter „der Zwilling wirft
+              # immer" → rot an kathedrale.
               run: npm run gate:regler-wirkt
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
