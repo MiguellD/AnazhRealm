@@ -54,7 +54,7 @@ ArrayBuffer → Vertex-Korruption). In den Goldens ist jeder Puffer als **byte-e
 gespeichert (`{ itemSize, bytes, sha256 }` je Attribut) — nicht die Rohdaten (ein L0-Baum trägt
 >100k Verts; die volle Serialisierung wäre zweistellige MB je Fall). sha256 macht einen einzigen
 abweichenden Byte sicher sichtbar; für den exakten Byte-OFFSET einer Divergenz dient der
-P0-Paritäts-Harness (`scripts/diag-foundry-parity.cjs`, voller base64-Byte-Vergleich).
+P0-Paritäts-Harness (voller base64-Byte-Vergleich, im Archiv: `git show 1011d41d:scripts/diag-foundry-parity.cjs`).
 
 ### 2. `get-recipes` → `recipes`
 

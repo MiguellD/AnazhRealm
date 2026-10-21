@@ -6,8 +6,7 @@
 // serialisierbar durch die page.evaluate-Grenze (Float32Array übersteht sie sonst nicht).
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
-// Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann. Die WORKER_SCRIPTS
-// sind identisch zu diag-foundry-parity.cjs (dort 720/720 byte-bewiesen).
+// Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
 const { statikServer, starteBrowser } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");

@@ -14,7 +14,7 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 
 | Phase | Gesetz | Strukturelle Erzwingung |
 | --- | --- | --- |
-| **P0** | Worker == iframe byte-identisch | `scripts/diag-foundry-parity.cjs` (720/720 byte-genau) |
+| **P0** | Worker == iframe byte-identisch | 720/720 byte-genau (der Harness im Archiv: `git show 1011d41d:scripts/diag-foundry-parity.cjs`) |
 | **P1** | Asset-Vertrag v1 (Pflanzen) eingefroren | `spec/asset-contract/v1/` + `gate:asset-contract` (132 Golden-Dateien) |
 | **P2** | Kern-Split `foundry-core.js` (Studio-Generator als geteilte Quelle) | `gate:portal-boot` (die Shell liest die Globals) |
 | **P3a** | Foundry iframe → Worker (Geometrie off-thread) | `gate:foundry-warm` (der Worker bäckt echte Assets headless) |
