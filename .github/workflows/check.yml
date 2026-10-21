@@ -1317,6 +1317,8 @@ jobs:
               if: matrix.gruppe == 16
               # 50 feste Posen (40 Mess-Wiese, 10 Prüfbühne s2-hang30) zu Fuß und im Verfolger-Ritt gegen die exakte Gestalt,
               # die Feld-Proben je 3rd-Bild, die Sprünge im Rundgang; NP-03 48 Posen im Körper-Studio, NP-02 der Tunnel.
+              # K4 der Gang (leib.K4): Third zu Fuß im echten Takt an Stamm, Fels und Haus (rückwärts heran, 360°-Orbit) — die
+              # Kugel der Linse nie in Fels oder Bau, keine Nah-Pixel, Ruck p95 ≤ 0,02 m; der Arm ohne Kollision ist ROT.
               # Gruppe 2 (Integration V18.542): Gruppe 8 trägt seit der weissen Masse 10,6 min (CI 38181627348), mit diesem
               # Schritt (38 s, CI 38170793765) über dem 11-min-Deckel; Gruppe 2 lief 5,7 min.
               run: npm run gate:kamera-leib

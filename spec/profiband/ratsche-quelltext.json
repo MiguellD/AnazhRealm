@@ -39,9 +39,8 @@
             "seite": 1
         },
         "scripts/diag-kamera-laub.cjs": {
-            "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM) und die Studio-Quelle der Absenz W3",
-            "stamm": 1,
-            "datei": 1
+            "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM)",
+            "stamm": 1
         },
         "scripts/diag-ofen-contract.cjs": {
             "zweck": "Messung: führt die Foundry-Brücke als Ofen im vm aus",

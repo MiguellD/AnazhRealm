@@ -127,7 +127,7 @@
         "gate:werkstatt-weg": "node scripts/diag-werkstatt-weg.cjs --selftest && node scripts/diag-werkstatt-weg.cjs",
         "gate:ankunft": "node scripts/diag-ankunft.cjs --selftest && node scripts/diag-ankunft.cjs",
         "gate:kamera-laub": "node scripts/diag-kamera-laub.cjs --selftest && node scripts/diag-kamera-laub.cjs --teile laub",
-        "gate:kamera-leib": "node scripts/diag-kamera-laub.cjs --teile leib,ninja",
+        "gate:kamera-leib": "node scripts/diag-kamera-laub.cjs --teile leib,gang,ninja",
         "gate:gpu-fehler": "node scripts/diag-gpu-fehler.cjs --selftest",
         "gate:asset-inventory": "node scripts/diag-asset-inventory.cjs --selftest",
         "gate:season-meadow": "node scripts/diag-season-meadow.cjs --selftest && node scripts/diag-season-meadow.cjs",
