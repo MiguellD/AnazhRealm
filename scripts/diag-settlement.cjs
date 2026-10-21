@@ -1821,8 +1821,8 @@ const FIXTURES = [
             } catch (e7) {
                 res.c.blickErr = (e7 && e7.message) || String(e7);
             }
-            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3 mit nH 12 und 300, der Spieler naht aus dem
-            // Vorlauf-Ring und erwacht sie; Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot
+            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht aus dem Vorlauf-Ring;
+            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot
             res.c.k5 = {};
             const alt = ["_autoSettlementRejected", "_stlWegePending", "_autoSettlementQueue"].map((f) => r[f]);
             const zelle = wm.settlementCells[key];
@@ -1863,7 +1863,10 @@ const FIXTURES = [
                 const pw = stell(A.nearM - 20);
                 wach = true;
                 t0 = performance.now();
-                while (!erst && performance.now() - t0 < 120000) {
+                for (
+                    const weiter = window.__deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
+                    !erst && weiter();
+                ) {
                     r._tickAutoSettlement(pw);
                     await new Promise((rs) => setTimeout(rs, 5));
                 }
@@ -1900,7 +1903,7 @@ const FIXTURES = [
                 Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorrat: null });
                 wm.settlementCells[key] = zelle;
                 pm.position.copy(p0);
-                // die Zelle geht, wie sie kam: ihre Bauten und ihr Erdbau fallen (Teil O misst fremde Bauten im Ort)
+                // die Zelle geht samt Bauten und Erdbau (für Teil O)
                 for (const e of r.state.architectures.filter((e) => !vorher[0].has(e))) r.removeArchitecture(e);
                 for (const k of Object.keys(wm.erdbau).filter((k) => !vorher[1].has(k))) {
                     const s = wm.erdbau[k];
@@ -2837,7 +2840,7 @@ const FIXTURES = [
         z5
     );
     check(
-        "C-K5 Selbsttest: der Teleport ins Erwachen exportiert danach (Bau-Ereignisse / Vorlauf > 1,2)",
+        "C-K5 Selbsttest: der Teleport ins Erwachen exportiert danach (> 1,2 je Vorlauf)",
         q5("vorlauf12", "teleport12") > 1.2,
         z5
     );
