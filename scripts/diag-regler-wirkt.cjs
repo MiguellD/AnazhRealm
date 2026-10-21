@@ -403,6 +403,7 @@ async function stufenMessen(h, opts) {
         if (pl.r && !o.ohneOv) m.ov = { [pl.r[0]]: o.bruch !== pl.r[0] ? pl.r[1] : "kein-wert" };
         if (pl.r && o.bruch === pl.r[0] && pl.r[1] === pbk[pl.art].find((d) => d.id === pl.r[0]).min)
             m.presetId = "__taeter_unbekannt__";
+        if (o.leereStufe === pl.s) m.presetId = "__taeter_unbekannt__";
         return m;
     };
     // der Bau-Abdruck (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder
@@ -413,10 +414,12 @@ async function stufenMessen(h, opts) {
         return m;
     });
     const res = await h.kostenListe(liste, (c) => erste.has(c), true);
-    const bruch = {};
+    const [bruch, leer] = [{}, []];
     const je = new Map();
     plan.forEach((pl, i) => {
         pl.k = res[i] || {};
+        // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
+        if (!(pl.k.teile && pl.k.teile.length)) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
         je.set(pl.p + "|" + pl.r + "|" + pl.s, pl.k);
         // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A, 12.10.): am Regler-Rand richtet der WURF
         const zu = ["tris", "draws"].filter(
@@ -435,7 +438,7 @@ async function stufenMessen(h, opts) {
         if (pl.s in STUFEN_QUOTE && !pl.zeile.nurWurf && t0 > 0 && !(q[pl.s] && q[pl.s].q >= pl.k.tris / t0))
             q[pl.s] = { q: pl.k.tris / t0, wo: pl.p + (pl.r ? " " + pl.r.join("=") : "") };
     }
-    return { bruch, arten, plan, je, builds: plan.length };
+    return { bruch, leer, arten, plan, je, builds: plan.length };
 }
 // Die Quoten über ihrem Soll beim Namen (art:L1 · art:L2), Wert = Quote und Ort.
 const quoteUeber = (st) =>
@@ -678,20 +681,23 @@ async function selbsttest() {
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
     let wHeil = null,
         sHeil = null,
-        sTaeter = null;
+        sTaeter = null,
+        sLeer = null;
     await runWithWorker(PORT, async (h) => {
         wHeil = wurfAus(await stufenMessen(h, { nurArt: "gate", nurRezept: "kathedrale" }), stammRegel());
         // (f) DIE STUFEN-PROBE: der Täter „die Stufe reduziert nicht" (die Ausstattung baut jede Stufe als L0) ist rot beim
         // Namen — die Stufe 1 über ihrer Zeile und ihre Quote über dem Soll; ohne Täter hält jede Stufe ihr Rezept-Maß.
         sHeil = await stufenMessen(h, { nurArt: "ausstattung" });
         sTaeter = await stufenMessen(h, { nurArt: "ausstattung", ohneReduktion: "ausstattung" });
+        sLeer = await stufenMessen(h, { nurArt: "ausstattung", nurRezept: "brunnen", leereStufe: 1 });
     });
     const sT = (sTaeter.bruch["fachwerk:ausstattung:(Rezept)"] || []).filter((b) => / L1: tris/.test(b));
     const qT = quoteUeber(sTaeter)["ausstattung:L1"];
+    const leerOk = !sHeil.leer.length && sLeer.leer.includes("ausstattung brunnen L1");
     const stufenOk =
-        !sHeil.bruch["fachwerk:ausstattung:(Rezept)"] && !quoteUeber(sHeil)["ausstattung:L1"] && sT.length > 0 && !!qT;
+        !sHeil.bruch["fachwerk:ausstattung:(Rezept)"] && !quoteUeber(sHeil)["ausstattung:L1"] && sT.length > 0 && !!qT && leerOk;
     console.log(
-        `${stufenOk ? "✅" : "❌"} SELBST-TEST STUFEN (Täter: die Stufe reduziert nicht): ${sT.length} Rezepte über der Zeile L1 (${sT[0] || "—"}) · Quote ausstattung:L1 ${qT || "im Soll"} · ohne Täter ${Object.keys(sHeil.bruch).length} Regler über Budget, kein Rezept`
+        `${stufenOk ? "✅" : "❌"} SELBST-TEST STUFEN (Täter: die Stufe reduziert nicht): ${sT.length} Rezepte über der Zeile L1 (${sT[0] || "—"}) · Quote ausstattung:L1 ${qT || "im Soll"} · ohne Täter ${Object.keys(sHeil.bruch).length} Regler über Budget, kein Rezept · Täter „die Stufe 1 liefert nichts" leer: ${sLeer.leer.slice(0, 2).join(", ") || "—"}`
     );
     const wTaeter = wurfRichten(wHeil.zeilen, { teilWirft: stammRegel().teilWirft, vonBilligerer: () => "zwilling" });
     const rotHeil = wurfUrteil(wHeil.zeilen);
@@ -773,7 +779,8 @@ async function selbsttest() {
         console.log(
             `❌ QUOTE GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.quote)`
         );
-    if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || brechend.length || wurfRot.length) process.exit(1);
+    for (const l of m.stufen.leer) console.log(`❌ LEER: ${l} baut 0 Teile`);
+    if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
         `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`

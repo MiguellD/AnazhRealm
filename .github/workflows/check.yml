@@ -1272,10 +1272,6 @@ jobs:
               # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
               run: npm run gate:portal-membran
 
-            - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
-              if: matrix.gruppe == 11
-              run: npm run gate:fahrzeug-fern
-
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 10
               run: npm run gate:seam

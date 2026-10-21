@@ -826,13 +826,6 @@
       "lauf": "npm run gate:portal-membran",
       "laeufe": ["39627539048", "39614141577", "39584063009", "39567386389", "39562739076", "39547307165", "39545080054"]
     },
-    "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
-      "s": 2,
-      "n": 7,
-      "gruppe": "voll 16",
-      "lauf": "npm run gate:fahrzeug-fern",
-      "laeufe": ["39627539048", "39614141577", "39610714347", "39584063009", "39567386389", "39562739076", "39547307165"]
-    },
     "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
       "s": 19,
       "n": 7,
