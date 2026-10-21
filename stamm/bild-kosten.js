@@ -147,7 +147,7 @@ class AnazhRealm_bild_kosten {
             CSM.__anazhEinAufbau = true;
         }
         // DAS REGISTER DER REGUNG: der EINE needsUpdate-Setter meldet jede Version (`_regungMelder`, in der Diät-Scheibe)
-        AnazhRealm._regungMelder(THREE, (t, l) => this.log(t, l));
+        this._regungMelder();
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
@@ -563,7 +563,6 @@ class AnazhRealm_bild_kosten {
             renderer.__anazhErstZeichnung = true;
         }
     }
-
     // DER STAND DER ERST-ZEICHNUNG (der EINE Ort in `_configureRenderer`): je Render-Aufruf die Bau-Zeit, die Zähler für
     // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines · bereit
     // gewordene) und je offener Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.

@@ -472,16 +472,18 @@ function diaetLaden(manipuliert) {
         AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, l, v) => verpasst(od, s, md, vorR, rid, true, v);
     if (manipuliert === "ohneMeldung") AnazhRealm._regt = () => 0;
     const fn = AnazhRealm._diaetRefresh;
-    // der Puffer wie three.core, eingehängt vom ECHTEN Melder
-    fn.P = class {
-        set needsUpdate(t) {
-            if (t === true) this.version++;
-        }
-    };
-    AnazhRealm._regungMelder({ BufferAttribute: fn.P }, () => {});
+    fn.A = AnazhRealm;
     return fn;
 }
-const puffer = (fn, p) => Object.setPrototypeOf(p, fn.P.prototype);
+// ein Puffer wie three.core, dessen Setter meldet wie der Melder (`_regungMelder`)
+const puffer = (fn, p) =>
+    Object.defineProperty(p, "needsUpdate", {
+        set(v) {
+            if (v !== true) return;
+            this.version++;
+            fn.A._regt(this);
+        },
+    });
 // DER SCHEIN-BEOBACHTER (r184 NodeMaterialObserver) der drei Diät-Proben: Daten je Render-Objekt (die Lage `welt`), die
 // Vendor-Bahn (Kopf → renderId-Wand → equals()), und equals() vergleicht die Stoff-Daten `md` EINMAL je Render-Id
 // (`getMaterialData`: `_renderId`/`_equal`) und geht wie r184 JEDEN Schlüssel der Daten gegen den Stoff durch (ein fremder

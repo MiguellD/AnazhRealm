@@ -1,3 +1,47 @@
+class AnazhRealm_bild_diaet {
+    // ===== ATLAS · Bild/diaet — Die Diät · das Register der Regung (Melder · Stand · Tor) · Gang · Objekt-Gang · Stoff je Render-Objekt =====
+    // DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an
+    // BufferAttribute und InterleavedBuffer; Index und Instanz-Puffer sind BufferAttribute) — er meldet die Regung mit.
+    // Ein Glied der Klasse (kein Außen-Satz): die Zone Bild/diaet lädt so vor dem Boot (`_bootAnazhRealm` am Ende der Ankunft).
+    _regungMelder() {
+        const T = THREE;
+        const log = (t, l) => this.log(t, l);
+        for (const [name, K] of [
+            ["BufferAttribute", T.BufferAttribute],
+            ["InterleavedBuffer", T.InterleavedBuffer],
+        ]) {
+            const p = K && K.prototype;
+            const d = p && Object.getOwnPropertyDescriptor(p, "needsUpdate");
+            if (!d || typeof d.set !== "function") {
+                log(`REGISTER: r184-${name}.needsUpdate nicht gefunden (Vendor-Drift)`, "ERROR");
+                continue;
+            }
+            if (d.set.__anazhRegung === true) continue;
+            const roh = d.set;
+            const set = function (v) {
+                roh.call(this, v);
+                if (v === true) AnazhRealm._regt(this);
+            };
+            set.__anazhRegung = true;
+            Object.defineProperty(p, "needsUpdate", { configurable: true, enumerable: d.enumerable, get: d.get, set });
+        }
+        // DIE LAGE DES STATISCHEN: three rechnet die Matrix eines Objekts mit matrixAutoUpdate = false nur, wenn sein Schreiber
+        // updateMatrix ruft — der EINE Ort, an dem ein Statisches rückt, meldet es
+        const O = T.Object3D && T.Object3D.prototype;
+        if (!O || typeof O.updateMatrix !== "function")
+            log("REGISTER: r184-Object3D.updateMatrix nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (O.updateMatrix.__anazhRegung !== true) {
+            const roh = O.updateMatrix;
+            O.updateMatrix = function () {
+                roh.call(this);
+                if (this.matrixAutoUpdate === false) AnazhRealm._regt(this);
+            };
+            O.updateMatrix.__anazhRegung = true;
+        }
+    }
+}
+_stammZonen(AnazhRealm, [AnazhRealm_bild_diaet]);
+
 // ===== ATLAS · Bild/diaet — Außen-Konstanten =====
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
@@ -203,42 +247,6 @@ AnazhRealm._regungHalter = function (q, h) {
     const l = q._anazhHalter;
     if (l === undefined) q._anazhHalter = [h];
     else if (l.indexOf(h) < 0) l.push(h);
-};
-// DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an
-// BufferAttribute und InterleavedBuffer; Index und Instanz-Puffer sind BufferAttribute) — er meldet die Regung mit.
-AnazhRealm._regungMelder = function (T, log) {
-    for (const [name, K] of [
-        ["BufferAttribute", T.BufferAttribute],
-        ["InterleavedBuffer", T.InterleavedBuffer],
-    ]) {
-        const p = K && K.prototype;
-        const d = p && Object.getOwnPropertyDescriptor(p, "needsUpdate");
-        if (!d || typeof d.set !== "function") {
-            log(`REGISTER: r184-${name}.needsUpdate nicht gefunden (Vendor-Drift)`, "ERROR");
-            continue;
-        }
-        if (d.set.__anazhRegung === true) continue;
-        const roh = d.set;
-        const set = function (v) {
-            roh.call(this, v);
-            if (v === true) AnazhRealm._regt(this);
-        };
-        set.__anazhRegung = true;
-        Object.defineProperty(p, "needsUpdate", { configurable: true, enumerable: d.enumerable, get: d.get, set });
-    }
-    // DIE LAGE DES STATISCHEN: three rechnet die Matrix eines Objekts mit matrixAutoUpdate = false nur, wenn sein Schreiber
-    // updateMatrix ruft — der EINE Ort, an dem ein Statisches rückt, meldet es
-    const O = T.Object3D && T.Object3D.prototype;
-    if (!O || typeof O.updateMatrix !== "function")
-        log("REGISTER: r184-Object3D.updateMatrix nicht gefunden (Vendor-Drift)", "ERROR");
-    else if (O.updateMatrix.__anazhRegung !== true) {
-        const roh = O.updateMatrix;
-        O.updateMatrix = function () {
-            roh.call(this);
-            if (this.matrixAutoUpdate === false) AnazhRealm._regt(this);
-        };
-        O.updateMatrix.__anazhRegung = true;
-    }
 };
 // DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
 // Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN: BEWEGLICH ist eine Kette
