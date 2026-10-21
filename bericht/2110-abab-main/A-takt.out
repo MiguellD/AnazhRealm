@@ -1,0 +1,41 @@
+TAKT-SPITZE: CPU-Takt {"p50":4.9,"p95":6.1,"p99":8.1,"max":21.4} ms (K2 8 ms), 84 Takte ab p95 (84 mit Proben), Bahn null m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+    4.73   3.31  renderer._renderScene
+    4.71   3.29    _renderScene [three.webgpu.min.js]
+    2.08   1.46      _renderObjects [three.webgpu.min.js]
+    1.48   1.05        renderer.renderObject
+    1.46   1.04          renderObject [three.webgpu.min.js]
+    1.38   0.99            rend._renderObjectDirect [werkbank]
+    1.36   0.97              renderer._renderObjectDirect
+    1.11   0.81                zeichne
+    0.59   0.46                  o.needsRefresh
+    0.53   0.44                    AnazhRealm._diaetRefresh
+    0.29   0.22                      AnazhRealm._diaetGeteiltSchreiben
+    0.58   0.41        i [three.webgpu.min.js]
+    0.57   0.41          renderer.renderObject
+    0.54   0.37            renderObject [three.webgpu.min.js]
+    0.46   0.31              rend._renderObjectDirect [werkbank]
+    0.46   0.28                renderer._renderObjectDirect
+    0.39   0.24                  zeichne
+    0.78   0.43      scene.onBeforeRender
+    0.77   0.42        _passSicht
+    0.31   0.21          _instanzWahlPass
+    0.27   0.17            _arenaTakt
+    0.25   0.16              _takt
+    0.65   0.53      renderer._renderBundles
+    0.65   0.52        _renderBundles [three.webgpu.min.js]
+    0.65   0.52          renderer._renderBundle
+    0.61    0.5            _renderBundle [three.webgpu.min.js]
+    0.58    0.5              needsRefresh [three.webgpu.min.js]
+    0.58   0.49                o.needsRefresh
+    0.52   0.45                  AnazhRealm._diaetRefresh
+    0.28    0.2      _renderTransparents [three.webgpu.min.js]
+    0.28    0.2        _renderObjects [three.webgpu.min.js]
+    0.26   0.18          renderer.renderObject
+    0.26   0.18            renderObject [three.webgpu.min.js]
+    0.35   0.32  mark
+    0.29   0.05  _perfSenseFoldFrame
+    0.28   0.19  _loopWeatherAndGrowth
+TÄTER (Spitze − Mitte ≥ 1 ms): keiner
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2110\abab5\profil\A-takt.json

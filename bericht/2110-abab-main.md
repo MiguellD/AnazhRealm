@@ -19,3 +19,13 @@ Weg: Instrument B (werkbank 1011d41d, misst die Belegung je Lauf; methoden: kein
 Rohpfade: OMEN `p3/n2110/abab5/`, Auswertungen hier in `bericht/2110-abab-main/`.
 
 Status ZWISCHENSTAND + Übergabe: Messung fertig. Die OMEN hält an (Budget), Übergabe in `Desktop/AnazhRealm-OMEN/UEBERGABE-OMEN-2110.md`.
+
+## Nachtrag 21.10. ~17:40: Genesis Third stehend auf n = 4 (zwei Paare mehr) und der Täter beim Namen
+- **CPU-Takt p95:** 5,6 → 5,8 (A 5,5 · 5,6 · 5,6 · 5,7, B 5,7 · 5,9 · 5,8 · 5,8; +0,2, 2σ 0,2, t 3,5). Das ist ein kleines, aber stetiges Minus. Soll 5,8: A 4/4, B 3/4.
+- **Belegung p95:** 7,14 → 7,26 (2σ 0,26), nicht langsamer. Außer Takt 0,73 → 0,71 gleich. Das Mehr liegt im Takt.
+- **gpu-bank:** 11,29 → 11,23, gleich.
+- **Täter** (`werkbank takt 20 --wandern aus`, EINE Sitzung je Seite, die p95-Takte je Methode, `takt-diff.txt`):
+  - **`AnazhRealm._diaetRefresh` Spitze 0,53 → 0,72 ms (+0,19)**, Mitte 0,44 → 0,49, darüber `o.needsRefresh` +0,14. Das ist der Pfad des e-bauart-Registers in den schweren Takten.
+  - Sitzungs-Terme ohne Code-Bezug: `updateCreatures` nur an B (0,36, Tiere nah), `_arenaTakt` nur an A (0,27).
+  - `_weltSteht` (ruhe-karten) erscheint nicht.
+  - Hinweis: Den Befehl `werkbank profil` gibt es am Kopf nicht mehr, `takt` ist sein Nachfolger.
