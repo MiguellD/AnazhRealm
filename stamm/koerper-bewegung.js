@@ -1753,21 +1753,27 @@ class AnazhRealm_koerper_bewegung {
                 // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
                 // Kamera über die rechte Schulter — Auge und Blickziel stehen KAMERA_SCHULTER_M rechts (Bildschirm-rechts
                 // = (−cos Gier, 0, sin Gier)), die Figur steht links der Bildmitte, das Fadenkreuz trifft daneben die Welt.
-                // Steht rechts eine Wand, rückt die Schulter vor ihr ein: die Bauten um r aufgeblasen (der Wurf ohne
-                // Gelände-Strahl), der Fels als Feld-Punkt am Rand der Kugel (bis zu 5 Proben, Bisektion) — die Strahlen des
-                // Frames gehören dem Arm. Der Ritt blickt auf die Kabine (der Wagen).
+                // Steht rechts eine Wand, rückt die Schulter vor ihr ein: die Bauten um r + 1 cm aufgeblasen (der Wurf ohne
+                // Gelände-Strahl), der Fels als Feld-Punkt am Rand dieser Kugel (bis zu 5 Proben, Bisektion) — die Strahlen des
+                // Frames gehören dem Arm. DAS BLICKZIEL HÄLT DIE KUGEL FREI (K4, wie das Labor: koerperstudio
+                // `_KAM.armRadiusM + 0.01`): die Schulter hält r + 1 cm — sie beginnt nie in Berührung (der Leib steht
+                // PLAYER_WALL_RADIUS 0,35 vor der Wand) und der Arm auch nie (das Blickziel steht 0,31 vor ihr). Hielt die Schulter r, begann der
+                // Arm an der Wand, `_segmentKugelBox` hielt die Mitte r ENTLANG der Strecke vor ihr, im flachen Winkel stand die
+                // Kugel in der Wand (gate:kamera-leib K4 am Haus: 49 von 1096 Bildern, die Linse 0,14 m vor der Fläche).
+                // Der Ritt blickt auf die Kabine (der Wagen).
                 let sx = 0;
                 let sz = 0;
                 if (!_fahrRitt) {
                     const S = AnazhRealm.KAMERA_SCHULTER_M;
                     const rx = -Math.cos(this.state.yaw);
                     const rz = Math.sin(this.state.yaw);
-                    const fest = (s) => this._fieldSolid(bx + rx * (s + kr), by, bz + rz * (s + kr));
+                    const frei = kr + 0.01;
+                    const fest = (s) => this._fieldSolid(bx + rx * (s + frei), by, bz + rz * (s + frei));
                     let s =
                         S *
                         this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
                             durchPflanzen: true,
-                            radius: kr,
+                            radius: frei,
                             gelaende: false,
                         }).t;
                     if (fest(s)) {
