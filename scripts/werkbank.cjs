@@ -3418,6 +3418,10 @@ async function starte() {
                 // die Karte gegen ihre Gestalt (A7): vor dem Schnitt 1,24 × so hell (Fichte, Genesis) — ROT beim Namen
                 [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.24, dL: 3.7, dC: 1.4 } } } }).befunde.join(), /KARTE fichte: Karte\/Gestalt \(f:fichte:L1\) Luma 1\.24/],
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
+                // die Hemi-Probe: eine Karte mit der Normale (0,1,0) überall (H = U) gegen ihre Gestalt (ȳ −0,5) ist ROT beim Namen
+                [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.02, S: 0.04, U: 0.05, H: 0.05 } } } } } }).befunde.join(), /NORMALE fichte: Hemi-Probe Karte\/Gestalt 4 — die Karte zeigt dem Himmel ȳ 1, ihre Gestalt ȳ -0\.5/],
+                [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.012, S: 0.032, U: 0.041, H: 0.0195 } } } } } }).urteil, "GRUEN"],
+                [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 0.73, dL: -5, dC: -4, hemi: { gestalt: { E: 0.01, S: 0.03, U: 0.04, H: 0.0175 }, karte: { E: 0.012, S: 0.024, U: 0.041, H: 0.0195 } } } } } }).befunde.join(), /SONNE fichte: Richtlicht allein Karte\/Gestalt 0\.6 — die Sonnen-Sicht der Karte gegen den Wurf ihrer Gestalt \(f:fichte:L1\)/],
                 // die Karte in der Nacht (F6): an der Basis 25f53923 4,74 × so hell wie ihre Gestalt (Fichte, Mess-Wiese, Radeon) — ROT beim Namen der Stunde
                 [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 4.737, dL: 16.6, dC: 2.73 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 4\.737/],
                 // ohne das Band die Wirts-Zahlen (Rauheit 0,9, Mikro-Kavität): die Karte nachts 0,544 ihrer Gestalt — ROT nach unten
@@ -3478,7 +3482,11 @@ async function starte() {
                 const [haus, boden] = [art === "haus", art === "ring"];
                 const anker = haus || boden ? dorf.spieler : wiese.spieler;
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
-                const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
+                // DIE NAHT (Licht K3): die Karte steht im Spiel erst ab ihrer Schwelle — `--karte` schießt jede Krone ohne `--wechsel` an
+                // der Naht (das Auge im Wechsel-Abstand, ihre L1 gegen die Karte). Aus 8 m (`--wechsel 0`) sah die L0 von 30° unten ihre
+                // Unterseite, die waagrecht gebackene Karte nie (Radeon 21.10., Fichte: ȳ −0,61 gegen −0,40; an der Naht −0,435/−0,437)
+                const wechsel = Number(opt("--wechsel", argv.includes("--karte") && !haus && !boden ? 1 : 0)) || 0;
+                const spiel = `wechsel: ${wechsel}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
                 const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
                 // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
                 await rufe("/umstellen", { x: anker[0], z: anker[1] });
@@ -3508,7 +3516,7 @@ async function starte() {
                 };
                 if (argv.includes("--karte")) {
                     if (haus) await stufen(plan.l1, plan.l1);
-                    else if (opt("--wechsel") && !boden) await stufen(plan.l1);
+                    else if (wechsel && !boden) await stufen(plan.l1);
                     // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
                     for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
                     if (!boden) await stufen(0.6);

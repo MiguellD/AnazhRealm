@@ -1746,6 +1746,26 @@ function laubGegenlicht(opts) {
                 dl.castShadow = wurf && !opts.boden; // der Boden ohne Schatten: die Kaskaden folgen dem Auge, die ferne Stelle läge außerhalb
                 const b = await lies("die Karte gegen die Gestalt");
                 dl.castShadow = wurf;
+                // DIE ZERLEGUNG (Licht K3): dieselbe Krone ohne jedes Licht-Objekt — der Himmel allein (`E`, die EINE Umgebung der Uhr),
+                // dazu je allein das Richtlicht mit seinem Wurf (`S`, Sonne oder Mond), das Hemi-Licht gleich von oben und unten (`U`)
+                // und nur von oben (`H`): (H − E)/(U − E) = (1 + ȳ)/2 nennt die mittlere Normale, die die Stufe dem Himmel zeigt (Albedo
+                // und Deckung kürzen sich heraus). Der Himmel bleibt in S, U und H stehen — `scene.environmentIntensity` liest kein
+                // Stoff der Krone (Radeon 21.10.: U folgte der Uhr wie E)
+                if (!opts.boden) {
+                    const hl = st.hemiLight, lichtAlt = [], hAlt = [hl.color.clone(), hl.groundColor.clone()];
+                    sc.traverse((o) => o.isLight && lichtAlt.push([o, o.intensity]));
+                    const probe = async (wer, setze) => (setze(), bundles(), (await lies("die Hemi-Probe: " + wer)).Yp);
+                    try {
+                        b.E = await probe("der Himmel allein", () => lichtAlt.forEach(([l]) => (l.intensity = 0)));
+                        b.S = await probe("das Richtlicht", () => (dl.intensity = lichtAlt.find(([l]) => l === dl)[1]));
+                        b.U = await probe("gleich", () => ((dl.intensity = 0), (hl.intensity = 1), hl.color.setRGB(1, 1, 1), hl.groundColor.setRGB(1, 1, 1)));
+                        b.H = await probe("von oben", () => hl.groundColor.setRGB(0, 0, 0));
+                    } finally {
+                        lichtAlt.forEach(([l, i]) => (l.intensity = i));
+                        [hl.color, hl.groundColor].forEach((c, i) => c.copy(hAlt[i]));
+                        bundles();
+                    }
+                }
                 // DIE STELLE IM BILD (der Boden): gezählt wird je Schuss, was waagrecht in 6 m um S liegt (Orts-Stoff: die Welt-Lage je Pixel)
                 if (opts.boden) {
                     const os = new T.MeshBasicNodeMaterial({ side: T.DoubleSide }), sicht = alle.filter((m) => m.visible), stoffe = sicht.map((m) => m.material);
@@ -1792,7 +1812,9 @@ function laubGegenlicht(opts) {
                     }
                 if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
                 const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
-                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                // die Hemi-Probe über dieselbe Insel: je Stufe das Mittel von E, U und H
+                const hemi = g.U && b.U ? Object.fromEntries([["gestalt", g], ["karte", b]].map(([s, x]) => [s, Object.fromEntries(["E", "S", "U", "H"].map((k) => [k, +(x[k].reduce((a, v, i) => (insel[i] ? a + Math.max(0, v) : a), 0) / n).toPrecision(4)]))])) : undefined;
+                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), hemi, png: [g.png, b.png] } });
             }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
@@ -2079,6 +2101,20 @@ function laubLichtUrteil(messung, band) {
             zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC, mittag: mittag ? mittag.karte.verhaeltnis : undefined });
             if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
                 befunde.push(`${w.paar ? "FERN" : w.weg ? "WEG" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : w.weg ? "Weg/Welt" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+            // DIE NORMALE DER KARTE (Hemi-Probe, Licht K3): unter dem Hemi-Licht zeigt die Karte dem Himmel dieselbe mittlere Normale
+            // wie ihre Gestalt — (H − E)/(U − E) je Stufe im Band ±`karte`, ȳ = 2·(H − E)/(U − E) − 1
+            const h = w.karte.hemi, oben = (x) => (x.H - x.E) / (x.U - x.E), yq = (x) => +(2 * oben(x) - 1).toFixed(3);
+            if (h) {
+                const q = +(oben(h.karte) / oben(h.gestalt)).toFixed(3), himmel = +(h.karte.E / h.gestalt.E).toFixed(3);
+                const sonne = +((h.karte.S - h.karte.E) / (h.gestalt.S - h.gestalt.E)).toFixed(3);
+                Object.assign(zeilen[zeilen.length - 1], { normale: q, nY: [yq(h.gestalt), yq(h.karte)], himmel, sonne });
+                // DAS RICHTLICHT DER KARTE: unter Sonne oder Mond allein (S − E) trägt die Karte mit ihrer Sonnen-Sicht so viel
+                // wie ihre Gestalt mit ihrem eigenen Wurf
+                if (!(Math.abs(Math.log(sonne)) <= Math.log(1 + band.karte)))
+                    befunde.push(`SONNE ${art}: Richtlicht allein Karte/Gestalt ${sonne} — die Sonnen-Sicht der Karte gegen den Wurf ihrer Gestalt (${w.stufe}), außerhalb ±${band.karte * 100} %`);
+                if (!(Math.abs(Math.log(q)) <= Math.log(1 + band.karte)))
+                    befunde.push(`NORMALE ${art}: Hemi-Probe Karte/Gestalt ${q} — die Karte zeigt dem Himmel ȳ ${yq(h.karte)}, ihre Gestalt ȳ ${yq(h.gestalt)} (Himmel allein ${himmel}), außerhalb ±${band.karte * 100} %`);
+            }
             continue;
         }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {
