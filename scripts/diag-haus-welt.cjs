@@ -163,7 +163,8 @@ const BASIS = {
         ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // W10: der Stab (die Brüstung) trägt
+    // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand
+    kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
     stab: [
         [
             "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
@@ -383,16 +384,23 @@ async function proben(phasen) {
         s.keys = s.keys || {};
         const eg = dm.levelsY[0];
         const xm = (f) => (f.x0 + f.x1) / 2;
-        const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.8);
+        const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.4);
         const seite = (rechts) => (rechts ? dm.stairX1 + 0.6 : dm.stairX0 - 0.6);
         const ziel = (name, lx, lz, soll) => {
             const w = welt(e, lx, lz);
+            let kl = 0;
             for (let k = 0, ruhe = 0; ruhe < 10; k++) {
                 s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
                 if (!s.keys.w) ruhe++;
-                s.yaw = Math.atan2(w.x - pm.position.x, w.z - pm.position.z);
+                // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
+                let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
+                const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
+                if (s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
+                    [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];
+                s.yaw = Math.atan2(dx, dz);
                 const y0 = pm.position.y;
                 r._stepFixedSim((t += DT), DT);
+                kl += s._parkourKletter > 0;
                 if (pm.position.y - y0 > g.hub)
                     [g.hub, g.wo] = [
                         pm.position.y - y0,
@@ -401,14 +409,15 @@ async function proben(phasen) {
             }
             const rest = Math.hypot(w.x - pm.position.x, w.z - pm.position.z);
             const fuss = pm.position.y - FUSS - base;
-            if (rest > 0.4 || Math.abs(fuss - soll) > 0.35)
-                g.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}`);
+            // wer nie in eine Wand drückt, klettert nie
+            if (rest > 0.4 || Math.abs(fuss - soll) > 0.35 || kl)
+                g.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`);
             g.z = lz;
         };
-        // W1 TÜR: vom Podest-Rand vor der Tür 1,8 m nach innen
-        const vor = welt(e, tu.x, tu.z - 0.25);
+        // W1 TÜR: vom Podest-Rand vor der Tür 1,8 m nach innen, an der Zarge entlang (der Körper streift sie)
+        const vor = welt(e, tu.x + tu.w / 2 - 0.3, tu.z - 0.25);
         stell(vor.x, base + 0.75 + FUSS, vor.z);
-        ziel("tür", tu.x, tu.z + 1.8, NaN);
+        ziel("tür", tu.x + tu.w / 2 - 0.3, tu.z + 1.8, NaN);
         const l = lokal(e, pm.position.x, pm.position.z);
         // W2 DIELE: der Fuß steht auf einer Fläche des Gesetzbuchs — die nächste Solid-Oberkante, deren Grundfläche den
         // Kapsel-Kreis trifft (das Gesetzbuch rechnet sie selbst, nie die Blocker der Welt)
@@ -490,9 +499,9 @@ async function proben(phasen) {
             h.optikProzent = n ? Math.round((gleich / n) * 1000) / 10 : null;
         }
         if (auf.length) {
-            // jenseits des Schachts: um ihn herum, auf der Seite mit mehr Raum
+            // jenseits des Schachts: um ihn herum, auf der Seite des Ziels
             const hin = (name, lx, lz, soll) => {
-                const sr = seite(dm.W / 2 - dm.stairX1 > dm.stairX0 + dm.W / 2);
+                const sr = seite(lx > (dm.stairX0 + dm.stairX1) / 2);
                 if (g.z < dm.stairZ0 !== lz < dm.stairZ0) {
                     ziel(name + "-um", sr, g.z, NaN);
                     ziel(name + "-um", sr, lz, NaN);
@@ -1844,8 +1853,7 @@ function urteil(o) {
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
-        if (hub.length)
-            f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
+        if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
         const zu = gang.filter((h) => h.gang.fehlt.length);
         if (zu.length)
             f.push(
@@ -2196,6 +2204,7 @@ function zeile(o) {
                 kern: ["w6", "W6 Kern-Hülle"],
                 bauwand: ["haus", "W7 Bau im Bau"],
                 stab: ["haus", "W10 Anti-Clip-Hub"],
+                kletter: ["haus", "W10 Spielgang"],
                 grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],

@@ -100,7 +100,7 @@ class AnazhRealm_koerper_bewegung {
         const s = this.state;
         if (s.playerUnderwater || !s.playerVel) return false;
         if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
-        const nowS = performance.now() / 1000;
+        const nowS = s._simZeit;
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         // Das Frische-Fenster wohnt im parkour-Gesetz (gilt auch fürs Klettern); das Feld steht in der
         // Gültigkeits-Wand von _parkourGesetz — kein lokaler Fallback.
@@ -1181,7 +1181,7 @@ class AnazhRealm_koerper_bewegung {
         }
         this.state._wandKontaktNx = nx;
         this.state._wandKontaktNz = nz;
-        this.state._wandKontaktAt = performance.now() / 1000;
+        this.state._wandKontaktAt = this.state._simZeit;
     }
 
     // Der waagrechte Abstand² eines Punkts zu einer Blocker-Box — im Rahmen der GEDREHTEN Box (`obb`, die Haus-Hülle und
@@ -1207,6 +1207,7 @@ class AnazhRealm_koerper_bewegung {
     }
 
     _loopPlayerMovement(currentTime, dtOverride) {
+        this.state._simZeit = currentTime; // die Uhr des Schritts (auch Replay, Lockstep): die Parkour-Wand stempelt und liest sie
         // ### Spielerbewegung ###
         // `dtOverride` (FIXED_DT im Sim-Schritt) macht die Bewegung zur reinen Funktion von (Input, dt);
         // ohne Override dt aus der Wall-Clock. Die horizontale Intent-Velocity lebt in `state.playerVel`,
@@ -1400,11 +1401,15 @@ class AnazhRealm_koerper_bewegung {
             // PARKOUR — KLETTERN: W gegen die frische Wand (der Kontakt bleibt frisch, solange man hineindrückt)
             // zehrt Ausdauer und trägt den Körper — der Step liest _parkourKletter als Steig-vy statt
             // Schwerkraft. Erschöpft/W los/Wand weg → Fall. Frische-Fenster = kontaktFrischeSec (parkour-Gesetz).
+            // GEGEN heißt hinein: der Blick höchstens 45° neben der Wand-Normalen — wer an einer Wand entlang geht (die
+            // Türzarge, der Flur), klettert nicht (siedlung.K1: vorher stieg der Spieler an jeder gestreiften Wand auf).
             let kletterV = 0;
             if (
                 parkG &&
                 this.state.keys["w"] &&
                 !slide &&
+                this.state.forward.x * this.state._wandKontaktNx + this.state.forward.z * this.state._wandKontaktNz <
+                    -Math.SQRT1_2 &&
                 Number.isFinite(this.state._wandKontaktAt) &&
                 currentTime - this.state._wandKontaktAt < parkG.kontaktFrischeSec
             ) {
