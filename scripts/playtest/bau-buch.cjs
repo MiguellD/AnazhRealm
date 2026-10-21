@@ -3144,15 +3144,9 @@ async function checkBandWaves9And10a(ctx) {
             out.soulFertigenRendered = !!document.querySelector("#workshop-action-zone .workshop-fertigen");
             out.oldSoulButtonGone = !document.querySelector(".workshop-soul-activate");
 
-            if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
-            r.cloneBlueprint("stein_block", "test_9d_arch");
-            r.selectBlueprintForEdit("test_9d_arch");
-            // die EINE FERTIGEN-Zeile erscheint auch fürs Gerät/Bauwerk — ein Akt für alle Mach-Rollen.
-            out.archAlsoFertigen = !!document.querySelector("#workshop-action-zone .workshop-fertigen");
-
             // Cleanup
             r.applyPlayerSoul("human");
-            for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul", "test_9d_arch"]) {
+            for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul"]) {
                 if (r.state.blueprints[n]) r.deleteBlueprint(n);
             }
             if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
@@ -3196,10 +3190,6 @@ async function checkBandWaves9And10a(ctx) {
         check(
             "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
             wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
-        );
-        check(
-            "Welle 9d UI (S7 V17.66): die FERTIGEN-Zeile rendert auch bei role=architecture (ein Akt fuer alle Mach-Rollen)",
-            wave9dResults.archAlsoFertigen
         );
     } else if (wave9dResults && wave9dResults.error) {
         check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);

@@ -2155,6 +2155,18 @@ class AnazhRealm_siedlung_satz {
         const n = typeof name === "string" && name ? name : b.name || "";
         return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
     }
+    // DIE REIHE DES KATALOGS (bauen.K1): griffbereit zuerst — die eigenen Werke des Spielers (weder eingebaut noch vom Studio
+    // geboren, `_foundryAutoSpecies` ist die Herkunfts-Marke), dann die seiner Hotbar in ihrer
+    // Reihe, dann der Rest in seiner Ordnung; jeder Picker liest sie (Werkstatt-Liste · Rezeptbuch). Griffbereit heißt
+    // Rang < Hotbar-Länge. Befund 22.10. (echte Eingaben): Eiche, Haus, GT und das eigene Werk lagen 2–22 Mausrad-Rasten tief.
+    _katalogRang(name) {
+        const b = this.state.blueprints && this.state.blueprints[name];
+        const hb = this.state.hotbar || [];
+        return b && !b.builtIn && !b._foundryAutoSpecies ? -1 : hb.includes(name) ? hb.indexOf(name) : hb.length;
+    }
+    _katalogReihe(namen) {
+        return namen.slice().sort((a, b) => this._katalogRang(a) - this._katalogRang(b));
+    }
 
     _stlWegeDispose() {
         const P = this.state.stlZaun;

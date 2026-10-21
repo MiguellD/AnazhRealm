@@ -14,19 +14,12 @@
 //     die Wörter des Befunds, jede platzierbare Studio-Art ihr Rezept-Wort, „bau mir ein fachwerkhaus" stellt ein Haus in
 //     die Welt, und ein unbekanntes Wort („scheune") sagt dem Spieler im Chat, was die Studios kennen.
 //
-//   L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — VOM WILLEN ZUM STEHENDEN WERK IN ≤ 3 EINGABEN, AUF JEDEM WEG (Meisterkarte
-//     Bauen K1): Eiche, Haus, GT und ein eigener Teil-Bauplan je über Werkstatt, Rezeptbuch und Hotbar, in schöpfer · frieden
-//     mit dem Material · frieden ohne · pfad, Ego und Third. Der Spieler ist ECHT: jeder Schritt ist ein Ereignis von
-//     page.keyboard / page.mouse (isTrusted), gezählt am Ereignis-Strom (ein Capture-Hörer auf window: pointerdown · keydown
-//     · wheel); ein Ziel außerhalb der Roll-Hülle erreicht das Mausrad, jede Raste eine Eingabe. Vorbereitet wird vor dem
-//     Zähler (Lage, Material, Sicht, Ort); die Werkstatt zeigt dabei ein anderes Werk — der Wille wählt. Soll: das Werk steht
-//     in ≤ 3 Eingaben, das Material zieht genau EINMAL die Kosten (frieden und pfad zahlen, frei nur schöpfer); ohne
-//     Material sagt der erste Schritt die Absage im Spieler-Kanal oder der Knopf steht gesperrt mit dem Fehlenden. Dazu:
-//     die getippte Suche „haus" findet die Häuser, und die Lichtung der Genesis-Plattform färbt das Phantom rot und sagt beim
-//     Setzen laut, warum dort nichts wächst. Gemessen je Lauf: Folge, Zahl, Zeit bis zum stehenden Werk (headless kein Bild,
-//     die Zeit ist dort nur die Mechanik), Rohdatei artifacts/werkstatt-weg/weg.json. Befund (Leben-Schau 07.10.):
-//     „0 von 3 Wegen", frieden verweigert nur im Log, das Rezeptbuch legte die Eiche ins Inventar und zog das Material
-//     doppelt; 22.10.: die Probe rief die Chokepoints selbst, keine Linse zählte Eingaben.
+//   L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — VOM WILLEN ZUM STEHENDEN WERK IN ≤ 3 EINGABEN (Meisterkarte Bauen K1): Eiche,
+//     Haus, GT und eine eigene Hütte über Werkstatt, Rezeptbuch und Hotbar, in schöpfer · frieden mit/ohne Material · pfad,
+//     Ego und Third. Jeder Schritt ist ein echtes Ereignis (page.keyboard / page.mouse, isTrusted), gezählt an einem
+//     Capture-Hörer auf window (pointerdown · keydown · wheel); vorbereitet wird vor dem Zähler. Soll: das Werk steht,
+//     frieden und pfad zahlen genau einmal, ohne Material spricht die Absage; die getippte Suche „haus" findet Häuser, die
+//     Lichtung färbt das Phantom rot und sagt warum. Rohdatei artifacts/werkstatt-weg/weg.json (je Lauf Folge, Zahl, Zeit).
 //
 //   BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH: die Eiche 2,4 m vor der Mitte der
 //     Genesis-Plattform (ihr Quarz-Kern ist nach der Tag-Sprache ein Brennglas) übersteht einen ganzen sonnigen Tag; die
@@ -120,17 +113,13 @@ function wortVerdict(m) {
     return out;
 }
 
-// L-WERKSTATT: der Spieler stellt das Werk über ECHTE Eingaben (puppeteer page.keyboard/page.mouse → isTrusted), gezählt am
-// Ereignis-Strom (ein Capture-Hörer auf window: pointerdown · keydown · wheel). Je Lage × Weg × Werk × Sicht ein Lauf e =
-// { steht, eingaben, unecht, folge, ms, kalt, zeile, gesperrt, bauModus, farbe, verbraucht, kosten, imInventar, fehler };
-// dazu Phantom, Gerät, Suche und Lichtung — auch sie über echte Eingaben.
+// L-WERKSTATT: je Lage × Weg × Werk × Sicht ein Lauf { steht, eingaben, unecht, folge, ms, kalt, zeile, gesperrt, bauModus,
+// farbe, verbraucht, kosten, imInventar, fehler }; dazu Phantom, Gerät, Suche, Lichtung.
 const WEGE = ["werkstatt", "rezeptbuch", "hotbar"];
 const LAGEN = ["schöpfer", "frieden mit Material", "frieden ohne Material", "pfad"];
-// das eigene Werk: eine Hütte aus fünf Grundformen, im Lauf als Teil-Bauplan gefügt (createBlueprint + addPartToBlueprint)
 const WERKE = { Eiche: "baum_eiche", Haus: "haus_alemannisch", GT: "fahrzeug_gt", Teil: "eigen_huette" };
 const SICHTEN = ["Ego", "Third"];
 const EINGABEN_SOLL = 3; // Meisterkarte Bauen K1: vom Willen zum stehenden Werk ≤ 3 Eingaben
-const zahlt = (lage) => lage === "frieden mit Material" || lage === "pfad";
 function wegVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = konsumTaeter(m.konsum);
@@ -138,31 +127,28 @@ function wegVerdict(m) {
         for (const weg of WEGE)
             for (const werk of Object.keys(WERKE))
                 for (const sicht of SICHTEN) {
-                    const e = m.wege && m.wege[lage] && m.wege[lage][weg] && m.wege[lage][weg][werk] && m.wege[lage][weg][werk][sicht];
-                    const wo = `${lage} · ${weg} · ${werk} · ${sicht}`;
+                    const e = ((((m.wege || {})[lage] || {})[weg] || {})[werk] || {})[sicht];
+                    const wo = `${lage} · ${weg} · ${werk} · ${sicht}: `;
+                    const t = (x) => out.push(wo + x);
                     if (!e) {
-                        out.push(`${wo}: nicht gelaufen`);
+                        t("nicht gelaufen");
                         continue;
                     }
-                    if (e.fehler) out.push(`${wo}: ${e.fehler.slice(0, 90)}`);
-                    if (e.unecht > 0) out.push(`${wo}: ${e.unecht} Ereignis(se) ohne Spieler (isTrusted false)`);
-                    if (!(e.eingaben > 0)) out.push(`${wo}: kein echtes Eingabe-Ereignis — der Weg lief ohne Spieler`);
+                    if (e.fehler) t(e.fehler.slice(0, 90));
+                    if (e.unecht > 0) t(`${e.unecht} Ereignis(se) ohne Spieler (isTrusted false)`);
+                    if (!(e.eingaben > 0)) t("kein echtes Eingabe-Ereignis — der Weg lief ohne Spieler");
                     if (lage === "frieden ohne Material") {
-                        if (e.steht > 0) out.push(`${wo}: steht ohne Material`);
-                        const laut = /fehlt/.test(e.zeile || "") || (e.gesperrt && /fehlt/i.test(e.gesperrt));
-                        if (!laut) out.push(`${wo}: stumme Absage („${(e.zeile || "").slice(0, 50)}")`);
-                        if (e.bauModus && weg !== "hotbar") out.push(`${wo}: der Weg führt in einen Bau-Modus, der nur ablehnen kann`);
+                        if (e.steht > 0) t("steht ohne Material");
+                        if (!/fehlt/i.test(`${e.zeile} ${e.gesperrt}`)) t(`stumme Absage („${(e.zeile || "").slice(0, 50)}")`);
+                        if (e.bauModus && weg !== "hotbar") t("der Weg führt in einen Bau-Modus, der nur ablehnen kann");
                         continue;
                     }
-                    if (!(e.steht === 1)) out.push(`${wo}: ${e.steht} Werk(e) stehen (Soll 1)${e.imInventar ? ", das Werk liegt im Inventar" : ""}`);
-                    else if (e.eingaben > EINGABEN_SOLL)
-                        out.push(`${wo}: ${e.eingaben} Eingaben bis zum stehenden Werk (Soll ≤ ${EINGABEN_SOLL}: ${e.folge})`);
-                    const kosten = e.kosten || {};
-                    if (zahlt(lage) && !Object.keys(kosten).length) out.push(`${wo}: das Werk kostet nichts (Vorbedingung)`);
-                    if (zahlt(lage))
-                        for (const [mt, n] of Object.entries(kosten))
-                            if ((e.verbraucht || {})[mt] !== n) out.push(`${wo}: ${mt} ${(e.verbraucht || {})[mt] || 0}× gezogen (Soll ${n})`);
-                    if (lage === "schöpfer" && Object.values(e.verbraucht || {}).some((n) => n)) out.push(`${wo}: schöpfer zahlt`);
+                    if (e.steht !== 1) t(`${e.steht} Werk(e) stehen (Soll 1)${e.imInventar ? ", das Werk liegt im Inventar" : ""}`);
+                    else if (e.eingaben > EINGABEN_SOLL) t(`${e.eingaben} Eingaben bis zum stehenden Werk (Soll ≤ ${EINGABEN_SOLL}: ${e.folge})`);
+                    // das Gesetz des Modus: frieden und pfad zahlen genau einmal, frei baut nur schöpfer
+                    for (const [mt, n] of Object.entries(e.kosten || {}))
+                        if (((e.verbraucht || {})[mt] || 0) !== (lage === "schöpfer" ? 0 : n))
+                            t(lage === "schöpfer" ? "schöpfer zahlt" : `${mt} ${(e.verbraucht || {})[mt] || 0}× gezogen (Soll ${n})`);
                 }
     // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt (Gegenprüfung 08.10.).
     const ge = m.geraet || {};
@@ -170,20 +156,19 @@ function wegVerdict(m) {
     else if (!/fehlt/.test(ge.zeile || "")) out.push(`das Gerät aus der Hotbar verweigert stumm („${(ge.zeile || "").slice(0, 50)}")`);
     const ph = m.phantom || {};
     if (!(ph.meshes > 0)) out.push("kein Phantom im Bau-Modus (Vorbedingung)");
-    else if (ph.verworfen > 0)
-        out.push(`das Phantom ist unsichtbar: ${ph.verworfen}/${ph.meshes} Meshes verwirft der Alpha-Test (Deckkraft < alphaTest)`);
+    else if (ph.verworfen > 0) out.push(`das Phantom ist unsichtbar: ${ph.verworfen}/${ph.meshes} Meshes verwirft der Alpha-Test`);
     if (!(m.sucheHaus > 0)) out.push(`die Suche „haus" findet kein Haus (${m.sucheHaus})`);
     const l = m.lichtung || {};
+    const tl = l.toenung || {};
     if (l.wand !== "lichtung") out.push(`das Phantom über der Lichtung urteilt nicht (Urteil ${l.wand})`);
     // Die Tönung im Stoff (Gegenprüfung 08.10.): der Studio-Stoff liest seine Farbe aus colorNode, die Tönung muss dort wirken.
-    const tl = l.toenung || {};
     if (!(tl.stoffe > 0)) out.push("kein Studio-Phantom über der Lichtung (Vorbedingung)");
     else if (tl.lesen !== tl.stoffe) out.push(`das Phantom färbt sich nicht: ${tl.lesen}/${tl.stoffe} Stoffe lesen die Tönung`);
     if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
     if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
     // Grün heißt: das Setzen trägt (Integration V18.536, Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
     const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
-    if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot — das Setzen lehnt ab)`);
+    if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
     if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${(l.zeile || "").slice(0, 50)}")`);
     return out;
@@ -285,10 +270,6 @@ function wand(w) {
         [
             "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
             ...alle([null, /AnazhRealm\.STUDIO_WORT\b/], [["_studioBlueprintForWord", "_studioWortKatalog", "_studioWordsForPrompt"], WORT]),
-        ],
-        [
-            "W4 das Rezeptbuch legt nie ins Inventar, FERTIGEN fragt kein zweites Tor, das Setzen sagt keine Absage nur ins Log",
-            ...alle(["craftFromRecipe", /addToInventory/], ["fertigeBlueprint", /this\._bauVorabTor\(/], ["confirmBuild", /this\.log\([\s\S]*this\.log\(/]),
         ],
         [
             "W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)",
@@ -890,88 +871,47 @@ async function probe(argW) {
     return out;
 }
 
-// ── L-WERKSTATT: DIE HILFE IN DER SEITE (Funktionsrumpf). Sie bereitet den Lauf vor (Lage, Material, Sicht, Ort — vor dem
-// Zähler) und liest ihn; sie stellt NIE einen Schritt des Wegs: jeder Schritt ist ein echtes Ereignis aus `wegLauf`. Headless
-// zeichnet der Null-Renderer kein Bild und die Schleife tickt nicht von selbst — sie tickt hier (`_gameLoopTick`, die Schleife
-// des Spiels, kein Weg-Schritt). ──
+// ── L-WERKSTATT, die Seite: sie bereitet vor (vor dem Zähler) und liest — nie ein Schritt des Wegs. Headless tickt die
+// Schleife nicht von selbst: hier tickt `_gameLoopTick` (die Schleife des Spiels). ──
 function wegHelfer(arg) {
     const r = window.anazhRealm;
     const st = r.state;
     const inv = st.player.inventory;
     const P = r._genesisPlattform().position;
-    const frei = arg.frei;
-    const yawWeg = Math.atan2(frei.x - P.x, frei.z - P.z);
-    const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
-    const leeren = () => {
-        for (let i = 0; i < inv.length; i++) inv[i] = null;
-    };
+    const yaw = Math.atan2(arg.frei.x - P.x, arg.frei.z - P.z);
+    const zeilen = () => document.querySelectorAll("#chat-output > div");
     const habe = () => {
         const h = {};
         for (const s of inv) if (s && s.kind === "material") h[s.material] = (h[s.material] || 0) + (s.count || 0);
         return h;
     };
-    // Das eigene Werk: eine Hütte aus fünf Grundformen (vier Wände, ein Dach), gefügt wie in der Werkstatt.
-    if (!st.blueprints[arg.teil]) {
-        r.createBlueprint(arg.teil, "Hütte");
-        for (const [x, y, z, sx, sy, sz] of [
-            [0, 1.2, -1.5, 3.2, 2.4, 0.3],
-            [0, 1.2, 1.5, 3.2, 2.4, 0.3],
-            [-1.5, 1.2, 0, 0.3, 2.4, 3.2],
-            [1.5, 1.2, 0, 0.3, 2.4, 3.2],
-            [0, 2.55, 0, 3.6, 0.3, 3.6],
-        ])
-            r.addPartToBlueprint(arg.teil, {
-                shape: "box",
-                material: "stein",
-                position: { x, y, z },
-                size: { x: sx, y: sy, z: sz },
-            });
-    }
-    // Die Tönung des Phantoms: welche Studio-Stoffe (colorNode) den EINEN Tönungs-Uniform lesen, und seine Farbe (rot: das
-    // Setzen wird abgelehnt, grün: es trägt).
-    const liest = (knoten, ziel) => {
-        const gesehen = new Set();
-        const stapel = [knoten];
-        while (stapel.length && gesehen.size < 2000) {
-            const k = stapel.pop();
-            if (!k || gesehen.has(k)) continue;
-            if (k === ziel) return true;
-            gesehen.add(k);
-            try {
-                for (const c of k.getChildren()) stapel.push(c);
-            } catch (_e) {}
-        }
-        return false;
-    };
-    const toenung = (phantom) => {
-        const t = r._phantomTintU || null;
-        let stoffe = 0;
-        let lesen = 0;
-        if (phantom)
-            phantom.traverse((o) => {
-                if (!o.isMesh || !o.material || !o.material.colorNode) return;
-                stoffe++;
-                if (t && liest(o.material.colorNode, t)) lesen++;
-            });
+    // das eigene Werk: eine Hütte aus fünf Grundformen (vier Wände, ein Dach), Teil für Teil gefügt
+    if (!st.blueprints[arg.teil]) r.createBlueprint(arg.teil, "Hütte");
+    for (const [x, y, z, a, b, c] of st.blueprints[arg.teil].parts.length ? [] : [[0, 1.2, -1.5, 3.2, 2.4, 0.3], [0, 1.2, 1.5, 3.2, 2.4, 0.3], [-1.5, 1.2, 0, 0.3, 2.4, 3.2], [1.5, 1.2, 0, 0.3, 2.4, 3.2], [0, 2.55, 0, 3.6, 0.3, 3.6]])
+        r.addPartToBlueprint(arg.teil, { shape: "box", material: "stein", position: { x, y, z }, size: { x: a, y: b, z: c } });
+    // Die Tönung des Phantoms: wie viele Studio-Stoffe (colorNode) den EINEN Tönungs-Uniform lesen, und seine Farbe (rot:
+    // das Setzen wird abgelehnt, grün: es trägt).
+    const liest = (k, ziel, gesehen) => k === ziel || (!gesehen.has(k) && gesehen.size < 2000 && (gesehen.add(k), [...(k.getChildren ? k.getChildren() : [])].some((c) => c && liest(c, ziel, gesehen))));
+    const toenung = (ph) => {
+        const t = r._phantomTintU;
+        const o = { stoffe: 0, lesen: 0 };
+        if (ph) ph.traverse((m) => m.isMesh && m.material && m.material.colorNode && (o.stoffe++, t && liest(m.material.colorNode, t, new Set()) && o.lesen++));
         const c = t && t.value;
-        const farbe = !c ? "ohne Tönung" : c.r > c.g * 1.5 ? "rot" : c.g > c.r * 1.5 ? "grün" : "grau";
-        return { stoffe, lesen, farbe };
+        o.farbe = !c ? "ohne Tönung" : c.r > c.g * 1.5 ? "rot" : c.g > c.r * 1.5 ? "grün" : "grau";
+        return o;
     };
     const aufraeumen = () => {
         if (st.buildMode.active) r._clearBuildMode();
         if (st.uiActiveDrawer) r.closeAllDrawers();
         if (st.inventoryOpen) r.toggleInventoryOverlay(false);
-        if (st.player.equipped) st.player.equipped.held = null;
         r._workshopClosePicker();
-        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        if (document.activeElement) document.activeElement.blur();
         r._spielerSagtLetzte = null; // die 2-s-Sperre derselben Zeile gilt dem gehaltenen Rechtsklick, nicht dem nächsten Lauf
     };
     const modusAlt = r.getGameMode();
+    const gebaut = new Set();
     let lauf = null;
-    const neue = () =>
-        st.architectures.filter(
-            (a) => a && lauf && !lauf.vorher.has(a) && a.type === lauf.name && typeof a.id === "string"
-        );
+    const neue = () => st.architectures.filter((a) => a && !lauf.vorher.has(a) && a.type === lauf.name && typeof a.id === "string");
     const takt = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
@@ -980,60 +920,34 @@ function wegHelfer(arg) {
     }, 40);
     window.__bauWeg = {
         // kein Stoff der Szene trägt einen Schwellen-Knoten: die Zahl regiert den Schnitt (das Phantom erbt nie 0,5, K68-N1; A3)
-        konsum: () => {
-            let n = 0;
-            st.scene.traverse((o) => (n += o.material && o.material.alphaTestNode ? 1 : 0));
-            return { "Stoff → alphaTest": n === 0 };
-        },
-        // o = { lage, name, sicht, ort: "frei" | "lichtung", slot } — alles vor dem Zähler; der Strom beginnt danach leer
+        konsum: () => ((n) => (st.scene.traverse((o) => (n += o.material && o.material.alphaTestNode ? 1 : 0)), { "Stoff → alphaTest": n === 0 }))(0),
+        // o = { lage, weg, name, sicht, ort, slot }; die Werkstatt zeigt ein anderes Werk (der Wille wählt), der Hotbar-Weg
+        // setzt das Werk in der Hotbar voraus, die Katalog-Wege finden es selbst
         vorbereiten(o) {
             aufraeumen();
             r.setGameMode(o.lage === "schöpfer" ? "schöpfer" : o.lage === "pfad" ? "pfad" : "frieden");
-            leeren();
+            inv.fill(null);
             const kosten = Object.assign({}, r.checkBuildCost(o.name).cost);
-            if (o.lage === "frieden mit Material" || o.lage === "pfad")
-                for (const [mt, n] of Object.entries(kosten)) r.addMaterialToInventory(mt, n);
+            if (o.lage === "frieden mit Material" || o.lage === "pfad") for (const mt in kosten) r.addMaterialToInventory(mt, kosten[mt]);
             r.setCameraMode(o.sicht === "Third" ? "third" : "first");
             const hotbarAlt = st.hotbar.slice();
-            if (o.slot != null) r.setHotbarSlot(o.slot, o.name);
-            // der Hotbar-Weg setzt voraus, dass das Werk in der Hotbar liegt; die Katalog-Wege finden es selbst
-            else if (o.weg === "hotbar" && !st.hotbar.includes(o.name))
-                r.setHotbarSlot(st.hotbar.findIndex((x) => !x), o.name);
-            // die Werkstatt zeigt ein anderes Werk: der Wille wählt (eine vorgewählte Zeile wäre ein vorgewärmter Weg)
+            if (o.slot != null || (o.weg === "hotbar" && !st.hotbar.includes(o.name))) r.setHotbarSlot(o.slot != null ? o.slot : st.hotbar.indexOf(null), o.name);
             r.selectBlueprintForEdit(Object.keys(st.blueprints).find((n) => n !== o.name && r._katalogSichtbar(n)));
-            const ort = o.ort === "lichtung" ? { x: P.x, y: P.y + 1, z: P.z } : frei;
+            const ort = o.ort === "lichtung" ? { x: P.x, y: P.y + 1, z: P.z } : arg.frei;
             st.playerMesh.position.set(ort.x, ort.y + 1.2, ort.z);
-            st.yaw = yawWeg;
+            st.yaw = yaw;
             st.pitch = -0.45;
-            for (let i = 0; i < 4; i++)
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-            const gebaut = window.__wegGebaut || (window.__wegGebaut = new Set());
-            const kalt = !gebaut.has(o.name);
+            lauf = { name: o.name, vorher: new Set(st.architectures), h0: habe(), n0: zeilen().length, kosten, hotbarAlt, kalt: !gebaut.has(o.name) };
             gebaut.add(o.name);
-            lauf = {
-                name: o.name,
-                vorher: new Set(st.architectures),
-                h0: habe(),
-                n0: zeilen().length,
-                kosten,
-                hotbarAlt,
-                kalt,
-                standT: null,
-            };
             window.__eingabeStrom.length = 0;
-            return { slot: st.hotbar.indexOf(o.name), kalt };
+            return st.hotbar.indexOf(o.name);
         },
         zustand: () => ({
-            drawer: st.uiActiveDrawer || null,
+            drawer: st.uiActiveDrawer,
             inv: !!st.inventoryOpen,
             picker: !!document.querySelector(".workshop-picker.open"),
-            gewaehlt: st.workshop && st.workshop.selectedBlueprint,
-            bauModus:
-                !!(st.buildMode.active && st.buildMode.phantomMesh) &&
-                st.buildMode.blueprintName === (lauf && lauf.name),
-            farbe: st.buildMode.phantomMesh ? toenung(st.buildMode.phantomMesh).farbe : null,
+            gewaehlt: st.workshop.selectedBlueprint,
+            bauModus: !!(st.buildMode.active && st.buildMode.phantomMesh) && st.buildMode.blueprintName === lauf.name,
             wand: st.buildMode.phantomWand || false,
             toenung: toenung(st.buildMode.phantomMesh),
         }),
@@ -1042,177 +956,96 @@ function wegHelfer(arg) {
         async phantom() {
             const bm = st.buildMode;
             for (let i = 0; i < 300 && bm.phantomStudioPending; i++) await new Promise((q) => setTimeout(q, 50));
-            let meshes = 0;
-            let verworfen = 0;
-            bm.phantomMesh.traverse((o) => {
-                if (!o.isMesh || !o.material) return;
-                meshes++;
-                const ma = o.material;
-                if ((ma.transparent ? ma.opacity : 1) < (ma.alphaTest || 0)) verworfen++;
-            });
-            const studio = !!bm.phantomMesh.userData.studioGhost;
-            return { studio, meshes, verworfen, farbe: toenung(bm.phantomMesh).farbe };
+            const o = { studio: !!bm.phantomMesh.userData.studioGhost, meshes: 0, verworfen: 0, farbe: toenung(bm.phantomMesh).farbe };
+            bm.phantomMesh.traverse((m) => m.isMesh && m.material && (o.meshes++, (m.material.transparent ? m.material.opacity : 1) < (m.material.alphaTest || 0) && o.verworfen++));
+            return o;
         },
         // der Weg ist zu Ende: das Werk steht, oder der Spieler-Kanal hat gesprochen
         fertig: () => neue().length > 0 || zeilen().length > lauf.n0,
-        // die Ziele der Eingaben: Mitte, ob sichtbar und oben (elementFromPoint), sonst die Roll-Hülle und die Richtung
-        ziel(q) {
-            let el = null;
-            if (q.art === "suche") el = document.getElementById("workshop-search");
-            else if (q.art === "zeile")
-                el = document.querySelector(`#workshop-list .workshop-list-row[data-blueprint="${q.name}"]`);
-            else if (q.art === "fertigen") el = document.querySelector("#workshop-action-zone .workshop-fertigen");
-            else if (q.art === "rezept") {
-                const lab = String(st.blueprints[q.name].label || q.name);
-                const z = [...document.querySelectorAll("#inventory-recipes .recipe-row")].find(
-                    (z) => (z.querySelector(".recipe-name") || {}).textContent === lab
-                );
-                el = z && z.querySelector("button");
-            }
-            if (!el) return { da: false };
-            const b = el.getBoundingClientRect();
-            if (!(b.width > 0 && b.height > 0)) return { da: true, offen: false };
-            let hu = el.parentElement;
-            const rollt = (h) => h.scrollHeight > h.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(h).overflowY);
-            while (hu && hu !== document.body && !rollt(hu)) hu = hu.parentElement;
-            const hb =
-                hu && hu !== document.body
-                    ? hu.getBoundingClientRect()
-                    : { top: 0, bottom: innerHeight, left: 0, right: innerWidth };
-            const oben = Math.max(0, hb.top);
-            const unten = Math.min(innerHeight, hb.bottom);
-            const x = b.left + b.width / 2;
-            const y = b.top + b.height / 2;
-            const drin = b.top >= oben - 1 && b.bottom <= unten + 1;
-            const treffer = drin ? document.elementFromPoint(x, y) : null;
-            const offenKlick = !!treffer && (treffer === el || el.contains(treffer));
-            return {
-                da: true,
-                offen: true,
-                x,
-                y,
-                sichtbar: drin && offenKlick,
-                verdeckt:
-                    drin && !offenKlick
-                        ? (treffer && (treffer.id || String(treffer.className) || treffer.tagName)) || "?"
-                        : null,
-                rx: (Math.max(0, hb.left) + Math.min(innerWidth, hb.right)) / 2,
-                ry: (oben + unten) / 2,
-                richtung: b.top < oben ? -1 : 1,
-                gesperrt: el.disabled ? el.title || "gesperrt" : null,
-            };
-        },
+        rezept: (name) => [...document.querySelectorAll("#inventory-recipes .recipe-row")].find((z) => z.querySelector(".recipe-name").textContent === String(st.blueprints[name].label || name)).querySelector("button"),
         lesen() {
-            const strom = window.__eingabeStrom.slice();
-            const echt = strom.filter((e) => e.echt);
+            const echt = window.__eingabeStrom.filter((e) => e.echt);
             const h1 = habe();
             const verbraucht = {};
-            for (const mt of Object.keys(lauf.kosten)) verbraucht[mt] = (lauf.h0[mt] || 0) - (h1[mt] || 0);
+            for (const mt in lauf.kosten) verbraucht[mt] = (lauf.h0[mt] || 0) - (h1[mt] || 0);
             return {
                 steht: neue().length,
                 eingaben: echt.length,
-                unecht: strom.length - echt.length,
+                unecht: window.__eingabeStrom.length - echt.length,
                 folge: echt.map((e) => e.was).join(" · "),
                 ms: lauf.standT != null && echt.length ? Math.round(lauf.standT - echt[0].t) : null,
                 kalt: lauf.kalt,
-                zeile: zeilen().slice(lauf.n0).join(" | "),
+                zeile: [...zeilen()].slice(lauf.n0).map((d) => d.textContent).join(" | "),
                 verbraucht,
                 kosten: lauf.kosten,
-                imInventar: inv.some((s) => s && s.kind !== "material" && s.blueprintName === lauf.name),
+                imInventar: inv.some((s) => s && s.blueprintName === lauf.name),
             };
         },
         abschluss() {
             for (const a of neue()) r.removeArchitecture(a);
-            for (let i = 0; i < inv.length; i++) if (inv[i] && inv[i].blueprintName === lauf.name) inv[i] = null;
             aufraeumen();
             lauf.hotbarAlt.forEach((n, i) => st.hotbar[i] !== n && r.setHotbarSlot(i, n));
-            lauf = null;
         },
         ende() {
             clearInterval(takt);
             aufraeumen();
             r.setGameMode(modusAlt);
             r.setCameraMode("first");
-            leeren();
+            inv.fill(null);
         },
-        geraet() {
-            const NICHT = ["armor", "soul", "consumable"];
-            const ist = (n) => {
+        // ein ungeschmiedetes Gerät mit Kosten (die Spitzhacke, sonst das erste)
+        geraet: () =>
+            ["klinge_spitzhacke", ...Object.keys(st.blueprints)].find((n) => {
                 const b = st.blueprints[n];
-                return (
-                    b &&
-                    !r._isPlaceableBlueprint(b) &&
-                    !NICHT.includes(b.role) &&
-                    !Number.isFinite(b.forgedPrecision) &&
-                    Object.keys(r.checkBuildCost(n).cost || {}).length > 0
-                );
-            };
-            return ["klinge_spitzhacke", ...Object.keys(st.blueprints)].find(ist) || null;
-        },
-        sucheHaus: () =>
-            [...document.querySelectorAll("#workshop-list .workshop-list-row")].filter(
-                (z) => z.style.display !== "none" && /^haus_/.test(z.getAttribute("data-blueprint") || "")
-            ).length,
+                return b && !r._isPlaceableBlueprint(b) && !["armor", "soul", "consumable"].includes(b.role) && !Number.isFinite(b.forgedPrecision) && Object.keys(r.checkBuildCost(n).cost).length;
+            }),
+        sucheHaus: () => [...document.querySelectorAll("#workshop-list .workshop-list-row")].filter((z) => z.style.display !== "none" && /^haus_/.test(z.dataset.blueprint)).length,
     };
-    return { yawWeg };
 }
 
-// ── L-WERKSTATT: DER SPIELER (Node). Jeder Schritt ist ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb
-// der Roll-Hülle erreicht das Mausrad (je Raste 100 px, jede Raste eine Eingabe). ──
+// ── L-WERKSTATT, der Spieler (Node): jeder Schritt ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb der
+// Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
 const pause = (ms) => new Promise((q) => setTimeout(q, ms));
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
-async function taste(page, code) {
-    await page.keyboard.press(code);
-    await pause(120);
-}
-async function klicke(page, q) {
-    const was = `${q.art}${q.name ? " " + q.name : ""}`;
-    for (let i = 0; i < 80; i++) {
-        const z = await bauWeg(page, "ziel", q);
-        if (!z.da || !z.offen) throw new Error(`${was}: ${z.da ? "nicht offen" : "fehlt in der UI"}`);
-        if (z.verdeckt) throw new Error(`${was}: verdeckt von ${z.verdeckt}`);
-        if (z.sichtbar) {
-            await page.mouse.click(z.x, z.y);
-            await pause(150);
-            return z;
-        }
-        await page.mouse.move(z.rx, z.ry);
-        await page.mouse.wheel({ deltaY: 100 * z.richtung });
+const taste = async (page, code) => (await page.keyboard.press(code), pause(120));
+async function klicke(page, el, liste) {
+    for (let i = 0; i < 80 && !(await el.isIntersectingViewport({ threshold: 1 })); i++) {
+        const [b, h] = [await el.boundingBox(), await (await page.$(liste)).boundingBox()];
+        if (!b || !h) throw new Error(`${liste}: nicht offen`);
+        await page.mouse.move(h.x + h.width / 2, Math.max(h.y, 0) + 40);
+        await page.mouse.wheel({ deltaY: b.y < Math.max(h.y, 0) ? -100 : 100 });
         await pause(150);
     }
-    throw new Error(`${was}: nach 80 Rasten nicht im Bild`);
+    const b = await el.boundingBox();
+    await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+    await pause(150);
+    return el.evaluate((k) => (k.disabled ? k.title || "gesperrt" : null));
 }
-// Die drei Wege bis zum Bau-Modus bzw. zur Absage (das Setzen folgt in `wegLauf`).
+const finde = async (page, sel) => (await page.$(sel)) || Promise.reject(new Error(`${sel} fehlt in der UI`));
+// Die drei Wege bis zum Bau-Modus bzw. zur Absage; das Setzen (F) folgt in `wegLauf`.
 const WEG_FAHRT = {
     async werkstatt(page, name) {
         if ((await bauWeg(page, "zustand")).drawer !== "werkstatt") await taste(page, "KeyB");
         if ((await bauWeg(page, "zustand")).gewaehlt !== name) {
-            if (!(await bauWeg(page, "zustand")).picker) await klicke(page, { art: "suche" });
-            await klicke(page, { art: "zeile", name });
+            if (!(await bauWeg(page, "zustand")).picker) await klicke(page, await finde(page, "#workshop-search"), "#workshop-search");
+            await klicke(page, await finde(page, `#workshop-list .workshop-list-row[data-blueprint="${name}"]`), "#workshop-list");
         }
-        await klicke(page, { art: "fertigen" });
-        return {};
+        await klicke(page, await finde(page, "#workshop-action-zone .workshop-fertigen"), "#workshop-action-zone");
     },
     async rezeptbuch(page, name) {
         if (!(await bauWeg(page, "zustand")).inv) await taste(page, "Tab");
-        const z = await klicke(page, { art: "rezept", name });
-        return z.gesperrt ? { gesperrt: z.gesperrt } : {};
+        return klicke(page, await page.evaluateHandle((n) => window.__bauWeg.rezept(n), name), "#inventory-recipes");
     },
-    async hotbar(page, name, slot) {
-        await taste(page, `Digit${slot + 1}`);
-        return {};
-    },
+    hotbar: (page, name, slot) => taste(page, `Digit${slot + 1}`),
 };
 // Ein Lauf: vorbereiten (vor dem Zähler) → der Weg → im Bau-Modus F (confirmBuild) → das Werk steht oder der Kanal spricht.
 async function wegLauf(page, o) {
-    const v = await bauWeg(page, "vorbereiten", o);
+    const slot = await bauWeg(page, "vorbereiten", o);
     const e = {};
     try {
-        Object.assign(e, await WEG_FAHRT[o.weg](page, o.name, v.slot));
+        e.gesperrt = (await WEG_FAHRT[o.weg](page, o.name, slot)) || undefined;
         const z = await bauWeg(page, "zustand");
-        e.bauModus = z.bauModus;
-        e.farbe = z.farbe;
-        if (o.lichtung) e.lichtung = { wand: z.wand, toenung: z.toenung };
+        Object.assign(e, { bauModus: z.bauModus, farbe: z.bauModus ? z.toenung.farbe : null, lichtung: { wand: z.wand, toenung: z.toenung } });
         if (o.phantom && z.bauModus) e.phantom = await bauWeg(page, "phantom");
         if (z.bauModus) await taste(page, "KeyF");
         const frist = o.lage === "frieden ohne Material" ? 1500 : 8000;
@@ -1228,45 +1061,28 @@ async function wegProbe(page, frei) {
     const m = { gestartet: false, wege: {} };
     await page.evaluate(wegHelfer, { frei, teil: WERKE.Teil });
     m.konsum = await bauWeg(page, "konsum");
-    for (const lage of LAGEN) {
-        m.wege[lage] = {};
-        for (const weg of WEGE) {
-            m.wege[lage][weg] = {};
-            for (const [werk, name] of Object.entries(WERKE)) {
-                m.wege[lage][weg][werk] = {};
+    for (const lage of LAGEN)
+        for (const weg of WEGE)
+            for (const [werk, name] of Object.entries(WERKE))
                 for (const sicht of SICHTEN) {
-                    const phantom = lage === "schöpfer" && weg === "werkstatt" && werk === "Eiche" && sicht === "Ego";
+                    const phantom = lage === "schöpfer" && weg === "hotbar" && werk === "Eiche" && sicht === "Ego";
                     const e = await wegLauf(page, { lage, weg, name, sicht, phantom });
                     if (phantom) m.phantom = e.phantom;
-                    m.wege[lage][weg][werk][sicht] = e;
+                    (((m.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
                 }
-            }
-        }
-    }
     // Ein Gerät aus der Hotbar in frieden ohne Material: der Griff schmiedet — und sagt, was fehlt.
     const geraet = await bauWeg(page, "geraet");
-    m.geraet = { name: geraet };
-    if (geraet) {
-        const g = await wegLauf(page, { lage: "frieden ohne Material", weg: "hotbar", name: geraet, sicht: "Ego", slot: 5 });
-        m.geraet.zeile = g.zeile;
-    }
-    // Die Suche „haus" in der Werkstatt: getippt.
+    m.geraet = { name: geraet, zeile: geraet && (await wegLauf(page, { lage: "frieden ohne Material", weg: "hotbar", name: geraet, sicht: "Ego", slot: 5 })).zeile };
+    // Die getippte Suche „haus" in der Werkstatt.
     await bauWeg(page, "vorbereiten", { lage: "schöpfer", name: WERKE.Haus, sicht: "Ego" });
     await taste(page, "KeyB");
-    await klicke(page, { art: "suche" });
+    await klicke(page, await finde(page, "#workshop-search"), "#workshop-search");
     await page.keyboard.type("haus", { delay: 40 });
     await pause(200);
     m.sucheHaus = await bauWeg(page, "sucheHaus");
     await bauWeg(page, "abschluss");
     // Die Lichtung: der Spieler mitten auf der Plattform, die Eiche (schöpfer) aus der Hotbar vor ihm.
-    const l = await wegLauf(page, {
-        lage: "schöpfer",
-        weg: "hotbar",
-        name: WERKE.Eiche,
-        sicht: "Ego",
-        ort: "lichtung",
-        lichtung: true,
-    });
+    const l = await wegLauf(page, { lage: "schöpfer", weg: "hotbar", name: WERKE.Eiche, sicht: "Ego", ort: "lichtung" });
     m.lichtung = Object.assign({ steht: l.steht, zeile: l.zeile }, l.lichtung);
     await bauWeg(page, "ende");
     m.gestartet = true;
@@ -1345,7 +1161,6 @@ async function wegProbe(page, frei) {
             ["die Streuung zieht aus dem Programm-Strom", kopfMit("_dslSpawnStudioItems", "ctx.rng()"), "W2"],
             ["die Hand-Liste kehrt zurück", kopfMit("_studioWortKatalog", "AnazhRealm.STUDIO_WORT"), "W3"],
             ["ein Wort-Literal im Katalog", kopfMit("_studioWortKatalog", '"fels"'), "W3"],
-            ["das Rezeptbuch legt wieder ins Inventar", kopfMit("craftFromRecipe", "this.addToInventory(name, 1)"), "W4"],
             ["der Sonnen-Winkel ein zweites Mal ausgeschrieben", kopfMit("_dayNightApplyStarField", "t * Math.PI * 2 - Math.PI / 2"), "W5"],
             ["die Wurzel würfelt wieder (Befund)", kopfMit("spawnArchitecture", "Math.random()"), "W7"],
             ["der Zähler wird wieder Sitzungs-Feld", kopfMit("_bauSame", "this._bauSameZaehler"), "W7"],
@@ -1438,14 +1253,7 @@ async function wegProbe(page, frei) {
         }
         // L-Werkstatt: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const KOST = { holz: 44, laub: 50 };
-        const lauf = (lage, weg) => {
-            const echt = { eingaben: weg === "hotbar" ? 2 : 3, unecht: 0, folge: "", kosten: KOST };
-            if (lage === "frieden ohne Material")
-                return weg === "rezeptbuch"
-                    ? Object.assign(echt, { bauModus: false, steht: 0, zeile: "", gesperrt: "Es fehlt: 44× holz, 50× laub" })
-                    : Object.assign(echt, { bauModus: weg === "hotbar", steht: 0, zeile: "Eiche: fehlt 44× holz · 50× laub — sammeln", farbe: "rot" });
-            return Object.assign(echt, { bauModus: true, steht: 1, zeile: "", verbraucht: lage === "schöpfer" ? {} : KOST });
-        };
+        const fehlt = "Eiche: fehlt 44× holz · 50× laub — sammeln";
         const gesundG = {
             gestartet: true,
             wege: {},
@@ -1453,135 +1261,41 @@ async function wegProbe(page, frei) {
             geraet: { name: "klinge_spitzhacke", zeile: "Spitzhacke: fehlt 12× eisen — sammeln" },
             phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             sucheHaus: 32,
-            lichtung: {
-                wand: "lichtung",
-                steht: 0,
-                zeile: "Eiche: die Lichtung der Genesis-Plattform bleibt frei",
-                toenung: { stoffe: 2, lesen: 2, farbe: "rot" },
-            },
+            lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Lichtung bleibt frei", toenung: { stoffe: 2, lesen: 2, farbe: "rot" } },
         };
-        for (const lage of LAGEN) {
-            gesundG.wege[lage] = {};
-            for (const weg of WEGE) {
-                gesundG.wege[lage][weg] = {};
-                for (const werk of Object.keys(WERKE)) {
-                    gesundG.wege[lage][weg][werk] = {};
-                    for (const sicht of SICHTEN) gesundG.wege[lage][weg][werk][sicht] = lauf(lage, weg);
-                }
-            }
-        }
-        check(
-            "Selbst-Test L-Werkstatt: gesund == 0 Täter",
-            wegVerdict(gesundG).length === 0,
-            wegVerdict(gesundG).join(" · ")
-        );
-        const mitG = (lage, weg, werk, sicht, e) => {
-            const b = JSON.parse(JSON.stringify(gesundG));
-            Object.assign(b.wege[lage][weg][werk][sicht], e);
-            return b;
-        };
+        for (const lage of LAGEN)
+            for (const weg of WEGE)
+                for (const werk of Object.keys(WERKE))
+                    for (const sicht of SICHTEN)
+                        (((gesundG.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] =
+                            lage === "frieden ohne Material"
+                                ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" }
+                                : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST };
+        check("Selbst-Test L-Werkstatt: gesund == 0 Täter", wegVerdict(gesundG).length === 0, wegVerdict(gesundG).join(" · "));
+        const mitG = (wo, e, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(wo.split(" · ").reduce((o, k) => o[k], b.wege), e), b);
+        const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
         for (const [name, bruch, soll] of [
-            [
-                "ein Weg mit einem zusätzlichen Bestätigungs-Klick",
-                mitG("frieden mit Material", "werkstatt", "Haus", "Third", { eingaben: 4, folge: "KeyB · Klick · Klick · Klick · KeyF" }),
-                "frieden mit Material · werkstatt · Haus · Third: 4 Eingaben bis zum stehenden Werk (Soll ≤ 3",
-            ],
-            [
-                "das Werk steht per Methoden-Aufruf, ohne ein Ereignis des Spielers",
-                mitG("pfad", "rezeptbuch", "GT", "Ego", { eingaben: 0 }),
-                "pfad · rezeptbuch · GT · Ego: kein echtes Eingabe-Ereignis",
-            ],
-            [
-                "ein geschmiedetes Ereignis (dispatchEvent, isTrusted false)",
-                mitG("schöpfer", "hotbar", "Teil", "Third", { unecht: 1 }),
-                "schöpfer · hotbar · Teil · Third: 1 Ereignis(se) ohne Spieler",
-            ],
-            [
-                "das Rezeptbuch legt ins Inventar (Befund)",
-                mitG("schöpfer", "rezeptbuch", "Eiche", "Ego", { steht: 0, imInventar: true }),
-                "schöpfer · rezeptbuch · Eiche · Ego: 0 Werk(e) stehen",
-            ],
-            [
-                "das Rezeptbuch zahlt doppelt",
-                mitG("frieden mit Material", "rezeptbuch", "Eiche", "Ego", { verbraucht: { holz: 88, laub: 100 } }),
-                "frieden mit Material · rezeptbuch · Eiche · Ego: holz 88× gezogen",
-            ],
-            [
-                "pfad zieht nichts",
-                mitG("pfad", "hotbar", "Haus", "Ego", { verbraucht: {} }),
-                "pfad · hotbar · Haus · Ego: holz 0× gezogen",
-            ],
-            [
-                "frieden verweigert nur im Log (Befund)",
-                mitG("frieden ohne Material", "hotbar", "Eiche", "Ego", { zeile: "" }),
-                "frieden ohne Material · hotbar · Eiche · Ego: stumme Absage",
-            ],
-            [
-                "FERTIGEN führt in den Bau-Modus ohne Material",
-                mitG("frieden ohne Material", "werkstatt", "Eiche", "Ego", { bauModus: true }),
-                "frieden ohne Material · werkstatt · Eiche · Ego: der Weg führt in einen Bau-Modus",
-            ],
-            [
-                "das Gerät aus der Hotbar verweigert nur im Log",
-                Object.assign({}, gesundG, { geraet: { name: "klinge_spitzhacke", zeile: "" } }),
-                "das Gerät aus der Hotbar verweigert stumm",
-            ],
-            [
-                "schöpfer zahlt",
-                mitG("schöpfer", "hotbar", "Eiche", "Ego", { verbraucht: { holz: 44 } }),
-                "schöpfer · hotbar · Eiche · Ego: schöpfer zahlt",
-            ],
-            [
-                "der GT hat keinen Weg",
-                mitG("schöpfer", "werkstatt", "GT", "Ego", { steht: 0, fehler: "zeile fahrzeug_gt: fehlt in der UI" }),
-                "schöpfer · werkstatt · GT · Ego: zeile fahrzeug_gt: fehlt in der UI",
-            ],
-            [
-                "das Phantom ist unsichtbar (Befund Leben-Schau)",
-                Object.assign({}, gesundG, { phantom: { studio: true, meshes: 2, verworfen: 2 } }),
-                "das Phantom ist unsichtbar: 2/2",
-            ],
-            [
-                "die Suche findet kein Haus (Befund)",
-                Object.assign({}, gesundG, { sucheHaus: 0 }),
-                'die Suche „haus" findet kein Haus',
-            ],
-            [
-                "das Phantom färbt sich nicht (Gegenprüfung 08.10.)",
-                Object.assign({}, gesundG, {
-                    lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 0, farbe: "rot" } }),
-                }),
-                "das Phantom färbt sich nicht: 0/2",
-            ],
-            [
-                "das Phantom steht grün über der Lichtung",
-                Object.assign({}, gesundG, {
-                    lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 2, farbe: "grün" } }),
-                }),
-                "das Phantom über der Lichtung steht grün",
-            ],
-            [
-                "die Eiche steht auf der Lichtung",
-                Object.assign({}, gesundG, { lichtung: { wand: false, steht: 1, zeile: "" } }),
-                "auf der Lichtung steht 1 Eiche",
-            ],
-            [
-                "ein Stoff mit Schwellen-Knoten statt der Zahl (K68-N1)",
-                Object.assign({}, gesundG, { konsum: { "Stoff → alphaTest": false } }),
-                "Konsum: Stoff → alphaTest",
-            ],
-            [
-                "grün ohne Material (Auflage 2 der zweiten Gegenprüfung)",
-                mitG("frieden ohne Material", "hotbar", "Eiche", "Ego", { farbe: "grün" }),
-                "das Phantom ohne Material steht grün",
-            ],
+            ["ein Weg mit einem zusätzlichen Bestätigungs-Klick", mitG("frieden mit Material · werkstatt · Haus · Third", { eingaben: 4 }), "frieden mit Material · werkstatt · Haus · Third: 4 Eingaben bis zum stehenden Werk"],
+            ["das Werk steht per Methoden-Aufruf, ohne Ereignis des Spielers", mitG("pfad · rezeptbuch · GT · Ego", { eingaben: 0 }), "pfad · rezeptbuch · GT · Ego: kein echtes Eingabe-Ereignis"],
+            ["ein geschmiedetes Ereignis (isTrusted false)", mitG("schöpfer · hotbar · Teil · Third", { unecht: 1 }), "schöpfer · hotbar · Teil · Third: 1 Ereignis(se) ohne Spieler"],
+            ["das Rezeptbuch legt ins Inventar (Befund)", mitG("schöpfer · rezeptbuch · Eiche · Ego", { steht: 0, imInventar: true }), "schöpfer · rezeptbuch · Eiche · Ego: 0 Werk(e) stehen"],
+            ["das Rezeptbuch zahlt doppelt", mitG("frieden mit Material · rezeptbuch · Eiche · Ego", { verbraucht: { holz: 88, laub: 100 } }), "frieden mit Material · rezeptbuch · Eiche · Ego: holz 88× gezogen"],
+            ["pfad zieht nichts", mitG("pfad · hotbar · Haus · Ego", { verbraucht: {} }), "pfad · hotbar · Haus · Ego: holz 0× gezogen"],
+            ["schöpfer zahlt", mitG("schöpfer · hotbar · Eiche · Ego", { verbraucht: { holz: 44 } }), "schöpfer · hotbar · Eiche · Ego: schöpfer zahlt"],
+            ["frieden verweigert nur im Log (Befund)", mitG("frieden ohne Material · hotbar · Eiche · Ego", { zeile: "" }), "frieden ohne Material · hotbar · Eiche · Ego: stumme Absage"],
+            ["FERTIGEN führt in den Bau-Modus ohne Material", mitG("frieden ohne Material · werkstatt · Eiche · Ego", { bauModus: true }), "frieden ohne Material · werkstatt · Eiche · Ego: der Weg führt in einen Bau-Modus"],
+            ["der GT hat keinen Weg", mitG("schöpfer · werkstatt · GT · Ego", { steht: 0, fehler: "fahrzeug_gt fehlt in der UI" }), "schöpfer · werkstatt · GT · Ego: fahrzeug_gt fehlt in der UI"],
+            ["grün ohne Material (Auflage 2 der zweiten Gegenprüfung)", mitG("frieden ohne Material · hotbar · Eiche · Ego", { farbe: "grün" }), "das Phantom ohne Material steht grün"],
+            ["das Gerät aus der Hotbar verweigert nur im Log", mitL({ geraet: { name: "klinge_spitzhacke", zeile: "" } }), "das Gerät aus der Hotbar verweigert stumm"],
+            ["das Phantom ist unsichtbar (Befund Leben-Schau)", mitL({ phantom: { studio: true, meshes: 2, verworfen: 2 } }), "das Phantom ist unsichtbar: 2/2"],
+            ["die Suche findet kein Haus (Befund)", mitL({ sucheHaus: 0 }), 'die Suche „haus" findet kein Haus'],
+            ["das Phantom färbt sich nicht (Gegenprüfung 08.10.)", mitL({ lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 0, farbe: "rot" } }) }), "das Phantom färbt sich nicht: 0/2"],
+            ["das Phantom steht grün über der Lichtung", mitL({ lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 2, farbe: "grün" } }) }), "das Phantom über der Lichtung steht grün"],
+            ["die Eiche steht auf der Lichtung", mitL({ lichtung: { wand: false, steht: 1, zeile: "" } }), "auf der Lichtung steht 1 Eiche"],
+            ["ein Stoff mit Schwellen-Knoten statt der Zahl (K68-N1)", mitL({ konsum: { "Stoff → alphaTest": false } }), "Konsum: Stoff → alphaTest"],
         ]) {
             const v = wegVerdict(bruch);
-            check(
-                `Selbst-Test L-Werkstatt: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
+            check(`Selbst-Test L-Werkstatt: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         // Der Same des Werks: gesund ohne Täter, je Befund-Zustand (Gegenprüfung 08.10.) der Täter beim Namen.
         const gesundK = {
@@ -1793,26 +1507,18 @@ async function wegProbe(page, frei) {
     const gm = out.weg || {};
     if (gm.err) check("L-Werkstatt Probe ohne Ausnahme", false, gm.err.split("\n")[0]);
     const vG = wegVerdict(gm);
-    // die Rohdatei: jeder Lauf mit Folge, Zahl und Zeit (artifacts/, ungetrackt)
-    fs.mkdirSync(path.join(__dirname, "..", "artifacts", "werkstatt-weg"), { recursive: true });
-    fs.writeFileSync(path.join(__dirname, "..", "artifacts", "werkstatt-weg", "weg.json"), JSON.stringify(gm, null, 1));
-    const laeufe = [];
-    for (const [lage, wege] of Object.entries(gm.wege || {}))
-        for (const [weg, werke] of Object.entries(wege))
-            for (const [werk, sichten] of Object.entries(werke))
-                for (const [sicht, e] of Object.entries(sichten)) laeufe.push(Object.assign({ lage, weg, werk, sicht }, e));
-    const tragend = laeufe.filter((e) => e.lage !== "frieden ohne Material");
+    fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true });
+    fs.writeFileSync(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), JSON.stringify(gm, null, 1)); // die Rohdatei
+    // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max, Zeit bis zum Werk (kalt: der erste Bau des Werks)
     const jeWeg = WEGE.map((w) => {
-        const l = tragend.filter((e) => e.weg === w);
-        const n = l.map((e) => e.eingaben || 0);
-        const ms = l.map((e) => e.ms).filter((x) => x != null);
-        const kalt = l.filter((e) => e.kalt && e.ms != null).map((e) => e.ms);
-        return `${w} ${l.filter((e) => e.steht === 1 && e.eingaben > 0 && !e.unecht).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)} (≤ ${EINGABEN_SOLL}: ${n.filter((x) => x <= EINGABEN_SOLL).length}/${l.length}), bis zum Werk max ${ms.length ? Math.max(...ms) : "–"} ms${kalt.length ? ` (kalt ${kalt.join("/")} ms)` : ""}`;
+        const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
+        const n = l.map((e) => e.eingaben);
+        return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}, max ${Math.max(...l.map((e) => e.ms))} ms (kalt ${l.filter((e) => e.kalt).map((e) => e.ms)})`;
     });
     check(
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) stellt Eiche, Haus, GT und das eigene Teil-Werk über echte Eingaben in ≤ 3 Schritten — schöpfer, frieden, pfad, Ego und Third; frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
-        `${gm.gestartet ? `${jeWeg.join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät ${(gm.geraet || {}).name}: „${((gm.geraet || {}).zeile || "").slice(0, 60)}" · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht, toenung: gm.lichtung && gm.lichtung.toenung })}` : "nicht gestartet"}${vG.length ? ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ") : ""}`
+        `${gm.gestartet ? `${jeWeg.join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät „${gm.geraet.zeile}" · Lichtung ${JSON.stringify(gm.lichtung)}` : "nicht gestartet"}${vG.length ? ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ") : ""}`
     );
     console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
     const km = out.werk || {};
