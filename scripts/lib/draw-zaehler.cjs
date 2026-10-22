@@ -566,7 +566,7 @@ function gangUrteil({ vor, nach }) {
         );
     };
     const mb = (h) => h.map(([k, x]) => [k, x / 1048576]);
-    const vg = (g) => g.map((x) => [x.k, x.mb]);
+    const vg = (g) => g.vram.liste.map((x) => [x.k, x.mb]);
     const rate = (nach.heapMB - vor.heapMB) / nach.min;
     const f = nach.min >= 1 ? [] : ["gang: " + nach.min + " min — zu kurz"];
     if (rate > GANG.heapMBjeMin)
@@ -578,12 +578,9 @@ function gangUrteil({ vor, nach }) {
                 " — Halter: " +
                 wuchs(mb(vor.halter), mb(nach.halter))
         );
-    if (nach.vramMB - vor.vramMB > GANG.vramMB)
+    if (nach.vram.mb - vor.vram.mb > GANG.vramMB)
         f.push(
-            "vram: +" +
-                (nach.vramMB - vor.vramMB).toFixed(1) +
-                " MB zurück am Start — " +
-                wuchs(vg(vor.gross), vg(nach.gross))
+            "vram: +" + (nach.vram.mb - vor.vram.mb).toFixed(1) + " MB zurück am Start — " + wuchs(vg(vor), vg(nach))
         );
     for (const [k, x] of Object.entries((nach.puffer && nach.puffer.halter) || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
@@ -599,8 +596,7 @@ function gangSelbsttest() {
                 min: v,
                 heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
                 halter,
-                vramMB: 50 + v * (offen ? 3 : 1),
-                gross: [{ k: "buf:a", mb: 50 + v * (offen ? 3 : 1) }],
+                vram: { mb: 50 + v * (offen ? 3 : 1), liste: [{ k: "buf:a", mb: 50 + v * (offen ? 3 : 1) }] },
             };
         };
         const vor = stand(0);
@@ -630,18 +626,22 @@ async function gangLauf(page, pufferStand, b) {
             text: type === "keyDown" && T[n][1] ? T[n][1] : undefined,
         });
     const tippe = async (n) => (await taste(n, "keyDown"), await taste(n, "keyUp"));
-    // die Fristen zählen präsentierte Bilder (je 300 dreht ein Steckender ab), nie die Wanduhr
+    // die Fristen zählen präsentierte Bilder (je 300 dreht ein Steckender ab), nie die Wanduhr; ein Tor, in das der Gang
+    // lief, verlässt er wieder und kehrt um (die Heimkehr verwirft die Tasten: der Rest der Frist geht mit neuem W)
     const bilder = (n, dreh) =>
         page.evaluate(
             async (n, dreh) => {
-                const st = window.anazhRealm.state;
+                const r = window.anazhRealm,
+                    st = r.state;
                 for (let i = 0, vor = null; i < n; i++) {
                     await new Promise((f) => requestAnimationFrame(f));
+                    if (r._portalOverlay) return (r.exitPortal(), (st.yaw += Math.PI), n - i);
                     if (!dreh || i % 300 < 299) continue;
                     const p = st.playerMesh.position;
                     if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
                     vor = [p.x, p.z];
                 }
+                return 0;
             },
             n,
             dreh
@@ -653,49 +653,72 @@ async function gangLauf(page, pufferStand, b) {
             for (let k = 0; k < 120; k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1)
                 await raf();
         });
-    const gehe = async (n) => (await taste("w", "keyDown"), await bilder(n, true), await taste("w", "keyUp"));
+    const gehe = async (n) => {
+        for (let rest = n; rest > 0; await taste("w", "keyUp"))
+            (await taste("w", "keyDown"), (rest = await bilder(rest, true)));
+    };
     const drittel = Math.round((Number(b.min) || 6) * 1200);
     await page.evaluate(() =>
         window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
     );
     await ruhig();
     await bilder(1200);
+    // EINE RUNDE ab dem Start: je ein Drittel gehen · fahren (GT, Taste E; der Gang räumt seinen GT) · das Uhr-Wort, dann
+    // zurück an den Start und eingeschwungen. Der EINLAUF (halbe Länge, Mittag, danach Mitternacht) füllt, was beim ersten
+    // Gebrauch gedeckelt wächst (die Werkbank der Satz-Blöcke, die Spiegel-Felder, die Leiber der Arten, die Ruhe des Foundry-
+    // Cache, die Render-Objekte und Werfer des Sonnen-Schattens); die gemessene Runde geht in die Gegenrichtung über unbereiste
+    // Welt und wechselt dieselbe Uhr — was mit der bereisten Welt oder je Wechsel wächst, wächst dort weiter.
     const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
-    const vor = Object.assign(await pufferStand(true, 60), { min: 0 });
-    const t0G = Date.now();
-    await gehe(drittel);
-    await page.evaluate(async () => {
-        const r = window.anazhRealm,
-            p = r.state.playerMesh.position;
-        const e = r.spawnArchitecture(
-            "fahrzeug_gt",
-            { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
-            { silent: true, precise: true }
-        );
-        await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
-    });
-    await tippe("e");
-    await bilder(60);
-    const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
-    await gehe(drittel);
-    if (fahrt) await tippe("e");
-    await tippe("enter");
-    await cdp.send("Input.insertText", { text: "setze uhrzeit mitternacht" });
-    await tippe("enter");
-    await bilder(30);
-    const uhr = await page.evaluate(() => window.anazhRealm.state.timeOfDay);
-    await gehe(drittel);
-    const min = (Date.now() - t0G) / 60000;
-    await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
-    await ruhig();
+    const sage = async (wort) => {
+        await tippe("enter");
+        await cdp.send("Input.insertText", { text: "setze uhrzeit " + wort });
+        await tippe("enter");
+        await bilder(30);
+        return page.evaluate(() => window.anazhRealm.state.timeOfDay);
+    };
+    const runde = async (n, wort) => {
+        const t0 = Date.now();
+        await gehe(n);
+        await page.evaluate(async () => {
+            const r = window.anazhRealm,
+                p = r.state.playerMesh.position;
+            const e = (window.__gangGT = r.spawnArchitecture(
+                "fahrzeug_gt",
+                { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
+                { silent: true, precise: true }
+            ));
+            await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
+        });
+        await tippe("e");
+        await bilder(60);
+        const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
+        await gehe(n);
+        if (fahrt) await tippe("e");
+        await page.evaluate(() => window.anazhRealm.removeArchitecture(window.__gangGT));
+        const uhr = await sage(wort);
+        await gehe(n);
+        const min = (Date.now() - t0) / 60000;
+        await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
+        await ruhig();
+        await bilder(1200);
+        return { fahrt, uhr, min };
+    };
+    const ein = await runde(drittel / 2, "mittag");
+    const nacht = await sage("mitternacht");
     await bilder(1200);
-    const nach = Object.assign(await pufferStand(true, 60), { min });
+    await page.evaluate(() => (window.anazhRealm.state.yaw += Math.PI));
+    const vor = Object.assign(await pufferStand(true, 60), { min: 0 });
+    const lauf = await runde(drittel, "mittag");
+    const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min });
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
     await cdp.detach();
     const urteil = gangUrteil({ vor, nach });
-    if (!fahrt) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");
-    if (!(uhr < 0.05 || uhr > 0.95)) urteil.push(`nacht: das Spieler-Wort setzte die Uhr auf ${uhr}`);
-    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vramMB, nach.vramMB], min };
+    if (!(ein.fahrt && lauf.fahrt)) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");
+    if (!(nacht < 0.05 || nacht > 0.95) || Math.abs(ein.uhr - 0.5) > 0.05 || Math.abs(lauf.uhr - 0.5) > 0.05)
+        urteil.push(
+            `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
+        );
+    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min };
 }
 
 module.exports = {
