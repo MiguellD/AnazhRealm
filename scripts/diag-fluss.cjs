@@ -1,32 +1,25 @@
 #!/usr/bin/env node
-// diag-fluss.cjs — DIE FLUSS-WAND (V18.511): der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.
-// Befund 02.10. (Fluss-Linse, Mess-Wiese): 262 Studio-Assets = 404 MB liefen beim Boot durch den Haupt-Thread —
-// Klon beim Empfang Σ 600 ms, IDB-Put-Serialisierung Σ 3,7 s (max 207 ms), Gets hinter Schreib-Transaktionen
-// (Median 3,3 s); 32 % der Bytes (aWind · aCenter · aType) las niemand. Seit V18.511 trägt die Transport-Schale
-// (`_foundrySchale`, läuft im Worker VOR dem Studio) Platte · Konsum-Wand · Index-Verengung · Transfer.
+// diag-fluss.cjs — DIE FLUSS-WAND: der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau. Die Transport-Schale
+// (`_foundrySchale`, im Worker VOR dem Studio) trägt Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
 // STATISCH (Node, über den EINEN Absenz-Helfer `stammLib.fehlt`) — die Wache des Gefallenen: der Asset-Store lebt NUR in der
 //   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine
 // KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
-//       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
+//       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03
 // VERHALTEN (Chromium, echter Worker + echte IndexedDB; die Schale aus dem Stamm + ein Studio-Double):
 //   V1  Konsum-Wand: aWind fällt, position/color reisen · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
-//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden — die Karte reist seit S2
-//       nie durch den Kanal (sie backt im Welt-Renderer, `_karteWeltBacken`)
+//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden
 // S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die
 //   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
-//   (B3a; vorher S3 · S7a · S7e · W4 · W5)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
 //   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
-//   Fahrzeug-Vorrat wärmt nur die Platte · W9 DER BAUER AUF DER ENGINE DER WELT (pipeline.K5): das Netz-Log jedes
-//   Foundry-Fadens (Resource Timing der Plattform, vor dem Boot-Blob abgegriffen, nie der Quelltext) zeigt three nur aus
-//   vendor/three.core (r184), 0 Bytes auf worlds/*/lib/ und 0 synchrone XHR in Boot und Bau; die Gegenprobe (ein Faden,
-//   der r128 lädt und synchron fragt) beweist, dass das Instrument beides sieht
+//   Fahrzeug-Vorrat wärmt nur die Platte · W9 (pipeline.K5) das Netz-Log jedes Foundry-Fadens: three r184 nur aus
+//   vendor/three.core, 0 Bytes auf worlds/*/lib/, 0 synchrone XHR; die Gegenprobe (r128 + synchron) beweist die Sicht
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -62,14 +55,14 @@ function schaleVon() {
     return A._foundrySchale.toString();
 }
 
-// DIE KLON-LINSE (V18.527, K20-N1): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
+// DIE KLON-LINSE: die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
 // `_foundryGestaltSame`, an der geladenen Klasse) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten
 // Streu-Gitter (`_scatterRohSame`, 600 × 600 Zellen). (a) Der rohe Same: je Art trägt jede ihrer T Gestalten (die V
 // Bestand-Gestalten und der Solitär V+1 einer Baum-Art, phyto-core `solitaerGestalt`) 1/T ± 0,03, die Nachbar- sowie die
-// 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/T + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-Gitter. (b) Das
+// 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/T + 0,03. (b) Das
 // Eimer-Urteil des Orts: im Bestand wählt der Same 1..V (je 1/V ± 0,03), frei steht immer der Solitär T; eine Art ohne
 // Solitär behält ihren Samen.
-// K42 — DIE STEMPEL-PROBE: der Platten-Stempel (die Formel der Schale, in Node nachgerechnet: pack-kanon computeStamp)
+// DIE STEMPEL-PROBE: der Platten-Stempel (die Formel der Schale, in Node nachgerechnet: pack-kanon computeStamp)
 // bleibt bei einem UI-Edit am Pflanzen-Labor gleich und springt bei einem Edit an der Brücke. `lies` (DARF) färbt eine
 // Quelle für den Selbsttest.
 const LABOR_SHELL = "worlds/terrain/phytogenesis.js";
@@ -384,8 +377,7 @@ async function verhalten(schaleSrc) {
                 // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der eine
                 // baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst nach dem
                 // Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen, wartete der Put
-                // und mit ihm der zweite Körper bis nach dem langen Bau (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
-                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Bake eines anderen Fadens).
+                // und mit ihm der zweite Körper bis nach dem langen Bau.
                 const H = neu(3, true);
                 const Wk = neu(3, true);
                 const tH0 = performance.now();
@@ -427,28 +419,22 @@ const WELT_HAKEN = () => {
     // Die Platte AN unter dem Null-Renderer (nur in dieser Sonde): der Boot-Blob der Transport-Schale trägt
     // cfg.platte=false (gate-deterministisch); hier wird er true — der Host schickt seine Schlüssel ohnehin immer, die
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
-    // W9 DAS NETZ-LOG DES FADENS: das Instrument läuft im Faden VOR seinem Boot-Blob — es fängt jedes synchrone
-    // XMLHttpRequest.open (Boot UND Bau) und antwortet auf `__netz` mit dem Resource Timing der Plattform (jede geladene
-    // URL samt Bytes, auch die Modul-Importe) und der Revision der Engine, die der Faden trägt. Die Gegenprobe der Sonde
-    // fährt dasselbe Instrument (`__fadenNetz`).
-    const FADEN_NETZ = function () {
-        var sync = [];
-        var offen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function (_m, u, asynchron) {
-            if (asynchron === false) sync.push(String(u));
-            return offen.apply(this, arguments);
+    // W9 das Instrument vor dem Boot-Blob: synchrone XMLHttpRequest.open (Boot und Bau) und das Resource Timing des Fadens
+    const netz = () => {
+        const sync = [];
+        const auf = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (_m, u, a) {
+            if (a === false) sync.push(String(u));
+            return auf.apply(this, arguments);
         };
-        self.addEventListener("message", function (e) {
-            var m = e.data;
-            if (!m || m.type !== "__netz") return;
+        self.addEventListener("message", (e) => {
+            if (!e.data || e.data.type !== "__netz") return;
             e.stopImmediatePropagation();
-            var res = performance.getEntriesByType("resource").map(function (r) {
-                return { url: r.name, bytes: r.encodedBodySize || r.decodedBodySize || r.transferSize || 0 };
-            });
-            self.postMessage({ type: "__netz", sync: sync, three: (self.THREE && self.THREE.REVISION) || null, res: res });
+            const res = performance.getEntriesByType("resource").map((r) => ({ url: r.name, bytes: r.encodedBodySize }));
+            self.postMessage({ type: "__netz", sync, three: self.THREE && self.THREE.REVISION, res });
         });
     };
-    window.__fadenNetz = "(" + FADEN_NETZ.toString() + ")();\n";
+    window.__fadenNetz = "(" + netz + ")();";
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
         if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0) {
@@ -487,12 +473,7 @@ const WELT_HAKEN = () => {
             this.__flNr = fl.faeden++;
             this.addEventListener("message", (e) => {
                 const m = e.data;
-                // W9: das Netz-Log des Fadens geht an die Sonde, nie an den Wirt
-                if (m && m.type === "__netz") {
-                    e.stopImmediatePropagation();
-                    if (this.__netzDa) this.__netzDa(m);
-                    return;
-                }
+                if (m && m.type === "__netz") return e.stopImmediatePropagation(), this.__netzDa(m); // W9, nie an den Wirt
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
                 if (m && m.type === "asset" && Array.isArray(m.meshes))
                     for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
@@ -602,25 +583,12 @@ const WELT_MESSEN = async () => {
             .slice(0, 4);
     }
     boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
-    // W9 — DAS NETZ-LOG JEDES FOUNDRY-FADENS (Werk und Helfer) nach Boot und Bau, und die Gegenprobe: ein Faden mit demselben
-    // Instrument, der three r128 lädt und das Manifest synchron fragt (der Boot vor dem Umzug) — sieht das Instrument das
-    // nicht, misst W9 nichts.
-    const netzVon = (w) =>
-        new Promise((res) => {
-            w.__netzDa = res;
-            w.postMessage({ type: "__netz" });
-            setTimeout(() => res(null), 10000);
-        });
-    const netz = { faeden: [], gegen: null };
-    for (const t of [{ k: 0, w: f.worker }].concat((f.helfer || []).map((h) => ({ k: h.k, w: h.w }))))
-        netz.faeden.push(Object.assign({ k: t.k }, (await netzVon(t.w)) || { fehlt: true }));
-    const gegenQuelle =
-        window.__fadenNetz +
-        `importScripts(${JSON.stringify(location.origin + "/worlds/terrain/lib/three-r128.min.js")});` +
-        `var x = new XMLHttpRequest(); x.open("GET", ${JSON.stringify(location.origin + "/cores.manifest.json")}, false); x.send();`;
-    const gegen = new Worker(URL.createObjectURL(new Blob([gegenQuelle], { type: "text/javascript" })));
-    netz.gegen = (await netzVon(gegen)) || { fehlt: true };
-    gegen.terminate();
+    // W9 das Netz-Log jedes Foundry-Fadens nach Boot und Bau; die Gegenprobe lädt r128 und fragt synchron (der alte Boot)
+    const netzVon = (w) => new Promise((r) => ((w.__netzDa = r), w.postMessage({ type: "__netz" }), setTimeout(r, 9000)));
+    const o = location.origin;
+    const gegen = new Worker(URL.createObjectURL(new Blob([window.__fadenNetz + `importScripts("${o}/worlds/terrain/lib/three-r128.min.js"); const x = new XMLHttpRequest(); x.open("GET", "${o}/cores.manifest.json", false); x.send();`]))); // prettier-ignore
+    const netz = { faeden: [], gegen: await netzVon(gegen) };
+    for (const w of [f.worker].concat((f.helfer || []).map((h) => h.w))) netz.faeden.push(await netzVon(w));
     if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten), netz };
     // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und den toten aWind · aCenter · aType zählt, was
     // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
@@ -777,37 +745,26 @@ function urteilWelt(d) {
         vr.arten > 0 && !vr.kalt.length,
         `${vr.arten} Arten` + (vr.kalt.length ? ` · ohne leere Vorrats-Antwort: ${vr.kalt.join(" ")}` : "")
     );
-    const nz = d.netz || { faeden: [], gegen: null };
-    const fb = nz.faeden.map((t) => ({ k: t.k, b: netzBruch(t) })).filter((x) => x.b.length);
-    const gb = netzBruch(nz.gegen);
-    const gegenSieht = gb.some((x) => /three-r128/.test(x)) && gb.some((x) => /synchrone XHR/.test(x));
-    const kern = nz.faeden.map((t) => ((t.res || []).find((x) => NETZ_KERN.test(x.url)) || {}).bytes || 0);
+    // W9 je Faden der Bruch beim Namen: eine Datei unter worlds/*/lib/ oder ein three-Bündel außer vendor/three.core (die
+    // zweite Version), ein synchrones XHR, eine Engine nicht aus vendor/three.core (inline — das Schlupfloch der Text-Absenz)
+    const bruch = (t) =>
+        !t
+            ? ["kein Netz-Log"]
+            : t.res
+                  .filter((x) => /\/worlds\/[^/]+\/lib\/|\/three(?!\.core\.min)[^/]*\.js/.test(x.url))
+                  .map((x) => `lädt ${x.url.split("?")[0]} (${x.bytes} B)`)
+                  .concat(t.sync.map((u) => `synchrones XHR ${u.split("?")[0]}`))
+                  .concat(t.three === "184" && t.res.some((x) => /vendor\/three\.core\.min\.js/.test(x.url)) ? [] : [`three ${t.three} nicht aus vendor/three.core`]); // prettier-ignore
+    const nz = d.netz || { faeden: [] };
+    const fb = nz.faeden.map((t, k) => bruch(t).map((b) => `Faden ${k}: ${b}`)).flat();
+    const gb = bruch(nz.gegen).join(" · ");
+    const sieht = /three-r128/.test(gb) && /synchrones XHR/.test(gb);
     pruef(
-        "W9 der Bauer auf der Engine der Welt: jeder Foundry-Faden lädt three r184 als Modul aus vendor/three.core, 0 Bytes auf worlds/*/lib/, 0 synchrone XHR in Boot und Bau",
-        nz.faeden.length >= 2 && !fb.length && gegenSieht,
-        (fb.length
-            ? fb.map((x) => `Faden ${x.k}: ${x.b.join(" · ")}`).join(" | ")
-            : `${nz.faeden.length} Fäden: three r184 aus vendor/three.core (${kern.join("/")} B), 0 fremde Engine, 0 synchrone XHR`) +
-            (gegenSieht ? " · Gegenprobe sieht r128 und das synchrone XHR" : " · Gegenprobe BLIND: " + gb.join(" · "))
+        "W9 der Bauer auf der Engine der Welt: jeder Foundry-Faden lädt three r184 aus vendor/three.core, 0 Bytes auf worlds/*/lib/, 0 synchrone XHR",
+        nz.faeden.length >= 2 && !fb.length && sieht,
+        (fb.join(" | ") || `${nz.faeden.length} Fäden sauber`) + (sieht ? " · Gegenprobe sieht r128 + synchron" : " · Gegenprobe BLIND: " + gb)
     );
     return aus;
-}
-
-// W9 — der Bruch eines Faden-Netz-Logs beim Namen: eine Datei unter worlds/*/lib/ oder ein three-Bündel außer
-// vendor/three.core (die Engine des Labors, eine zweite Version), ein synchrones XHR, eine Engine, die nicht r184 aus
-// vendor/three.core ist (eine Kopie inline — das Schlupfloch der Text-Absenz).
-const NETZ_FREMD = /\/worlds\/[^/?]+\/lib\/|\/three(?!\.core\.min\.js)[^/?]*\.js(\?|$)/;
-const NETZ_KERN = /\/vendor\/three\.core\.min\.js(\?|$)/;
-function netzBruch(t) {
-    if (!t || t.fehlt) return ["kein Netz-Log (das Instrument antwortet nicht)"];
-    const kurz = (u) => String(u).replace(/^[a-z]+:\/\/[^/]+\//, "").split("?")[0];
-    const b = [];
-    const fremd = (t.res || []).filter((x) => NETZ_FREMD.test(x.url));
-    if (fremd.length) b.push("lädt " + fremd.map((x) => `${kurz(x.url)} (${x.bytes} B)`).join(" "));
-    if ((t.sync || []).length) b.push(`${t.sync.length} synchrone XHR (${t.sync.map(kurz).join(" ")})`);
-    if (t.three !== "184" || !(t.res || []).some((x) => NETZ_KERN.test(x.url)))
-        b.push(`three ${t.three || "fehlt"} nicht aus vendor/three.core`);
-    return b;
 }
 
 async function welt() {
@@ -907,20 +864,8 @@ const VERHALTEN = [
             wand: { lesen: ["position", "color"], gelesen: ["color", "position"], reist: ["position", "color"] },
             vorrat: { arten: 2, kalt: [] },
             netz: {
-                faeden: [0, 1, 2].map((k) => ({
-                    k,
-                    three: "184",
-                    sync: [],
-                    res: [
-                        { url: "http://h/vendor/three.core.min.js", bytes: 384222 },
-                        { url: "http://h/phyto-core.js?v=1", bytes: 250000 },
-                    ],
-                })),
-                gegen: {
-                    three: "128",
-                    sync: ["http://h/cores.manifest.json"],
-                    res: [{ url: "http://h/worlds/terrain/lib/three-r128.min.js", bytes: 603000 }],
-                },
+                faeden: [0, 1].map(() => ({ three: "184", sync: [], res: [{ url: "h/vendor/three.core.min.js" }] })),
+                gegen: { three: "128", sync: ["h/cores.manifest.json"], res: [{ url: "h/worlds/terrain/lib/three-r128.min.js" }] },
             },
             boot: {
                 posts: 200,
@@ -1058,25 +1003,14 @@ const VERHALTEN = [
             "Selbst-Test 22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread → W8 rot",
             rot(W({ vorrat: { arten: 2, kalt: ["gt"] } }), "W8")
         );
-        const mitFaden1 = (faden) =>
-            W({ netz: Object.assign({}, gut.netz, { faeden: gut.netz.faeden.map((t) => (t.k === 1 ? Object.assign({}, t, faden) : t)) }) });
-        const r128 = { url: "http://h/worlds/terrain/lib/three-r128.min.js", bytes: 603000 };
-        check(
-            "Selbst-Test 23a: ein Faden lädt three r128 aus worlds/terrain/lib (die zweite Version) → W9 rot",
-            rot(mitFaden1({ three: "128", res: gut.netz.faeden[1].res.concat([r128]) }), "W9")
-        );
-        check(
-            "Selbst-Test 23b: ein Faden fragt das Manifest synchron (XMLHttpRequest, async false) → W9 rot",
-            rot(mitFaden1({ sync: ["http://h/cores.manifest.json?v=1"] }), "W9")
-        );
-        check(
-            "Selbst-Test 23c: die Engine reist inline statt aus vendor/three.core (Text-Absenz) → W9 rot",
-            rot(mitFaden1({ res: [{ url: "http://h/phyto-core.js?v=1", bytes: 250000 }] }), "W9")
-        );
-        check(
-            "Selbst-Test 23d: die Gegenprobe sieht weder r128 noch das synchrone XHR (das Instrument ist blind) → W9 rot",
-            rot(W({ netz: Object.assign({}, gut.netz, { gegen: { three: null, sync: [], res: [] } }) }), "W9")
-        );
+        const faden1 = (t) => W({ netz: { faeden: [gut.netz.faeden[0], Object.assign({}, gut.netz.faeden[0], t)], gegen: gut.netz.gegen } }); // prettier-ignore
+        for (const [n, t] of [
+            ["23a ein Faden lädt three r128 aus worlds/terrain/lib", { res: gut.netz.gegen.res.concat(gut.netz.faeden[0].res) }],
+            ["23b ein Faden fragt das Manifest synchron", { sync: ["h/cores.manifest.json"] }],
+            ["23c die Engine reist inline statt aus vendor/three.core (Text-Absenz)", { res: [] }],
+        ])
+            check(`Selbst-Test ${n} → W9 rot`, rot(faden1(t), "W9"));
+        check("Selbst-Test 23d die Gegenprobe ist blind → W9 rot", rot(W({ netz: { faeden: gut.netz.faeden, gegen: gut.netz.faeden[0] } }), "W9")); // prettier-ignore
         check(
             "Selbst-Test 20: das Manifest nennt die Labor-Shell als Brücke → S7f rot (ein UI-Edit leerte den Cache)",
             stempelProbe(shellAlsBruecke)[0][1] === false

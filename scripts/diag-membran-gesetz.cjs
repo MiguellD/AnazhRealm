@@ -18,7 +18,7 @@ const stammLib = require("./lib/stamm.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 require(path.join(root, "porta-core.js"));
 const PC = globalThis.__portaCore;
 

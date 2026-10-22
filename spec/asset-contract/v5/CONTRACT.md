@@ -92,3 +92,10 @@ wie nachher — andere Proben desselben Rauschens); alle übrigen 42 Fälle byte
 Die Plattform-Probe des Gates (`scripts/lib/plattform-probe.cjs`) baut jeden Fall mit
 `Math.pow` ±1 ULP noch einmal und nennt die Aufrufstelle, deren Drift die Bytes erreicht
 — gegen den alten Kern: `saebel-s7-L0 ← schmiede-core.js:287`.
+
+**Vertrags-Akt foundry-r184 (22.10.2026, die Engine der Welt im Bau-Faden):** der Foundry-Faden und die Gates bauen auf
+three r184 (`vendor/three.core.min.js`, `_foundryEngine`) statt r128. r184 rechnet die Normalen einer `LatheGeometry` analytisch
+(r128: computeVertexNormals mit Naht-Mittelung) und legt die Dreiecke jedes Vierecks in anderer Ecken-Folge — dieselbe
+Dreiecks-Menge, Ecken und Dreiecke gleich; `normal` weicht bis 0,10 ab, an den Polen der Drehkörper bis 0,99. Neu geprägt
+NUR die Rezepte mit Drehkörper (Griff, Knauf, Kolben): 17 von 21 Rezepten, 36 von 44 Fällen (beide Samen, dazu die
+ov-Fälle von langschwert und spitzhacke), `objects`/`vertices` unverändert; die übrigen 8 byte-gleich. Kein cv-Bump.

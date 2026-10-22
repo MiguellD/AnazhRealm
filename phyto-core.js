@@ -1442,6 +1442,60 @@
     // gleich, was für Fels genügt [kein Lockstep]). Nur die GESTALT: den Stoff legt das Fels-Gesetz
     // auf (gelaende-core `felsNetz`, K17; die Vertex-Farben hier sind gefallen). `seq` (0..1) treibt
     // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
+    // DIE NAHT DER ECKEN (foundry-r184): gleiche Ecken (jedes Attribut auf 1e-4 abgeschnitten, in Attribut-Folge) werden
+    // EINE, der Index zeigt auf die erste — rein, mit injizierter Engine (wie buildBoulderGeometry), dieselben Bytes wie das
+    // r128-Addon `BufferGeometryUtils.mergeVertices` (Index Uint32 erst über 65 535). Vorher nähte nur der Bau-Faden (r128
+    // mit Addon); der Haupt-Faden (r184 ohne Addon) ließ die Ecken des Felsens offen, und seine Laplace-Rundung lief auf
+    // losen Dreiecken. Ein verschränktes oder Morph-Attribut bricht laut (kein Netz der Kerne trägt eines).
+    function mergeVertices(THREE, geometry, tolerance = 1e-4) {
+        const tol = Math.max(tolerance, Number.EPSILON);
+        const ix = geometry.getIndex();
+        const namen = Object.keys(geometry.attributes);
+        for (const n of namen) {
+            if (geometry.attributes[n].isInterleavedBufferAttribute)
+                throw new Error("NAHT: verschränktes Attribut " + n);
+            if (geometry.morphAttributes[n] && geometry.morphAttributes[n].length)
+                throw new Error("NAHT: Morph-Attribut " + n);
+        }
+        const n = ix ? ix.count : geometry.getAttribute("position").count;
+        const schub = Math.pow(10, Math.log10(1 / tol));
+        const neu = {};
+        for (const name of namen) neu[name] = [];
+        const zuIndex = {};
+        const index = [];
+        let naechste = 0;
+        for (let i = 0; i < n; i++) {
+            const e = ix ? ix.array[i] : i;
+            let schluessel = "";
+            for (const name of namen) {
+                const a = geometry.attributes[name];
+                for (let k = 0; k < a.itemSize; k++) schluessel += `${~~(a.array[e * a.itemSize + k] * schub)},`;
+            }
+            if (schluessel in zuIndex) {
+                index.push(zuIndex[schluessel]);
+                continue;
+            }
+            for (const name of namen) {
+                const a = geometry.attributes[name];
+                for (let k = 0; k < a.itemSize; k++) neu[name].push(a.array[e * a.itemSize + k]);
+            }
+            zuIndex[schluessel] = naechste;
+            index.push(naechste++);
+        }
+        const aus = geometry.clone();
+        for (const name of namen) {
+            const a = geometry.attributes[name];
+            aus.setAttribute(
+                name,
+                new THREE.BufferAttribute(new a.array.constructor(neu[name]), a.itemSize, a.normalized)
+            );
+        }
+        let max = 0;
+        for (const x of index) if (x > max) max = x;
+        aus.setIndex(new THREE.BufferAttribute(new (max > 65535 ? Uint32Array : Uint16Array)(index), 1));
+        return aus;
+    }
+
     function buildBoulderGeometry(THREE, noise3, P, seq) {
         if (!THREE || !THREE.IcosahedronGeometry) return null;
         const rnd = typeof seq === "function" ? seq : Math.random;
@@ -1486,9 +1540,7 @@
             off = (P.seed || 0) * 13.7;
         const detail = Math.max(1, (P.detail || 4) - 1);
         let geo = THREE.IcosahedronGeometry ? new THREE.IcosahedronGeometry(1, detail) : null;
-        if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeVertices) {
-            geo = THREE.BufferGeometryUtils.mergeVertices(geo);
-        }
+        geo = mergeVertices(THREE, geo);
         const pos = geo.attributes.position,
             n = pos.count;
         const idxAttr = geo.index;
@@ -5087,6 +5139,7 @@
         RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,
+        mergeVertices: mergeVertices, // foundry-r184 — die Naht der Ecken (Fels, Kristall-Fuß), auf jedem Faden dieselbe
         buildBoulderGeometry: buildBoulderGeometry,
         buildCrystalPointGeometry: buildCrystalPointGeometry,
         buildBarkTubeArrays: buildBarkTubeArrays,

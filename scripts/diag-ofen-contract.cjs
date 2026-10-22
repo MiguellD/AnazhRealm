@@ -2,11 +2,8 @@
 // diag-ofen-contract.cjs — DER OFEN-VERTRAG (S1 Wände): das Byte-Golden des Tier- und Mensch-Bakes je
 // Stoff-Klasse × Gelenk (npm run gate:ofen-contract).
 //
-// Befund: die MESHFREI-Kerne (tetrapoda-core, koerper-core) tragen nur Daten-Goldens (v7: PRESETS + PARAMS); den Guss
-// macht der Ofen (foundry-core BAKERS_BY_KIND.kreatur/.koerper — dieselben Bäcker, die Foundry-Worker und Wirt rufen).
-// Sein Ausgang war ohne Golden: 3a0248e8 (das Fell folgt der Haut) und 8e6f628c (die Hand-Mitte) bewiesen ihren
-// Byte-Stand von Hand („sha256 je Stoff-Klasse × Gelenk, 189 Klassen: 185 byte-gleich, anders nur die vier
-// fellSchale@wolf"; „Mensch-Bake byte-gleich, 53 Klassen"). Diese Linse macht den Handbeweis zur Datei.
+// Die MESHFREI-Kerne (tetrapoda-core, koerper-core) tragen nur Daten-Goldens (v7); den Guss macht der Ofen (foundry-core
+// BAKERS_BY_KIND.kreatur/.koerper — dieselben Bäcker, die Foundry-Worker und Wirt rufen). Diese Linse friert ihn ein.
 //
 // Fälle: jede Art des Tier-Gesetzbuchs (wolf · fox · bear · deer) und der Mensch, je deklarierte Stufe (kindStages
 // kreatur/koerper [0, 1]), Samen 1 (der Ofen liest den Samen nie — die Linse friert die Invarianz ein: Samen 7 ==
@@ -19,9 +16,8 @@
 //   <fall>|beipack            — der übrige Beipack (root · art · base · skinJoints · tailSegs · masse · handMitte)
 // Rot nennt den Täter beim Namen: `wolf-L0|fell|earL: sha256 weicht ab`, `…: fehlt im Ist`, `…: neu (nicht im Golden)`.
 //
-// PLATTFORM: die Bäcker rechnen in three r128 und den Kernen mit sin/cos/pow — Math.pow kippt seit dem Raster in
-// tetrapoda-core (skullR) keine Klasse, sin/cos stehen benannt in spec/asset-contract/plattform-ratsche.json (Satz
-// `ofen`). Node 22 (CI) und Node 24 (lokal) prägen dieselben Bytes.
+// PLATTFORM: die Bäcker rechnen auf der Engine des Bau-Fadens mit sin/cos/pow — Math.pow kippt keine Klasse, sin/cos
+// stehen benannt in spec/asset-contract/plattform-ratsche.json (Satz `ofen`).
 //
 // Goldens: spec/asset-contract/ofen/golden/bake.json — EINGEFROREN, gemintet NUR wenn die Datei fehlt (oder
 // MINT_FORCE=1, ein benannter Vertrags-Akt im Commit).
@@ -34,13 +30,13 @@ const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
-const { probeWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, farbHex } = require("./lib/plattform-probe.cjs");
+const { engine } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
 const GOLDEN = path.join(GOLDEN_DIR, "bake.json");
 const QUELLEN = [
-    "worlds/terrain/lib/three-r128.min.js",
     "phyto-core.js",
     "koerper-core.js",
     "tetrapoda-core.js",
@@ -50,12 +46,12 @@ const SAME = 1;
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-// Die Welt des Ofens: three r128 und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
+// Die Welt des Ofens: die Engine des Bau-Fadens und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
 // Plattform-Probe erreicht so den Guss).
 const QUELLTEXT = {};
 for (const f of QUELLEN) QUELLTEXT[f] = fs.readFileSync(path.join(ROOT, f), "utf8");
 function ladeOfen() {
-    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
+    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout, THREE: engine() };
     sb.self = sb;
     sb.globalThis = sb;
     sb.window = sb;
@@ -101,8 +97,8 @@ function fingerabdruck(g, fall) {
         h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
         h.update(
             JSON.stringify({
-                c: m.color ? m.color.getHex() : null,
-                e: m.emissive ? m.emissive.getHex() : null,
+                c: m.color ? farbHex(m.color) : null,
+                e: m.emissive ? farbHex(m.emissive) : null,
                 r: typeof m.roughness === "number" ? m.roughness : null,
                 mt: typeof m.metalness === "number" ? m.metalness : null,
                 o: typeof m.opacity === "number" ? m.opacity : null,

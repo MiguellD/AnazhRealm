@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-mensch-anatomie.cjs — DIE ANATOMIE-LINSE DES MENSCHEN (Welle 5, „der Mensch nah: Hände, Gesicht, Augen")
 // (npm run gate:mensch-anatomie). Sie misst das GESETZ, aus dem Lab und Welt den Menschen bauen — koerper-core
-// bauMensch + morphAuf mit den Start-Dials (START_PARAMS), three r128 im node-vm wie der Foundry-Worker —, die Arme
+// bauMensch + morphAuf mit den Start-Dials (START_PARAMS), die Engine im node-vm wie der Foundry-Worker —, die Arme
 // gerade hängend (Arm-Gelenke auf 0 gedreht), normiert auf die Körperhöhe Hk, gegen die Anthropometrie-Bänder des
 // Gesetzbuchs (koerper-core MENSCH_SOLL, erwachsener Mann 1,80 m):
 //   handL · handB · handgelenk (Hand-Länge, Mittelhand-Breite, Handgelenk-Breite)
@@ -19,13 +19,12 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 
 function ladeWelt() {
-    const sb = { console, Math };
+    const sb = { console, Math, THREE: require("./lib/asset-worker-harness.cjs").engine() };
     sb.self = sb;
     sb.globalThis = sb;
     sb.window = sb;
     vm.createContext(sb);
-    for (const f of ["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"])
-        vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
+    for (const f of ["koerper-core.js"]) vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
     return sb;
 }
 
@@ -156,7 +155,6 @@ function messe(sb, verzerre) {
 // Lippe, Höhle und Haar, die Dreiecke — misst der OFEN L0 (foundry-core BAKERS_BY_KIND.koerper, wie Welt und Labor ihn
 // zeichnen). Farben in CIELAB (D65) aus den linearen Stoff- und Vertex-Farben.
 const OFEN_QUELLEN = [
-    "worlds/terrain/lib/three-r128.min.js",
     "phyto-core.js",
     "koerper-core.js",
     "tetrapoda-core.js",
@@ -164,6 +162,7 @@ const OFEN_QUELLEN = [
 ];
 function ladeOfen() {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
+    sb.THREE = require("./lib/asset-worker-harness.cjs").engine();
     sb.self = sb;
     sb.globalThis = sb;
     sb.window = sb;

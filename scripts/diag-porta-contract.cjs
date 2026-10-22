@@ -1,14 +1,7 @@
 // diag-porta-contract.cjs — ASSET-VERTRAG v4 (Tore): der Byte-Beweis für
 // porta-core.js buildInstance (Studio-Vertrag B2, docs/studio-vertrag.md).
-// Läuft DIREKT in Node (die v2/v3-Klasse): porta-core braucht nur
-// THREE-Geometrie/Material-Klassen — das vendorte r128-UMD lädt in Node,
-// kein Browser, keine swiftshader-Fragilität.
-//
-// Fingerabdruck je Fall (rezeptId × seed × lod): sha256 über den kanonischen
-// Byte-Strom der gebauten Gruppe in traverse-Reihenfolge — je Objekt mit
-// Geometrie: Typ · matrixWorld (Float64-Bytes) · Material-Signatur (Farbe/
-// roughness/metalness/opacity) · alle Attribute (Name sortiert, itemSize +
-// rohe Puffer-Bytes) · Index. Ein einziges abweichendes Byte kippt den Hash.
+// Läuft DIREKT in Node auf der Engine des Bau-Fadens (asset-worker-harness `engine`), kein Browser.
+// Fingerabdruck je Fall (rezeptId × seed × lod): plattform-probe `fingerabdruck`.
 //
 // SEED-INVARIANZ (cv:4, dokumentiert in spec/asset-contract/v4/CONTRACT.md):
 // der Bau zieht aus dem LAB-FESTEN Strom mulberry32(0x50FA) (byte-treu zur
@@ -21,8 +14,7 @@
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
 // PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte —
 // die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion
-// und Aufrufstelle. Befund am Kopf 516e704a: unter Node 24 grün, unter Node 22 16 von 16 Fällen rot (three r128
-// CatmullRomCurve3 'centripetal' und convertSRGBToLinear rufen Math.pow mit gebrochenem Exponenten).
+// und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const fs = require("fs");
 const path = require("path");
@@ -32,7 +24,7 @@ const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v4/golden");
 const goldenFile = path.join(goldenDir, "gates.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 const KERN = path.join(root, "porta-core.js");
 require(KERN);
 const PC = globalThis.__portaCore;

@@ -1,14 +1,7 @@
 // diag-schmiede-contract.cjs — ASSET-VERTRAG v5 (Klingen & Werkzeuge): der Byte-Beweis
 // für schmiede-core.js buildInstance (Studio-Vertrag B2, docs/studio-vertrag.md).
-// Läuft DIREKT in Node (die v2/v3/v4-Klasse): schmiede-core braucht nur
-// THREE-Geometrie/Material-Klassen — das vendorte r128-UMD lädt in Node,
-// kein Browser, keine swiftshader-Fragilität.
-//
-// Fingerabdruck je Fall (rezeptId × seed × lod): sha256 über den kanonischen
-// Byte-Strom der gebauten Gruppe in traverse-Reihenfolge — je Objekt mit
-// Geometrie: Typ · matrixWorld (Float64-Bytes) · Material-Signatur (Farbe/
-// roughness/metalness/opacity) · alle Attribute (Name sortiert, itemSize +
-// rohe Puffer-Bytes) · Index. Ein einziges abweichendes Byte kippt den Hash.
+// Läuft DIREKT in Node auf der Engine des Bau-Fadens (asset-worker-harness `engine`), kein Browser.
+// Fingerabdruck je Fall (rezeptId × seed × lod): plattform-probe `fingerabdruck`.
 //
 // SEED-INVARIANZ (cv:5, dokumentiert in spec/asset-contract/v5/CONTRACT.md):
 // der Waffen-Bau des Labs ist eine reine Funktion der Parameter (kein
@@ -24,10 +17,7 @@
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
 //
-// PLATTFORM-PROBE (Integration W5, scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8
-// dieselben Bytes — jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss
-// byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Befund: unter Node 24 geprägt, unter Node 22
-// (CI) rot — die Säbel-Klinge hing an pow(e, 0,7) im Querschnitt. Seit S1 Wände driften alle Transzendenten: pow
+// PLATTFORM-PROBE (scripts/lib/plattform-probe.cjs): jeder Fall baut noch einmal mit den Transzendenten ±1 ULP; pow
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const fs = require("fs");
@@ -38,7 +28,7 @@ const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
 const goldenFile = path.join(goldenDir, "klingen.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 const KERN = path.join(root, "schmiede-core.js");
 require(KERN);
 const SC = globalThis.__schmiedeCore;

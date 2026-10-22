@@ -84,7 +84,7 @@ function staticLaws(q, manifestSrc) {
     for (const [name, ok, detail] of staticLaws(undefined, manifestSrc)) check(name, ok, detail);
 
     // Die Kern-Wahrheit fuer die Dial-Drift-Wand (Buch == Kern): PRESETS in Node ableiten.
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+    global.THREE = require("./lib/asset-worker-harness.cjs").engine();
     require(path.join(root, "fachwerk-core.js"));
     const FCn = globalThis.__fachwerkCore;
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;

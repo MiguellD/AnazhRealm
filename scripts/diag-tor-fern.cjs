@@ -1,12 +1,10 @@
 #!/usr/bin/env node
-// diag-tor-fern.cjs — DIE LINSE DES TOR-WURFS UND DER TOR-FERNFORM (1110-9, gate:tor-fern). Befund (OMEN 11.10., Genesis-Ring,
-// GTX 1060): die Stufe 0 jedes Tors warf sich selbst (Budget-Zeile `schatten: 0`) — 181 000 der 977 000 Dreiecke der Genesis
-// lagen im Wurf der Tore in die nahe Kaskade, je Tor und Kaskade bis 13 Stoff-Befehle. Der Akt: die NUR-WURF-Stufe 3 ist die
+// diag-tor-fern.cjs — DIE LINSE DES TOR-WURFS UND DER TOR-FERNFORM (gate:tor-fern). Die NUR-WURF-Stufe 3 ist die
 // Hüllen-Liste des Tors (porta-core `huelle`, N5), gesammelt im SELBEN Lauf von buildGate, der die Meshes baut; die feinen Teile
 // tragen die Rolle "wurf" (nur die Stufe 3 wirft sie), die Fernform des Welt-March liest höchstens 24 Teile der Rolle "sicht"
 // (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je Pixel über alle Teile seines Eintrags). Die Linse
 // misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7 Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node,
-// worlds/terrain/lib/three-r128.min.js + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
+// three r184 des Bau-Fadens + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
 //
 //   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);
 //      die Kosten der Stufe 3 (Zeile und Draw je Rezept und Rand) richtet gate:regler-wirkt STUFEN über die echte Brücke
@@ -24,7 +22,7 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 require(path.join(root, "porta-core.js"));
 const PC = globalThis.__portaCore;
 const ARG = process.argv;
@@ -283,12 +281,9 @@ function deckung(umbauListe, aufblaehen, nurIds) {
 // ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
 // Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
 // Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
-// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third. Gemessen an Genesis Third (werkbank
-// zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
-// Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
-// Hysterese-Band in der Stufe 1 (23 082), der Wurf der Stufe 3 (19 248) und der Wurf der fernen Stufe (kathedrale + ruine
-// 4 814) — 88 538. Fern jenseits 12 m stehen fünf Tore (maurentor, die Portale-Vorschau als drachentor, maschine, kathedrale,
-// ruine): ihre Summe trägt den Rest 31 462. Die Linse rechnet die SUMME der fünf (nie ein Mittel über eine angenommene Zahl).
+// DAS SOLL DER KLASSE: ≤ 120 000 Dreiecke an Genesis Third; fern jenseits 12 m stehen fünf Tore (maurentor, die
+// Portale-Vorschau als drachentor, maschine, kathedrale, ruine), ihre Summe trägt den Rest 31 462 neben dem Nahen. Die Linse
+// rechnet die SUMME der fünf (nie ein Mittel über eine angenommene Zahl).
 // Stoff-Treue: jede Fläche einer gezeigten fernen Stufe trägt einen Stoff ihrer L0 (Typ, Farbe, Glut, Metall, Rauheit,
 // Deckkraft gleich) — keine Fläche heller als ihr L0-Stoff, die Albedo der Fernstufe IST die der L0.
 const FERN = {

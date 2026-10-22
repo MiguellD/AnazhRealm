@@ -64,7 +64,7 @@ bleibt unberührt — die Schale sitzt hinter ihm.
 Mesh {
   kind:  string,          // bark | barkBirch | stem | foliage | foliageTex | grass | … | unknown
   mat:   { roughness, metalness, flatShading, envMapIntensity, side, alphaTest, hasNormalMap,
-           color? },      // color: [r,g,b] r128-LINEAR, nur Zweit-Kern-Meshes (must-ignore für Alt-Leser)
+           color? },      // color: [r,g,b] LINEAR, nur Zweit-Kern-Meshes (must-ignore für Alt-Leser)
   <attr>:{ array:Float32Array, itemSize:int },  // position PFLICHT; nur Namen aus FOUNDRY_LESEN
   index?: Uint16Array | Uint32Array             // Uint16 bei ≤ 65 536 Vertices
 }
@@ -77,17 +77,21 @@ Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERAT
 ihr den Manifest-Text und die Skript-URLs):
 
 ```text
-stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + bruecke_1 + … + bruecke_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
+stamp = SHA-256( manifestText + "\n" + modul_1 + … + modul_k + "\n" + script_1 + … + script_n + "\n" + bruecke_1 + … + bruecke_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
 ```
 
 - `manifestText` — der ROHE Text von `cores.manifest.json` (ein Manifest-Edit = neuer Kern-Satz = Bust).
+- `modul_i` — der Text JEDES `modul[]`-Eintrags (die Engine des Fadens, heute `vendor/three.core.min.js` = three r184,
+  foundry-r184): die Engine formt Bytes mit (r128 → r184 bewegte Kegel, Drehkörper, Extrusion) — ein Engine-Wechsel
+  baut neu. Ihr Abruf trägt KEIN `?v=` (dieselbe URL wie die Import-Map der Welt; der Anker pinnt die Bytes).
 - `script_i` — der Text JEDES `scripts[]`-Eintrags ALLER Manifest-Kerne, in Manifest-Reihenfolge
   (heute: `phyto-core.js`, `foundry-core.js`, `vehicle-core.js`) — jeder Kern ist Generator-Quelle.
 - `bruecke_j` — der Text JEDER `bruecke` der Manifest-Kerne (heute `foundry-bruecke.js`; K42, vorher seit V18.527 die
   Labor-Shell `worlds/terrain/phytogenesis.js`): die Brücke trägt `__extractAssetMesh` (backt matrixWorld in die
   Vertices) und `bakeImpostorAtlas` (die Karte) — ein Brücken-Edit leert die Platte, ein UI-Edit am Labor nie
   (gate:fluss S7f).
-- Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
+- Jeder Fetch eines Kerns und der Brücke trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene
+  versionierte Datei).
 - `|f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
   eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form leert den Cache von selbst.
 - Beim DB-Open wird `__stamp` gelesen: Mismatch → `store.clear()` + neuen Stempel schreiben
@@ -195,7 +199,8 @@ Der Live-Code (die Transport-Schale `_foundrySchale`) schreibt heute v0 (`{ mesh
 
 ## r128→r184-Übersetzung am Chokepoint (Ü1/Ü2)
 
-Das Pack trägt die ROHEN r128-Daten (Vertex-Farben/Material-Regler, wie sie das Studio bäckt) —
+Das Pack trägt die ROHEN Daten des Bau-Fadens (Vertex-Farben/Material-Regler, wie sie das Studio bäckt; seit
+foundry-r184 baut der Faden auf three r184 mit abgeschaltetem Farb-Management — dieselben Zahlen wie r128) —
 die Übersetzung in die r184-Welt lebt NUR am Empfangs-/Anwendungs-Chokepoint des Hosts, NIE im
 Pack und NIE verstreut (die zwei DOKUMENTIERTEN Migrations-Regeln, keine Tuning-Knöpfe):
 
@@ -211,13 +216,14 @@ an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 | `_dayNightApplyAmbient`                 | der Hemi-Tag-Term (`0.45 × LEGACY_LICHT × sunHeight`)            |
 | (S2 die Karte backt in der Welt)         | der Impostor-Atlas backt im Welt-Renderer (`_karteWeltBacken`) aus denselben Stoffen, die die Welt zeichnet — die Welt-Lichtkette gilt nativ, kein Bake-Rig |
 
-**Ü2 — FARBE (raw-als-linear):** r128 las Hex-Farben ALS LINEAR — treue Studio-Werte reisen
+**Ü2 — FARBE (raw-als-linear):** der Bau-Faden liest Hex-Farben ALS LINEAR (r128 kannte kein Farb-Management, r184
+schaltet es im Faden ab, `_foundryEngine`; das FARB-GESETZ rechnet jeder Kern selbst) — treue Studio-Werte reisen
 deshalb als ROHE lineare Zahlen und werden roh=linear gelesen (nie als sRGB-Hex re-interpretiert):
 
 | Anker (Stamm)               | Anwendung                                                                                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `_foundryTreeMaterial`      | `colorNode = attribute("color")` — die r128-Vertex-Farben im Reply/Pack sind LINEAR und werden ROH gelesen (kein sRGB-Decode)                     |
-| `_foundryBuildGroup`        | `m.mat.color` (Zweit-Kern-Meshes) ist r128-LINEAR → füllt das color-Attribut roh; die kind-Default-Füllfarben sind lineare Literale               |
+| `_foundryTreeMaterial`      | `colorNode = attribute("color")` — die Vertex-Farben im Reply/Pack sind LINEAR und werden ROH gelesen (kein sRGB-Decode)                     |
+| `_foundryBuildGroup`        | `m.mat.color` (Zweit-Kern-Meshes) ist LINEAR → füllt das color-Attribut roh; die kind-Default-Füllfarben sind lineare Literale               |
 | `_foundryIngestWorldParams` | die Studio-HEX-Anker (ground/sky) werden EINMAL am Ingest via `THREE.Color` nach linear gewandelt (sRGB-Hex → linear), nie per Hex weitergereicht |
 
 **Regel:** eine NEUE r128-Quelle (weiterer Kern, weiteres Lab) erbt Ü1/Ü2 automatisch, solange

@@ -91,3 +91,10 @@ Werten der 9 Bau-Fälle), `normal` ≤ 3,1e-5, `uv` ≤ 1,22e-4, `matrixWorld` �
 ≤ 7,4e-6 (ein Hex kippt um 1/255). Danach: Node 22 und Node 24 grün, die Probe kippt 0 von 9
 Fällen (Ratsche `v4` = 0, `spec/asset-contract/plattform-ratsche.json`). Kein cv-Bump (die
 Naht ist dieselbe).
+
+**Vertrags-Akt foundry-r184 (22.10.2026, die Engine der Welt im Bau-Faden):** der Foundry-Faden und die Gates bauen auf
+three r184 (`vendor/three.core.min.js`, `_foundryEngine`) statt r128. r184 trianguliert die Deckel einer `ExtrudeGeometry` mit der
+anderen Diagonale: je Stein (Quader-Extrusion mit Fase, `quadBlock` und `_steinL0`) liegen 4 von 28 Dreiecken anders, die
+Fläche ist dieselbe (Ecken und Dreiecke gleich, die indexweise Lage-Abweichung bis 1,45 ist Umordnung). Neu geprägt NUR
+die Steinbögen: kathedrale · verkalkt · ruine · maurentor, L0 (beide Samen und der ov-Fall der Kathedrale) und L1 — 13 von
+37 Fällen, `objects`/`vertices` unverändert; die übrigen 24 byte-gleich. Kein cv-Bump.

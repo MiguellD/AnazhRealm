@@ -2,7 +2,7 @@
 // an Albedo liefern, je Stoff gegen das Band der Natur geurteilt (das FARB-GESETZ: ein Paletten-Hex ist eine sRGB-
 // Absicht, die Albedo sein linearer Wert — Kreatur-Bäcker, Vegetation und Gegenstände lesen dieselbe Kurve).
 //
-// Node-DIREKT (r128-UMD + require, wie gate:vehicle-contract): je Fahrzeug-Rezept × Lack-Gestalt (Same 1..8) und je
+// Node-DIREKT (die Engine des Bau-Fadens, wie gate:vehicle-contract): je Fahrzeug-Rezept × Lack-Gestalt (Same 1..8) und je
 // Schmiede-Rezept baut das Gesetzbuch seine Welt-Gestalt (`buildInstance`); je Mesh liest die Linse, was in die Welt
 // reist — die Material-Farbe (ein Stoff ohne Vertex-Farben) bzw. das Mittel der Vertex-Farben je Vertex (der
 // Wirt liest NUR das color-Attribut: eine Material-Tönung dazu zeigt das Labor, die Welt nie — Lab ≠ Welt).
@@ -21,7 +21,7 @@
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 require(path.join(root, "vehicle-core.js"));
 require(path.join(root, "schmiede-core.js"));
 require(path.join(root, "phyto-core.js"));

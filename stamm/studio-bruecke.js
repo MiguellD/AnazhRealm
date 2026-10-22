@@ -74,6 +74,8 @@ class AnazhRealm_studio_bruecke {
                 JSON.stringify(start) +
                 ",function " +
                 AnazhRealm._foundrySchale.toString() +
+                ",function " +
+                AnazhRealm._foundryEngine.toString() +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
             // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt — der Faden
@@ -440,33 +442,77 @@ class AnazhRealm_studio_bruecke {
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
-    // nichts außerhalb seines Rumpfs zu. Er liest das Kern-Manifest selbst (synchron: im Faden wartet niemand darauf; ALLES
-    // aus cores.manifest.json, EINE Quelle, ?v= Pflicht), stellt die Transport-Schale VOR das Studio (ihr Kanal-Hörer steht
-    // zuerst) und lädt die lib der Kerne (three r128 + die Geometrie-Helfer, keine Labor-Szene) → die Kerne in Manifest-Folge
-    // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
-    // (die Blob-URL hat keine Basis). Der Stempel der Platte hasht jede Generator-Quelle: die Kern-Skripte UND die Brücke
-    // (`__extractAssetMesh`, `bakeImpostorAtlas`), nie die Labor-Shell. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
-    static _foundryStart(b, schale) {
+    // nichts außerhalb seines Rumpfs zu. Er fragt das Kern-Manifest selbst (ALLES aus cores.manifest.json, EINE Quelle, ?v=
+    // Pflicht) — asynchron, kein synchrones XHR —, lädt die Engine der Welt als Modul (`modul`: three r184 aus
+    // vendor/three.core, ohne ?v unter DERSELBEN URL wie die Import-Map der Welt, der Anker pinnt ihre Bytes, gate:vendor-anker)
+    // und macht sie zum THREE der Gesetzbücher (`_foundryEngine`), stellt die Transport-Schale VOR das Studio (ihr Kanal-Hörer
+    // steht zuerst) und lädt die Kerne in Manifest-Folge (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell
+    // im Faden); importScripts braucht ABSOLUTE URLs (die Blob-URL hat keine Basis). Der Stempel der Platte hasht jede
+    // Generator-Quelle: die Engine, die Kern-Skripte UND die Brücke (`__extractAssetMesh`, `bakeImpostorAtlas`), nie die
+    // Labor-Shell — ein Engine-Wechsel baut neu (r128 → r184 bewegte Kegel, Drehkörper, Extrusion). Bis die Brücke steht,
+    // hält der Warte-Hörer jede Nachricht und reicht sie danach in Ankunfts-Folge weiter (nichts fällt in den Spalt des
+    // Modul-Imports). Ein Manifest ohne Kern oder Engine, ein fehlgeschlagener Abruf oder Import bricht LAUT (`worker.onerror`).
+    static _foundryStart(b, schale, engine) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
-        const x = new W.XMLHttpRequest();
-        x.open("GET", url("cores.manifest.json"), false);
-        x.send();
-        const manifestText = x.responseText;
-        const manifest = JSON.parse(manifestText);
-        if (!Array.isArray(manifest) || !manifest.length)
-            throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-        const liste = (feld) => {
-            const out = [];
-            for (const core of manifest)
-                for (const s of [].concat((core && core[feld]) || [])) if (typeof s === "string" && s) out.push(url(s));
-            return out;
+        const halt = [];
+        const warte = (ev) => {
+            ev.stopImmediatePropagation();
+            halt.push(ev.data);
         };
-        const quellen = liste("scripts").concat(liste("bruecke"));
-        schale({ lesen: b.lesen, format: b.format, platte: b.platte, manifestText, stempelUrls: quellen });
-        W.__PHYTO_FOUNDRY_WORKER = true;
-        W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-        W.importScripts(...liste("lib").concat(quellen)); // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
+        W.addEventListener("message", warte);
+        fetch(url("cores.manifest.json"))
+            .then((r) => {
+                if (!r.ok) throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest antwortet " + r.status);
+                return r.text();
+            })
+            .then((manifestText) => {
+                const manifest = JSON.parse(manifestText);
+                if (!Array.isArray(manifest) || !manifest.length)
+                    throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
+                const liste = (feld, mitV) => {
+                    const out = [];
+                    for (const core of manifest)
+                        for (const s of [].concat((core && core[feld]) || []))
+                            if (typeof s === "string" && s) out.push(mitV ? url(s) : new URL(s, b.base).href);
+                    return out;
+                };
+                const module = liste("modul", false);
+                if (!module.length)
+                    throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest nennt keine Engine (modul)");
+                return Promise.all(module.map((u) => import(u))).then((ns) => {
+                    W.THREE = engine(ns);
+                    const quellen = liste("scripts", true).concat(liste("bruecke", true));
+                    schale({
+                        lesen: b.lesen,
+                        format: b.format,
+                        platte: b.platte,
+                        manifestText,
+                        stempelUrls: module.concat(quellen),
+                    });
+                    W.__PHYTO_FOUNDRY_WORKER = true;
+                    W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
+                    W.importScripts(...quellen); // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
+                    W.removeEventListener("message", warte);
+                    for (const data of halt) W.dispatchEvent(new W.MessageEvent("message", { data }));
+                });
+            })
+            .catch((e) =>
+                setTimeout(() => {
+                    throw e;
+                })
+            );
+    }
+    // DIE ENGINE DES BAU-FADENS: die Modul-Namensräume des Manifests (`modul`, three r184 aus vendor/three.core) als EIN
+    // globales THREE der Gesetzbücher. Das Farb-Management der Engine ist AUS: jedes Gesetzbuch spricht seine Farbe roh und
+    // rechnet das FARB-GESETZ selbst (das Hex ist eine sRGB-Absicht, der Kern legt den linearen Wert) — rechnete die Engine
+    // mit, zöge sie jeden Stoff ein zweites Mal durch die sRGB-Kurve (r128 kannte kein Farb-Management; die Goldens tragen
+    // die rohe Farbe). Läuft als Quelltext im Faden (der Boot-Blob) und in den Werkzeugen (`asset-worker-harness` engine);
+    // sie greift auf nichts außerhalb ihres Rumpfs zu.
+    static _foundryEngine(ns) {
+        const T = Object.assign({}, ...ns);
+        T.ColorManagement.enabled = false;
+        return T;
     }
     // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
     // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den

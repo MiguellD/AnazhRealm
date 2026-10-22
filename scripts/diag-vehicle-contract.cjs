@@ -1,14 +1,7 @@
 // diag-vehicle-contract.cjs — ASSET-VERTRAG v3 (Fahrzeuge): der Byte-Beweis
 // für vehicle-core.js buildInstance (Studio-Vertrag B2, docs/studio-vertrag.md).
-// Läuft DIREKT in Node (Gesetzbuch-Gate ohne Browser): vehicle-core braucht
-// nur THREE-Geometrie/Material-Klassen — das vendorte r128-UMD lädt in Node,
-// kein Browser, keine swiftshader-Fragilität.
-//
-// Fingerabdruck je Fall (rezeptId × seed × lod): sha256 über den kanonischen
-// Byte-Strom der gebauten Gruppe in traverse-Reihenfolge — je Objekt mit
-// Geometrie: Typ · matrixWorld (Float64-Bytes) · Material-Signatur (Farbe/
-// roughness/metalness/opacity) · alle Attribute (Name sortiert, itemSize +
-// rohe Puffer-Bytes) · Index. Ein einziges abweichendes Byte kippt den Hash.
+// Läuft DIREKT in Node auf der Engine des Bau-Fadens (asset-worker-harness `engine`), kein Browser.
+// Fingerabdruck je Fall (rezeptId × seed × lod): plattform-probe `fingerabdruck`.
 //
 // SEED-INVARIANZ (cv:3, dokumentiert in spec/asset-contract/v3/CONTRACT.md):
 // das Garage-Studio trägt keinen stochastischen Term — derselbe Bauplan bei
@@ -18,9 +11,8 @@
 // Goldens: spec/asset-contract/v3/golden/vehicles.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
-// PLATTFORM-PROBE (Integration W5; S1 Wände: alle Transzendenten, scripts/lib/plattform-probe.cjs): Math.pow ±1 ULP
-// kippt kein Byte — die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; sin/cos/atan2/hypot
-// erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
+// PLATTFORM-PROBE (scripts/lib/plattform-probe.cjs): Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot erreichen
+// die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const fs = require("fs");
 const path = require("path");
@@ -30,7 +22,7 @@ const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v3/golden");
 const goldenFile = path.join(goldenDir, "vehicles.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 const KERN = path.join(root, "vehicle-core.js");
 require(KERN);
 const VC = globalThis.__vehicleCore;

@@ -645,7 +645,8 @@ angewandt:
 ## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV
 
 Die Studios sind in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert
-r184 (physisch, farb-verwaltet). Wo AnazhRealm Studio-INHALT selbst rendert
+r184 (physisch, farb-verwaltet). Der Foundry-Faden baut auf derselben Engine (three r184, `vendor/three.core.min.js`)
+mit abgeschaltetem Farb-Management — die Gesetzbücher sprechen Farbe roh. Wo AnazhRealm Studio-INHALT selbst rendert
 (nicht das Portal — dort läuft das Original), gelten DREI dokumentierte
 Übersetzungs-Regeln (three.js-Migrationspfad, KEINE Tuning-Knöpfe):
 

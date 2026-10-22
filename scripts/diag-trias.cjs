@@ -77,7 +77,7 @@ const triasStaticLaws = () => [
         // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
         // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die
         // leichte Flaechen-Stufe ~20k; ein fern klebendes L1 faengt B4 am Stufen-Schluessel).
-        global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+        global.THREE = require("./lib/asset-worker-harness.cjs").engine();
         require(path.join(root, "fachwerk-core.js"));
         const FCst = globalThis.__fachwerkCore;
         const g0 = FCst.buildInstance("alemannisch", 7, 0);
@@ -119,7 +119,7 @@ const triasStaticLaws = () => [
 
     // ===== Teil N: die fachwerk-Stufen-Wahrheit als Zahl =====
     console.log("=== TEIL N: die Stufen-Wahrheit (fachwerk-core, Node-direkt) ===");
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+    global.THREE = require("./lib/asset-worker-harness.cjs").engine();
     require(path.join(root, "fachwerk-core.js"));
     const FC = globalThis.__fachwerkCore;
     const trisOf = (g) => {

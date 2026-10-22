@@ -4,7 +4,7 @@
         "scripts": ["phyto-core.js", "foundry-core.js"],
         "vertrag": "foundry-core.js",
         "ns": null,
-        "lib": ["worlds/terrain/lib/three-r128.min.js", "worlds/terrain/lib/BufferGeometryUtils.js"],
+        "modul": ["vendor/three.core.min.js"],
         "bruecke": "foundry-bruecke.js"
     },
     {

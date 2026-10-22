@@ -22,7 +22,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - **Studios** `worlds/` (14 Verzeichnisse + die Hülle): die Gesetzbücher und Nebenwelten. Die EINE Hülle `worlds/huelle` ist NUR UI
   (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Heute fährt die Engine der Welt nur `gelaende` (Modus
   `index.html?studio=gelaende`), die übrigen zeichnen mit eigenem `WebGLRenderer` (r128 bis r183) — Labor = Welt ist dort Gesetz, nicht Stand.
-- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf three r128 (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
+- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf three r184 (das Manifest-`modul` `vendor/three.core.min.js`,
+  `_foundryEngine` Farb-Management aus; Manifest per fetch, kein synchrones XHR; `get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte trägt nur `build-asset`, SHA-Stempel der Quellen) · `voxel-worker.js`. **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
 

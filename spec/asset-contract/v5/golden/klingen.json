@@ -5,62 +5,62 @@
     "langschwert-s7-L0": {
       "objects": 18,
       "vertices": 10011,
-      "sha256": "21d0a2e68251344a00037e3abab237bc97520331f0fbb44ffbaedd7c7ceb2406"
+      "sha256": "a26f6c6df7cd2c89144952a615586987cb71ddfcc4b1128d30a526b20b1fad2b"
     },
     "langschwert-s12345-L0": {
       "objects": 18,
       "vertices": 10011,
-      "sha256": "21d0a2e68251344a00037e3abab237bc97520331f0fbb44ffbaedd7c7ceb2406"
+      "sha256": "a26f6c6df7cd2c89144952a615586987cb71ddfcc4b1128d30a526b20b1fad2b"
     },
     "saebel-s7-L0": {
       "objects": 14,
       "vertices": 9183,
-      "sha256": "8b9794e4e8b1d8a336aa4ca6638425adda41bf5c90e2b1d1918890bd516db6c4"
+      "sha256": "0cfa16034fe48a48a92b2b750100bcba0aad90791a0da5a9c11781c1ae5ab6a3"
     },
     "saebel-s12345-L0": {
       "objects": 14,
       "vertices": 9183,
-      "sha256": "8b9794e4e8b1d8a336aa4ca6638425adda41bf5c90e2b1d1918890bd516db6c4"
+      "sha256": "0cfa16034fe48a48a92b2b750100bcba0aad90791a0da5a9c11781c1ae5ab6a3"
     },
     "degen-s7-L0": {
       "objects": 14,
       "vertices": 9183,
-      "sha256": "ecd332330b8a8a7e99b95401b371641504138fe87b86614e0e59ba27264ff33f"
+      "sha256": "45b40e017b9169078a77e207a06d2fc8ccb7ea26a288ddb62a57c862d891ad74"
     },
     "degen-s12345-L0": {
       "objects": 14,
       "vertices": 9183,
-      "sha256": "ecd332330b8a8a7e99b95401b371641504138fe87b86614e0e59ba27264ff33f"
+      "sha256": "45b40e017b9169078a77e207a06d2fc8ccb7ea26a288ddb62a57c862d891ad74"
     },
     "grossschwert-s7-L0": {
       "objects": 26,
       "vertices": 11667,
-      "sha256": "ad51f337c0678a1d47fd985bba3282623da0534a4d1f6e3c1e3005462f0db0ee"
+      "sha256": "1bb0bdce2df92857aa0235abe737c35d0402cb080219dd775f39176b6fff1bbf"
     },
     "grossschwert-s12345-L0": {
       "objects": 26,
       "vertices": 11667,
-      "sha256": "ad51f337c0678a1d47fd985bba3282623da0534a4d1f6e3c1e3005462f0db0ee"
+      "sha256": "1bb0bdce2df92857aa0235abe737c35d0402cb080219dd775f39176b6fff1bbf"
     },
     "dolch-s7-L0": {
       "objects": 12,
       "vertices": 8769,
-      "sha256": "318bfd4eda888de8a2985cfcaac2e69e18774a8f5891694ebcb5e000b64d4c30"
+      "sha256": "c6cc30f419f679641939a3811907a532e6dd398303b7bfbddc5bb2e044a9199e"
     },
     "dolch-s12345-L0": {
       "objects": 12,
       "vertices": 8769,
-      "sha256": "318bfd4eda888de8a2985cfcaac2e69e18774a8f5891694ebcb5e000b64d4c30"
+      "sha256": "c6cc30f419f679641939a3811907a532e6dd398303b7bfbddc5bb2e044a9199e"
     },
     "messer-s7-L0": {
       "objects": 9,
       "vertices": 8271,
-      "sha256": "c4e943be52a10e9c74af1d804e644e14fdbc94bcea79bcce5dd74eb9df0939bc"
+      "sha256": "92c2f4a7a684ef05c65316559344e81d005731278871d3b1e5f669e8712b67fc"
     },
     "messer-s12345-L0": {
       "objects": 9,
       "vertices": 8271,
-      "sha256": "c4e943be52a10e9c74af1d804e644e14fdbc94bcea79bcce5dd74eb9df0939bc"
+      "sha256": "92c2f4a7a684ef05c65316559344e81d005731278871d3b1e5f669e8712b67fc"
     },
     "langbogen-s7-L0": {
       "objects": 4,
@@ -105,122 +105,122 @@
     "streitkolben-s7-L0": {
       "objects": 15,
       "vertices": 3081,
-      "sha256": "919cf15d80bf688257c5ca2932084e06b43f5f48df2300dece319a6013dc135b"
+      "sha256": "07ca78a57f97ff917ee08734cfa69113172b24990f221e5d9d6e86d92e82c384"
     },
     "streitkolben-s12345-L0": {
       "objects": 15,
       "vertices": 3081,
-      "sha256": "919cf15d80bf688257c5ca2932084e06b43f5f48df2300dece319a6013dc135b"
+      "sha256": "07ca78a57f97ff917ee08734cfa69113172b24990f221e5d9d6e86d92e82c384"
     },
     "kriegsaxt-s7-L0": {
       "objects": 11,
       "vertices": 2899,
-      "sha256": "9586a89c5eaf9fd4b0b49ce1688ae79f7ebd2c51423424e921c2bfdfdfd36056"
+      "sha256": "267c0b7864df39d82d3cace9bfd38937b37a247ce6650fd86af4586b5238933b"
     },
     "kriegsaxt-s12345-L0": {
       "objects": 11,
       "vertices": 2899,
-      "sha256": "9586a89c5eaf9fd4b0b49ce1688ae79f7ebd2c51423424e921c2bfdfdfd36056"
+      "sha256": "267c0b7864df39d82d3cace9bfd38937b37a247ce6650fd86af4586b5238933b"
     },
     "kriegshammer-s7-L0": {
       "objects": 10,
       "vertices": 2037,
-      "sha256": "202db89e74315b1968fe87edff7790129ce0fb3b8aec4be1f0cc64898f993b09"
+      "sha256": "4eb0b047582fbb09ac28fdbee007fb743f1e48777463832a0306f6607895a7dd"
     },
     "kriegshammer-s12345-L0": {
       "objects": 10,
       "vertices": 2037,
-      "sha256": "202db89e74315b1968fe87edff7790129ce0fb3b8aec4be1f0cc64898f993b09"
+      "sha256": "4eb0b047582fbb09ac28fdbee007fb743f1e48777463832a0306f6607895a7dd"
     },
     "keule-s7-L0": {
       "objects": 10,
       "vertices": 2414,
-      "sha256": "d40131638e56ed1ce796960a507c96049052c4bb21f280e14c0913f5f4f41488"
+      "sha256": "16ff969532da14de4d37e2b9e8a8beafb946707ad9d40117bbf72dbfa9e5c4a0"
     },
     "keule-s12345-L0": {
       "objects": 10,
       "vertices": 2414,
-      "sha256": "d40131638e56ed1ce796960a507c96049052c4bb21f280e14c0913f5f4f41488"
+      "sha256": "16ff969532da14de4d37e2b9e8a8beafb946707ad9d40117bbf72dbfa9e5c4a0"
     },
     "faellaxt-s7-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "120074a451ea786173961678b9b4fdc15f847da5c8b7c1e00ca15d2612dd758f"
+      "sha256": "d8f9a651a0df4c05d995d0af6a3d2fd71b1a40d857399c9d4221c5611b2646e9"
     },
     "faellaxt-s12345-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "120074a451ea786173961678b9b4fdc15f847da5c8b7c1e00ca15d2612dd758f"
+      "sha256": "d8f9a651a0df4c05d995d0af6a3d2fd71b1a40d857399c9d4221c5611b2646e9"
     },
     "spaltmaul-s7-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "087798ae3dfc6c88b686a33f58cb1bc6c743897a4190e82741930a03c0a39b0f"
+      "sha256": "b2924ab1386ee1233e49e9aa36668be4ad469ce0cabbf404c7ab2a9870752dac"
     },
     "spaltmaul-s12345-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "087798ae3dfc6c88b686a33f58cb1bc6c743897a4190e82741930a03c0a39b0f"
+      "sha256": "b2924ab1386ee1233e49e9aa36668be4ad469ce0cabbf404c7ab2a9870752dac"
     },
     "vorschlaghammer-s7-L0": {
       "objects": 10,
       "vertices": 1910,
-      "sha256": "34133a1ae244baf63011e56e03360613c08c69737846641dabcb9ce209c9c533"
+      "sha256": "02ad98c014a85a14ce4b95f3da719c814a6077c3a34f1d8fb438d3ee0eb55a5c"
     },
     "vorschlaghammer-s12345-L0": {
       "objects": 10,
       "vertices": 1910,
-      "sha256": "34133a1ae244baf63011e56e03360613c08c69737846641dabcb9ce209c9c533"
+      "sha256": "02ad98c014a85a14ce4b95f3da719c814a6077c3a34f1d8fb438d3ee0eb55a5c"
     },
     "beil-s7-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "d43912e8782ad46c9d4b72e0bd1bf89359dac31a1a2fa37318c335c1788b6ac9"
+      "sha256": "9a70151fff62ef3e326c8701a30dce3207b7a192763f2295873279350b3df7ca"
     },
     "beil-s12345-L0": {
       "objects": 11,
       "vertices": 2809,
-      "sha256": "d43912e8782ad46c9d4b72e0bd1bf89359dac31a1a2fa37318c335c1788b6ac9"
+      "sha256": "9a70151fff62ef3e326c8701a30dce3207b7a192763f2295873279350b3df7ca"
     },
     "spitzhacke-s7-L0": {
       "objects": 10,
       "vertices": 1882,
-      "sha256": "e8f04caeb469403fb7c33486b2e930d0af92c44befe66d62b6b82960d7d27673"
+      "sha256": "fbe9b85e823580581fb0644eff078c42180da772fabe00eac6ba5ccf5116fc69"
     },
     "spitzhacke-s12345-L0": {
       "objects": 10,
       "vertices": 1882,
-      "sha256": "e8f04caeb469403fb7c33486b2e930d0af92c44befe66d62b6b82960d7d27673"
+      "sha256": "fbe9b85e823580581fb0644eff078c42180da772fabe00eac6ba5ccf5116fc69"
     },
     "spaten-s7-L0": {
       "objects": 9,
       "vertices": 2323,
-      "sha256": "9e6bbe875c693bdc0539ff950623e30c9a1e5197357b52a52734611fab7e5676"
+      "sha256": "4fd6aaf10446c9eddadf8f093fef7a9d0fce76e2db0d208932a8473d0db2b496"
     },
     "spaten-s12345-L0": {
       "objects": 9,
       "vertices": 2323,
-      "sha256": "9e6bbe875c693bdc0539ff950623e30c9a1e5197357b52a52734611fab7e5676"
+      "sha256": "4fd6aaf10446c9eddadf8f093fef7a9d0fce76e2db0d208932a8473d0db2b496"
     },
     "schaufel-s7-L0": {
       "objects": 8,
       "vertices": 2299,
-      "sha256": "bcc41af26ffa7fc9f3a9a21be7212c5190155fd56fb26d8a3a581c5774b41fff"
+      "sha256": "76aa0a3f43e5e005f128453120573eb1c4dc3148fc639fab6ea4a0eabe00910a"
     },
     "schaufel-s12345-L0": {
       "objects": 8,
       "vertices": 2299,
-      "sha256": "bcc41af26ffa7fc9f3a9a21be7212c5190155fd56fb26d8a3a581c5774b41fff"
+      "sha256": "76aa0a3f43e5e005f128453120573eb1c4dc3148fc639fab6ea4a0eabe00910a"
     },
     "langschwert-s7-L0-ov_fuller_klinge": {
       "objects": 18,
       "vertices": 10011,
-      "sha256": "f4aab00153958968efe6f0f70a7c9fee43cd420704a6445fa7600e3011feb486"
+      "sha256": "4b0afb291b4bbe2bd6112148db46bc121ca14ed2d4586a9740db5ee23835fe6b"
     },
     "spitzhacke-s7-L0-ov_schaft": {
       "objects": 10,
       "vertices": 1882,
-      "sha256": "a1d8508b7429f41de1e1090bf8bfaa52a7c8edf8166fa10a1a70d9855b5b8fca"
+      "sha256": "ac3d2ead3db5bc159edf21b39b27fe594e1d240cc5124371f93b244f454c1172"
     }
   }
 }

@@ -125,15 +125,14 @@ ok(
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
-// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
+// gebaut (die Engine des Bau-Fadens, three r184 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
 // (foundry-bruecke.js), hier ihr Ersatz — die Dials liest der Kern nur aus `__dials` (K47: kein DOM-Leser `gv` mehr).
 // Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
-const TERR_LIB = path.join(__dirname, "..", "worlds", "terrain", "lib");
-const fsb = { console, performance: { now: () => 0 } };
+const THREE = require("./lib/asset-worker-harness.cjs").engine();
+const fsb = { console, performance: { now: () => 0 }, THREE };
 fsb.self = fsb;
 fsb.globalThis = fsb;
 const fctx = vm.createContext(fsb);
-vm.runInContext(fs.readFileSync(path.join(TERR_LIB, "three-r128.min.js"), "utf8"), fctx, { filename: "three-r128" });
 vm.runInContext(src, fctx, { filename: "phyto-core.js(foundry)" });
 vm.runInContext(
     "var clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;" +
@@ -212,11 +211,10 @@ ok(
 // defined", gate:brennglas-takt fand ihn im Brennpunkt der Kern-Landform). Der Scope wird wie im Haupt-Thread gebaut
 // (three → phyto-core → foundry-core, KEINE Shell-Globale), jede Baum- und Strauch-Art je Gestalt und Stufe gewachsen.
 // Konsum-Leser: `_growTreeBlueprintRich` (Stamm) — der Stamm liest das Skelett für die Kollision.
-const hsb = { console, performance: { now: () => 0 } };
+const hsb = { console, performance: { now: () => 0 }, THREE };
 hsb.self = hsb;
 hsb.globalThis = hsb;
 const hctx = vm.createContext(hsb);
-vm.runInContext(fs.readFileSync(path.join(TERR_LIB, "three-r128.min.js"), "utf8"), hctx, { filename: "three-r128" });
 vm.runInContext(src, hctx, { filename: "phyto-core.js(haupt)" });
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "foundry-core.js"), "utf8"), hctx, {
     filename: "foundry-core.js(haupt)",

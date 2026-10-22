@@ -11,9 +11,9 @@
 // DER ROUNDTRIP IST BEWIESEN, NICHT BEHAUPTET: je Puffer wird der sha256 UNABHÄNGIG im Browser
 // über die rohen Bytes gerechnet (vor der b64-Kodierung); nach dem Schreiben liest der Mint das
 // Artefakt ZURÜCK, dekodiert und vergleicht sha256 + Byte-Länge — eine Divergenz macht den
-// Lauf rot (Exit 1). r128 lebt NUR im Mint-Worker (Ü1/Ü2 übersetzt der Host-Chokepoint, N3.5).
+// Lauf rot (Exit 1). Ü1/Ü2 übersetzt der Host-Chokepoint.
 //
-// SAISON (V18.527): jeder Welt-Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season
+// SAISON: jeder Welt-Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season
 // "summer"), das Jahr färbt der Host über uSeasonMul — ein Pack ist saisonfrei.
 //
 //   node scripts/mint-asset-packs.cjs                       # mintet die warme Bibliothek

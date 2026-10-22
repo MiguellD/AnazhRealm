@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-haus-fern.cjs — DIE LINSE DES HAUS-FERNKÖRPERS (S3 haus, Plan §3.3 1a; gate:haus-fern, in `npm run check`).
 // Die Linse misst je Kultur (32) × Samen (1, 7) und je Ausstattung (3 × ihre Gestalten) direkt am Gesetzbuch (Node,
-// worlds/terrain/lib/three-r128.min.js + fachwerk-core.js):
+// three r184 des Bau-Fadens + fachwerk-core.js):
 //
 //   W  WURF-DECKUNG: der Werfer jeder gezeigten Stufe (B2c `schatten`) gegen die L0 — IoU der Schatten-Fußabdrücke
 //      (Projektion entlang der Sonne auf y = 0, Raster 10 cm) unter drei Sonnen (25° · 40° · 60° Höhe, drei Azimute):
@@ -33,7 +33,7 @@
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 require(path.join(root, "fachwerk-core.js"));
 const FC = globalThis.__fachwerkCore;
 const T = global.THREE;
@@ -465,8 +465,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
 //    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
-//    Schritte. Vorher (Kern c5a4d0f8): die L2 legte Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,25;
-//    die L1 würfelte den Schlaf allein, ihr Raum war Putz für jeden Stil.
+//    Schritte.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;

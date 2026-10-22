@@ -15,30 +15,22 @@ const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-// V18.470 (Konsum-Matrix) — der Boot ist MANIFEST-GETRIEBEN wie die Produktion
-// (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
-// self.__anazhCores): die lib der Kerne → alle Kern-Skripte in Manifest-Reihenfolge
-// → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES
-// aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
-// kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
-// (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
+// Der Boot ist MANIFEST-GETRIEBEN wie die Produktion: alle Kern-Skripte in Manifest-Reihenfolge
+// → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES aus dem Manifest. So trägt das
+// Harness-Buch ALLE Gattungen (tor/klinge/haus/kreatur …), nicht nur die Pflanzen.
 const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
 const WORKER_SCRIPTS = (() => {
     const rel = [];
-    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
     for (const core of CORES_MANIFEST) if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
     return rel;
 })();
-// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness, der
-// Bäcker-Kanal und die Fahrzeug-Ferne setzen DIESEN ein (`const boot = ${WORKER_BOOT};`), kein zweiter Boot-Text. Die
-// Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready) — kein init() hinter den importScripts.
-const WORKER_BOOT =
-    '"self.__PHYTO_FOUNDRY_WORKER=true;" + "self.__anazhCores=" + JSON.stringify(' +
-    JSON.stringify(CORES_MANIFEST) +
-    ') + ";" + "importScripts(" + ' +
-    JSON.stringify(WORKER_SCRIPTS) +
-    '.map((p) => JSON.stringify(location.origin + p)).join(",") + ");"';
+// DER BOOT DER WELT (foundry-r184): DIESELBEN Funktionen wie `_ensureAssetFoundry` — `_foundryStart` und `_foundryEngine`
+// aus der geladenen Klasse (Lehre 12) —, ohne Transport-Schale (das Harness liest jedes Attribut) und ohne Platte.
+const klasse = require("./stamm.cjs").ladeKlasse(ROOT).AnazhRealm;
+const WORKER_BOOT = `${JSON.stringify("(function " + klasse._foundryStart)} + ")(" + JSON.stringify({ v: "", base: location.origin + "/" }) + ",function () {}," + ${JSON.stringify("function " + klasse._foundryEngine + ");")}`; // prettier-ignore
+// Die Engine der Werkzeuge: die Module des Manifests (three r184) durch DIESELBE Funktion des Stamms.
+const engine = () => klasse._foundryEngine(CORES_MANIFEST.flatMap((c) => [].concat(c.modul || [])).map((m) => require(path.join(ROOT, m)))); // prettier-ignore
 
 function pageHtml() {
     return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
@@ -159,9 +151,7 @@ function pageHtml() {
   // SHA-256 über jedes gelieferte Byte jedes Teils, die Felder in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize,
   // Bytes), Index (Bytes), alles andere als JSON (Teil-Art, Stoff, Wurf, Tür-Scharnier, Gelenk, Seh-Klasse …); der Beipack
   // (kind "__…" ohne Positions-Puffer) zählt nicht. Dazu \`teile\`, \`bytes\` und \`nichtEndlich\` (NaN/Inf in den
-  // Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen). Bis zur Kette V18.534 trugen zwei
-  // Zweige je einen Hasher (SHA-256 über Art · Stoff · Wurf · Puffer, FNV-1a über alle Felder) — zwei Wahrheiten über
-  // „derselbe Bau".
+  // Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen).
   const bauAbdruck = async (meshes) => {
     const enc = new TextEncoder();
     const stuecke = [];
@@ -369,13 +359,11 @@ const DATEN_KANAELE = [
     ["renderConfig", "render-config"],
 ];
 
-// DER UMSCHLAG OHNE BROWSER (K64-n2): die drei Daten-Kanäle sind reine Daten — DIESELBEN Dateien wie der Worker
-// (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal
-// (`foundryKanal` "get-book") antwortet. Die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber: der Atlas
-// reist neben den drei Kanälen. Gemessen K64-n2: recipes 74 838 und world-params 38 Byte byte-gleich mit dem Worker, ~0,6 s
-// statt eines Browser-Boots — die Statik (gate:studio-vertrag U) fängt im Puls jede Kern-Änderung, die den eingefrorenen
-// Umschlag verlässt (bis K64-n2 fiel sie erst in der vollen Batterie, Gruppe 5 Schritt 37, ohne Namen). `quellen`:
-// { "<datei>": "<quelltext>" } ersetzt eine Datei (der Selbsttest).
+// DER UMSCHLAG OHNE BROWSER: die drei Daten-Kanäle sind reine Daten — DIESELBEN Dateien wie der Worker (die Engine, Kerne
+// in Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal` "get-book")
+// antwortet; die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. Die Statik (gate:studio-vertrag U) fängt
+// so im Puls jede Kern-Änderung, die den eingefrorenen Umschlag verlässt. `quellen`: { "<datei>": "<quelltext>" } ersetzt
+// eine Datei (der Selbsttest).
 function umschlagImVm(quellen = {}) {
     const vm = require("vm");
     const absorber = () => {
@@ -392,6 +380,7 @@ function umschlagImVm(quellen = {}) {
         performance: { now: () => 0 },
         OffscreenCanvas: absorber(),
         __anazhCores: CORES_MANIFEST,
+        THREE: engine(),
         postMessage: (p) => posts.push(p),
     });
     ctx.self = ctx;
@@ -435,8 +424,7 @@ function ersteAbweichung(ist, soll, pfad = "") {
 module.exports = {
     runWithWorker,
     fingerprintMeshes,
-    WORKER_SCRIPTS,
-    WORKER_BOOT,
+    engine,
     DATEN_KANAELE,
     umschlagImVm,
     ersteAbweichung,

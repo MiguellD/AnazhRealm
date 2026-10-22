@@ -705,7 +705,7 @@ const FIXTURES = [
 ];
 
 (async () => {
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+    global.THREE = require("./lib/asset-worker-harness.cjs").engine();
     require(path.join(root, "fachwerk-core.js"));
     const FC = globalThis.__fachwerkCore;
 

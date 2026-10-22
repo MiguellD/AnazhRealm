@@ -77,6 +77,15 @@ HAUT: die Höhlen-Kugeln (Klasse socket) werden nicht mehr gegossen, ihr Ton lie
 und der Haut-Saum (`HAUT_LOOK.sssAmt`): `mensch-L1|{skin,shadow,lips}|mensch` (Dreiecke gleich). Neu geprägt NUR diese 18 Schlüssel,
 461 → 460 Klassen; alle übrigen 442 byte-gleich (jedes Tier, beide Mensch-Beipacks mit `leibV`), Ratsche `ofen` 461 → 460 Fälle.
 
+Vertrags-Akt foundry-r184 (22.10.2026, die Engine der Welt im Bau-Faden): der Ofen gießt auf three r184 (`vendor/three.core.min.js`,
+`_foundryEngine`) statt r128. r184 rechnet `Matrix4.invert` und `Vector3.applyQuaternion` in anderer Reihenfolge (≤ 9e-16
+je Wert): die Primitiv-Teile der Tiere an Ohr und Lid (L0) weichen um ≤ 2,2e-16 m ab (Hirsch-Ohr 7,5e-9 m), die
+Augen und Lider des Menschen ebenso; die Gelenke elbow · hand · ankle · iris · lid tragen dieselbe ULP-Drift in pos/quat (alle
+Stufen); die Hand-Häute (L0, SDF-Guss) kippen an der Iso-Schwelle: 29 von 4 718 (links) und 44 von 4 660 (rechts) Dreiecken
+liegen über 1e-4 anders, Ecken und Dreiecke gleich. Der Fingerabdruck liest die Stoff-Farbe mit der Prägeformel
+(`farbHex`, × 255 abgeschnitten — r184 rundet in `getHex`, die Farbe selbst ist byte-gleich). Neu geprägt NUR diese 85
+Schlüssel; die übrigen 441 byte-gleich, Ecken/Dreiecke überall unverändert.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

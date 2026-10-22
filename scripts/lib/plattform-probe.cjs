@@ -1,11 +1,5 @@
-// plattform-probe.cjs — DIE PLATTFORM-PROBE der Goldens (Integration W5, 06.10.; S1 Wände, 07.10.: alle
-// Transzendenten statt nur Math.pow, jeder Golden-Satz, Node UND der Chrome-Worker der Pflanzen).
-// Befund 1 (cc26c7d8): die Klingen-Goldens v5 wurden unter Node 24 (V8 13.6) geprägt, die CI rechnet unter Node 22
-// (V8 12.4). Math.pow mit gebrochenem Exponenten rundet dort im letzten Bit anders; Täter schmiede-core sectionAt.
-// Befund 2 (S1): die Tor-Goldens v4 standen am Kopf 516e704a unter Node 24 grün und unter Node 22 rot (16 von
-// 16 Fällen) — 2405 von 40148 verschiedenen Math.pow-Aufrufen runden in V8 12.4 anders, alle in three r128
-// (CatmullRomCurve3 'centripetal' pow(d², 0,25), Color.convertSRGBToLinear pow(c, 2,4)), gerufen aus porta-core.
-// sin/cos/acos/atan2/hypot (213 707 verschiedene Aufrufe) rundeten in beiden V8 gleich.
+// plattform-probe.cjs — DIE PLATTFORM-PROBE der Goldens (alle Transzendenten, jeder Golden-Satz, Node UND der
+// Chrome-Worker der Pflanzen): ein anderes V8 rundet Math.pow mit gebrochenem Exponenten im letzten Bit anders.
 //
 // Die Probe macht diese Drift LOKAL sichtbar, auf jeder Node-Version: sie baut jeden Fall noch einmal, während die
 // Transzendenten von Math (FUNKTIONEN) um ±1 ULP verschoben rechnen, und verlangt dieselben Bytes. Verschoben wird nur,
@@ -314,6 +308,12 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
 // v3–v5, porta, schmiede, vehicle) — bis F4 stand er viermal wortgleich in den Vertrags-Linsen. `nurGeometrie`: ohne die
 // Material-Signatur (die Seed-Probe des Fahrzeugs); `mitFern`: die NUR-WURF-Stufe des Hauses trägt ihre Fernform als Beipack
 // `__fern` (die Tor-Goldens zählen ihn nicht).
+// Die Farbe eines Stoffs als Hex, wie die Goldens sie prägen: je Kanal × 255 abgeschnitten — rein, kein Rechner der
+// Engine (r184 rundet in Color.getHex). Der Ofen-Vertrag liest DIESELBE Funktion.
+function farbHex(c) {
+    return ((c.r * 255) << 16) ^ ((c.g * 255) << 8) ^ ((c.b * 255) << 0);
+}
+
 function fingerabdruck(group, nurGeometrie, mitFern) {
     const h = require("crypto").createHash("sha256");
     let objects = 0;
@@ -330,8 +330,8 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
         if (m) {
             h.update(
                 JSON.stringify({
-                    c: m.color ? m.color.getHex() : null,
-                    e: m.emissive ? m.emissive.getHex() : null,
+                    c: m.color ? farbHex(m.color) : null,
+                    e: m.emissive ? farbHex(m.emissive) : null,
                     r: typeof m.roughness === "number" ? m.roughness : null,
                     mt: typeof m.metalness === "number" ? m.metalness : null,
                     o: typeof m.opacity === "number" ? m.opacity : null,
@@ -381,5 +381,6 @@ module.exports = {
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
+    farbHex,
     goldenVergleich,
 };

@@ -51,8 +51,8 @@
             "datei": 1
         },
         "scripts/diag-phyto-core-parity.cjs": {
-            "zweck": "Messung: führt foundry-core und three im vm aus (Parität Studio = Welt)",
-            "datei": 4
+            "zweck": "Messung: führt foundry-core im vm aus, die Engine aus dem Manifest (Parität Studio = Welt)",
+            "datei": 2
         },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",

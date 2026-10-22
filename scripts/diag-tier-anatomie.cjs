@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen")
 // (npm run gate:tier-anatomie). Sie misst die GEBACKENE Gestalt — denselben Bäcker, den Worker und Wirt rufen
-// (foundry-core BAKERS_BY_KIND.kreatur, three r128 im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
+// (foundry-core BAKERS_BY_KIND.kreatur, im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
 // normiert auf den Widerrist W, gegen das SOLL des Gesetzbuchs (tetrapoda-core ANATOMIE_SOLL, die Natur-Bänder je Art):
 //   widerristM · brustTiefe · aufzug · rumpf · unterarm · kopfHoehe · ohr · rute   (die Gestalt)
 //   kontrast (Bauch/Rücken) · lauf (Läufe/Flanke) · spitze (Rutenspitze/Flanke)    (das Fell-Muster am Vertex)
@@ -85,11 +85,12 @@ function kahlAnteile(g) {
 
 function ladeWelt() {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
+    sb.THREE = require("./lib/asset-worker-harness.cjs").engine();
     sb.self = sb;
     sb.globalThis = sb;
     sb.window = sb;
     vm.createContext(sb);
-    for (const f of ["worlds/terrain/lib/three-r128.min.js", "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"])
+    for (const f of ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"])
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
     return sb;
 }

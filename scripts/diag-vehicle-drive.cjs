@@ -102,8 +102,7 @@ function standVerdict(s) {
     return out;
 }
 
-// ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 require(path.join(root, "vehicle-core.js"));
 const VC = globalThis.__vehicleCore;
 function expectedFor(presetId) {

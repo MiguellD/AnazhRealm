@@ -1,15 +1,8 @@
 // diag-fachwerk-contract.cjs — ASSET-VERTRAG v6 (Häuser): der Byte-Beweis für
 // fachwerk-core.js buildInstance (Studio-Vertrag B2, docs/studio-vertrag.md).
-// Läuft DIREKT in Node (die v2/v3/v4/v5-Klasse): fachwerk-core braucht nur
-// THREE-Geometrie/Material-Klassen — das vendorte r128-UMD lädt in Node,
-// kein Browser, keine swiftshader-Fragilität (die Canvas-Textur-Bäcker sind
-// document-gegated und backen in Node kartenlos — exakt wie im Worker).
-//
-// Fingerabdruck je Fall (rezeptId × seed × lod): sha256 über den kanonischen
-// Byte-Strom der gebauten Gruppe in traverse-Reihenfolge — je Objekt mit
-// Geometrie: Typ · matrixWorld (Float64-Bytes) · Material-Signatur (Farbe/
-// roughness/metalness/opacity) · alle Attribute (Name sortiert, itemSize +
-// rohe Puffer-Bytes) · Index. Ein einziges abweichendes Byte kippt den Hash.
+// Läuft DIREKT in Node auf der Engine des Bau-Fadens (asset-worker-harness `engine`), kein Browser (die Canvas-
+// Textur-Bäcker sind document-gegated und backen in Node kartenlos — exakt wie im Worker).
+// Fingerabdruck je Fall (rezeptId × seed × lod): plattform-probe `fingerabdruck`.
 //
 // SEED-GETRIEBEN (cv:6, dokumentiert in spec/asset-contract/v6/CONTRACT.md):
 // der Haus-Bau würfelt aus P.seed (Fenstertakt · OG-Material · Giebel-Verband ·
@@ -48,7 +41,7 @@ const goldenFile = path.join(goldenDir, "haeuser.json");
 // DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
 const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+global.THREE = require("./lib/asset-worker-harness.cjs").engine();
 const KERN = path.join(root, "fachwerk-core.js");
 require(KERN);
 const FC = globalThis.__fachwerkCore;
@@ -697,9 +690,7 @@ function bogenLinse() {
         t2.some((s) => s.includes("objects"))
     );
 
-    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear": bis
-    //     05.10. legte der Bake (`_colFor`) das Paletten-Hex roh in den Vertex, die Welt las es linear — Putz 0,82, Holz
-    //     0,30, ganze Häuser 0,35–0,57 (das weiße Haus mit blassem Fachwerk). Gemessen wird, was die Welt liest: je Kultur
+    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear". Gemessen wird, was die Welt liest: je Kultur
     //     (alle 32, Stufe 1 — die Flächen-Stufe, die das Auge am längsten sieht) die flächengewichtete lineare Albedo der
     //     Vertex-Farbe × Stoff-Farbe, je Rolle und gesamt, gegen das Band der Natur (diag-albedo-zensus): Holz-Klasse
     //     (holz · stamm · blockholz · lattung · boden) ≤ 0,25 · Kalk und Lehm (putz · gefach · lehm) ≤ 0,85 · jeder andere

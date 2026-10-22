@@ -3,7 +3,7 @@
 // worlds/terrain/phytogenesis.js (Shell) + im Foundry-Worker (importScripts) VOR phytogenesis.
 // Verschoben (nicht kopiert) aus phytogenesis.js via scripts/move-to-foundry-core.cjs; die
 // Wuchs-/Asset-Mathematik lebt hier, phytogenesis.js ist die Display-/Welt-/UI-Shell + der
-// GL-Bäcker. THREE/BufferGeometryUtils/__phytoCore sind zur Laufzeit global (Ladereihenfolge).
+// GL-Bäcker. THREE/__phytoCore sind zur Laufzeit global (Ladereihenfolge; der Bau-Faden: three r184 aus vendor/three.core).
 
 function mulberry32(a) {
     return function () {
@@ -1102,13 +1102,7 @@ function weldNormals(geo, eps) {
 
 function addMerged(geos, mat, weld) {
     if (!geos || !geos.length) return;
-    let merged = null;
-    try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
-    } catch (e) {
-        merged = null;
-    }
-    if (!merged) return;
+    const merged = __verbundNetz(geos);
     if (weld) weldNormals(merged, 0.04);
     const m = new THREE.Mesh(merged, mat);
     m.castShadow = true;
@@ -4169,10 +4163,7 @@ function emitColumns(P) {
         g.computeVertexNormals();
         geos.push(g);
     }
-    let merged = null;
-    try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
-    } catch (e) {}
+    const merged = __verbundNetz(geos);
     if (merged) {
         felsStoffNetz(P, merged); // der Stoff der Säulen ist das Fels-Gesetz (K17)
         const mat = new THREE.MeshStandardMaterial({
@@ -4337,7 +4328,7 @@ function emitCrystals(P) {
     const cB = vegFarbe(P.rockA).toArray(), // FARB-GESETZ (K17): die Töne des Kristalls sind sRGB-Absichten
         cT = vegFarbe(P.rockC).toArray(),
         dk = vegFarbe(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
-    const baseGeo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
+    const baseGeo = self.__phytoCore.mergeVertices(THREE, new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
     baseGeo.deleteAttribute("uv");
     const bp = baseGeo.attributes.position;
     for (let i = 0; i < bp.count; i++) {
@@ -4358,12 +4349,7 @@ function emitCrystals(P) {
             rad = len * rrange(0.1, 0.19);
         pushCrystal(geos, base, dir, len, rad, cB, cT);
     }
-    let merged = null;
-    try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
-    } catch (e) {
-        console.error("crystal merge", e.message);
-    }
+    const merged = __verbundNetz(geos);
     if (merged) {
         const mat = new THREE.MeshStandardMaterial({
             vertexColors: true,
@@ -4891,8 +4877,15 @@ function deriveParamsWaldboden(pre, d, IR, J, O) {
     };
 }
 
+// Die Mischung zweier Paletten-Hex (Fels-Bänke): je Kanal Byte/255 linear gemischt, × 255 ABGESCHNITTEN — die Arithmetik des
+// Gesetzbuchs selbst, kein Rechner der Engine (r184 rundet in Color.getHex, r128 schnitt ab; die Bänke tragen den Schnitt).
 function lerpHex(a, b, t) {
-    return new THREE.Color(a).lerp(new THREE.Color(b), clamp(t, 0, 1)).getHex();
+    const u = clamp(t, 0, 1);
+    const kanal = (s) => {
+        const x = ((a >> s) & 255) / 255;
+        return ((x + (((b >> s) & 255) / 255 - x) * u) * 255) << s;
+    };
+    return kanal(16) ^ kanal(8) ^ kanal(0);
 }
 
 // DAS FARB-GESETZ DER VEGETATION (V18.506): ein Paletten-Hex ist eine sRGB-ABSICHT (Farbwähler,
@@ -5164,9 +5157,68 @@ __terrainCore.skelettDerGestalt = skelettDerGestalt;
 // PIPE gebacken: der Dispatch in der Foundry-Shell schlägt hier nach
 // (BAKERS_BY_KIND[preset.kind]) statt einem Kern-buildInstance — tabellengetrieben
 // (M8), kein Kern-spezifisches Literal, tetrapoda-core bleibt THREE-frei.
-// Derselbe Bäcker läuft im Worker (r128) UND auf dem Stamm-Main-Thread (r184,
+// Derselbe Bäcker läuft im Bau-Faden UND auf dem Stamm-Main-Thread (beide three r184,
 // Kalt-Start/Headless) — EIN Gesetz, zwei Scheduler, byte-gleiche Ausgabe.
 // ════════════════════════════════════════════════════════════════════════════
+
+// DER VERBUND DER TEILE (foundry-r184): die Teile eines Stoffs werden EIN Netz — jedes Attribut in Teil-Folge aneinander
+// (Puffer-Typ, itemSize und normalized des ersten Teils), der Index um die Ecken der Vorgänger verschoben (Uint32 erst über
+// 65 535). Rein wie der Tier-Merge unten, dieselben Bytes wie das r128-Addon `mergeBufferGeometries`. Ein Teil mit anderem
+// Attribut-Satz, mit und ohne Index gemischt, mit Morph-Attribut oder verschränktem Puffer bricht LAUT (das Addon gab null,
+// und der Aufrufer ließ den Stoff still fallen). Keine Teile = kein Netz (null).
+function __verbundNetz(geos) {
+    if (!geos.length) return null;
+    const g0 = geos[0];
+    const indiziert = g0.index !== null;
+    const namen = Object.keys(g0.attributes);
+    const out = new THREE.BufferGeometry();
+    out.userData.mergedUserData = [];
+    for (const g of geos) {
+        const ns = Object.keys(g.attributes);
+        if ((g.index !== null) !== indiziert) throw new Error("VERBUND: Teile mit und ohne Index");
+        if (ns.length !== namen.length || ns.some((n) => !namen.includes(n)))
+            throw new Error("VERBUND: verschiedene Attribute (" + ns.join(",") + " gegen " + namen.join(",") + ")");
+        if (Object.keys(g.morphAttributes).length) throw new Error("VERBUND: ein Teil trägt Morph-Attribute");
+        out.userData.mergedUserData.push(g.userData);
+    }
+    if (indiziert) {
+        let n = 0,
+            max = 0;
+        for (const g of geos) n += g.index.count;
+        const ix = new Array(n);
+        let o = 0,
+            versatz = 0;
+        for (const g of geos) {
+            const a = g.index.array;
+            for (let j = 0; j < g.index.count; j++) {
+                const v = a[j] + versatz;
+                ix[o++] = v;
+                if (v > max) max = v;
+            }
+            versatz += g.attributes.position.count;
+        }
+        out.setIndex(new THREE.BufferAttribute(new (max > 65535 ? Uint32Array : Uint16Array)(ix), 1));
+    }
+    for (const name of namen) {
+        const a0 = g0.attributes[name];
+        let len = 0;
+        for (const g of geos) {
+            const a = g.attributes[name];
+            if (a.isInterleavedBufferAttribute) throw new Error("VERBUND: verschränktes Attribut " + name);
+            if (a.array.constructor !== a0.array.constructor || a.itemSize !== a0.itemSize || a.normalized !== a0.normalized)
+                throw new Error("VERBUND: Attribut " + name + " mit anderem Puffer-Typ, itemSize oder normalized");
+            len += a.array.length;
+        }
+        const arr = new a0.array.constructor(len);
+        let o = 0;
+        for (const g of geos) {
+            arr.set(g.attributes[name].array, o);
+            o += g.attributes[name].array.length;
+        }
+        out.setAttribute(name, new THREE.BufferAttribute(arr, a0.itemSize, a0.normalized));
+    }
+    return out;
+}
 
 // Indizierter Merge (pos+nor+idx, Offsets verschoben) — bewusst pur (kein
 // BufferGeometryUtils: r128 heißt mergeBufferGeometries, r184 mergeGeometries —

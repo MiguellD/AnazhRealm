@@ -105,37 +105,44 @@ async function selftest() {
 
 // DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
 // Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` liefert, Laden, Abruf und Digest
-// mitschreibt. Das Soll kommt aus dem echten Manifest; ohne Blob bei der Geburt nennt `fehler` den Täter.
+// mitschreibt; die Engine (das Modul des Manifests) lädt der Modul-Lader von Node. Das Soll kommt aus dem echten Manifest;
+// ohne Blob bei der Geburt nennt `fehler` den Täter.
 async function bootLauf(text) {
     const vm = require("vm");
     const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
     const g = vm.runInContext("globalThis", ctx);
+    const basis = require("url").pathToFileURL(path.join(PK.ROOT, "index.html")).href;
     const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false };
     let blob = null;
-    Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
+    Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: basis } });
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
     g.Worker = function (_u, o) { aus.geburt = (o && o.name) || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
     const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }); // prettier-ignore
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);
-    const url = (p) => new URL(p + "?v=" + A.VERSION, "http://wirt/index.html").href;
-    const liste = (feld) => echt.flatMap((c) => [].concat(c[feld] || [])).map(url);
-    aus.sollLaden = ["lib", "scripts", "bruecke"].flatMap(liste).join(" ");
-    const quellen = liste("scripts").concat(liste("bruecke")).map((u) => `<${u}>`);
+    const url = (p, mitV) => new URL(p + (mitV ? "?v=" + A.VERSION : ""), basis).href;
+    const liste = (feld, mitV) => echt.flatMap((c) => [].concat(c[feld] || [])).map((p) => url(p, mitV));
+    aus.sollLaden = liste("scripts", true).concat(liste("bruecke", true)).join(" ");
+    const quellen = liste("modul", false).concat(liste("scripts", true), liste("bruecke", true)).map((u) => `<${u}>`);
     aus.sollStempel = [fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"), ...quellen].join("\n");
     if (!blob) return Object.assign(aus, { fehler: "kein Boot-Blob bei der Geburt — der Haupt-Faden holt das Manifest (fetch) vor ihr" }); // prettier-ignore
-    const ord = [];
-    const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), postMessage: (m) => (aus.post = m) };
-    w.XMLHttpRequest = function () { this.open = () => {}; this.send = () => (this.responseText = text); }; // prettier-ignore
-    w.importScripts = (...u) => (ord.push("laden"), (aus.laden = ord[0] === "message" ? u.join(" ") : "die Schale steht nicht davor")); // prettier-ignore
-    w.fetch = (u) => Promise.resolve({ text: () => Promise.resolve(`<${u}>`) });
+    const hoerer = [];
+    const roh = (m) => (aus.post = m);
+    const w = { TextEncoder, URL, indexedDB: {}, postMessage: roh, removeEventListener() {}, setTimeout: (f) => f() };
+    w.addEventListener = (t, f) => hoerer.push(f);
+    w.MessageEvent = function (_t, o) { this.data = o.data; this.stopImmediatePropagation = () => {}; }; // prettier-ignore
+    w.dispatchEvent = (ev) => (aus.wartet = ev.data === "vorher");
+    // die Schale steht vor dem Studio: sie hält den Ausgang des Fadens (postMessage), bevor die Kerne laden
+    w.importScripts = (...u) => (aus.laden = w.postMessage !== roh ? u.join(" ") : "die Schale steht nicht davor"); // prettier-ignore
+    w.fetch = (u) => Promise.resolve({ ok: true, text: () => Promise.resolve(/manifest/.test(u) ? text : `<${u}>`) }); // prettier-ignore
     w.crypto = { subtle: { digest: (_a, b) => ((aus.stempel = new TextDecoder().decode(b)), new Promise(() => {})) } };
     w.self = w.globalThis = w;
-    vm.runInContext(blob, vm.createContext(w));
+    new vm.Script(blob, { importModuleDynamically: vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER }).runInContext(vm.createContext(w)); // prettier-ignore
+    hoerer[0](new w.MessageEvent("message", { data: "vorher" })); // vor der Brücke: der Warte-Hörer hält sie bis danach
+    for (let i = 0; i < 400 && aus.stempel == null; i++) await new Promise((r) => setTimeout(r, 5));
     w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
     aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
-    for (let i = 0; i < 50 && aus.stempel == null; i++) await new Promise((r) => setImmediate(r));
     return aus;
 }
 
@@ -175,9 +182,9 @@ async function main() {
     const lauf = await bootLauf(fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"));
     check(lauf.geburt === "buch", `Boot: der Faden kommt synchron mit der Geburt und heißt „buch" (${lauf.geburt || lauf.fehler})`);
     const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore
-    check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt lib · scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)"); // prettier-ignore
+    check(lauf.laden === lauf.sollLaden && lauf.wartet && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42), eine Nachricht vor der Brücke wartet"); // prettier-ignore
     check(lauf.wand, "Boot: die Konsum-Wand (FOUNDRY_LESEN) reist in die Schale — ein ungelesenes Attribut fällt vor dem Transfer");
-    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: Manifest-Text vor ALLEN core.scripts + core.bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
+    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: Manifest-Text vor der Engine (modul), ALLEN core.scripts + core.bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);

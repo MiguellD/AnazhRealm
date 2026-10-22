@@ -14,7 +14,7 @@ die der Stamm zur Laufzeit liest, und `gate:vendor-anker` nennt jeden Anker, von
 
 | Datei                    | Quelle                                                          | Rolle                                                                                                                                       |
 | ------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `three.core.min.js`      | `three@0.184.0` (`build/three.core.min.js`)                     | Basis-Symbole (Matrix4, Vector3, Material …), von den anderen Bündeln über relativen Pfad importiert                                        |
+| `three.core.min.js`      | `three@0.184.0` (`build/three.core.min.js`)                     | Basis-Symbole (Matrix4, Vector3, Material …), von den anderen Bündeln über relativen Pfad importiert; die Engine des Foundry-Fadens (`cores.manifest.json` `modul`) |
 | `three.module.min.js`    | `three@0.184.0` (`build/three.module.min.js`)                   | das nackte `three` der Import-Map + Re-Exporte aus `three.core.min.js`                                                                      |
 | `three.webgpu.min.js`    | `three@0.184.0` (`build/three.webgpu.min.js`)                   | WebGPURenderer + alle NodeMaterials + Licht-Modelle; Import-Map-Pfad `three/webgpu`                                                         |
 | `three.tsl.min.js`       | `three@0.184.0` (`build/three.tsl.min.js`)                      | TSL-Helfer (`Fn`, `select`, `texture`, `uniform` …); Import-Map-Pfad `three/tsl`                                                            |
