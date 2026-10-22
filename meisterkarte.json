@@ -53,7 +53,7 @@
     {
       "key": "schoepfung",
       "titel": "IV · SCHÖPFUNG — die Studios, die Pipeline, die KI im System, Spieler-Bauen",
-      "summe": 5,
+      "summe": 6,
       "max": 40,
       "bereiche": [
         "studios",
@@ -82,7 +82,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 7,
+      "summe": 6,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -2517,7 +2517,7 @@
       "key": "pipeline",
       "titel": "Die Pipeline — Studio → Kern → Foundry/Ofen → Welt",
       "gruppe": "schoepfung",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (bauen) · B · E",
       "dateien": "`foundry-bruecke.js` · `stamm/studio-bruecke.js` (`_foundryAuftrag`, `_foundrySchale`) · `cores.manifest.json` · `stamm/netz-portal.js` (Übergabe) · `spec/vertraege/ratsche.json`",
       "aaaa": "Ein Griff in einem der acht Studios steht spätestens 1 s später als dasselbe Werk in der Welt: derselbe Bau-Hash aus Saat + ov, an seinem Ort, in jeder Stufe, für 8/8 Arten. EIN Foundry-Worker auf der Engine der Welt (r184-Kern, 0 KB fremdes three, kein synchrones XHR) baut jede Mesh-Art, der Ofen gießt Mensch und Tier, die Karte kommt aus EINEM Bäcker. Jede Stufe reduziert nach Gesetz (L1 ≤ 50 %, L2 ≤ 15 % der L0-Dreiecke) und hält ihr Budget an jedem Regler-Rand. Die Platte unter dem Gesetz-SHA trägt jede Lieferung: ein Zweit-Boot baut 0, eine Gesetz-Änderung baut nur ihre Art neu. **Wo wir die Besten schlagen:** UE kocht Assets in einen GB-Cache, Nanite zeichnet ein Asset billig, das Asset bleibt Handarbeit; No Man's Sky erzeugt 2^64 Planeten ohne Werkbank, an der der Spieler das Gesetz greift. Bei uns ist das Asset die Funktion (Kilobytes Gesetz), der Cache-Schlüssel der SHA des Gesetzes, und der Spieler hält das Gesetz in der Hand.",
@@ -2548,10 +2548,10 @@
         },
         {
           "name": "Kosten am Asset: jede Stufe reduziert nach Gesetz und hält ihr Budget an jedem Regler-Rand",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = reglerBudget ≤ 3 ohne geschrumpften Wertebereich · 2 = 0, und je Art L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke",
           "messung": "gate:regler-wirkt, Teil Budget, über die echte Foundry-Brücke: je Art × Stufe × Regler-Rand Dreiecke und Befehle ≤ PORTAL_RENDER_CONFIG.lod.budget; der Wertebereich steht in der Ratsche.",
-          "beleg": "reglerBudget 7 (spec/vertraege/ratsche.json bruch: fachwerk haus bend·doppel·storeys, porta ruin·wMason·wMono, schmiede griff). Dass Reduktion am Studio heilt, zeigt der Labor-Wolf L0 1 299 852 → 54 894 (K45, d7559531).",
+          "beleg": "SCHNITT pipeline-k3, auf main e5003509 (V18.546.59), mit Welt-Byte: die Stufen-Probe von gate:regler-wirkt (scripts/diag-regler-wirkt.cjs, drei CI-Teile 71/110/85 s) baut jede Stufe × Rezept × Regler-Rand (6 527 Bauten) über die echte Foundry-Brücke und richtet Dreiecke und Befehle gegen die Budget-Zeile — an der Basis 24 Regler über Budget (die alte Linse sah 7), am Kopf 3 = Ratsche 3 (Staffel 3), Quote 3, WURF 1 324 Paare; die Heilung im Rezept (fachwerk-core Biege-Achse, Sehnen-Toleranz, Kuppel-Meridiane, Ziegel-Band, Großformat; schmiede-core Wicklung; foundry-core Blüte; vehicle-core teil-Gesetz; phyto-core Leucht-Linien), 412 Rezept-Stufen ohne Regler byte-gleich, hochhaus-s12345-L0 per Vertrags-Akt (173 416 > 132 000 schon ohne Regler); Werkstatt-Bild alemannisch bend=1 in L1 26 668 statt 89 146 Dreiecke (Radeon, angesehen). Die Linse fährt in jeder vollen CI am Kopf: integ-CI an e5003509 (Run 39719773531) 22/22 grün inkl. echt → Staffel 1 (Mechanik am Bau, R3). Für die 2 fehlen reglerBudget 0 (haus doppel 12 Fälle, storeys=12 18 Rezepte, turm marokkanisch L2) und die Quoten gate L1/L0 0,81, L2/L0 0,39, haus L1/L0 0,54. Davor: reglerBudget 7 (spec/vertraege/ratsche.json bruch: fachwerk haus bend·doppel·storeys, porta ruin·wMason·wMono, schmiede griff). Dass Reduktion am Studio heilt, zeigt der Labor-Wolf L0 1 299 852 → 54 894 (K45, d7559531).",
           "schlupfloch": "Den Regler-Rand enger klemmen statt im Rezept zu reduzieren: der Wertebereich steht in der Ratsche; ein Budget anheben ist ein Vertrags-Akt des Schöpfers.",
           "aenderung": "EIN Heim der Reduktion je Stufe (vorher auch LOD K5; B38); Staffel neu (B48)."
         },
@@ -2605,17 +2605,17 @@
           "v1": true
         },
         {
-          "name": "Die 7 Rand-Brüche heilen im Rezept (Reduktion statt Klemme)",
+          "name": "Die letzten 3 Rand-Brüche und die Quoten heilen im Rezept (reglerBudget 0, L1/L0 ≤ 0,5, L2/L0 ≤ 0,15)",
           "bewegt": [
-            "pipeline.K3+2"
+            "pipeline.K3+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1,
             1.5
           ],
-          "p_je_tag": 1.6,
-          "wurzel": "`fachwerk-core.js` (haus bend, doppel, storeys), `porta-core.js` (ruin, wMason, wMono), `schmiede-core.js` (griff); spec/vertraege/ratsche.json je Zeile im selben Commit.",
+          "p_je_tag": 0.8,
+          "wurzel": "`fachwerk-core.js` (haus doppel 12 Fälle, storeys=12 18 Rezepte, turm marokkanisch L2 — der Massen-Körper zeichnet den Turm in L2 ein zweites Mal), Quoten gate L1/L0 0,81 und L2/L0 0,39, haus L1/L0 0,54; spec/vertraege/ratsche.json je Zeile im selben Commit (gate:regler-wirkt, drei CI-Teile).",
           "pflicht": "E",
           "v1": true
         },
@@ -4320,7 +4320,7 @@
       "key": "speicher",
       "titel": "Speicher und Persistenz",
       "gruppe": "fundament",
-      "punkte": 3,
+      "punkte": 2,
       "pfad": "v1 (nichts geht verloren) · E (kein Frame)",
       "dateien": "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
       "aaaa": "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
@@ -4342,10 +4342,10 @@
         },
         {
           "name": "Speichern kostet keinen Frame",
-          "punkte": 1,
+          "punkte": 0,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "In den Frames ab p95 kostet `saveState` 0,12 ms (GTX, frische Welt, `bericht/1910-b-e-gtx.md` E; `stamm/dienst.js` seither unberührt) — dazu kommen 0,17 ms `saveToProjectFolder`, die nur der lokale Host zahlt (`stamm/werkstatt-sozial.js:474-490`). saveState baut den ganzen Stand (`buildStateSnapshot`, `speicher-welten.js:791`) und schreibt per JSON.stringify und bis zu 3 localStorage-Schreibern synchron im Haupt-Faden (`stamm/dienst.js:1186-1213`). Gemessen 21.10. am Kopf 816f26b4 auf dem Pfad des Spielers (Radeon, Host :7960, 90 s gehen, Hülle um `saveState` und CPU-Profil 100 µs als Gegenprobe, Messschuld M16): je Bild p95 0 ms und p99 0 ms (5 324 Bilder, 10 mit Save, Mittel 0,014 ms) → die 1 hält; je Ruf aber p50 6,6 ms, max 14,6 ms (Stand 210 kB) — der Save-Frame selbst ist ein Hänger-Kandidat. Für die 2 fehlen 0,1 ms nach 2 h und 10 000 Edits und die GTX.",
+          "beleg": "FÄLLT NACH R6 am 22.10. (Kopf e5003509): speicher-h1 änderte den gemessenen Pfad (saveState sperrt beim Laden, EINE IDB-Transaktion, Takt 10 → 5 s) — die Messung von 816f26b4 trägt ihn nicht mehr; die Neumessung am Pfad des Spielers läuft (radeon-beweise, saveState-ms je Bild). Davor: In den Frames ab p95 kostet `saveState` 0,12 ms (GTX, frische Welt, `bericht/1910-b-e-gtx.md` E; `stamm/dienst.js` seither unberührt) — dazu kommen 0,17 ms `saveToProjectFolder`, die nur der lokale Host zahlt (`stamm/werkstatt-sozial.js:474-490`). saveState baut den ganzen Stand (`buildStateSnapshot`, `speicher-welten.js:791`) und schreibt per JSON.stringify und bis zu 3 localStorage-Schreibern synchron im Haupt-Faden (`stamm/dienst.js:1186-1213`). Gemessen 21.10. am Kopf 816f26b4 auf dem Pfad des Spielers (Radeon, Host :7960, 90 s gehen, Hülle um `saveState` und CPU-Profil 100 µs als Gegenprobe, Messschuld M16): je Bild p95 0 ms und p99 0 ms (5 324 Bilder, 10 mit Save, Mittel 0,014 ms) → die 1 hält; je Ruf aber p50 6,6 ms, max 14,6 ms (Stand 210 kB) — der Save-Frame selbst ist ein Hänger-Kandidat. Für die 2 fehlen 0,1 ms nach 2 h und 10 000 Edits und die GTX.",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1."
         },
@@ -4621,20 +4621,6 @@
       "pflicht": "A (Ferne); Last: E (Boden-Haushalt 12/120k)"
     },
     {
-      "bereich": "pipeline",
-      "hebel": "Die 7 Rand-Brüche heilen im Rezept (Reduktion statt Klemme)",
-      "bewegt": [
-        "pipeline.K3+2"
-      ],
-      "punkte": 2,
-      "tage": [
-        1,
-        1.5
-      ],
-      "p_je_tag": 1.6,
-      "pflicht": "E"
-    },
-    {
       "bereich": "streaming",
       "hebel": "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)",
       "bewegt": [
@@ -4662,6 +4648,20 @@
       ],
       "p_je_tag": 1.33,
       "pflicht": "A (boden-nah)"
+    },
+    {
+      "bereich": "material",
+      "hebel": "Stufen-Albedo aus EINER Rechnung (S8)",
+      "bewegt": [
+        "material.K3+2"
+      ],
+      "punkte": 2,
+      "tage": [
+        1.5,
+        1.5
+      ],
+      "p_je_tag": 1.33,
+      "pflicht": "A (haus)"
     }
   ],
   "verlauf": [
@@ -4758,7 +4758,7 @@
       "summe": 40,
       "max": 330,
       "skala": "2.0",
-      "was": "main-Vorlauf 7670a4a1..e5003509 (pipeline-k3, profiband-k3, halten-latenz, tier-gang-k3, speicher-h1; V18.546.59); je Kriterium `git log` Mess-SHA..e5003509 über die Dateien des Pfads. Schnitt mit Welt-Byte: Halten K2 0 → 1 (halten-latenz 11774d4d: `_pickCreatureAtCrosshair` fragt die EINE Körper-Gestalt `_kreaturGliedTreffer` statt jede Tier-Haut per Raycast; Radeon, Mess-Wiese, frisch gebootet, je 30 Proben je Sicht, Langschwert und Wolf-Puppe, Klick bis zum ersten Bild mit der Hand ≥ 1 cm: Third p50 90,1 → 19,2, p95 115,8 → 30,5 ms, Ego p50 92,8 → 18,1, p95 105,6 → 36,0 ms, im Hörer 76,8/77,8 → 2,0/1,3 ms, Hit-Stop 13/12 präsentierte Bilder im Ausgabe-Pfad; Zweig-CI 39711623849 21/21), Tiere K3 1 → 2 (tier-gang-k3 8b560b2a..86d8d41c: der Tastgrad aus dem Gesetz, tetrapoda-core `gangSchritt`; Radeon/Null-Renderer Welt Schritt 0,52–0,54 → 0,64–0,68, Labor 0,50 → 0,65, Galopp 0,19–0,20 → 0,25–0,30, Welt gegen Labor ≤ 0,03 Zyklus, Querhang 20,8° Schlupf 0,024, Third-Bild aus 10 m; GTX an e5003509 gate:tier-gang GRÜN 32/32, Trab 0,48–0,52, Querhang 20,8° Bein-Lot 7,5/7,7°, Rampe 29,9° Schlupf 0,026/0,021, Bild aus 10 m mit je drei Füßen am Boden). Gemessen: Profiband K4 0 → 1 (GTX an e5003509 mit dem Regler des Spielers nach R8, Wiese Ego, `haenger 60 --regler frei --wandern bahn`, 4 frische Sitzungen: 3 von 4 ohne Frame > 100 ms, max 66,6–66,7 ms; s4 EIN Hänger von 100,1 ms im ersten Frame beim Namen — der synchrone Auto-Speicher-Takt, `_loopAutoSave` 30 %, `saveState` 7 %, `setItem` 5 % —, 1 von 4 Boots, kein Täter nach Regel 5). Messschuld M18, M25 und M29 fallen gebucht. Nicht gerichtet in dieser Buchung: speicher-h1 (Speicher K1 bleibt 0, Speicher K2 bleibt 1 auf der Messung von 816f26b4) und pipeline-k3 (Pipeline K3 bleibt 0, Budget 24 → 3 im Merge) — am Kopf nicht nachgefahren; profiband-k3 lässt Profiband K3 bei 0 (GPU je Bild ≤ 12 ms ROT an der GTX). Zwei Hebel schrumpfen auf ihren Rest (Halten H2, Profiband H1); Tiere trägt keinen Hebel auf K3."
+      "was": "main-Vorlauf 7670a4a1..e5003509 (pipeline-k3, profiband-k3, halten-latenz, tier-gang-k3, speicher-h1; V18.546.59); je Kriterium `git log` Mess-SHA..e5003509 über die Dateien des Pfads. Schnitt mit Welt-Byte: Halten K2 0 → 1 (halten-latenz 11774d4d: `_pickCreatureAtCrosshair` fragt die EINE Körper-Gestalt `_kreaturGliedTreffer` statt jede Tier-Haut per Raycast; Radeon, Mess-Wiese, frisch gebootet, je 30 Proben je Sicht, Langschwert und Wolf-Puppe, Klick bis zum ersten Bild mit der Hand ≥ 1 cm: Third p50 90,1 → 19,2, p95 115,8 → 30,5 ms, Ego p50 92,8 → 18,1, p95 105,6 → 36,0 ms, im Hörer 76,8/77,8 → 2,0/1,3 ms, Hit-Stop 13/12 präsentierte Bilder im Ausgabe-Pfad; Zweig-CI 39711623849 21/21), Tiere K3 1 → 2 (tier-gang-k3 8b560b2a..86d8d41c: der Tastgrad aus dem Gesetz, tetrapoda-core `gangSchritt`; Radeon/Null-Renderer Welt Schritt 0,52–0,54 → 0,64–0,68, Labor 0,50 → 0,65, Galopp 0,19–0,20 → 0,25–0,30, Welt gegen Labor ≤ 0,03 Zyklus, Querhang 20,8° Schlupf 0,024, Third-Bild aus 10 m; GTX an e5003509 gate:tier-gang GRÜN 32/32, Trab 0,48–0,52, Querhang 20,8° Bein-Lot 7,5/7,7°, Rampe 29,9° Schlupf 0,026/0,021, Bild aus 10 m mit je drei Füßen am Boden). Gemessen: Profiband K4 0 → 1 (GTX an e5003509 mit dem Regler des Spielers nach R8, Wiese Ego, `haenger 60 --regler frei --wandern bahn`, 4 frische Sitzungen: 3 von 4 ohne Frame > 100 ms, max 66,6–66,7 ms; s4 EIN Hänger von 100,1 ms im ersten Frame beim Namen — der synchrone Auto-Speicher-Takt, `_loopAutoSave` 30 %, `saveState` 7 %, `setItem` 5 % —, 1 von 4 Boots, kein Täter nach Regel 5). Messschuld M18, M25 und M29 fallen gebucht. Nicht gerichtet in dieser Buchung: speicher-h1 (Speicher K1 bleibt 0, Speicher K2 bleibt 1 auf der Messung von 816f26b4) ; Pipeline K3 0 → 1 (pipeline-k3: über Budget 24 → 3 = Staffel 3, gate:regler-wirkt in der integ-CI an e5003509 grün); profiband-k3 lässt Profiband K3 bei 0 (GPU je Bild ≤ 12 ms ROT an der GTX). Zwei Hebel schrumpfen auf ihren Rest (Halten H2, Profiband H1); Tiere trägt keinen Hebel auf K3.; Speicher K2 1 → 0 nach R6 (speicher-h1 änderte den gemessenen saveState-Pfad, Neumessung läuft)"
     }
   ],
   "text": {
