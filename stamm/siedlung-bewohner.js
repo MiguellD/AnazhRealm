@@ -658,8 +658,9 @@ class AnazhRealm_siedlung_bewohner {
             }
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
             if (S.wache.stand !== S.wegeStand) {
+                const trifft = this._bewohnerWechsel(S, S.wegeStand);
                 S.wegeStand = S.wache.stand;
-                this._bewohnerWegPruefen(S);
+                this._bewohnerWegPruefen(S, trifft);
             }
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
@@ -1030,8 +1031,9 @@ class AnazhRealm_siedlung_bewohner {
     // DIE WAND AN DER STRECKE (mensch.K3): die Kapsel des Leibs — die des Spielers (`_resolveCapsuleVsAABB`: Radius
     // PLAYER_WALL_RADIUS, Wand ab der Stufe PLAYER_STEP_UP über der Sohle) bis zum Scheitel (`BEWOHNER.kopfM`) — längs a → e
     // gegen das EINE Blocker-Netz (`_blockerNahe`, je Box `_streckeBoxAbstand2`): Haus, Bau, Baum, Fels. Die Höhe trägt der
-    // Boden an beiden Enden (die Stufe am tieferen, der Scheitel am höheren). Liefert den Eintrag der ersten Wand oder null;
-    // a = e fragt den Stand.
+    // Boden an beiden Enden (die Stufe am tieferen, der Scheitel am höheren), je Punkt gemerkt bis zum nächsten Edit oder
+    // Erdbau (`_editGenZaehler`): Knoten, Orte und Tür fragen das Gesetz einmal, nie je Strecke. Liefert den Eintrag der ersten
+    // Wand oder null; a = e fragt den Stand.
     _bewohnerWand(a, e) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const kand = this._bewohnerWandKand || (this._bewohnerWandKand = []);
@@ -1045,8 +1047,14 @@ class AnazhRealm_siedlung_bewohner {
             for (const box of boxen) {
                 if (this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
                 if (lo !== lo) {
-                    const ya = this.getTerrainHeightAt(a.x, a.z);
-                    const ye = a === e ? ya : this.getTerrainHeightAt(e.x, e.z);
+                    this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
+                    const st = this._editGenZaehler | 0;
+                    const grund = (q) =>
+                        q._grundStand === st
+                            ? q._grundY
+                            : ((q._grundStand = st), (q._grundY = this.getTerrainHeightAt(q.x, q.z)));
+                    const ya = grund(a);
+                    const ye = a === e ? ya : grund(e);
                     lo = Math.min(ya, ye) + AnazhRealm.PLAYER_STEP_UP;
                     hi = Math.max(ya, ye) + AnazhRealm.BEWOHNER.kopfM;
                     if (!Number.isFinite(lo + hi)) [lo, hi] = [-Infinity, Infinity]; // ohne Boden ist jede Box Wand
@@ -1061,37 +1069,63 @@ class AnazhRealm_siedlung_bewohner {
     // eines Wegs seine Kanten, die Kreuzungen (Knoten zweier Wege näher als `kreuzM`) verbunden; es hängt über FREIE Kanten
     // zusammen (`_bewohnerKante`): was getrennt liegt (ein Weg, der seitlich in eine Straße mündet, eine Gasse, über der ein
     // Baum steht), schließt der kürzeste freie Schritt zum Rest (bis `naehtM`) — EIN Netz je Dorf. Wechselt eine Hülle im
-    // Rechteck der Wache, entsteht es neu.
+    // Rechteck der Wache, urteilt es neu. DER GRUND DES NETZES (Knoten, Folgen, Kreuzungen: die Lage allein, `S.netzGrund`)
+    // entsteht je Siedlung einmal — ein neuer Stand urteilt nur die Kanten (Lehre 25: der Takt kostet die Änderung), und jeder
+    // Knoten behält seinen Boden (`_bewohnerWand`); jede Naht urteilt über `_bewohnerKante` (gemerkt wie jede Kante).
+    // EIN STAND, DER KEIN URTEIL ÄNDERT, ÄNDERT DAS NETZ NICHT: jede gemerkte Kante, die eine gewechselte Hülle berührt
+    // (`_bewohnerWechsel`), urteilt neu — bleibt jedes Urteil, gilt das Netz weiter; sonst entsteht es mit dem Geurteilten neu.
     _bewohnerNetz(S) {
-        if (S.netz && S.netz.stand === S.wache.stand) return S.netz;
-        const knoten = [];
-        const kanten = [];
-        const zug = [];
-        const N = { knoten, kanten, baeume: new Map(), frei: new Map(), stand: S.wache.stand };
-        const kante = (i, j) => {
+        const alt = S.netz;
+        if (alt && alt.stand === S.wache.stand) return alt;
+        const trifft = alt && this._bewohnerWechsel(S, alt.stand);
+        let erbe = null;
+        if (trifft) {
+            const n = alt.knoten.length;
+            let gleich = true;
+            erbe = new Map();
+            for (const [key, f] of alt.frei) {
+                const a = alt.knoten[Math.floor(key / n)];
+                const e = alt.knoten[key % n];
+                const neu = trifft(a, e) ? !this._bewohnerWand(a, e) : f;
+                if (neu !== f) gleich = false;
+                erbe.set(key, neu);
+            }
+            if (gleich) {
+                alt.stand = S.wache.stand;
+                return alt;
+            }
+        }
+        const G = S.netzGrund || (S.netzGrund = { knoten: [], kanten: [] });
+        const knoten = G.knoten;
+        const kante = (kanten, i, j) => {
             const w = Math.hypot(knoten[i].x - knoten[j].x, knoten[i].z - knoten[j].z);
             kanten[i].push(j, w);
             kanten[j].push(i, w);
         };
-        let wi = 0;
-        for (const rd of (S.plan.roads || []).concat(S.plan.feldwege || [])) {
-            let vor = -1;
-            for (const q of rd.pts || []) {
-                if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
-                knoten.push({ x: S.ox + q.x, z: S.oz + q.z });
-                kanten.push([]);
-                zug.push(wi);
-                const i = knoten.length - 1;
-                if (vor >= 0) kante(vor, i);
-                vor = i;
+        if (!knoten.length) {
+            const zug = [];
+            let wi = 0;
+            for (const rd of (S.plan.roads || []).concat(S.plan.feldwege || [])) {
+                let vor = -1;
+                for (const q of rd.pts || []) {
+                    if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
+                    knoten.push({ x: S.ox + q.x, z: S.oz + q.z });
+                    G.kanten.push([]);
+                    zug.push(wi);
+                    const i = knoten.length - 1;
+                    if (vor >= 0) kante(G.kanten, vor, i);
+                    vor = i;
+                }
+                wi++;
             }
-            wi++;
+            const K2 = AnazhRealm.BEWOHNER.kreuzM ** 2;
+            for (let i = 0; i < knoten.length; i++)
+                for (let j = i + 1; j < knoten.length; j++)
+                    if (zug[i] !== zug[j] && (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2 < K2)
+                        kante(G.kanten, i, j);
         }
-        const K2 = AnazhRealm.BEWOHNER.kreuzM ** 2;
-        for (let i = 0; i < knoten.length; i++)
-            for (let j = i + 1; j < knoten.length; j++)
-                if (zug[i] !== zug[j] && (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2 < K2)
-                    kante(i, j);
+        const kanten = G.kanten.map((k) => k.slice());
+        const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
         const teil = new Int32Array(knoten.length);
         const N2 = AnazhRealm.BEWOHNER.naehtM ** 2;
         for (;;) {
@@ -1125,15 +1159,14 @@ class AnazhRealm_siedlung_bewohner {
                 }
             }
             paare.sort((p, q) => p[0] - q[0]);
-            const naht = paare.find(([, i, j]) => !this._bewohnerWand(knoten[i], knoten[j]));
+            const naht = paare.find(([, i, j]) => this._bewohnerKante(N, i, j));
             if (!naht) {
                 this._bruchMelden(
                     `BEWOHNER: das Wege-Netz von „${S.plan.name || "?"}" zerfällt in ${n} Teile (kein freier Schritt bis ${AnazhRealm.BEWOHNER.naehtM} m)`
                 );
                 break;
             }
-            kante(naht[1], naht[2]);
-            N.frei.set(naht[1] < naht[2] ? naht[1] * knoten.length + naht[2] : naht[2] * knoten.length + naht[1], true);
+            kante(kanten, naht[1], naht[2]);
         }
         return (S.netz = N);
     }
@@ -1173,8 +1206,9 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DER REST DES WEGS nach einem Wechsel der Wache: wer geht, prüft die Beine vor sich (vom Leib bis zum Ziel, ohne das Bein
-    // durch die eigene Tür); trifft eines eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt).
-    _bewohnerWegPruefen(S) {
+    // durch die eigene Tür), die eine gewechselte Hülle berühren (`trifft`, `_bewohnerWechsel`; null: jedes); trifft eines
+    // eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt).
+    _bewohnerWegPruefen(S, trifft = null) {
         for (const b of S.liste) {
             if (!b.weg || !b.leib) continue;
             const o = b.orte;
@@ -1182,12 +1216,32 @@ class AnazhRealm_siedlung_bewohner {
             for (let i = b.wi; i < b.weg.length; p = b.weg[i++]) {
                 const q = b.weg[i];
                 const tuerBein = q === o.tuer || (q === o.vor && (p === o.tuer || (i === b.wi && b.stand === o.tuer)));
-                if (tuerBein || !this._bewohnerWand(p, q)) continue;
+                if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
                 b.weg = null;
                 b.stand = null;
                 break;
             }
         }
+    }
+
+    // DIE WECHSEL SEIT EINEM STAND der Wache (ihr Buch, `_blockerWacheMelden`): die Probe, ob eine Strecke a → e eine Hülle
+    // berührt, die seit `seit` wechselte (ihr Kasten samt Kapsel und Spur, wie die Wache); null, wenn das Buch nicht so weit
+    // zurück reicht — dann urteilt der Leser alles neu.
+    _bewohnerWechsel(S, seit) {
+        const w = S.wache;
+        const L = w.wechsel || [];
+        const n = w.stand - seit;
+        if (!(n >= 0 && n <= L.length)) return null;
+        const H = L.slice(L.length - n);
+        const r = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM + 1;
+        return (a, e) => {
+            const x0 = Math.min(a.x, e.x) - r;
+            const x1 = Math.max(a.x, e.x) + r;
+            const z0 = Math.min(a.z, e.z) - r;
+            const z1 = Math.max(a.z, e.z) + r;
+            for (const h of H) if (h[1] >= x0 && h[0] <= x1 && h[3] >= z0 && h[2] <= z1) return true;
+            return false;
+        };
     }
 
     // DER ANSCHLUSS eines Orts: der nächste Knoten des Netzes, den er frei erreicht (die zwölf nächsten geprüft; sonst der
