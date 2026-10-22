@@ -928,7 +928,7 @@ class AnazhRealm_koerper_fahrt {
             if (nahe.some((e) => e !== entry)) continue;
             const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
             if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
-            if (boden === null && !(this._koerperWasser(x, z, fz.y) > fz.y)) continue; // ein Abgrund ohne Wasser
+            if (boden === null && !this._nassAt(x, z, 0, fz.y)) continue; // ein Abgrund ohne Wasser
             // die Füße nie unter der Rad-Ebene (ein Boden tiefer ist Wasser-Grund unter einem schwimmenden Werk: er schwimmt)
             return { x, z, y: Math.max(boden !== null ? boden : fz.y, fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
         }

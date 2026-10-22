@@ -198,28 +198,6 @@ class AnazhRealm_klang {
         }
     }
 
-    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter der EINEN Wasser-Wahrheit am Körper
-    // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
-    // null) trägt kein Wasser. DIE EINE SPALTEN-PROBE „ist hier Wasser": die Nässe des Klangs (der Hör-Ring und der
-    // Wasser-Hauch) und — mit `marge` (m über dem Spiegel, der Rand zählt mit) — das Trink-Ziel der Tiere
-    // (`_findNearestWaterPoint`) und die erste Hälfte des LANDS jedes Werks (`_landAt`). Bis zur Gegenprüfung las der Klang
-    // das 3×3-gedehnte `_waterLevelAt`; bis Schau-2 (09.10.) las das Land eine Zwillings-Probe über `_waterLevelAt`.
-    // DER BILLIGE BEWEIS ZUERST (Lehre 25; Integration Welle L: wasser × auge-v1 R2): die Wahrheit am Körper trägt an (x, z)
-    // höchstens das gezeichnete Wasser (geladener Chunk, `_wasserBildAt`) bzw. ohne Chunk den Spiegel des Gesetzes samt Rand
-    // und voller Fluss-Breite (`_atlasWaterLevelAt` mit einem Boden unter allem) — gleich über welchem Boden, die Decke nimmt
-    // nur. Ist dort kein Wasser, ist die Spalte trocken ohne Scan; ist ein Gitterpunkt über dieser Obergrenze + Marge Fels
-    // (`_felsUeber`), liegt der Boden darüber — trocken ohne Scan. Nur Spalten, an denen Wasser sein kann, zahlen den
-    // Spalten-Scan `_voxelSurfaceY`; das Urteil bleibt dasselbe. Die dichte Wasser-Suche scannte nach dem Merge je Probe
-    // (gate:v1-pfad R2 trocken 40 m: 351 Scans, Soll ≤ 80).
-    _nassAt(x, z, marge = -0.05) {
-        const bild = this._wasserBildAt(x, z);
-        const oben = bild === undefined ? this._atlasWaterLevelAt(x, z, -1e9) : bild;
-        if (oben === null || !(oben > -Infinity)) return false;
-        if (this._felsUeber(x, z, oben + marge)) return false;
-        const boden = this._voxelSurfaceY(x, z);
-        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
-    }
-
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
     // Ellipse · Quader als Rechteck · sonst die halbe Box) × Bau-Skala² — je Bauplan gemerkt. Ein Bett-Feuer knistert
     // mit seiner BRENNENDEN Fläche (klang:UMWELT.stimmen.glut, Bezug das Glutbett der Studio-Feuerstelle); die Höhe
@@ -536,13 +514,10 @@ class AnazhRealm_klang {
         if (sym && sym.enabled && sym.ctx && sym.masterGain) this._playSchrittOneShot(param);
     }
 
-    // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er.
-    // `_koerperWasser` = die EINE Wasser-Wahrheit am Körper (der Fuß ist sein Grund), `_terrainMaterialAt` die
-    // EINE Boden-Wahrheit.
+    // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
+    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit.
     _schrittMaterialAt(x, z, y) {
-        const w = this._koerperWasser(x, z, y);
-        if (Number.isFinite(w) && y < w + 0.02) return "wasser";
-        return this._terrainMaterialAt(x, z, y);
+        return this._nassAt(x, z, 0.02, y) ? "wasser" : this._terrainMaterialAt(x, z, y);
     }
 
     // Material → Timbre, PUR aus der Tabelle (unbekannt → Tabellen-Fallback). Die LANDUNG ist derselbe
