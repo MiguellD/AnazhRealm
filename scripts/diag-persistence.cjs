@@ -2,9 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-persistence.cjs — DIE PERSISTENZ-HÄRTUNG (npm run gate:persistence)
 //
-// (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr.
-//
-// (W) DIE WIEDERKEHR (speicher.K4): ein Werk des Spielers auf der Genesis-Lichtung steht nach dem Reload (Täter: `_weichtDemBau` nach Stoff).
+// (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr (ein Werk auf der Lichtung).
 //
 // (K) DER RELOAD MIT KALTEM BUCH (06.10., V18.531): ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
@@ -405,7 +403,7 @@ const server = statikServer();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
         await warteAufWelt(page, 60000);
         out = {};
-        // (W) zwei Werke auf der Lichtung (der Satz, der Bau-Modus), Save, echter Reload; Selbsttest: der Räumer nach Stoff lädt neu
+        // (W) zwei Werke auf der Lichtung (Satz, Bau-Modus), Save, Reload; Selbsttest: der Räumer nach Stoff
         const w = (art) =>
             page.evaluate(async (art) => {
                 const r = await window.__weltDa((x) => x._genesisPlattform());
@@ -580,7 +578,7 @@ const server = statikServer();
             pass: out.uGleichBericht === null,
         },
         {
-            name: `(W) Wiederkehr: die Werke des Spielers auf der Lichtung stehen nach dem Reload ${out.w.stehen}/${out.w.gesetzt} (Satz + Bau-Modus, r 15 m)${out.w.stehen < 2 ? " — Täter _weichtDemBau: Stoff statt Herkunft" : ""}`,
+            name: `(W) Werke auf der Lichtung nach dem Reload ${out.w.stehen}/${out.w.gesetzt}${out.w.stehen < 2 ? " — Täter _weichtDemBau: Stoff statt Herkunft" : ""}`,
             pass: out.w.gesetzt === 2 && out.w.stehen === 2,
         },
         {
@@ -603,7 +601,7 @@ const server = statikServer();
     if (SELBSTTEST)
         checks.push(
             {
-                name: `(W) SELBSTTEST: der Räumer nach Stoff (_weichtDemBau = die Art) nimmt die Werke beim Laden (${out.w.selbst}/${out.w.gesetzt})`,
+                name: `(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${out.w.selbst}/${out.w.gesetzt})`,
                 pass: out.w.selbst === 0,
             },
             {
