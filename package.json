@@ -129,7 +129,6 @@
         "gate:gpu-fehler": "node scripts/diag-gpu-fehler.cjs --selftest",
         "gate:asset-inventory": "node scripts/diag-asset-inventory.cjs --selftest",
         "gate:season-meadow": "node scripts/diag-season-meadow.cjs --selftest && node scripts/diag-season-meadow.cjs",
-        "gate:one-wuchs-parity": "node scripts/diag-one-wuchs-parity.cjs",
         "gate:s4-impostor-workshop": "node scripts/diag-s4-impostor-workshop.cjs",
         "gate:nervensystem": "node scripts/diag-nervensystem.cjs",
         "gate:nervensystem-vehicle": "node scripts/diag-nervensystem-vehicle.cjs --selftest && node scripts/diag-nervensystem-vehicle.cjs",

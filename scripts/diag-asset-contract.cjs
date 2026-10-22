@@ -545,7 +545,7 @@ function bildUrteil(mess, tafel) {
             if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
-            // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten), wo die Ferne der Art ihre Hülle ist
+            // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
             if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true && budget[kind].fernform === "huelle") {
                 const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
                 fernMess.push({ fall, fern: fb || null });

@@ -2886,46 +2886,44 @@ async function kreaturProben(r, T, opts) {
             L.filter(
                 (g) => gezeichnet(g) && stationen.some((o) => Math.hypot(g.position.x - o.x, g.position.z - o.z) < 1.5)
             ).length;
-        // DER GANG IM SATZ (Schlupf wie gate:tier-gang): je Takt der Fuß jedes gehenden Satz-Bewohners aus dem, was die GPU
-        // zeichnet — jede Senke `bewohner-satz`, die ihn trägt: die Vorlage (ohne Gang-Puffer `userData.gang` die stehende
-        // Geometrie) an der Phase seiner Instanz (`aGang`: Phase, Gewicht; Puffer je Phase und Vertex vec4, die letzte
-        // Phase ist der Stand), durch seine Instanz-Matrix. Ferse und Ballen je Seite (die Sohle der stehenden Vorlage), der
-        // tiefere trägt; Stand = die untersten 5 % der Beinlänge über der Sohle im Raum des Leibs.
+        // DER GANG IM SATZ (Schlupf wie gate:tier-gang): der Fuß jedes gehenden Satz-Bewohners aus dem, was die GPU zeichnet —
+        // jede Senke `bewohner-satz` mit Sohle: die Vorlage (ohne Gang-Puffer `userData.gang` die stehende Geometrie) an Phase
+        // und Gewicht seiner Instanz (`aGang`) × Instanz-Matrix. Ferse und Ballen je Seite, der tiefere trägt; Stand = die
+        // untersten 5 % der Beinlänge.
         const saetze = () => s.scene.children.filter((o) => o && o.name === "bewohner-satz" && o.isInstancedMesh);
         const fussMemo = new WeakMap();
         const fussIx = (geo) => {
             if (fussMemo.has(geo)) return fussMemo.get(geo);
             const P = geo.attributes.position;
-            let ymin = Infinity;
-            for (let v = 0; v < P.count; v++) ymin = Math.min(ymin, P.getY(v));
-            const seite = [
-                [-1, Infinity, -1, -Infinity],
-                [-1, Infinity, -1, -Infinity],
-            ];
+            const ix = {
+                ymin: Infinity,
+                fuss: [
+                    [-1, -1],
+                    [-1, -1],
+                ],
+            };
+            for (let v = 0; v < P.count; v++) ix.ymin = Math.min(ix.ymin, P.getY(v));
             for (let v = 0; v < P.count; v++) {
-                if (P.getY(v) > ymin + 0.03) continue;
-                const q = seite[P.getX(v) < 0 ? 0 : 1];
-                if (P.getZ(v) < q[1]) q.splice(0, 2, v, P.getZ(v));
-                if (P.getZ(v) > q[3]) q.splice(2, 2, v, P.getZ(v));
+                if (P.getY(v) > ix.ymin + 0.03) continue;
+                const f = ix.fuss[P.getX(v) < 0 ? 0 : 1];
+                if (f[0] < 0 || P.getZ(v) < P.getZ(f[0])) f[0] = v;
+                if (f[1] < 0 || P.getZ(v) > P.getZ(f[1])) f[1] = v;
             }
-            const ix = { ymin, fuss: seite.map((q) => [q[0], q[2]]) };
             fussMemo.set(geo, ix);
             return ix;
         };
         const lokal = (m, inst, v, out) => {
-            const geo = m.geometry;
             const G = m.userData.gang;
-            if (!G) return out.fromBufferAttribute(geo.attributes.position, v);
-            const vid = Math.abs(geo.attributes.aVid.getX(v)) - 1;
-            const ph = geo.attributes.aGang.getX(inst);
-            const w = geo.attributes.aGang.getY(inst);
-            const f = (((ph % 1) + 1) % 1) * G.n;
-            const k0 = Math.floor(f) % G.n;
-            const k1 = (k0 + 1) % G.n;
-            const t = f - Math.floor(f);
-            const D = G.puffer;
-            const at = (k, c) => D[(k * G.nv + vid) * 4 + c];
-            const c3 = (c) => at(G.n, c) + w * (at(k0, c) + t * (at(k1, c) - at(k0, c)) - at(G.n, c));
+            const a = m.geometry.attributes;
+            if (!G) return out.fromBufferAttribute(a.position, v);
+            const vid = Math.abs(a.aVid.getX(v)) - 1;
+            const f = (((a.aGang.getX(inst) % 1) + 1) % 1) * G.n;
+            const k0 = Math.floor(f);
+            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
+            const c3 = (c) => {
+                const lauf = at(k0, c) + (f - k0) * (at((k0 + 1) % G.n, c) - at(k0, c));
+                return at(G.n, c) + a.aGang.getY(inst) * (lauf - at(G.n, c));
+            };
             return out.set(c3(0), c3(1), c3(2));
         };
         const m4 = new T.Matrix4();
@@ -2933,121 +2931,95 @@ async function kreaturProben(r, T, opts) {
         const spuren = new Map();
         const gangMessen = (SZ) => {
             const gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
-            if (!gehend.length) return;
-            for (const m of SZ) {
-                // der Fuß steht in der Senke, die die Sohle trägt (ihre Vorlage reicht bis zur Sohle, PLAYER_FOOT_OFFSET unter
-                // dem Ursprung des Leibs) — die Haut endet am Knöchel, ihr Saum ist kein Fuß
-                if (fussIx(m.geometry).ymin > -A.PLAYER_FOOT_OFFSET + 0.03) continue;
+            for (const m of gehend.length ? SZ : []) {
+                // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs — die Haut endet am Knöchel
+                const ix = fussIx(m.geometry);
+                if (ix.ymin > -A.PLAYER_FOOT_OFFSET + 0.03) continue;
                 const IM = m.instanceMatrix.array;
                 for (const b of gehend) {
                     const g = b.leib;
-                    let inst = -1;
-                    for (let i = 0; i < m.count; i++)
-                        if (
-                            Math.abs(IM[i * 16 + 12] - g.position.x) < 1e-3 &&
-                            Math.abs(IM[i * 16 + 14] - g.position.z) < 1e-3
-                        ) {
-                            inst = i;
-                            break;
-                        }
+                    let inst = m.count - 1;
+                    while (
+                        inst >= 0 &&
+                        Math.hypot(IM[inst * 16 + 12] - g.position.x, IM[inst * 16 + 14] - g.position.z) > 1e-3
+                    )
+                        inst--;
                     const key = m.uuid + "|" + b.same;
-                    let sp = spuren.get(key);
-                    if (inst < 0) {
-                        if (sp) sp.luecke = true;
+                    if (!spuren.has(key)) spuren.set(key, { reihe: [], bein: (b.beinL || 0.9) / (b.groesse || 1) });
+                    const sp = spuren.get(key);
+                    if (inst < 0 || sp.reihe.length >= 1800) {
+                        sp.reihe.push(null);
                         continue;
                     }
-                    if (!sp)
-                        spuren.set(key, (sp = { reihe: [], luecke: false, bein: (b.beinL || 0.9) / (b.groesse || 1) }));
-                    if (sp.reihe.length >= 1800) continue;
-                    if (sp.luecke) sp.reihe.push(null);
-                    sp.luecke = false;
                     m4.fromArray(IM, inst * 16);
-                    const ix = fussIx(m.geometry);
                     const fuss = ix.fuss.map((paar) =>
                         paar.map((v) => {
-                            lokal(m, inst, v, vL);
-                            const y = vL.y - ix.ymin;
+                            const y = lokal(m, inst, v, vL).y - ix.ymin;
                             const w = vL.applyMatrix4(m4);
                             return { y, x: w.x, z: w.z };
                         })
                     );
-                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z, ry: g.rotation.y, w: m.userData.gang ? m.geometry.attributes.aGang.getY(inst) : 1 });
+                    const w = m.userData.gang ? m.geometry.attributes.aGang.getY(inst) : 1;
+                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z, ry: g.rotation.y, w });
                 }
             }
         };
         const schlupfVon = () => {
             let wegFuss = 0;
             let wegLeib = 0;
-            let stand = 0;
             for (const sp of spuren.values()) {
                 const R = sp.reihe;
                 for (let j = 0; j < 2; j++) {
                     let ymin = Infinity;
                     for (const e of R) if (e) ymin = Math.min(ymin, e.fuss[j][0].y, e.fuss[j][1].y);
                     for (let i = 1; i < R.length; i++) {
-                        const a0 = R[i - 1];
-                        const a1 = R[i];
-                        if (!a0 || !a1) continue;
-                        // gezählt wird der Gang geradeaus und eingeschwungen (wie gate:tier-gang): nie die Wende, nie Anlauf und Halt
-                        if (Math.abs(a1.ry - a0.ry) > 1e-3 || a0.w < 0.99 || a1.w < 0.99) continue;
+                        const [a0, a1] = [R[i - 1], R[i]];
+                        // gezählt wird der Gang geradeaus und eingeschwungen (wie gate:tier-gang): nie Wende, Anlauf, Halt
+                        if (!a0 || !a1 || Math.abs(a1.ry - a0.ry) > 1e-3 || Math.min(a0.w, a1.w) < 0.99) continue;
                         const k = a1.fuss[j][1].y < a1.fuss[j][0].y - 1e-4 ? 1 : 0;
-                        const p = a0.fuss[j][k];
-                        const q = a1.fuss[j][k];
-                        if (p.y > ymin + 0.05 * sp.bein || q.y > ymin + 0.05 * sp.bein) continue;
-                        stand++;
+                        const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
+                        if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
                         wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
                         wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
                     }
                 }
             }
             return {
-                schlupf: wegLeib > 0 ? Math.round((wegFuss / wegLeib) * 1000) / 1000 : null,
-                wegLeib: Math.round(wegLeib * 10) / 10,
-                standTakte: stand,
+                schlupf: wegLeib > 0 ? q3(wegFuss / wegLeib) : null,
+                wegLeib: Math.round(wegLeib),
                 spuren: spuren.size,
             };
         };
-        // DER BLICK DER STEHENDEN (mensch.K2): wer an seinem Ort steht, schaut auf sein Ziel — am Platz zur Mitte, vor der
-        // Tür vom Haus fort (die Gasse, das Gegenüber); gemessen an der Drehung, die der Satz zeichnet (die des Leibs)
-        const blicke = { n: 0, treffer: 0, sektor: new Map(), aus: [] };
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort — die Drehung des Leibs, die der
+        // Satz zeichnet; dazu die Streuung (der größte Anteil in einem Sektor von 30 Grad)
+        const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
         const blickMessen = () => {
             for (const b of liste) {
                 const g = b.leib;
                 if (!g || !b.da || b.drinnen || !gezeichnet(g) || !b.ziel) continue;
-                const o = b.orte;
-                let soll = null;
-                if (b.ziel === o.platz) soll = Math.atan2(pc.x - g.position.x, pc.z - g.position.z);
-                else if (b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt"))
-                    soll = Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z);
-                const th = taeter === "bewohner-nord" ? 0 : g.rotation.y;
                 if (taeter === "bewohner-nord") g.rotation.y = 0;
-                const sk = Math.round((((th % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / (Math.PI / 6)) % 12;
-                blicke.sektor.set(sk, (blicke.sektor.get(sk) || 0) + 1);
+                const o = b.orte;
+                const th = g.rotation.y;
+                blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                const soll =
+                    b.ziel === o.platz
+                        ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
+                        : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
+                          ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
+                          : null;
                 if (soll === null) continue;
                 blicke.n++;
-                let d = th - soll;
-                d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
-                if (Math.abs(d) <= 1.3) blicke.treffer++;
-                else if (blicke.aus.length < 4)
-                    blicke.aus.push(
-                        `${b.beruf}@${b.ziel === o.platz ? "platz" : "tuer"} ${Math.round((d * 180) / Math.PI)}°`
-                    );
+                const d = th - soll;
+                if (Math.abs(d - 2 * Math.PI * Math.round(d / (2 * Math.PI))) <= 1.3) blicke.treffer++;
             }
         };
-        // DER PLATZ (mensch.K2): wem das Gesetz den Platz gibt (Mittag, Abend, der Markt), der hat dort einen Stand — am
-        // Platz, seinem Rand oder dem Rand seiner Gassen (≤ 12 m vom Rand des Platzes), nie daheim statt dort
+        // DER PLATZ (mensch.K2): wem das Gesetz den Platz gibt, der hat dort einen Stand — am Platz,
+        // seinem Rand oder dem Rand seiner Gassen (bis 12 m über den Platz hinaus), nie daheim statt dort
         if (taeter === "bewohner-daheim") for (const b of liste.slice(0, 6)) b.orte.platz = null;
-        const platzFern = (o) => {
-            if (!o) return Infinity;
-            const c = Math.cos(pz.phi || 0);
-            const sn = Math.sin(pz.phi || 0);
-            const dx = o.x - pc.x;
-            const dz = o.z - pc.z;
-            const lx = dx * c - dz * sn;
-            const lz = dx * sn + dz * c;
-            return Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez));
-        };
-        const ohnePlatz = liste.filter((b) => !(platzFern(b.orte.platz) <= 12));
+        const platzR = Math.hypot(pz.ex, pz.ez) + 12;
+        const ohnePlatz = liste.filter(
+            (b) => !(b.orte.platz && Math.hypot(b.orte.platz.x - pc.x, b.orte.platz.z - pc.z) <= platzR)
+        );
         const tTag = performance.now();
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
@@ -3087,8 +3059,7 @@ async function kreaturProben(r, T, opts) {
                     v.z = g.position.z;
                 }
             }
-            // DAS GANG-FENSTER: um 7,5 · 12 · 17,2 Uhr (die Wege zum Werk, zum Platz, nach Hause) 10 s im Takt des Spiels
-            // (1/60 s je Takt, die Raten-Leiter wie im Spiel) — der Fuß jedes gehenden Satz-Bewohners je Frame
+            // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause — 10 s im Takt des Spiels (1/60 s)
             if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
                 for (const sp of spuren.values()) sp.luecke = true;
                 for (let k = 0; k < 600; k++) {
@@ -3164,13 +3135,12 @@ async function kreaturProben(r, T, opts) {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
                 sektorMax: q3(
-                    Math.max(0, ...blicke.sektor.values()) /
+                    Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            [...blicke.sektor.values()].reduce((a, x) => a + x, 0)
+                            blicke.sektor.reduce((a, x) => a + x, 0)
                         )
                 ),
-                aus: blicke.aus,
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map((b) => `${b.rolle}/${b.beruf} #${b.heim}`),
@@ -3251,11 +3221,11 @@ function urteil(name, z) {
         const sg = z.satzGang || {};
         soll(
             sg.schlupf !== null && sg.schlupf <= 0.05 && sg.wegLeib >= 10,
-            `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m Weg in ${sg.standTakte} Stand-Takten (${sg.spuren} Spuren; Soll ≤ 0,05 über ≥ 10 m wie gate:tier-gang)`
+            `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m Weg (${sg.spuren} Spuren; Soll ≤ 0,05 über ≥ 10 m wie gate:tier-gang)`
         );
         soll(
             z.blick.n >= 10 && z.blick.quote >= 0.9 && z.blick.sektorMax <= 0.5,
-            `der Blick der Stehenden: ${z.blick.quote} von ${z.blick.n} schauen auf ihr Ziel (Soll ≥ 0,9), ${z.blick.sektorMax} in einer Richtung (Soll ≤ 0,5)${z.blick.aus.length ? ": " + z.blick.aus.join(" · ") : ""}`
+            `der Blick der Stehenden: ${z.blick.quote} von ${z.blick.n} schauen auf ihr Ziel (Soll ≥ 0,9), ${z.blick.sektorMax} in einer Richtung (Soll ≤ 0,5)`
         );
         soll(
             z.ohnePlatz === 0,
