@@ -394,6 +394,13 @@ function zeichnetHaken() {
         for (const m of ["requestDevice", "submit", "createRenderPipeline", "createComputePipeline", "getSupportedExtensions", "drawArrays", "linkProgram"])
             if (K && K.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
 }
+// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
+async function weicheUrteil(browser, art) {
+    const welt = (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()));
+    const genutzt = async (p) => p.evaluate(() => !!window.__gpuGenutzt).catch(() => true);
+    if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
+    return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
+}
 // Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
@@ -691,17 +698,9 @@ async function starteBrowser(opts = {}) {
     }
     let abbau = false;
     const zu = browser.close.bind(browser);
-    // ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst: ROT beim Namen
     browser.close = async (...a) => {
-        const welt = GPU_REZEPTE.includes(opts.art)
-            ? (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()))
-            : [];
-        const genutzt = async (p) => p.evaluate(() => !!window.__gpuGenutzt).catch(() => true);
-        if (welt.length && !(await Promise.all(welt.map(genutzt))).some(Boolean))
-            melde(
-                "klasse",
-                `${path.basename(process.argv[1] || "?")} startet „${opts.art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`
-            );
+        const rot = await weicheUrteil(browser, opts.art);
+        if (rot) melde("klasse", rot);
         [abbau, b.offen] = [true, false];
         return zu(...a);
     };
@@ -1106,10 +1105,14 @@ async function selbsttest() {
         aus.frei = r.state.perfRegulator === true;
         return aus;
     };
-    const ruhig = await fall(
-        "/ruhig.html",
-        async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]))
-    );
+    // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
+    const weiche = [];
+    const ruhig = await fall("/ruhig.html", async (p) => {
+        [bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]);
+        weiche.push(await weicheUrteil(browser, "echt"));
+        await p.evaluate(() => WebGL2RenderingContext.prototype.drawArrays.call(null)).catch(() => {});
+        weiche.push(await weicheUrteil(browser, "echt"));
+    });
     const schleife = await fall("/schleife.html", async () => {
         for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await warte(500);
         await warte(500);
@@ -1156,6 +1159,10 @@ async function selbsttest() {
         [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
             `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
+        ],
+        [
+            /^welt-boot.cjs startet „echt" und zeichnet nie/.test(weiche[0]) && weiche[1] === null,
+            `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],

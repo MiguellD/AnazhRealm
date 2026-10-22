@@ -10,9 +10,8 @@
 //       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht. Befund V18.537: der Bau weckte den
 //       Wasser-Automaten (15 Chunks), der flutete das Tal — 6 von 6 Stämmen 1,9–3,8 m unter dem Wasser.  Soll 0 · 0 Chunks
 //   S — DAS HAUS AUS DEM SATZ: „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt
-//       −935/−1070 und den See −906/−634 (je Zentrum bis zu drei trockene Standorte 18–40 m vom Zentrum). Befund am Kopf
-//       f5714efb: 11 von 11 Fundamenten im Wasser (6–67 von 81 Raster-Punkten, bis 0,92–3,68 m) — der Satz fragte die Mitte,
-//       und die Spieler-Klemme der Wurzel schob das Haus vom Spieler weg ins Wasser. Die Häuser misst Z.  Soll ≥ 5 Häuser
+//       −935/−1070 und den See −906/−634 (je Zentrum bis zu drei trockene Standorte 18–40 m vom Zentrum).
+//       Die Häuser misst Z.  Soll ≥ 5 Häuser
 //   Z — DER ZENSUS DER WERKE: jedes Werk, das während der Probe gesetzt wird (Wald und Unterholz beim Strömen, der Hain, die
 //       Bau-Eiche, die Häuser der Sätze, „dorf" am Fluss: `spawnSettlement` seed 7, 18 Häuser, Brunnen, Stände; kein
 //       Fahrzeug). Der Setz-Punkt `spawnArchitecture` ist Beobachtungs-Punkt: ein Stamm misst das Wasser über seinem Fuß VOR
@@ -32,25 +31,18 @@
 //       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
 //   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
-//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
-//       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
+//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl
 //       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
 //   E — DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
 //       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
-//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Befund am Kopf 0302a6c4: „10 Kreaturen
-//       gespawnt" bei 3 und 0, „tempel vor dir gebaut" bei 0, das Fraktal baute bei kaltem Buch still 43 Wasserfälle,
-//       „wasserfall vor dir gebaut" bei 0, „dorf vor dir gebaut" sofort bei 0 Häusern. Soll: die tatsächliche Zahl mit dem
+//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem
 //       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
 //       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
 //   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
 //       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
-//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Befund am Kopf f5b331ae (900 Takte): 1 Invalidierung, 2 Chunks wach, nasse
-//       Punkte (±60 m) 3 019 → 2 752, gezeichnete Spalten 2 562 → 2 604 — die Weck-Frage las das Gesetz samt Rand-Füllung, die
-//       Zellen dort sind trocken. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
+//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
-//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Befund am Kopf
-//       e162430b (1800 Takte): 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
-//       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
+//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
 //       DER ORT TRÄGT EINEN STAU (K37): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
 //       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
 //       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. D misst das Feld gegen
@@ -67,8 +59,7 @@
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
-//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte —
-//       am Kopf e162430b trug er eine eigene: Schüttdichte × Hüll-Quader, GT 1 557 statt 1 341 kg).
+//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
