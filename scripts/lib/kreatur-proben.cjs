@@ -2923,7 +2923,7 @@ async function kreaturProben(r, T, opts) {
             const k0 = Math.floor(f) % G.n;
             const k1 = (k0 + 1) % G.n;
             const t = f - Math.floor(f);
-            const D = G.puffer.array;
+            const D = G.puffer;
             const at = (k, c) => D[(k * G.nv + vid) * 4 + c];
             const c3 = (c) => at(G.n, c) + w * (at(k0, c) + t * (at(k1, c) - at(k0, c)) - at(G.n, c));
             return out.set(c3(0), c3(1), c3(2));
@@ -2955,7 +2955,7 @@ async function kreaturProben(r, T, opts) {
                     }
                     if (!sp)
                         spuren.set(key, (sp = { reihe: [], luecke: false, bein: (b.beinL || 0.9) / (b.groesse || 1) }));
-                    if (sp.reihe.length >= 400) continue;
+                    if (sp.reihe.length >= 1800) continue;
                     if (sp.luecke) sp.reihe.push(null);
                     sp.luecke = false;
                     m4.fromArray(A, inst * 16);
@@ -2968,7 +2968,7 @@ async function kreaturProben(r, T, opts) {
                             return { y, x: w.x, z: w.z };
                         })
                     );
-                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z });
+                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z, ry: g.rotation.y, w: m.userData.gang ? m.geometry.attributes.aGang.getY(inst) : 1 });
                 }
             }
         };
@@ -2985,6 +2985,8 @@ async function kreaturProben(r, T, opts) {
                         const a0 = R[i - 1];
                         const a1 = R[i];
                         if (!a0 || !a1) continue;
+                        // gezählt wird der Gang geradeaus und eingeschwungen (wie gate:tier-gang): nie die Wende, nie Anlauf und Halt
+                        if (Math.abs(a1.ry - a0.ry) > 1e-3 || a0.w < 0.99 || a1.w < 0.99) continue;
                         const k = a1.fuss[j][1].y < a1.fuss[j][0].y - 1e-4 ? 1 : 0;
                         const p = a0.fuss[j][k];
                         const q = a1.fuss[j][k];
@@ -3081,13 +3083,22 @@ async function kreaturProben(r, T, opts) {
                     v.x = g.position.x;
                     v.z = g.position.z;
                 }
-                // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 mit Gewicht 0 (der Stand)
-                if (taeter === "bewohner-gleiten")
-                    for (const m of SZ) {
-                        const a = m.geometry.attributes.aGang;
-                        if (a) for (let q = 0; q < a.count; q++) a.setXY(q, 0, 0);
-                    }
-                gangMessen(SZ);
+            }
+            // DAS GANG-FENSTER: um 7,5 · 12 · 17,2 Uhr (die Wege zum Werk, zum Platz, nach Hause) 10 s im Takt des Spiels
+            // (1/60 s je Takt, die Raten-Leiter wie im Spiel) — der Fuß jedes gehenden Satz-Bewohners je Frame
+            if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
+                for (const sp of spuren.values()) sp.luecke = true;
+                for (let k = 0; k < 600; k++) {
+                    r._tickBewohner(1 / 60);
+                    // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 (die Pose friert ein)
+                    if (taeter === "bewohner-gleiten")
+                        for (const m of SZ) {
+                            const a = m.geometry.attributes.aGang;
+                            if (a) for (let q = 0; q < a.count; q++) a.setX(q, 0);
+                        }
+                    gangMessen(SZ);
+                }
+                for (const g of L) lage.set(g, { x: g.position.x, z: g.position.z }); // das Fenster ist kein Sprung
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs: sein Weg zu DIESEM
