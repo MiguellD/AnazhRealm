@@ -7107,9 +7107,13 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // die Mengen-Stufe (lod 2, mensch.K1): jede Kugel im Raster ihrer Größe (`__kugelRaster`, das Gesetz des Tiers; die Lab-Höhe
     // des Menschen ~6 Einheiten) — Stufe 0 und 1 byte-gleich
     const menge = (lod | 0) >= 2;
-    const segW = fein ? 8 : 20,
-        segH = fein ? 6 : 14,
-        segZ = fein ? 6 : 14;
+    // die NUR-WURF-Stufe (lod 3, mensch.K1 Staffel 2: der Wurf der Menge): ein gröberes Raster je Kugel und Walze, Augen,
+    // Lider, Lippen und die kleinen Glieder fallen (der Wurf trägt sie nie) — Stufe 0, 1 und 2 byte-gleich
+    const fern = (lod | 0) >= 3;
+    const FERN_KLEIN = 0.012;
+    const segW = fein ? (fern ? 5 : 8) : 20,
+        segH = fein ? (fern ? 4 : 6) : 14,
+        segZ = fein ? (fern ? 4 : 6) : 14;
     const lin = (hx) => {
         const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
         return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)];
@@ -7143,14 +7147,21 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
+            if (fern && (k === "eye" || k === "iris" || k === "pupil" || k === "socket" || k === "lips" || k === "shadow"))
+                return new THREE.Group();
+            // im Wurf fallen die Glieder unter FERN_KLEIN der Lab-Höhe (Finger, Nasenflügel: unter einem Kaskaden-Texel)
+            if (fern && r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1) < FERN_KLEIN * 6) return new THREE.Group();
             // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
             const AR = !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket") ? kern.MENSCH_GESTALT.augeRaster : null;
-            const [w, h] = AR ? [AR.w, AR.h] : menge ? __kugelRaster(r, sc, 6, segW, segH, 4, 3) : [segW, segH];
+            const [w, h] = AR ? [AR.w, AR.h] : menge ? __kugelRaster(r, sc, 6, segW, segH, fern ? 3 : 4, fern ? 2 : 3) : [segW, segH];
             const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
             return mesh;
         },
-        zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
+        zylinder: (rt, rb, h, k) =>
+            fern && Math.max(rt, rb, h / 2) < FERN_KLEIN * 6
+                ? new THREE.Group()
+                : new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
     };
     const B = kern.bauMensch(F);
     kern.morphAuf(B, dials);
@@ -7734,7 +7745,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt. Ohne Zeile kein Mensch (fail-closed).
     {
         const zeilen = kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
-        const zeile = zeilen && zeilen.koerper && zeilen.koerper[(lod | 0) >= 2 ? 2 : fein ? 1 : 0]; // die Mengen-Stufe (2) additiv
+        const zeile = zeilen && zeilen.koerper && zeilen.koerper[(lod | 0) >= 2 ? Math.min(3, lod | 0) : fein ? 1 : 0]; // die Mengen-Stufen (2, 3) additiv
         const ziel = zeile ? (Number.isInteger(zeile.band) ? zeile.band : zeile.tris) : null;
         if (!(ziel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
         const huellen = [];

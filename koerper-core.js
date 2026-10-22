@@ -37,7 +37,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { koerper: [0, 1, 2] },
+            kindStages: { koerper: [0, 1, 2, 3] },
             budget: {
                 koerper: {
                     // 1310-15 (Lehre 19, Re-Mint deklariert): die Stufe erreicht ihr Band, das Feld `band` fällt und `tris`
@@ -49,8 +49,12 @@
                     1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
                     // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
                     // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
-                    // auf die Zeile; sie wirft selbst (der Satz IST ihr Wurf).
+                    // auf die Zeile; sie wirft über die NUR-WURF-Stufe 3 (der Wurf-Satz trägt sie).
                     2: { tris: 4000, draws: 6, schatten: 2 },
+                    // DIE NUR-WURF-STUFE (mensch.K1 Staffel 2, rein additiv, Studio-Vertrag B2): nie gezeigt, sie IST der Wurf jedes
+                    // Bewohners im Nah-Kreis (der Wurf-Satz, `_bewohnerSatz`) — die Kosten der Menge in den Kaskaden; dieselbe Pipe,
+                    // die Hüllen kollabieren auf `band` (ihre Säume stehen fest: der Kollaps landet ~30 darüber), `tris` ist die Decke.
+                    3: { tris: 760, band: 700, draws: 6, schatten: 3, nurWurf: true },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,

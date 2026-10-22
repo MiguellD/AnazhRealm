@@ -375,13 +375,14 @@ function validateManifest(m) {
                 const letzte = st.length ? B[k][st[st.length - 1]] : null;
                 const karte = !!(letzte && letzte.karte === true);
                 // S3 haus: "huelle" — die Liste der NUR-WURF-Stufe in der Hüllen-Form (N5, Beipack `__fern`); genau dann, wenn
-                // die Art eine NUR-WURF-Stufe trägt (sie ist der Träger von `__fern`, die Konsum-Wand in gate:asset-contract)
+                // die Art eine NUR-WURF-Stufe trägt (sie ist der Träger von `__fern`, die Konsum-Wand in gate:asset-contract) —
+                // außer die Ferne der Art ist ihr Gesetz ("gesetz", die Gelenk-Gestalt: ihre NUR-WURF-Stufe wirft nur)
                 const nurWurf = st.some((x) => B[k][x] && B[k][x].nurWurf === true);
                 if (fern !== "gesetz" && fern !== "boden" && fern !== "karte" && fern !== "huelle")
                     v.push(`B2c: lod.budget.${k}.fernform muss "gesetz", "boden", "karte" oder "huelle" sein`);
                 else if ((fern === "karte") !== karte)
                     v.push(`B2c: lod.budget.${k}.fernform — "karte" genau dann, wenn die letzte Stufe Karte ist`);
-                else if ((fern === "huelle") !== nurWurf)
+                else if (fern === "huelle" ? !nurWurf : nurWurf && fern !== "gesetz")
                     v.push(
                         `B2c: lod.budget.${k}.fernform — "huelle" genau dann, wenn eine NUR-WURF-Stufe den Beipack __fern trägt`
                     );

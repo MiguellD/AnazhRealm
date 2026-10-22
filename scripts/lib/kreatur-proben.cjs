@@ -2935,14 +2935,17 @@ async function kreaturProben(r, T, opts) {
             const gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
             if (!gehend.length) return;
             for (const m of SZ) {
-                const A = m.instanceMatrix.array;
+                // der Fuß steht in der Senke, die die Sohle trägt (ihre Vorlage reicht bis zur Sohle, PLAYER_FOOT_OFFSET unter
+                // dem Ursprung des Leibs) — die Haut endet am Knöchel, ihr Saum ist kein Fuß
+                if (fussIx(m.geometry).ymin > -A.PLAYER_FOOT_OFFSET + 0.03) continue;
+                const IM = m.instanceMatrix.array;
                 for (const b of gehend) {
                     const g = b.leib;
                     let inst = -1;
                     for (let i = 0; i < m.count; i++)
                         if (
-                            Math.abs(A[i * 16 + 12] - g.position.x) < 1e-3 &&
-                            Math.abs(A[i * 16 + 14] - g.position.z) < 1e-3
+                            Math.abs(IM[i * 16 + 12] - g.position.x) < 1e-3 &&
+                            Math.abs(IM[i * 16 + 14] - g.position.z) < 1e-3
                         ) {
                             inst = i;
                             break;
@@ -2958,7 +2961,7 @@ async function kreaturProben(r, T, opts) {
                     if (sp.reihe.length >= 1800) continue;
                     if (sp.luecke) sp.reihe.push(null);
                     sp.luecke = false;
-                    m4.fromArray(A, inst * 16);
+                    m4.fromArray(IM, inst * 16);
                     const ix = fussIx(m.geometry);
                     const fuss = ix.fuss.map((paar) =>
                         paar.map((v) => {

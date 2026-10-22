@@ -545,8 +545,8 @@ function bildUrteil(mess, tafel) {
             if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
-            // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
-            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true) {
+            // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten), wo die Ferne der Art ihre Hülle ist
+            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true && budget[kind].fernform === "huelle") {
                 const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
                 fernMess.push({ fall, fern: fb || null });
             }
@@ -734,7 +734,7 @@ function bildUrteil(mess, tafel) {
             fails.push(...wurfUrteil(wurfMess, budget).map((x) => "Wurf: " + x));
             // DIE FERN-WAND (S3 haus, N5): jede Art mit NUR-WURF-Stufe gebaut, jede mit __fern in der Form; Selbsttest: ohne
             // __fern und mit einem Keil ohne gültige First-Kante MUSS sie rot werden
-            const nwArten = Object.keys(stufen).filter((k) => stufen[k].some((s) => budget[k] && budget[k][s] && budget[k][s].nurWurf === true));
+            const nwArten = Object.keys(stufen).filter((k) => budget[k] && budget[k].fernform === "huelle" && stufen[k].some((s) => budget[k][s] && budget[k][s].nurWurf === true));
             const nwGebaut = new Set(fernMess.map((m) => m.fall.split("-s")[0]));
             if (nwArten.length && !fernMess.length) fails.push("Fern: keine NUR-WURF-Stufe gebaut (" + nwArten.join(",") + ")");
             fails.push(...fernUrteil(fernMess).map((x) => "Fern: " + x));
