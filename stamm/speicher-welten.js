@@ -1004,6 +1004,8 @@ class AnazhRealm_speicher_welten {
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
                 // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
                 ...(a.feldWurf === true ? { feldWurf: true } : {}),
+                // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
+                ...(a.werk === true ? { werk: true } : {}),
                 // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                 // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                 ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),

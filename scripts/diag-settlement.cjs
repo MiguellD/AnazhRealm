@@ -636,9 +636,10 @@ function feldWurfImOrt(anker, defekt) {
             res.err = `kein ${weg ? "freier Ort" : "Punkt des Wegs"} um ${anker.x.toFixed(0)}/${anker.z.toFixed(0)}`;
             return res;
         }
-        // der Wurf mit den Optionen des Felds (samt seiner Marke), das Werk präzise ohne sie (der Satz, der Bau-Modus)
+        // der Wurf mit den Optionen des Felds (samt seiner Marke), das Werk präzise mit der Herkunft eines Worts (der Satz, der
+        // Bau-Modus: `werk`) — es weicht in keinem Stoff (`_weichtDemBau`, die Wiederkehr)
         const wirf = (t, x, z, wo, werk) => {
-            const o = werk ? { precise: true, seed: 4711 } : Object.assign({}, feldOpts || {}, { seed: 4711 });
+            const o = werk ? { precise: true, seed: 4711, werk: true } : Object.assign({}, feldOpts || {}, { seed: 4711 });
             const e = r.spawnArchitecture(t, { x, y: H(x, z) + 0.5, z }, o);
             if (!e && werk) res.werk.weicht.push(`${t} (kein Werk @${wo})`);
             else if (!e) res.fehl.push(t + "@" + wo);
@@ -647,7 +648,6 @@ function feldWurfImOrt(anker, defekt) {
         };
         const steht = (e) => r.state.architectures.includes(e);
         for (const t of LISTE) {
-            if (r._istNatur({ type: t })) continue; // die Natur weicht in jeder Herkunft (das Natur-Gesetz)
             res.werk.arten.push(t);
             const wo = [];
             const w1 = wirf(t, frei.x, frei.z, "frei", true);
@@ -660,7 +660,7 @@ function feldWurfImOrt(anker, defekt) {
             }
             const w3 = wirf(t, weg.x, weg.z, "weg", true);
             if (w3) {
-                r._naturRaeumen(weg.x, weg.z, 2, false, "dem Weg des Dorfs", null);
+                r._naturRaeumen(weg.x, weg.z, 2, false, null);
                 if (!steht(w3)) wo.push("auf dem Weg geräumt");
             }
             if (wo.length) res.werk.weicht.push(`${t} (${wo.join(" · ")})`);
@@ -677,7 +677,7 @@ function feldWurfImOrt(anker, defekt) {
             }
             const e3 = wirf(t, weg.x, weg.z, "weg");
             if (e3) {
-                r._naturRaeumen(weg.x, weg.z, 2, false, "dem Weg des Dorfs", null);
+                r._naturRaeumen(weg.x, weg.z, 2, false, null);
                 if (steht(e3)) res.weg.push(t);
             }
         }
@@ -2664,8 +2664,8 @@ const FIXTURES = [
             : `sperrt: ${FWd.sperrt.join(", ") || "—"} · im Grundriss: ${FWd.grundriss.join(", ") || "—"}`
     );
     check(
-        "O Auto-Dorf: das Werk derselben Art (die Feuerstelle des Satzes, des Bau-Modus) weicht nie — es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marke feldWurf, nie die Art)",
-        !FW.err && FW.werk.arten.includes("glutbrunnen") && FW.werk.weicht.length === 0,
+        "O Auto-Dorf: das Werk jeder Art des Felds (Baum, Fels, Feuerstelle — der Satz, der Bau-Modus) weicht nie — es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marken werk und feldWurf, nie die Art)",
+        !FW.err && FW.werk.arten.length === FW.arten && FW.werk.weicht.length === 0,
         FW.err
             ? FW.err.split("\n")[0]
             : `Werk-Arten ${FW.werk.arten.join(", ") || "—"}` +

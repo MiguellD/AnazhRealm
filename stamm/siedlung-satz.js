@@ -2880,6 +2880,10 @@ class AnazhRealm_siedlung_satz {
         // DIE MARKE DES WURFS (K10-6): eine Art des Felds (`FELD_WURF`), die das Feld warf (`_enqueueVegetationSpawn`), weicht
         // dem Bau (`_weichtDemBau`); dieselbe Art aus dem Satz, dem Bau-Modus oder der KI ist Bau. Sie reist durch den Save.
         if (opts.feldWurf === true && AnazhRealm.FELD_WURF.includes(type)) entry.feldWurf = true;
+        // DIE HERKUNFT DES WERKS (die Wiederkehr): was ein Wort setzte — der Bau-Modus und sein Mitspieler (Text-id), der Satz,
+        // die KI, eine Regel des Spielers (`opts.werk`, die Spawn-Ops der DSL ohne das Feld) —, ist Werk und weicht keinem
+        // Räumer (`_weichtDemBau`), gleich aus welchem Stoff. Sie reist durch den Save.
+        if (opts.werk === true || (typeof opts.id === "string" && opts.id)) entry.werk = true;
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.

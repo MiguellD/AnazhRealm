@@ -4,9 +4,7 @@
 //
 // (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr.
 //
-// (W) DIE WIEDERKEHR ZEIGT DIESELBE WELT (speicher.K4): ein Werk des Spielers auf der Genesis-Lichtung (r 15 m, der Satz und
-// der Bau-Modus) steht nach dem echten Reload — bis zur Wiederkehr räumte das Laden (`_naturRaeumen`) einen stein_block als
-// Fels (basalt), weil `_weichtDemBau` den Stoff fragte statt der Herkunft.
+// (W) DIE WIEDERKEHR (speicher.K4): ein Werk des Spielers auf der Genesis-Lichtung steht nach dem Reload (Täter: `_weichtDemBau` nach Stoff).
 //
 // (K) DER RELOAD MIT KALTEM BUCH (06.10., V18.531): ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
@@ -407,52 +405,28 @@ const server = statikServer();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
         await warteAufWelt(page, 60000);
         out = {};
-        // (W) DIE WIEDERKEHR: zwei Werke des Spielers auf der Lichtung (r 15 m) — der Satz („spawn_blueprint", Zahlen-id) und
-        // der Bau-Modus (Text-id, wie `confirmBuild` und der Mitspieler) —, Save, echter Reload, zählen. Selbsttest: der Räumer
-        // nach STOFF (die Art allein, wie bis zur Wiederkehr) lädt denselben Stand — er MUSS sie nehmen.
-        const wSteht = (orte) =>
-            page.evaluate(async (orte) => {
-                const r = await window.__weltDa((x) => x.state.worldMeta && x._genesisPlattform());
-                const steht = ([x, z]) =>
-                    (r.state.architectures || []).some(
-                        (a) => a.type === "stein_block" && Math.hypot(a.position.x - x, a.position.z - z) < 0.5
-                    );
-                return orte.filter(steht).length;
-            }, orte);
-        const wOrte = await page.evaluate(async () => {
-            const r = await window.__weltDa((x) => x.state.worldMeta && x._genesisPlattform());
-            const G = r._genesisMitte();
-            const y = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
-            r.dslRun(["spawn_blueprint", "stein_block", ["at", G.x + 15, y(G.x + 15, G.z), G.z]], { source: "human" });
-            r.spawnArchitecture("stein_block", { x: G.x, y: y(G.x, G.z + 15), z: G.z + 15 }, { id: r._newArchId() });
-            r.saveState();
-            return [
-                [G.x + 15, G.z],
-                [G.x, G.z + 15],
-            ];
-        });
-        out.w = { gesetzt: await wSteht(wOrte) };
+        // (W) zwei Werke auf der Lichtung (der Satz, der Bau-Modus), Save, echter Reload; Selbsttest: der Räumer nach Stoff lädt neu
+        const w = (art) =>
+            page.evaluate(async (art) => {
+                const r = await window.__weltDa((x) => x._genesisPlattform());
+                const G = r._genesisMitte();
+                if (art === "setzen") {
+                    r.dslRun(["spawn_blueprint", "stein_block", ["at", G.x + 15, r._voxelSurfaceY(G.x + 15, G.z), G.z]], { source: "human" });
+                    r.spawnArchitecture("stein_block", { x: G.x, y: r._voxelSurfaceY(G.x, G.z + 15), z: G.z + 15 }, { id: r._newArchId() });
+                    r.saveState();
+                }
+                if (art === "stoff") {
+                    r._weichtDemBau = (e) => r._istNatur(e);
+                    r._loadStateRestoreArchitectures(r.buildStateSnapshot());
+                    delete r._weichtDemBau;
+                }
+                return r.state.architectures.filter((a) => a.type === "stein_block" && Math.hypot(a.position.x - G.x, a.position.z - G.z) < 16).length;
+            }, art);
+        out.w = { gesetzt: await w("setzen") };
         await sleep(1500); // der IDB-Put des Saves landet (ein Reload schneidet sonst den Schreiber ab)
         await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
-        await warteAufWelt(page, 60000);
-        out.w.stehen = await wSteht(wOrte);
-        if (SELBSTTEST)
-            out.w.selbst = await page.evaluate(async (orte) => {
-                const r = window.anazhRealm;
-                const P = Object.getPrototypeOf(r);
-                const echt = P._weichtDemBau;
-                P._weichtDemBau = function (e) {
-                    return this._istNatur(e) || (!!e && e.feldWurf === true);
-                };
-                try {
-                    r._loadStateRestoreArchitectures({ architectures: r.buildStateSnapshot().architectures });
-                } finally {
-                    P._weichtDemBau = echt;
-                }
-                return orte.filter(([x, z]) =>
-                    r.state.architectures.some((a) => a.type === "stein_block" && Math.hypot(a.position.x - x, a.position.z - z) < 0.5)
-                ).length;
-            }, wOrte);
+        out.w.stehen = await w("laden");
+        if (SELBSTTEST) out.w.selbst = await w("stoff");
         // (K) DER RELOAD MIT KALTEM BUCH: warten, bis das Studio-Buch die Häuser registriert hat, dann ein Haus mit
         // Zahlen-id setzen, den Snapshot bei kaltem Buch zurückspielen (der Zweit-Boot) und zählen.
         await page.waitForFunction(
@@ -606,7 +580,7 @@ const server = statikServer();
             pass: out.uGleichBericht === null,
         },
         {
-            name: `(W) Wiederkehr: die Werke des Spielers auf der Lichtung stehen nach dem Reload ${out.w.stehen}/${out.w.gesetzt} (Satz + Bau-Modus, r 15 m)${out.w.stehen < out.w.gesetzt ? " — Täter _weichtDemBau: der Räumer beim Laden (_naturRaeumen) fragt den Stoff, nicht die Herkunft" : ""}`,
+            name: `(W) Wiederkehr: die Werke des Spielers auf der Lichtung stehen nach dem Reload ${out.w.stehen}/${out.w.gesetzt} (Satz + Bau-Modus, r 15 m)${out.w.stehen < 2 ? " — Täter _weichtDemBau: Stoff statt Herkunft" : ""}`,
             pass: out.w.gesetzt === 2 && out.w.stehen === 2,
         },
         {
@@ -629,7 +603,7 @@ const server = statikServer();
     if (SELBSTTEST)
         checks.push(
             {
-                name: `(W) SELBSTTEST: der Räumer nach Stoff (_weichtDemBau = die Art) nimmt die Werke beim Laden (${out.w.selbst}/${out.w.gesetzt} stehen)`,
+                name: `(W) SELBSTTEST: der Räumer nach Stoff (_weichtDemBau = die Art) nimmt die Werke beim Laden (${out.w.selbst}/${out.w.gesetzt})`,
                 pass: out.w.selbst === 0,
             },
             {
