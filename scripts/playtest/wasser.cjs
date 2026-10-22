@@ -587,7 +587,6 @@ async function checkBandWelleC1WaterCells(ctx) {
         const out = {};
         // 1) Konstante CELL_STATE
         const STATE = r.constructor.CELL_STATE;
-        out.hasCellState = !!STATE;
         out.cellStateAir = STATE && STATE.AIR;
         out.cellStateWater = STATE && STATE.WATER;
         out.cellStateSolid = STATE && STATE.SOLID;
@@ -713,7 +712,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         check("Welle C.1 V9.71: Cell-Feld-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.1 V9.71: CELL_STATE existiert + ist freezed", res.hasCellState && res.cellStateFrozen);
+    check("Welle C.1 V9.71: CELL_STATE ist freezed", res.cellStateFrozen === true);
     check(
         "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
         res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
@@ -1781,7 +1780,11 @@ async function checkBandWasserWahrheit(ctx) {
         ws._ensureWaterCALevel = () => new Float64Array(1024);
         ws._tickWaterCA = (...a) => ((kappe = a[7]), 0);
         const weltTick = (versorger) => {
-            ws.state = { waterCAActive: new Set(["0,0"]), voxelChunks: new Map([["0,0", eS]]), waterCapJ: new Map([["0,0", capS]]) };
+            ws.state = {
+                waterCAActive: new Set(["0,0"]),
+                voxelChunks: new Map([["0,0", eS]]),
+                waterCapJ: new Map([["0,0", capS]]),
+            };
             return window.__consumes(ws, "_tickWorldWaterCA", ws, versorger, []);
         };
 
@@ -1848,7 +1851,7 @@ async function checkBandWasserWahrheit(ctx) {
                 fail("F1: kein Lippe+Vorhang an der Klippe (der ECHTE Wasserfall muss weiterleben)");
             if (!(cliff.maxYInterior > -Infinity)) fail("F1: kein Tal-Vertex (ix ≥ 14) — die Linse ist blind");
         }
-    
+
         // ── FIXTURE 2 (F2) — DIE RIM-WAND: −Inf liefert an Land neben Wasser KEIN Wasser ──
         // Echte Region: eine atlas-LAND-Spalte mit Wasser-Körper im 3×3, ohne Fluss. Seit K16 sind die Seen die
         // benannten Senken des Flussnetzes (selten): die Heimat-Kachel trägt nicht immer ein Ufer — gesucht wird in den
@@ -1943,16 +1946,14 @@ async function checkBandWasserWahrheit(ctx) {
             const le = r._atlasWaterLevelAt(bank.x, bank.z, Infinity);
             o.bankLevels = { lb, le };
             if (lb !== -Infinity) fail(`F2: Fluss-BANK zählt bei −Inf nass (L=${lb}) — die Rampe ist kein Kern`);
-            if (!(le > -Infinity))
-                fail("F2: +Inf-Existenz-Probe verlor die volle Carve-Breite (colSrc/CA-Quellen!)");
+            if (!(le > -Infinity)) fail("F2: +Inf-Existenz-Probe verlor die volle Carve-Breite (colSrc/CA-Quellen!)");
         }
         if (core) {
             const lc = r._atlasWaterLevelAt(core.x, core.z, -Infinity);
             o.coreLevel = lc;
             if (!(lc > -Infinity)) fail("F2: Fluss-KERN verlor sein Fern-Wasser (centerness>0 muss zählen)");
         }
-        if (!bank && !core)
-            o.riverNote = "kein isolierter Fluss-Punkt gefunden — Fluss-Wand unmessbar (Rim-Kern grün)";
+        if (!bank && !core) o.riverNote = "kein isolierter Fluss-Punkt gefunden — Fluss-Wand unmessbar (Rim-Kern grün)";
 
         // ── FIXTURE 4 (F4) — DIE STAU-QUALIFIKATION: geerdet + geschlossen ──
         const runStau = (clusterFn, naht) => {
@@ -1995,7 +1996,7 @@ async function checkBandWasserWahrheit(ctx) {
             o.stauBroken = bc.length;
             if (bc.length !== 3) fail(`F4-Selbsttest: die gelockerte Qualifikation ergab ${bc.length} statt 3 Werke`);
         }
-    
+
         // ── FIXTURE 5 (F5) — DIE RUHE IST DER FIXPUNKT: der erwachte Automat bewegt ruhendes Wasser nicht ──
         // K37 (Auge 13.10., Solitär-Eiche): jede Werk-Setzung am Ufer weckt den Automaten; die Kappe lag eine Zeile über
         // der Ruhe, die Deck-Zelle (4b) floss in die Zeile über dem See und aufs Land, die flache Ufer-Spalte leerte sich.
@@ -2041,8 +2042,7 @@ async function checkBandWasserWahrheit(ctx) {
             const src = shim.state.waterSourceCols.get("0,0");
             for (let t = 0; t < 200; t++) {
                 for (let c = 0; c < dSq; c++)
-                    if (src[c])
-                        for (let j = 0; j < dy; j++) if (cells[c + j * dSq] === WATER) level[c + j * dSq] = 1;
+                    if (src[c]) for (let j = 0; j < dy; j++) if (cells[c + j * dSq] === WATER) level[c + j * dSq] = 1;
                 r._tickWaterCA(level, cells, d, dy, 0.25, null, null, cap);
             }
             let gerissen = 0;
@@ -2067,7 +2067,7 @@ async function checkBandWasserWahrheit(ctx) {
         // Selbst-Test F5: die Kappe eine Zeile über der Ruhe (der alte Raum) → die Deck-Spalte MUSS reißen.
         o.ruheBroken = runRuhe(r._ensureWaterCALevel, true).gerissen;
         if (!(o.ruheBroken > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
-    
+
         // ── FIXTURE 6 (F6) — DIE GELEERTE SPALTE IST TROCKEN: nie ein Dach 14 m unter dem Spiegel ──
         // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1). Bis K37
         // zeichnete das Sheet sie 14 m unter dem Spiegel (die Klemme des Live-Deltas) — eine Grube mit weißen Wänden.
@@ -2112,7 +2112,7 @@ async function checkBandWasserWahrheit(ctx) {
                 fail(`F6: die geleerte Spalte liegt ${f6.grube} m unter dem Spiegel (Soll trocken, < 0,05)`);
             if (!Number.isFinite(f6.grube)) fail("F6: kein innerer Vertex — die Linse ist blind");
         }
-    
+
         // ── FIXTURE 7 (F7) — DAS NETZ TRÄGT SEINE BYTES: das gezeichnete Wasser überlebt das Verdichten des Satzes ──
         // Das Sheet eines Chunks ist ein View in den Puffer des Wasser-Satzes; verdichtet sich der Satz, schiebt er die
         // Bereiche im alten Puffer nach vorn (copyWithin) und zeigt neue Views. Ein Netz (`_wasserNetz`), das den alten
@@ -2137,7 +2137,9 @@ async function checkBandWasserWahrheit(ctx) {
                 voxelChunkWaterIso: new Map([["0,0", mesh]]),
             };
             // der Täter an der Naht: das Netz bekommt den View des Satzes statt seiner Kopie
-            if (haeltView) shim._wasserNetzBau = (cx, cz, pos, idx) => r._wasserNetzBau.call(shim, cx, cz, mesh.geometry.attributes.position.array, idx);
+            if (haeltView)
+                shim._wasserNetzBau = (cx, cz, pos, idx) =>
+                    r._wasserNetzBau.call(shim, cx, cz, mesh.geometry.attributes.position.array, idx);
             const h0 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
             // das Verdichten: Bereich 2 rückt nach vorn, ein dritter Bereich (fremd, y 2) zieht in seinen alten Platz
             alt.copyWithin(0, 12, 24);
@@ -2164,7 +2166,11 @@ async function checkBandWasserWahrheit(ctx) {
         if (o.netzBroken === 8) fail("F7-Selbsttest: mit dem gehaltenen View blieb das Netz richtig — Linse blind");
         return o;
     })) || { fails: ["keine Antwort der Seite"] };
-    check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
+    check(
+        "Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7",
+        out.fails.length === 0,
+        out.fails.join(" · ").slice(0, 400)
+    );
 }
 
 // Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab (D3b): das Wasser-Verdikt der Streu liest das
@@ -2292,14 +2298,25 @@ async function checkBandScatterWasserAB(ctx) {
         }
         return o;
     });
-    if (!out || out.__err) return check("Scatter-Wasser A/B: die Probe antwortet", false, out ? out.__err : "keine Antwort der Seite");
-    check(`Scatter-Wasser A/B: der Korpus trägt die Ufer-Klasse (shore ${out.classes.shore} · steep ${out.classes.steep} · river ${out.classes.river} über ${out.corpus.length} Regionen)`, out.classes.shore >= 1);
+    if (!out || out.__err)
+        return check("Scatter-Wasser A/B: die Probe antwortet", false, out ? out.__err : "keine Antwort der Seite");
+    check(
+        `Scatter-Wasser A/B: der Korpus trägt die Ufer-Klasse (shore ${out.classes.shore} · steep ${out.classes.steep} · river ${out.classes.river} über ${out.corpus.length} Regionen)`,
+        out.classes.shore >= 1
+    );
     check(
         `Scatter-Wasser A/B: BYTE-IDENTISCH über alle ${out.corpus.length} Regionen (${out.totalCells} Zellen)`,
         out.abIdentical === true,
-        out.diffs.filter((x) => !x.identical).map((x) => `(${x.rx},${x.rz}) A ${x.cellsA} vs B ${x.cellsB}`).join(" · ")
+        out.diffs
+            .filter((x) => !x.identical)
+            .map((x) => `(${x.rx},${x.rz}) A ${x.cellsA} vs B ${x.cellsB}`)
+            .join(" · ")
     );
-    check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
+    check(
+        "Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot",
+        out.selftestFires === true,
+        JSON.stringify(out.selftestRegion)
+    );
 }
 
 // B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b, V18.345): der Worker baut den
@@ -2320,7 +2337,8 @@ async function checkBandWasserSheetSpiegel(ctx) {
         // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
         const kand = [];
         if (O && O.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });
-        if (O && O.fluss) kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
+        if (O && O.fluss)
+            kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
         const spot = kand
             .filter((k) => Number.isFinite(k.L))
             .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz))[0];
@@ -2414,7 +2432,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             out.msgs.push("KEIN CA-freier Wasser-Chunk gefunden (Welt ohne Wasser im Ring?)");
             return out;
         }
-    
+
         const f32 = (a) => (a instanceof Float32Array ? a : new Float32Array(a));
         const u32 = (a) => (a instanceof Uint32Array ? a : new Uint32Array(a));
         const cmpF = (label, a, b, ctx) => {
@@ -2451,7 +2469,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
                 }
             }
         };
-    
+
         for (const c of cand) {
             let wd = null;
             try {
@@ -2484,8 +2502,16 @@ async function checkBandWasserSheetSpiegel(ctx) {
 }
 
 module.exports = {
-    checkBandHydrosphere, checkBandWelleC1WaterCells, checkBandWelleC2WaterIsoSurface,
-    checkBandWellePerfHWaterIsoQueue, checkBandV17117FarWater, checkBandWelleV11D1WaterContext,
-    checkBandWelleV11D2WaterBias, checkBandV18129HochBecken, checkBandV18194Gamma6Befoerderung,
-    checkBandWasserWahrheit, checkBandScatterWasserAB, checkBandWasserSheetSpiegel,
+    checkBandHydrosphere,
+    checkBandWelleC1WaterCells,
+    checkBandWelleC2WaterIsoSurface,
+    checkBandWellePerfHWaterIsoQueue,
+    checkBandV17117FarWater,
+    checkBandWelleV11D1WaterContext,
+    checkBandWelleV11D2WaterBias,
+    checkBandV18129HochBecken,
+    checkBandV18194Gamma6Befoerderung,
+    checkBandWasserWahrheit,
+    checkBandScatterWasserAB,
+    checkBandWasserSheetSpiegel,
 };

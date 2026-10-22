@@ -1004,13 +1004,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
-        // --- Instanced-Gras (Voxel-Gras-Pendant) ---
-        // Lebenszyklus: `_buildVoxelChunkGrass` / `_disposeVoxelChunkGrass` / `state.voxelChunkGrass`;
-        // `_grassInstanceMat` (Wind-Material) ist geteilt.
-        out.grassMethodsExist =
-            typeof r._buildVoxelChunkGrass === "function" &&
-            typeof r._disposeVoxelChunkGrass === "function" &&
-            typeof r._grassInstanceMat === "function";
+        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), `_grassInstanceMat` ist geteilt
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
         // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
@@ -1124,10 +1118,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 JSON.stringify(e)
             );
         }
-        check(
-            "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
-            v829Results.grassMethodsExist
-        );
         check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
         check(
             "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",

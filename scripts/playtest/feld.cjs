@@ -222,7 +222,11 @@ async function checkBandV1723Harmony(ctx) {
         out.spawnRings =
             born.length > 0 &&
             dR.every((d) => d >= 4 - 1e-6 && d <= 6.5 + 1e-6) &&
-            born.every((a, i) => born.every((b, j) => j <= i || Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) > 0.05));
+            born.every((a, i) =>
+                born.every(
+                    (b, j) => j <= i || Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) > 0.05
+                )
+            );
         born.forEach((c) => r.removeCreature(c));
         r.state.maxCreatures = capR;
         return out;
@@ -243,9 +247,8 @@ async function checkBandV1726FieldDirection(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
-        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm && out.hasResolver) {
+        const pm = r.state.playerMesh.position;
+        {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
             const need = r.dslPositions.at_field_need([50], ctx2);
             const needLeb = r.auraAt(need.x, need.z).lebendig;
@@ -262,7 +265,6 @@ async function checkBandV1726FieldDirection(ctx) {
         }
         return out;
     });
-    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
     check(
         "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
         res.needIsMin,
@@ -2183,9 +2185,22 @@ async function checkBandG8R2SovereignWall(ctx) {
 }
 
 module.exports = {
-    checkRing2Dsl, checkBandV1723Harmony, checkBandV1726FieldDirection, checkBandV1730EmotionFromBeing,
-    checkBandV1733WorldRules, checkBandV1734FieldRules, checkBandV1735NexusEvolvesRules, checkBandV1736HumanRules,
-    checkBandV1737RulesUI, checkBandV1739RulesUX, checkBandV1740LlmRules, checkBandV1741RuleThread,
-    checkBandV1743RuleFitness, checkBandV1745EmotionCore, checkBandV1746EmotionSubstance, checkBandV1747FastSlow,
-    checkBandV1748Social, checkBandG8R2SovereignWall,
+    checkRing2Dsl,
+    checkBandV1723Harmony,
+    checkBandV1726FieldDirection,
+    checkBandV1730EmotionFromBeing,
+    checkBandV1733WorldRules,
+    checkBandV1734FieldRules,
+    checkBandV1735NexusEvolvesRules,
+    checkBandV1736HumanRules,
+    checkBandV1737RulesUI,
+    checkBandV1739RulesUX,
+    checkBandV1740LlmRules,
+    checkBandV1741RuleThread,
+    checkBandV1743RuleFitness,
+    checkBandV1745EmotionCore,
+    checkBandV1746EmotionSubstance,
+    checkBandV1747FastSlow,
+    checkBandV1748Social,
+    checkBandG8R2SovereignWall,
 };

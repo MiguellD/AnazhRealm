@@ -16,7 +16,6 @@ async function checkBandWaves1to3(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
         // journalAppend schreibt
@@ -47,7 +46,6 @@ async function checkBandWaves1to3(ctx) {
             (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -1162,8 +1160,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. — radiating ──
         check(
             "W10 ext.: radiating trägt Label + Schwellen",
-            wave10bResults.radiatingLabel &&
-                wave10bResults.radiatingThresholds
+            wave10bResults.radiatingLabel && wave10bResults.radiatingThresholds
         );
         check(
             "W10 ext.: ein radialer Quarz-Cluster (≥3 Parts, gespreizt) → radiating=true",
@@ -1236,8 +1233,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. Welle 3/4 — balancing ──
         check(
             "W10 ext.: balancing trägt Label 'gründend' + Schwellen",
-            wave10bResults.balancingLabel &&
-                wave10bResults.balancingThresholds
+            wave10bResults.balancingLabel && wave10bResults.balancingThresholds
         );
         check(
             "W10 ext.: eine breite flache schwere Stein-Plattform → balancing=true",
@@ -1264,8 +1260,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. Welle 4/4 — lifting ──
         check(
             "W10 ext.: lifting trägt Label 'hebend' + Schwellen",
-            wave10bResults.liftingLabel &&
-                wave10bResults.liftingThresholds
+            wave10bResults.liftingLabel && wave10bResults.liftingThresholds
         );
         check(
             "W10 ext.: ein magie-geladener leichter Quarz-Cone-Cluster → lifting=true",
@@ -1305,7 +1300,6 @@ async function checkBandWave10b(ctx) {
         if (!r) return null;
         const out = {};
         try {
-
             // Mount-Test
             if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
             r.cloneBlueprint("stein_block", "test_10b3_car");
@@ -1608,10 +1602,19 @@ async function checkBandPsi0Winkel(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // ein Werk aus zwei Parts (Eisen-Block + Holz-Stiel): jeder Leser ruft das Organ unbedingt
-        const bpK = { name: "_psi1", connections: [], parts: [
-            { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-            { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
-        ] };
+        const bpK = {
+            name: "_psi1",
+            connections: [],
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                {
+                    shape: "cylinder",
+                    material: "holz",
+                    position: { x: 0, y: 1.6, z: 0 },
+                    size: { x: 0.2, y: 1.2, z: 0.2 },
+                },
+            ],
+        };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
         // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
@@ -1775,13 +1778,16 @@ async function checkBandV18266RockDetail(ctx) {
         `V18.266: grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
         res.bigHigher === true && res.smallCheaperThanBig === true
     );
-    check(
-        "V18.266: explizites noiseDetail bleibt Intent-Override",
-        res.overrideHonored === true
-    );
+    check("V18.266: explizites noiseDetail bleibt Intent-Override", res.overrideHonored === true);
 }
 
 module.exports = {
-    checkBandWaves1to3, checkBandV1767WorkshopDomainEmergent, checkBandOmegaGrammatik, checkBandWave10b,
-    checkBandTailleOmega6, checkBandPsi0Winkel, checkBandLambda1LivingCenter, checkBandV18266RockDetail,
+    checkBandWaves1to3,
+    checkBandV1767WorkshopDomainEmergent,
+    checkBandOmegaGrammatik,
+    checkBandWave10b,
+    checkBandTailleOmega6,
+    checkBandPsi0Winkel,
+    checkBandLambda1LivingCenter,
+    checkBandV18266RockDetail,
 };

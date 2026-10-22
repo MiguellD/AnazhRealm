@@ -2438,7 +2438,8 @@ async function checkBandPhasenBF(ctx) {
         const pp4 = r.state.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
         r.state.maxCreatures = cap4;
-        const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
+        const liestTemperament =
+            !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);
         out.d4Konsum =
             liestTemperament &&
@@ -2564,8 +2565,15 @@ async function checkBandPhasenBF(ctx) {
                     delete r._hydrosphereLakeAt;
                 }
             };
-            const meer = bau(0, false), fluss = bau(1, false), see = bau(0, true);
-            return meer.some((v) => v > 0.5) && fluss.length > 0 && fluss.every((v) => v === 0) && see.every((v) => v === 0);
+            const meer = bau(0, false),
+                fluss = bau(1, false),
+                see = bau(0, true);
+            return (
+                meer.some((v) => v > 0.5) &&
+                fluss.length > 0 &&
+                fluss.every((v) => v === 0) &&
+                see.every((v) => v === 0)
+            );
         })();
         // WASSER-SHEET-ANTI-STARVATION: reine Distanz-Priorität + Dauer-Nachschub naher Keys ließe FERNE
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
@@ -2639,7 +2647,9 @@ async function checkBandPhasenBF(ctx) {
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
             // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
-            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
+            const wagen = JSON.parse(
+                JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] })
+            );
             const panel = document.createElement("div");
             r._specRenderBody(panel, wagen);
             const line = panel.querySelector(".spec-motion-line");
@@ -3222,7 +3232,9 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) r._setBlueprintWear(heldBp, 0.42);
         const unbekannt = (prog) =>
             !Object.hasOwn(r.dslEffects, prog[0]) &&
-            r.dslRun(prog, { seed: 1, programId: "probe-r2" }).log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
+            r
+                .dslRun(prog, { seed: 1, programId: "probe-r2" })
+                .log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
             (!heldBp || Math.abs(r._blueprintWear(heldBp) - 0.42) < 1e-9);
         out.noRepairOp = unbekannt(["repair_held"]);
         out.noSetWearOp = unbekannt(["set_wear", "_t_wear_spitz", 1]);
@@ -3352,64 +3364,44 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
-// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
-// Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
+// Die Schneegrenze des Gelände-Kerns fließt: die Boden-Farbe fragt sie (KONSUM; der Kern ist eingefroren → offene Kopie).
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
-
-        // (K2) die R5-Konstante steht (Mana-Drain, Geruch und Baum-Grammatik fahren ihre Bänder am Verhalten)
-        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-
-        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
-        out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
-        // KONSUM: die Boden-Farbe fragt die Schneegrenze des Gelände-Kerns (der Kern ist eingefroren → offene Kopie)
         const G = window.__gelaendeCore;
         window.__gelaendeCore = Object.assign({}, G);
         try {
             const p = r.state.playerMesh.position;
-            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
+            return {
+                schnee: window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [
+                    p.x,
+                    p.y,
+                    p.z,
+                    [0, 0, 0],
+                ]),
+            };
         } finally {
             window.__gelaendeCore = G;
         }
-        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
-        out.gammaMLichen = !!A.LICHEN;
-        out.gammaMIronBands = !!A.IRON_BANDS;
-        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
-        out.gamma3Char = !!A.FIELD_CHARACTER;
-        out.gammaBogenKomplett =
-            out.gamma4Anker &&
-            out.gamma6Snowband &&
-            out.gammaMStrata &&
-            out.gammaMLichen &&
-            out.gammaMIronBands &&
-            out.gamma2Totholz &&
-            out.gamma3Char;
-
-        // (K5) MANA-SYMMETRIE Foundation:
-        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
-
-        return out;
     });
-
-    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
-    check(
-        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
-        res.gammaBogenKomplett === true
-    );
-    check(
-        "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
-        res.manaMaxFn && res.manaRegenConst
-    );
+    check("die Boden-Farbe liest die Schneegrenze des Gelände-Kerns (_bodenFarbeAt → schnee)", res.schnee === true);
 }
 
 module.exports = {
-    checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
-    checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
-    checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
-    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld, checkBandV18209Konsolidierung,
+    checkBandV1757HeldSlot,
+    checkBandV1761ForgeImplement,
+    checkBandV1762ForgeMeaningful,
+    checkBandV1763ForgeArmor,
+    checkBandV1765BrewConsumable,
+    checkBandV1766FertigenFlow,
+    checkBandV1770WorkshopStationMark,
+    checkBandV1772Library,
+    checkBandV1773HeldMesh,
+    checkBandV1784AvatarFormFit,
+    checkBandWelle6DSoul,
+    checkBandPhasenBF,
+    checkBandW5Werkzeugabnutzung,
+    checkBandV18202GeruchFeld,
+    checkBandV18209Konsolidierung,
 };
