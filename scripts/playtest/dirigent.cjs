@@ -8,7 +8,7 @@ const SK = require("../lib/shader-kosten.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-// V9.52 Sub-Welle a — die Basis-Invarianten direkt nach dem `finalState`-Greifen.
+// die Basis-Invarianten direkt nach dem `finalState`-Greifen.
 // Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
 function checkInitialState(ctx) {
     const { check, finalState } = ctx;
@@ -102,7 +102,7 @@ async function checkBandV1778LadderCut(ctx) {
         const out = {};
         const tools = r.state.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
-        // V17.88 — nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
+        // nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
         // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
         out.keptPresent =
             !!tools["hände"] &&
@@ -741,7 +741,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         out.a1ManyVariants = keys.size >= NVar;
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
-        // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
+        // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
@@ -960,7 +960,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode();
-        // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
+        // saubere Test-Hygiene: state vorher
         // SCHNAPPEN (Stat-Felder + tools-Liste), nachher EXAKT restaurieren.
         const savedManaA4 = r.state.player.mana;
         const savedManaMaxA4 = r.state.player.manaMax;
@@ -1023,7 +1023,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a4Error = String(e && (e.message || e));
         } finally {
             r.setGameMode(sm);
-            // V18.210 (Audit-Heilung #5) — exakt restaurieren, damit
+            // exakt restaurieren, damit
             // nachfolgende Bands den Spieler frisch sehen (sonst leaken
             // ritueller-stab im Werkzeug-Inventar + Stat-Drift).
             r.state.player.mana = savedManaA4;

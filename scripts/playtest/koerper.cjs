@@ -5,7 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V17.64 S5 (kampf-plan §11.7, §11.2) — Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
+// Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
 // embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
 async function checkBandV1764ForgeAvatar(ctx) {
@@ -111,7 +111,7 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
+// Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -961,7 +961,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
     );
 }
 
-// V18.196 — MANA-SYMMETRIE (aktiv-plan §4.E): die zweite Ausdauer-Achse als
+// MANA-SYMMETRIE (aktiv-plan §4.E): die zweite Ausdauer-Achse als
 // Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
 // Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
 async function checkBandV18196ManaSymmetry(ctx) {
@@ -1062,7 +1062,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
     );
 }
 
-// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
+// MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
 // KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
 async function checkBandV18201ManaKonsum(ctx) {
@@ -1153,7 +1153,7 @@ async function checkBandV18201ManaKonsum(ctx) {
     );
 }
 
-// V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
 // Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
 async function checkBandV18206SpeedTrade(ctx) {
     const { page, check } = ctx;

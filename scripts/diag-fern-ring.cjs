@@ -14,7 +14,7 @@
 //       neuen Ort.
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
-//   (6) SICHT-BESITZ (SELBST GESPIELT 16.07.) — mit bereitem Ring weitet die
+//   (6) SICHT-BESITZ — mit bereitem Ring weitet die
 //       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die Luft misst gate:luft-tiefe:echt im Bild;
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 //   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
@@ -154,7 +154,7 @@ const server = statikServer();
         });
         res.visible = fr.meshes.every((m) => m.visible === true);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
-        // DER LOCH-DECKEL (20.07.): Schale 1 beginnt DIREKT am Spieler (0.5·span)
+        // DER LOCH-DECKEL: Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
         // verdeckt); gebaute Chunks decken ihn per Depth. deckZoneRad trägt die
         // Chunk-Ziel-Zone, in der die Reihen das VOLLE Gesetz gesenkt tragen.
@@ -175,7 +175,7 @@ const server = statikServer();
             const row = (li / F.winkel) | 0;
             const ai = li - row * F.winkel;
             const sh = fr.schalen[s];
-            // GEOMETRISCHE Reihen + NAHT-VEREDELUNG (20.07.) — die Erwartung
+            // GEOMETRISCHE Reihen + NAHT-VEREDELUNG — die Erwartung
             // spiegelt das LIVE-Layout (nah dicht, fern weit; Innen-Reihen der
             // ersten Schale tragen das volle Gesetz leicht gesenkt).
             const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (reihenSoll[s] - 1));
@@ -441,7 +441,7 @@ const server = statikServer();
         // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
         const P8 = r.constructor.FELD_PASS;
         let fp8 = r.state.feldPass;
-        // SCHATTIERUNGS-PERSISTENZ (20.07.): sichtbar erst mit gebackenem
+        // SCHATTIERUNGS-PERSISTENZ: sichtbar erst mit gebackenem
         // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
         // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
         for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {

@@ -353,7 +353,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             res.blockerParity = JSON.stringify(rel) === JSON.stringify(blockersRelStudio);
             r.removeArchitecture(entry2);
         } finally {
-            // V18.423-Lehre: den Hook SICHERN + WIEDERHERSTELLEN, NIE nackt loeschen.
+            // den Hook SICHERN + WIEDERHERSTELLEN, NIE nackt loeschen.
             if (prev) window.__anazhGateNoFoundry = prev;
             else delete window.__anazhGateNoFoundry;
         }

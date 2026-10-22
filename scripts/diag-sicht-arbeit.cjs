@@ -29,7 +29,7 @@
 //       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
 //       (die Stellvertreter tragen keine Box — den Licht-Rand der echten Kaskaden, über den ihre Wahl die Stufen hält, prüft
 //       gate:schatten-werfer K8, im echten Loop `werkbank sicht --sonne`);
-//   (A) DAS ATMENDE AUGE (zweite Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm
+//   (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm
 //       quer, unter dem Halt — die Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende (vorher verglich die
 //       Lage die Blende exakt, eine zweite Signatur neben `_wahlHaelt`: 14 999 Prüfungen je Frame, die Linse GRÜN); die
 //       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
@@ -208,7 +208,7 @@ function selbsttest() {
     const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
     if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
     console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
-    // RUHE MIT ÄNDERUNG (K, 07.10.): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
+    // RUHE MIT ÄNDERUNG: Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
     // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
     // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
     const loopInhalt = Object.assign(klon().ruhe, {
@@ -1060,7 +1060,7 @@ const server = statikServer();
                 }
                 aus.drehTreue = D;
             }
-            // (I) DIE INSTANZ-TREUE DER KASKADEN (Gegenprüfung 07.10.): beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
+            // (I) DIE INSTANZ-TREUE DER KASKADEN: beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
             // fremder Schreiber, der die Zahl lässt (Freigeben + Belegen; der echte Weg: der Stufen-Wechsel eines Baums,
             // `_switchArchitectureLOD`), muss JEDE Kaskade neu wählen lassen: keine tote Marke (Slot −1), kein Wurf, kein NaN
             // in einem lebenden Slot, und jeder Werfer, den das Gesetz in der Lage einer Kaskade trifft, steht in ihrer Wahl.
@@ -1249,7 +1249,7 @@ const server = statikServer();
             } finally {
                 delete r._chunkSatzRuht;
             }
-            // (S) SCHARF FÜR DEN SATZ-STAND (Gegenprüfung 07.10.): der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
+            // (S) SCHARF FÜR DEN SATZ-STAND: der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
             // seinen Stand, ohne dass ein Bereich, ein Anker oder eine Hülle sich ändert (der Cache-Schlüssel churnt, jede Wahl
             // rechnet neu); die Linse zählt die Arbeit OHNE Änderung und nennt `stand:ohne`
             stelle(0, 0);
@@ -1263,7 +1263,7 @@ const server = statikServer();
             } finally {
                 delete r._tickChunkSatz;
             }
-            // (A) DAS ATMENDE AUGE (Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
+            // (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
             // legt es je Frame aus der Kamera) atmen ±1 mm quer, unter dem Halt: keine Lage ändert sich, die Kette arbeitet
             // nicht, und die Linse nennt es weder Kamera noch Blende. Vorher verglich die Lage die Blende exakt — eine zweite
             // Signatur neben dem Gesetz des Halts: 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende".

@@ -146,7 +146,7 @@ function caseKey(c) {
     );
     globalThis.__portaCore = PC;
 
-    // 5c) DIE TOR-HÜLLE (Leben-Schau 2, Nachbesserung 10.10.): die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
+    // 5c) DIE TOR-HÜLLE: die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
     //     stoßen lässt, IST die gebaute Gestalt — je Rezept und Zahl deckt die Tafel das Gemessene und liegt höchstens 1 cm
     //     darüber (scripts/lib/tor-huelle.cjs). Bis dahin baute der Wirt die Gestalt beim ersten Spawn synchron auf dem
     //     Haupt-Thread nach; ändert sich der Bau, nennt die Linse die Zahl beim Namen. `MINT_TOR_HUELLE=1` druckt die Tafel.

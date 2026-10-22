@@ -5,7 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (Voxel V9.36 + Ring 11 V1 + W7 P1/P2 — Mesh-Compute-Sharing).
+// Band-Funktion (Voxel V9.36 + Ring 11 V1 + W7 P1/P2 — Mesh-Compute-Sharing).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing11AndW7Mesh(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -222,7 +222,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.dslEffects.peer_dsl === "undefined" &&
             typeof r.dslEffects.remote_run === "undefined";
 
-        // V2.1: CSP enthält generelle ws:/wss:-Whitelist (statt
+        // CSP enthält generelle ws:/wss:-Whitelist (statt
         // explizite IP-Liste, die LAN-Spieler blockierte).
         const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
         const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
@@ -677,7 +677,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (W16 P1 + P2 — Mesh-Welt-Verteilung + Welt-Katalog).
+// Band-Funktion (W16 P1 + P2 — Mesh-Welt-Verteilung + Welt-Katalog).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW16Distribution(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1218,7 +1218,7 @@ async function checkBandW16Distribution(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Bau-Sync + W7 P3/P4 + W11 P4 + Ring 11 V2/V2.1/11.5).
+// Band-Funktion (Bau-Sync + W7 P3/P4 + W11 P4 + Ring 11 V2/V2.1/11.5).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandLateMultiUser(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -2282,7 +2282,7 @@ async function checkBandLateMultiUser(ctx) {
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
         out.inviteInputExists = !!document.getElementById("new-world-invite");
-        // V9.35: die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
+        // die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
         // (Voxel permanent + irreversibel — Toggle-Tod).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
         out.hostBannerExists = !!document.getElementById("world-host-banner");
@@ -2343,7 +2343,7 @@ async function checkBandLateMultiUser(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.34 Soul-Sync (Ring 11 V3) + V8.35 Substanz-Rolle + V8.36 Browser-Fixes + V8.37-V8.39 Werkstatt + Werkzeug-Klassen).
+// Band-Funktion (V8.34 Soul-Sync (Ring 11 V3) + V8.35 Substanz-Rolle + V8.36 Browser-Fixes + V8.37-V8.39 Werkstatt + Werkzeug-Klassen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -2951,7 +2951,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 },
             ];
             r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
-            // V18.153 — die Linien sind Werkstatt-Werkzeug: der Test bestellt
+            // die Linien sind Werkstatt-Werkzeug: der Test bestellt
             // sie wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
             const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
             const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
@@ -2965,7 +2965,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const pre = r.state.workshop && r.state.workshop.preview;
             out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
             r._renderWorkshopDOM();
-            // V17.91 — die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
+            // die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
             // werden jetzt im 3D-Connect-Modus angelegt/gelöst. Der frühere „Sollbruchstelle"-Text-Check entfiel.
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf

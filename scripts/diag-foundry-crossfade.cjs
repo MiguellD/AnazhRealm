@@ -495,8 +495,8 @@ async function runPartB() {
         res.visH = visH;
         res.factor = factor;
         const stageOfKey = (k) => {
-            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
-            // Welle A: der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
+            // der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
+            // der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
             // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — die L0
             // steht auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
             if (/#S$/.test(k)) return null;

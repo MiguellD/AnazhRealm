@@ -7,7 +7,7 @@ const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-// V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
+// Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandHydrosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -161,7 +161,7 @@ async function checkBandHydrosphere(ctx) {
             }
         }
         out.waterKindValid = kindOk && finiteOk;
-        // V9.49-e — alle Ozean-Zellen teilen EINEN flachen Spiegel (kein per-Zelle-filled mehr): gemessen an der Kachel
+        // alle Ozean-Zellen teilen EINEN flachen Spiegel (kein per-Zelle-filled mehr): gemessen an der Kachel
         // des Meer-Orts.
         let meerZellen = 0;
         let oceanY = null;
@@ -188,7 +188,7 @@ async function checkBandHydrosphere(ctx) {
             !!(h2.water && h2.water.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-        // V9.50-a — das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
+        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
         // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
         out.waterLevelOceanOk = false;
         out.waterLevelLakeOk = false;
@@ -312,7 +312,7 @@ async function checkBandHydrosphere(ctx) {
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
             out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level) < 0.01;
-            // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
+            // der Auftrieb folgt der dilatierten See-Plane:
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
             // einen See-Wasserspiegel, nicht den Meeresspiegel.
             const cellsSet = new Set(renderedLk.cells);
@@ -797,13 +797,13 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         const out = {};
         const STATE = r.constructor.CELL_STATE;
         // 1) State-Feld existiert (Map)
-        // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
+        // Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
         // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
-        // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
+        // die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         r._drainPendingWaterIso();
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
@@ -839,7 +839,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.isoMeshGeomTotal = isoMeshGeomTotal;
         out.isoMeshVisibleCount = isoMeshVisibleCount;
         out.allChunksTracked = chunksWithoutIso === 0;
-        // V9.75 — Iso-Meshes sind default sichtbar (kein Toggle mehr).
+        // Iso-Meshes sind default sichtbar (kein Toggle mehr).
         out.allIsoVisible = isoMeshCount > 0 && isoMeshVisibleCount === isoMeshCount;
         // 7) Cell-Init erfasst Bergsee-Wasser über state.waterLevel: existieren Lake-Cells im
         // 16-m-Hydrosphäre-Atlas, MUSS in einem Chunk ihres Footprints mindestens eine water-Cell über
@@ -937,7 +937,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     const nz = e1x * e2y - e1y * e2x;
                     const nl = Math.hypot(nx, ny, nz) || 1e-9;
                     const nyn = ny / nl;
-                    // V18.4 W1: nur die Unterseite (ny>0.2) verworfen → undersideTris ≈ 0;
+                    // nur die Unterseite (ny>0.2) verworfen → undersideTris ≈ 0;
                     // Oberseite + Ufer/Fluss-Drops (fast-vertikal) bleiben (top-only reverted).
                     if (nyn > 0.2) undersideTris++;
                     else topsTris++;
@@ -1255,7 +1255,7 @@ async function checkBandV17117FarWater(ctx) {
     );
 }
 
-// V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
+// Beweis dass der
 // Wasser-Kontext-Helper deterministisch + korrekt arbeitet. D.2/D.3 bauen
 // darauf auf, also MUSS die Foundation grün sein bevor sie geschnitten werden.
 async function checkBandWelleV11D1WaterContext(ctx) {

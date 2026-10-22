@@ -28,7 +28,7 @@
 //   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
+//               (3) kein Band jenseits des Radius — D2 rot; (4) ein Gedächtnis mit
 //               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
@@ -211,7 +211,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     ms: Math.round(performance.now() - t0),
                 });
             }
-            // F DER GRUNDRISS-STAND (K20, Übergabe 12.10.): ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
+            // F DER GRUNDRISS-STAND: ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
             // Grundriss eines Hauses), steht nie — die Eiche neben ihm steht frei. Eine Eiche im Bestand mit genau EINEM
             // stehenden Nachbarn bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein, gemerkt
             // (die Antwort vor dem Haus) wie frisch gefragt.

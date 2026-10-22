@@ -1,4 +1,4 @@
-// diag-blick.cjs — DIE AUGEN (T0 des Erlebnis-Ziels, 16.07.): ein ECHTER Welt-Schuss
+// diag-blick.cjs — DIE AUGEN: ein ECHTER Welt-Schuss
 // aus dem Container. Die V18.359-Narbe (WebGPU-Frame komponiert nicht in den
 // puppeteer-Screenshot: weiß/schwarz/Timeout — 3 Wege gemessen) wird UMGANGEN, nicht
 // wiederholt: die Welt rendert EINMAL in ein explizites RenderTarget und die Pixel
@@ -75,7 +75,7 @@ const server = statikServer();
                     set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
                     if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
                 }
-                // PNG über Canvas. GEMESSEN (erster Schuss 16.07.): der WebGPU-
+                // PNG über Canvas. GEMESSEN: der WebGPU-
                 // Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
                 // (der WebGL-Erfahrungswert „bottom-up" gilt hier nicht).
                 const cv = document.createElement("canvas");

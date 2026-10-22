@@ -12,9 +12,9 @@
 //     jetzt ALLE geschnittenen Regionen — der 2×2-Fächer um den Spieler wird
 //     abgedeckt (Quell-Probe: der Block walkt rx0..rx1/rz0..rz1, nicht nur
 //     die Home-Region).
-//   F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): platzierte Fern-Leaves
+//   F: platzierte Fern-Leaves
 //     (Impostor-Quads) über ein 4×4-Region-Raster, A/B durch DIESELBE Pipe:
-//     S=1 (per-Region-Keying, die V18.300/V18.303-Welt) vs S=SCATTER_FERN_
+//     S=1 vs S=SCATTER_FERN_
 //     SUPERREGION (Super-Region). Erwartung ≥4× weniger lod2-Gruppen, Slot-
 //     Bilanz dicht (Empty-Dispose räumt beide Welten restlos), und die EINE
 //     Key-Funktion (_archFernRegionKey) ist der einzige Konstanten-Leser.
@@ -217,7 +217,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     max: 500,
                 })
                 .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
-            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
+            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT: nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
             // BODEN-Schichten (nicht die globale Baum-Schicht) und der Takt holt sie auf ihre Nah-Stufe (privat, @reg).
@@ -312,7 +312,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             dblk.err = String(e && e.message);
         }
         res.d = dblk;
-        // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
+        // ── F: A/B durch DIESELBE Pipe ──
         // Gestreute Fern-Geometrie (die Gras-Fernstufe; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
         // eigene Probe) über ein 4×4-Region-Raster: S=1 reproduziert das alte
         // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
@@ -447,7 +447,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 for (const sl of alleK) r._scatterFreeSlots(sl);
                 fern.karten.leck = lebend() - lebendVor;
                 const R = AR.ARCH_REGION_M;
-                // Welle B: der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
+                // der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
                 // streut das Fern-Flat (Name `fscatter:…:2` = Fern-Stufe) über den echten Streu-Eintritt in 4×4
                 // Regionen und räumt über den echten Streu-Austritt.
                 const PROBE = "fscatter:diaetprobe:0:2";

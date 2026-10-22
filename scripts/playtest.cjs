@@ -608,14 +608,10 @@ if (require.main === module) (async () => {
             failures.push("Game-State erreichbar");
             console.log("  ❌ window.anazhRealm.state nicht erreichbar (Seite tot?)");
         } else {
-            // V9.52-a: die ersten drei Sektionen als benannte Funktionen.
             await timed(BAND.checkInitialState, ctx);
             await timed(BAND.checkRing1Grok, ctx);
             await timed(BAND.checkRing2Dsl, ctx);
 
-            // V9.52-b: Band 1 (Ring 2 Phase 3 .. Ring 11.5) als 11 thematische Band-
-            // Funktionen, je 265-1260 Z.
-            // (Ziel: ~25-35 Band-Funktionen total, NICHT per-Sektion).
             await timed(BAND.checkBandRing2Extended, ctx);
             await timed(BAND.checkBandWaves1to3, ctx);
             await timed(BAND.checkBandV1721LivingFieldAura, ctx);
@@ -699,8 +695,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandW4LofiPad, ctx);
             await timed(BAND.checkBandLateMultiUser, ctx);
 
-            // V9.52-c: Band 2 (Welle 6.A .. Welle 6.H Phase 2C) als 8 thematische
-            // Band-Funktionen, je 475-1567 Z.
             await timed(BAND.checkBandWelle6APolish, ctx);
             await timed(BAND.checkBandWelle6DSoul, ctx);
             await timed(BAND.checkBandWelle6GHylomorphism, ctx);
@@ -711,47 +705,27 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandVoxelP3AndInventory, ctx);
             await timed(BAND.checkBandWelle6Keybindings, ctx);
             await timed(BAND.checkBandWelle6HCreatures, ctx);
-            // V9.75 (Welle C.4+5) — Welle-A/B Test-Bänder gestrichen (alte
-            // Maschinerie ist weg). Vision-Beweis lebt jetzt vollständig in
-            // C.1-C.3 (Cell-Feld + Iso-Mesh + Stempel-Reaktion).
             await timed(BAND.checkBandWelleC1WaterCells, ctx);
             await timed(BAND.checkBandWelleC2WaterIsoSurface, ctx);
             await timed(BAND.checkBandWelleC3CellularReaction, ctx);
-            // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
             await timed(BAND.checkBandWellePerf3bDistanceLod, ctx);
-            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
-            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
             await timed(BAND.checkBandWellePerfDBudget, ctx);
-            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
             // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
-            // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
-            // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
-            // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await timed(BAND.checkBandWellePerf3cPhase3FullMesh, ctx);
-            // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
             await timed(BAND.checkBandV17117FarWater, ctx);
-            // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await timed(BAND.checkBandV17118WorkerEngaged, ctx);
-            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Luft↔Ring · A6 Kollision.
             await timed(BAND.checkBandPhaseAFundament, ctx);
-            // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(BAND.checkBandPhasenBF, ctx);
-            // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
             await timed(BAND.checkBandWelle993WaterLodSeam, ctx);
-            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
             await timed(BAND.checkBandWelleV11D1WaterContext, ctx);
-            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
             await timed(BAND.checkBandWelleV11D2WaterBias, ctx);
-            // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(BAND.checkBandWelleV11D3DrinkTask, ctx);
-            // V11.0-a..d (Gras-Mesh-Pool) — V18.492 GESCHNITTEN mit dem Pool selbst: die
-            // Wiese ist Boden-Funktion (21.07.), kein Halm-Mesh → kein Pool, kein Band.
-            // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
+            // FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(BAND.checkBandNahStreu, ctx);
 
             // Band 3 — Atmosphäre, Welt-Portal/Vibe-Pass/Bibliothek, Übersetzer + Untrusted-Tor, späte Politur.
@@ -1000,7 +974,7 @@ if (require.main === module) (async () => {
     }
     console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (gateAborted) {
-        // V18.309 — UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
+        // UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
         // rätselhafte ✅-Liste oder Endlos-Schweigen. Eine laute Zeile, Exit≠0,
         // egal ob STRICT — ein unvollständiger Lauf ist nie ein grünes Gate.
         console.log(`\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`);

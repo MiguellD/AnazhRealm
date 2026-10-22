@@ -58,7 +58,7 @@ const ERLAUBT = {
 };
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
 const ohneKommentare = stammLib.ohneKommentare;
-// DER ALIAS (Kette V18.534): eine Methode legt den Canvas des Renderers in eine eigene Variable (`schirm =
+// DER ALIAS: eine Methode legt den Canvas des Renderers in eine eigene Variable (`schirm =
 // this.state.renderer.domElement`) und liest dort die Größe (`schirm.height`) — SCHIRM_RE sah nur `domElement.height`.
 // Je Methode merkt die Linse jede Variable, der ein `….domElement` zugewiesen wird (const/let/var, Komma-Liste oder
 // Zuweisung), und liest dann `<alias>.width/height/clientWidth/clientHeight` als Schirm-Lesung.

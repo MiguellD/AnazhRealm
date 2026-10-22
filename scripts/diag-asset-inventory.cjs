@@ -39,7 +39,7 @@
 // verhungert, err null). BEWUSSTE LRU-Räumungen (f.lruEvicted, das reine Inventur-Buch
 // am Cache-Chokepoint) sind KEIN Verlust — der Key bleibt re-anfragbar.
 //
-// Erwartung (V18.433+): 0 VERLETZUNGEN · 0 verlorene Keys · 0 hängende pending.
+// Erwartung: 0 VERLETZUNGEN · 0 verlorene Keys · 0 hängende pending.
 // --selftest injiziert NACH der echten Messung (a) drei Fremd-Emitter (Grammatik-Baum-
 // Gruppe + nackter Unbekannter + unbekannte inventar-Klasse) und (b) einen synthetisch
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
@@ -135,7 +135,7 @@ const server = statikServer();
                 if (!meshKeys.has(g.mesh)) meshKeys.set(g.mesh, []);
                 meshKeys.get(g.mesh).push(String(k));
             }
-        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
+        // die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
         // Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
         if (st.nahWiese)
             for (const a of st.nahWiese.senken.values())
@@ -154,7 +154,7 @@ const server = statikServer();
             for (const [art, s] of st.chunkSaetze)
                 if (s.spec && s.spec.userData && s.spec.userData.streuSatz && streuKeys.has(art))
                     meshKeys.set(s.mesh, streuKeys.get(art));
-        // Welle 6 — der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
+        // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
@@ -164,7 +164,7 @@ const server = statikServer();
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =
             /(^|[#@:_])(baum_|strauch|busch|gras|blume|farn|pilz|kiesel|fels|findling|geroell|basalt|sediment|zacken|kristall|stamm_gefallen|totholz|grown_)/i;
-        // Welle B: der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
+        // der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
         const leafOf = (k) => {
             const i = k.indexOf("#");
             if (i >= 0) return k.slice(i + 1);
@@ -282,7 +282,7 @@ const server = statikServer();
                 // 2) Welt-Substanz-Identitäten:
                 if ((node.userData && node.userData.isHydrosphere) || waterSet.has(node))
                     return tally("substanz", "wasser");
-                // V18.381 — das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
+                // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
                 if (node.userData && typeof node.userData.hydroKind === "string")
                     return tally("substanz", "wasser (" + node.userData.hydroKind + ")");

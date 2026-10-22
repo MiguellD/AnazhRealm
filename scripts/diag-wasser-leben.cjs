@@ -159,7 +159,7 @@ function urteil(b) {
                 );
         }
     }
-    // F8 = der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3): das gezeichnete Wasser gegen den Körper
+    // F8 = der Bach der Mess-Wiese: das gezeichnete Wasser gegen den Körper
     if (b.bach) {
         const k = b.bach;
         if (k.fehler) v.push(`F8: ${k.fehler}`);

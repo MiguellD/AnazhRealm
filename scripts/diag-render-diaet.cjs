@@ -129,7 +129,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 o.leaves = flat.leaves.length;
                 o.mats = mats.size; // Materialien je Tag-Signatur (alle 6 Parts = stein)
                 o.tints = flat.leaves.filter((l) => l.tint !== undefined).length;
-                // Welle B: der platzierte Bau ist global — die Fixtur zählt über ihren EIGENEN Bauplan-Namen
+                // der platzierte Bau ist global — die Fixtur zählt über ihren EIGENEN Bauplan-Namen
                 const regTag = name + "#";
                 const vor = zaehle(regTag);
                 const entries = [];

@@ -122,7 +122,7 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
+// Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -385,7 +385,7 @@ async function checkBandRing8(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // V18.73: die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
+        // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
         // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list (V9.56-i).
         out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
         out.newWorldBtnInDom = !!document.getElementById("world-new");
@@ -584,7 +584,7 @@ async function checkBandRing8(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
+// Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1172,7 +1172,7 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
+// Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -2261,7 +2261,7 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
-// V18.207 — R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
+// R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {

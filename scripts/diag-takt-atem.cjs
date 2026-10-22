@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-takt-atem.cjs — DIE ATEM-WAND DES TAKTS (gate:takt-atem, 0910-7)
 //
-// Befund (OMEN 0910-6/0910-7, V18.538, Regler frei): der CPU-Takt p95 stieg 4,8 → 11,7 ms. Die Laub-Dichte
+// Befund: der CPU-Takt p95 stieg 4,8 → 11,7 ms. Die Laub-Dichte
 // (`_foliageDensityScale`) war die einzige Stellgröße des Reglers ohne Grenzzyklus-Wand: wo der Regler mitten in seiner
 // Spanne steht, pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte). Jeder Wechsel weckte über den Stand-Stempel jeden
 // Fege-Takt zu einer vollen Runde über den Bestand (`_tickArchitectureLOD` → `_lodTreeVisHeight` → `_foundrySichtHoehe`) und

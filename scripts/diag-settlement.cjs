@@ -37,7 +37,7 @@ const goldenFile = path.join(goldenDir, "siedlung.json");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
-// Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random
+// Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads: kein Math.random
 // zwischen `_autoSettlementCellInfo` und `_tickAutoSettlement`. Die Gesetze selbst (Reservierung, Strom des Welt-Seeds, die
 // EINE Slot-Quelle, Headless-Ruhe, ov-Stempel, Erlebnis-Schichten) fahren Teil B und C im Verhalten.
 // der Auto-Dorf-Pfad an einer LISTE (Lehre 6: Zugehörigkeit am Namen, nie an der Lage im Text); ein totes Glied wirft im
@@ -1464,7 +1464,7 @@ const FIXTURES = [
                     Math.abs(e.position.y - (sl.y + 0.5)) < 1e-9
                 );
             });
-        // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
+        // HAUS-DOPPELBAU-SCHNITT — der KONSUM-Beweis lebt:
         // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
         //     byte-gleich, per seed dem Export-Slot zugeordnet),
         // (b) der Flatten-Chokepoint LIEST ihn (_artifactStudioOv non-null) und
@@ -1530,13 +1530,13 @@ const FIXTURES = [
         // 4) Der Chat-Konsument "dorf" existiert in der System-Befehls-Tabelle.
         res.chatDorf = r.chatSystemPatterns.some((p) => p.example && p.example.indexOf("dorf") === 0);
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
-        // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
+        // der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
         res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0 && window.__fehlt(baueHier.build, /Math\.random/);
         res.gammaStream = ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 && window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
-        // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
+        // Nachlese-Welle: die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
         // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel; seit der Gegenprüfung fragt der
         // Slot das EINE Land des Fundaments (`_fundamentLand`: jeder Punkt des `_fundamentRaster` fragt `_landAt`) — dieselbe
@@ -1632,7 +1632,7 @@ const FIXTURES = [
                   ])
                 : null;
             res.c.planOk = !!(plan && plan !== "timeout" && Array.isArray(plan.slots));
-            // DORF-ERLEBNIS (17.07.) — das Band wandert MIT dem Gesetz: die
+            // DORF-ERLEBNIS — das Band wandert MIT dem Gesetz: die
             // Reservierung ist jetzt das Rebuild-Gedächtnis-OBJEKT {seed,nH,x,z}.
             res.c.reserved = !!(
                 key &&
@@ -1643,7 +1643,7 @@ const FIXTURES = [
             );
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
-            // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
+            // drosselTakte-ten Takt. Vorher entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
             // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
             // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
             // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in

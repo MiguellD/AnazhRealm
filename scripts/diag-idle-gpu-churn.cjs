@@ -35,7 +35,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer, BEVOR er kompiliert — die
     // Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der Schlüssel-Warmup nennt seine Schlüssel selbst.
     page.on("console", (m) => { const t = m.text(); if (t.startsWith("[Linse]")) console.log(`  ${t.slice(0, 600)} — im Aufruf „${laufenderRuf}"`); });
-    // DAS HOLZ DER LINSE (gemessen 03.10.): sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
+    // DAS HOLZ DER LINSE: sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
     // selbst „kienspan" vor (Ring 2, keine Schatten, kein Fern-Wasser; die Auto-Wahl erkennt es nur unter WebGPU, der
     // WebGL2-Rückfall fuhr „voll"). Auf „voll" kostete ein Szenen-Render 7–110 s und jeder schwere Erst-Compile 50–70 s:
     // die Linse lief 21–65 min. Ihr Gegenstand bleibt ganz: Wiederholungs-Compiles im Leerlauf und bei der Env-
@@ -92,7 +92,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     r.state.renderer.render = function () {};
                     if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
                     r.state.postProcessingFailed = true;
-                    // P0 (Bühnen-Ordnung, 09.07.) — die Bühne für diese Linse VOR-latchen: sie misst
+                    // P0 — die Bühne für diese Linse VOR-latchen: sie misst
                     // Steady-State-Idle-Churn, nicht die Boot-Ordnung. Ohne Latch könnte das Bühnen-
                     // Prädikat mitten im 16-Frame-Mess-Fenster schließen → Fern-Deko (Planeten/Sterne)
                     // + Bake-Queue kompilierten neue Pipelines = falsches ❌ (Boot-Transient, kein Churn).
@@ -467,7 +467,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     const a1 = await stand();
     const idle = { gesamt: a1.tot - a0.tot, wdh: a1.wdh - a0.wdh };
 
-    // CHECK B — ENV-REGENERIERUNG (die scharfe V18.322-Wand): die Himmelsfarbe wechselt (wie die
+    // CHECK B — ENV-REGENERIERUNG: die Himmelsfarbe wechselt (wie die
     // Tag-Nacht-Uhr es im Stehen tut) → die Env regeneriert. Eine KORREKTE Implementierung nutzt
     // das Target wieder (stabile Identität → 0 Recompiles); der alte Churn rekompilierte ~270/Regen.
     // SELBSTTEST (--selbsttest-churn): die V18.322-Klasse künstlich zurück — jede Regenerierung eine NEUE

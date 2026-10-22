@@ -48,7 +48,7 @@ async function checkRing2Dsl(ctx) {
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
-        // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
+        // maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
         // damit dieser Band den spawn_creature-INTENT misst, nicht den Cap (der Warmup
         // kann nahe 20 liegen). Der Test wandert mit dem Code (kein Revert der Senkung).
         const _saveMaxPos = r.state.maxCreatures;
@@ -197,7 +197,7 @@ async function checkBandV1723Harmony(ctx) {
         r.state.skyTintTo = null;
         r.state.skyTintTarget = 0;
         r.state.skyTintStrength = 0;
-        // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
+        // Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
         r.dslRun(["skybox_color", "#ff0000"], { source: "test" });

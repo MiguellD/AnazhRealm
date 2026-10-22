@@ -108,7 +108,7 @@ async function checkBandV1749Adventure(ctx) {
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
+// Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -184,7 +184,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         let p4FloorSolid = true;
         for (let sx = -200; sx <= 200; sx += 25) {
             for (let sz = -200; sz <= 200; sz += 25) {
-                // V14.7: SURF-RELATIV — der Boden UNTER der Höhlen-Zone (min aus
+                // SURF-RELATIV — der Boden UNTER der Höhlen-Zone (min aus
                 // base-25 und surf-30) bleibt fest; das Höhlen-Band scannt bis surf.
                 const surf = r._terrainMacroSurfaceY(sx, sz);
                 if (r._terrainDensityAt(sx, Math.min(cBase - 25, surf - 30), sz) <= 0) p4FloorSolid = false;
@@ -205,7 +205,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.worldNotHollow = caveCells * 3 < solidCells;
         out.caveFloorSolid = p4FloorSolid;
 
-        // V14.7: oy straddelt die ECHTE Oberfläche (vorher fix -24; die V14.7-
+        // oy straddelt die ECHTE Oberfläche (vorher fix -24; die V14.7-
         // Massive heben surf darüber → ein Tiefband läge ganz unter Grund → 0 Verts).
         const geom = r._voxelChunkGeometry(0, Math.round(r._terrainMacroSurfaceY(18, 18)) - 20, 0, 20, 20, 20, 1.8);
         out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
@@ -219,7 +219,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.geomFinite = allFinite;
             out.geomHasNormals = !!geom.getAttribute("normal");
             out.geomHasIndex = !!geom.getIndex();
-            // V9.16 — die Normalen kommen aus dem Dichte-
+            // die Normalen kommen aus dem Dichte-
             // Gradienten: jede ist ein endlicher Einheits-
             // vektor (kein Facetten-Rauten-Muster).
             const nrm = geom.getAttribute("normal");
@@ -404,7 +404,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
         // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
 
-        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
+        // der Voxel-Chunk grünt: Instanced-Gras.
         let grassEntries = 0;
         let grassBlades = 0;
         if (r.state.voxelChunkGrass) {
@@ -476,7 +476,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta = oldMeta;
         r.ensureWorldMeta();
         out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
-        // V9.35 — explizit Heightfield-Opt-out wird auch
+        // explizit Heightfield-Opt-out wird auch
         // zwangs-migriert (der Opt-out existiert nicht mehr).
         const optOutMeta = {
             worldId: "test-opt-out",
@@ -494,7 +494,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
         }
 
-        // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
+        // Welt-Feld-Farbe + Naht-Skirt.
         let anyColorAttr = false;
         let colorMin = 1;
         let colorMax = 0;
@@ -536,7 +536,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
         out.pruneRemovesFar = r.state.voxelChunks.size === 0;
 
-        // V9.35: nach dem Prune baut der Streaming-Ring den
+        // nach dem Prune baut der Streaming-Ring den
         // Spieler-Ring neu auf — wir restaurieren das hier
         // direkt, damit nachfolgende Tests Voxel-Chunks haben.
         r._tickVoxelChunkStreaming(pos);
@@ -575,7 +575,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         }
         out.lod23Builds = lod23Builds;
 
-        // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+        // die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
         // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
         // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
         const b = (rr) => r._detailBand(rr);
@@ -600,7 +600,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             BS.halt > 0 &&
             BS.vorlauf > 0;
         out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-        // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+        // die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
         // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
         out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
         r.updateCreatures(0.016);
@@ -773,7 +773,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // jetzt „abwesend ODER leer" (beides = kein Heightfield-Chunk).
         out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
         out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
-        // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
+        // heightData/minHeight/maxHeight nicht allokiert/gesetzt.
         out.voxelGroundFieldNull = r.state.groundHeightField === null;
         out.voxelMinHeightZero = r.state.minHeight === 0;
         out.voxelMaxHeightZero = r.state.maxHeight === 0;
@@ -787,7 +787,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
-        // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
+        // „abwesend ODER leer": kein Heightfield-Chunk gebaut.
         out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
@@ -1246,7 +1246,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
 }
 
 // SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
-// (V18.510): Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
+// Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
 // SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
 // Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
 // einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
@@ -1446,7 +1446,7 @@ async function checkBandV18150Ride(ctx) {
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
             };
-            // Welle L (Q5): die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
+            // die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
             // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,
             // Steigung ≤ 20 %). An (96, 60) stand der Wagen in einer Mulde (der Rand 2 m hoch auf 3 m) — ein Hindernis ist
             // ein anderes Band (gate:fahr-leben H).
@@ -1499,7 +1499,7 @@ async function checkBandV18150Ride(ctx) {
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
-            // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
+            // ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
             for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
             r.state.keys.w = true;
@@ -1793,7 +1793,7 @@ async function checkBandGammaGenese(ctx) {
     check("Γ1 genVersion reist im Welt-Snapshot (V8.59-Klasse)", res.snapGen === 2);
 }
 
-// V18.199 — Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
+// Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
 // Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen(ctx) {

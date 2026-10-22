@@ -117,7 +117,7 @@ function staticLaws(manifestSrc) {
             res.k.scaleStudio = JSON.stringify(r._lofiActiveScale());
             res.k.semi2Studio = r._lofiScaleSemitone(2); // Blues: scale[2] = 5
             res.k.semi6Studio = r._lofiScaleSemitone(6); // 6-Ton-Skala: idx 6 = Oktav-Wurzel +12
-            // V18.492 — die Akkord-BREITE folgt dem klang-Gesetz colorExt (Genre-DNA color,
+            // die Akkord-BREITE folgt dem klang-Gesetz colorExt (Genre-DNA color,
             // EINE Quelle Lab+Welt): der Grund-Vierklang [0,5,7,12] + (colorExt−1) Terzen darüber.
             const _kc = globalThis.__klangCore;
             const _extSoll = () => {
@@ -261,7 +261,7 @@ function staticLaws(manifestSrc) {
         // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
         try {
             res.x = {};
-            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
+            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH
             const frozenG = r.constructor.CREATURE_SOULS.wolf.bodyParts;
             const effG = r._tetrapodaSoulParts("wolf");
             res.x.glutDocked = !!effG && effG.length === frozenG.length;
@@ -293,7 +293,7 @@ function staticLaws(manifestSrc) {
             res.x.humanDefTags = JSON.stringify(r.computeSoulCompoundTags(r.playerSoulDefs.human) || {});
             res.x.waechterGussLiest = (() => {
                 try {
-                    // PIPE-VOLLENDUNG (V18.459): der Mensch fährt durch die Foundry — der
+                    // PIPE-VOLLENDUNG: der Mensch fährt durch die Foundry — der
                     // Stamm-Rig KONSUMIERT den Mensch-Ofen (_ofenMenschTemplate), der über
                     // den Bäcker-Tisch (BAKERS_BY_KIND.koerper → bauMensch+morphAuf im
                     // Bäcker) gießt. Die Identitäts-Wahrheit: Kern trägt das Gesetz, der

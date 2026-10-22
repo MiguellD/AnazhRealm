@@ -15,7 +15,7 @@ const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-// V18.470 (Konsum-Matrix) — der Boot ist MANIFEST-GETRIEBEN wie die Produktion
+// der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
 // self.__anazhCores): die lib der Kerne → alle Kern-Skripte in Manifest-Reihenfolge
 // → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES

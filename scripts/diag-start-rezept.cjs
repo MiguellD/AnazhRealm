@@ -5,10 +5,10 @@
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
 //   W2  das Rezept selbst: Linux trägt die Swapchain-Schalter, Windows trägt keinen Vulkan-/ANGLE-Schalter; die Weiche
-//       (13.10., K39) gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
+//       gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
 //   W3  keine Linse ruft das swiftshader-Rezept (`softwareWebGpuArgs`) an der Weiche vorbei — der Rückweg ist LINSE_GPU
 //   W4  jede Linse an der Weiche nennt ihren Adapter: je Aufruf von `linsenWebGpuArgs()` ein `adapterZeile(…)`
-//   W5  DIE ZEIT-ACHSE (14.10., K39-2): die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
+//   W5  DIE ZEIT-ACHSE: die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
 //       swiftshader; jede Zeit-Linse (ZEIT_LINSEN: ein Urteil, das auf swiftshaders Zeit geeicht ist) trägt `zeit: true`
 //       an ihrem Start und fährt so swiftshader; die Zeit-Zeile in welt-boot nennt eine Zeit-Linse auf der Karte ROT
 //   --selftest: ein eingeschmuggeltes Literal (auch ein eigenes Adapter-Literal) wird genannt, eine Kommentar-Erwähnung

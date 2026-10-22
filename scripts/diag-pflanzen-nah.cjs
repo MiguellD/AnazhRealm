@@ -22,7 +22,7 @@
 //      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
 //      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
 //      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
-//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Seit S3 (09.10.) sitzt die Nadel im
+//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Seit S3 sitzt die Nadel im
 //      Wedel (Zelle 3, WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
 //      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
 //  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
@@ -566,7 +566,7 @@ function frachtStufe(m, wert, teilen) {
     return { Z, zellen };
 }
 // Die Reihen: das Labor (das Bild, gerade) und die Welt je Format (die Fracht, der EINE Leser). `bcLeser` (Selbsttest):
-// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade (der Leser vor 05.10.).
+// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade.
 function frachtReihen(bild, bcLeser) {
     const fr = PC.blattAtlasFracht(bild, true);
     const stufen = (mips, teilen) =>
@@ -605,7 +605,7 @@ function frachtUrteil(R) {
         }
     return v;
 }
-// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht: die Zelle des Atlas als Karte auf dem Schirm
 // (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
 // zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
 // Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
@@ -688,7 +688,7 @@ function kornReihe(mips, zBasis) {
         return { lambda, N, zellen };
     };
 }
-// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20, 13.10.): das Kanten-Korn (oben) misst die Deckung, das Bild
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht: das Kanten-Korn (oben) misst die Deckung, das Bild
 // der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
 // Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
 // Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
@@ -878,7 +878,7 @@ function brustDurchmesser(T, yWelt, skala) {
 // mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
 const SOLITAER_HD = 0.6;
 // Der Kronenansatz des Solitärs (tiefstes Blatt ÷ Höhe, Solitäreiche Marbach): tief, aber über einem kurzen Stamm —
-// unter 0,08 steht die Krone als Busch auf dem Boden (Blick-Sonde 12.10.), über 0,35 trägt er den Bestands-Schaft.
+// unter 0,08 steht die Krone als Busch auf dem Boden, über 0,35 trägt er den Bestands-Schaft.
 const SOLITAER_ANSATZ = [0.08, 0.35];
 function kronenAnsatz(T) {
     let lo = Infinity;

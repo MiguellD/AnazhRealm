@@ -1,5 +1,5 @@
 // diag-praegung-welt.cjs — PRÄGUNG-WELT (Auftrag A): DIE PRÄGUNG REIST MIT DEM ARTEFAKT.
-// Der verifizierte Naht-Riss: das präge-Verb (V18.466) schrieb state.workshop.studioOv,
+// Der verifizierte Naht-Riss: das präge-Verb schrieb state.workshop.studioOv,
 // aber NUR die Werkstatt-VORSCHAU konsumierte das ov — die Welt-Pfade (_foundryFlattenFor ·
 // _heldFoundryGroup) riefen _foundryRequest OHNE 5. Arg → Prägung war Vorschau-Theater.
 // Jetzt wird die Prägung beim GUSS als `studioOv` aufs Artefakt GESTEMPELT (Bauplan/Entry)

@@ -11,7 +11,7 @@ const { checkBandG8R2SovereignWall } = require("./feld.cjs");
 const { checkBandG8R1DampedChannel } = require("./netz-p2p.cjs");
 const { checkBandG8R3Locality } = require("./netz-portal.cjs");
 
-// V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
+// Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW13W14VibePassLibrary(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -386,7 +386,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard.querySelector(".lib-trust-seal") &&
             !!fluidCard.querySelector(".spec-body") &&
             !!fluidCard.querySelector(".spec-footer .library-get");
-        // V18.77 — Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
+        // Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
         // KEIN beschriftetes Zwei-Spalten-Datenblatt mehr (die `.spec-col-head`-Form-Labels sind weg).
         out.cardLightened =
             !!fluidCard &&
@@ -402,7 +402,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
         out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
         out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
-        // V18.73 — die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
+        // die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
         // die Welt-Katalog-Quelle im Hauptthread als Tab (X-Muster); das Tagebuch eingeklappt (Chronik im Hof).
         const schoepfen = feedRight && feedRight.querySelector(".feed-schoepfen");
         out.schoepfenRight =
@@ -412,7 +412,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!schoepfen.querySelector(".feed-3block #world-new") &&
             !!schoepfen.querySelector(".feed-3block #world-fuse-open") &&
             !!schoepfen.querySelector(".feed-3block #library-import");
-        // V18.71: das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
+        // das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
         const feedSelf = feedLeft && feedLeft.querySelector(".feed-self");
         r._renderActiveWorldIsland();
         out.feedSelfIsland =
@@ -429,7 +429,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
             Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
-        // V18.73: die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
+        // die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
         const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
         const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
         out.feedTabs =
@@ -479,12 +479,12 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
         out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
-        // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
+        // jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
-        // V18.74 — die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
+        // die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
         // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
         // · ★ Bewertung) — der Test wandert mit (V9.56-i).
         out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
@@ -502,7 +502,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r.state.feedSort = "neueste";
             r.renderLibraryUI();
         }
-        // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
+        // der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
             !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
             typeof r._feedFocus === "function" &&
@@ -517,11 +517,11 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
             r.state.feedFocusId = null;
         }
-        // V18.76 — der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
+        // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
         // Wurzel, GEMESSEN: der Drawer war 858 statt 816 → ragte unten aus dem Bild + der Resize-Griff unerreichbar).
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
-        // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
+        // die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
         const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
         out.omniboxWelt =
             Array.isArray(omniWelt) &&

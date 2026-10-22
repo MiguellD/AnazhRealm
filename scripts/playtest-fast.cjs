@@ -51,7 +51,7 @@ function check(name, ok) {
         // (GPU-init ist langsam); beim Null-Renderer resolved init() sofort → rendererReady
         // feuert VOR startEternalLoop → Race. Auf den Loop warten ist renderer-unabhängig korrekt.
         await page.evaluate(async () => {
-            // V18.276 — die Boot-Readiness wartet großzügig (wie der volle Gate): auf einem
+            // die Boot-Readiness wartet großzügig (wie der volle Gate): auf einem
             // gedrosselten Container dauert Worldgen+Loop-Boot >5 s (gemessen ~5-26 s); ein zu
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
@@ -76,7 +76,7 @@ function check(name, ok) {
             const MIN_MS = 3000;
             const PLATEAU_MS = 1500;
             const CAP_MS = 35000;
-            // V18.273 — wie der volle Gate: den Worker für den Warmup aushängen →
+            // wie der volle Gate: den Worker für den Warmup aushängen →
             // der Ring baut SYNC + deterministisch (load-unabhängig), kein
             // Async-Worker-Hunger unter CPU-Last (s. playtest.cjs-Warmup-Kommentar).
             const _warmupSavedWorker = r.state.voxelWorker;
@@ -386,7 +386,7 @@ function check(name, ok) {
         check("Spieler-Stats sinnvoll (hp>0, speed>0)", ps && ps.hp > 0 && ps.speed > 0);
         if (!(ps.hp > 0 && ps.speed > 0)) console.log("     ⟶ " + JSON.stringify(ps));
 
-        // V18.492 — v1.0-Schritt 4 ohne Schlüssel: der Satz wird zum Studio-Programm. Die KI-Antwort trägt der Korpus mit den
+        // v1.0-Schritt 4 ohne Schlüssel: der Satz wird zum Studio-Programm. Die KI-Antwort trägt der Korpus mit den
         // Antworten eines echten Modells (scripts/diag-v1-pfad.cjs --korpus).
         const K = await page.evaluate(async () => {
             const r = window.anazhRealm;

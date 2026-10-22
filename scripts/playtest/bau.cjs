@@ -5,7 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
+// Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -483,7 +483,7 @@ async function checkBandOmegaGrammatik(ctx) {
     check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 10b.1 + 10b.3 — Compound-Tag-Affordances + Welt-Reaktionen (mount + zoom + focusing-Ignite)).
+// Band-Funktion (Welle 10b.1 + 10b.3 — Compound-Tag-Affordances + Welt-Reaktionen (mount + zoom + focusing-Ignite)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave10b(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1083,7 +1083,7 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            // V17.91 — die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
             // angezeigt (V17.86), nicht im entfernten Editor-Header-Status.
             const spCar = document.getElementById("workshop-stats-panel");
             out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");

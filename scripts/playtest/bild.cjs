@@ -69,7 +69,7 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
     );
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
+// Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G3Lebendigkeit(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -357,7 +357,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.player.emotions.sorrow = 0;
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
-        // V17.32 — der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
+        // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
         // aus früheren _feelAction-Bands rein, V9.56-i).
@@ -569,7 +569,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
+// Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -651,7 +651,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                 if (arch && arch.mesh) {
                     arch.mesh.traverse((node) => {
-                        // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER
+                        // mode-agnostisch: das aktive Lichtmodell ist Toon ODER
                         // PBR (Default pbr). Beide reagieren auf Licht/Tag-Nacht.
                         if (
                             node.isMesh &&
@@ -710,7 +710,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Phase A: Stern-Feld ---
-        // V10.0-i.a: InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
+        // InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
         // Vendor-Bug mit pointUV → Profi-Pattern: 4-Vertex-Quad pro Instanz).
         const sf = r.state.starField;
         out.starFieldIsPoints = !!(sf && sf.isInstancedMesh === true);
@@ -720,7 +720,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.starFieldRotates = !!(sf && sf.rotation);
 
         // --- Phase D: Wind + Wolken + Wasser ---
-        // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
+        // Wind lebt jetzt im Instanced-Gras-Material.
         const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
@@ -861,7 +861,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.atmosphere.colorVar === 0 &&
             r.state.atmoUniforms &&
             r.state.atmoUniforms.tintScale.value === 0;
-        // V18.106 — B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
+        // B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
         // die Wahrheit lebt als statische Konstante (Worker-Mirror-Vertrag).
         out.terrainFlattenSetter =
             typeof r.setTerrainFlatten === "undefined" &&
@@ -1012,7 +1012,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._disposeVoxelChunkGrass === "function" &&
             typeof r._grassInstanceMat === "function";
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
-        // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist Boden-
+        // die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
@@ -1025,7 +1025,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
-        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
+        // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
         // `_bodenSichtAt` (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
         // zeigt oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben (gemessen 01.10.: Spawn-Chunk
         // Median 45 cm, 8 % ≤ 5 cm; Mess-Wiese ±0,22 m) — Gras und Streu darauf steckten im Boden.
@@ -1282,7 +1282,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
+// Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1294,11 +1294,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         (stammDateien) => {
             const out = {};
             const ring = document.getElementById("slider-ring");
-            // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
+            // der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
             // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
             out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
 
-            // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
+            // Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
             const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
             const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
             out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
@@ -1336,7 +1336,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             const ox = pm.position.x;
             const oz = pm.position.z;
             const oTod = r.state.timeOfDay;
-            // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
+            // deterministische schräge Sonne: der Light-Space-Snap
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
             r.setTimeOfDay(0.3, "human");
@@ -1468,7 +1468,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const stamText = document.getElementById("stats-hud-stam-text");
         out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
         const hpFill = document.getElementById("stats-hud-hp-fill");
-        // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
+        // Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
         out.hpFillProportional = !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
 
         // --- B3: Tooltip enthält slow stats nach Hover
@@ -1572,7 +1572,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         });
         r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
         r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-        // V18.44 — Spec-Sheet: die „Synergie" ist jetzt die ROLLEN-RESONANZ (der Fingerabdruck), das
+        // Spec-Sheet: die „Synergie" ist jetzt die ROLLEN-RESONANZ (der Fingerabdruck), das
         // „Wachstum" der actionable Hinweis im Footer (.spec-growth, nur eigene Baupläne).
         const panel = document.getElementById("workshop-stats-panel");
         out.synergyRowRendered = [...panel.querySelectorAll(".spec-col-head")].some(

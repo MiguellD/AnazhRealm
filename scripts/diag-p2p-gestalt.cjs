@@ -1,4 +1,4 @@
-// diag-p2p-gestalt.cjs — P2P-GESTALT (V18.478): DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
+// diag-p2p-gestalt.cjs — P2P-GESTALT: DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
 // Der benannte V18.477-Offen-Punkt: die Studio-Übergabe (state.studioUebergabe) war LOKALE
 // Wahrheit — ein Mitspieler baute den fremden Avatar aus SEINEM eigenen _koerperStudioDials,
 // die vom Sender gewählte Gestalt (Kleider/Haut/Haar) reiste nie übers Mesh. Jetzt trägt der

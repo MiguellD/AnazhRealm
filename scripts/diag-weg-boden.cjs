@@ -1,4 +1,4 @@
-// diag-weg-boden.cjs — DIE WEG-KANTEN-PROBE (V18.530): der Siedlungs-Weg ist Boden, kein schwebendes Quad.
+// diag-weg-boden.cjs — DIE WEG-KANTEN-PROBE: der Siedlungs-Weg ist Boden, kein schwebendes Quad.
 // Befund 04.10. (Blick-Tour 1-nord · 3-markt · 4-west, echte GPU): Straßen, Feldwege, Platz und Äcker lagen als
 // flache Box-Streifen (0,14 m) des Wege-Pools auf der Gesetz-Höhe — der sichtbare Boden (Surface-Nets, ±0,2 m)
 // schnitt sie: harte Kanten, schwarze Linien zwischen gekippten Segmenten, Gras durch den Weg, am Ring-Rand

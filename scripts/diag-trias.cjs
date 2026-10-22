@@ -1,4 +1,4 @@
-// diag-trias.cjs — DIE TRIAS-LINSE (V18.444, Trias-Welle): die Szenen-Dreiecke bleiben
+// diag-trias.cjs — DIE TRIAS-LINSE: die Szenen-Dreiecke bleiben
 // ueber die Wanderung GEDECKELT — platzierte Studio-Architektur (haus_ u. a.) lebt in
 // der EINEN LOD-Geschichte statt fuer immer auf ihrer Bau-Stufe zu kleben.
 //
@@ -285,7 +285,7 @@ const triasStaticLaws = () => [
             }
         }
 
-        // (2b) FLAECHEN-STUFE (V18.500): im L1-RING stempelt die Distanz-Autoritaet 1 und
+        // (2b) FLAECHEN-STUFE: im L1-RING stempelt die Distanz-Autoritaet 1 und
         // die Foundry SERVIERT die echte Stufe 1 (das Studio liefert sie, kein Host-Mapping).
         // Ring visH-echt via _chooseLODForDistance gescannt, Konvergenz gepumpt.
         const h0b = near3[0];
@@ -306,7 +306,7 @@ const triasStaticLaws = () => [
             }
             res.l1Level = h0b._lodLevel;
             res.l1Served = h0b._servedLod;
-            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…` am Anfang), die Streu `typ#f:…`.
+            // der platzierte Bau keyt nach Studio-Geometrie (`f:…` am Anfang), die Streu `typ#f:…`.
             const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/(^|#)f:[^|]+\|\d+\|(\d)[|:]/);
             res.l1Slot = mS ? Number(mS[2]) : null;
         }
@@ -392,7 +392,7 @@ const triasStaticLaws = () => [
         // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
         // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege deckeln am
         // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel); Deckel + 44 leichte deckeln an der
-        // Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
+        // Entries-Zweitwand.
         const f2 = r._ensureAssetFoundry();
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
         res.warmCacheSize = f2.cache.size;
@@ -419,7 +419,7 @@ const triasStaticLaws = () => [
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
-        // V18.527: der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
+        // der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
         // leichten Einträgen bewiesen, gelesen aus der EINEN Konstante.
         res.cap = r.constructor.FOUNDRY_CACHE_CAP;
         for (let i = 0; i < res.cap + 44; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));

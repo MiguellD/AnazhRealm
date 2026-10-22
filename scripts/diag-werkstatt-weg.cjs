@@ -26,9 +26,9 @@
 //     gebaute Linse (Quarz-Kugel im Bronze-Ring, 1 m über dem Boden) entzündet zu Mittag die Eiche unter sich — erst glimmt
 //     sie, dann brennt sie, beides im Spieler-Kanal —, nachts nie, und was den Brennpunkt verlässt, kühlt. Dazu der
 //     Zensus der Welt: was das alte Gesetz im 4-m-Kreis jeder Linse erhitzte, was das Licht jetzt erreicht. Befund
-//     (Leben-Schau 07.10.): die Werkstatt-Eiche verbrannte nach 20 s Sonne still (Architekturen 125 → 124, nur im Log).
+//    : die Werkstatt-Eiche verbrannte nach 20 s Sonne still (Architekturen 125 → 124, nur im Log).
 //
-//   DER SAME DES WERKS (Gegenprüfung 08.10., ROT 1) — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER: das Setzen
+//   DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER: das Setzen
 //     (`confirmBuild`) stellt die Gestalt, Drehung und Tönung, die das Phantom zeigt (EIN Same je Werk, `_werkSame` — dieselbe
 //     Gestalt wie Werkstatt-Vorschau und Hand), würfelt nichts aus Math.random, und die Nachricht an den Mitspieler trägt
 //     Same und Drehung des Werks: dort steht dasselbe Werk. Der Zähler des Welt-Stroms (`_bauSame`) reist im Welt-Gedächtnis
@@ -150,7 +150,7 @@ function wegVerdict(m) {
                         if (((e.verbraucht || {})[mt] || 0) !== (lage === "schöpfer" ? 0 : n))
                             t(lage === "schöpfer" ? "schöpfer zahlt" : `${mt} ${(e.verbraucht || {})[mt] || 0}× gezogen (Soll ${n})`);
                 }
-    // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt (Gegenprüfung 08.10.).
+    // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt.
     const ge = m.geraet || {};
     if (!ge.name) out.push("kein ungeschmiedetes Gerät mit Kosten (Vorbedingung)");
     else if (!/fehlt/.test(ge.zeile || "")) out.push(`das Gerät aus der Hotbar verweigert stumm („${(ge.zeile || "").slice(0, 50)}")`);
@@ -161,12 +161,12 @@ function wegVerdict(m) {
     const l = m.lichtung || {};
     const tl = l.toenung || {};
     if (l.wand !== "lichtung") out.push(`das Phantom über der Lichtung urteilt nicht (Urteil ${l.wand})`);
-    // Die Tönung im Stoff (Gegenprüfung 08.10.): der Studio-Stoff liest seine Farbe aus colorNode, die Tönung muss dort wirken.
+    // Die Tönung im Stoff: der Studio-Stoff liest seine Farbe aus colorNode, die Tönung muss dort wirken.
     if (!(tl.stoffe > 0)) out.push("kein Studio-Phantom über der Lichtung (Vorbedingung)");
     else if (tl.lesen !== tl.stoffe) out.push(`das Phantom färbt sich nicht: ${tl.lesen}/${tl.stoffe} Stoffe lesen die Tönung`);
     if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
     if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
-    // Grün heißt: das Setzen trägt (Integration V18.536, Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
+    // Grün heißt: das Setzen trägt — ohne Material lehnt es ab, das Phantom steht rot.
     const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
     if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
@@ -230,7 +230,7 @@ function werkVerdict(m) {
         );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
-    // Jedes Setzen ein neues Werk (Integration V18.536, Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.
+    // Jedes Setzen ein neues Werk: nach dem Setzen zeigt das Phantom den nächsten Samen.
     if (m.naechsterSame == null) out.push("nach dem Setzen kein Phantom mit Samen (Vorbedingung)");
     else if (m.naechsterSame === m.werkSame)
         out.push(`das nächste Setzen zeigt dasselbe Werk (Same ${m.werkSame}) — jedes Setzen derselbe Wurf`);
@@ -492,7 +492,7 @@ async function probe(argW) {
         r.processChatCommand("bau mir eine scheune");
         await tick(1, 30);
         m.absageZeile = zeilen().slice(n1).join(" | ");
-        // Ein Verb mit einem Wort, das kein Ding ist (Gegenprüfung 08.10.): der Studio-Satz stiehlt dem Vorschlag die Zeile nicht.
+        // Ein Verb mit einem Wort, das kein Ding ist: der Studio-Satz stiehlt dem Vorschlag die Zeile nicht.
         m.vorschlag = {};
         for (const satz of ["bau hier", "mach licht"]) {
             const n2 = zeilen().length;
@@ -1261,7 +1261,7 @@ async function wegProbe(page, frei) {
             const v = wegVerdict(bruch);
             check(`Selbst-Test L-Werkstatt: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        // Der Same des Werks: gesund ohne Täter, je Befund-Zustand (Gegenprüfung 08.10.) der Täter beim Namen.
+        // Der Same des Werks: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundK = {
             gestartet: true,
             steht: 1,

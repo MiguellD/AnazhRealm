@@ -97,7 +97,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
+// Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -439,10 +439,10 @@ async function checkBandCadWorkshop(ctx) {
             // top-right statt bottom-right (unten verdeckt von
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
-            // V18.83 — die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
+            // die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
             // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit (V9.56-i).
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
-            // V18.43 — die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
+            // die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
             // breiten-brechenden .resize-bl (der die left/right-Symmetrie zerstörte). Heilung statt
             // Schnitt (Schöpfer „Samen geschnitten"): anpassbar bleiben, Symmetrie wahren.
             const drawers = document.querySelectorAll(".drawer[data-drawer]");
@@ -594,7 +594,7 @@ async function checkBandCadWorkshop(ctx) {
             });
             out.allDrawersWrapped = allWrapped;
             out.drawerCount = drawers.length;
-            // V18.42 — die V18-Drawer tragen keinen Resize-Griff mehr (CSS-Rahmen, symmetrisch); der
+            // die V18-Drawer tragen keinen Resize-Griff mehr (CSS-Rahmen, symmetrisch); der
             // verbliebene Griff lebt an der Konsole + ist ein direktes Kind (kein Scroll-Wrapper davor
             // → er scrollt nicht weg). Plus: kein Drawer hat einen Griff im Scroll-Wrapper.
             const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
@@ -1005,7 +1005,7 @@ async function checkBandCadWorkshop(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
+// Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1634,7 +1634,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
         // (c) Run-Button klicken → ability läuft, Welt-Effekt
-        // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+        // Kreatur ist Group; rote Vor-Color auf
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
         if (r.state.creatures[0]) {
             const cR = r.state.creatures[0];
@@ -1647,7 +1647,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         }
         const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
         if (runBtn) runBtn.click();
-        // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+        // Kreatur ist Group; Color über Sub-Meshes lesen.
         const cFirst = r.state.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
@@ -1854,7 +1854,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
-        // V18.82 — der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
+        // der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
         // mit (V9.56-i): die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
@@ -1974,7 +1974,7 @@ async function checkBandV18134Social(ctx) {
     }
 }
 
-// V18.135 — F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
+// F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
 // im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
 // pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
 async function checkBandV18135Bookmarks(ctx) {
@@ -2392,7 +2392,7 @@ async function checkBandWBHofKarte(ctx) {
         const out = {};
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
-        // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
+        // den maxCreatures-Cap (20) für die EINE Test-Kreatur
         // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
         const _saveMaxWB = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // gate:weltgrenze — KEIN WELT-ZUSTAND REIST ÜBER EINE WELTGRENZE.
 //
-// Die Gegenprüfung Runde 2 (10.10.) fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
+// Die Gegenprüfung Runde 2 fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
 // Welt, die ohne Erbgut geladen wurde, behielt das Erbgut, den Anker, die Edits, die Dorf-Zellen und die Stempel der
 // Welt davor — über das Welt-Tor „Ersetzen" wurde eine Wildnis-Welt still als Insel gezeichnet und mit dem Erbgut der
 // Prüfbühne gespeichert. Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A

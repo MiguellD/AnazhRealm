@@ -25,7 +25,7 @@ async function checkBandV1758CreatureNature(ctx) {
         out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
@@ -114,7 +114,7 @@ async function checkBandV1758CreatureNature(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
+// Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatures(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -532,7 +532,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.spriteHasResoniert = (tagsWolf.resoniert || 0) > 0;
         out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
         out.geistHasLebendig = (r.computeCreatureCompoundTags(geist).lebendig || 0) > 0;
-        // Welle L (Q12): ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
+        // ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
         // Ersatz (`spawnCreatureAt(…, "hirsch")` ergab einen Bären) — und der Schild einer Seele findet sie.
         const nVorAbsage = r.state.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
@@ -589,7 +589,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
         // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
-        // V18.55 — die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
+        // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
         const stageSpec = document.getElementById("hof-stage-spec");
         out.stageSpecPresent = !!stageSpec;
         out.stageShowsOneCard =
@@ -1076,7 +1076,7 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.camera.lookAt(tcx, p.y, tcz);
             r.state.camera.updateMatrixWorld(true);
         }
-        // V17.55 W1 — Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
+        // Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
         // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
         // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
         r.state.player.equipped = r.state.player.equipped || {};
@@ -1378,7 +1378,7 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
-// V11.0-d.3 (Pfeiler D — Trinken am Ufer) — Beweis dass der drink-Task als
+// Beweis dass der drink-Task als
 // 6. Task registriert ist, dass die Sprache (Aura+Ping+Chat) ihn trägt,
 // und dass _tickCreatureDrink den 3-Phasen-Zyklus durchläuft.
 async function checkBandWelleV11D3DrinkTask(ctx) {

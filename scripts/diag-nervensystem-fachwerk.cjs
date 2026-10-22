@@ -190,7 +190,7 @@ function staticLaws(q, manifestSrc) {
         }
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
-        // FLÄCHEN-STUFE (V18.500 — der Test wandert mit dem Entscheid): L1 ist eine echte
+        // FLÄCHEN-STUFE: L1 ist eine echte
         // Studio-Stufe (17–33 % von L0), der Host-Umweg lodServe {1:2} ist gefallen. Also:
         // Wahl 2 fragt |2| frisch an; Wahl 1 fragt die ECHTE Stufe |1| frisch an (kein
         // Mapping, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|; Wahl 0

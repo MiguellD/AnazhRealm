@@ -44,7 +44,7 @@ const server = statikServer();
             const t0 = performance.now();
             await window.__weltDa(() => !(!f.ready));
             out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
-            // N2 (V9.56-i): f.worker entsteht seit dem manifest-getriebenen Boot ASYNC im
+            // N2: f.worker entsteht seit dem manifest-getriebenen Boot ASYNC im
             // fetch-then — der ehrliche Lese-Moment ist NACH dem ready-Wait (vorher ist ein
             // false nur das Boot-Fenster, kein Befund; ready==true impliziert den Worker).
             out.hasWorker = !!(f && f.worker);

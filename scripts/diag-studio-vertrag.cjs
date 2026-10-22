@@ -302,7 +302,7 @@ function validateManifest(m) {
     if (m.meshfrei) {
         if (typeof m.build === "function") v.push("B2/§8: MESHFREI-Kern trägt buildInstance (widersprüchlich)");
     } else if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
-    // B2 (LOD-WURZEL 08.07.) — kindStages: die Stufen-Wahrheit je Art als Daten (SOLL, wenn
+    // B2 — kindStages: die Stufen-Wahrheit je Art als Daten (SOLL, wenn
     // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..3 — die Stufe 3 ist NUR-WURF (S3 haus: nie Anzeige, sie
     // wirft für die Art und trägt die Fernform; ihre Budget-Zeile trägt `nurWurf: true`, unten).
     const lodC = m.cfg && m.cfg.lod;
@@ -317,12 +317,12 @@ function validateManifest(m) {
             }
         }
     }
-    // B2c (04.10.) — DAS BUDGET je Art × Stufe (docs/studio-vertrag.md B2c): trägt ein Kern `lod.budget`, dann
+    // B2c — DAS BUDGET je Art × Stufe (docs/studio-vertrag.md B2c): trägt ein Kern `lod.budget`, dann
     // VOLLSTÄNDIG — jede Art aus seinen kindStages × jede deklarierte Stufe hat eine Zeile {tris, draws,
     // schatten}; tris ganzzahlig > 0, draws ganzzahlig ≥ 1, schatten = eine deklarierte Stufe der Art oder
     // false; MONOTON — tris fällt je Stufe streng, draws steigt nie; die Karten-Stufe (karte: true) ist die
     // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte endlich > 0, deckung ein Band [lo<=1<=hi]) halten
-    // ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract. S3 (09.10.): die Baum-Zeile des Haupt-Kerns
+    // ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract. S3: die Baum-Zeile des Haupt-Kerns
     // trägt ihre Kosten-Regler als PFLICHT — lagen · geruest · blattKarte · wedel je Stufe 0/1, quote und der Wurf-Teil
     // (wurf.teil "schatten") an der Stufe 1 —, die Nadel-Karte (nadelKarte) und der Blatt-Stride (dichte.laub/nadel) sind
     // gefallen, der Fels bleibt einstufig.
@@ -330,7 +330,7 @@ function validateManifest(m) {
         const ks = lodC.kindStages || {};
         const B = lodC.budget;
         for (const k in B) {
-            // B2c (04.10.) — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
+            // B2c — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
             // die '*'-Zeile ist Pflicht im HAUPT-Kern (die Welt-Varianten-Wahl liest sie für jede Art ohne Zeile).
             // W8 — ein ZWEIT-Kern zählt die Gestalten SEINER Rezepte selbst (das Wirts-16 gehört dem Gesetzbuch):
             // VOLLSTÄNDIG je eigenem Rezept, kein fremdes Rezept, keine '*'-Zeile (die gehört dem Haupt-Kern).
@@ -364,7 +364,7 @@ function validateManifest(m) {
             // zurück erst innerhalb (1−h)·ab; ab 0,5 läge die Rück-Kante bei der Hälfte der Grenze).
             if ("hyst" in B[k] && !(typeof B[k].hyst === "number" && B[k].hyst > 0 && B[k].hyst < 0.5))
                 v.push(`B2c: lod.budget.${k}.hyst muss in (0, 0,5) liegen`);
-            // DIE FERNFORM (B2c 04.10.): was die Art jenseits der Nah-Grenze des Wirts ist — "karte" (ihre Karten-Stufe),
+            // DIE FERNFORM: was die Art jenseits der Nah-Grenze des Wirts ist — "karte" (ihre Karten-Stufe),
             // "gesetz" (ihr Satz im Welt-March) oder "boden" (keine Geometrie). "karte" genau dann, wenn die letzte Stufe
             // Karte ist. PFLICHT je Budget-Art (B2c vollständig): der Host-Leser (_foundryFernForm) liest sie für jede
             // gestreute Art im Zellen-Chokepoint — ein Vertrag ohne sie wäre grün, während der Spielpfad KERN-PFLICHT
@@ -438,7 +438,7 @@ function validateManifest(m) {
                     !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte))
                 )
                     v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
-                // S3 (09.10.): die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
+                // S3: die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
                 // Stufe / der Nah-Stufe, in (0, 1)), geruest (Röhren ab geruest·trunkR, in (0, 1)), wedel (der Nadel-Ast als
                 // Strähne: ab in [0, 1), teile ganz >= 1, breite > 0, nadel > 0 m, rand >= 0 Nadel-Größen, winkel in (0°, 45°),
                 // holz in [0, 1) — Gegenprüfung R1: der Wedel kreuzt ±winkel aus der Lotrechten, seine Breite ist die Hülle der
@@ -498,7 +498,7 @@ function validateManifest(m) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
-                // S3 (08.10.): die Rispe des Grases — Grannen (ganz >= 1) und Segmente je Rispe (ganz 1..3: die Stufe tastet
+                // S3: die Rispe des Grases — Grannen (ganz >= 1) und Segmente je Rispe (ganz 1..3: die Stufe tastet
                 // die EINE Kurve der Granne in 3 Segmenten ab, sie verfeinert nie), die Breite der Granne in Einheiten der
                 // vollen (> 0); emitGrass liest sie je gelieferter Stufe.
                 if ("rispe" in z) {
@@ -515,14 +515,14 @@ function validateManifest(m) {
                             `B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`
                         );
                 }
-                // W6 (05.10.): die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
+                // W6: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
                 if (
                     "ringToleranz" in z &&
                     !(typeof z.ringToleranz === "number" && z.ringToleranz > 0 && z.ringToleranz < 0.01)
                 )
                     v.push(`B2c: lod.budget.${k}[${st}].ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
-                // W6 (05.10.): der Wurf-Teil — Straenge ab durchmesserM Welt-Durchmesser werfen (der Kaskaden-Texel k0);
+                // W6: der Wurf-Teil — Straenge ab durchmesserM Welt-Durchmesser werfen (der Kaskaden-Texel k0);
                 // nur eine Stufe, die selbst wirft, kann einen Wurf-Teil nennen.
                 // S3 — das EINE Wurf-Gesetz in zwei Formen, dieselbe Regel (nur eine Stufe, die selbst wirft, nennt ihn):
                 // die Gelenk-Gestalt nennt ihren Wurf-Teil als Seh-Klassen (`wurf.seh` — eine nicht-leere Teilmenge von
@@ -568,7 +568,7 @@ function validateManifest(m) {
                         v.push(`B2c: lod.budget.${k}[${st}].ab steigt nicht streng (${abVor} → ${z.ab})`);
                     if (typeof z.ab === "number") abVor = z.ab;
                 }
-                // Welle 5 (Integration 05.10.): das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
+                // das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
                 if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
                     v.push(`B2c: lod.budget.${k}[${st}] muss 0 < schnitt < rute < 1 tragen`);
@@ -627,7 +627,7 @@ function validateManifest(m) {
                     "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43/K64: kindStages [0, 1, 2, 3], Zeilen 0 · 1 und 2 mit steigendem ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > L2 > Fern)"
                 );
         }
-        // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
+        // S3 — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
         // einstufig (eine Fels-L1 spart an der Mess-Wiese < 3k Dreiecke: formationen 10 240 / Haushalt 30 000).
         if (!m.zweit && B.tree) {
             for (const st of [0, 1]) {
@@ -657,7 +657,7 @@ function validateManifest(m) {
             for (const k in pl.rarity)
                 if (!(typeof pl.rarity[k] === "number" && pl.rarity[k] > 0 && pl.rarity[k] <= 1))
                     v.push(`B3: placement.rarity.${k} muss in (0,1] liegen`);
-        // B3b (Waldboden 04.10.) — DAS BODEN-GESETZ (placement.boden): jede Zeile ist eine Studio-Art DIESES Kerns,
+        // B3b — DAS BODEN-GESETZ (placement.boden): jede Zeile ist eine Studio-Art DIESES Kerns,
         // deren kind Stufen UND für jede Stufe eine Budget-Zeile trägt (die Nah-Streu der Welt baut sie über die
         // Foundry) und die eine eigene Gestalten-Zeile hat (nie '*' = 16); ring ∈ {nah, wald}, dichte > 0,
         // skala [min ≤ max] > 0, jedes Band ein Trapez [a ≤ b ≤ c ≤ d].
@@ -728,7 +728,7 @@ function validateManifest(m) {
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
     }
-    // V18.486 — DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
+    // DIE GEFÜHLS-BLÖCKE sind VERTRAG, nicht mehr nur
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
@@ -843,7 +843,7 @@ function validateManifest(m) {
         const seeleOk =
             V.jagd &&
             Number.isFinite(V.jagd.strikeCooldownSec) &&
-            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Vertrags-Akt 09.10.): die Reichweite um die Mitten und der feste
+            // DER BISS IST DER ANSPRUNG: die Reichweite um die Mitten und der feste
             // Pirsch-Stopp kehren nicht zurueck (die Reichweite ist der Weg des Ansprungs, der Halt das Maul am Leib).
             V.jagd.strikeRange === undefined &&
             V.jagd.pirschStoppM === undefined &&
@@ -851,7 +851,7 @@ function validateManifest(m) {
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
             V.temperament.profile &&
-            // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
+            // DAS TEMPERAMENT DER GATTUNG: die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
             // der Natur sind Vertrag; die Substanz-Signaturen, ihr Floor und die Substanz-Gewichte der Furcht kehren nicht
             // zurueck (die Tiere sind tag-gleich, Lehre 8).
             V.temperament.gattung &&
@@ -870,7 +870,7 @@ function validateManifest(m) {
             Number.isFinite(V.wandern.leashBaseM) &&
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
-            // DIE JAGD SCHLIESST SICH (Welle LF, Vertrags-Akt 08.10.): der Ring der Hetze, die Pirsch-Sicht und die
+            // DIE JAGD SCHLIESST SICH: der Ring der Hetze, die Pirsch-Sicht und die
             // Beute-Masse sind Vertrag; der Gradienten-Schritt der Witterung und der Trab der Flucht kehren nicht zurueck
             // (die Flucht ist der Sprint der Gestalt, STEUER_GESETZ.sprint).
             Number.isFinite(V.jagd.hetzM) &&
@@ -883,7 +883,7 @@ function validateManifest(m) {
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
             Number.isFinite(V.freude.tempoMul) &&
-            // DAS SPRUNG-GESETZ (Welle L, Vertrags-Akt 07.10.): die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
+            // DAS SPRUNG-GESETZ: die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
             // eine Aktion traegt nur `hop: true` (der Abflug in m/s und sprung.impulsProM fielen).
             Number.isFinite(V.freude.hopHochM) &&
             Number.isFinite(V.freude.hopBasisM) &&
@@ -892,7 +892,7 @@ function validateManifest(m) {
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.separation &&
-            // DER PERSOENLICHE RAUM (Welle LF, Vertrags-Akt 08.10.): der Raum je Leib (raumKugel × Koerper-Kugel), das
+            // DER PERSOENLICHE RAUM: der Raum je Leib (raumKugel × Koerper-Kugel), das
             // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
             Number.isFinite(V.separation.raumKugel) &&
             V.separation.radiusBaseM === undefined &&
@@ -1064,7 +1064,7 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
+    // DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
     // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
     const pflicht = {
@@ -1324,7 +1324,7 @@ function validateManifest(m) {
         build: function () {},
         meshfrei: true,
     });
-    // V18.486 — auch die Gefühls-Block-Prüfungen feuern auf Injektion:
+    // auch die Gefühls-Block-Prüfungen feuern auf Injektion:
     const bvFx = validateManifest({
         vertrag: 1,
         presets: {
@@ -1400,7 +1400,7 @@ function validateManifest(m) {
             bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
         `${bv.length + bvS3.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
-    // DAS SPRUNG-GESETZ (Welle L, Vertrags-Akt 07.10.): der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
+    // DAS SPRUNG-GESETZ: der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
     // Aktion (der alte bound-Zwilling 3,2) und einmal mit dem linearen sprung-Faktor — beide feuern die VERHALTEN-Wand.
     {
         const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
@@ -1420,7 +1420,7 @@ function validateManifest(m) {
                 faktor.some((s) => s.includes("ohne sprung-Zwilling")),
             `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
         );
-        // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Substanz-Signaturen kehren zurueck, oder die
+        // DAS TEMPERAMENT DER GATTUNG: die Substanz-Signaturen kehren zurueck, oder die
         // Gattungs-Zeile fehlt — beide feuern die VERHALTEN-Wand.
         const sig = tm ? mitZwilling((V) => (V.temperament.signaturen = { wehrhaft: { dichte: 1 } })) : [];
         const ohneG = tm ? mitZwilling((V) => delete V.temperament.gattung) : [];
@@ -1431,7 +1431,7 @@ function validateManifest(m) {
             `Signaturen ${sig.length} · ohne Gattung ${ohneG.length}`
         );
     }
-    // S3 (Vertrags-Akt 09.10.) — DIE ABSENZ-WAND DER FINAL GESTRICHENEN: (a) budgetErzwingen faltet nur Zweit-Kern-Gestalten
+    // S3 — DIE ABSENZ-WAND DER FINAL GESTRICHENEN: (a) budgetErzwingen faltet nur Zweit-Kern-Gestalten
     // (die Pflanzen-Zeile IST der Bau-Regler — ein Ausgangs-Falten wäre ein Zwilling), (b) die Seh-Klasse `laub` existiert
     // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
     // einstufig (validateManifest oben; hier der Selbsttest).

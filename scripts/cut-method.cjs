@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // cut-method.cjs — DER AST-PRÄZISE METHODEN-SCHNITT (die V17.20-Klasse strukturell heilen)
 //
-// DIE WURZEL (CLAUDE.md, V17.20-Lehre, GEMESSEN): ein Line-Range-Delete
+// DIE WURZEL: ein Line-Range-Delete
 // (`sed 'A,Bd'`) eines „toten Clusters" kann eine NICHT-passende Methode
 // ENTHALTEN, die der Pattern-Grep nie sieht (damals `_configureRenderer`
 // mitten zwischen zwei `_voxelGpu*` → mit-gelöscht → die ganze Welt tot,

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt (Welle K, 07.10.), und frei gehören Uhr und Wetter dem
-// Spieler (Leben-Schau 2, 09.10.).
-// Befund 1 (OMEN, V18.534, ein B-Boot von vier): die Wetter-Wache der Bühne hielt die Uhr des Auto-Zugs eingefroren, und das
+// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt, und frei gehören Uhr und Wetter dem
+// Spieler.
+// Befund 1: die Wetter-Wache der Bühne hielt die Uhr des Auto-Zugs eingefroren, und das
 // Wetter drehte trotzdem sunny → rainy (zweimal der Emotions-Effekt „sorrow → rainy", einmal ein Nexus-Programm). Schnitt: der
 // EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug, solange die Uhr unter 0 steht (der Halt der Bühne).
 // Befund 2 (Leben-Schau 2, drei Fenster auf der echten Radeon, `artifacts/profiband/leben-schau-2/befund.md` §6 #1): 3 von 3

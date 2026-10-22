@@ -31,7 +31,7 @@
 //   (i) WACHSEN (Welle 6) — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
 //       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
 //       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
-//   (j) NEUSCHREIBEN (06.10.) — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
+//   (j) NEUSCHREIBEN — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
 //       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
@@ -44,7 +44,7 @@
 //   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
 //       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
 //       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
-//       (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
+//      : 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
 //       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
@@ -993,7 +993,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 geos.initGeometry({ geometry: g });
                 res.tauschSicher = !geos._geometryDisposeListeners.has(g) && !g.hasEventListener("dispose", h);
             }
-            // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
+            // (j) NEUSCHREIBEN: kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
             // Chokepoint `_chunkSatzPass` mit Stellvertreter-Ortho-Kameras über dem Spieler: „ruhe" = enge Boxen
             // (k0 ±120 m, k1 ±400 m), „druck" = beide über den ganzen Ring (der Abend mit der Sonne im Rücken trägt fast den

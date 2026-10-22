@@ -1,6 +1,6 @@
 // diag-schatten-werfer.cjs — DIE WERFER-WAND (npm run gate:schatten-werfer).
 //
-// Befund 04.10. (echte GPU, Mess-Wiese, V18.528): beide CSM-Kaskaden zeichneten DIESELBE Werfer-Menge (k0 = k1 = 209
+// Befund 04.10.: beide CSM-Kaskaden zeichneten DIESELBE Werfer-Menge (k0 = k1 = 209
 // Befehle · 1,23 M Dreiecke). Drei Wurzeln: (a) das r184-Addon setzte jede Kaskade auf ein Quadrat mit der Diagonale
 // ihrer Frustum-Scheibe — der Blick deckte ein Viertel —, und es stellte die Lichter NACH den Karten (r184 ruft sein
 // updateBefore nach den Kaskaden-Pässen); (b) die Region-Bundles trugen EIN Urteil für jeden Pass, das der Haupt-Kamera:
@@ -302,7 +302,7 @@ function probe(selbsttest) {
     // der Wahl um weniger, als das Gesetz des Halts erlaubt (`_wahlHaelt`: der halbe Licht-Rand über den längsten Licht-Weg),
     // legt jede Kaskade ihre Box neu (die Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden
     // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
-    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft (Gegenprüfung 07.10.):
+    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft:
     // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
     // den Licht-Rand); die Grenze des Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
@@ -692,7 +692,7 @@ function probe(selbsttest) {
     zwei.userData._sichtHaupt = true;
     map.set("__w7:zwei", zwei);
     const passeAlt = (kamera, nach) => {
-        // DIE ALTE REGEL (bis V18.528): jeder Pass liest das Haupt-Urteil
+        // DIE ALTE REGEL: jeder Pass liest das Haupt-Urteil
         for (const bg of map.values()) if (bg.userData._sichtHaupt !== undefined) bg.visible = bg.userData._sichtHaupt;
         void kamera;
         void nach;
@@ -876,7 +876,7 @@ function probe(selbsttest) {
     };
     if (boden) {
         const passeVoll = (kamera, nach) => {
-            // DIE ALTE REGEL (bis 05.10.): der Satz zeichnet den ganzen Ring in jedem Pass
+            // DIE ALTE REGEL: der Satz zeichnet den ganzen Ring in jedem Pass
             void kamera;
             void nach;
             boden.mesh.geometry.setDrawRange(0, boden.iSumme);

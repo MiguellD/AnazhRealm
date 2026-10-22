@@ -448,7 +448,7 @@ async function stufenMessen(h, opts) {
         if (pl.nurAbdruck) return;
         // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
         if (!(pl.k.teile && pl.k.teile.length)) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
-        // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A, 12.10.): am Regler-Rand richtet der WURF
+        // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß: am Regler-Rand richtet der WURF
         const zu = ["tris", "draws"].filter(
             (f) =>
                 Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)

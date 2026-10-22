@@ -1,4 +1,4 @@
-// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen" (V18.494, 30.09.): im
+// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen": im
 // Analog-Pfad ist ein gesetzter Bau nur sichtbar, wenn er einen Feld-Slot bekommt
 // (_archZiegelFern). GEMESSEN vor der Heilung: eine gesetzte Eiche + ein Haus blieben
 // 300 Takte ohne jeden Versuch (Verhungern in der Listen-Reihenfolge, 4 Bakes/s über
@@ -8,14 +8,14 @@
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
 //   A  nah (10 m · 26 m): gesetzte Eiche UND Haus sind binnen 200 Takten sichtbar — das Studio-Mesh steht
 //      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; AAA nah, V18.496: nah ist das
-//      Mesh die Gestalt). Die Eiche hat seit dem Fernwald (05.10.) keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
+//      Mesh die Gestalt). Die Eiche hat seit dem Fernwald keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
 //      und das wartet nie hinter einem Karten-Bake (der Bäcker hat seinen Faden, gate:takt T7)
 //   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
 //      Gestalt, nicht die Brücke
 //   A' fern (jenseits der Mesh-Zone): das gesetzte Haus bekommt seinen Feld-Slot — der Feld-Bake-Takt geht
 //      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
 //      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
-//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.),
+//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte,
 //      sobald der Bäcker ihre Zelle erreicht: das Karten-Buch prüft das Gesetz (keine fernere Zelle überholt die ihre,
 //      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)

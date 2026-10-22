@@ -32,7 +32,7 @@
 //     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
 //     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
 //     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
+//     Framerate) und um die Plattform, nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
 //     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
@@ -1278,7 +1278,7 @@ async function probe(arg) {
         const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
         const scan = r._voxelSurfaceY;
         const urteil = r._landAt;
-        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
+        // (a) Das Urteil gegen den vollen Spalten-Scan: 3 Margen, je 400 Punkte
         //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
         const ref = (x, z, mg) => {
             const s = scan.call(r, x, z);

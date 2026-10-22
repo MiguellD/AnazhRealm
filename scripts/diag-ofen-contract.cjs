@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-ofen-contract.cjs — DER OFEN-VERTRAG (S1 Wände, 07.10.): das Byte-Golden des Tier- und Mensch-Bakes je
+// diag-ofen-contract.cjs — DER OFEN-VERTRAG: das Byte-Golden des Tier- und Mensch-Bakes je
 // Stoff-Klasse × Gelenk (npm run gate:ofen-contract).
 //
 // Befund: die MESHFREI-Kerne (tetrapoda-core, koerper-core) tragen nur Daten-Goldens (v7: PRESETS + PARAMS); den Guss

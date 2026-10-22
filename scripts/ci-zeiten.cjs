@@ -1,4 +1,4 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, 11.10.; CW, 16.10.): aus der GitHub-API je Schritt von check.yml der Median seiner
+// ci-zeiten.cjs — DIE ZEITEN DER CI: aus der GitHub-API je Schritt von check.yml der Median seiner
 // Laufzeit über die letzten 7 Läufe auf integ-probe, die ihn in einem grünen Job der GitHub-Läufer tragen (die Echt-Gruppe
 // fährt dieselben Schritte auf der Karte, eine andere Zeit), je Gruppe der Median ihrer Job-Dauer bei gleichem Schritt-Satz,
 // die Vorbereitung als Job-Dauer über die Gate-Schritte hinaus und der Kopf der Quelle (der neueste gemessene Lauf) →

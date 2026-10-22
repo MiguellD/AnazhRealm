@@ -344,7 +344,7 @@ function werkzeug() {
             orte.wiese = neu || { x: wx, z: wz, ohneOrt: "kein Punkt jenseits der Glut-Hörweite binnen 240 m" };
         }
         // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–24 m neben seinem Fuß (der
-        // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
+        // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft, reicht
         // das Becken eines Falls bis zur Krone seines Kanals: am 9,1-m-Fall der Mess-Wiese ist kein Punkt ≤ 12 m trocken.
         // Das SOLL misst die Ferne mit (SOLL.fallArm).
         // Seit K16 trägt die Kachel der Wiese keinen Fall: der nächste Fall der Kacheln bis zum zweiten Ring (wie der

@@ -6,7 +6,7 @@
 //
 // Dieselbe Sonde läuft auf JEDEM Stand (die APIs sind geguardet) → das Bild-PAAR
 // vorher↔nachher entsteht, indem man sie in einem Worktree des Mesh-Stands
-// (z. B. d7ca0a1f, 19.07.) und auf HEAD fährt:
+// und auf HEAD fährt:
 //
 //   node scripts/diag-beweis-e.cjs --tag analog [--out DIR] [--ohne-wiese] [--klassen baum,haus] [--proto-min 40]
 //   (im Worktree)  node scripts/diag-beweis-e.cjs --tag mesh --out <HEAD>/artifacts/beweis-e
@@ -33,7 +33,7 @@ const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
 const MIT_WIESE = !process.argv.includes("--ohne-wiese") && KLASSEN.includes("wiese");
 // Die Protokoll-Frist je page.evaluate: der Mesh-Stand (Juli) rendert im Wald Millionen Dreiecke
-// durch swiftshader — ein Doppel-Render dort sprengte 15 min (GEMESSEN 30.09.).
+// durch swiftshader — ein Doppel-Render dort sprengte 15 min.
 const PROTO_MS = Number(argOf("--proto-min", "15")) * 60000;
 const W = 640,
     H = 360;
@@ -122,7 +122,7 @@ const SCHUSS_FN = async (kam) => {
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
-    // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
+    // BODEN-KLEMME: das Auge nie im Hang.
     const sy = r._voxelSurfaceY(kam.px, kam.pz);
     if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
     cam.lookAt(kam.lx, kam.ly, kam.lz);

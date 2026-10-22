@@ -43,7 +43,7 @@
 //       Boot: 0,48 ms je Frame auf der GTX 1060, wo es nicht leuchtete);
 //   (k) DER FELS HAT STOFF (K17) — jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff (gelaende-core
 //       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30; vorher
-//       die eine graue Masse des Palette-Steins (Auge-Runde V18.540 bei 762/−138), davor
+//       die eine graue Masse des Palette-Steins, davor
 //       das Grün der Wiese 25 m über ihm.
 //   (m) DIE BANKUNG IST UNREGELMÄSSIG (K17, Nachbesserung 1) — am Gesetz (gelaende-core `felsBankung`, ohne Browser): der
 //       Variationskoeffizient der Bank-Mächtigkeit ≥ 0,4, die Eigen-Welligkeit der Fugen ≥ 0,1 Bänke, der Durchlauf der Klüfte
@@ -558,7 +558,7 @@ function selbsttest() {
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
-        // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        // (l) der Befund von OMEN 1110-3: das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
             (b) =>

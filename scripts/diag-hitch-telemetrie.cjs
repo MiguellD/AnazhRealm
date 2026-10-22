@@ -45,7 +45,7 @@ function pruefeTraceFelder(trace) {
     const pp = trace.steadyState && trace.steadyState.pipelines;
     if (!pp || typeof pp.total !== "number" || typeof pp.neuProS !== "number")
         maengel.push("steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch");
-    // Welle K — die Erst-Zeichnung reist im selben Pipeline-Block (Bauten · verschoben · asynchron · offen).
+    // die Erst-Zeichnung reist im selben Pipeline-Block (Bauten · verschoben · asynchron · offen).
     if (!pp || typeof pp.erstBauN !== "number" || typeof pp.erstPipeAsync !== "number" || typeof pp.erstVerschoben !== "number")
         maengel.push("steadyState.pipelines {erstBauN,erstVerschoben,erstPipeAsync} fehlt oder ist nicht numerisch");
     if (!trace.steadyState || typeof trace.steadyState.uploadKBProS !== "number")
@@ -624,7 +624,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const D = probeMesh(M, 0, 3.5);
         welt.add(D);
         const a0 = ESt.absagenN || 0;
-        // DER EINE MELDER (Integration V18.535): die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
+        // DER EINE MELDER: die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
         // zählt dort, und dieselbe Absage steht genau EINMAL im Log
         const g0 = r._gpuWache ? r._gpuWache.n : 0;
         let wurf = null;
@@ -823,7 +823,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             : null;
         return res;
     }, IN(1) ? LAUFZEIT_MS : 0);
-    // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
+    // DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
         // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
         // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug

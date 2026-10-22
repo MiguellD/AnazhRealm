@@ -28,7 +28,7 @@ const PC = globalThis.__phytoCore;
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
-// DIE BILD-TAFEL (S3 pflanzen, Wand D; Gegenprüfung R1 09.10.): je Baum-Art × Same (Sommer) das Bild seiner L0 und
+// DIE BILD-TAFEL: je Baum-Art × Same (Sommer) das Bild seiner L0 und
 // seiner L1 JE BLICK-HEBUNG (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°,
 // 30°, 60° von unten; Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1:
 // Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
@@ -93,7 +93,7 @@ function meshDiff(tag, gold, live) {
     return null;
 }
 
-/// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
+/// DIE BUDGET-WAND — der KONSUM des Budgets (render-config lod.budget,
 // Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
 //  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
 //      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen
@@ -315,7 +315,7 @@ function deckungsUrteil(paare, band, atlas) {
     return v;
 }
 
-// DIE KRONEN-KOSTEN (S3 pflanzen, 09.10.) — die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht; jede Stufe
+// DIE KRONEN-KOSTEN — die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht; jede Stufe
 // trug Geometrie ohne Bild. Drei Wände je Baum-Art × Gestalt (Goldens und jede Gestalt der Welt, Sommer):
 //  (L) LAGEN — Quad-Lagen je Kronen-Pixel (kronen-linse bildLagen, 24 Ansichten) ≤ lod.budget.tree[Stufe].lagen;
 //  (Q) QUOTE — Dreiecke L1 / L0 desselben Baums ≤ lod.budget.tree[1].quote (die L1 ist das Gerüst + Karten, nie die

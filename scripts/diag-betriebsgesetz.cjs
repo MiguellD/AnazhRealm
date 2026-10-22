@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md, 21.07.).
+// gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ.
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
 //   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
@@ -26,7 +26,7 @@ function eintraege(text) {
     return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
 }
 
-// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
+// 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
 const LISTE_MAX_ZEILEN = 40;
 function logbuchBefund(text) {
     const zeilen = text.split("\n");
@@ -68,10 +68,10 @@ function archivBefund(dateien) {
     ];
 }
 
-// 6) WACHSTUMS-WAND (V1 15.10.) + DIE DECKE (PFLICHT-OFFEN D, Schöpfer 16.10.): scripts/ wächst nie — Inhalt und Dateien
+// 6) WACHSTUMS-WAND + DIE DECKE: scripts/ wächst nie — Inhalt und Dateien
 //    sinken oder stehen, eine neue Linse zahlt mit gestrichenen; scripts/ + spec/ zusammen höchstens um die Hälfte des
 //    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige),
-//    aus EINEM Diff (`git diff -U0`): je Datei hinzu − weg in ATOMEN (Wort oder Satzzeichen, K-DECKE-INHALT 20.10.) —
+//    aus EINEM Diff (`git diff -U0`): je Datei hinzu − weg in ATOMEN —
 //    Pressen zahlt nichts (f1-rest e93134f4..ada41e38: Zeilen −2, Atome +879); dazu Dateien neu − weg.
 //    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
 const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
@@ -137,7 +137,7 @@ function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter 
 
 // 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.; K1 Doku-Wahrheit 16.10.): ein Dokument nennt nur, was der Baum trägt, und die
 //    EINE Karte docs/README.md nennt jedes Dokument. Die Diät strich gate:tier-gang und gate:weltgrenze, während
-//    docs/studio-vertrag.md sie weiter als Beweis nannte; die Wurzel-README schickte nach dem Stamm-Schnitt (14.10.) zur
+//    docs/studio-vertrag.md sie weiter als Beweis nannte; die Wurzel-README schickte nach dem Stamm-Schnitt zur
 //    toten Monolith-Datei. ROT je Fund beim Namen: a) ein gate:<name>, das package.json nicht trägt · b) ein Pfad, den kein
 //    verfolgter Pfad trägt (ab Wurzel oder Ordner des Dokuments; ein nackter Datei-Name über irgendeinen Ordner; eine von
 //    .gitignore gedeckte Laufzeit-Datei zählt) · c) ein `_name`, den kein Code trägt · d) eine .md, die die Karte nicht
@@ -262,7 +262,7 @@ function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
     return { gates, pfade, namen, kennung, karte, code, ignoriert, monolith };
 }
 
-// 8) STRIPPER-WAND (PFLICHT-OFFEN D3, Karte D3a 16.10.): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
+// 8) STRIPPER-WAND: es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
 //    scripts/lib/stamm.cjs) und EIN `__codeOf` (scripts/lib/welt-boot.cjs trägt es in jede Seite). Bis D3a lebten 171
 //    Stripper-Stellen in 65 Dateien mit verschiedener Semantik — dieselbe Quelle wurde je Linse anders bereinigt. Ein
 //    Kommentar-Regex in einem replace, ein Zeichen-Automat auf Schrägstrich-Paare oder ein eigener __codeOf-Einbau
