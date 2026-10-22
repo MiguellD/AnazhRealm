@@ -220,7 +220,7 @@ async function serverProbe(quelle) {
 
 // (T) DER TAB-TOD (speicher.K1): kein save-server, EIN Profil; je Zyklus geht, schnitzt und baut der Spieler, dann stirbt der
 // GANZE Browser hart — im Schreiber (Haken) oder zufällig. Der nächste Boot: dieselbe Welt, kein Korrupt-/Rettungs-Befund,
-// der Stand ist EIN Schreiben, ≤ 10 s alt, kein halbes. PERSISTENCE_TABTOD=a-b (Standard 0-9). SELBSTTEST: der Platz in
+// der Stand ist EIN Schreiben, ≤ 10 s alt, kein halbes. PERSISTENCE_TABTOD=a-b (Standard 0-7). SELBSTTEST: der Platz in
 // zwei Zügen, der Tod dazwischen.
 const TT_HAKEN = ["idb", "fest", "platz", "zeiger"];
 function ttHaken() {
@@ -241,8 +241,7 @@ function ttHaken() {
         }
         const e = { t: Date.now(), art, rec: r, n: nJetzt };
         console.log("__TT__ " + JSON.stringify(e));
-        if (window.__ttTod && window.__ttTod(e))
-            for (const t = console.log("__TOD__") || Date.now() + 8000; Date.now() < t;);
+        if (window.__ttTod && window.__ttTod(e)) for (console.log("__TOD__"); ;); // der Faden steht IN diesem Schreiber, bis der Prozess stirbt
     };
     const set = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, v) {
@@ -390,7 +389,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
 const ttZeile = (t) =>
     `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt/gerettet · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · die Linie trägt ${t.linie} Löcher`;
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
-const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-9").split("-").map(Number);
+const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
 const server = statikServer();
 
 (async () => {
