@@ -339,7 +339,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
             const h = alle.find(
                 (e) => e.art === "platz" && e.t >= tGoto && (e.rec.e !== g.e + e.n[0] || e.rec.b !== g.b + e.n[1])
             );
-            if (h) zeile.befund.push(`halbes Schreiben: ${h.rec.e} Edits/${h.rec.b} Bauten, geladen ${g.e}/${g.b}`);
+            if (h) zeile.befund.push(`halbes Schreiben: ${h.rec.e}/${h.rec.b} Edits/Bauten, geladen ${g.e}/${g.b}`);
         };
         zyklen.push(zeile);
         if (z > bis) {
@@ -366,7 +366,8 @@ async function tabTodProbe({ von, bis, selbst = false }) {
             );
         for (let i = 0; i < 300 && !tot; i++) await sleep(50);
         if (!tot) ((zeile.hakenVerfehlt = true), toeten());
-        await new Promise((ok) => (browser.process().exitCode != null ? ok() : browser.process().once("exit", ok)));
+        const p = browser.process();
+        await new Promise((ok) => ((p.exitCode ?? p.signalCode) != null ? ok() : p.once("exit", ok)));
         halbe();
         vorher = { tot, art, w: g.w };
         console.log(
@@ -387,7 +388,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
     };
 }
 const ttZeile = (t) =>
-    `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt/gerettet · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · die Linie trägt ${t.linie} Löcher`;
+    `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · Linie ${t.linie} Löcher`;
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
 const server = statikServer();
