@@ -416,7 +416,7 @@ class AnazhRealm_siedlung_ort {
     // (`node scripts/diag-studio-huelle.cjs --panorama`), geliefert als Datei (`worlds/tor-ziele.json` nennt je Welt ihre Datei
     // rgba16float 512 × 256 und ihren Stempel = SHA-256 der Quellen; gate:studio-huelle H5 hält den Stempel an den Quellen von
     // heute). Die Heimat rendert und bootet keine Ziel-Welt: sie liest die Datei (der Haupt-Faden trägt einen Abruf und eine
-    // Kopie, nie den Bau einer Welt). Jedes Ziel ist EINE Zeile EINES Atlas (rgba16float, 512 × 256·N, +1 MB je Ziel); die
+    // Kopie, nie den Bau einer Welt). Jedes Ziel ist EINE Zeile EINES Atlas (rgb9e5ufloat, 512 × 256·N, +0,5 MB je Ziel); die
     // Membran liest ihre Zeile als Stoff-Wert `ziel` mit demselben Knoten. Das TOR lebt ohne sein Ziel (Hindurchgehen, Flügel,
     // Licht: `_tickPortalMembranes`), nur das FENSTER wartet darauf — ohne Ziel kein Zwischen-Bild. Eine Welt, die der Export
     // benannt ohne Panorama führt (`ohne`: die sandgesicherten Welten ohne Skript), zeigt keins; eine, die er nicht kennt, bricht
@@ -544,22 +544,26 @@ class AnazhRealm_siedlung_ort {
     // nicht reicht — dann mit einer Zeile je ANGEFRAGTER Welt, IN seiner Textur (die neue GPU-Form legt `_texturAbschied` an,
     // die Zeilenzahl ist eine geteilte Uniform): eine neue Textur je Wachsen stieg nach dem Entsorgen wieder auf, weil r184 beim
     // ersten Binden die Textur des Stoff-BAUS hochlädt (`Bindings._init`) — Puffer-Zensus: tex:tor-ziel 512×256, 1 MB.
+    // DER ATLAS IN rgb9e5ufloat (profiband-k3, VRAM Genesis Third 118,9 > 118 MB): die Membran liest nur `.rgb` des Ziels, und
+    // die Zeile ist lineares HDR-Licht ≥ 0 — drei Kanäle mit geteiltem Exponenten (9 Bit Mantisse je Kanal, wie half 10) in 4 Byte
+    // statt rgba16float in 8: 7,0 → 3,5 MB an den sieben Zeilen des Genesis-Rings. Der Export bleibt rgba16float (die Datei und
+    // ihr Stempel, gate:studio-huelle H5); das Einsetzen packt ihn (`_rgb9e5AusHalb`), `_torZielDaten` entpackt für die Linse.
     _torZielEinsetzen(da) {
         const G = AnazhRealm.TOR_ZIEL;
         const Z = this._torZiele();
-        const zeile = G.w * G.h * 4;
+        const zeile = G.w * G.h;
         const n = Z.n + da.length;
         const platz = Z.tex ? Z.tex.image.height / G.h : 0;
         if (n > platz) {
             let offen = 0; // die angefragten Welten mit Bild (keine benannt ohne, keine gebrochene)
             for (const x of Z.welten.values()) if (!x.ohne && !x.fehler) offen++;
             const hoch = Math.max(n, offen);
-            const neu = new Uint16Array(zeile * hoch);
+            const neu = new Uint32Array(zeile * hoch);
             if (Z.tex) {
                 neu.set(Z.tex.image.data.subarray(0, Z.n * zeile));
                 Z.tex.image = { data: neu, width: G.w, height: G.h * hoch };
             } else {
-                Z.tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
+                Z.tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBFormat, THREE.UnsignedInt5999Type);
                 Z.tex.name = "tor-ziel";
                 Z.tex.wrapS = THREE.RepeatWrapping;
                 Z.tex.minFilter = THREE.LinearFilter;
@@ -569,7 +573,7 @@ class AnazhRealm_siedlung_ort {
             Z.uZeilen.value = hoch;
         }
         for (const [z, daten] of da) {
-            Z.tex.image.data.set(daten, Z.n * zeile);
+            Z.tex.image.data.set(AnazhRealm._rgb9e5AusHalb(daten), Z.n * zeile);
             z.zeile = Z.n;
             z.quelle = "export";
             Z.n++;
@@ -585,18 +589,46 @@ class AnazhRealm_siedlung_ort {
         const Z = this._torZielAtlas;
         const z = meta && Z ? Z.welten.get(meta.world) : null;
         if (!z || z.zeile == null) return null;
-        const o = z.zeile * G.w * G.h * 4;
-        const roh = Z.tex.image.data.subarray(o, o + G.w * G.h * 4);
-        const daten = new Float32Array(roh.length);
+        const o = z.zeile * G.w * G.h;
+        const roh = Z.tex.image.data.subarray(o, o + G.w * G.h);
+        const daten = new Float32Array(roh.length * 4);
         for (let i = 0; i < roh.length; i++) {
-            const h = roh[i];
-            const e = (h >> 10) & 31,
-                m = h & 1023,
-                s = h & 0x8000 ? -1 : 1;
-            daten[i] =
-                e === 0 ? s * m * 2 ** -24 : e === 31 ? (m ? NaN : s * Infinity) : s * (1 + m / 1024) * 2 ** (e - 15);
+            const p = roh[i];
+            const s = 2 ** ((p >>> 27) - 24); // 2^(e − B − N), B 15, N 9
+            daten[4 * i] = (p & 511) * s;
+            daten[4 * i + 1] = ((p >>> 9) & 511) * s;
+            daten[4 * i + 2] = ((p >>> 18) & 511) * s;
+            daten[4 * i + 3] = 1;
         }
         return { w: G.w, h: G.h, daten, quelle: z.quelle, stempel: z.stempel, world: z.world };
+    }
+
+    // half rgba (der Export) → rgb9e5 (der Atlas): je Texel der geteilte Exponent des größten Kanals (WebGPU/GL-Packregel, B 15,
+    // N 9, Emax 31), die Kanäle gerundet; negativ und NaN → 0, über 65408 geklemmt. Alpha fällt (die Membran liest es nie).
+    static _rgb9e5AusHalb(h) {
+        const f = (x) => {
+            const e = (x >> 10) & 31,
+                m = x & 1023;
+            if (x & 0x8000 || e === 31) return e === 31 && !m && !(x & 0x8000) ? 65408 : 0;
+            return e === 0 ? m * 2 ** -24 : (1 + m / 1024) * 2 ** (e - 15);
+        };
+        const aus = new Uint32Array(h.length >> 2);
+        for (let i = 0; i < aus.length; i++) {
+            const r = Math.min(f(h[4 * i]), 65408),
+                g = Math.min(f(h[4 * i + 1]), 65408),
+                b = Math.min(f(h[4 * i + 2]), 65408);
+            const mx = Math.max(r, g, b);
+            let e = Math.max(-16, Math.floor(Math.log2(mx || 2 ** -16))) + 16;
+            let s = 2 ** (e - 24);
+            if (Math.floor(mx / s + 0.5) === 512) ((s *= 2), e++);
+            aus[i] =
+                (Math.floor(r / s + 0.5) |
+                    (Math.floor(g / s + 0.5) << 9) |
+                    (Math.floor(b / s + 0.5) << 18) |
+                    (e << 27)) >>>
+                0;
+        }
+        return aus;
     }
 
     // Membran-Tick: je sichtbarem Portal-Eintrag mit Tor-Gestalt EINE Membran (Registry je entry.id),
