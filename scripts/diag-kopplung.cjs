@@ -82,6 +82,7 @@ const server = statikServer();
                     playerVel: mkVel(),
                     player: { mountedArch: null },
                     keys: {},
+                    verbTafel: { gehalten: {} }, // die Verb-Tafel, gefüllt vom echten Sammler (`_verbTafelSammeln`)
                     yaw: 0,
                     speed: 6,
                     sprintSpeed: 12,
@@ -112,6 +113,7 @@ const server = statikServer();
                 shim.state.yaw = yaw || 0;
                 let t = 0;
                 for (let i = 0; i < n; i++) {
+                    shim._verbTafelSammeln();
                     shim._loopPlayerMovement(t, DT);
                     shim._stepCharacter(DT, t);
                     t += DT;

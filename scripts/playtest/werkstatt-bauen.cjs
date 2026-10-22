@@ -935,8 +935,8 @@ async function checkBandWelle6Keybindings(ctx) {
         out.sectionInDom = !!document.getElementById("keybindings-section");
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
-        // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
+        // je Aktion eine Zeile: 13 der Tastatur + 8, die nur das Gamepad frei bindet (leib.K5)
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 21;
         // Pro Aktion ein Rebind-Button mit data-action
         out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
@@ -992,7 +992,7 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }

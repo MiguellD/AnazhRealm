@@ -629,8 +629,8 @@ class AnazhRealm_netz_portal {
         const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
         this._disposePortalOverlay();
         // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
-        // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
-        this.state.keys = {};
+        // sonst liefe der Avatar nach der Heimkehr von selbst weiter (die Tasten-Wand).
+        this._alleTastenLos();
         // V18.491.75 — Heimkehr-Linger (Portal-Kontinuum): Membran/Nebel/Licht
         // am Ausgangstor bleiben ~2.2 s warm (Lab-openM-Analog), statt hartem
         // Insel-Schnitt iframe→kalt. Währenddessen unarmed (kein Sofort-Reenter).

@@ -26,7 +26,7 @@ async function WELLE_L() {
         lock: s.isPointerLocked,
         hp: p.hp,
         grace: p.respawnGraceUntil,
-        breakHeld: p.breakHeld,
+        breakHeld: s.verbTafel.gehalten.break,
         hotbar: Array.isArray(s.hotbar) ? s.hotbar.slice() : s.hotbar,
     };
     // ── die mitlaufenden Zähler (rufen IMMER durch; nur die Voxel-Ops werden gezählt statt geschnitzt) ──
@@ -1117,7 +1117,7 @@ async function WELLE_L() {
         zielen(punkt(hirsch, null));
         const z2 = zaehl.carve;
         p._swing = null;
-        p.breakHeld = true;
+        s.verbTafel.gehalten.break = true;
         p.lastHarvestStrikeAt = performance.now() / 1000;
         r.tryMouseBreak();
         stelle(hirsch, 1.6, 7); // aus dem Fadenkreuz geschoben
@@ -1132,7 +1132,7 @@ async function WELLE_L() {
             p.lastHarvestStrikeAt = -Infinity;
             r._tickHarvest();
         }
-        p.breakHeld = false;
+        s.verbTafel.gehalten.break = false;
         p._swing = null;
         w.z.haltenKrater = zaehl.carve - z2;
         w.c.haltenOhneKrater = w.z.haltenKrater === 0;
@@ -1199,7 +1199,7 @@ async function WELLE_L() {
         } finally {
             r.tryMouseBreak = tmbOrig;
             delete r.tryMouseBreak;
-            p.breakHeld = false;
+            s.verbTafel.gehalten.break = false;
         }
         // (M5) FERTIGEN eines Bauwerks fährt diag-werkstatt-weg mit echten Klicks (das Werk steht, nie in der Hand)
         ausruesten(null);
@@ -2990,7 +2990,7 @@ async function WELLE_L() {
         s.isPointerLocked = saved.lock;
         p.hp = saved.hp;
         p.respawnGraceUntil = saved.grace;
-        p.breakHeld = saved.breakHeld;
+        s.verbTafel.gehalten.break = saved.breakHeld;
         p._swing = saved.swing;
         p._hitStopUntil = saved.hitStop;
         s.maxCreatures = saved.maxC;

@@ -105,8 +105,8 @@ class AnazhRealm_werkstatt_hud {
         // sauber. Headless steht die Bühne sofort.
         if (!this._buehneSteht()) return;
         const grok = this.state.grok;
-        const keys = this.state.keys || {};
-        const moving = !!(keys["w"] || keys["a"] || keys["s"] || keys["d"] || keys[" "]);
+        const T = this.state.verbTafel;
+        const moving = T.vor !== 0 || T.quer !== 0 || T.sprung;
         if (moving) {
             grok.idleSince = null;
         } else if (grok.idleSince === null) {
@@ -2252,8 +2252,8 @@ class AnazhRealm_werkstatt_hud {
         }
     }
 
-    // Keybindings-UI: je Aktion Label, aktuelle Taste, „Ändern"-Button → Rebind-Capture (die nächste
-    // Taste oder Maus-Taste bindet); Reset stellt die Defaults her.
+    // Keybindings-UI: je Aktion Label, aktuelle Taste und Pad-Knopf, je ein „Ändern"-Button → Rebind-Capture (die nächste
+    // Taste, Maus-Taste oder der nächste Pad-Knopf bindet, leib.K5); Reset stellt die Defaults beider Schichten her.
     keybindingsInitDOM() {
         if (typeof document === "undefined") return;
         const section = document.getElementById("keybindings-section");
@@ -2262,26 +2262,31 @@ class AnazhRealm_werkstatt_hud {
         const resetBtn = section.querySelector("#keybindings-reset");
         if (!list) return;
         list.innerHTML = "";
-        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+        const aktionen = new Set([...AnazhRealm.KEYBINDING_ACTIONS, ...Object.keys(AnazhRealm.PAD_BELEGUNG)]);
+        for (const action of aktionen) {
             const row = document.createElement("div");
             row.className = "keybind-row";
             row.dataset.action = action;
             const label = document.createElement("span");
             label.className = "keybind-label";
             label.textContent = AnazhRealm.KEYBINDING_LABELS[action] || action;
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "keybind-rebind";
-            btn.dataset.action = action;
-            btn.addEventListener("click", () => {
-                if (this.state.keybindRebind && this.state.keybindRebind.action === action) {
-                    this.cancelKeybindRebind();
-                } else {
-                    this.beginKeybindRebind(action);
-                }
-            });
             row.appendChild(label);
-            row.appendChild(btn);
+            for (const art of ["keybind-rebind", "keybind-rebind keybind-pad"]) {
+                const pad = art !== "keybind-rebind";
+                if (!pad && !(action in AnazhRealm.DEFAULT_KEYBINDINGS)) continue;
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = art;
+                btn.dataset[pad ? "pad" : "action"] = action;
+                btn.addEventListener("click", () => {
+                    if (this.state.keybindRebind && this.state.keybindRebind.action === action) {
+                        this.cancelKeybindRebind();
+                    } else {
+                        this.beginKeybindRebind(action);
+                    }
+                });
+                row.appendChild(btn);
+            }
             list.appendChild(row);
         }
         if (resetBtn) {
@@ -2306,6 +2311,7 @@ class AnazhRealm_werkstatt_hud {
         if (code.startsWith("Digit")) return code.slice(5);
         if (code.startsWith("Arrow"))
             return "↑↓←→".charAt(["Up", "Down", "Left", "Right"].indexOf(code.slice(5))) || code;
+        if (/^Pad\d+$/.test(code)) return "Pad " + (AnazhRealm.PAD_KNOPF_NAMEN[+code.slice(3)] || code.slice(3));
         return code;
     }
 
@@ -2314,14 +2320,15 @@ class AnazhRealm_werkstatt_hud {
         const section = document.getElementById("keybindings-section");
         if (!section) return;
         const rb = this.state.keybindRebind;
-        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
-            const btn = section.querySelector(`button.keybind-rebind[data-action="${action}"]`);
-            if (!btn) continue;
+        for (const btn of section.querySelectorAll("button.keybind-rebind")) {
+            const action = btn.dataset.action || btn.dataset.pad;
             if (rb && rb.action === action) {
-                btn.textContent = "Drücke Taste…";
+                btn.textContent = btn.dataset.pad ? "Drücke Knopf…" : "Drücke Taste…";
                 btn.classList.add("rebinding");
             } else {
-                btn.textContent = this._formatBindingCode(this.state.keybindings[action]);
+                btn.textContent = this._formatBindingCode(
+                    (btn.dataset.pad ? this.state.padBelegung : this.state.keybindings)[action]
+                );
                 btn.classList.remove("rebinding");
             }
         }
@@ -2627,7 +2634,7 @@ class AnazhRealm_werkstatt_hud {
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
     _uiZeigerFrei() {
-        if (this.state.player) this.state.player.breakHeld = false;
+        this.state.verbTafel.gehalten.break = false;
         if (typeof document !== "undefined" && document.pointerLockElement && document.exitPointerLock) {
             try {
                 document.exitPointerLock();

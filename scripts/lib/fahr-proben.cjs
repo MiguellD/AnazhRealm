@@ -98,14 +98,9 @@ async function probeLeben(expected) {
         const m = st.playerMesh.position;
         const x0 = m.x;
         const z0 = m.z;
-        const k = st.keys;
-        const e = {
-            throttle: k.w ? 1 : 0,
-            brake: k.s ? 1 : 0,
-            steer: (k.a ? 1 : 0) - (k.d ? 1 : 0),
-            hand: !!k.shift,
-        };
         P._stepFixedSim.call(this, simTime, dt);
+        const T = st.verbTafel; // die Eingabe, die der Schritt las (die Verb-Tafel, leib.K5)
+        const e = { throttle: T.gas, brake: T.bremse, steer: T.lenken, hand: T.handbremse };
         if (z.an) {
             z.simWeg += Math.hypot(m.x - x0, m.z - z0);
             z.schritte++;

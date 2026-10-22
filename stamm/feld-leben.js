@@ -1476,6 +1476,11 @@ class AnazhRealm_feld_leben {
             `System: ${this.chatSystemPatterns.map((p) => q(p.example)).join(" · ")}`,
             `Tasten: WASD laufen · 1–9 Hotbar · ${tasten.join(" · ")}`,
             `Fahren: ${this._fahrTastenZeile()}`,
+            `Gamepad: linker Stick laufen · rechter Stick blicken · RT/LT Gas/Bremse · ${Object.entries(
+                this.state.padBelegung || AnazhRealm.PAD_BELEGUNG
+            )
+                .map(([a, c]) => `${fmt(c)} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`)
+                .join(" · ")}`,
         ];
     }
 
@@ -2216,6 +2221,15 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     cameraToggle: "Kamera: 1st/3rd-Person",
     swapHands: "Hand tauschen (Off-Hand)",
     chat: "Gespräch öffnen (sprich mit der Welt)",
+    // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
+    einsteigen: "Aufsitzen/Absitzen · Portal betreten",
+    handbremse: "Handbremse (Fahrt)",
+    sprint: "Sprinten (unter Wasser: tauchen)",
+    rutschen: "Rutschen",
+    zoom: "Fernglas (halten)",
+    hud: "HUD aus/ein",
+    slotVor: "Nächster Hotbar-Slot",
+    slotZurueck: "Voriger Hotbar-Slot",
 });
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({

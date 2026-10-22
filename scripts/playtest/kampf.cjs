@@ -81,8 +81,8 @@ async function checkBandV1755HarvestEffort(ctx) {
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
-        // (7) der Hold-Tick ist gegated (ohne breakHeld → nichts)
-        p.breakHeld = false;
+        // (7) der Hold-Tick ist gegated (ohne die gehaltene Abbau-Aktion der Verb-Tafel → nichts)
+        r.state.verbTafel.gehalten.break = false;
         const beforeTick = r.state.architectures.length;
         r._tickHarvest();
         out.tickGuarded = r.state.architectures.length === beforeTick;
@@ -101,7 +101,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
-        p.breakHeld = false;
+        r.state.verbTafel.gehalten.break = false;
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);
@@ -130,7 +130,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
         res.yieldScalesWithFitness
     );
-    check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
+    check("V17.55 W1: der Hold-Tick ist gegated (ohne gehaltenes Abbauen passiert nichts)", res.tickGuarded);
     check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
 }
 

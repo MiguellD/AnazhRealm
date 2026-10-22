@@ -1803,7 +1803,7 @@ class AnazhRealm_werkstatt_hof {
                         /* defensive */
                     }
                 }
-                this.toggleInventoryOverlay();
+                this._verbTaste("inventory", true); // der EINE Auslöser (das Pad öffnet es ebenso)
             },
             true
         );

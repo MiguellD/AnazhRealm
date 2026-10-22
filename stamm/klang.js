@@ -632,9 +632,8 @@ class AnazhRealm_klang {
         if (!fz) return;
         if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
         const S = AnazhRealm._fahrSchrittGesetz().S;
-        const FT = AnazhRealm.FAHR_TASTEN;
-        const keys = this.state.keys;
-        const gas = keys[FT.gas.tasten[0]] || (keys[FT.bremse.tasten[0]] && fz.vlong <= S.bremsV) ? 1 : 0;
+        const T = this.state.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
+        const gas = Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0);
         const vmax = e._fahrSatz.vmax;
         s.fahrt.stimme.anwenden(
             { v: fz.vlong, vmax, rueckVmax: vmax * S.rueckVmax, gas, luft: !!fz.luft },

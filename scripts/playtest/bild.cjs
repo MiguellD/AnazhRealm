@@ -1205,20 +1205,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 pm.position.copy(pos);
                 s._fieldVy = 0;
                 s.playerVel.setValue(0, 0, 0);
-                s.keys = Object.assign({}, k);
+                Object.assign(s.verbTafel, { sprint: false, sprung: false }, k); // die Leib-Felder der Verb-Tafel (leib.K5)
                 s.player.stamina = 100;
                 r._stepCharacter(r.constructor.FIXED_DT, 0);
                 return s._fieldVy;
             };
             try {
-                const tauch = vy({ shift: true }),
-                    auf = vy({ " ": true }),
+                const tauch = vy({ sprint: true }),
+                    auf = vy({ sprung: true }),
                     ruhe = vy({});
                 out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
                 out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
             } finally {
                 for (const k in buehne) delete r[k];
-                Object.assign(s, { _fieldVy: 0, keys: {} });
+                Object.assign(s.verbTafel, { sprint: false, sprung: false });
+                s._fieldVy = 0;
                 Object.assign(s.player, { mountedArch: sattel, stamina: sta });
                 pm.position.copy(pos);
                 s.playerVel.setValue(0, 0, 0);
@@ -1270,7 +1271,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
         check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
         check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("V8.33: im Charakter-Schritt sinkt Shift und steigt Space unter Wasser", v833Results.physicsUsesSwimFn);
+        check("V8.33: im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
         check("V8.32: getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
         check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);

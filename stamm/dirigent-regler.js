@@ -1281,15 +1281,12 @@ class AnazhRealm_dirigent_regler {
             pm && pm.position
                 ? { x: +pm.position.x.toFixed(1), y: +pm.position.y.toFixed(1), z: +pm.position.z.toFixed(1) }
                 : null;
-        let activeKeys = [];
-        try {
-            if (st.keys)
-                activeKeys = Object.keys(st.keys)
-                    .filter((k) => st.keys[k] === true)
-                    .slice(0, 8);
-        } catch {
-            /* keys nicht lesbar */
-        }
+        // die gedrückten Verben der Tafel (die Achsen, die nicht ruhen, und jede gehaltene Aktion)
+        const T = st.verbTafel;
+        const activeKeys = ["vor", "quer", "gas", "bremse", "lenken"]
+            .filter((k) => T[k] !== 0)
+            .concat(Object.keys(T.gehalten).filter((k) => T.gehalten[k] === true))
+            .slice(0, 8);
         return {
             frameMs: +frameMs.toFixed(1),
             cpuSumMs: +cpuSum.toFixed(1),

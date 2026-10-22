@@ -876,6 +876,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
             await timed(BAND.checkBandTierFern, ctx);
             await timed(BAND.checkBandKoerperBewegung, ctx);
+            await timed(BAND.checkBandGamepadVerben, ctx);
             await timed(BAND.checkBandTodZensus, ctx);
             await timed(BAND.checkBandWasserWahrheit, ctx);
             await timed(BAND.checkBandTierSeparation, ctx);

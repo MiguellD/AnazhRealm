@@ -1228,16 +1228,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
             const fr = [];
             for (const [count, k] of seq)
                 for (let i = 0; i < count; i++)
-                    fr.push({
-                        dt: DT,
-                        yaw: 0,
-                        w: !!k.w,
-                        a: !!k.a,
-                        s: !!k.s,
-                        d: !!k.d,
-                        shift: !!k.shift,
-                        space: !!k.space,
-                    });
+                    fr.push({ dt: DT, yaw: 0, vor: (k.w ? 1 : 0) - (k.s ? 1 : 0), quer: k.d ? -1 : 0, sprint: false, sprung: !!k.space });
             return fr;
         };
         const sy = r.getTerrainHeightAt(0, 0);
