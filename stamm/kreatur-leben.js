@@ -1862,7 +1862,8 @@ class AnazhRealm_kreatur_leben {
             for (const cr of Z.glieder)
                 if (cr.userData._satz === Z && cr.userData._satzTakt === takt) Z.glieder[w++] = cr;
             Z.glieder.length = w;
-            for (const cr of Z.glieder) if (this._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
+            for (const cr of Z.glieder)
+                if (this._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
             this._tierSatzPlaetze(Z.platzW, aus ? [] : Z.glieder);
             // ein Satz ohne Tier geht nach `leerTakte` Takten (seine Gestalt kommt wieder: er backt neu)
             Z.leer = w > 0 ? 0 : Z.leer + 1;
