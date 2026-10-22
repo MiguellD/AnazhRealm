@@ -1030,9 +1030,7 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // (a) Das Anleitungs-Modal ist restlos entfernt.
-        out.introDialogGone = typeof r.initIntroDialog === "undefined";
-        out.introPagesGone = typeof r._introPages === "undefined";
+        // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
         const msg = r._firstWelcomeMessage();
@@ -1057,8 +1055,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wowStartResults) {
-        check("UI-Putz WOW-Start: Anleitungs-Modal (initIntroDialog) entfernt", wowStartResults.introDialogGone);
-        check("UI-Putz WOW-Start: _introPages-Helper entfernt", wowStartResults.introPagesGone);
         check("UI-Putz WOW-Start: kein #intro-dialog im DOM", wowStartResults.noDialogInDom);
         check("UI-Putz WOW-Start: Begrüssung ist eine Einladung (nicht-leer)", wowStartResults.welcomeIsInvitation);
         check("UI-Putz WOW-Start: Begrüssung ist KEINE Steuerungs-Anleitung", wowStartResults.welcomeNotManual);

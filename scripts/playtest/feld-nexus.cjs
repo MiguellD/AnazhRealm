@@ -125,13 +125,6 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // 10. Phase 5: createDynamicAbility/codeParser sind weg
-        out.dynamicCodeMethodsRemoved =
-            typeof r.createDynamicAbility === "undefined" &&
-            typeof r.codeParser === "undefined" &&
-            typeof r.developAdvancedPhysics === "undefined" &&
-            typeof r.developAdvancedRenderer === "undefined";
-
         // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
@@ -195,10 +188,6 @@ async function checkBandRing2Extended(ctx) {
         check(
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
-        );
-        check(
-            "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
-            phase3Results.dynamicCodeMethodsRemoved
         );
         check(
             "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",

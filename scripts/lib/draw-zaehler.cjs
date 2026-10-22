@@ -578,25 +578,39 @@ function gangUrteil({ vor, nach }) {
                 " — Halter: " +
                 wuchs(mb(vor.halter), mb(nach.halter))
         );
-    if (nach.vram.mb - vor.vram.mb > GANG.vramMB)
+    // DIE TIERE ZIEHEN FREI: ein Tier mehr oder weniger am Start ist Bestand, nie Drift — je Art erklärt der Unterschied der
+    // Zahl den Leib je Tier vom Start (eine neue Art den vom Ende); was der Leib je Tier zulegt, bleibt Drift
+    const [vm, nm] = [new Map(vg(vor)), new Map(vg(nach))];
+    const bestand = (k) => {
+        const [a, b] = [(vor.tiere || {})[k] | 0, (nach.tiere || {})[k] | 0];
+        return a ? ((vm.get(k) || 0) / a) * (b - a) : b ? nm.get(k) || 0 : 0;
+    };
+    const drift = nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
+    if (drift > GANG.vramMB)
         f.push(
-            "vram: +" + (nach.vram.mb - vor.vram.mb).toFixed(1) + " MB zurück am Start — " + wuchs(vg(vor), vg(nach))
+            "vram: +" +
+                drift.toFixed(1) +
+                " MB zurück am Start — " +
+                wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
         );
     for (const [k, x] of Object.entries((nach.puffer && nach.puffer.halter) || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
     return f;
 }
-// Selbsttest: ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter (LRU 2) nicht, VRAM-Drift beim Erzeuger.
+// Selbsttest: ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter (LRU 2) nicht, VRAM-Drift beim Erzeuger; ein Wolf
+// mehr ist Bestand, ein Wolf-Leib, der je Tier zulegt, Drift.
 function gangSelbsttest() {
     const r = { state: { lru: new Map(), offen: [] } };
     const lauf = (offen) => {
         const stand = (v) => {
             const halter = heapHalter(r, 3);
+            const [a, w] = [50 + v * (offen ? 3 : 1), v ? (offen ? 6.4 : 5.2) : 2.6];
             return {
                 min: v,
                 heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
                 halter,
-                vram: { mb: 50 + v * (offen ? 3 : 1), liste: [{ k: "buf:a", mb: 50 + v * (offen ? 3 : 1) }] },
+                vram: { mb: a + w, liste: [{ k: "buf:a", mb: a }, { k: "buf:szene:tier:wolf", mb: w }] },
+                tiere: { "buf:szene:tier:wolf": v ? 2 : 1 },
             };
         };
         const vor = stand(0);
@@ -608,7 +622,7 @@ function gangSelbsttest() {
         return gangUrteil({ vor, nach: stand(1) }).join(" | ");
     };
     const soll =
-        "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +3.0 MB zurück am Start — buf:a +3.0 MB";
+        "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +4.2 MB zurück am Start — buf:a +3.0 MB · buf:szene:tier:wolf +1.2 MB";
     return [lauf(false), lauf(true)].join(" / ") === " / " + soll ? [] : ["der Gang urteilt falsch: " + lauf(true)];
 }
 
@@ -707,9 +721,17 @@ async function gangLauf(page, pufferStand, b) {
     const nacht = await sage("mitternacht");
     await bilder(1200);
     await page.evaluate(() => (window.anazhRealm.state.yaw += Math.PI));
-    const vor = Object.assign(await pufferStand(true, 60), { min: 0 });
+    // die Tiere je Erzeuger (`_taeterKlasse`: `tier:<seele>`) neben dem Stand
+    const tiere = () =>
+        page.evaluate(() => {
+            const n = {};
+            for (const { userData: u } of window.anazhRealm.state.creatures)
+                if (u && u._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+            return n;
+        });
+    const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
     const lauf = await runde(drittel, "mittag");
-    const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min });
+    const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min, tiere: await tiere() });
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
     await cdp.detach();
     const urteil = gangUrteil({ vor, nach });
@@ -718,7 +740,7 @@ async function gangLauf(page, pufferStand, b) {
         urteil.push(
             `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
         );
-    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min };
+    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min, tiere: [vor.tiere, nach.tiere] };
 }
 
 module.exports = {

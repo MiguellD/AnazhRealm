@@ -2545,14 +2545,6 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_phoenix &&
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
-        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
-        out.a4PlaneCut =
-            typeof r._buildHydroWaterfall === "undefined" &&
-            typeof r._buildHydroWaterfallPool === "undefined" &&
-            typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "undefined" &&
-            typeof r.setWaterfallSteep === "undefined";
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
         // Gebaut wird das Sheet eines Meeres-Chunks dreimal: ruhig (Wogen), unter voller Strömung (Fluss) und als See.
@@ -2872,7 +2864,6 @@ async function checkBandPhasenBF(ctx) {
         })();
         // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
         // Material-Probe wandert zur Abwesenheit (der Schnitt bleibt geschnitten).
-        out.b3Mantle = typeof r._ensureHorizonMantle === "undefined";
         // A4-SCHELF, KÜSTEN-AQUIFER — synthetisch auf präpariertem preDensity-Grid (atlas-frei, in-region):
         // (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER; (b) Land über dem Spiegel bleibt
         // trocken; (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (_skyOpenWaterFilter trennt).
@@ -2983,7 +2974,6 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
         "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
@@ -3004,7 +2994,6 @@ async function checkBandPhasenBF(ctx) {
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
-    check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,

@@ -21,8 +21,6 @@ async function checkBandHydrosphere(ctx) {
         if (!r || !r.state) return null;
         return {
             tot:
-                typeof r._computeErosion === "undefined" &&
-                typeof r._erosionIncisionPass === "undefined" &&
                 !("erosion" in r.state) &&
                 typeof window.__gelaendeCore.erosionDelta === "undefined" &&
                 typeof window.__gelaendeCore.erosionFuer === "undefined",
@@ -759,7 +757,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         const STATE = r.constructor.CELL_STATE;
         // 1) State-Feld existiert (Map)
         // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
-        out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
         // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
@@ -960,7 +957,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         return;
     }
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
-    check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
     check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",

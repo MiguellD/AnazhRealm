@@ -75,11 +75,23 @@ const FORBIDDEN = [
         "_buildVoxelChunkWaterfalls",
         "_disposeVoxelChunkWaterfalls",
         "voxelChunkWaterfalls",
+        "_buildHydroWaterfall",
+        "_waterfallIsRealWall",
+        "setWaterfallSteep",
+        "_setVoxelWaterIsoVisible",
+        "_ensureHorizonMantle",
+        "_disposeHorizonMantle",
+        "_ensureCanopyShell",
+        "_buildCanopyShell",
+        "_disposeCanopyShell",
     ].map((token) => ({ token, fiel: "V9.30–V9.39 — das Heightfield fiel, der Boden ist Voxel" })),
     ...["_buildIslandCollision", "_disposeStaticCollision", "_buildTreeCollision", "spawnTreeAt"].map((token) => ({
         token,
         fiel: "Welle 6.G — die Kollision ist feld-nativ, der Baum ein Bauplan",
     })),
+    ...["initIntroDialog", "_introPages", "createDynamicAbility", "codeParser", "developAdvancedPhysics", "developAdvancedRenderer"].map(
+        (token) => ({ token, fiel: "UI-Putz und Phase 5 — kein Anleitungs-Modal, kein Laufzeit-Code, der Nexus spricht DSL" })
+    ),
     ...["_equipAppendHeldRow", "_equipAppendWeaponRow", "_workshopRenderActions"].map((token) => ({
         token,
         fiel: "V17.91/V18.66 — der EINE Halte-Pfad (wieldBlueprint), der EINE FERTIGEN-Akt",
