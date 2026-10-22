@@ -1,0 +1,47 @@
+[AnazhRealm V18.546.61] [INFO] Initialisiere Anazh Realm V18.546.61... Ewigkeit erwacht!
+[AnazhRealm V18.546.61] [INFO] Kamera-Modus: first
+[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o
+[AnazhRealm V18.546.61] [INFO] Feld-Physik (Determinismus-Controller) — keine Ammo-Welt, Kollision aus dem Dichtefeld.
+[AnazhRealm V18.546.61] [INFO] Physik erfolgreich initialisiert
+[AnazhRealm V18.546.61] [INFO] Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution
+[AnazhRealm V18.546.61] [INFO] Nexus erfolgreich initialisiert
+[AnazhRealm V18.546.61] [INFO] HOLZ-PROFIL „voll": Ring ≤4 · Schatten ≤170 m · Fern-Wasser Standard · Pixel-Cap 2 (überschreibbar: ?holz=voll|nah|kienspan — die Nähe bleibt immer voll)
+[AnazhRealm V18.546.61] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …
+[AnazhRealm V18.546.61] [INFO] Renderer initialisiert mit Schattenunterstützung (webgpu)
+[AnazhRealm V18.546.61] [INFO] Szene initialisiert
+[AnazhRealm V18.546.61] [INFO] Galaxy-Skybox erstellt (V10.0-f-1 TSL)
+[AnazhRealm V18.546.61] [INFO] Welt-Wasser — Meeresspiegel y=-3.0 (Iso-Cells, V9.75)
+[AnazhRealm V18.546.61] [INFO] Himmelskörper hinzugefügt (Sonne + Mond)
+[AnazhRealm V18.546.61] [INFO] Schatten-CSM aktiv (2 Kaskaden: Band 0 · Rest bis zur Schatten-Reichweite)
+[AnazhRealm V18.546.61] [INFO] Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten
+[AnazhRealm V18.546.61] [INFO] Kamera initialisiert
+[AnazhRealm V18.546.61] [INFO] Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert
+[AnazhRealm V18.546.61] [INFO] Spielerposition geladen: (0, 90.40625, 8.36032465681866)
+[AnazhRealm V18.546.61] [INFO] Materialien geladen: 0 eigene
+[AnazhRealm V18.546.61] [INFO] Baupläne geladen: 65 eigene
+[AnazhRealm V18.546.61] [DBG] Γ7: 3 gewachsene Bauplane aus dem Save wiederhergestellt
+[AnazhRealm V18.546.61] [INFO] Grundriss: 4 Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).
+[AnazhRealm V18.546.61] [INFO] Architekturen geladen: 428
+[AnazhRealm V18.546.61] [INFO] Inventar geladen: 0 Slots belegt
+[AnazhRealm V18.546.61] [INFO] DSL-Abilities geladen: 0
+[AnazhRealm V18.546.61] [INFO] Zustand geladen
+[AnazhRealm V18.546.61] [INFO] Fliegende Insel 0 erstellt: Position (-78.9, 180.2, 26.8), Grösse 15.4 m, Höhe 15.9 m
+[AnazhRealm V18.546.61] [INFO] Fliegende Insel 1 erstellt: Position (45.8, 178.4, -97.0), Grösse 21.6 m, Höhe 8.0 m
+[AnazhRealm V18.546.61] [INFO] Fliegende Insel 2 erstellt: Position (-69.6, 171.2, 19.2), Grösse 27.9 m, Höhe 10.2 m
+[AnazhRealm V18.546.61] [INFO] Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (28 Chunks aus Altbestand abgeleitet)
+[AnazhRealm V18.546.61] [INFO] V9.43-b: Hydrosphäre berechnet — 21 Flüsse, 0 Seen, 0 Wasserfälle
+[AnazhRealm V18.546.61] [INFO] V9.75: Hydrosphäre gerendert — Iso-Wasser (0 Fall-Läufe im CA-Wildwasser)
+[AnazhRealm V18.546.61] [INFO] Kreaturen wiederhergestellt: 10 aus persistiertem Save
+[AnazhRealm V18.546.61] [INFO] Tastatureingaben initialisiert: WASD, Space, Shift
+[AnazhRealm V18.546.61] [INFO] Maussteuerung für Kamera initialisiert
+[AnazhRealm V18.546.61] [INFO] Chat-Steuerung initialisiert
+[AnazhRealm V18.546.61] [INFO] State-Import (Lade Datei) initialisiert
+[AnazhRealm V18.546.61] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[AnazhRealm V18.546.61] [INFO] Nervensystem: 4 neue Studio-Baumart(en) automatisch registriert.
+[AnazhRealm V18.546.61] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.
+[AnazhRealm V18.546.61] [INFO] GPU-Zeit: timestamp-query aktiv — perfSense misst echtes gpuMs (Quelle „echt").
+[AnazhRealm V18.546.61] [INFO] KAMIN-RAUCH: 19 Quelle(n) live (chimney→rauchQuelle)
+[AnazhRealm V18.546.61] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[AnazhRealm V18.546.61] [INFO] Seele gewechselt: Mensch (human)
+[AnazhRealm V18.546.61] [INFO] AUSGABE: rg11b10ufloat, das Gerät rundet gegen null — Ausgleich 1.0056/1.0056/1.0113
+[AnazhRealm V18.546.61] [INFO] Seele gewechselt: Mensch (human)

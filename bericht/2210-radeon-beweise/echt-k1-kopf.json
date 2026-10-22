@@ -1,0 +1,353 @@
+{
+ "tode": 20,
+ "alterMax": 999,
+ "ueber10": 0,
+ "halbe": 11,
+ "korrupt": 0,
+ "saveRufe": 422,
+ "saveMs": {
+  "p50": 9,
+  "p95": 15.9,
+  "max": 28
+ },
+ "bilder": 25887,
+ "jeBild": {
+  "p95": 0,
+  "p99": 0,
+  "mittel": 0.1133
+ },
+ "zyklen": [
+  {
+   "z": 0,
+   "bootMs": 8014,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": []
+  },
+  {
+   "z": 1,
+   "bootMs": 7492,
+   "g": {
+    "x": 0,
+    "z": 18779,
+    "b": 2,
+    "e": 10,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 8,
+   "verlorenEdits": 0,
+   "tod": "idb"
+  },
+  {
+   "z": 2,
+   "bootMs": 6746,
+   "g": {
+    "x": 0,
+    "z": 34038,
+    "b": 10,
+    "e": 18,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.337,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 3,
+   "bootMs": 7094,
+   "g": {
+    "x": 317,
+    "z": 50361,
+    "b": 19,
+    "e": 27,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.002,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "fest"
+  },
+  {
+   "z": 4,
+   "bootMs": 6931,
+   "g": {
+    "x": -7,
+    "z": 60454,
+    "b": 21,
+    "e": 32,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 2,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 5,
+   "bootMs": 7113,
+   "g": {
+    "x": -7,
+    "z": 77418,
+    "b": 24,
+    "e": 41,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 6,
+   "verlorenEdits": 0,
+   "tod": "platz"
+  },
+  {
+   "z": 6,
+   "bootMs": 7074,
+   "g": {
+    "x": -7,
+    "z": 87605,
+    "b": 25,
+    "e": 46,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 5,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 7,
+   "bootMs": 7785,
+   "g": {
+    "x": 870,
+    "z": 102829,
+    "b": 25,
+    "e": 56,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 10,
+   "verlorenEdits": 0,
+   "tod": "idb"
+  },
+  {
+   "z": 8,
+   "bootMs": 7952,
+   "g": {
+    "x": 709,
+    "z": 119706,
+    "b": 25,
+    "e": 65,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 10,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 9,
+   "bootMs": 8522,
+   "g": {
+    "x": 709,
+    "z": 138136,
+    "b": 25,
+    "e": 75,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 10,
+   "verlorenEdits": 0,
+   "tod": "fest"
+  },
+  {
+   "z": 10,
+   "bootMs": 8053,
+   "g": {
+    "x": 709,
+    "z": 155076,
+    "b": 27,
+    "e": 84,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.072,
+   "verlorenBloecke": 7,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 11,
+   "bootMs": 7714,
+   "g": {
+    "x": 709,
+    "z": 168456,
+    "b": 34,
+    "e": 91,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 1.471,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "platz"
+  },
+  {
+   "z": 12,
+   "bootMs": 7874,
+   "g": {
+    "x": 709,
+    "z": 178398,
+    "b": 39,
+    "e": 96,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.335,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 13,
+   "bootMs": 7757,
+   "g": {
+    "x": 709,
+    "z": 185045,
+    "b": 42,
+    "e": 99,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 1.006,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "idb"
+  },
+  {
+   "z": 14,
+   "bootMs": 7798,
+   "g": {
+    "x": 709,
+    "z": 200304,
+    "b": 44,
+    "e": 107,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 6,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 15,
+   "bootMs": 7497,
+   "g": {
+    "x": 709,
+    "z": 208391,
+    "b": 45,
+    "e": 111,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": null,
+   "verlorenBloecke": 5,
+   "verlorenEdits": 0,
+   "tod": "fest"
+  },
+  {
+   "z": 16,
+   "bootMs": 7726,
+   "g": {
+    "x": 709,
+    "z": 215039,
+    "b": 48,
+    "e": 114,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 1.086,
+   "verlorenBloecke": 2,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 17,
+   "bootMs": 7637,
+   "g": {
+    "x": 709,
+    "z": 230240,
+    "b": 56,
+    "e": 122,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 1.555,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "platz"
+  },
+  {
+   "z": 18,
+   "bootMs": 7199,
+   "g": {
+    "x": 1021,
+    "z": 241380,
+    "b": 62,
+    "e": 128,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 1.125,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  },
+  {
+   "z": 19,
+   "bootMs": 7080,
+   "g": {
+    "x": 1021,
+    "z": 254916,
+    "b": 69,
+    "e": 135,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.698,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "idb"
+  },
+  {
+   "z": 20,
+   "bootMs": 7444,
+   "g": {
+    "x": 1021,
+    "z": 270156,
+    "b": 77,
+    "e": 143,
+    "w": "d207cefa-6ac0-4ebc-80eb-2fd061b5d557"
+   },
+   "befund": [],
+   "alterS": 0.1,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "tod": "zufall"
+  }
+ ]
+}

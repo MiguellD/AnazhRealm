@@ -1,0 +1,3 @@
+third/gehen {"n":50,"fehlt":0,"p50":31.7,"p95":42.9,"max":49.7,"eingabe":5.6,"hoerer":0,"kette":10.5,"kurve":16.9,"takte":4}
+ego/gehen {"n":50,"fehlt":0,"p50":28.7,"p95":43.1,"max":52.2,"eingabe":5.8,"hoerer":0,"kette":10.8,"kurve":16.7,"takte":3}
+LATENZ GRÜN (Bild 10.5 ms) 

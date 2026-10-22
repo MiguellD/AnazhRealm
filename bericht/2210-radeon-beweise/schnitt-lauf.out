@@ -1,0 +1,6 @@
+gpu-lauf: Schloss radeon-beweise nach 0 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7902 · Seite :7901
+schritt 1 EXIT=0: umstellen --ort wiese |  "ms": 36444 } 
+schritt 2 EXIT=1: latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen,hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-schnitt-voll.json | third/hieb {"n":50,"fehlt":0,"p50":22.1,"p95":30.7,"max":42.3,"eingabe":7.6,"hoerer":1.5,"kette":15,"kurve":0,"takte":3,"halt":9} LATENZ ROT (Bild 8.9 ms) ego/hieb Verben hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb
+ende schnitt
+EXIT=0

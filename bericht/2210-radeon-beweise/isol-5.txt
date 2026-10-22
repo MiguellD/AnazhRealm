@@ -1,0 +1,14 @@
+{
+ "device": [],
+ "draws": [],
+ "pass": "?",
+ "objekt": "atmo-himmel",
+ "geraete": [
+  {
+   "__anazhWache": true,
+   "createRenderPipelineAsync": {},
+   "__anazhAbsage": true
+  }
+ ],
+ "ms": 2
+}

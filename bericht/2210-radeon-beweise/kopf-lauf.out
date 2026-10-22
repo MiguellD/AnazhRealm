@@ -1,0 +1,7 @@
+gpu-lauf: Schloss radeon-beweise nach 1 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7902 · Seite :7901
+schritt 1 EXIT=0: umstellen --ort wiese |  "ms": 36498 } 
+schritt 2 EXIT=1: latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen,hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-kopf-voll.json | third/hieb {"n":39,"fehlt":11,"p50":24.2,"p95":588.1,"max":702.6,"eingabe":7.5,"hoerer":4.9,"kette":16.2,"kurve":0,"takte":3,"halt":1} LATENZ ROT (Bild 9 ms) ego/hieb Verben hieb,hieb,hieb,hieb,hieb,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb
+schritt 3 EXIT=0: latenz --proben 50 --sicht third,ego --verb gehen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-kopf-gehen.json | ego/gehen {"n":50,"fehlt":0,"p50":28.7,"p95":43.1,"max":52.2,"eingabe":5.8,"hoerer":0,"kette":10.8,"kurve":16.7,"takte":3} LATENZ GRÜN (Bild 10.5 ms)  
+ende kopf
+EXIT=0

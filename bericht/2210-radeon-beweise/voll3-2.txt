@@ -1,0 +1,11 @@
+ego/gehen {"n":50,"fehlt":0,"p50":33.2,"p95":45.1,"max":46.8,"eingabe":0.5,"hoerer":null,"kette":12,"kurve":17.4,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":10.9,"p95":24.9,"max":26.8,"eingabe":0.5,"hoerer":null,"kette":7.7,"kurve":0,"takte":1}
+ego/springen {"n":50,"fehlt":0,"p50":18.3,"p95":32.2,"max":36.9,"eingabe":0.4,"hoerer":null,"kette":10.2,"kurve":6.9,"takte":2}
+ego/einsteigen {"n":50,"fehlt":0,"p50":14,"p95":32.8,"max":37.9,"eingabe":0.4,"hoerer":null,"kette":13.4,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":16.2,"p95":25.7,"max":26.6,"eingabe":0.5,"hoerer":1.2,"kette":10.4,"kurve":0,"takte":2,"halt":16}
+third/gehen {"n":50,"fehlt":0,"p50":28.2,"p95":43.3,"max":48.1,"eingabe":0.9,"hoerer":null,"kette":11.1,"kurve":16.1,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":12.8,"p95":24.4,"max":24.8,"eingabe":5.9,"hoerer":null,"kette":8.7,"kurve":0,"takte":1}
+third/springen {"n":50,"fehlt":0,"p50":11.7,"p95":24.6,"max":28.3,"eingabe":0.4,"hoerer":null,"kette":9.9,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":15.2,"p95":28.8,"max":30.5,"eingabe":0.5,"hoerer":null,"kette":13.7,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":20.5,"p95":27.5,"max":50.2,"eingabe":4.6,"hoerer":1.6,"kette":13.7,"kurve":0,"takte":2,"halt":10}
+LATENZ GRÜN (Bild 10.1 ms) 

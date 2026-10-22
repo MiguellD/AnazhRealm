@@ -1,0 +1,23 @@
+gpu-lauf: Schloss radeon-beweise nach 0 s
+z0 idb boot=8014 geladen={"x":0,"z":0,"b":0,"e":0,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=undefined verloren=undefined 
+z1 zufall boot=7492 geladen={"x":0,"z":18779,"b":2,"e":10,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=8 
+z2 fest boot=6746 geladen={"x":0,"z":34038,"b":10,"e":18,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=0.337 verloren=0 
+z3 zufall boot=7094 geladen={"x":317,"z":50361,"b":19,"e":27,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=0.002 verloren=0 
+z4 platz boot=6931 geladen={"x":-7,"z":60454,"b":21,"e":32,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=2 
+z5 zufall boot=7113 geladen={"x":-7,"z":77418,"b":24,"e":41,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=6 
+z6 idb boot=7074 geladen={"x":-7,"z":87605,"b":25,"e":46,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=5 
+z7 zufall boot=7785 geladen={"x":870,"z":102829,"b":25,"e":56,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=10 
+z8 fest boot=7952 geladen={"x":709,"z":119706,"b":25,"e":65,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=10 
+z9 zufall boot=8522 geladen={"x":709,"z":138136,"b":25,"e":75,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=10 
+z10 platz boot=8053 geladen={"x":709,"z":155076,"b":27,"e":84,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=0.072 verloren=7 
+z11 zufall boot=7714 geladen={"x":709,"z":168456,"b":34,"e":91,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=1.471 verloren=0 
+z12 idb boot=7874 geladen={"x":709,"z":178398,"b":39,"e":96,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=0.335 verloren=0 
+z13 zufall boot=7757 geladen={"x":709,"z":185045,"b":42,"e":99,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=1.006 verloren=0 
+z14 fest boot=7798 geladen={"x":709,"z":200304,"b":44,"e":107,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=6 
+z15 zufall boot=7497 geladen={"x":709,"z":208391,"b":45,"e":111,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=null verloren=5 
+z16 platz boot=7726 geladen={"x":709,"z":215039,"b":48,"e":114,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=1.086 verloren=2 
+z17 zufall boot=7637 geladen={"x":709,"z":230240,"b":56,"e":122,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=1.555 verloren=0 
+z18 idb boot=7199 geladen={"x":1021,"z":241380,"b":62,"e":128,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=1.125 verloren=0 
+z19 zufall boot=7080 geladen={"x":1021,"z":254916,"b":69,"e":135,"w":"d207cefa-6ac0-4ebc-80eb-2fd061b5d557"} alter=0.698 verloren=0 
+ERGEBNIS {"tode":20,"alterMax":999,"ueber10":0,"halbe":11,"korrupt":0,"saveRufe":422,"saveMs":{"p50":9,"p95":15.9,"max":28},"bilder":25887,"jeBild":{"p95":0,"p99":0,"mittel":0.1133}}
+EXIT=0

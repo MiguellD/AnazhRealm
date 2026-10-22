@@ -1,0 +1,12 @@
+872c872
+<     const o = {};
+---
+>     const o = {}; r.setCameraMode("third");
+888c888
+<         const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
+---
+>         const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0, sicht: s.cameraMode });
+1113c1113
+<                 ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · ` +
+---
+>                 ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° ${o[ort].sicht} · ` +

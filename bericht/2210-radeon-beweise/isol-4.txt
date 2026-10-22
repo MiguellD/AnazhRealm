@@ -1,0 +1,4 @@
+{
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\bericht\\2210-radeon-beweise\\isol-schirm.png",
+ "ms": 2032
+}

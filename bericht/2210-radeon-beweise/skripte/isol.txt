@@ -1,0 +1,5 @@
+umstellen --ort wiese
+latenz --proben 3 --sicht ego,third --verb hieb,gehen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/isol-a.json
+latenz --proben 3 --sicht ego,third --verb einsteigen,gehen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/isol-b.json
+schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/isol-schirm.png
+gpu-fehler

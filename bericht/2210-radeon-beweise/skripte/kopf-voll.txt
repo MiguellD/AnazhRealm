@@ -1,0 +1,3 @@
+umstellen --ort wiese
+latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen,hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-kopf-voll.json
+latenz --proben 50 --sicht third,ego --verb gehen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-kopf-gehen.json

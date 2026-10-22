@@ -1,0 +1,2 @@
+ego/hieb {"n":50,"fehlt":0,"p50":16.9,"p95":31,"max":37.8,"eingabe":0.6,"hoerer":1.1,"kette":9.8,"kurve":0,"takte":2,"halt":11}
+LATENZ GRÜN (Bild 8.5 ms) 

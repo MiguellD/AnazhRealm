@@ -1,0 +1,11 @@
+ego/gehen {"n":50,"fehlt":0,"p50":30.4,"p95":42.8,"max":43.2,"eingabe":0.4,"hoerer":0.1,"kette":11.9,"kurve":16.8,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":9.8,"p95":24.7,"max":29.9,"eingabe":0.4,"hoerer":0.4,"kette":6.7,"kurve":0,"takte":1}
+ego/springen {"n":50,"fehlt":0,"p50":14.6,"p95":28.9,"max":34.9,"eingabe":0.4,"hoerer":0.1,"kette":11.3,"kurve":0,"takte":2}
+ego/einsteigen {"n":50,"fehlt":0,"p50":12.1,"p95":25.5,"max":61.9,"eingabe":0.4,"hoerer":0.5,"kette":10.4,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":17.4,"p95":29.3,"max":553.9,"eingabe":0.5,"hoerer":1.3,"kette":10.3,"kurve":0,"takte":2,"halt":1}
+third/gehen {"n":50,"fehlt":0,"p50":27.7,"p95":42.6,"max":55.2,"eingabe":2.4,"hoerer":0,"kette":10.7,"kurve":15.8,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":20.6,"p95":24.2,"max":28.9,"eingabe":6.5,"hoerer":0.3,"kette":13.5,"kurve":0,"takte":2}
+third/springen {"n":50,"fehlt":0,"p50":16.5,"p95":27.2,"max":28.3,"eingabe":0.6,"hoerer":0.1,"kette":9.9,"kurve":0,"takte":2}
+third/einsteigen {"n":0,"fehlt":50,"p50":null,"p95":null,"max":null,"eingabe":null,"hoerer":null,"kette":null,"kurve":null,"takte":null}
+third/hieb {"n":39,"fehlt":11,"p50":24.2,"p95":588.1,"max":702.6,"eingabe":7.5,"hoerer":4.9,"kette":16.2,"kurve":0,"takte":3,"halt":1}
+LATENZ ROT (Bild 9 ms) ego/hieb Verben hieb,hieb,hieb,hieb,hieb,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb, Hit-Stop 1 Bilder · third/einsteigen p95 null ms > 50 (fehlt 50) — Täter eingabe null ms, null Takte · third/hieb Verben hieb,abbau,abbau,abbau,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb,abbau,abbau,abbau,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,abbau,abbau,abbau,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,abbau,abbau,abbau,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb, Hit-Stop 1 Bilder · third/hieb p95 588.1 ms > 50 (fehlt 11) — Täter kette 16.2 ms, 3 Takte

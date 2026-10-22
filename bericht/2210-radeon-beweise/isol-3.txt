@@ -1,0 +1,5 @@
+ego/einsteigen {"n":3,"fehlt":0,"p50":14.6,"p95":22.1,"max":22.1,"eingabe":0.4,"hoerer":null,"kette":13.1,"kurve":0,"takte":1}
+ego/gehen {"n":3,"fehlt":0,"p50":32.6,"p95":35.7,"max":35.7,"eingabe":0.2,"hoerer":null,"kette":15.8,"kurve":16.5,"takte":3}
+third/einsteigen {"n":3,"fehlt":0,"p50":12.2,"p95":13.6,"max":13.6,"eingabe":0.4,"hoerer":null,"kette":11.9,"kurve":0,"takte":1}
+third/gehen {"n":3,"fehlt":0,"p50":23.6,"p95":54.1,"max":54.1,"eingabe":0.3,"hoerer":null,"kette":15,"kurve":8.7,"takte":3}
+LATENZ ROT (Bild 8.3 ms) third/gehen p95 54.1 ms > 50 (fehlt 0) — Täter kette 15 ms, 3 Takte

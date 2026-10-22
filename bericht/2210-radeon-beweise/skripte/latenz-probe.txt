@@ -1,0 +1,2 @@
+umstellen --ort wiese
+latenz --proben 5 --sicht ego --verb gehen,springen,einsteigen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-probe.json

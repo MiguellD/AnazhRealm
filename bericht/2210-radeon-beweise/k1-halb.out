@@ -1,0 +1,27 @@
+gpu-lauf: Schloss radeon-beweise nach 0 s
+{
+ "sofort": {
+  "welt": 77,
+  "ls": 77,
+  "idb": 77,
+  "store": [
+   "worlds"
+  ],
+  "fehlt": [],
+  "nFehlt": 0
+ },
+ "nach15s": {
+  "welt": 77,
+  "ls": 77,
+  "idb": 77,
+  "store": [
+   "worlds"
+  ],
+  "fehlt": [],
+  "nFehlt": 0
+ },
+ "grund": [
+  "[AnazhRealm V18.546.61] [INFO] Architekturen geladen: 1060"
+ ]
+}
+EXIT=0

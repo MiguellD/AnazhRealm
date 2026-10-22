@@ -1,0 +1,6 @@
+gpu-lauf: Schloss radeon-beweise nach 0 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7902 · Seite :7901
+schritt 1 EXIT=0: umstellen --ort wiese |  "ms": 36322 } 
+schritt 2 EXIT=1: latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen,hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-voll.json | WERKBANK-FEHLER: read ECONNRESET 
+ende voll
+EXIT=0

@@ -1,0 +1,5 @@
+gpu-lauf: Schloss radeon-beweise nach 0 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7902 · Seite :7901
+schritt 1 EXIT=0: umstellen --ort wiese |  "ms": 36097 } 
+schritt 2 EXIT=0: latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen,hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-voll.json | third/hieb {"n":50,"fehlt":0,"p50":20.5,"p95":27.5,"max":50.2,"eingabe":4.6,"hoerer":1.6,"kette":13.7,"kurve":0,"takte":2,"halt":10} LATENZ GRÜN (Bild 10.1 ms)  
+ende voll3

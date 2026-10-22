@@ -1,0 +1,1235 @@
+// diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Welle L 06.10., Klasse Q4).
+// Befund der Leben-Prüfung (Synthese Q4, Kritik §2.1): die Sim steht auf dem Gesetz, die Sicht muss auf dem stehen, was das
+// Auge sieht. Gemessen war: die Fuß-IK zog Becken und Sohlen 0,25 m ins Haus-Podest (die Probe las das Gelände unter
+// dem Träger), im Sprung sank das Becken 0,25 m, während die Kapsel stieg (N-D1); in jeder Höhle las die Probe die Wiese
+// darüber und die IK schwieg; ein Tier auf dem Höhlen-Boden stand im ersten Frame auf dem Dach (+32,6 m); die Sohlen der
+// Tiere lagen am Hang-Fuß bis 0,63 m im sichtbaren Boden (R-D15), der 0,5-m-Cache war ihre Y-Quelle (Treppen bis 0,64 m je
+// Frame, R-D10), Pitch längs der festen Welt-z, Roll 0 (R-D11); das sterbende Tier kippte halb unter das Gelände (K-D19).
+// Die Linse ruft die ECHTEN Pfade der Welt (headless, Null-Renderer — die Boden-Karte ist das Mesh des Workers):
+//   K1  MENSCH AUF DEM TRÄGER: der Spieler auf der Start-Plattform (der Kapsel-Schritt trägt ihn auf dem Bauwerk), Fuß-IK
+//       im Stand → das Becken sinkt nicht (≤ 1 cm); im Sprung (Kapsel in der Luft) senkt kein Boden das Becken
+//   K2  MENSCH IN DER HÖHLE: der Spieler auf einem Höhlen-Boden (die Kapsel steht dort) → die Fuß-Probe liest diesen
+//       Boden (± 10 cm), nie die Oberkante der Säule darüber
+//   K3  TIER IN DER HÖHLE: ein Wolf, gerufen auf den Höhlen-Boden → er bleibt dort (± 15 cm)
+//   K4  TIER AM HANG: an der Stelle mit dem größten Abstand Gesetz ↔ Karte im Hang (≥ 12°) steht der Leib (seine Lage, der
+//       Zeuge der Sicht) auf der Boden-Karte (Median ≤ 6 cm; die Sohlen gegen das Mesh misst K8); entlang
+//       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe; der
+//       Täter heißt mit seiner Box, wenn ein Werk den Sprung trägt) — und (K4c, K24-N1) keine FUGE trägt einen Leib: die
+//       Oberkante einer Box, auf der eine Box desselben Werks sitzt (zwei Stamm-Abschnitte), hebt weder die Kapsel noch das
+//       Tier. Vorher stieg das Tier an einer Tanne 0,6 m auf die erste Stamm-Fuge (Treppe 55,1 cm, jede der 2803 Fugen trug)
+//   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
+//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
+//       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die
+//       Beine, die ein Ruf 20 m weit am alten Ort verankert ließ: blind, sobald der Gang sie am neuen Ort setzte, K07)
+//   K6  TIER AM CHUNK-RAND (K07): am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
+//       des Eigners ist leer oder trägt nur, was darunter liegt — (a) der Stand-Leser quer durch die Rand-Streifen um den
+//       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm. Vorher las der
+//       Stand-Leser dort den Träger: 527 von 582 Punkten daneben (Pfoten 62–71 cm über dem Boden); die Pfote am Mesh misst K8
+//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
+//       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
+//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
+//       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
+//   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
+//       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
+//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
+//       Bein, das schlechteste), das Rad
+//       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
+//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
+//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
+//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
+//   node scripts/diag-koerper-stand.cjs [--selftest]
+"use strict";
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
+const fs = require("fs");
+const path = require("path");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+
+const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
+const SELBST = process.argv.includes("--selftest");
+const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
+const K8_UMFANG = 200; // Kontakte je Ort × Rolle
+
+// DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
+// `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst (Seite: `window.__eignerKarte`, Proben und Täter „rand").
+function eignerKarte(r, x, z) {
+    const s = r.state;
+    const span = r._voxelChunkConfig(0).span;
+    const cx = Math.floor(x / span);
+    const cz = Math.floor(z / span);
+    const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
+    const m = e && e.surfMap;
+    if (!m) return null;
+    const C = r._voxelChunkConfig(e.lod || 0);
+    const T = r.constructor.BODEN_KARTE_TEILUNG;
+    const h = C.step / T;
+    const M = T * (C.dim + 3) + 1;
+    const u = (x - (cx * C.span - C.step)) / h;
+    const v = (z - (cz * C.span - C.step)) / h;
+    const i = Math.floor(u);
+    const j = Math.floor(v);
+    if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
+    const ka = m[i + j * M];
+    const kb = m[i + 1 + j * M];
+    const kc = m[i + (j + 1) * M];
+    const kd = m[i + 1 + (j + 1) * M];
+    if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
+    const fu = u - i;
+    const fv = v - j;
+    return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
+}
+
+// DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
+// Nachbarn, so gemorpht, wie der Stoff es zeichnet (je Vertex zum Ziel der gröberen Stufe um `_morphFaktor`, Naht und Stufe am
+// Auge; je Auge und Geometrie einmal gebaut) — die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts), nie durch einen Leser, den ein
+// Schnitt heilt; null ohne Mesh. `steil`: die oberste Fläche des Strahls ist steil (ein Überhang: die Karte trägt dort die
+// Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks.
+function gezeichnet(r, x, z) {
+    const T = window.THREE;
+    const G = window.__gezeichnet;
+    const strahl = G.strahl || (G.strahl = new T.Raycaster());
+    const span = r._voxelChunkConfig(0).span;
+    let best = null;
+    let oben = -Infinity;
+    G.steil = false;
+    for (const [a, b] of [
+        [0, 0],
+        [-1, 0],
+        [0, -1],
+        [-1, -1],
+    ]) {
+        const e = r.state.voxelChunks
+            ? r.state.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`)
+            : null;
+        if (!e || !e.mesh || !e.mesh.geometry) continue;
+        G.meshe = (G.meshe | 0) + 1;
+        const geo = e.mesh.geometry;
+        const auge = r.state.stufeAuge ? r.state.stufeAuge.x + "," + r.state.stufeAuge.z : "";
+        if (!e.__gez || e.__gez.geo !== geo || e.__gez.auge !== auge) {
+            const P = geo.attributes.position.array;
+            const Z = geo.attributes.aMorphTarget;
+            const W = geo.attributes.aMorphWeight;
+            const L = Float32Array.from(P);
+            for (let i = 0; Z && W && i < W.count; i++) {
+                const f = r._morphFaktor(W.array[i], P[3 * i], P[3 * i + 2]);
+                for (let k = 0; k < 3; k++) L[3 * i + k] += (Z.array[3 * i + k] - P[3 * i + k]) * f;
+            }
+            const g = new T.BufferGeometry().setAttribute("position", new T.BufferAttribute(L, 3)).setIndex(geo.index);
+            e.__gez = { geo, auge, mesh: new T.Mesh(g, e.mesh.material) };
+        }
+        strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+        const alle = strahl.intersectObject(e.__gez.mesh, false);
+        const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
+        if (h && (best === null || h.point.y > best)) best = h.point.y;
+        if (alle.length && alle[0].point.y > oben) {
+            oben = alle[0].point.y;
+            G.steil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
+        }
+    }
+    return best;
+}
+
+// DIE TÄTER DES SELBSTTESTS: je Defekt der Leser vor seiner Heilung als Laufzeit-Stub an der Welt (je Lauf ein eigener
+// Kontext, kein Rückbau) — installiert vor dem Einschwingen, die Wand muss jeden beim Namen rot nennen.
+function taeter(inj) {
+    const r = window.anazhRealm;
+    const P = Object.getPrototypeOf(r);
+    const ueber = (n, vor) =>
+        (r[n] = function (...a) {
+            vor.call(this);
+            try {
+                return P[n].apply(this, a);
+            } finally {
+                delete this._bodenSichtAt;
+            }
+        });
+    // traeger/luft: die Kapsel stand auf der Oberkante der Säule statt auf ihrem Träger; luft: die IK erdete im Sprung
+    if (inj === "traeger" || inj === "luft") r._gaitBodenY = (x, z) => r.getTerrainHeightAt(x, z);
+    if (inj === "luft") r._gaitTick = (m, h, v, dt, o) => P._gaitTick.call(r, m, h, v, dt, o && { ...o, ik: true });
+    if (inj === "hoehle") r._koerperBodenUnter = (x, _y, z) => r._voxelSurfaceY(x, z); // der Boden über der Höhle
+    if (inj === "sicht") r._standSicht = (_x, _z, traegerY) => traegerY; // der Leib steht auf dem Gesetz, nie auf der Karte
+    if (inj === "tod")
+        ueber("_tickLeichname", function () {
+            for (const c of this.state.leichname || []) if (c.userData.dying) c.userData.dying.hebe = null;
+        });
+    if (inj === "fuge") {
+        // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
+        r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
+        for (const e of r.state.architectures || []) r._blockerFugen(e.blockerAABBs);
+    }
+    // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
+    // nichts (vor K21)
+    if (inj === "rand")
+        ueber("_standSicht", function () {
+            this._bodenSichtAt = (x, z) => window.__eignerKarte(this, x, z);
+        });
+    const C = r._voxelChunkConfig(0);
+    const rest = (w) => w - Math.floor(w / C.span) * C.span;
+    const streifen = (x, z) => rest(x) < C.step / 2 || rest(z) < C.step / 2;
+    if (inj === "wiese")
+        for (const n of ["_nahWieseKachelBueschel", "_nahStreuKachel"])
+            ueber(n, function () {
+                this._bodenSichtAt = (x, z, g) => (streifen(x, z) ? null : P._bodenSichtAt.call(this, x, z, g));
+            });
+    // rolle (K8): der Fuß der Streu las das Gesetz bilinear im 8-m-Raster des Feld-Bakes (vor H5), die Pfote stand auf dem
+    // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz und sein Reifen wölbte 0,12 radR (0,2 Federweg) unter
+    // den Aufstand (vor H5)
+    if (inj === "rolle") {
+        r._streuFuss = (x, z) => {
+            const [u, w] = [x / 8 - 0.5, z / 8 - 0.5];
+            const [i, j] = [Math.floor(u), Math.floor(w)];
+            const h = (a, b) => r._voxelSurfaceY((a + 0.5) * 8, (b + 0.5) * 8) || 0;
+            const y =
+                (h(i, j) * (i + 1 - u) + h(i + 1, j) * (u - i)) * (j + 1 - w) +
+                (h(i, j + 1) * (i + 1 - u) + h(i + 1, j + 1) * (u - i)) * (w - j);
+            return { x, z, lage: y, lod: 3, y };
+        };
+        r._kreaturFussBoden = (g) => g.userData._traegerY;
+        const rad = r._archRadMatrix;
+        r._archRadMatrix = function (e, lf, ewU, out) {
+            this._bodenSichtAt = () => null;
+            rad.call(this, e, lf, ewU, out);
+            delete this._bodenSichtAt;
+            out.elements[13] -= 0.2 * e._fahrSatz.auf.hub;
+            return out;
+        };
+    }
+}
+
+const server = statikServer({ root: ROOT });
+
+// Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
+// DER UMFANG DER K7-PROBE (die EINE Quelle für Messung und Urteil): Büschel der Nah-Wiese und Pflanzen der Nah-Streu neben dem
+// Rand-Streifen — bei 1 000 Büscheln ist die Unschärfe des Verhältnisses ≈ 3 %. Die Streu trägt 500 Pflanzen (σ ≈ 0,1): bei 100
+// (gemessen 209 am Umkreis 120 m, σ 0,155, Band ± 46 %) lag ihr Defekt „wiese" (Verhältnis 0,53) auf der Kante des Bands —
+// der Selbsttest feuerte 1 von 2 Mal (K69-2 N2, gates/koerper-stand.log blind, ks-nachher.log 0,533).
+const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
+
+async function proben(mitWiese, umfang) {
+    const r = window.anazhRealm;
+    const s = r.state;
+    const T = window.THREE;
+    const A = r.constructor;
+    const o = {};
+    const pm = s.playerMesh;
+    const p = s.player;
+    const takt = () => {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch (_e) {}
+    };
+    const rig = pm && pm.userData && pm.userData.rig;
+    if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
+    // die Boden-Karte des EIGNERS selbst (eignerKarte) — die Linse misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr
+    // das Rand-Loch (dort ist sie leer, der Strahl richtet)
+    const span = r._voxelChunkConfig(0).span;
+    const karte = (x, z) => window.__eignerKarte(r, x, z);
+    // die Kapsel ruhen lassen (Fuß-Tempo 0) und n feste Sim-Schritte gehen
+    const savedVel = s.playerVel;
+    let vy = 0;
+    s.playerVel = {
+        x: () => 0,
+        y: () => vy,
+        z: () => 0,
+        setValue: (_x, y) => {
+            vy = y;
+        },
+    };
+    const kapsel = (n) => {
+        for (let k = 0; k < n; k++) r._stepCharacter(1 / 60, 1000 + k / 60);
+    };
+    let uhr = 2000;
+    const animiere = (n) => {
+        p._gaitW = 0;
+        p.animationLastTick = -Infinity;
+        for (let k = 0; k < n; k++) r.animatePlayerSoul((uhr += 1 / 60));
+    };
+    const ikRuhe = () => {
+        const ik = pm.userData._gaitIK;
+        if (ik) {
+            ik.probeL.g = NaN;
+            ik.probeR.g = NaN;
+        }
+    };
+    const wpl = () => (pm.userData._gaitIK && pm.userData._gaitIK.wpl) || 1;
+    // ── K1 MENSCH AUF DEM TRÄGER (Start-Plattform) ──
+    {
+        kapsel(30);
+        o.k1 = { struktur: s._kapselStruktur === true, traeger: s._kapselTraegerY };
+        // Bezug: die Becken-Höhe der Pose selbst (im Stand ohne Gang-Wippen `_baseHipY` — der Rig-Bezug, den
+        // `_animateHumanoidRig` vor jeder IK setzt); was darunter liegt, hat die Fuß-IK gesenkt
+        const air = s.isInAir;
+        s.isInAir = false;
+        ikRuhe();
+        animiere(2);
+        const hRef = rig._baseHipY;
+        ikRuhe();
+        animiere(10);
+        o.k1.beckenCm = Math.round((rig.hips.position.y - hRef) * wpl() * 1000) / 10;
+        // im Sprung: die Kapsel steigt, das Becken bleibt
+        vy = 4.5;
+        s._fieldVy = 4.5;
+        kapsel(6);
+        o.k1.sprungLuft = s.isInAir === true;
+        ikRuhe();
+        animiere(4);
+        o.k1.sprungBeckenCm = Math.round((rig.hips.position.y - hRef) * wpl() * 1000) / 10;
+        vy = 0;
+        s._fieldVy = 0;
+        kapsel(90);
+        s.isInAir = air;
+    }
+    // ── K2 MENSCH IN DER HÖHLE ── (die erste Luft-Tasche ≥ 3 m unter der Oberfläche, Raster 8 m um den Spieler, in die der
+    // Leib passt). K16 (das Flussnetz-Gelände): seine Höhlen sind Gänge, oft schmaler als ein Leib — an der ersten Tasche
+    // (−7,4/3,1) lag der Grund 1,5 m daneben 3,9 m tiefer, die Kapsel glitt 2,2 m in den Fels, Fuß-Probe und Tier-Boden
+    // lasen nichts (null, und `null <= 10` hieß grün). Im Umkreis R (Spieler und Wolf 1,5 m daneben: 2,4 m) liegt der Fels
+    // im Abstand r höchstens r/3 über oder unter dem Grund (≤ 18°, der Leib ruht), darüber Luft bis + 2,4 m — wie die
+    // Kammer-Probe des Fall-Wächters (`leibPasst`).
+    const passt = (x, z, g, R) => {
+        for (let k = 0; k < 12; k++) {
+            const w = (k / 12) * Math.PI * 2;
+            for (const rr of [R / 2, R]) {
+                const px = x + Math.cos(w) * rr;
+                const pz = z + Math.sin(w) * rr;
+                const d = rr / 3;
+                for (let yy = g + d + 0.05; yy <= g + 2.4; yy += 0.3) if (r._fieldSolid(px, yy, pz)) return false;
+                let fy = g + d + 0.05;
+                while (fy > g - d && !r._fieldSolid(px, fy, pz)) fy -= 0.05;
+                if (fy <= g - d) return false;
+            }
+        }
+        return true;
+    };
+    const start = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
+    let hoehle = null;
+    for (let d = 8; d <= 160 && !hoehle; d += 8)
+        for (let a = 0; a < 16 && !hoehle; a++) {
+            const x = start.x + Math.cos((a / 16) * Math.PI * 2) * d;
+            const z = start.z + Math.sin((a / 16) * Math.PI * 2) * d;
+            const top = r._voxelSurfaceY(x, z);
+            if (!Number.isFinite(top)) continue;
+            let inLuft = false;
+            let luftOben = null;
+            for (let y = top - 1.0; y > top - 45; y -= 0.3) {
+                const sol = r._fieldSolid(x, y, z);
+                if (!sol && !inLuft) {
+                    inLuft = true;
+                    luftOben = y;
+                }
+                if (sol && inLuft) {
+                    if (luftOben - y >= 3.0) {
+                        const boden = r._fieldSurfaceBelow(x, y + 0.5, z, 2);
+                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4))
+                            hoehle = { x, z, top, boden };
+                    }
+                    break;
+                }
+            }
+        }
+    o.hoehle = hoehle;
+    if (hoehle) {
+        pm.position.set(hoehle.x, hoehle.boden + A.PLAYER_FOOT_OFFSET + 0.05, hoehle.z);
+        vy = 0;
+        s._fieldVy = 0;
+        kapsel(40);
+        ikRuhe();
+        animiere(6);
+        const ik = pm.userData._gaitIK;
+        o.k2 = {
+            kapselFussY: pm.position.y - A.PLAYER_FOOT_OFFSET,
+            probe: ik ? Math.min(ik.probeL.g, ik.probeR.g) : null,
+        };
+        o.k2.abstandCm = Number.isFinite(o.k2.probe)
+            ? Math.round(Math.abs(o.k2.probe - o.k2.kapselFussY) * 1000) / 10
+            : null;
+        // ── K3 TIER IN DER HÖHLE ──
+        const saveMax = s.maxCreatures;
+        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
+        const w = r.spawnCreatureAt(hoehle.x + 1.5, hoehle.boden + 0.3, hoehle.z, "happy", "wolf", {
+            precise: true,
+            bodySize: 1,
+        });
+        if (w) {
+            const hs = [];
+            for (let k = 0; k < 40; k++) {
+                r.updateCreatures(0.02);
+                w.position.x = hoehle.x + 1.5;
+                w.position.z = hoehle.z;
+                hs.push(w.position.y - (w.userData._hopH || 0));
+            }
+            const bodenW = r._fieldSurfaceBelow(hoehle.x + 1.5, hoehle.boden + 1.0, hoehle.z, 3);
+            hs.sort((a, b) => a - b);
+            o.k3 = { tierY: hs[hs.length >> 1], boden: bodenW };
+            o.k3.abstandM = Number.isFinite(bodenW) ? Math.round(Math.abs(o.k3.tierY - bodenW) * 100) / 100 : null;
+            r.removeCreature(w);
+        }
+        s.maxCreatures = saveMax;
+    }
+    pm.position.set(start.x, start.y, start.z);
+    vy = 0;
+    s._fieldVy = 0;
+    kapsel(30);
+    // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
+    // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene trockene Stelle (≤ 3°, über dem Wasser) für die Tod-Lage ──
+    // K16 (das Flussnetz-Gelände): um die Plattform trägt der Hang das Gesetz glatt (Gesetz ↔ Karte höchstens 10 cm im
+    // 120-m-Quadrat) — der Ort kommt aus der Welt: das Quadrat um den Start, dann um die Orte 150 m und 300 m weit
+    // (die Welt schwingt dort ein), der erste mit einer Hang-Stelle im Band.
+    let hang = null;
+    let eben = null;
+    // DIE MITTE DER EINGESCHWUNGENEN WELT: um sie stehen die Chunks der Nah-Zone (K6 misst den Rand-Streifen dort, nie am
+    // verlassenen Start — 300 m weiter trägt der Start die gröbersten Stufen; seit K51 liegen die Nähte 0 ↔ 1 ↔ 2 im Streifen
+    // der Probe, der Leser liest über jede Stufen-Grenze)
+    let mitte = { x: start.x, z: start.z };
+    const orte = [[0, 0]];
+    for (const d of [150, 300])
+        for (let a = 0; a < 8; a++)
+            orte.push([
+                Math.round(Math.cos((a / 8) * Math.PI * 2) * d),
+                Math.round(Math.sin((a / 8) * Math.PI * 2) * d),
+            ]);
+    for (const [ox, oz] of orte) {
+        if (hang) break;
+        eben = null;
+        if (ox || oz) {
+            // einschwingen am Ort (der echte Spiel-Takt mit der echten Bewegung)
+            const vel = s.playerVel;
+            s.playerVel = savedVel;
+            pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
+            mitte = { x: start.x + ox, z: start.z + oz };
+            savedVel.setValue(0, 0, 0);
+            await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
+            s.playerVel = vel;
+        }
+        for (let dx = -60; dx <= 60; dx += 2)
+            for (let dz = -60; dz <= 60; dz += 2) {
+                const x = start.x + ox + dx;
+                const z = start.z + oz + dz;
+                const k = karte(x, z);
+                if (k === null) continue;
+                const g = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(g)) continue;
+                const kx = karte(x + 1, z);
+                const kz = karte(x, z + 1);
+                if (kx === null || kz === null) continue;
+                if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null))
+                    continue;
+                const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
+                const ab = Math.abs(g - k);
+                const trocken = !(r._koerperWasser(x, z, k) > k);
+                if (neig <= 3 && ab < 0.1 && trocken && (!eben || neig < eben.neig))
+                    eben = { x, z, karte: k, gesetz: g, neig };
+                if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
+                if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
+            }
+    }
+    o.hang = hang;
+    o.eben = eben;
+    if (hang) {
+        const saveMax = s.maxCreatures;
+        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
+        pm.position.set(hang.x + 6, r._voxelSurfaceY(hang.x + 6, hang.z + 6) + 1.7, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
+        const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", {
+            precise: true,
+            bodySize: 1,
+        });
+        if (c) {
+            const tiere = (n, fn) => {
+                for (let k = 0; k < n; k++) {
+                    r.updateCreatures(0.02);
+                    c.userData._hopV = 0;
+                    c.userData._hopH = 0;
+                    if (fn) fn(k);
+                    else {
+                        c.position.x = hang.x;
+                        c.position.z = hang.z;
+                    }
+                }
+            };
+            tiere(80);
+            // der Leib, der Zeuge der Sicht (die Sohlen am Mesh misst K8 am 25°-Hang)
+            const leib = [];
+            for (let k = 0; k < 30; k++) {
+                tiere(1);
+                const mL = karte(c.position.x, c.position.z);
+                if (mL !== null) leib.push(Math.abs(c.position.y - mL));
+            }
+            leib.sort((a, b) => a - b);
+            o.k4 = { leibMedianCm: leib.length ? Math.round(leib[leib.length >> 1] * 1000) / 10 : null };
+            // der Weg über den Hang: je Takt 0,12 m, der Sprung über die Neigung hinaus
+            const kx = karte(hang.x + 1, hang.z) - hang.karte;
+            const kz = karte(hang.x, hang.z + 1) - hang.karte;
+            const lg = Math.hypot(kx, kz) || 1;
+            const ux = kx / lg;
+            const uz = kz / lg;
+            let yAlt = null;
+            let xAlt = null;
+            let zAlt = null;
+            let maxUeber = 0;
+            let traeger = null;
+            // der Täter beim Namen: die Box-Oberkante eines Werks, auf der die Lage nach dem größten Sprung steht (sonst Boden)
+            const traegerBox = (x, z, y) => {
+                for (const e of s.architectures || []) {
+                    const bx = e && e.blockerAABBs;
+                    if (!bx || !e.position || Math.abs(e.position.x - x) > 12 || Math.abs(e.position.z - z) > 12)
+                        continue;
+                    for (let i = 0; i < bx.length; i++) {
+                        const b = bx[i];
+                        if (!(Math.abs(b.topY - y) < 0.005)) continue;
+                        if (x > b.minX - 1.5 && x < b.maxX + 1.5 && z > b.minZ - 1.5 && z < b.maxZ + 1.5)
+                            return `${e.type}#${e.id} Box ${i} Oberkante ${b.topY.toFixed(2)}`;
+                    }
+                }
+                return "Boden";
+            };
+            tiere(140, (k) => {
+                const sx = hang.x + ux * (-8 + k * 0.12);
+                const sz = hang.z + uz * (-8 + k * 0.12);
+                const yJetzt = c.position.y;
+                if (yAlt !== null && k > 4) {
+                    // die Neigung über den GEGANGENEN Weg (die Lage des Vortakts zur Lage jetzt): ein Werk am Weg schiebt
+                    // den Leib (K20: die Hülle der Tanne ist ihr gezeichneter Stamm — der Stoß am Stamm ist kein Sprung)
+                    const weg = Math.hypot(c.position.x - xAlt, c.position.z - zAlt);
+                    const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * weg);
+                    const ueber = Math.abs(yJetzt - yAlt) - erwartet;
+                    if (ueber > maxUeber) {
+                        maxUeber = ueber;
+                        traeger = traegerBox(c.position.x, c.position.z, yJetzt);
+                    }
+                }
+                yAlt = yJetzt;
+                xAlt = c.position.x;
+                zAlt = c.position.z;
+                c.position.x = sx;
+                c.position.z = sz;
+            });
+            o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10, traeger };
+            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
+            // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der Kapsel —
+            // die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche: an ihrem Rand, der
+            // Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers (`_stepCharacterStructures`) noch die Auflage des
+            // Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit achsparallelen Boxen im Umkreis 60 m um den Start. Befund
+            // (K24-N1): an der Hang-Stelle stieg das Tier auf die erste Stamm-Fuge einer Tanne, 0,6 m je Takt (K4 Treppe 55,1 cm).
+            {
+                const R = A.PLAYER_WALL_RADIUS;
+                const SNAP = A.PLAYER_GROUND_SNAP;
+                let fugen = 0;
+                let traegt = 0;
+                const taeter = [];
+                const saveNah = c.userData._huellenNah;
+                const cp = c.position.clone();
+                for (const e of s.architectures || []) {
+                    const bx = e && e.blockerAABBs;
+                    if (!bx || !e.position || bx.some((b) => b.obb)) continue;
+                    if (Math.hypot(e.position.x - start.x, e.position.z - start.z) > 60) continue;
+                    for (let i = 0; i < bx.length; i++) {
+                        const a = bx[i];
+                        const mx = (a.minX + a.maxX) / 2;
+                        const mz = (a.minZ + a.maxZ) / 2;
+                        const deckel = bx.findIndex(
+                            (b) =>
+                                b !== a &&
+                                b.botY <= a.topY + SNAP &&
+                                b.topY > a.topY &&
+                                mx >= b.minX &&
+                                mx <= b.maxX &&
+                                mz >= b.minZ &&
+                                mz <= b.maxZ &&
+                                b.minX <= a.minX + R &&
+                                b.maxX >= a.maxX - R &&
+                                b.minZ <= a.minZ + R &&
+                                b.maxZ >= a.maxZ - R
+                        );
+                        if (deckel < 0) continue;
+                        fugen++;
+                        // je Leser die Fuge ALLEIN (die Auflage einer Nachbar-Box gleicher Höhe zählt nicht): die Kapsel
+                        // über ihren Chokepoint `_resolveCapsuleVsAABB`, das Tier über `_kreaturAuflage` mit dem Werk aus ihr
+                        const fuss = a.topY - 0.3;
+                        const kapsel = r._resolveCapsuleVsAABB(
+                            a,
+                            { x: a.maxX + 0.1, z: mz },
+                            fuss,
+                            fuss + 1.7,
+                            R,
+                            -Infinity
+                        );
+                        c.position.set(a.maxX - 0.02, fuss, mz);
+                        const nurA = { position: e.position, blockerAABBs: [a], _blockerReach: e._blockerReach };
+                        c.userData._huellenNah = {
+                            x: c.position.x,
+                            z: c.position.z,
+                            t: s.creatureAnimationTime,
+                            liste: [nurA],
+                        };
+                        const tier = r._kreaturAuflage(c, 0);
+                        const wer = [];
+                        if (Math.abs(kapsel - a.topY) < 0.005) wer.push("Kapsel");
+                        if (Math.abs(tier - a.topY) < 0.005) wer.push("Tier");
+                        if (!wer.length) continue;
+                        traegt++;
+                        if (taeter.length < 3)
+                            taeter.push(
+                                `${e.type}#${e.id} Box ${i} unter Box ${deckel} (Oberkante ${a.topY.toFixed(2)}, trägt ${wer.join("+")})`
+                            );
+                    }
+                }
+                c.userData._huellenNah = saveNah;
+                c.position.copy(cp);
+                o.k4c = { fugen, traegt, taeter };
+            }
+            // ── K5 TOD-LAGE ── (auf der ebenen Stelle: das Tier stirbt, kippt, liegt — die tiefste Stelle gegen den Boden)
+            const ort = eben || hang;
+            pm.position.set(ort.x + 6, r._voxelSurfaceY(ort.x + 6, ort.z + 6) + 1.7, ort.z + 6);
+            tiere(20, () => {
+                c.position.x = ort.x;
+                c.position.z = ort.z;
+            });
+            // die PRÄZISE tiefste Stelle: jeder Vertex der sichtbaren Haut (Skin angewandt, `getVertexPosition`) gegen die
+            // Boden-Karte unter IHM — nie die Welt-AABB (eine Obermenge: sie verbarg 11,9 cm Spalt als „liegt auf")
+            const tiefste = () => {
+                c.updateMatrixWorld(true);
+                const v = new T.Vector3();
+                let min = Infinity;
+                c.traverseVisible((q) => {
+                    const pa = q.isMesh && !q.isInstancedMesh && q.geometry && q.geometry.attributes.position;
+                    if (!pa) return;
+                    for (let i = 0; i < pa.count; i++) {
+                        q.getVertexPosition(i, v);
+                        v.applyMatrix4(q.matrixWorld);
+                        const m = karte(v.x, v.z);
+                        if (m !== null && v.y - m < min) min = v.y - m;
+                    }
+                });
+                return Number.isFinite(min) ? Math.round(min * 1000) / 10 : null;
+            };
+            const stehtCm = tiefste();
+            r.damageCreature(c, 1e6, {});
+            const dy = c.userData.dying;
+            if (dy) {
+                const nKipp = Math.ceil((dy.dauer + 0.05) / 0.02);
+                let wegMin = Infinity;
+                let wegMax = -Infinity;
+                for (let k = 0; k < nKipp; k++) {
+                    r.updateCreatures(0.02);
+                    if (k % 5 === 4) {
+                        const t = tiefste();
+                        if (t !== null) {
+                            wegMin = Math.min(wegMin, t - stehtCm);
+                            wegMax = Math.max(wegMax, t - stehtCm);
+                        }
+                    }
+                }
+                const liegt = tiefste();
+                o.k5 = {
+                    stehtCm,
+                    untenCm: liegt,
+                    // gegen den Stand: der Kontakt des stehenden Tiers ist die Null (die Pose steht, wie sie steht)
+                    gegenStandCm: liegt !== null && stehtCm !== null ? Math.round((liegt - stehtCm) * 10) / 10 : null,
+                    wegMinCm: Number.isFinite(wegMin) ? Math.round(wegMin * 10) / 10 : null,
+                    wegMaxCm: Number.isFinite(wegMax) ? Math.round(wegMax * 10) / 10 : null,
+                };
+            } else o.k5 = { fehler: "kein Sterben" };
+            if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener (state.leichname)
+        }
+        s.maxCreatures = saveMax;
+    }
+    // ── K6 TIER AM CHUNK-RAND (K07, der Fuß steht in der Standphase): am unteren Rand jedes Chunks (je Achse ein halber
+    // Zellen-Schritt) zeichnet das Mesh des NACHBARN, die Karte des Eigners ist dort leer. Die Streifen-Stelle (0,45 m im
+    // Chunk, x-Rand) mit dem größten Fehler eines Lesers, der dort den Träger nimmt (Gesetz der Mitte gegen den gezeichneten
+    // Boden 0,7 m hangab, 10–60 cm): ein stehender Wolf, Blick hangauf, Sohlen und Leib gegen die GEZEICHNETEN Dreiecke (ein
+    // Strahl lotrecht auf das Mesh des Eigners und seiner unteren Nachbarn — nie durch den Leser, den der Schnitt heilt) ──
+    {
+        const G = window.__gezeichnet;
+        const gezeichnet = (x, z) => G(r, x, z);
+        const cx0 = Math.floor(mitte.x / span);
+        const cz0 = Math.floor(mitte.z / span);
+        // DER LESER QUER DURCH DEN STREIFEN: je Rand-Streifen der Chunks um den Start (x- und z-Rand, alle 8 m) Punkte im Abstand
+        // 0,1 m über die ganze Breite (0,05–0,85 m) — der Stand-Leser mit einem Träger 0,5 m über dem gezeichneten Boden (eine
+        // Pfote hangab ihres Leibs) trifft den gezeichneten Boden; wer auf den Träger fällt, verfehlt ihn um 0,5 m (die Wache
+        // 0,25 m trennt das von der Auflösung der Karte). Nicht gezählt: Punkte unter einem Überhang und Raster-Zellen über
+        // einer Kante (eine Ecke unter steiler Fläche oder > 0,6 m Höhen-Spanne der fünf Säulen auf 0,45 m, steiler als 53°: dort
+        // mittelt jede Karte Schichten und Knicke — eine Frage ihrer Auflösung, nicht des Rand-Streifens)
+        const hR = r._voxelChunkConfig(0).step / A.BODEN_KARTE_TEILUNG;
+        const verwickelt = (x, z, g) => {
+            const x0 = Math.floor(x / hR) * hR;
+            const z0 = Math.floor(z / hR) * hR;
+            let lo = g;
+            let hi = g;
+            for (const [px, pz] of [
+                [x0, z0],
+                [x0 + hR, z0],
+                [x0, z0 + hR],
+                [x0 + hR, z0 + hR],
+            ]) {
+                const y = gezeichnet(px, pz);
+                if (y === null || G.steil) return true;
+                lo = Math.min(lo, y);
+                hi = Math.max(hi, y);
+            }
+            return hi - lo > 0.6;
+        };
+        const leser = { n: 0, fehl: 0, ueberhang: 0, kante: 0, max: 0, wo: null };
+        for (let q = -1; q <= 2; q++)
+            for (let dl = -40; dl <= 40; dl += 8)
+                for (let f = 0.05; f < 0.9; f += 0.1)
+                    for (const [x, z] of [
+                        [(cx0 + q) * span + f, mitte.z + dl],
+                        [mitte.x + dl, (cz0 + q) * span + f],
+                    ]) {
+                        const g = gezeichnet(x, z);
+                        if (g === null || r._koerperWasser(x, z, g) > g) continue;
+                        if (G.steil) {
+                            leser.ueberhang++;
+                            continue;
+                        }
+                        const d = Math.abs(r._standSicht(x, z, g + 0.5, false) - g);
+                        if (!(d <= 0.25) && verwickelt(x, z, g)) {
+                            leser.kante++;
+                            continue;
+                        }
+                        leser.n++;
+                        if (!(d <= 0.25)) leser.fehl++;
+                        if (d > leser.max) {
+                            leser.max = d;
+                            leser.wo = [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+                            // die Stufen der vier Chunks, deren Karten der Leser dort fragt (Eigner und untere Nachbarn)
+                            leser.stufen = [
+                                [0, 0],
+                                [-1, 0],
+                                [0, -1],
+                                [-1, -1],
+                            ].map(([a, b]) => {
+                                const e = s.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`);
+                                return e ? `L${e.lod || 0}${e.surfMap ? "" : " ohne Karte"}` : "fehlt";
+                            });
+                        }
+                    }
+        o.k6leser = {
+            n: leser.n,
+            fehl: leser.fehl,
+            ueberhang: leser.ueberhang,
+            kante: leser.kante,
+            maxCm: Math.round(leser.max * 1000) / 10,
+            wo: leser.wo,
+            stufen: leser.stufen || null,
+            mitte: [Math.round(mitte.x), Math.round(mitte.z)],
+            meshe: G.meshe,
+        };
+    }
+    pm.position.set(start.x, start.y, start.z);
+    kapsel(30);
+    s.playerVel = savedVel;
+    // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
+    // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln im Umkreis 120 m, deren Chunks
+    // einer Stufe sind (der Nah-Ring liegt ganz in LOD 0, die Stufen-Kette K51 trägt L1 und L2 in den Umkreis; der Streifen ist
+    // ein halber Schritt der Stufe): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m in L0:
+    // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
+    // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
+    if (mitWiese) {
+        const [X, Z] = window.__messWiese;
+        const setz = () => {
+            pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
+            s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
+        };
+        // Ruhe heißt: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), und der Wald der Mesh-Zone steht — die
+        // Antwort des Weltbilds (`_weltbildLuecken`, Terme `pflanzung` und `streu`). Seit K69 pflanzt die Schlange des Walds im
+        // Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155).
+        const waldOffen = () => r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
+        await window.__weltStehtNach(() => (setz(), takt()));
+        o.k7wald = !waldOffen();
+        const C = r._voxelChunkConfig(0);
+        // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe
+        // zählen, der Leser liest jede Naht)
+        const fach = (x, z, stufe) => {
+            const halb = r._voxelChunkConfig(stufe).step / 2;
+            const lx = x - Math.floor(x / C.span) * C.span;
+            const lz = z - Math.floor(z / C.span) * C.span;
+            if (lx < halb || lz < halb) return 0; // der Rand-Streifen
+            if (lx < 3 * halb || lz < 3 * halb) return 1; // die Mitte daneben
+            return 2;
+        };
+        // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in EINER Stufe (die Linse rechnet das selbst, nie über den
+        // Leser): die Stufe, sonst -1
+        const eineStufe = (x0, z0, x1, z1) => {
+            let stufe = -1;
+            for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
+                for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
+                    const e = s.voxelChunks.get(`${cx},${cz}`);
+                    if (!e) return -1;
+                    if (stufe < 0) stufe = e.lod || 0;
+                    else if ((e.lod || 0) !== stufe) return -1;
+                }
+            return stufe;
+        };
+        let R = 120;
+        const zaehle = (K, rand, bau) => {
+            const zahl = [0, 0, 0];
+            const flaeche = [0, 0, 0];
+            let kacheln = 0;
+            for (let tz = Math.floor((Z - R) / K); tz <= Math.floor((Z + R) / K); tz++)
+                for (let tx = Math.floor((X - R) / K); tx <= Math.floor((X + R) / K); tx++) {
+                    const stufe = eineStufe(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand);
+                    if (stufe < 0) continue;
+                    const liste = bau(tx, tz);
+                    if (!liste) continue;
+                    kacheln++;
+                    for (let a = 0.05; a < K; a += 0.1)
+                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b, stufe)] += 0.01;
+                    for (const q of liste) zahl[fach(q.x, q.z, stufe)]++;
+                }
+            const d = zahl.map((n, i) => (flaeche[i] > 0 ? n / flaeche[i] : 0));
+            const verh = d[1] > 0 ? d[0] / d[1] : 0;
+            // die Unschärfe des Verhältnisses unter gleicher Dichte (Poisson: die im Streifen erwartete Zahl und die daneben)
+            const erwartet = d[1] * flaeche[0];
+            const sigma = erwartet > 0 && zahl[1] > 0 ? Math.sqrt(1 / erwartet + 1 / zahl[1]) : 1;
+            return {
+                kacheln,
+                streifen: zahl[0],
+                daneben: zahl[1],
+                mitte: zahl[2],
+                dichte: d.map((v) => Math.round(v * 1000) / 1000),
+                verh: Math.round(verh * 1000) / 1000,
+                sigma: Math.round(sigma * 1000) / 1000,
+            };
+        };
+        const NW = A.NAH_WIESE;
+        const NS = A.NAH_STREU;
+        const arten = r._nahStreuArten();
+        // der Umkreis wächst in 20-m-Schritten (höchstens 240 m), bis die Probe ihren Umfang trägt (K55-2: an der Mess-Wiese
+        // −278/−1038 trug der Umkreis 120 m 866 Büschel und 70 Pflanzen neben dem Streifen, die Aue ist offener als der alte Hang)
+        // Je Probe ihr eigener Umkreis: die Wiese steht, sobald sie ihren Umfang trägt; die Streu wächst weiter bis zu ihrem.
+        for (R = 120; R <= 240; R += 20) {
+            if (!(o.k7wiese && o.k7wiese.daneben >= umfang.bueschel)) {
+                o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+                o.k7umkreis = R;
+            }
+            o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
+                const satz = r._nahStreuKachel(tx, tz, arten);
+                return satz ? satz.items : null;
+            });
+            o.k7umkreisStreu = R;
+            if (o.k7wiese.daneben >= umfang.bueschel && o.k7streu.daneben >= umfang.pflanzen) break;
+        }
+    }
+    return o;
+}
+
+// ── K8 (Kopf der Datei) ──
+async function rollen(n) {
+    const r = window.anazhRealm;
+    const s = r.state;
+    const T = window.THREE;
+    const pm = s.playerMesh;
+    const gez = (x, z) => window.__gezeichnet(r, x, z);
+    // die Uhr des Takts: je Takt ein Bild (16,7 ms) — der Gang schreitet gleich, wie schnell die Seite auch rechnet
+    let uhr = performance.now();
+    const takt = () => {
+        try {
+            r._gameLoopTick((uhr += 1000 / 60));
+        } catch (_e) {}
+    };
+    const cm = (a, f) => {
+        const b = a.slice().sort((x, y) => x - y);
+        return b.length ? Math.round(b[Math.min(b.length - 1, Math.floor(f * b.length))] * 1000) / 10 : null;
+    };
+    const mass = (a) => ({ n: a.length, p95: cm(a.map(Math.abs), 0.95), median: cm(a, 0.5) });
+    const v = new T.Vector3();
+    const M = new T.Matrix4();
+    // je Knochen die Vertices des gezeichneten Leibs (Ebene 0, vor der Ego-Maske), die er überwiegend trägt; die Sohle = der
+    // tiefste von ihnen nach den Knochen, gegen das Mesh unter ihm
+    const sohle = (leib, knochen) => {
+        const je = knochen.map(() => []);
+        leib.traverse((o) => {
+            const ebene = o.userData._maskeVorEgo !== undefined ? o.userData._maskeVorEgo : o.layers.mask;
+            if (!o.isSkinnedMesh || !(ebene & 1)) return;
+            const si = o.geometry.attributes.skinIndex;
+            const sw = o.geometry.attributes.skinWeight;
+            const bi = knochen.map((b) => o.skeleton.bones.indexOf(b));
+            for (let i = 0; i < si.count; i++)
+                for (let k = 0; k < 4; k++) {
+                    const j = bi.indexOf(si.getComponent(i, k));
+                    if (j >= 0 && sw.getComponent(i, k) > 0.5) je[j].push([o, i]);
+                }
+        });
+        return (j) => {
+            let t = null;
+            for (const [o, i] of je[j]) {
+                o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld);
+                if (!t || v.y < t.y) t = v.clone();
+            }
+            const g = t && gez(t.x, t.z);
+            return g === null || !t ? null : t.y - g;
+        };
+    };
+    const gehen = (je) => {
+        const a = [];
+        for (let k = 0; k < 1500 && a.length < n; k++) {
+            takt();
+            je(a);
+        }
+        return a;
+    };
+    const o = {}; r.setCameraMode("first");
+    const W = window.__messWiese;
+    // der 25°-Hang: der nächste trockene Hang 24–26° um die Wiese (das Gesetz über ± 4 m, die EINE Orts-Suche `__weltOrt`)
+    const hang = window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });
+    const h = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+    for (const [ort, X, Z] of [
+        ["wiese", W[0], W[1]],
+        ["hang", hang && Math.round(hang.x), hang && Math.round(hang.z)],
+    ]) {
+        if (!Number.isFinite(X)) continue;
+        const setz = () => {
+            pm.position.set(X, r._voxelSurfaceY(X, Z) + 0.6, Z);
+            s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+        };
+        await window.__weltStehtNach(() => (setz(), takt()));
+        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0, sicht: s.cameraMode });
+        // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
+        const fein = [];
+        let saat = 7;
+        const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let k = 0; k < 20 * n && fein.length < n; k++) {
+            const w = zufall() * 2 * Math.PI;
+            const d = 3 + 27 * zufall();
+            const x = X + d * Math.cos(w);
+            const z = Z + d * Math.sin(w);
+            const g = gez(x, z);
+            const l = r._voxelSurfaceY(x, z);
+            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) fein.push(g - l);
+        }
+        R.fein = mass(fein);
+        // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz, ihr Ursprung
+        // liegt über der Zelle) gegen das Mesh, wie es JETZT gezeichnet ist — im Stand, nach dem Gang und nach der Fahrt, ohne
+        // Einschwingen (der Geomorph folgt dem Auge)
+        const streu = [];
+        const streuJetzt = () => {
+            for (const reg of s.scatterRegions ? s.scatterRegions.values() : [])
+                for (const c of (reg && reg.cells) || []) {
+                    const ref = c.slots && c.slots[0];
+                    const g = ref && s.archInstanceGroups.get(ref.key);
+                    if (!g || !g.mesh) continue;
+                    v.setFromMatrixPosition(g.mesh.getMatrixAt(ref.slot, M), M);
+                    const b = Math.hypot(v.x - c.x, v.z - c.z) < 0.05 ? gez(c.x, c.z) : null;
+                    if (b !== null) streu.push(v.y - b);
+                }
+        };
+        streuJetzt();
+        // der Fuß des Spielers: er geht längs der Höhenlinie (die Füße im Stand: der Fuß-Lock der IK); vorwärts ist (sin, cos)
+        const quer = Math.atan2(h(X, Z - 1) - h(X, Z + 1), h(X + 1, Z) - h(X - 1, Z));
+        const rig = pm.userData.rig;
+        const fuss = sohle(pm, [rig.legL.ankle, rig.legR.ankle]);
+        s.yaw = quer;
+        s.keys.w = true;
+        R.fuss = mass(
+            gehen((a) => {
+                const ik = pm.userData._gaitIK;
+                if (ik) [ik.lockL, ik.lockR].forEach((l, j) => l.on && (v.y = fuss(j)) !== null && a.push(v.y));
+            })
+        );
+        s.keys.w = false;
+        streuJetzt();
+        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0
+        // ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm (vorher 1,4–3,5 cm je Lauf)
+        const P = pm.position;
+        const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
+        for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {
+            [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
+            const reh = r.spawnCreatureAt(
+                P.x + 4,
+                r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5,
+                P.z + 3,
+                "happy",
+                "wesen",
+                {
+                    bodySize: band.max,
+                }
+            );
+            [s.maxCreatures, s._creatureNetSeq] = [max, seq];
+            const tb = reh && reh.userData._tierBaum;
+            if (!tb) continue;
+            const huf = sohle(reh, [tb.teile.flP, tb.teile.frP, tb.teile.hlP, tb.teile.hrP]);
+            const m = mass(
+                gehen((a) => {
+                    const Zg = tb._gang && tb._gang.ziele;
+                    reh.updateMatrixWorld(true);
+                    for (let j = 0; Zg && j < 4; j++) if (Zg[j][3] === 0 && (v.y = huf(j)) !== null) a.push(v.y);
+                })
+            );
+            if (!R.huf || m.p95 > R.huf.p95) R.huf = { ...m, median: band.name + " " + m.median };
+            r.removeCreature(reh);
+        }
+        // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x)
+        const e = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
+            { silent: true, precise: true, rotationY: quer - Math.PI / 2 }
+        );
+        if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
+        if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
+            for (let k = 0; k < 15; k++) takt();
+            // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
+            // in der Luft (`_fahr.luft`) und im Stand (ein Rad auf einem Stein) zählt kein Boden-Kontakt
+            const tief = (ref) => {
+                const g = s.archInstanceGroups.get(ref.key);
+                const pa = g.geom.attributes.position;
+                g.mesh.getMatrixAt(ref.slot, M);
+                let t = null;
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(M);
+                    if (!t || v.y < t.y) t = v.clone();
+                }
+                return t;
+            };
+            s.keys.w = true;
+            R.rad = mass(
+                gehen((a) => {
+                    const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
+                    const flat = r._foundryFlattenFor(e, r._foundryPresetForEntry(e), lod);
+                    const naben = new Map();
+                    for (let i = 0; flat && !e._fahr.luft && e._fahr.speed > 1 && i < e.instSlots.length; i++) {
+                        const rd = flat.leaves[i] && flat.leaves[i].rad;
+                        const t = rd && tief(e.instSlots[i]);
+                        const k = rd && rd.hx + "," + rd.hz;
+                        if (t && !(naben.get(k) && naben.get(k).y <= t.y)) naben.set(k, t);
+                    }
+                    for (const t of naben.values()) {
+                        const g = gez(t.x, t.z);
+                        if (g !== null) a.push(t.y - g);
+                    }
+                })
+            );
+            s.keys.w = false;
+            streuJetzt();
+            r.dismountArchitecture();
+            r.removeArchitecture(e);
+        }
+        R.streu = mass(streu);
+    }
+    return o;
+}
+
+function urteil(o) {
+    const f = [];
+    if (o.fehler) return [o.fehler];
+    if (!o.k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${o.k1.traeger})`);
+    if (!(Math.abs(o.k1.beckenCm) <= 1))
+        f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
+    if (!o.k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
+    else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1))
+        f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
+    if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
+    else {
+        // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
+        if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
+            f.push(
+                `K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`
+            );
+        if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
+            f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
+    }
+    if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
+    else {
+        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
+            f.push(
+                `K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`
+            );
+        if (!o.k4b || !(o.k4b.treppeCm <= 8))
+            f.push(
+                `K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus (Träger: ${o.k4b ? o.k4b.traeger : "?"})`
+            );
+        if (!o.k4c || !(o.k4c.fugen >= 20))
+            f.push(`K4 Aufbau: ${o.k4c ? o.k4c.fugen : "?"} Fugen im Umkreis (Soll ≥ 20)`);
+        else if (o.k4c.traegt > 0)
+            f.push(
+                `K4 Fuge: ${o.k4c.traegt} von ${o.k4c.fugen} Fugen tragen einen Leib — Täter ${o.k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
+            );
+        if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
+        else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
+            f.push(
+                `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
+            );
+    }
+    if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
+        f.push(
+            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}, Karten dort ${o.k6leser && o.k6leser.stufen ? o.k6leser.stufen.join(" · ") : "?"}, Mitte ${o.k6leser && o.k6leser.mitte ? o.k6leser.mitte.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+        );
+    if (!o.k6leser || !(o.k6leser.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
+    // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
+    // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
+    // −278/−1038 (K55) trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
+    // nicht unabhängig je Büschel: dort lag das Verhältnis 1,12 ± 0,044, und die Erwartung aus den Faktoren des Lesers selbst
+    // (Σp je Kandidat, Stufe 0/1/2 einzeln) 1,07 — Streifen über und unter 1 je Stufe, keine Naht. Der Täter der Klasse (K21:
+    // der Leser liest nur die Karte des Eigners) fiel auf 0,08.
+    const toleranz = (w) => Math.max(0.1, 3 * w.sigma);
+    const k7 = (w, name, n) => {
+        if (!w) return;
+        if (!(w.daneben >= n)) f.push(`K7 Aufbau: ${w.daneben} ${name} neben dem Rand-Streifen (Soll ≥ ${n})`);
+        else if (!(Math.abs(w.verh - 1) <= toleranz(w)))
+            f.push(
+                `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
+            );
+    };
+    if (o.k7wald === false)
+        f.push("K7 Aufbau: der Wald der Mesh-Zone steht nicht (Terme pflanzung/streu offen nach 200 Runden)");
+    k7(o.k7wiese, "Büschel", K7_UMFANG.bueschel);
+    k7(o.k7streu, "Pflanzen", K7_UMFANG.pflanzen);
+    return f;
+}
+
+// K8 je Ort × Rolle: Soll p95 in cm und der EINE Leser der Rolle (der Täter beim Namen)
+const K8_ROLLEN = Object.freeze({
+    fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
+    streu: [3, "der Fuß der Streu (_streuFuss: der gezeichnete Boden, dem Auge nach)"],
+    fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
+    huf: [3, "der Huf (_kreaturFussBoden)"],
+    rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
+});
+// DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
+// schlechter werden (+ 15 % + 0,5 cm Streuung je Lauf); `--ratsche` schreibt den Lauf als neue Ratsche
+const RATSCHE = path.join(ROOT, "spec/profiband/ratsche-boden-rolle.json");
+function urteilK8(o, umfang) {
+    if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
+    const f = [];
+    const rs = fs.existsSync(RATSCHE) ? JSON.parse(fs.readFileSync(RATSCHE, "utf8")) : {};
+    for (const ort of ["wiese", "hang"])
+        for (const [rolle, [soll, wer]] of Object.entries(K8_ROLLEN)) {
+            // die Deko-Streu über den Chunks (64–194 m) trägt an der Wiese (einer Aue) gut 100 Instanzen: die Hälfte des Umfangs
+            const m = o[ort][rolle];
+            const min = rolle === "streu" ? umfang / 2 : umfang;
+            if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
+            else if (!(m.p95 <= Math.max(soll, ((rs[ort] || {})[rolle] || 0) * 1.15 + 0.5)))
+                f.push(
+                    `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
+                );
+        }
+    return f;
+}
+const zeileK8 = (o) =>
+    ["wiese", "hang"]
+        .map((ort) =>
+            o && o[ort]
+                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° ${o[ort].sicht} · ` +
+                  Object.keys(K8_ROLLEN)
+                      .map(
+                          (k) =>
+                              `${k} ${o[ort][k] ? o[ort][k].p95 + " (" + o[ort][k].median + ", n " + o[ort][k].n + ")" : "?"}`
+                      )
+                      .join(" · ")
+                : `K8 ${ort} ?`
+        )
+        .join(" | ");
+
+function zeile(o) {
+    if (o.fehler) return o.fehler;
+    const v = (x) => (x === null || x === undefined ? "?" : x);
+    return (
+        `K1 Becken ${v(o.k1.beckenCm)} cm · Sprung ${v(o.k1.sprungBeckenCm)} cm` +
+        ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
+        ` · K4 Leib−Karte Median ${o.k4 ? v(o.k4.leibMedianCm) : "?"} cm · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
+        ` · K4 Fuge ${o.k4c ? v(o.k4c.traegt) + "/" + v(o.k4c.fugen) + " tragen" : "?"}` +
+        ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
+        ` · K6 Leser ${o.k6leser ? v(o.k6leser.fehl) + "/" + v(o.k6leser.n) + " (max " + v(o.k6leser.maxCm) + " cm)" : "?"}` +
+        (o.k7wiese
+            ? ` · K7 Umkreis ${v(o.k7umkreis)} m · Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
+            : "") +
+        (o.k7streu
+            ? ` · K7 Streu (Umkreis ${v(o.k7umkreisStreu)} m) ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
+            : "") +
+        (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
+        (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
+    );
+}
+
+(async () => {
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    let rot = 0;
+    try {
+        // `k8`: die Welt mit Foundry (Streu, Reh und GT tragen Studio-Gestalten), sie misst nur K8
+        const lauf = async (inj, k8) => {
+            // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
+            // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
+            const kontext = await browser.createBrowserContext();
+            const page = await kontext.newPage();
+            page.setDefaultTimeout(880000);
+            const errs = [];
+            page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
+            await nullRenderer(page, { foundry: k8 === true });
+            await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
+            await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
+            await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
+            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+            await warteAufWelt(page, 180000);
+            if (inj) await page.evaluate(taeter, inj);
+            // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
+            await page.evaluate(() =>
+                window.__weltStehtNach(() => {
+                    try {
+                        window.anazhRealm._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                })
+            );
+            const o = k8
+                ? await page.evaluate(rollen, K8_UMFANG)
+                : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
+            await kontext.close();
+            return { o, errs };
+        };
+        if (SELBST) {
+            const soll = {
+                traeger: ["K1 Becken auf dem Träger", "K2 Fuß-Probe"],
+                luft: ["K1 Becken im Sprung"],
+                hoehle: ["K3 Tier in der Höhle"],
+                sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
+                tod: ["K5 Tod-Lage"],
+                fuge: ["K4 Fuge"],
+                rand: ["K6 Leser im Rand-Streifen"],
+                wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
+                rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
+            };
+            for (const inj of Object.keys(soll)) {
+                const { o } = await lauf(inj, inj === "rolle");
+                const f = inj === "rolle" ? urteilK8(o, K8_UMFANG) : urteil(o);
+                const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
+                const ok = fehlt.length === 0;
+                const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
+                console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
+                if (!ok) rot++;
+            }
+        }
+        const { o, errs } = NUR_K8 ? { o: null, errs: [] } : await lauf(null);
+        const k8 = await lauf(null, true);
+        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG)];
+        if (o) console.log("  " + zeile(o));
+        console.log("  " + zeileK8(k8.o));
+        if (process.argv.includes("--ratsche"))
+            fs.writeFileSync(
+                RATSCHE,
+                JSON.stringify(
+                    Object.fromEntries(
+                        ["wiese", "hang"].map((w) => [
+                            w,
+                            Object.fromEntries(Object.keys(K8_ROLLEN).map((k) => [k, k8.o[w][k].p95])),
+                        ])
+                    ),
+                    null,
+                    1
+                ) + "\n"
+            );
+        for (const x of f) console.log("  ❌ " + x);
+        for (const e of [...errs, ...k8.errs].slice(0, 1)) console.log("  ❌ Seiten-Fehler: " + e);
+        rot += f.length + (errs.length || k8.errs.length ? 1 : 0);
+        if (process.env.KOERPER_STAND_JSON)
+            fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify({ ...o, k8: k8.o }, null, 1));
+    } finally {
+        await browser.close();
+        server.close();
+    }
+    console.log(rot ? `❌ gate:koerper-stand ROT (${rot})` : "✅ gate:koerper-stand grün");
+    process.exit(rot ? 1 : 0);
+})().catch((e) => {
+    console.error(e);
+    process.exit(2);
+});

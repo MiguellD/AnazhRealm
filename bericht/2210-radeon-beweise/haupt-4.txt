@@ -1,0 +1,2 @@
+third/hieb {"n":50,"fehlt":0,"p50":21.2,"p95":28.9,"max":34.4,"eingabe":6.2,"hoerer":1.8,"kette":15.1,"kurve":0,"takte":3,"halt":8}
+LATENZ GRÜN (Bild 9.9 ms) 

@@ -1,0 +1,5 @@
+umstellen --ort wiese
+latenz --proben 50 --sicht ego,third --verb gehen,wechsel,springen,einsteigen --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-vier.json
+latenz --proben 50 --sicht ego --verb hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-hieb-ego.json
+latenz --proben 50 --sicht third --verb hieb --json C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/latenz-hieb-third.json
+schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-radeon-beweise/haupt-schirm.png
