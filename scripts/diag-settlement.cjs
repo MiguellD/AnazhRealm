@@ -1452,7 +1452,7 @@ const FIXTURES = [
         // Slot-Anker == Plan-Slot (K10): JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
         // steht auf dem Boden des Plans v2 (y = slot.y + 0,5, `_ortPlanSetzen` — derselbe Plan am selben Anker). Die Welt rückt
         // kein Haus: die Ersatz-Orte und die hMax-Suche fielen mit dem Erdbau des Orts.
-        const v2 = typeof r._ortPlanSetzen === "function" ? r._ortPlanSetzen(plan, o1) : null;
+        const v2 = r._ortPlanSetzen(plan, o1);
         res.planV2 = !!(v2 && v2.version === 2);
         res.slotAnchorExact =
             !!v2 &&

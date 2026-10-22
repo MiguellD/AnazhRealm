@@ -722,15 +722,10 @@ async function probe(argW) {
                     brennbar(e)
             );
             st.timeOfDay = 0.5;
-            const licht = typeof r._sonnenRichtung === "function" ? r._sonnenRichtung() : null;
-            const imLicht =
-                licht && typeof r._brennpunkte === "function"
-                    ? nah.filter((e) =>
-                          linsen.some((f) =>
-                              r._brennpunkte(f, licht).some((p) => r._traegtPunkt(e, st.blueprints[e.type], p))
-                          )
-                      ).length
-                    : null;
+            const licht = r._sonnenRichtung();
+            const imLicht = nah.filter((e) =>
+                linsen.some((f) => r._brennpunkte(f, licht).some((p) => r._traegtPunkt(e, st.blueprints[e.type], p)))
+            ).length;
             m.zensus = { linsen: [...new Set(linsen.map((e) => e.type))], altReichweite: nah.length, imLicht };
             // (1) Die Eiche 2,4 m vor der Plattform-Mitte (der Ort der Leben-Schau; direkt gesetzt — der Bau-Modus hält die
             // Lichtung seit dem Schnitt der Wege frei, hier wird das Brennglas-Gesetz allein gemessen): ein sonniger Tag.
