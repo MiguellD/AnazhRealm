@@ -1,0 +1,16 @@
+HÄNGER-LINSE: 1 Frames > 100 ms in 60 s (3742 Frames, 5783 Takte; Frame p50/p95/p99/max 16.6/25/33.4/100.1 ms) — TAKT 1 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.06 · Chunks 90 · Wetter sunny · Proben ja (5783 Takt-Marken)
+Pipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module
+Erst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms
+
+   n    Σ ms   max ms  Ursache
+   1     100      100  TAKT: verteilt
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=1 dt=100.1 ms (1 Takte, 0 ohne Bild) [TAKT 97 · NEBEN 9] TAKT: verteilt
+      Zweige: _loopAutoSave 30% · renderer._renderScene 29% · _loopVoxelStreaming 18%
+      Selbst: _voxelSurfaceY 7% · saveState 7% · setItem 5%
+      Gerät: texKB 1536
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\glaette-e500\s4-haenger.json

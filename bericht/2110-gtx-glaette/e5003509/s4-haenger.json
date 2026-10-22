@@ -1,0 +1,122 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "schwelle": 100,
+ "sekunden": 60,
+ "takte": 5783,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 0,
+  "shader": 0,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 0,
+  "ms": 0,
+  "maxMs": 0,
+  "ueber16": 0,
+  "jeAuftragMs": {}
+ },
+ "bildTaktMs": 9.8,
+ "frames": 3742,
+ "frameMs": {
+  "p50": 16.6,
+  "p95": 25,
+  "p99": 33.4,
+  "max": 100.1
+ },
+ "haengerN": 1,
+ "jeKlasse": {
+  "TAKT": 1,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [
+  {
+   "ursache": "TAKT: verteilt",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 100,
+   "maxMs": 100
+  }
+ ],
+ "haenger": [
+  {
+   "t": 1,
+   "dt": 100.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 97,
+    "NEBEN": 9,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopAutoSave",
+     "pct": 30
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 29
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 18
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_voxelSurfaceY",
+     "pct": 7
+    },
+    {
+     "name": "saveState",
+     "pct": 7
+    },
+    {
+     "name": "setItem",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 1536
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  }
+ ],
+ "marken": 5783,
+ "profil": true,
+ "probe": [],
+ "lauf": {
+  "regler": "frei",
+  "tiere": "frei",
+  "wandern": "bahn",
+  "kreaturen": 9,
+  "chunks": 90,
+  "loadScale": 0.06,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "bauN": 0,
+  "bauMs": 0,
+  "verschoben": 0,
+  "pipeAsync": 0,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 1 Frames > 100 ms in 60 s (3742 Frames, 5783 Takte; Frame p50/p95/p99/max 16.6/25/33.4/100.1 ms) — TAKT 1 · NEBEN 0 · GC 0 · GPU 0\nLauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.06 · Chunks 90 · Wetter sunny · Proben ja (5783 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module\nErst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms\n\n   n    Σ ms   max ms  Ursache\n   1     100      100  TAKT: verteilt\n\nJe Hänger (t = ms seit Mess-Beginn):\n  t=1 dt=100.1 ms (1 Takte, 0 ohne Bild) [TAKT 97 · NEBEN 9] TAKT: verteilt\n      Zweige: _loopAutoSave 30% · renderer._renderScene 29% · _loopVoxelStreaming 18%\n      Selbst: _voxelSurfaceY 7% · saveState 7% · setItem 5%\n      Gerät: texKB 1536"
+}

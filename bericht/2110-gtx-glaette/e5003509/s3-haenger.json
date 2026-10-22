@@ -1,0 +1,64 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "schwelle": 100,
+ "sekunden": 60,
+ "takte": 5667,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 0,
+  "shader": 0,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 0,
+  "ms": 0,
+  "maxMs": 0,
+  "ueber16": 0,
+  "jeAuftragMs": {}
+ },
+ "bildTaktMs": 10,
+ "frames": 3727,
+ "frameMs": {
+  "p50": 16.6,
+  "p95": 25.1,
+  "p99": 33.6,
+  "max": 66.7
+ },
+ "haengerN": 0,
+ "jeKlasse": {
+  "TAKT": 0,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [],
+ "haenger": [],
+ "marken": 5667,
+ "profil": true,
+ "probe": [],
+ "lauf": {
+  "regler": "frei",
+  "tiere": "frei",
+  "wandern": "bahn",
+  "kreaturen": 10,
+  "chunks": 72,
+  "loadScale": 0.07,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "bauN": 0,
+  "bauMs": 0,
+  "verschoben": 0,
+  "pipeAsync": 0,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3727 Frames, 5667 Takte; Frame p50/p95/p99/max 16.6/25.1/33.6/66.7 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0\nLauf: Regler frei · Tiere frei (10) · Wandern bahn · loadScale 0.07 · Chunks 72 · Wetter sunny · Proben ja (5667 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module\nErst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms"
+}

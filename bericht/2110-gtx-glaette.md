@@ -36,3 +36,23 @@ Der erste Lauf fuhr `haenger --regler voll`. R8 verlangt für Glätte den Regler
 - Mit dem Regler des Spielers ist der längste Frame kürzer als unter `voll` (66,7–91,6 gegen 83,2–100,0 ms), bei rund 6 % mehr Frames.
 - Zwischen s2 und s3 lief ein CI-echt-Job mit Vorfahrt (bis 05:15); s3 begann danach mit CI-Ruhe.
 - Roh: OMEN `p3/n2210/glaette-frei/`; hier `bericht/2110-gtx-glaette/regler-frei/`.
+
+---
+
+## Nachtrag 22.10. 06:07–06:21 — frisch am main-Kopf e5003509 (V18.546.59; R6: der Speicher-Takt änderte sich seit 7670a4a1), `--regler frei`
+
+**Urteil: Staffel 1 hält — 3 von 4 Sitzungen ohne Frame > 100 ms.** Eine Sitzung hat EINEN Hänger, beim Namen genannt.
+
+| Sitzung | Frames | > 100 ms | Frame p50/p95/p99/max ms |
+|---|---|---|---|
+| s1 | 3708 | 0 | 16,6 / 25,1 / 33,4 / 66,6 |
+| s2 | 3806 | 0 | 16,6 / 25 / 33,4 / 66,6 |
+| s3 | 3727 | 0 | 16,6 / 25,1 / 33,6 / 66,7 |
+| s4 | 3742 | **1** | 16,6 / 25 / 33,4 / 100,1 |
+
+- **Der Hänger in s4:** t = 1 ms nach Mess-Beginn, dt 100,1 ms, ein Takt, TAKT 97 % · NEBEN 9 %.
+  - Zweige: **`_loopAutoSave` 30 %** · `renderer._renderScene` 29 % · `_loopVoxelStreaming` 18 %.
+  - Selbst: `_voxelSurfaceY` 7 % · **`saveState` 7 % · `setItem` 5 %**; Gerät texKB 1536.
+  - Das ist der Auto-Speicher-Takt, der synchron in `localStorage` schreibt, genau im ersten Frame der Messung (zusammen mit einem Streaming-Takt). Er trifft die 100-ms-Grenze um 0,1 ms.
+- Gegen 7670a4a1 (max 66,7–91,6 ms) stehen drei Sitzungen ruhiger (max 66,6–66,7). Der eine Hänger ist der Speicher-Takt beim Namen. Ein Täter erst bei ≥ 2 Boots (Regel 5): hier 1 von 4.
+- Roh: OMEN `p3/n2210/glaette-e500/`; hier `bericht/2110-gtx-glaette/e5003509/`.
