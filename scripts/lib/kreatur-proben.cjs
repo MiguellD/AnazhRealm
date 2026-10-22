@@ -2657,16 +2657,16 @@ async function kreaturProben(r, T, opts) {
                 tiere.push({ c, zone, spur: [], lage: null });
             });
         const BEINE = ["legFL", "legFR", "legHL", "legHR"];
-        // der sichtbare Leib: der Satz seiner Gestalt (Phase × Gewicht seiner Instanz, `_tickTierSatz`), die Grobstufe (die
-        // Gelenke ihrer Haut) oder die feine Stufe
+        // der sichtbare Leib: der Satz seiner Gestalt (Phase × Gewicht seiner Instanz im Wurf, der jedes Satz-Tier trägt —
+        // `_tickTierSatz`), die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
         const imSatz = (c) => {
             for (const m of s.scene.children) {
-                if (!m.isInstancedMesh || m.userData.inventar !== "tier" || m.userData.teil !== "fell") continue;
+                if (!m.isInstancedMesh || m.userData.inventar !== "tier" || m.userData.teil !== "wurf") continue;
                 const e = m.instanceMatrix.array;
                 const a = m.geometry.attributes.aGang;
                 for (let i = 0; i < m.count; i++)
                     if (Math.hypot(e[i * 16 + 12] - c.position.x, e[i * 16 + 14] - c.position.z) < 1e-3)
-                        return BEINE.map(() => a.getX(i) * a.getY(i) * TAU);
+                        return BEINE.map(() => (a.getX(i) % 1) * a.getY(i) * TAU);
             }
             return null;
         };
