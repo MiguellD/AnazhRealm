@@ -108,7 +108,7 @@ async function checkBandV1749Adventure(ctx) {
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
+// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
     const { page, check, errors, finalState } = ctx;
