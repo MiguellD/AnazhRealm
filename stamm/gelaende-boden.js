@@ -755,8 +755,9 @@ class AnazhRealm_gelaende_boden {
     }
     // DIE ORT-WAHL (K10 · siedlung.K5): der Plan v2 des Exports `plan` am nächsten Ort der Ringe um den Wunsch `origin`, der
     // jedes Haus trägt. Die Kandidaten rechnet der Ort-Faden (`_nebenAuftrag("ort")`, voxel-worker `ortWahl`: fachwerk
-    // `ortPlan` und das Wasser-Urteil `ortTraegt` am Zustand des Gesetzes); der Wirt urteilt am Sieger nur, was nur er kennt
-    // (`_ortTraegtWirt`: die Bauten, der Spieler jetzt) und lässt sonst ab dem nächsten weiterrechnen. Bis K5 rechnete der
+    // `ortPlan` und das Wasser-Urteil `ortTraegt` am Zustand des Gesetzes); der Wirt urteilt am Sieger des groben Rasters, was nur
+    // er kennt (`_ortTraegtWirt`: die Bauten, der Spieler jetzt), erst dann zahlt der Faden das Raster der Wand (`wand`); fällt
+    // der Ort an einem davon, rechnet der Faden ab dem nächsten weiter. Bis K5 rechnete der
     // Haupt-Thread jeden Kandidaten in 3-ms-Scheiben (Teleport ins Erwachen nH 300: 70 761 Haus-Pläne, 18,7 s bis zum ersten
     // Haus; nH 12: 300, 1,4 s). Je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als
     // Gelände); zwei Rufer desselben Orts teilen EINE Wahl. `legen` false (der Vorlauf, `_dorfBereiten`): ihr Erdbau liegt erst,
@@ -789,7 +790,7 @@ class AnazhRealm_gelaende_boden {
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt (die Kachel reist vor dem Auftrag)
         this._ensureHydroTilesAround(origin.x, origin.z, reich + W.ringe * W.schrittM);
-        for (let ab = 0; ;) {
+        for (let ab = 0, wand = -1; ;) {
             const pm = this.state.playerMesh;
             const raster = this._ortRaster(plan);
             const r = await this._nebenAuftrag(
@@ -799,6 +800,7 @@ class AnazhRealm_gelaende_boden {
                     plan,
                     origin,
                     ab,
+                    wand,
                     W,
                     M: AnazhRealm.WERK_LAND_M,
                     spieler: pm
@@ -820,14 +822,15 @@ class AnazhRealm_gelaende_boden {
                 );
                 return r.v2;
             }
-            const t0 = performance.now();
-            const frei = this._ortTraegtWirt(r.v2);
-            mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
-            if (frei) {
+            if (r.wand) {
                 mass.abstandM = r.abstandM;
                 return r.v2;
             }
-            ab = r.index + 1;
+            const t0 = performance.now();
+            const frei = this._ortTraegtWirt(r.v2);
+            mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
+            ab = frei ? r.index : r.index + 1;
+            wand = frei ? r.index : -1;
         }
     }
     // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts

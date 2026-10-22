@@ -5795,6 +5795,55 @@
         var c = Math.cos(p.phi || 0);
         return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
     }
+    // DAS WASSER EINES HAUSES (K10): ein Slot `sl` (plan-lokal), dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt
+    // (`wasserAm(x, z)` plan-lokal: ctx.wasserAt, dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts,
+    // `_fundamentRaster`: je Meter ein Punkt, höchstens 13 je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine
+    // Platte im See, das Dorf ist, was steht. `ein` sein Eingang (`eingangVon`); `mitte`: nur der mittlere Punkt des Rasters
+    // (der billige Beweis zuerst). Leser: `ortPlan` und `ortImWasser`.
+    function slotImWasser(sl, wasserAm, ein, mitte) {
+        var O = ORT_GESETZ;
+        var ob = sl.obb;
+        if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
+            var c = Math.cos(ob.phi || 0);
+            var s = Math.sin(ob.phi || 0);
+            var ex = ob.ex + O.saumM;
+            var ez = ob.ez + O.saumM;
+            var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
+            var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
+            for (var i = mitte ? nx >> 1 : 0; i <= (mitte ? nx >> 1 : nx); i++)
+                for (var j = mitte ? nz >> 1 : 0; j <= (mitte ? nz >> 1 : nz); j++) {
+                    var lx = ex * ((2 * i) / nx - 1);
+                    var lz = ez * ((2 * j) / nz - 1);
+                    if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
+                }
+        } else if (wasserAm(sl.x, sl.z)) return true;
+        var tu = sl.tuer;
+        if (!mitte && tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w)) {
+            var ez0 = ein(sl).z;
+            var cu = Math.cos(sl.phi || 0);
+            var su = Math.sin(sl.phi || 0);
+            for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
+                for (var u = -1; u <= 1; u++) {
+                    var lt = ez0 - t;
+                    var du = (u * tu.w) / 2;
+                    if (wasserAm(sl.x + tu.x * cu + lt * su + du * cu, sl.z - tu.x * su + lt * cu - du * su)) return true;
+                }
+        }
+        return false;
+    }
+    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
+    // (`slotImWasser`: erst die Mitte jedes Hauses, dann sein ganzes Raster), −1 ohne — ohne den Plan zu rechnen. Leser: die
+    // Ort-Wahl der Welt (voxel-worker `ortWahl`: ein Ort, an dem das Wasser ein Haus nimmt, trägt den Plan nie ganz).
+    function ortImWasser(plan, origin, ctx) {
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        var am = function (x, z) {
+            return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
+        };
+        for (var m = 1; m >= 0; m--)
+            for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
+        return -1;
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -6050,38 +6099,8 @@
             if (!e) eingaenge.set(sl, (e = eingangVon(sl)));
             return e;
         };
-        // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
-        // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
-        // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
         var wasserAm = function (x, z) {
             return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
-        };
-        var imWasser = function (sl) {
-            var ob = sl.obb;
-            if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
-                var c = Math.cos(ob.phi || 0);
-                var s = Math.sin(ob.phi || 0);
-                var ex = ob.ex + O.saumM;
-                var ez = ob.ez + O.saumM;
-                var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
-                var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
-                for (var i = 0; i <= nx; i++)
-                    for (var j = 0; j <= nz; j++) {
-                        var lx = ex * ((2 * i) / nx - 1);
-                        var lz = ez * ((2 * j) / nz - 1);
-                        if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
-                    }
-            } else if (wasserAm(sl.x, sl.z)) return true;
-            if (hatTuer(sl) && isFinite(sl.tuer.w))
-                for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
-                    for (var u = -1; u <= 1; u++) {
-                        var v = vorne(sl, eingang(sl).z - t);
-                        var cu = Math.cos(sl.phi || 0);
-                        var su = Math.sin(sl.phi || 0);
-                        var du = (u * sl.tuer.w) / 2;
-                        if (wasserAm(v[0] + du * cu, v[1] - du * su)) return true;
-                    }
-            return false;
         };
         var ps = [];
         var wasserSlots = 0;
@@ -6091,7 +6110,7 @@
         // Hauses hing vor einer Wand, die es nicht gab.
         var neuSi = [];
         for (var si0 = 0; si0 < plan.slots.length; si0++)
-            if (imWasser(plan.slots[si0])) {
+            if (slotImWasser(plan.slots[si0], wasserAm, eingang)) {
                 wasserSlots++;
                 neuSi.push(-1);
             } else {
@@ -6373,6 +6392,7 @@
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
         ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,

@@ -237,7 +237,7 @@ self.onmessage = function (e) {
             waldWecken();
         } else if (msg.type === "ort-wahl") {
             // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
-            // trägt — der Wirt prüft an ihm nur noch die Bauten und den Spieler
+            // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
             self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
@@ -258,31 +258,51 @@ self.onmessage = function (e) {
 // `grobN`/`wandN` Punkte je Slot, `radius` die Reichweite des Grundrisses, NaN ohne). Ab dem Kandidaten `ab` rechnet der
 // Faden je Ort der Ringe den Plan v2 (fachwerk `ortPlan`, dieselbe Gelände-Funktion: gelaende-core `hoehe` am Zustand samt
 // dem Erdbau früherer Orte, das Wasser des Gesetzes `atlasWaterLevelAt`) und urteilt, ob er jedes Haus trägt (`ortTraegt`).
-// Bis K5 rechnete der Haupt-Thread jeden Kandidaten in 3-ms-Scheiben (nH 300: 231 Kandidaten, 70 761 Haus-Pläne, 18,7 s bis
-// zum ersten Haus). Rückgabe { index (−1: kein Ort, der Wunsch), v2, abstandM, kandidaten, ms }.
+// Das Welt-Wasser des Plans (ctx.wasserAt: Haus und Brücken-Etikett) ist DASSELBE Urteil `ortNass` über dem Boden vor dem Plan:
+// bis K5 kannte es nur den Spiegel über dem ungeformten Boden, nie den Fluss — sein Kanal liegt unter dem Spiegel, sein Damm
+// darüber —, der Plan stellte Häuser in Kanal und Damm, und erst `ortTraegt` warf den Ort (nH 300: jeder der 231 Kandidaten,
+// 8–48 Häuser und 4–22 Laternen in der Gestalt des Gewässers, der Faden rechnete 8–19 s). Ein Ort, an dem das Wasser ein Haus
+// nimmt (fachwerk `ortImWasser`), trägt den Plan nie ganz: er fällt, bevor sein Plan entsteht. Rückgabe { index (−1: kein Ort,
+// der Wunsch), v2, wand, abstandM, kandidaten (die Pläne der Ringe), ms }. Billige Urteile zuerst (Lehre 25): der Faden gibt den
+// Ort nach dem groben Raster, der Wirt urteilt die Bauten, und erst sein Sieger (`msg.wand`: sein Index) zahlt das Raster der
+// Wand (nH 300: 155 000 Punkte, ~1 s) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
 function ortWahl(msg) {
     if (!self.__fachwerkCore)
         importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
     const t0 = self.performance.now();
-    const ctx = G.ortCtx(state, (x, z) => {
-        const w = atlasWaterLevelAt(x, z, -1e9);
-        return w > -Infinity && w > G.hoehe(state, x, z, true);
-    });
+    const ctx = G.ortCtx(state, (x, z) => ortNass(msg, null, x, z));
     let i = 0;
     let kandidaten = 0;
+    const letzt = ortWahl.letzt;
+    ortWahl.letzt = null;
     for (let ring = 0; ring <= W.ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
             if (i < msg.ab) continue;
             const a = (2 * Math.PI * j) / n;
             const o = { x: origin.x + Math.cos(a) * ring * W.schrittM, z: origin.z + Math.sin(a) * ring * W.schrittM };
+            const aus = (k, wand) => ({
+                index: i,
+                v2: k,
+                wand,
+                abstandM: ring * W.schrittM,
+                kandidaten,
+                ms: self.performance.now() - t0,
+            });
+            if (i === msg.wand && letzt && letzt.i === i) {
+                if (ortTraegt(msg, letzt.k, false)) return aus(letzt.k, true);
+                continue;
+            }
+            if (FC.ortImWasser(plan, o, ctx) >= 0) continue;
             const k = FC.ortPlan(plan, o, ctx);
             kandidaten++;
-            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), dann das Raster der Wand
-            if (ortTraegt(msg, k, true) && ortTraegt(msg, k, false))
-                return { index: i, v2: k, abstandM: ring * W.schrittM, kandidaten, ms: self.performance.now() - t0 };
+            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort)
+            if (ortTraegt(msg, k, true)) {
+                ortWahl.letzt = { i, k };
+                return aus(k, false);
+            }
         }
     }
     return {
@@ -301,16 +321,8 @@ function ortWahl(msg) {
 function ortTraegt(msg, k, grob) {
     const plan = msg.plan;
     if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
-    const M = msg.M;
-    const tol = msg.W.bodenTolM;
     const E = G.erdbauNormal(k.erdbau);
-    const nass = (x, z) => {
-        const h0 = G.hoehe(state, x, z, true);
-        const he = E ? G.erdbauY(E, x, z, h0) : h0;
-        const h = gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
-        if (Math.abs(h - he) > tol) return true;
-        return h < atlasWaterLevelAt(x, z, h) + M;
-    };
+    const nass = (x, z) => ortNass(msg, E, x, z);
     for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
     const R = msg.raster;
     const sp = msg.spieler;
@@ -337,6 +349,16 @@ function ortTraegt(msg, k, grob) {
         }
     }
     return true;
+}
+// DAS WASSER DES ORTS an (x, z): der Boden (gelaende-core `hoehe` samt dem Erdbau früherer Orte, darauf der Erdbau `E` des
+// Plans, null: der Boden vor dem Plan) verschiebt die Gestalt des Gewässers (`gewaesserForm`) um mehr als `bodenTolM`, oder er
+// liegt weniger als `M` über dem Wasser des Gesetzes. Leser: das Welt-Wasser des Plans (`ortWahl`) und `ortTraegt`.
+function ortNass(msg, E, x, z) {
+    const h0 = G.hoehe(state, x, z, true);
+    const he = E ? G.erdbauY(E, x, z, h0) : h0;
+    const h = gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    if (Math.abs(h - he) > msg.W.bodenTolM) return true;
+    return h < atlasWaterLevelAt(x, z, h) + msg.M;
 }
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,
