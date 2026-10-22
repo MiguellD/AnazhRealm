@@ -101,6 +101,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   der Flatten und die Starr-Bindung des Ofens gruppieren nach ihr, das Gesetz zählt mit ihr = Draws je
   Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1, jede gezeigte
   Haus-Stufe die NUR-WURF-Stufe 3), oder `false`.
+- **Die Reduktion je Stufe** (pipeline.K3): eine gezeigte Stufe trägt höchstens ihren Anteil der L0-Dreiecke desselben
+  Baus — L1 ≤ 0,5, L2 ≤ 0,15 —, je Rezept und an jedem Regler-Rand (`gate:regler-wirkt` STUFEN, `reglerBudget.quote` Soll
+  leer); das Tor richtet sie selbst (porta-core.js `baueStufe`: das Kosten-Buch zählt die L0 an denselben Stellen, das
+  Gesetz der Stufe vergröbert sich bis zum Anteil), das Haus heilt am Rezept.
   Bei einer GELENK-GESTALT (Tier, Mensch — §8.4) darf `schatten` auf die gelenkige Grobstufe zeigen: sie bindet an das
   Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19). Ihr
   Umriss trägt den der feinen: die Grobstufe liegt auf dem Gesetz (`__aufsNiveau` — die Glättung zieht sie nicht nach

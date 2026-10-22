@@ -43,9 +43,6 @@
         "staffel": 0,
         "sollQuelle": "Studio-Vertrag B2c: jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers (Heilung am Studio, Lehre 19)",
         "bruch": {},
-        "quote": {
-            "gate:L1": "0.810 an kathedrale mass=0",
-            "gate:L2": "0.385 an kathedrale wLace=0"
-        }
+        "quote": {}
     }
 }
