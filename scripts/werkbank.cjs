@@ -90,7 +90,8 @@
 //                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
 //                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
 //                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
-//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,hieb] [--json datei] | latenz --selbsttest
+//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei]
+//                                    | latenz --selbsttest (ohne Welt: das Urteil) | latenz --verzugprobe (in der Welt: 3 Bilder Verzug)
 //                                                           DIE LATENZ (leib.K1): Taste (CDP) → erstes Bild mit Leib/Kamera
 //                                                           ≥ 1 cm bewegt, je Sicht × Verb p50/p95, ROT über 50 ms beim Täter
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
@@ -420,9 +421,11 @@ function latenzAn(k) {
             if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
         })();
     };
-    const nach = () => L.probe && (L.probe.imHoerer = performance.now() - L.probe.hoerer); // die Blase nach dem Hörer
+    // die Blase nach dem Hörer des Spiels — an der Taste wie am Klick (latenz-verben: bis dahin nur am Klick, jede Tasten-Probe
+    // trug kein imHoerer und das Urteil brach an ihr)
+    const nach = (ev) => L.probe && L.probe.hoerer != null && L.probe.imHoerer == null && !synth.has(ev) && (L.probe.imHoerer = performance.now() - L.probe.hoerer);
     for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
-    window.addEventListener("mousedown", nach);
+    for (const typ of ["keydown", "mousedown"]) window.addEventListener(typ, nach);
     rend.setAnimationLoop((t) => {
         L.takt++;
         L.taktAm = performance.now();
@@ -433,9 +436,11 @@ function latenzAn(k) {
     // zufällige Phase gegen den Bild-Takt
     L.bereit = async (sicht, zurueck, verb) => {
         L.probe = null;
+        if (st.player.mountedArch != null) r.dismountArchitecture(); // die Probe davor stieg ein
         if (zurueck || (L.verb = verb) === "hieb") st.playerMesh.position.copy(L.start);
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
         if (verb === "hieb" && !(await L.tierStellen())) return false;
+        if (verb === "einsteigen") await L.wagenStellen();
         for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await raf()) if (L.bilder.length > bis) return false;
         await new Promise((f) => setTimeout(f, Math.random() * 17));
         return !!(L.probe = {});
@@ -461,12 +466,26 @@ function latenzAn(k) {
             st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
         }
     };
+    // der Wagen des Einsteigens: EIN GT quer neben dem Start in der Reichweite des Gesetzes (`MOUNT_RANGE_M`), GEZEICHNET
+    // (`_archIsRendered`) — der Loop läuft, die Foundry baut ihn; ohne Bild mäße die Probe nur Leib und Kamera und bricht laut
+    L.wagenStellen = async () => {
+        if (!L.wagen) {
+            const f = r._blickVorn(st.yaw, 0), d = Math.min(2.6, 0.85 * r.constructor.MOUNT_RANGE_M);
+            const x = L.start.x + f.z * d, z = L.start.z - f.x * d;
+            L.wagen = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: st.yaw });
+            if (!L.wagen) throw new Error("latenz einsteigen: der GT steht nicht (spawnArchitecture fahrzeug_gt)");
+        }
+        for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await raf()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
+        if (!r._archIsRendered(L.wagen)) throw new Error("latenz einsteigen: der GT ist nach 1800 Bildern nicht gezeichnet (_archIsRendered)");
+    };
     L.ende = () => {
         for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
         GPUCanvasContext.prototype.getCurrentTexture = gct;
         for (const typ of ["keydown", "keyup", "mousedown"]) window.removeEventListener(typ, hoer, true);
-        window.removeEventListener("mousedown", nach);
+        for (const typ of ["keydown", "mousedown"]) window.removeEventListener(typ, nach);
         if (L.tier) r.removeCreature(L.tier);
+        if (st.player.mountedArch != null) r.dismountArchitecture();
+        if (L.wagen) r.removeArchitecture(L.wagen);
         rend.setAnimationLoop(null);
         st.playerMesh.position.copy(L.start);
         r.setCameraMode(L.sicht);
@@ -1876,7 +1895,10 @@ async function starte() {
                 }
                 if (req.url === "/latenz") {
                     const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
-                    const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86] };
+                    // die Verben des Leibs (leib.K1 Staffel 2): je Verb die Taste des Spiels (FAHR_TASTEN.einsteigen, die Aktion jump);
+                    // hieb ist der Klick. gehen, springen und einsteigen beginnen am Start (springen landet, einsteigen sitzt ab)
+                    const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86], springen: ["Space", " ", 32], einsteigen: ["KeyE", "e", 69] };
+                    const zurueck = { gehen: true, springen: true, einsteigen: true };
                     const tu = (verb, type, [code, key, vk] = taste[verb] || []) =>
                         code
                             ? cdp.send("Input.dispatchKeyEvent", { type, code, key, windowsVirtualKeyCode: vk })
@@ -1890,7 +1912,8 @@ async function starte() {
                                 const reihe = (proben[`${sicht}/${verb}`] = []);
                                 for (let i = 0; i < +b.proben; i++) {
                                     const s = sicht === "ego" ? "first" : "third";
-                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, verb === "gehen", verb))) {
+                                    if (!taste[verb] && verb !== "hieb") throw new Error(`latenz: das Verb ${verb} kennt die Linse nicht (gehen · wechsel · springen · einsteigen · hieb)`);
+                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, !!zurueck[verb], verb))) {
                                         reihe.push({ unruhe: true });
                                         if (reihe.filter((p) => p.unruhe).length < 3) continue;
                                         throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht`);
@@ -3898,9 +3921,21 @@ async function starte() {
     else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
-        // der Selbsttest: 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
+        // der Selbsttest (ohne Welt, check:statik): das Urteil je Verb gegen erfundene Reihen (scripts/lib/haenger-linse.cjs)
+        if (argv.includes("--selbsttest")) {
+            const f = HL.latenzSelbsttest();
+            console.log(
+                f.length
+                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
+                    : "SELBSTTEST GRÜN: das Latenz-Urteil hält gesunde Reihen aller Verben (gehen · wechsel · springen · einsteigen · hieb) " +
+                          "GRÜN und nennt eine Probe ohne imHoerer, ohne Bewegung, einen langsamen p95, einen Hieb ohne Hit-Stop und eine " +
+                          "Reihe nur aus Unruhe ROT beim Namen, ohne zu brechen"
+            );
+            process.exit(f.length ? 1 : 0);
+        }
+        // die Verzug-Probe (in der Welt): 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
         const reihe = { proben: opt("--proben", 50), sichten: opt("--sicht", "ego,third"), verben: opt("--verb", "gehen,wechsel") };
-        const selbst = argv.includes("--selbsttest"), klein = { proben: 12, sichten: "ego", verben: "gehen" };
+        const selbst = argv.includes("--verzugprobe"), klein = { proben: 12, sichten: "ego", verben: "gehen" };
         o = await rufe("/latenz", selbst ? klein : reihe);
         const mit = selbst && (await rufe("/latenz", Object.assign({ verzug: 3 }, klein)));
         if (opt("--json")) fs.writeFileSync(opt("--json"), JSON.stringify(selbst ? { ohne: o, mit } : o, null, 1));
@@ -3908,9 +3943,13 @@ async function starte() {
             for (const [n, e] of Object.entries(x.reihen || {})) console.log(n, JSON.stringify(e));
             console.log(`LATENZ ${x.urteil} (Bild ${x.bildMs} ms) ${x.rot ? x.rot.join(" · ") : x.fehler}`);
         }
-        const hub = mit && mit.reihen["ego/gehen"].p50 - o.reihen["ego/gehen"].p50;
-        const gut = selbst ? mit.urteil === "ROT" && hub >= 2 * o.bildMs : o.urteil === "GRÜN";
-        if (selbst) console.log(`SELBSTTEST ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms`);
+        // ein Lauf, der mit `fehler` antwortet, trägt keine Reihen: die Probe nennt ihn, statt an ihm zu brechen (bis latenz-verben:
+        // „Cannot read properties of undefined (reading 'ego/gehen')")
+        const g = (x) => x && x.reihen && x.reihen["ego/gehen"] && x.reihen["ego/gehen"].p50;
+        const hub = selbst && Number.isFinite(g(mit)) && Number.isFinite(g(o)) ? +(g(mit) - g(o)).toFixed(1) : null;
+        const gut = selbst ? mit.urteil === "ROT" && hub != null && hub >= 2 * o.bildMs : o.urteil === "GRÜN";
+        if (selbst)
+            console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms` + (hub == null ? ` — ${o.fehler || mit.fehler || "keine Reihe ego/gehen"}` : ""));
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {

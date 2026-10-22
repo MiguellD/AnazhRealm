@@ -847,30 +847,70 @@ function selbsttest() {
 // Das Urteil der Latenz je Sicht × Verb: p50/p95 (Rang), die Zerlegung im Median, ROT über `soll` ms oder bei einer Probe
 // ohne Bewegung — beim Namen der größten Stufe (eingabe · hoerer · kette bis 1 mm · kurve 1 mm → 1 cm) und der Takte bis zur Bewegung;
 // der Hieb auch bei einem anderen Verb oder einem Hit-Stop unter 2 Bildern (im Median, ein Hieb ohne Treffer hält 0).
+// DIE GRÖSSEN JEDER PROBE (latenz-verben): jedes Verb — Taste wie Klick — trägt eingabe · imHoerer · regung · takte (der Hörer
+// `nach` in latenzAn misst imHoerer an keydown UND mousedown). Fehlt eine davon in einer gemessenen Probe, ist die Reihe ROT beim
+// Namen der Größe; der Median rechnet nur über Zahlen (bis latenz-verben brach `.toFixed` auf undefined jede Tasten-Reihe).
+const LATENZ_PFLICHT = Object.freeze(["eingabe", "imHoerer", "regung", "takte"]);
 function latenzUrteil(proben, bildMs, soll = 50) {
+    const zahlen = (v) => v.filter(Number.isFinite).sort((a, b) => a - b);
     const rang = (v, q) => (v.length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
-        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]).sort((a, b) => a - b), 0.5);
-        const ms = ok.map((p) => p.ms).sort((a, b) => a - b);
+        const ok = ps.filter((p) => Number.isFinite(p.ms)), med = (f) => rang(zahlen(ok.map((p) => p[f])), 0.5);
+        const ms = zahlen(ok.map((p) => p.ms));
+        const ohne = LATENZ_PFLICHT.map((g) => [g, ok.filter((p) => !Number.isFinite(p[g])).length]).filter(([, n]) => n);
+        if (ohne.length) rot.push(`${name} ohne ${ohne.map(([g, n]) => `${g} (${n}/${ok.length})`).join(", ")} — eine Pflicht-Größe fehlt in gemessenen Proben`);
         for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
         const z = { eingabe: med("eingabe"), hoerer: med("imHoerer"), kette: med("kette"), kurve: med("kurve") };
         const e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
         Object.assign(e, z, { takte: med("takte") });
         if (name.endsWith("hieb")) {
-            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(ps.map((p) => p.halt || 0).sort((a, b) => a - b), 0.5));
+            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(zahlen(ps.map((p) => p.halt || 0)), 0.5));
             if (/[^,]/.test(verben.replace(/hieb/g, "")) || !(halt >= 2)) rot.push(`${name} Verben ${verben}, Hit-Stop ${halt} Bilder`);
         }
         if (e.fehlt || !(e.p95 <= soll)) {
-            const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
-            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);
+            const taeter = Object.keys(z).filter((k) => z[k] != null).sort((a, b) => z[b] - z[a])[0];
+            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter || "keiner gemessen"} ${taeter ? z[taeter] : "–"} ms, ${e.takte} Takte`);
         }
     }
-    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: bildMs && +bildMs.toFixed(2), reihen, rot, proben };
+    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: Number.isFinite(bildMs) ? +bildMs.toFixed(2) : null, reihen, rot, proben };
+}
+
+// DER SELBSTTEST DES LATENZ-URTEILS (ohne Welt, `werkbank latenz --selbsttest`, check:statik): je Täter eine erfundene Reihe —
+// jede gesunde Verb-Reihe GRÜN; eine Probe ohne imHoerer, eine ohne Bewegung, ein langsamer p95, ein Hieb ohne Hit-Stop und eine
+// Reihe nur aus Unruhe ROT beim Namen, ohne dass das Urteil bricht
+function latenzSelbsttest() {
+    const f = [];
+    const probe = (ms, o = {}) => Object.assign({ t0: 0, eingabe: 0.3, imHoerer: 1.2, regung: ms - 6, ms, takte: 2 }, o);
+    const reihe = (n, o) => Array.from({ length: n }, (_, i) => probe(20 + (i % 10), o));
+    const gesund = { "ego/gehen": reihe(20), "third/wechsel": reihe(20), "ego/springen": reihe(20), "third/einsteigen": reihe(20), "ego/hieb": reihe(20, { verb: "hieb", halt: 9 }) };
+    const g = latenzUrteil(gesund, 8.3);
+    if (g.urteil !== "GRÜN") f.push("gesunde Reihen aller Verben nicht GRÜN: " + g.rot.join(" · "));
+    const faelle = [
+        [{ "ego/springen": reihe(20).map((p, i) => (i < 3 ? Object.assign(p, { imHoerer: undefined }) : p)) }, /ego\/springen ohne imHoerer \(3\/20\)/],
+        // jede Tasten-Reihe am Kopf f3865c80: kein Hörer setzte imHoerer — das alte Urteil brach an .toFixed
+        [{ "ego/wechsel": reihe(20, { imHoerer: undefined }) }, /ego\/wechsel ohne imHoerer \(20\/20\)/],
+        [{ "ego/gehen": reihe(19).concat([{ t0: 0 }]) }, /ego\/gehen p95 .* \(fehlt 1\)/],
+        [{ "third/einsteigen": reihe(20, { ms: 80 }).map((p) => Object.assign(p, { regung: 8 })) }, /third\/einsteigen p95 80 ms > 50 .*Täter kurve/],
+        [{ "ego/hieb": reihe(20, { verb: "hieb", halt: 0 }) }, /ego\/hieb Verben .*Hit-Stop 0 Bilder/],
+        [{ "third/gehen": [{ unruhe: true }, { unruhe: true }, { unruhe: true }] }, /third\/gehen p95 null ms > 50 \(fehlt 3\) — Täter keiner gemessen/],
+    ];
+    for (const [proben, muster] of faelle) {
+        let u;
+        try {
+            u = latenzUrteil(proben, 8.3);
+        } catch (e) {
+            f.push(`${Object.keys(proben)[0]}: das Urteil bricht (${e.message})`);
+            continue;
+        }
+        if (u.urteil !== "ROT" || !muster.test(u.rot.join(" · "))) f.push(`${Object.keys(proben)[0]}: nicht beim Namen ROT (${u.rot.join(" · ") || u.urteil})`);
+    }
+    return f;
 }
 
 module.exports = {
     latenzUrteil,
+    latenzSelbsttest,
     linseWerten,
     spurProfil,
     selbsttest,
