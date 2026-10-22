@@ -410,6 +410,7 @@ class AnazhRealm_dienst {
         if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
             this._weltBakeFenster = jetzt;
             this._weltBakeN = 0;
+            this._weltBakeNein = 0;
             this._weltBakeVorrang = Number.isFinite(this._weltBakeHunger) ? this._weltBakeHunger : Infinity;
             this._weltBakeHunger = Infinity;
         }
@@ -417,10 +418,27 @@ class AnazhRealm_dienst {
         const vorrang = jetzt - this._weltBakeFenster < 500 && D > this._weltBakeVorrang;
         if (this._weltBakeN >= max || vorrang) {
             if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
+            this._weltBakeNein++;
             return false;
         }
         this._weltBakeN++;
         return true;
+    }
+    // DIE SCHULD DER BAKE-UHR: wer in ihrem lebenden Fenster abgewiesen wurde, wartet (er fragt im nächsten Bild wieder) —
+    // `_weltOffen` liest sie. Die Uhr zählt Fits je Sekunde, jede Wand Takte: auf der GTX liefen 1 988 Takte, während sie den
+    // Satz des Dorfs noch abwies, und das Wort „steht" kannte ihre Schuld nicht (CI 39700100953). Ein abgelaufenes Fenster
+    // ohne Frager schuldet nichts.
+    _weltBakeSchuld() {
+        const f = this._weltBakeFenster;
+        return f !== undefined && performance.now() - f <= 1000 ? this._weltBakeNein | 0 : 0;
+    }
+    // DER WECKER DER BAKE-UHR: der Beginn ihrer jetzigen Phase (das Fenster, seine zweite Hälfte ohne Vorrang, das fällige
+    // nächste) — neu, sobald sie anders antworten kann. Ein Fege-Takt, der nur auf sie wartet, schläft bis dahin (`_standRuht`).
+    _weltBakeWecker() {
+        const f = this._weltBakeFenster;
+        if (f === undefined) return -1;
+        const dt = performance.now() - f;
+        return f + (dt < 500 ? 0 : dt <= 1000 ? 500 : 1000);
     }
 
     // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
@@ -1431,7 +1449,9 @@ class AnazhRealm_dienst {
         // gegangen: bis K-WANDUHR hieß sie 1, ein Gang über 0 Zellen meldete 0 — die Streu einer leeren Bühne ging für immer
         // „0/1", die Welt stand nie (CI 39510089436 schatten-terminator, der Leib wärmte nie vor)
         t.runde = runde | 0;
-        if (t.leer >= t.runde) {
+        // DIE BAKE-UHR WECKT (Lehre 26): wartete der letzte Gang NUR auf sie (`offen` "felder"), geht der nächste erst, wenn sie
+        // anders antworten kann (`_weltBakeWecker`) — vorher ging archCull je Bild den Bestand (90 000 Abweisungen in 31 s)
+        if (t.leer >= t.runde || (!neu && t.offen === "felder" && t.wecker === this._weltBakeWecker())) {
             t.ruht++;
             return true;
         }
@@ -1439,12 +1459,14 @@ class AnazhRealm_dienst {
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
-    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach). Beides beginnt seine Runde neu.
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach; "felder": nur auf die Bake-Uhr, ein Asset oder das
+    // Buch — ihn wecken ihr Wecker und der Stempel). Beides beginnt seine Runde neu.
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
-        t.offen = !!offen;
+        t.offen = offen === "felder" ? offen : !!offen;
+        t.wecker = this._weltBakeWecker();
         if (gewirkt) {
             t.leer = 0;
             if (t.bau) this._bauRegt();
