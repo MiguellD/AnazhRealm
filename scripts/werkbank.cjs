@@ -1787,7 +1787,7 @@ async function starte() {
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
-                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei" });
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
                     await page.evaluate(() => {
                         const r = window.anazhRealm;
                         r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
