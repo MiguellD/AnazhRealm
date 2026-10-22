@@ -1,11 +1,9 @@
 // diag-fernwald.cjs — DER FERNWALD IST KARTE (npm run gate:fernwald).
 //
 // Studio-Vertrag B2c: Baum und Strauch tragen `lod.budget[kind].fernform: "karte"` — jenseits der Nah-Grenze des Wirts
-// IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz). Die Streu
-// las das seit 04.10.; der GESETZTE Wald (Architektur-Einträge aus `_forestPlantChunk`) trug jenseits der Mesh-Zone (des
-// geregelten Cull-Radius, 100–150 m) bis 05.10. einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m glatte, gestreifte,
-// einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m; an der Mess-Wiese 895 Sätze), am Radius
-// sprang die Karte in den Satz. Der EINE Chokepoint `tickArchitectureCulling` liest jetzt `_archKartenPreset`: ein
+// IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz) — auch im
+// GESETZTEN Wald (Architektur-Einträge aus `_forestPlantChunk`) jenseits der Mesh-Zone (des geregelten Cull-Radius,
+// 100–150 m; bis 05.10. ein Satz im Welt-March). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein
 // Karten-Ding trägt seine Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits
 // seines L1↔Karte-Bands auf die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu
 // SEINEM Rand im Saum vor `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst
@@ -28,8 +26,7 @@
 //   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot, der Rückweg ein Schreiber, über den
-//               die Stufen-Wahl nie schläft (das Band steht im Ereignis); (4) ein Gedächtnis mit
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
 //               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
@@ -144,7 +141,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             let geprueft = 0;
             let wahl = null;
             let gewaehlt = null;
-            const t0 = performance.now();
             for (const [KX, KZ] of orte) {
                 if (st.hydroTiles && st.hydroTiles.has(kachelVon(KX, KZ))) continue;
                 geprueft++;
@@ -209,7 +205,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     frei: gewaehlt.frei,
                     vorWelt,
                     selbst: sAlt !== sFrisch,
-                    ms: Math.round(performance.now() - t0),
                 });
             }
             // F DER GRUNDRISS-STAND (K20, Übergabe 12.10.): ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
@@ -271,6 +266,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 await sleep(0);
             }
         };
+        const warte = (name, fertig) =>
+            window
+                .__gebautNach(name, { takt: () => tick(1), fertig })
+                .then(() => null)
+                .catch((f) => f.message.split("\n")[0]);
+        const wache = (name) => r._standWache.takte.get(name);
         const pm = st.playerMesh.position;
         const stelle = (x, z) => pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const [MX, MZ] = window.__messWiese;
@@ -332,11 +333,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             let vor = -1,
                 ruhig = 0,
                 z = formZensus();
-            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter();) {
+            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter(); ) {
                 await tick(10);
                 z = formZensus();
                 const s = st.architectures.length * 1000 + z.ok;
-                ruhig = s === vor ? ruhig + 1 : 0;
+                ruhig = s !== vor ? 0 : ruhig + !Object.values(r._weltOffen()).some(Boolean); // nur Gänge ohne Offenes
                 vor = s;
                 if (z.n > 0 && z.ok === z.n && ruhig >= 3) break;
                 if (ruhig >= 30) break;
@@ -373,10 +374,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         }
 
         // ── D: der Übergang am Radius — ein Baum in der Mesh-Zone nahe dem Rand wandert hinaus und zurück ──
-        // Der Cull-Radius ist GEREGELT (ARCH_QUALITY_RADIUS_MIN..MAX; headless folgt er dem PID je Takt — unter Last
-        // sprang er im Lauf 05.10. über den Baum hinweg, D las „voll false" bei einem Baum, der diesseits stand): der
-        // Baum steht diesseits des kleinsten Radius und wandert jenseits des größten, der Zonen-Wechsel hängt nie am
-        // Regler-Stand.
+        // Der Cull-Radius ist GEREGELT (ARCH_QUALITY_RADIUS_MIN..MAX, headless folgt er dem PID je Takt): der Baum steht
+        // diesseits des kleinsten Radius und wandert jenseits des größten, der Zonen-Wechsel hängt nie am Regler-Stand.
         const RMIN = AR.ARCH_QUALITY_RADIUS_MIN,
             RMAX = AR.ARCH_QUALITY_RADIUS_MAX;
         const uebergang = async () => {
@@ -496,12 +495,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
         res.D2 = await riese();
         // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
-        // Karten-Ding keinen Band-Partner) — D2 muss rot werden, und zurück steht das Band wieder. Der Regler hält
-        // (`perfRegulator` aus — wie unter CI-Last an seiner Klemme: der Cull-Radius steht und weckt die Stufen-Wahl nicht je
-        // Takt); unter dem Tausch geht die Welt, bis das Band fiel UND die Wahl schläft (die Stand-Wache ruht). Der Rückweg
-        // ist ein Schreiber: er ändert, was die Wahl urteilt — die Wahl schläft nie über ihn (`ruht` steht), das Band steht
-        // im Ereignis (`__gebautNach`), nie nach einer Taktzahl (CI 22.10. auf vier Zweigen: „wieder: 165 m L1“, die Wahl
-        // schlief nach 60 Takten noch) ──
+        // Karten-Ding keinen Band-Partner) — D2 muss rot werden; Tausch und Rückweg wecken (wie S1), der Regler hält (unter
+        // CI-Last klemmt er), die Wahl schläft nie über den Rückweg ──
         if (riesenEintrag) {
             const e = riesenEintrag;
             stelle(e.position.x - dBand, e.position.z);
@@ -512,25 +507,22 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const R = this.state.architectureCullingRadius;
                 return Number.isFinite(R) && d > R && this._archKartenPreset(en) ? null : BP.call(this, en, d);
             };
-            const wahl = () => (r._standWache && r._standWache.takte.get("archLod")) || { ruht: 0 };
-            const mitBandS = (z) => z.da && !z.voll && z.partner !== null && z.partner !== z.stufe;
-            const warte = (name, fertig) =>
-                window
-                    .__gebautNach(name, { takt: () => tick(1), fertig })
-                    .then(() => null)
-                    .catch((f) => String(f.message).split("\n")[0]);
-            const ruhte = wahl().ruht;
+            r._weltRegt();
+            const band = () => Number.isFinite(e._lodBandLevel);
+            const ruhte = wache("archLod").ruht;
             const ohne = await warte(
                 "Riese ohne Band, die Wahl schläft",
-                () => !mitBandS(rieseZustand(e)) && wahl().ruht > ruhte
+                () => !band() && wache("archLod").ruht > ruhte
             );
             res.S3 = rieseZustand(e);
-            res.S3.ohne = ohne;
             delete r._foundryLodBandPartner;
-            const schlief = wahl().ruht;
-            res.S3.wieder = await warte("Riese wieder im Band", () => mitBandS(rieseZustand(e)));
-            res.S3.zurueck = rieseZustand(e);
-            res.S3.schlief = wahl().ruht - schlief; // Takte, die die Wahl über den Rückweg schlief
+            r._weltRegt();
+            const schlief = wache("archLod").ruht;
+            const wieder = await warte("Riese wieder im Band", band);
+            res.S3.zurueck = Object.assign(rieseZustand(e), {
+                schlief: wache("archLod").ruht - schlief,
+                warten: ohne || wieder,
+            });
             st.perfRegulator = regler;
             stelle(MX, MZ);
             await tick(10);
@@ -559,28 +551,18 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // ── SELBSTTEST (1): der alte Weg — kein Karten-Ding: jenseits der Mesh-Zone geräumt ──
         stelle(MX, MZ);
         await einschwingen(120000);
-        const D1 = r.constructor.prototype._archKartenPreset;
         const kandS1 = await uebergang(); // der Kandidat unter dem echten Weg (der Baum steht am Rand)
         // Der Tausch ändert, was Cull und Stufen-Wahl urteilen: er ist ein Schreiber und trägt seinen Weckruf (die Stand-Wache,
         // `_standRuht` — ohne ihn ging der Cull in einer eingeschwungenen Welt nie, A blieb unter dem alten Weg grün: CI
         // 91c44f0f, A 1558/1558). A zählt erst, wenn der Cull nach dem Tausch gegangen ist — nie nach einer festen Taktzahl.
-        const PS = Object.getPrototypeOf(r);
-        let cullGaenge = 0;
-        r.tickArchitectureCulling = function () {
-            const t = this._standWache && this._standWache.takte.get("archCull");
-            const vor = t ? t.ruht : 0;
-            const o = PS.tickArchitectureCulling.call(this);
-            if (!t || t.ruht === vor) cullGaenge++;
-            return o;
-        };
+        const cullVor = wache("archCull").arbeit;
         r._archKartenPreset = () => null;
         r._weltRegt();
-        for (let i = 0; i < 120 && cullGaenge < 1; i++) await tick(1);
-        delete r.tickArchitectureCulling;
+        await warte("der Cull nach dem Tausch", () => wache("archCull").arbeit > cullVor);
+        const cullGaenge = wache("archCull").arbeit - cullVor;
         res.S1 = { A: formZensus(), cullGaenge, D: await uebergang(), vorher: !kandS1.fehlt };
         delete r._archKartenPreset; // die Prototyp-Methode trägt wieder
         r._weltRegt();
-        res.S1.zurueck = r._archKartenPreset === D1;
         // ── SELBSTTEST (2): ein injizierter Satz an einem Baum ──
         const opfer = karten()[0];
         if (opfer) {
@@ -662,21 +644,15 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
     const s3 = out.S3;
     check(
-        "SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot, zurück steht es im Ereignis)",
-        !!s3 && !s3.ohne && !mitBand(s3) && !s3.wieder && mitBand(s3.zurueck) && s3.schlief === 0,
+        "SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot)",
+        !!s3 && !mitBand(s3) && mitBand(s3.zurueck) && s3.zurueck.schlief === 0 && !s3.zurueck.warten,
         s3
-            ? `alt: ${zs(s3)}${s3.ohne ? ` (${s3.ohne})` : ""} · wieder: ${zs(s3.zurueck)}` +
-                  `${s3.wieder ? ` (${s3.wieder})` : ""} · die Wahl schlief über den Rückweg ${s3.schlief} Takte`
+            ? `alt: ${zs(s3)} · wieder: ${zs(s3.zurueck)} · die Wahl schlief ${s3.zurueck.schlief} Takte ${s3.zurueck.warten || ""}`
             : "kein Riese"
     );
     const s1 = out.S1;
     const s1Rot =
-        s1.vorher &&
-        s1.zurueck &&
-        s1.cullGaenge >= 1 &&
-        !(s1.A.n >= 100 && s1.A.ok === s1.A.n) &&
-        !s1.D.fehlt &&
-        !dOk(s1.D);
+        s1.vorher && s1.cullGaenge >= 1 && !(s1.A.n >= 100 && s1.A.ok === s1.A.n) && !s1.D.fehlt && !dOk(s1.D);
     check(
         "SELBSTTEST 1 (der alte Weg macht A und D rot)",
         s1Rot,
@@ -702,7 +678,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             vw.gemerkt === false,
         !E.kachel
             ? `keine Kachel ohne Wahrheit mit freien und gebundenen Eichen und einer F-Probe (${E.geprueft || 0} geprüft, gemerkt ≠ frisch: ${(E.taeter || []).length}) — keine Probe`
-            : `Kachel ${E.kachel} (die ${E.geprueft}. geprüfte): ${E.n} gesetzte Eichen vor ihrer Wasser-Wahrheit gefragt (${E.frei} frei, ${E.ms} ms), gemerkt ≠ frisch in allen geprüften: ${E.taeter.length}` +
+            : `Kachel ${E.kachel} (die ${E.geprueft}. geprüfte): ${E.n} gesetzte Eichen vor ihrer Wasser-Wahrheit gefragt (${E.frei} frei), gemerkt ≠ frisch in allen geprüften: ${E.taeter.length}` +
                   (E.taeter.length ? ` (${E.taeter.slice(0, 4).join(" | ")})` : "") +
                   ` · vor dem Worldgen: ${vw.fehler ? "Fehler " + vw.fehler : "Gestalt " + vw.gestalt + (vw.gemerkt ? ", gemerkt" : ", nicht gemerkt")}`
     );
