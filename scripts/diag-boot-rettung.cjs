@@ -4,7 +4,7 @@
 // Die Gegenprüfung Runde 4 (10.10.) fand zwei Formen, in denen der Boot eine rettbare Welt durch eine frische ersetzte: ein
 // korrupter Platz mit gültigem `.bak` (die Vorlade fing den Parse-Fehler, ensureWorldMeta vergab eine neue Id samt
 // Aktiv-Zeiger, die `.bak`-Rettung in loadState kam nie dran) und eine Welt, die nur in IndexedDB lag (der IDB-Vorlauf lief
-// erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE (Platz → .bak → IndexedDB) und läuft, BEVOR eine neue Id
+// erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE und läuft, BEVOR eine neue Id
 // vergeben wird; eine neue Welt erwacht nur, wenn alle drei leer sind — und dann laut. Diese Linse fährt die acht Formen
 // der Boot-Sonde des Prüfers (C:\Users\micha\AppData\Local\Temp\claude\pruef4-pruefbuehne\boot-sonde.cjs) und eine neunte:
 //
@@ -13,7 +13,7 @@
 //   legacy-ohne-id    der Single-Key vor Ring 8 (ohne worldId), kein Zeiger         → migriert, stabil über zwei Boots
 //   legacy-ohne-meta  … ohne worldMeta                                             → dito
 //   mehrere           zwei Welten, Zeiger auf w2, dann der Wechsel nach w1         → w2, dann w1; w2 bleibt auf ihrem Platz
-//   korrupt-bak       Platz korrupt, `.bak` gültig                                 → die Welt aus dem `.bak`
+//   korrupt-bak       Platz und IndexedDB korrupt, `.bak` gültig                   → die Welt aus dem `.bak`
 //   nur-idb           kein Platz, die Welt nur in IndexedDB                        → die Welt aus IndexedDB
 //   idb-frischer      Platz alt, IndexedDB nachweislich frischer                   → der frischere Stand
 //   alles-leer        der Zeiger nennt eine Welt, die nirgends liegt               → eine frische Welt, LAUT (Chat)
@@ -145,7 +145,7 @@ async function fahreForm(browser, form, schein) {
                 return s;
             };
             // die IndexedDB des Spiels (dieselbe Datenbank „anazhRealm", Store „worlds", {at, json} je worldId)
-            const idbPut = (id, s) =>
+            const idbPut = (id, s, roh) =>
                 new Promise((res) => {
                     const req = indexedDB.open("anazhRealm", 1);
                     req.onupgradeneeded = () => req.result.createObjectStore("worlds");
@@ -153,7 +153,7 @@ async function fahreForm(browser, form, schein) {
                     req.onsuccess = () => {
                         const db = req.result;
                         const tx = db.transaction("worlds", "readwrite");
-                        tx.objectStore("worlds").put({ at: Date.now(), json: JSON.stringify(s) }, id);
+                        tx.objectStore("worlds").put({ at: Date.now(), json: roh || JSON.stringify(s) }, id);
                         tx.oncomplete = () => {
                             db.close();
                             res(true);
@@ -194,7 +194,8 @@ async function fahreForm(browser, form, schein) {
             }
             if (form === "korrupt-bak") {
                 localStorage.setItem("anazhRealmState_welt-k1", '{"kaputt": ');
-                localStorage.setItem("anazhRealmState_welt-k1.bak", JSON.stringify(mit("MARK-K1", "welt-k1")));
+                await idbPut("welt-k1", null, '{"kaputt": ');
+                await idbPut("welt-k1.bak", mit("MARK-K1", "welt-k1"));
                 idx(["welt-k1"]);
                 zeiger("welt-k1");
                 return { welt: "welt-k1", marke: "MARK-K1", index: ["welt-k1"] };

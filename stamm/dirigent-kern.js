@@ -242,7 +242,8 @@ class AnazhRealm {
             right: new THREE.Vector3(),
             moveDirection: new THREE.Vector3(),
             lastSaveUpdate: 0,
-            saveInterval: 10.0,
+            // der Takt des Speichers (speicher.K1): ein Tod mitten im Schreiben liefert den Stand davor — ≤ 10 s verlangt < 10
+            saveInterval: 5.0,
             lastServerSaveUpdate: 0,
             serverSaveInterval: 30.0,
             isServerSaveInFlight: false,
