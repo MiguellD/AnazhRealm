@@ -41,52 +41,35 @@ class AnazhRealm_siedlung_ort {
     // DER ORT AUF DEM GELÄNDE (K10): der Export des Studios (2D) wird am Anker zum Plan v2 — dieselbe Formel, die das Studio
     // rechnet (fachwerk `ortPlan`), über DIESELBE Gelände-Funktion (`_terrainMacroSurfaceY`, das Gesetz samt dem Erdbau früherer
     // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
-    // (`spawnSettlement` über `_ortPlanWarten`), der Export (`_spawnSettlementFromExport`) und das Auto-Dorf
+    // (`spawnSettlement` über `_ortWahl`), der Export (`_spawnSettlementFromExport`) und das Auto-Dorf
     // (`_tickAutoSettlement`); die Slot-Quelle liest `slot.y`.
     // DIE ORT-WAHL (K10, Pflicht-OFFEN C: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
     // nächsten Ort der Ringe um ihn (`ORT_WAHL`: je `schrittM` ein Ring bis zur halben Siedlungs-Zelle, auf jedem Ring Orte im
-    // Abstand ≤ `schrittM`), an dem er JEDES Haus trägt (`_ortTraegt`: jede Platte samt Saum und Vorplatz liegt auf dem
+    // Abstand ≤ `schrittM`), an dem er JEDES Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`: jede Platte samt Saum und Vorplatz liegt auf dem
     // Boden des Plans, `WERK_LAND_M` über dem Wasser des Gesetzes — das Urteil der Wasser-Wand jedes Werks, `_fundamentLand` —,
     // kein Haus in einem Bau, `_bauFrei`, keins auf dem Spieler). Bis K10-6 stand das Auto-Dorf der Welt am Wunsch: vier
     // Platten lagen 0,6 m unter dem Spiegel des Flusses, die Wand warf die Häuser (12/16); die Ringe bis 72 m fanden keinen
     // Ort (der Fluss läuft 18 m neben dem Anker, das Dorf misst 65 m Radius, der nächste trockene Ort liegt 80 m weit). Der
     // Anker folgt dem Ort des Plans (`origin` x, z und seine Mitte). Ohne trockenen Ort bleibt der Wunsch, laut.
-    // DIE ARBEIT IM TAKT (Lehre 14): die Wahl ist EIN Generator (`_ortWahl`), der nach jedem Kandidaten und jedem Haus abgibt
-    // — bis K10-6 rechnete der Takt bis zu 49 Pläne samt Raster am Stück (≈ 34 ms je Kandidat, 1,7 s im Takt). Ihn fahren
-    // `_ortPlanSetzen` ganz (der Export, der Prüfstand), `_ortPlanWarten` über Takte (der Akt) und der Dorf-Zug je Takt eine
-    // Scheibe (`_tickAutoSettlement`); jede Scheibe `ORT_WAHL.taktMs` (`_ortWahlScheibe`).
-    _ortPlanSetzen(plan, origin) {
-        return this._ortWahlScheibe(this._ortWahl(plan, origin), Infinity).value;
-    }
-    _ortPlanWarten(plan, origin, legen = true) {
-        const job = this._ortWahl(plan, origin, legen);
-        return new Promise((fertig) => {
-            const takt = () => {
-                const s = this._ortWahlScheibe(job, AnazhRealm.ORT_WAHL.taktMs);
-                if (s.done) fertig(s.value);
-                else setTimeout(takt, 16); // eine Scheibe je Bild (60 Hz), nie die Lücke zwischen zwei Bildern ganz
-            };
-            takt();
-        });
-    }
-    // EINE Scheibe der Ort-Wahl: der Generator läuft, bis er fertig ist oder `ms` verstrichen sind (mindestens ein Schritt).
-    // Unter dem Ladeschirm rechnet sie bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2): das Dorf der Ankunft ist ein Leser
-    // des ersten Weltbilds (Term „dorf").
-    // Die Kosten der laufenden Wahl stehen in `_ortWahlMass` (Kandidaten, Scheiben, Summe, die längste Scheibe, der Abstand
-    // des Orts zum Wunsch) — gate:settlement Teil O liest sie.
-    _ortWahlScheibe(job, ms) {
-        const t0 = performance.now();
-        let s;
-        do s = job.next();
-        while (!s.done && this._kappeOffen(performance.now() - t0, ms));
-        const d = performance.now() - t0;
-        const m = this._ortWahlMass;
-        if (m) {
-            m.scheiben++;
-            m.ms += d;
-            if (d > m.maxMs) m.maxMs = d;
-        }
-        return s;
+    // DER ORT WIRD WELT: der Plan v2 aus dem Gedächtnis des Orts (`_ortPlaene`, die Wahl `_ortWahl` im Ort-Faden) — `legen`
+    // legt seinen Erdbau (`_erdbauSetzen` je Schlüssel einmal), der Anker `origin` (x, z und seine Mitte) rückt an seinen Ort.
+    // Ein Plan, der schon v2 ist, bleibt. Ohne Wahl wirft der Ruf laut: die Wahl rechnet im Faden, wer sie braucht, wartet
+    // auf `_ortWahl` (der Akt, der Vorlauf, der Prüfstand).
+    _ortPlanSetzen(plan, origin, legen = true) {
+        if (plan && plan.version === 2) return plan;
+        const key = AnazhRealm._ortSchluessel(plan, origin);
+        const v2 = this._ortPlaene && this._ortPlaene.get(key);
+        if (!v2)
+            throw new Error(
+                `ORT: der Plan „${plan.name || "?"}" hat an ${key} keine Wahl — der Rufer wartet auf _ortWahl`
+            );
+        if (legen) this._erdbauSetzen(key, v2.erdbau);
+        const dx = v2.ort.x - origin.x;
+        const dz = v2.ort.z - origin.z;
+        origin.x = v2.ort.x;
+        origin.z = v2.ort.z;
+        if (origin.mitte) origin.mitte = { x: origin.mitte.x + dx, z: origin.mitte.z + dz };
+        return v2;
     }
 
     // ═══ DIE WELT-MEMBRAN: die Portal-PASSAGE in der Hauptwelt ═══
@@ -1240,7 +1223,7 @@ class AnazhRealm_siedlung_ort {
             "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
         );
     }
-    // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
+    // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (der Akt) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
     // (prefix + kultur, kein "haus_"-Literal); die Spalten-Probe `_nassAt` über dem ganzen Fundament vor JEDEM Spawn; fehlender Blueprint/
     // fremde Kultur → Slot fällt GESCHLOSSEN aus. Γ5: aller Zufall lebt im Export, hier nur lesen +
@@ -1381,7 +1364,7 @@ class AnazhRealm_siedlung_ort {
     // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}. Ohne obb
     // (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes Werks an der Wurzel aus den
     // Optionen liest (`_werkGrundriss`). `fundament` nur mit obb (das Haus eines Orts trägt den Saum seines Erdbaus).
-    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und die Ort-Wahl (`_ortTraegt`).
+    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und die Ort-Wahl (`_ortRaster`, `_ortTraegtWirt`).
     static _slotGrundriss(slot) {
         const ry = slot.phi || 0;
         const rc = Math.cos(ry);
@@ -2089,29 +2072,38 @@ class AnazhRealm_siedlung_ort {
         if (this._bewohnerSiedlungen) for (const S of this._bewohnerSiedlungen.values()) this._bewohnerFort(S);
     }
 
-    _spawnSettlementFromExport(plan, origin, so) {
+    // DER AKT HEBT ÜBER DEN ZUG (siedlung.K5): die Slots des Plans v2 in seiner Folge (vom Platz nach außen), je Schritt des
+    // Zugs (`_dorfZugSchritt`) ein Bild — das erste zeigt das erste Haus. Bis K5
+    // hob der Akt alle Slots in EINER Aufgabe (nH 120: 123 Häuser, 410 ms bis zum ersten Bild). Rückgabe: Promise der Bilanz.
+    async _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
-        const f = this._foundry;
+        const reihe = plan.slots.map((_s, i) => i);
+        const q = {
+            plan,
+            origin: { x: origin.x, z: origin.z },
+            idx: 0,
+            reihe,
+            so: { autonomous: !!(so && so.autonomous) },
+        };
         let placed = 0;
         let skipped = 0;
         let mx = 0;
         let mz = 0;
         const haeuser = [];
-        for (let si = 0; si < plan.slots.length; si++) {
+        for (;;) {
             // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
             // Wandlaternen (K66-2: `plan` + `si`)
-            const haus = this._spawnSettlementSlot(plan.slots[si], origin, f, {
-                autonomous: !!(so && so.autonomous),
-                plan,
-                si,
-            });
-            if (haus) {
-                placed++;
-                haeuser.push(haus);
-                mx += haus.position.x;
-                mz += haus.position.z;
-            } else skipped++;
+            for (const haus of this._dorfZugSchritt(q, !!this.state._frameOverBudget)) {
+                if (haus) {
+                    placed++;
+                    haeuser.push(haus);
+                    mx += haus.position.x;
+                    mz += haus.position.z;
+                } else skipped++;
+            }
+            if (q.idx >= plan.slots.length) break;
+            await new Promise((weiter) => requestAnimationFrame(weiter)); // der nächste Schritt nach dem Bild, das ihn zeigt
         }
         // die Mitte der gesetzten Häuser — dorthin schaut, wer das Dorf verlangt hat (`_nachDorfOrientieren`)
         const mitte = placed ? { x: mx / placed, z: mz / placed } : null;
@@ -2313,9 +2305,9 @@ class AnazhRealm_siedlung_ort {
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
-            // die Ort-Wahl rechnet in Takt-Scheiben (`_ortPlanWarten`, Lehre 14), der Akt wartet auf sie
-            plan = await this._ortPlanWarten(plan, anchor);
-            const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
+            // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie
+            plan = await this._ortWahl(plan, anchor);
+            const res = await this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
             const wmD = this.state.worldMeta || (this.state.worldMeta = {});
@@ -2784,10 +2776,21 @@ class AnazhRealm_siedlung_ort {
             this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
             if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
             return v2;
-        });
+        }, this._ortWahlWartet(key));
+    }
+    // OHNE ORT-WAHL (der Ort-Faden steht noch nicht: der Sandbox-Weg holt die Quelle des Voxel-Fadens, `_nebenFaden`) fragt der
+    // nächste Takt neu — ein Wurf des Fadens meldet sich dort laut beim Namen (`_bruchMelden`). Der Rückruf der Zell-Kette und
+    // des Vorlaufs.
+    _ortWahlWartet(key) {
+        return (e) => {
+            if (this._autoSettlementPendingKey === key) this._autoSettlementPendingKey = null;
+            if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat = null;
+            this.log(`ORT: die Zelle ${key} wartet auf die Ort-Wahl — ${(e && e.message) || e}`, "INFO");
+            return null;
+        };
     }
     // DAS DORF IM VORLAUF (siedlung.K5): der Export und die Ort-Wahl einer Zelle rechnen, sobald sie in den Vorlauf-Ring
-    // tritt (`AUTO_SETTLEMENT.vorlaufM` vor `nearM`), im Worker und in Takt-Scheiben — ihr Erdbau liegt erst, wenn sie
+    // tritt (`AUTO_SETTLEMENT.vorlaufM` vor `nearM`), im Foundry- und im Ort-Faden — ihr Erdbau liegt erst, wenn sie
     // erwacht (`_autoSettlementSpawnCell`). Bis K5 begann beides beim Erwachen: der Export baut jedes Haus zur Probe (der
     // Mass-Bau misst die Welt-Box, die das Layout braucht), das erste Haus der Zelle wartete mit nH (Export nH 12 0,29 s,
     // nH 300 2,0 s). EIN Vorrat zur Zeit, ein Ruf mit demselben Schlüssel nimmt ihn. Rückgabe: Promise {plan, anker} | null.
@@ -2810,7 +2813,7 @@ class AnazhRealm_siedlung_ort {
             // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall, fern bleibt die Zelle, wie sie ist.
             const anker = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
             // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker in Takt-Scheiben (Lehre 14), ohne den Erdbau zu legen
-            return this._ortPlanWarten(plan, Object.assign({}, anker), false).then(() => {
+            return this._ortWahl(plan, Object.assign({}, anker), false).then(() => {
                 if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat.da = true;
                 return { plan, anker };
             });
@@ -2821,6 +2824,24 @@ class AnazhRealm_siedlung_ort {
     // DER RANG DES ZUGS (siedlung.K5): die Häuser eines Plans heben in der Reihe ihres Abstands zum Spieler (`reihe`, das
     // nächste zuerst, gleich weit die Slot-Folge) — bis K5 in der Slot-Folge des Layouts, die vom Kern des Dorfs nach außen
     // wächst: wer am Rand ankam, sah das Dorf hinten beginnen. `idx` zählt die gehobenen.
+    // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
+    // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
+    // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
+    // (`_spawnSettlementFromExport`). Rückgabe: je gehobenem Slot das Haus oder false.
+    _dorfZugSchritt(q, ueber) {
+        const f = this._foundry;
+        const neu = [];
+        while (
+            q.idx < q.plan.slots.length &&
+            this._kappeOffen(neu.length, ueber ? 1 : AnazhRealm.AUTO_SETTLEMENT.perTick)
+        ) {
+            const si = q.reihe[q.idx++];
+            neu.push(
+                this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, Object.assign({ plan: q.plan, si }, q.so))
+            );
+        }
+        return neu;
+    }
     _dorfZug(plan, origin, cellKey) {
         const pm = this.state.playerMesh;
         const p = pm ? pm.position : origin;
@@ -2914,15 +2935,7 @@ class AnazhRealm_siedlung_ort {
         }
         const q = this._autoSettlementQueue;
         if (q && q.plan) {
-            const f = this._foundry;
-            let n = 0;
-            // unter dem Ladeschirm hebt der Zug Slots bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2): die Häuser der
-            // Ankunft gehören ins erste Weltbild (Term „dorf")
-            while (q.idx < q.plan.slots.length && this._kappeOffen(n, ueber ? 1 : A.perTick)) {
-                const si = q.reihe[q.idx++];
-                this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, { plan: q.plan, si }); // mit seinen Wandlaternen (K66-2)
-                n++;
-            }
+            this._dorfZugSchritt(q, ueber);
             if (q.idx >= q.plan.slots.length) {
                 this._autoSettlementQueue = null;
                 this.log(
@@ -2996,7 +3009,7 @@ class AnazhRealm_siedlung_ort {
                 }
                 const i3 =
                     site.x === info.x && site.z === info.z ? info : Object.assign({}, info, { x: site.x, z: site.z });
-                if (vor) this._dorfBereiten(key, i3);
+                if (vor) this._dorfBereiten(key, i3).catch(this._ortWahlWartet(key));
                 else this._autoSettlementSpawnCell(cx, cz, i3);
                 return; // EIN Dorf-Akt pro Tick
             }
@@ -3080,7 +3093,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_ort]);
 
 // ===== ATLAS · Siedlung/ort — Außen-Konstanten =====
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
-// Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`_ortTraegt`) urteilen gleich.
+// Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`ortTraegt` im Ort-Faden) urteilen gleich.
 AnazhRealm.WERK_LAND_M = 0.2;
 // Worldgen-Auto-Dorf-Daten (Konsument `_tickAutoSettlement`, Wände + Γ5-Disziplin dort):
 // nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Genesis-Ort (nearM < spawnClearM →

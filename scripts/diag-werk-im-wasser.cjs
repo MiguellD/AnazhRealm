@@ -1621,7 +1621,7 @@ async function probe(A) {
                 let zellenWechsel = 0;
                 for (const [k, n] of zellenVor) if (zellenNach.has(k) && zellenNach.get(k) !== n) zellenWechsel++;
                 // DAS RAND-HAUS IST, WO DAS GESETZ ES STELLT (K10-6): die Ort-Wahl (`_ortWahl`) hält jedes Haus samt Saum aus dem
-                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `_ortTraegt`) und rückt das Dorf vom Wunsch
+                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `ortTraegt` im Ort-Faden) und rückt das Dorf vom Wunsch
                 // am Ufer Ring um Ring landein (am Seerand 1807,8/−6152 vier Ringe, 64 m) — das Haus am Wunsch fand R nie mehr
                 // (R LEER: 19 Häuser, keins am Seerand). Das Rand-Haus ist das Haus des Dorfs, das dem Ufer am nächsten steht;
                 // R prüft, was den Automaten weckt: den Erdbau des Dorfs, und der muss an Wasser reichen — je Zelle seiner

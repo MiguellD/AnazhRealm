@@ -753,117 +753,130 @@ class AnazhRealm_gelaende_boden {
         }
         return false;
     }
-    // `legen` false (der Vorlauf des Dorfs, `_dorfBereiten`): die Wahl rechnet, ihr Erdbau liegt erst, wenn der Ort Welt wird —
-    // der Ruf, der legt, findet sie im Gedächtnis des Orts und legt sie (`_erdbauSetzen` je Schlüssel einmal)
-    *_ortWahl(plan, origin, legen = true) {
+    // DIE ORT-WAHL (K10 · siedlung.K5): der Plan v2 des Exports `plan` am nächsten Ort der Ringe um den Wunsch `origin`, der
+    // jedes Haus trägt. Die Kandidaten rechnet der Ort-Faden (`_nebenAuftrag("ort")`, voxel-worker `ortWahl`: fachwerk
+    // `ortPlan` und das Wasser-Urteil `ortTraegt` am Zustand des Gesetzes); der Wirt urteilt am Sieger nur, was nur er kennt
+    // (`_ortTraegtWirt`: die Bauten, der Spieler jetzt) und lässt sonst ab dem nächsten weiterrechnen. Bis K5 rechnete der
+    // Haupt-Thread jeden Kandidaten in 3-ms-Scheiben (Teleport ins Erwachen nH 300: 70 761 Haus-Pläne, 18,7 s bis zum ersten
+    // Haus; nH 12: 300, 1,4 s). Je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als
+    // Gelände); zwei Rufer desselben Orts teilen EINE Wahl. `legen` false (der Vorlauf, `_dorfBereiten`): ihr Erdbau liegt erst,
+    // wenn der Ort Welt wird (`_ortPlanSetzen`). Rückgabe: Promise des Plans v2, `origin` rückt an seinen Ort.
+    async _ortWahl(plan, origin, legen = true) {
         if (plan && plan.version === 2) return plan;
-        // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
-        const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
+        const key = AnazhRealm._ortSchluessel(plan, origin);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
-        let v2 = ple.get(key);
-        if (!v2) {
-            const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
-            // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das
-            // vom Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der
-            // Erdbau nichts
-            const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
-                const w = this._atlasWaterLevelAt(x, z, -1e9);
-                return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
-            });
-            const W = AnazhRealm.ORT_WAHL;
-            let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
-            for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
-            for (let ring = 0; ring <= W.ringe && !v2; ring++) {
-                const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
-                for (let i = 0; i < n && !v2; i++) {
-                    const a = (2 * Math.PI * i) / n;
-                    const o = {
-                        x: origin.x + Math.cos(a) * ring * W.schrittM,
-                        z: origin.z + Math.sin(a) * ring * W.schrittM,
-                    };
-                    // das Wasser des Kandidaten ist gekachelt, bevor er urteilt — je Kandidat, nie die ganze Suche voraus (eine neue
-                    // Kachel kostet ~200 ms; die Wahl reicht sie erst, wenn ihr Ring sie braucht)
-                    if (this._ensureHydroTilesAround(o.x, o.z, reich)) yield;
-                    const k = globalThis.__fachwerkCore.ortPlan(plan, o, ctx);
-                    mass.kandidaten++;
-                    yield;
-                    // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), dann das Raster der Wand
-                    if ((yield* this._ortTraegt(plan, k, W.grobM)) && (yield* this._ortTraegt(plan, k, 0.5))) {
-                        v2 = k;
-                        mass.abstandM = ring * W.schrittM;
-                    }
-                }
+        if (!ple.has(key)) {
+            const flug = this._ortWahlFlug || (this._ortWahlFlug = new Map());
+            let wahl = flug.get(key);
+            if (!wahl) {
+                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }).then(
+                    (v2) => (ple.set(key, v2), flug.delete(key), v2),
+                    (e) => (flug.delete(key), Promise.reject(e))
+                );
+                flug.set(key, wahl);
             }
-            if (!v2) {
-                v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
+            await wahl;
+        }
+        return this._ortPlanSetzen(plan, origin, legen);
+    }
+    static _ortSchluessel(plan, origin) {
+        return "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
+    }
+    async _ortWahlImFaden(plan, origin) {
+        const W = AnazhRealm.ORT_WAHL;
+        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
+        let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
+        for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt (die Kachel reist vor dem Auftrag)
+        this._ensureHydroTilesAround(origin.x, origin.z, reich + W.ringe * W.schrittM);
+        for (let ab = 0; ;) {
+            const pm = this.state.playerMesh;
+            const raster = this._ortRaster(plan);
+            const r = await this._nebenAuftrag(
+                "ort",
+                {
+                    type: "ort-wahl",
+                    plan,
+                    origin,
+                    ab,
+                    W,
+                    M: AnazhRealm.WERK_LAND_M,
+                    spieler: pm
+                        ? { x: pm.position.x, z: pm.position.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN }
+                        : null,
+                    raster,
+                },
+                [raster.lx.buffer, raster.lz.buffer]
+            );
+            mass.kandidaten += r.kandidaten;
+            mass.scheiben++;
+            mass.ms += r.ms;
+            if (r.index < 0) {
                 this.log(
                     `ORT: der Plan „${plan.name || "?"}" findet binnen ${W.ringe * W.schrittM} m um ` +
                         `${Math.round(origin.x)}/${Math.round(origin.z)} keinen Ort, der jedes Haus trocken trägt — die Wand ` +
                         "wirft die nassen Häuser",
                     "WARN"
                 );
+                return r.v2;
             }
-            ple.set(key, v2);
+            const t0 = performance.now();
+            const frei = this._ortTraegtWirt(r.v2);
+            mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
+            if (frei) {
+                mass.abstandM = r.abstandM;
+                return r.v2;
+            }
+            ab = r.index + 1;
         }
-        if (legen) this._erdbauSetzen(key, v2.erdbau);
-        const dx = v2.ort.x - origin.x;
-        const dz = v2.ort.z - origin.z;
-        origin.x = v2.ort.x;
-        origin.z = v2.ort.z;
-        if (origin.mitte) origin.mitte = { x: origin.mitte.x + dx, z: origin.mitte.z + dz };
-        return v2;
     }
-    // TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports `plan`? (die Ort-Wahl, `_ortWahl`; ein Generator, der nach jedem Haus
-    // abgibt) Jeder Punkt des Fundament-Rasters (`_fundamentRaster` im Schritt `schritt`: 0,5 m ist das Raster der Wand,
-    // `_fundamentLand`; Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) und jede Laterne liegt mit dem Boden, den der
-    // Erdbau des Plans baut, mindestens `WERK_LAND_M` über dem Wasser des Gesetzes an dieser Höhe (`_atlasWaterLevelAt`) —
-    // das Urteil der Wand (`_fundamentLand` → `_landAt`) über dem Boden, den der Erdbau baut —, kein Haus berührt den Spieler
-    // (Reichweite + `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`) und im Raster der Wand steht keins
-    // in einem Bau (`_bauFrei`, die zweite Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
-    *_ortTraegt(plan, k, schritt) {
-        if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
+    // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts
+    // (`_fundamentRaster`: Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) im Schritt `ORT_WAHL.grobM` und in dem der
+    // Wand (0,5 m, `_fundamentLand`), `radius` die Reichweite des Grundrisses (NaN ohne) — der Ort-Faden legt es je Kandidat an.
+    _ortRaster(plan) {
         const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
-        const M = AnazhRealm.WERK_LAND_M;
+        const grobM = AnazhRealm.ORT_WAHL.grobM;
+        const lx = [];
+        const lz = [];
+        const grobN = [];
+        const wandN = [];
+        const radius = [];
+        for (const sl of plan.slots) {
+            const { fundament, fp } = AnazhRealm._slotGrundriss(sl);
+            let nG = 0;
+            let nW = 0;
+            if (fp) {
+                const s = fundament ? saum : 0;
+                const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
+                const grob = AnazhRealm._fundamentRaster(raster, sl.tuer, grobM);
+                const wand = AnazhRealm._fundamentRaster(raster, sl.tuer, 0.5);
+                for (const p of grob.concat(wand)) {
+                    lx.push(p[0]);
+                    lz.push(p[1]);
+                }
+                nG = grob.length;
+                nW = wand.length;
+            }
+            grobN.push(nG);
+            wandN.push(nW);
+            radius.push(fp ? Math.hypot(fp.ex, fp.ez) : NaN);
+        }
+        return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius };
+    }
+    // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Spieler JETZT (Reichweite +
+    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`) und keins steht in einem Bau (`_bauFrei`, die zweite
+    // Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
+    _ortTraegtWirt(k) {
         const pm = this.state.playerMesh;
         const frei = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
-        // der Boden, den der Erdbau des Plans baut (gelaende-core `erdbauY` über dem Gesetz samt dem Erdbau früherer Orte)
-        const G = globalThis.__gelaendeCore;
-        const E = G.erdbauNormal(k.erdbau);
-        // und die Gestalt des Gewässers darüber — DIESELBE Formel wie die Dichte (`_gewaesserForm`: der Damm füllt tieferes
-        // Gelände zur Krone, der Fluss-Kanal schneidet höheres zur Böschung, das See-Becken blendet zu seinem Bett; eine Dichte
-        // ist Höhe − y, in y = 0 also die Höhe selbst): die Platte im Kanal liegt so tief, wie die Welt sie baut
-        const nass = (x, z) => {
-            const h0 = this._terrainMacroSurfaceY(x, z, true);
-            const he = E ? G.erdbauY(E, x, z, h0) : h0;
-            const h = AnazhRealm._gewaesserForm(he, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
-            // die Welt baut den Boden des Plans, wie er geplant ist: ein Kanal unter der Platte (oder ein Damm über ihr) legt
-            // das Haus auf einen Sockel bzw. in den Boden — am Kanal-Ort 72 m westlich des Auto-Dorfs 10,2 m Sockel, 15/16 Türen
-            if (Math.abs(h - he) > AnazhRealm.ORT_WAHL.bodenTolM) return true;
-            return h < this._atlasWaterLevelAt(x, z, h) + M;
-        };
-        for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
-        const wand = schritt <= 0.5;
-        let punkte = 0; // je 128 Punkte gibt die Wahl ab (ein Haus im Raster der Wand trägt bis zu 700)
         for (const sl of k.slots) {
-            const { fundament, fp } = AnazhRealm._slotGrundriss(sl);
+            const { fp } = AnazhRealm._slotGrundriss(sl);
             if (!fp) continue;
             const wx = k.ort.x + sl.x;
             const wz = k.ort.z + sl.z;
             if (pm && Math.hypot(pm.position.x - wx, pm.position.z - wz) < Math.hypot(fp.ex, fp.ez) + frei)
                 return false;
-            const s = fundament ? saum : 0;
-            const ry = sl.phi || 0;
-            const c = Math.cos(ry);
-            const sn = Math.sin(ry);
-            const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
-            for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, sl.tuer, schritt)) {
-                const px = wx + lx * c + lz * sn;
-                const pz = wz - lx * sn + lz * c;
-                if (nass(px, pz)) return false;
-                if (++punkte % 128 === 0) yield;
-            }
-            if (wand && !this._bauFrei(wx, wz, ry, fp, sl.tuer, sl.y)) return false;
-            yield;
+            if (!this._bauFrei(wx, wz, sl.phi || 0, fp, sl.tuer, sl.y)) return false;
         }
         return true;
     }
@@ -3061,10 +3074,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_boden]);
 AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
-// jedes Haus trägt (`_ortTraegt`), gewinnt. `grobM`: das Raster des ersten Urteils (die Wand urteilt im halben Meter).
-// `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans unter einem Haus verschieben.
-// `taktMs`: so lange rechnet die Wahl je Takt-Scheibe (`_ortWahlScheibe`, Lehre 14), mindestens einen Schritt.
-AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, taktMs: 3 });
+// jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die
+// Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans
+// unter einem Haus verschieben.
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05 });
 
 // DIE BODEN-STUFEN (K51, K51-2 CDLOD) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 ·
 // 14,4 m) nach dem KASTEN-Abstand des Spielers zum Chunk-Quadrat (Chebyshev, `_voxelChunkLodFor`): `bis` die Grenze der Stufe,
