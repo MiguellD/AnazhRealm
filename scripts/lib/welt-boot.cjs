@@ -706,7 +706,19 @@ async function starteBrowser(opts = {}) {
     }
     let abbau = false;
     const zu = browser.close.bind(browser);
-    browser.close = (...a) => ((abbau = true), (b.offen = false), zu(...a));
+    // ein Echt-Rezept, dessen jede Welt-Seite den Null-Renderer trägt, zeichnet nie und belegt eine GPU-Gruppe umsonst: ROT
+    browser.close = async (...a) => {
+        const welt = GPU_REZEPTE.includes(opts.art)
+            ? (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()))
+            : [];
+        if (welt.length && welt.every((p) => p.__nullRenderer))
+            melde(
+                "klasse",
+                `${path.basename(process.argv[1] || "?")} startet „${opts.art}" und zeichnet nie (jede seiner ${welt.length} Seiten trägt den Null-Renderer): das Rezept ist „null"`
+            );
+        [abbau, b.offen] = [true, false];
+        return zu(...a);
+    };
     browser.on("disconnected", () => {
         b.offen = false;
         if (!abbau) melde("absturz", "Browser getrennt ohne Abbau");
@@ -741,6 +753,7 @@ async function starteBrowser(opts = {}) {
 // Foundry baut auch ohne Bild, `__anazhForceFoundry`) — EINMAL hier, jede Linse ohne Bild ruft ihn vor dem Laden;
 // `warteAufWelt` wartet, bis die Welt ihren Takt trägt — die EINE Warte jeder Linse.
 async function nullRenderer(page, { foundry = false } = {}) {
+    page.__nullRenderer = true;
     await page.evaluateOnNewDocument((mitFoundry) => {
         if (mitFoundry) window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;

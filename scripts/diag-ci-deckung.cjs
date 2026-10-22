@@ -57,6 +57,7 @@ const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
+const { messe } = require("./ci-zeiten.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -79,26 +80,53 @@ const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
 // (E) DIE ECHT-GRUPPE (K65): der eigene Läufer mit der Karte fährt benannte GPU-Schritte von `voll` noch einmal (derselbe
-// run-Befehl) und die Wände der Karte (`gate:…:echt`), außerhalb der Waage, nie pull_request; so hält sein Rot wie `voll` (S).
+// run-Befehl) und die Wände der Karte (`gate:…:echt`), nie pull_request, hinter dem Kopf-Richter (er sagt `echt`), so hält
+// sein Rot wie `voll` (S). Jeder Schritt trägt seine Frist (scripts/ci-zeiten.cjs), der Job höchstens ECHT_DECKEL_MIN; sein
+// Plan (Vorbereitung + Mediane, spec/ci/ci-zeiten.json `echt`) höchstens ECHT_PLAN_S — ein neuer echt-Schritt zahlt.
 const ECHT_JOB = "echt";
 const ECHT_WENN =
     "(github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && " +
-    "needs.kopf.result == 'success'";
+    "needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'";
+const [ECHT_DECKEL_MIN, ECHT_PLAN_S] = [45, 20 * 60];
 function echtForm(doc) {
     const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
     if (!E) return [];
     const V = doc.jobs[VOLL_JOB] || {};
-    const gpu = new Set(((V.strategy && V.strategy.matrix.include) || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe));
-    const soll = new Set(gateSchritte(doc).filter((s) => s.job === VOLL_JOB && gpu.has(s.gruppe)).map((s) => s.run));
+    const gpu = new Set(
+        ((V.strategy && V.strategy.matrix.include) || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe)
+    );
+    const soll = new Set(
+        gateSchritte(doc)
+            .filter((s) => s.job === VOLL_JOB && gpu.has(s.gruppe))
+            .map((s) => s.run)
+    );
     const v = [];
     const env = E.env || {};
-    if ([].concat(E["runs-on"] || []).sort().join(" + ") !== "omen-gpu + self-hosted" || env.CI_KLASSE !== "gpu" || env.LINSE_GPU !== "karte")
-        v.push(`(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + omen-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`);
+    if (
+        []
+            .concat(E["runs-on"] || [])
+            .sort()
+            .join(" + ") !== "omen-gpu + self-hosted" ||
+        env.CI_KLASSE !== "gpu" ||
+        env.LINSE_GPU !== "karte"
+    )
+        v.push(
+            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + omen-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
+        );
     if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
         v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
-    for (const s of gateSchritte(doc).filter((x) => x.job === ECHT_JOB))
-        if (!soll.has(s.run) && !/^npm run gate:[a-z0-9:-]+:echt$/.test(s.run))
-            v.push(`(E) ECHT: „${s.name}" ist kein Schritt der GPU-Klasse von „${VOLL_JOB}" und keine Wand der Karte (gate:…:echt)`);
+    if (!(Number(E["timeout-minutes"]) > 0 && Number(E["timeout-minutes"]) <= ECHT_DECKEL_MIN))
+        v.push(`(E) DECKEL: „${ECHT_JOB}" timeout-minutes ${E["timeout-minutes"]} (Soll 1–${ECHT_DECKEL_MIN})`);
+    for (const s of (E.steps || []).filter((x) => x.run && !IST_VORBEREITUNG(x))) {
+        if (!soll.has(lauf(s)) && !/^npm run gate:[a-z0-9:-]+:echt$/.test(lauf(s)))
+            v.push(
+                `(E) ECHT: „${name(s)}" ist kein Schritt der GPU-Klasse von „${VOLL_JOB}" und keine Wand der Karte (gate:…:echt)`
+            );
+        if (!(Number(s["timeout-minutes"]) > 0))
+            v.push(
+                `(E) FRIST: „${name(s)}" trägt keine timeout-minutes — er hielte die Karte bis zum Job-Deckel (node scripts/ci-zeiten.cjs)`
+            );
+    }
     return v;
 }
 // die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
@@ -591,11 +619,17 @@ function kopfForm(doc) {
         );
     if (r) {
         if (r["continue-on-error"] !== undefined && r["continue-on-error"] !== false)
-            v.push(`(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
+            v.push(
+                `(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`
+            );
         if (r.if !== undefined) v.push(`(V) KOPF: der Richter-Schritt trägt die Bedingung „${r.if}"`);
-        const soll = r.id ? `\${{ steps.${r.id}.outputs.voll }}` : null;
-        if (!soll || normWenn((K.outputs || {}).voll) !== soll)
-            v.push(`(V) KOPF: „${KOPF_JOB}" reicht outputs.voll nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`);
+        for (const aus of ["voll", "echt"]) {
+            const soll = r.id ? `\${{ steps.${r.id}.outputs.${aus} }}` : null;
+            if (!soll || normWenn((K.outputs || {})[aus]) !== soll)
+                v.push(
+                    `(V) KOPF: „${KOPF_JOB}" reicht outputs.${aus} nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`
+                );
+        }
     }
     return v;
 }
@@ -822,6 +856,25 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                     (art === "push" ? "" : " — die Verteilung senkt sie: node scripts/ci-zeiten.cjs")
             );
     }
+    // (E) der Plan der Echt-Gruppe: ihre Vorbereitung und die Mediane ihrer Schritte auf der Karte, höchstens ECHT_PLAN_S
+    const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
+    if (E) {
+        const ze = (zeiten && zeiten.echt) || {};
+        let plan = Number(ze.vorbereitung_s) || 0;
+        for (const s of (E.steps || []).filter((x) => x.run && !IST_VORBEREITUNG(x))) {
+            const z = Z[name(s)];
+            if (z && Number(z.s) >= 0) plan += z.s;
+            else
+                v.push(
+                    `(T) UNGEMESSEN: „${name(s)}" (${ECHT_JOB}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`
+                );
+        }
+        zeilen.push(`${ECHT_JOB} ${minuten(plan)}`);
+        if (ueber(plan, ECHT_PLAN_S))
+            v.push(
+                `(T) ECHT: „${ECHT_JOB}" trägt ${minuten(plan)} min (Deckel ${minuten(ECHT_PLAN_S)} min) — ein neuer echt-Schritt zahlt mit einem gestrichenen`
+            );
+    }
     // (T) PLÄTZE: zugleich laufen alle Jobs des vollen Laufs außer denen, auf die ein anderer wartet
     const gewartet = new Set(imLauf.flatMap(([, J]) => needsVon(J)));
     const zugleich = imLauf.filter(([job]) => !gewartet.has(job));
@@ -848,7 +901,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
 // Fixture-Bausteine (K61): der Kopf-Richter in seiner Form, ein Cache-Schritt
 const kopfJob = () => ({
     if: VOLL_WENN,
-    outputs: { voll: "${{ steps.kopf.outputs.voll }}" },
+    outputs: { voll: "${{ steps.kopf.outputs.voll }}", echt: "${{ steps.kopf.outputs.echt }}" },
     steps: [{ uses: "actions/checkout@v4" }, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
 });
 const cacheSchritt = (p, key, restore = p.replace(/\W+/g, "") + "-") => ({
@@ -937,39 +990,63 @@ function selbsttestSchluessel() {
 }
 
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
-function selbsttestKopf() {
-    const gruen = (id, event = "push", voll = ["success", "success"]) => ({
+function selbsttestKopf(urteile = kopfUrteil) {
+    const gruen = (id, event = "push", voll = ["success", "success"], echt = []) => ({
         lauf: { id, event, status: "completed", conclusion: "success", head_branch: "integ-probe" },
-        jobs: [{ name: "puls 1/2", conclusion: "success" }].concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2 cpu`, conclusion: c }))),
+        jobs: [{ name: "puls 1/2", conclusion: "success" }]
+            .concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2 cpu`, conclusion: c })))
+            .concat(echt.map((c) => ({ name: "echt (GPU-Wände auf der Karte)", conclusion: c }))),
     });
-    const fall = (ereignis, ...laeufe) => ({
+    const lauf = (x, lauf) => ({ ...x, lauf: { ...x.lauf, ...lauf } });
+    const laufend = lauf(gruen(1), { status: "in_progress", conclusion: null });
+    const fall = (ereignis, laeufe, gewartet = []) => ({
         ereignis,
         eigenerLauf: 9,
         laeufe: laeufe.map((x) => x.lauf),
         jobsJe: Object.fromEntries(laeufe.map((x) => [x.lauf.id, x.jobs])),
+        gewartet,
     });
+    // [Name, Fall, Soll: „ja"/„nein" (voll) · „warte" · „rot" · ein Prüfer am Urteil]
     const faelle = [
-        ["derselbe Kopf grün auf integ-probe (d2e06032)", fall("push", gruen(1)), "nein"],
-        ["kein anderer Lauf", fall("push"), "ja"],
-        ["nur der eigene Lauf", fall("push", gruen(9)), "ja"],
-        ["nachts läuft sie immer", fall("schedule", gruen(1)), "ja"],
-        ["auf Abruf läuft sie immer", fall("workflow_dispatch", gruen(1)), "ja"],
-        ["ein PR prüft den Merge, nie den Kopf", fall("pull_request", gruen(1)), "ja"],
-        ["der grüne Lauf war ein PR", fall("push", gruen(1, "pull_request")), "ja"],
-        ["der grüne Lauf trug nur den Puls", fall("push", gruen(1, "push", [])), "ja"],
-        ["eine Voll-Gruppe übersprungen", fall("push", gruen(1, "push", ["success", "skipped"])), "ja"],
+        ["derselbe Kopf grün auf integ-probe (d2e06032)", fall("push", [gruen(1)]), "nein"],
+        ["kein anderer Lauf", fall("push", []), "ja"],
+        ["nur der eigene Lauf", fall("push", [gruen(9)]), "ja"],
+        ["auf Abruf läuft sie immer", fall("workflow_dispatch", [gruen(1)]), "ja"],
+        ["ein PR prüft den Merge, nie den Kopf", fall("pull_request", [gruen(1)]), "ja"],
+        ["der grüne Lauf war ein PR", fall("push", [gruen(1, "pull_request")]), "ja"],
+        ["der grüne Lauf trug nur den Puls", fall("push", [gruen(1, "push", [])]), "ja"],
+        ["eine Voll-Gruppe übersprungen", fall("push", [gruen(1, "push", ["success", "skipped"])]), "ja"],
+        // Richter 22.10.: Doppel-Batterien auf derselben SHA (Cloud claude/* + benannter Zweig, 286 Läufer-min, von Hand abgebrochen)
+        ["ein älterer Lauf läuft noch (er wird abgewartet)", fall("push", [laufend]), "warte"],
+        ["ein jüngerer Lauf läuft noch (kein Kreis)", fall("push", [lauf(laufend, { id: 12 })]), "ja"],
+        ["laufend, dann grün", fall("push", [gruen(1)], [1]), "nein"],
+        ["laufend, dann rot", fall("push", [lauf(gruen(1), { conclusion: "failure" })], [1]), "rot"],
         [
-            "der andere Lauf läuft noch",
-            fall("push", { ...gruen(1), lauf: { ...gruen(1).lauf, status: "in_progress", conclusion: null } }),
+            "laufend, dann abgebrochen (die Batterie fährt selbst)",
+            fall("push", [lauf(gruen(1), { conclusion: "cancelled" })], [1]),
+            "ja",
+        ],
+        // Richter 22.10.: der Nachtlauf fuhr auf schon grünem main (131 hosted + 22 GTX-min, hielt e86600bd 18,7 min)
+        [
+            "nachts auf grünem main (Batterie und Karte stehen)",
+            fall("schedule", [gruen(1, "push", undefined, ["success"])]),
+            (u) => u.voll === "nein" && u.echt === "nein",
+        ],
+        [
+            "nachts, der Kopf stand rot (die Batterie fährt)",
+            fall("schedule", [lauf(gruen(1, "push", undefined, ["failure"]), { conclusion: "failure" })]),
             "ja",
         ],
     ];
     const f = [];
     for (const [n, e, soll] of faelle) {
-        const u = kopfUrteil(e);
-        const ok = u.voll === soll;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Kopf „${n}" → voll=${u.voll} (${u.grund})`);
-        if (!ok) f.push(`Kopf „${n}": voll=${u.voll} statt ${soll}`);
+        const u = urteile(e);
+        const art = u.warte ? "warte" : u.rot ? "rot" : u.voll;
+        const ok = typeof soll === "function" ? soll(u) : art === soll;
+        console.log(
+            `  ${ok ? "✅" : "❌"} Selbsttest Kopf „${n}" → ${art}${u.echt ? ` echt=${u.echt}` : ""} (${u.grund || u.rot || (u.warte && u.warte.id)})`
+        );
+        if (!ok) f.push(`Kopf „${n}": ${art} statt ${typeof soll === "function" ? "der Prüfung" : soll}`);
     }
     return f;
 }
@@ -1003,7 +1080,43 @@ function selbsttest() {
         },
     });
     const V = (d) => d.jobs.voll;
+    // (E) die Echt-Gruppe in ihrer Form: B (GPU-Klasse) auf der Karte, mit Frist
+    const echtDazu = (d, schritt = { name: "B auf der Karte", run: "npm run gate:b", "timeout-minutes": 5 }) => {
+        V(d).strategy.matrix.include = [
+            { gruppe: 1, klasse: "cpu" },
+            { gruppe: 2, klasse: "gpu" },
+        ];
+        const env = { CI_KLASSE: "gpu", LINSE_GPU: "karte" };
+        return (d.jobs.echt = {
+            needs: KOPF_JOB,
+            if: ECHT_WENN,
+            "runs-on": ["self-hosted", "omen-gpu"],
+            "timeout-minutes": 30,
+            env,
+            steps: prep().concat([schritt]),
+        });
+    };
     const faelle = [
+        [
+            "ein echt-Schritt ohne Frist",
+            (d) => delete echtDazu(d).steps[4]["timeout-minutes"],
+            /\(E\) FRIST: „B auf der Karte" trägt keine timeout-minutes/,
+        ],
+        [
+            "echt über dem Job-Deckel (b9d99b9e: 150 min)",
+            (d) => (echtDazu(d)["timeout-minutes"] = 150),
+            /\(E\) DECKEL: „echt" timeout-minutes 150/,
+        ],
+        [
+            "ein CPU-Schritt (Null-Renderer) auf der Karte",
+            (d) => echtDazu(d, { name: "A auf der Karte", run: "npm run gate:a", "timeout-minutes": 5 }),
+            /\(E\) ECHT: „A auf der Karte" ist kein Schritt der GPU-Klasse/,
+        ],
+        [
+            "echt ohne das Kopf-Urteil echt",
+            (d) => (echtDazu(d).if = ECHT_WENN.replace(/ && needs\.kopf\.outputs\.echt == 'ja'/, "")),
+            /\(E\) ECHT: „echt" läuft unter/,
+        ],
         ["ohne Gruppe (er liefe N-fach)", (d) => delete V(d).steps[5].if, /\(G\) N-FACH: „B"/],
         [
             "Gruppe außerhalb der Matrix (er liefe nie)",
@@ -1092,8 +1205,14 @@ function selbsttest() {
         ],
     ];
     const f = [];
-    const g0 = urteil(gut());
-    if (g0.length) f.push("der gute Stand ist rot: " + g0.join(" · "));
+    for (const [n, d] of [
+        ["", gut()],
+        [" mit echt", gut()],
+    ]) {
+        if (n) echtDazu(d);
+        const g0 = urteil(d);
+        if (g0.length) f.push(`der gute Stand${n} ist rot: ` + g0.join(" · "));
+    }
     for (const [n, tat, soll] of faelle) {
         const d = gut();
         tat(d);
@@ -1150,6 +1269,14 @@ function selbsttestWaage() {
         z.gruppen = { "voll 1": { s } };
     };
     const gruppen = (d, n) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: n }, (_, i) => i + 1));
+    const mitEcht = (d, z, s) => {
+        d.jobs.echt = {
+            needs: KOPF_JOB,
+            if: ECHT_WENN,
+            steps: prep().concat([{ name: "W", run: "npm run gate:w:echt" }]),
+        };
+        [z.echt, z.schritte.W] = [{ vorbereitung_s: 100 }, { s, gruppe: "echt" }];
+    };
     // [Name, Tat an Lage und Zeiten, Soll (Regex · null: grün · Prüfung am Ergebnis), Alter der Quelle in Merges oder „wurf"]
     const B100 = (d, z) => (z.schritte.B.s = 100);
     const faelle = [
@@ -1173,6 +1300,10 @@ function selbsttestWaage() {
         ["mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)", (d) => gruppen(d, 20), /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/],
         ["der Kopf-Richter belegt keinen Platz neben der Batterie", (d, z) => mitKopf(d, z) || gruppen(d, 19), (w) => !w.v.some((x) => /PLÄTZE/.test(x))],
         ["der längste Weg über 8 min (benannt, nie ROT)", (d, z) => mitKopf(d, z, 120), (w) => !w.v.length && minuten(w.wanduhr[0]) === "8,5" && w.wanduhr[1] === "kopf → voll 1/2"],
+        // (E) der Plan der Echt-Gruppe (Richter 22.10.: Median 21,7–22,6 min, gewachsen von 15 auf 26–35 min in 3 Tagen)
+        ["echt im Plan (grün)", (d, z) => mitEcht(d, z, 900), null],
+        ["echt über dem Deckel", (d, z) => mitEcht(d, z, 1300), /\(T\) ECHT: „echt" trägt 23,3 min \(Deckel 20,0 min\)/],
+        ["ein echt-Schritt ohne Zeit", (d, z) => mitEcht(d, z, 900) || delete z.schritte.W, /\(T\) UNGEMESSEN: „W" \(echt\)/],
     ];
     // der Befund vom 16.10. (CW2): die Lage aba1da28 mit der frischen Messung — der feste Deckel nannte 9 Gruppen und die
     // Wanduhr ROT, die Physik nennt nur die Gruppen, die die Verteilung senkt; die Wanduhr steht als Zahl
@@ -1479,9 +1610,20 @@ function selbsttestPlaytest() {
     return f;
 }
 
-if (process.argv.includes("--selftest")) {
+// ci-zeiten (22.10.: eine leere Tafel, 0 Schritte, 969 Zeilen still weg): liefert die API keinen Lauf, endet die Messung ROT
+async function selbsttestZeiten() {
+    const leer = async (p) => (p.includes("/runs?") ? { workflow_runs: [] } : { jobs: [] });
+    const u = await messe(leer, { jobs: { puls: { steps: [{ name: "Lint", run: "npm run lint" }] } } }).then(
+        () => "grün",
+        (e) => e.message
+    );
+    const ok = /^ROT: die API lieferte 0 Läufe, 0 Messungen, 0 Schritte/.test(u);
+    console.log(`  ${ok ? "✅" : "❌"} Selbsttest „ci-zeiten an einer leeren API" → ${u}`);
+    return ok ? [] : [`ci-zeiten an einer leeren API: ${u}`];
+}
+async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
-    const f = selbsttest();
+    const f = selbsttest().concat(await selbsttestZeiten());
     if (f.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist blind:\n  " + f.join("\n  "));
         process.exit(1);
@@ -1490,43 +1632,53 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
-const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
-const v = urteil(doc);
-v.push(...klassenUrteil(doc, skripte));
-const alleWorkflows = workflowsLesen();
-const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
-v.push(...g.v);
-v.push(...schluesselUrteil(alleWorkflows));
-v.push(...playtestUrteil(alleWorkflows, skripte));
-const zeitenDatei = path.join(root, ZEITEN);
-const w = fs.existsSync(zeitenDatei)
-    ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
-    : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
-v.push(...w.v);
-const jeKlasse = g.zahl.jeKlasse;
-console.log("=== CI-DECKUNG — " + DATEI + " ===");
-console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs)`);
-console.log(
-    `  Wände: ${g.zahl.waende} (gate:* und Teile von npm run check) · in der CI ${g.zahl.inCi} · Ausnahmen ${g.zahl.ausnahmen}` +
-        (Object.keys(jeKlasse).length
-            ? ` (${Object.entries(jeKlasse)
-                  .map(([k, n]) => `${k} ${n}`)
-                  .join(" · ")})`
-            : "") +
-        ` · ohne Workflow ${g.zahl.offen}`
-);
-if (w.alt && w.alt.length) console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
-console.log(`  Waage (Plan = Median samt Vorbereitung, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`);
-if (w.gross && w.gross.length) console.log(`  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`);
-if (w.wanduhr)
+function hauptlauf() {
+    const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
+    const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+    const v = urteil(doc);
+    v.push(...klassenUrteil(doc, skripte));
+    const alleWorkflows = workflowsLesen();
+    const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
+    v.push(...g.v);
+    v.push(...schluesselUrteil(alleWorkflows));
+    v.push(...playtestUrteil(alleWorkflows, skripte));
+    const zeitenDatei = path.join(root, ZEITEN);
+    const w = fs.existsSync(zeitenDatei)
+        ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
+        : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
+    v.push(...w.v);
+    const jeKlasse = g.zahl.jeKlasse;
+    console.log("=== CI-DECKUNG — " + DATEI + " ===");
+    console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs)`);
     console.log(
-        `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg, benannt, sperrt nie): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
+        `  Wände: ${g.zahl.waende} (gate:* und Teile von npm run check) · in der CI ${g.zahl.inCi} · Ausnahmen ${g.zahl.ausnahmen}` +
+            (Object.keys(jeKlasse).length
+                ? ` (${Object.entries(jeKlasse)
+                      .map(([k, n]) => `${k} ${n}`)
+                      .join(" · ")})`
+                : "") +
+            ` · ohne Workflow ${g.zahl.offen}`
     );
-if (v.length) {
-    console.error("\n❌ ROT:\n  " + v.join("\n  "));
-    process.exit(1);
+    if (w.alt && w.alt.length)
+        console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
+    console.log(
+        `  Waage (Plan = Median samt Vorbereitung, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`
+    );
+    if (w.gross && w.gross.length)
+        console.log(
+            `  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`
+        );
+    if (w.wanduhr)
+        console.log(
+            `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg, benannt, sperrt nie): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
+        );
+    if (v.length) {
+        console.error("\n❌ ROT:\n  " + v.join("\n  "));
+        process.exit(1);
+    }
+    console.log(
+        `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt im Plan unter ihrem Deckel (Puls 2 min, Voll das Mittel ihrer Klasse + ${minuten(RAND_S)} min; ein Schritt darüber allein), die Zeit-Quelle ist nicht älter als ihre Läufe, ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich, jedes npm run X hat sein Skript, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in einer Voll-Gruppe am Verdikt.`
+    );
 }
-console.log(
-    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt im Plan unter ihrem Deckel (Puls 2 min, Voll das Mittel ihrer Klasse + ${minuten(RAND_S)} min; ein Schritt darüber allein), die Zeit-Quelle ist nicht älter als ihre Läufe, ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich, jedes npm run X hat sein Skript, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in einer Voll-Gruppe am Verdikt.`
-);
+if (process.argv.includes("--selftest")) selbsttestLauf();
+else hauptlauf();
