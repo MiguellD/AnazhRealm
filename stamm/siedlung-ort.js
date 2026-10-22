@@ -2844,7 +2844,23 @@ class AnazhRealm_siedlung_ort {
         }
     }
 
-    async spawnSettlement(opts) {
+    // DAS DORF IM FLUG (stand-treue): ein Akt — Chat, Feld, Nexus — ist offen vom Auftrag bis zum letzten Haus (Export, Ort-Wahl
+    // im Faden, Zug über die Bilder); `_weltOffen` zählt ihn (`_dorfOffen`). Vorher „stand" die Welt während der Ort-Wahl, und
+    // die Häuser des Nexus kamen in die Runde der Stufen-Wahl (CI 39767254768: archLod 2288 → 2294 mit den Tätern).
+    spawnSettlement(opts) {
+        this._dorfImFlug = (this._dorfImFlug | 0) + 1;
+        const ende = () => this._dorfImFlug--;
+        const akt = this._dorfAkt(opts);
+        akt.then(ende, ende);
+        return akt;
+    }
+    // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt samt dem Export ihrer Zelle (`_tickAutoSettlement`)
+    _dorfOffen() {
+        const q = this._autoSettlementQueue;
+        const zug = q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) : 0;
+        return (this._dorfImFlug | 0) + zug + (this._autoSettlementPendingKey ? 1 : 0);
+    }
+    async _dorfAkt(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
         let seed = Number.isFinite(o.seed) ? Number(o.seed) : NaN;
         if (!Number.isFinite(seed)) seed = this._bauSame("stadt");

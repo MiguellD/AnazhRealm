@@ -597,6 +597,10 @@ function standUrteil(b) {
     const BS = b.schuld || {};
     if (BS.rest !== 0 || !(BS.abgewiesen > 0) || !/Felder offen/.test(BS.grund))
         v.push(`BAKE-SCHULD: steht nach ${BS.takte} Takten mit ${BS.rest} offenen Fits (${BS.abgewiesen} abgewiesen, ${BS.grund})`);
+    // (D) DORF: erst nach dem letzten Haus des Akts steht die Welt
+    const D = b.dorf || {};
+    if (!(D.placed > 0) || typeof D.steht !== "number")
+        v.push(`DORF: die Welt stand nach ${D.steht} Takten mit dem Dorf im Flug (${D.placed} Häuser gesetzt)`);
     // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
     // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
     if (b.fixWach !== false)
