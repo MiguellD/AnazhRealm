@@ -8,7 +8,7 @@
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
 //                                                           `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug,
 //                                                           Ort-Takt und Sicht (ohne Wahl Ego, K26) des Orts;
-//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
+//                                                           ein Toggle-Ort (buehne) betritt seine Welt, hält Stellgrößen
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
@@ -864,8 +864,7 @@ async function starte() {
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
         // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
-        // — die Schalter je Plattform trägt das EINE Rezept (die alte Vulkan-Kopie lieferte unter Windows keinen Adapter: die
-        // Werkbank fuhr ohne --echt still WebGL2).
+        // — die Schalter je Plattform trägt das EINE Rezept.
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
     await adapterZeile(browser);
@@ -958,7 +957,7 @@ async function starte() {
     // DIE SICHT des gestellten Orts (K26): Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
-    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`, 1110-6): die Prüfbühne ist eine geborene Welt — sie betritt die
+    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
     // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
     // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
@@ -1224,7 +1223,7 @@ async function starte() {
                 // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
                 // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
                 // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
-                // zeichnet nie ins Bild und bleibt, wie er ist. Vorher hieß das ganze Tor ab L1 „bauSatz“.
+                // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
                 for (const [art, s] of r.state.chunkSaetze || [])
                     if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
@@ -2043,11 +2042,10 @@ async function starte() {
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/albedo" && b.nahFern) {
-                    // DIE ALBEDO NAH GEGEN FERN (0910-8): Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
+                    // DIE ALBEDO NAH GEGEN FERN: Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
                     // Vorher steht die Welt: der Ring der Chunks trägt das Quadrat der Linse (≥ 2, Ziel und aktiv wie `stell.ring`
                     // der Bühne — im Software-Holz wählte der Regler je Sitzung Ring 1 oder 2), kein Chunk ist im Bau, und die
-                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen: nach dem Umstellen hielt die Karte
-                    // bereit 1 mit der Mitte am Spawn, am Messort mischte nichts — nah Y 0,13 wie main). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
+                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
                     // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
                     // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
@@ -2516,7 +2514,7 @@ async function starte() {
                     // DIE BAND-MESSUNG: einschwingen (bis der Bau ruht), Proben (das Maximum je Klasse × Pass), dann der
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
-                    // Ein Toggle-Ort (bank, 1110-6) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
+                    // Ein Toggle-Ort (bank) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
                     BAND.ratscheVon(BAND.ladeSpec(b.ort));
                     // DAS GERÄT und DIE SICHT (K26): sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
                     // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
@@ -3086,7 +3084,7 @@ async function starte() {
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {
-        // DIE ALBEDO NAH GEGEN FERN (0910-8): je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
+        // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
         // rauscht), der Boden-Satz doppelt so hell rot mit dem Täter Boden-Satz, ein Ring neben dem Gesetz mit dem Täter
         // Fern-Ring, zu wenige Orte, ein leerer Schuss, ein fehlendes Gesetz und eine Karte, die nicht steht, laut.

@@ -1613,7 +1613,6 @@ async function checkBandPsi0Winkel(ctx) {
             { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
         ] };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
-        out.organDa = typeof r._resonateArgmax === "function";
         // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
@@ -1634,7 +1633,7 @@ async function checkBandPsi0Winkel(ctx) {
     });
     check(
         "Ψ1 das EINE argmax-Organ: alle 6 Inline-Leser konsumieren _resonateArgmax (Domäne·GapHint·FormRolle·Implement·Op·Motion)",
-        psi1.organDa && psi1.leser
+        psi1.leser
     );
     check(
         "Ψ1 Organ-Semantik: argmax + strikt-über-floor + refs/refDefault-Norm + keys-Subset (bit-gleiche Inline-Form)",

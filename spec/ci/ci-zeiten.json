@@ -70,13 +70,6 @@
       "lauf": "npm run gate:mensch-anatomie",
       "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
     },
-    "EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)": {
-      "s": 3,
-      "n": 7,
-      "gruppe": "puls 2",
-      "lauf": "npm run gate:one-wuchs-parity",
-      "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
-    },
     "Single-Quote-Template-Strings (B2-Pattern)": {
       "s": 0,
       "n": 7,
@@ -271,13 +264,6 @@
       "n": 7,
       "gruppe": "voll 4",
       "lauf": "npm run gate:boot-rettung",
-      "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
-    },
-    "Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)": {
-      "s": 10,
-      "n": 7,
-      "gruppe": "voll 1",
-      "lauf": "npm run gate:grass-thin",
       "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
     },
     "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)": {
@@ -1001,7 +987,6 @@
           ["Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)", 1, 123],
           ["Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)", 2, 3],
           ["Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)", 2, 9],
-          ["EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)", 2, 2],
           ["Single-Quote-Template-Strings (B2-Pattern)", 2, 0],
           ["Verbotenes dynamisches Auswerten (eval / new Function)", 2, 0],
           ["innerHTML-Schreibzugriffe (Hinweis, kein Fail)", 2, 0],

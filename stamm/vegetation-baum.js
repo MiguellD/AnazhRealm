@@ -1916,16 +1916,11 @@ class AnazhRealm_vegetation_baum {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
-        const nenne = (e) => {
-            const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
-            return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
-        };
         return this._naturRaeumen(
             haus.position.x,
             haus.position.z,
             fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
             !!fp.lichtung,
-            fp.lichtung ? "dem Genesis-Platz" : `dem Grundriss von ${nenne(haus)}`,
             haus
         );
     }
@@ -1934,8 +1929,9 @@ class AnazhRealm_vegetation_baum {
     // (`_imGrundriss` — Grundriss, Lichtung samt Krone, Weg des Dorfs), fällt: Einträge, lebende Streu-Zellen, und die
     // Nah-Streu-Kacheln wachsen durch die Wand neu. Leser: `_grundrissRaeumen` (ein Bau) und `_wegeRaeumen` (die Fläche eines
     // Dorfs, im Takt der Wege-Karte). `mitKrone`: eine Lichtung fragt die Krone, die Suche reicht eine Streu-Region weiter.
-    // `wem` nennt die Fläche im Spieler-Satz, `ausser` ist der Bau selbst. Gibt die Zahl der geräumten Natur-Stücke.
-    _naturRaeumen(hx, hz, r, mitKrone, wem, ausser) {
+    // `ausser` ist der Bau selbst. Ein Werk des Spielers (`werk`) weicht nie (`_weichtDemBau`, die Wiederkehr): bis dahin nahm
+    // die Räumung es nach seinem Stoff und nannte es nur. Gibt die Zahl der geräumten Natur-Stücke.
+    _naturRaeumen(hx, hz, r, mitKrone, ausser) {
         // die Welt regt sich, bevor geräumt wird: der Gang schreibt die Nah-Streu-Kacheln (`nahStreu.kacheln`, über
         // `_nahStreuKachelEntsorgen` ihren `zustand`) — die Stand-Wache weckt die Fege-Takte (gate:stand-takt, Schreiber-Wand)
         this._weltRegt();
@@ -1953,17 +1949,6 @@ class AnazhRealm_vegetation_baum {
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
-        // Ein Werk des Spielers (string-id: gesetzt im Bau-Modus) weicht nie still — die Räumung nennt es im Spieler-Kanal
-        // (Welle L Folge: jede Zerstörung nennt sich dem Spieler; ein älterer Stand trug die Werkstatt-Eiche auf der Lichtung,
-        // ein Dorf gründet über einem gepflanzten Baum).
-        const eigene = weg.filter((e) => typeof e.id === "string");
-        if (eigene.length) {
-            const nenne = (e) => {
-                const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
-                return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
-            };
-            this._spielerSagt(`${eigene.map(nenne).join(", ")} wich${eigene.length > 1 ? "en" : ""} ${wem}.`);
-        }
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {
@@ -2009,7 +1994,6 @@ class AnazhRealm_vegetation_baum {
                 (b.z0 + b.z1) / 2,
                 Math.max(b.x1 - b.x0, b.z1 - b.z0) / 2 + 1,
                 false,
-                "dem Weg des Dorfs",
                 null
             );
         return n;
