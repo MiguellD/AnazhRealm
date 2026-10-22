@@ -299,7 +299,6 @@ async function probe(cfg) {
     const W = cfg.W,
         H = cfg.H;
     const csm = st.csmNode;
-    const K = r.constructor.SCHATTEN_KASKADE;
     const aus = { werfer: [], fern: [], akne: [], echt: [], bilder: [], zaehne: null, bias: null, texel: null };
     rend.setAnimationLoop(null);
     // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor (gemessen 09.10.: zwischen dem LEER und dem LEER2 eines Werfers

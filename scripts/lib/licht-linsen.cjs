@@ -730,12 +730,10 @@ function lichtBilanz() {
         // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
         // Boden; der Hillaire-Richter des D3-Spikes rechnete dieselbe Höhe, git 637de30b), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
         const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
-        if (typeof r._atmoTakt === "function") {
-            st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
-            st.camera.updateMatrixWorld(true);
-            r._applyDayNightToScene();
-            r._ensureSkyEnvironment(true);
-        }
+        st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
+        st.camera.updateMatrixWorld(true);
+        r._applyDayNightToScene();
+        r._ensureSkyEnvironment(true);
         const meshes = [];
         sc.traverse((o) => {
             if ((o.isMesh || o.isSprite || o.isPoints) && o !== karte) meshes.push(o);
