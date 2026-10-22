@@ -1,0 +1,6 @@
+17:42:49 START A=01ba2bf3[0] B=71d61c11[0]
+17:51:41 A1 fps 75.7 C50 5.2 C95 9.6 Bel95 13.22 aT95 1.38 ruhe {"ruhig":false,"sek":300.1,"chunks":81,"foundry":1,"karten":0,"meshOffen":0}
+17:54:23 B1 fps 75.1 C50 5.1 C95 6.7 Bel95 9.62 aT95 0.98 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+18:03:53 A2 fps 69.8 C50 8 C95 13.7 Bel95 17.35 aT95 2.73 ruhe {"ruhig":false,"sek":300.1,"chunks":81,"foundry":1,"karten":0,"meshOffen":0}
+18:06:54 B2 fps 61.3 C50 7.5 C95 12.8 Bel95 17.2 aT95 2.29 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+18:07:09 ENDE
