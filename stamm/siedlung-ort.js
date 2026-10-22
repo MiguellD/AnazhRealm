@@ -1283,7 +1283,11 @@ class AnazhRealm_siedlung_ort {
             for (const a of flaechen) if (this._rechteckeSchneiden(a, b2)) return true;
             return false;
         };
-        for (const e of this.state.architectures || []) {
+        // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`: Ort ± Reichweite, eine Obermenge), nie der ganze Bestand — bis
+        // stadt-erwachen fragte jede Laterne des Erwachens jeden Bau der Welt (nH 300: 104 × ~2 000)
+        const nahe = this._bauFreiNahe || (this._bauFreiNahe = []);
+        nahe.length = 0;
+        for (const e of this._blockerUmPlatz(x, z, R + 8, nahe)) {
             if (!e || !e.position) continue;
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
@@ -1523,12 +1527,19 @@ class AnazhRealm_siedlung_ort {
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
     // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
     // Konsum: fences/felder/trees/staende/brunnen/laternen (die Studio-Gestalt `laterne_dorf`, ihr Licht das Datum ihres
-    // Rezepts); unkonsumiert (export-stripped): mauer/fluss.
+    // Rezepts); unkonsumiert (export-stripped): mauer/fluss. Die Schichten gehen in EINEM Zug (der Akt, der Wege-Neubau).
     _spawnSettlementErlebnis(plan, origin, so) {
+        for (const g = this._dorfErlebnis(plan, origin, so); !g.next().done;);
+    }
+    // DAS ERLEBNIS IN RATEN (stadt-erwachen, Lehre 14): die Schichten des Plans als Gang — je Schritt EINE Rate: die Bewohner
+    // und die Wege, je `AUTO_SETTLEMENT.laternenJeTakt` Laternen, die Ausstattung (Brunnen, Stände, Hof-Bäume); dieselbe Folge
+    // und dieselben Samen in Raten (der Dorf-Zug des Erwachens, `_dorfErwachen`) wie in einem Zug.
+    *_dorfErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
         if (so && so.nurWege) return;
+        yield;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
         // Datum seines Rezepts (`_lichtDatumDerGestalt`), der Licht-Takt liest ihn wie jede Feuerstelle. Keine Kappe: das
@@ -1537,11 +1548,14 @@ class AnazhRealm_siedlung_ort {
         // (`_spawnSettlementSlot`), nie hier.
         if (Array.isArray(plan.laternen)) {
             let k = 0;
+            let j = 0;
             for (const l of plan.laternen) {
                 if (!l || l.wand) continue;
                 const ort = this._dorfLaterneOrt(l, origin);
                 if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
+                if (++j % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield;
             }
+            if (j % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt) yield;
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         let n = 0;
@@ -1597,10 +1611,9 @@ class AnazhRealm_siedlung_ort {
         // Hof-Bäume der Siedlung: die Export-Plätze ({x,z,h}) heben als Studio-Bäume durch spawnArchitecture;
         // h skaliert auf die Export-Höhe (eiche fx.height 6.2). Kappe 12 (Architektur-LOD/Instanzen-Budget),
         // Wasser-Wand, deterministisch je Siedlung + Platz.
-        if (!Array.isArray(plan.trees)) return;
         const baumArten = ["baum_eiche", "baum_birke"];
         let t = 0;
-        for (const b of plan.trees) {
+        for (const b of Array.isArray(plan.trees) ? plan.trees : []) {
             if (t >= 12) break;
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
@@ -1624,6 +1637,7 @@ class AnazhRealm_siedlung_ort {
             );
             if (entry) t++;
         }
+        yield;
     }
 
     // DIE NORMALE IN EINER ZAHL (oktaedrisch, je Achse 12 Bit — eine ganze Zahl unter 2^24, in f32 exakt): der Gang-Puffer
@@ -1845,12 +1859,14 @@ class AnazhRealm_siedlung_ort {
         akt.then(ende, ende);
         return akt;
     }
-    // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt samt dem Export ihrer Zelle (`_tickAutoSettlement`)
+    // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt (und sein Gang, `_dorfErlebnis`) samt dem Export
+    // ihrer Zelle (`_tickAutoSettlement`)
     // — der Zug nur, solange sein Takt lebt (`_dorfTaktLebt`, dasselbe Urteil wie der Term „dorf" des ersten Weltbilds): ein Ort
     // ohne Dorf-Zug hält ihn an, und ein Zug, den kein Takt baut, hielt die Welt ewig offen (CI 39780312347: „Dorf offen 18").
     _dorfOffen() {
         const q = this._dorfTaktLebt() && this._autoSettlementQueue;
-        const zug = q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) : 0;
+        const zug =
+            q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) + !!q.gang : 0;
         return (this._dorfImFlug | 0) + zug + (this._autoSettlementPendingKey ? 1 : 0);
     }
     async _dorfAkt(opts) {
@@ -2351,7 +2367,8 @@ class AnazhRealm_siedlung_ort {
         const wm = st.worldMeta || (st.worldMeta = {});
         if (!wm.settlementCells || typeof wm.settlementCells !== "object") wm.settlementCells = {};
         const key = i2.key || cx + "," + cz; // Zell-Infos tragen cx,cz — das Start-Dorf trägt "start"
-        if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
+        const q = this._autoSettlementQueue;
+        if (wm.settlementCells[key] || this._autoSettlementPendingKey || (q && q.gang)) return Promise.resolve(null);
         // der Plan und seine Ort-Wahl rechnen, solange die Zelle naht (`_dorfBereiten`) — so lange gilt der Export als
         // unterwegs (der Zug beginnt keine zweite Zelle, die Messung schwingt nicht ein)
         this._autoSettlementPendingKey = key;
@@ -2359,21 +2376,39 @@ class AnazhRealm_siedlung_ort {
             this._autoSettlementPendingKey = null;
             this._dorfVorraete.delete(key); // die Zelle ist erwacht: ihr Vorrat ist verbraucht
             if (!b) return null; // fail-closed (Foundry kalt)
-            // DER ORT WIRD WELT: die Wahl steht im Gedächtnis des Orts (`_ortPlaene`), der Ruf legt ihren Erdbau, bevor das
-            // erste Haus steht, und rückt den Anker an den Ort des Plans
+            // DER ORT WIRD WELT: die Wahl steht im Gedächtnis des Orts (`_ortPlaene`), der Anker rückt an den Ort des Plans;
+            // sein Erdbau und seine Schichten gehen als Gang des Zugs (`_dorfErwachen`) vor dem ersten Haus
             const anchor = Object.assign({}, b.anker);
-            const v2 = this._ortPlanSetzen(b.plan, anchor);
+            const ort = AnazhRealm._ortSchluessel(b.plan, anchor);
+            const v2 = this._ortPlanSetzen(b.plan, anchor, false);
             // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
-            // Alle Leser fragen nur Existenz (truthy).
+            // Alle Leser fragen nur Existenz (truthy). Ein Stand mitten im Gang schließt ihn zuerst (`saveState`).
             wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
-            this._autoSettlementQueue = this._dorfZug(v2, anchor, key);
-            // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser materialisieren budgetiert über die
-            // Ticks) — die Ausstattung des Plans steht frei von jedem seiner Häuser (fachwerk `brunnenWeicht`)
-            this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
-            if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+            this._autoSettlementQueue = this._dorfZug(v2, anchor, key, this._dorfErwachen(v2, anchor, ort, key));
             return v2;
         }, this._ortWahlWartet(key));
+    }
+    // DAS ERWACHEN IN RATEN (stadt-erwachen, Lehre 14): der Gang des Zugs einer Zelle, je Takt EIN Schritt vor dem ersten Haus —
+    // das Wasser-Urteil ihres Erdbaus VOR dem Eintrag (`_erdbauAmWasser`, je Rate `AUTO_SETTLEMENT.wasserZellenJeTakt` Zellen
+    // seiner Normalform), EIN Schritt legt ihn (`_erdbauSetzen` unter dem Schlüssel des Orts `ort`), einer normt die Welt mit ihm
+    // (`_erdbauLage`), dann die Schichten (`_dorfErlebnis`). Bis stadt-erwachen trug der Rückruf des Erwachens alles: nH 300
+    // 192 ms synchron (`_ortPlanSetzen` 96, davon `_erdbauWirkt` 45; die Schichten 95), das Bild 461–469 ms (GTX 22.10.).
+    *_dorfErwachen(v2, anchor, ort, key) {
+        const E = globalThis.__gelaendeCore.erdbauNormal(v2.erdbau);
+        yield;
+        const n = AnazhRealm.AUTO_SETTLEMENT.wasserZellenJeTakt;
+        let nass = false;
+        for (let ab = 0; E && !nass && ab < E.zellen.size; ab += n) {
+            nass = this._erdbauAmWasser(E, ab, n);
+            yield;
+        }
+        this._erdbauSetzen(ort, v2.erdbau, nass);
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        yield;
+        this._erdbauLage(); // die Normalform der Welt mit dem neuen Ort (ihr erster Leser zahlte sie)
+        yield;
+        yield* this._dorfErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
     }
     // OHNE ORT-WAHL (der Ort-Faden steht noch nicht: der Sandbox-Weg holt die Quelle des Voxel-Fadens, `_nebenFaden`) fragt der
     // nächste Takt neu — ein Wurf des Fadens meldet sich dort laut beim Namen (`_bruchMelden`). Der Rückruf der Zell-Kette und
@@ -2409,11 +2444,13 @@ class AnazhRealm_siedlung_ort {
                 if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu
                 return null;
             }
-            // Der Anker misst den Plan selbst (`_siedlungsAnker`, die EINE Regel jedes Dorfs): nie um den Spieler —
-            // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall, fern bleibt die Zelle, wie sie ist.
-            const anker = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
-            // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker in Takt-Scheiben (Lehre 14), ohne den Erdbau zu legen
-            return this._ortWahl(plan, Object.assign({}, anker), false).then(() => {
+            // DER ORT DER WELT IST EINE FUNKTION (Lehre 7): der Wunsch ist der Ort der Zelle, die Ort-Wahl fragt keinen Spieler
+            // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
+            // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
+            // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
+            const anker = { x: i2.x, y: 0, z: i2.z };
+            // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker im Ort-Faden, ohne den Erdbau zu legen
+            return this._ortWahl(plan, Object.assign({}, anker), false, null).then(() => {
                 v.da = true;
                 return { plan, anker };
             });
@@ -2428,26 +2465,49 @@ class AnazhRealm_siedlung_ort {
     // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
     // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
     // (`_spawnSettlementFromExport`). Rückgabe: je gehobenem Slot das Haus oder false.
+    // DER GANG ZUERST (stadt-erwachen): trägt der Zug den Gang seines Erlebnisses (`q.gang`, `_dorfErlebnis`), geht der Schritt
+    // EINE seiner Raten und kein Haus (unter dem Ladeschirm bis zur Frist); ein Haus über `AUTO_SETTLEMENT.taktMs` ist das
+    // letzte des Takts (frame-adaptiv, Lehre 14: im Zug nH 300 kosteten zwei Häuser bis 50 ms). DER SPIELER IM GRUND: die
+    // Ort-Wahl der Welt fragt ihn nie (Lehre 7) — ein Slot, dessen Grundriss samt `STRUCTURE_PLAYER_CLEAR_MARGIN` ihn berührt,
+    // rückt ans Ende der Reihe; berührt ihn jeder offene, wartet der Zug, bis er geht.
     _dorfZugSchritt(q, ueber) {
         const f = this._foundry;
         const neu = [];
-        while (
+        for (let n = 0; q.gang && this._kappeOffen(n, 1); n++) if (q.gang.next().done) q.gang = null;
+        if (q.gang) return neu;
+        const pm = this.state.playerMesh;
+        const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const t0 = performance.now();
+        for (
+            let warten = 0;
             q.idx < q.plan.slots.length &&
-            this._kappeOffen(neu.length, ueber ? 1 : AnazhRealm.AUTO_SETTLEMENT.perTick)
+            warten < q.plan.slots.length - q.idx &&
+            this._kappeOffen(neu.length, ueber || performance.now() - t0 >= A.taktMs ? 1 : A.perTick);
         ) {
+            const sl = q.plan.slots[q.reihe[q.idx]];
+            const { fp } = AnazhRealm._slotGrundriss(sl);
+            const p = pm && pm.position;
+            if (
+                fp &&
+                p &&
+                Math.hypot(p.x - q.origin.x - sl.x, p.z - q.origin.z - sl.z) < Math.hypot(fp.ex, fp.ez) + M
+            ) {
+                q.reihe.push(q.reihe.splice(q.idx, 1)[0]);
+                warten++;
+                continue;
+            }
             const si = q.reihe[q.idx++];
-            neu.push(
-                this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, Object.assign({ plan: q.plan, si }, q.so))
-            );
+            neu.push(this._spawnSettlementSlot(sl, q.origin, f, Object.assign({ plan: q.plan, si }, q.so)));
         }
         return neu;
     }
-    _dorfZug(plan, origin, cellKey) {
+    _dorfZug(plan, origin, cellKey, gang) {
         const pm = this.state.playerMesh;
         const p = pm ? pm.position : origin;
         const d = (s) => (origin.x + s.x - p.x) ** 2 + (origin.z + s.z - p.z) ** 2;
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => d(plan.slots[a]) - d(plan.slots[b]) || a - b);
-        return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey };
+        return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
     // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
@@ -2536,7 +2596,7 @@ class AnazhRealm_siedlung_ort {
         const q = this._autoSettlementQueue;
         if (q && q.plan) {
             this._dorfZugSchritt(q, ueber);
-            if (q.idx >= q.plan.slots.length) {
+            if (!q.gang && q.idx >= q.plan.slots.length) {
                 this._autoSettlementQueue = null;
                 this.log(
                     `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
@@ -2714,6 +2774,12 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRadiusM: Object.freeze([110, 130, 150, 170]),
     perTick: 2,
+    // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
+    taktMs: 8,
+    // die Laternen je Rate des Erlebnis-Gangs (`_dorfErlebnis`, stadt-erwachen)
+    laternenJeTakt: 32,
+    // die Zellen des Erdbaus je Rate seines Wasser-Urteils (`_dorfErwachen`, stadt-erwachen)
+    wasserZellenJeTakt: 200,
     // Über dem Frame-Budget trägt jeder drosselTakte-te Takt einen Slot (das Tempo fällt, die Siedlung entsteht).
     drosselTakte: 8,
 });
