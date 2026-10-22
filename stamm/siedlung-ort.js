@@ -2589,7 +2589,8 @@ class AnazhRealm_siedlung_ort {
         let fliegt = false;
         for (const [k, w] of V) {
             fliegt = fliegt || !w.da;
-            if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + 2 * A.vorlaufM) ** 2) V.delete(k);
+            if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + 2 * A.vorlaufM) ** 2)
+                V.delete(k);
         }
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
