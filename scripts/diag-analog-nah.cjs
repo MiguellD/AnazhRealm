@@ -114,7 +114,9 @@ function urteil(z) {
             const r = window.anazhRealm;
             if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
             if (typeof r._analogZensus !== "function") return { fatal: "_analogZensus fehlt" };
+            // der Loop ruht die ganze Probe: der Boot hängt ihn erst mit der Heimat aus dem Faden an (`startEternalLoop`)
             r.state.renderer.setAnimationLoop(null);
+            r.state.renderer.setAnimationLoop = () => {};
             // Der Takt rendert NICHT (unter swiftshader kostet ein Voll-Render mit Studio-Meshes Sekunden — wie in
             // diag-beweis-e): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
             // denn der Renderer ist echt (kein Null-Renderer), nur sein Zeichnen ruht.
