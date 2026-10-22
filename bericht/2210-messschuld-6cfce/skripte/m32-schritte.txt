@@ -1,0 +1,6 @@
+eval 'return { version: r.constructor.VERSION, gpu: (r.state.renderer && r.state.renderer.backend && r.state.renderer.backend.adapter && r.state.renderer.backend.adapter.info && r.state.renderer.backend.adapter.info.vendor) || null }'
+!node scripts/diag-kreatur-takt.cjs --werkbank 7972 --proben bewohner
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/platz-8.js)"
+schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-platz-8uhr-third.png
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/platz-10.js)"
+schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-platz-10uhr-third.png

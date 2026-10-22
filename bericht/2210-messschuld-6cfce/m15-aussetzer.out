@@ -1,0 +1,9 @@
+gpu-lauf: Schloss messbahn nach 1 s
+VERSION = "18.546.68"
+19:50:59 Zensus A {"name":"A","vramMB":112.37,"pufferMB":25.15,"texturenMB":87.22,"heapMB":238.26,"halter":{"szene":24.83,"bild":0},"pos":[0,0],"t":42192}
+19:51:02 Bindung {"task":"follow_player","bond":0.15924770359653673,"folger":1,"gesetztesFolgt":true,"chat":"Kein gespeicherter Stand (kein Aktiv-Zeiger, kein Legacy-Save) — eine neue Welt erwacht.> folge mirdie nächste Kreatur folgt mir"}
+19:55:03 gehen1 Ende, Tier-Proben 239
+19:58:07 Fahrt Weg 172
+20:01:40 Zensus B {"name":"B","vramMB":114.03,"pufferMB":26.41,"texturenMB":87.62,"heapMB":345.33,"halter":{"szene":26.05,"bild":0},"pos":[0.07346121986330494,0.09289804541620061],"t":682790.599999994}
+{"frame":{"erste5":{"n":17938,"p50":16.7,"p95":17.5,"p99":18.1},"letzte5":{"n":17965,"p50":16.7,"p95":17.5,"p99":18.1}},"drift":{"p95Faktor":1,"vramMB":1.66,"heapMB":107.07},"A":{"vram":112.37,"heap":238.26,"halter":{"szene":24.83,"bild":0}},"B":{"vram":114.03,"heap":345.33,"halter":{"szene":26.05,"bild":0}},"klangTakt":{"gehen1":{"n":14383,"p50":0,"p95":0.2,"max":2},"fahrt":{"n":10912,"p50":0.1,"p95":0.2,"max":2.1},"gehen2":{"n":10785,"p50":0.1,"p95":0.3,"max":2.3}},"audioA":{"underrunEvents":0,"underrunDurationS":0,"totalDurationS":30.067148,"averageLatency":0.082299},"audioB":{"underrunEvents":0,"underrunDurationS":0,"totalDurationS":670.981546,"averageLatency":0.082429},"tier":{"proben":239,"fehlt":0,"p50":3.56,"p95":4.94,"max":5.7,"anteilUnter10m":1,"aufgabeImmerFolgen":true,"bondEnde":1,"spielerWegM":274},"fahrtWegM":172,"gt":{"da":true,"inst":true,"aufgesessen":false,"mountWeg":true},"nacht":0.00042616666666665044,"bau":true}
+m15aus EXIT=0

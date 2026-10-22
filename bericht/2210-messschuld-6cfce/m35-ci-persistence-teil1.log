@@ -1,0 +1,13 @@
+2026-10-22T17:11:39.4821793Z   ✅ Kreatur-Kosten (R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz
+2026-10-22T17:12:24.9091203Z   [T] 0 Tod idb · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+2026-10-22T17:12:32.1122132Z   [T] 1 Tod zufall · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":6740,"e":103,"b":4,"l":103} · Alter 4.972 s · 
+2026-10-22T17:12:47.6846501Z   [T] 2 Tod fest · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":8292,"e":118,"b":4,"l":118} · Alter 0.537 s · 
+2026-10-22T17:12:57.3323081Z   [T] 3 Tod zufall · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":19284,"e":340,"b":12,"l":340} · Alter 0.001 s · 
+2026-10-22T17:13:08.1078064Z   [T] 4 Tod platz · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":20054,"e":349,"b":12,"l":349} · Alter 3.097 s · 
+2026-10-22T17:13:18.3690955Z   [T] 5 Tod zufall · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":21580,"e":364,"b":12,"l":364} · Alter 3.9 s · 
+2026-10-22T17:13:28.8519745Z   [T] 6 Tod zeiger · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":23048,"e":379,"b":12,"l":379} · Alter 3.487 s · 
+2026-10-22T17:13:37.2297738Z   [T] 7 Tod zufall · geladen {"w":"3492d24a-097b-4cd6-babd-4611b021a92c","x":0,"z":24571,"e":394,"b":12,"l":394} · Alter 3.79 s · 
+2026-10-22T17:14:08.8360869Z   [T] 0 Tod selbst · geladen {"w":"7c6ce543-46d2-499b-a346-d2dd37623202","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+2026-10-22T17:14:15.7724235Z === Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server) ===
+2026-10-22T17:14:15.7739590Z   ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 4.972 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 409 Löcher
+2026-10-22T17:14:15.7749287Z   ✅ (T) SELBSTTEST: der Platz in zwei Zügen (Tod nach der halben Last) wird ROT (1 Tode: Alter max 0 s, 0 über 10 s · 1 korrupt · 1 halbe Welten · 0 Haken verfehlt · Linie 0 Löcher)

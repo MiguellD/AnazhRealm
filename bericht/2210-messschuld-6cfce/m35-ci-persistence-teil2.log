@@ -1,0 +1,19 @@
+2026-10-22T17:10:46.1122497Z   [T] 8 Tod idb · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+2026-10-22T17:10:54.5225378Z   [T] 9 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":7845,"e":156,"b":6,"l":156} · Alter 4.905 s · 
+2026-10-22T17:11:04.9488142Z   [T] 10 Tod fest · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":9597,"e":179,"b":6,"l":179} · Alter 2.708 s · 
+2026-10-22T17:11:14.3037858Z   [T] 11 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":16144,"e":306,"b":11,"l":306} · Alter 0 s · 
+2026-10-22T17:11:24.6338188Z   [T] 12 Tod platz · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":17994,"e":333,"b":12,"l":333} · Alter 3.318 s · 
+2026-10-22T17:11:33.3839189Z   [T] 13 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":19370,"e":352,"b":12,"l":352} · Alter 4.844 s · 
+2026-10-22T17:11:43.7088692Z   [T] 14 Tod zeiger · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":21355,"e":379,"b":13,"l":379} · Alter 2.852 s · 
+2026-10-22T17:11:51.9054962Z   [T] 15 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":22776,"e":398,"b":13,"l":398} · Alter 4.855 s · 
+2026-10-22T17:12:02.2755394Z   [T] 16 Tod idb · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":24323,"e":418,"b":13,"l":418} · Alter 2.751 s · 
+2026-10-22T17:12:11.0506032Z   [T] 17 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":26819,"e":455,"b":14,"l":455} · Alter 4.119 s · 
+2026-10-22T17:12:26.4619377Z   [T] 18 Tod fest · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":28651,"e":479,"b":14,"l":479} · Alter 2.998 s · 
+2026-10-22T17:12:35.7937864Z   [T] 19 Tod zufall · geladen {"w":"161152b0-4da0-410e-b200-f41bae199871","x":0,"z":40672,"e":752,"b":24,"l":752} · Alter 0.001 s · 
+2026-10-22T17:12:41.6096420Z === Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server) ===
+2026-10-22T17:12:41.6109067Z   ✅ (T) Tab-Tod ohne save-server, Zyklen 8-19: 12 Tode: Alter max 4.905 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 785 Löcher
+2026-10-22T17:12:41.7494182Z   ✅ Selbsttest „stumpfer Schmuggel" → rot: LINSE STUMPF: (T) der eingeschmuggelte Täter (ein Felsturm mit den Spender-Parts) wurde nicht beim Namen genannt (felsturm#4)
+2026-10-22T17:12:41.7495437Z   ✅ Selbsttest „stumpfer Tor-Schmuggel" → rot: LINSE STUMPF: (T) das Tor ohne seinen ersten Pfosten wurde nicht als Bild ohne Blocker genannt (welt_fachwerk#9)
+2026-10-22T17:12:59.4422975Z   Schmuggel (T): {"wer":"felsturm#2","genannt":true,"funde":["blocker 1.81"]} · Tor: {"wer":"welt_fachwerk#2303","genannt":true,"funde":["bild 3.16"]}
+2026-10-22T17:12:59.5872825Z   ✅ Selbsttest „stumpfer Schmuggel" → rot: LINSE STUMPF: (T) mit dem Dach-Leser im Boden des Werks fiel O1 nicht rot (8,2 m durch den Boden)
+2026-10-22T17:13:36.6099899Z   Schmuggel (T): {"rot":true,"mass":"99.00 m unter dem Grund, am Ende y -28.24"}

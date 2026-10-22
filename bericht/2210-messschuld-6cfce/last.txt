@@ -1,0 +1,10 @@
+m32-vor 2026-10-22T20:37:08+02:00 cpu%=23 chrome=34 node=4
+m32b-vor 2026-10-22T21:07:43+02:00 cpu%=11 chrome=23 node=3
+m32b-vor 2026-10-22T21:08:28+02:00 cpu%=24 chrome=34 node=4
+m31-vor 2026-10-22T21:18:55+02:00 cpu%=5 chrome=15 node=0
+m33-vor 2026-10-22T21:26:27+02:00 cpu%=6 chrome=14 node=1
+m15takt-vor 2026-10-22T21:36:30+02:00 cpu%=36 chrome=23 node=2
+m35-vor 2026-10-22T21:42:12+02:00 cpu%=6 chrome=14 node=0
+m15aus-vor 2026-10-22T21:50:12+02:00 cpu%=9 chrome=15 node=0
+m15takt-vor 2026-10-22T22:02:01+02:00 cpu%=46 chrome=23 node=1
+m15takt-vor 2026-10-22T22:08:45+02:00 cpu%=9 chrome=15 node=0

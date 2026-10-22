@@ -1,0 +1,19 @@
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (89 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (152 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (215 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (278 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (341 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (404 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (467 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (530 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:07:02+02:00 (593 s)
+gpu-lauf: Schloss messbahn nach 536 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7972 · Seite :7971
+schritt 1 EXIT=0: eval 'return { version: r.constructor.VERSION }' |  "ms": 3 } 
+schritt 2 EXIT=1: !node scripts/diag-kreatur-takt.cjs --werkbank 7972 --proben bewohner |  ❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt. 
+schritt 3 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/pla |  "ms": 19343 } 
+schritt 4 EXIT=0: !node /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/b64png.cj | {"uhr":0.3333,"tod":0.3388,"sicht":"third","stand":[20.2,115.2],"platz":[7.8,115.2],"leiber":81,"imBild":36,"gehendImBild":12,"fps":60,"version":"18.546.68"} 
+schritt 5 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/pla |  "ms": 13590 } 
+schritt 6 EXIT=0: !node /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/b64png.cj | {"uhr":0.4167,"tod":0.4206,"sicht":"third","stand":[20.2,115.2],"platz":[7.8,115.2],"leiber":81,"imBild":34,"gehendImBild":9,"fps":60,"version":"18.546.68"} 
+ende m32b
+m32b EXIT=0

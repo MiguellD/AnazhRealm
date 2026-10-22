@@ -1,0 +1,19 @@
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:18:59+02:00 (0 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:18:59+02:00 (64 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:18:59+02:00 (128 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:21:57+02:00 (14 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:21:57+02:00 (78 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:21:57+02:00 (143 s)
+gpu-lauf: Schloss messbahn nach 353 s
+VERSION = "18.546.68"
+{"saat":11,"abstand":1,"verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":213}
+{"saat":11,"abstand":3,"verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":290,"gefuelltMs":175.5,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":205}
+{"saat":23,"abstand":1,"verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":112,"nassEnde":292,"gefuelltMs":216.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":220}
+{"saat":23,"abstand":3,"verb":"graben","edits":3,"k":49,"krone":3.68,"nassVor":213,"nassEnde":200,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":231}
+{"saat":37,"abstand":1,"verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":105,"nassEnde":292,"gefuelltMs":109.1,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":214}
+{"saat":37,"abstand":3,"verb":"graben","edits":5,"k":47,"krone":3.34,"nassVor":236,"nassEnde":207,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":209}
+{"saat":51,"abstand":1,"verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":153,"nassEnde":333,"gefuelltMs":135.9,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":215}
+{"saat":51,"abstand":3,"verb":"graben","edits":7,"k":7,"krone":3.34,"nassVor":257,"nassEnde":228,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":231}
+{"saat":73,"abstand":1,"verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":116,"nassEnde":298,"gefuelltMs":98.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":234}
+{"saat":73,"abstand":3,"verb":"graben","edits":9,"k":16,"krone":3.34,"nassVor":225,"nassEnde":212,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":232}
+m31 EXIT=0

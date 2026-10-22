@@ -1,0 +1,12 @@
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:26:28+02:00 (2 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:26:28+02:00 (66 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:26:28+02:00 (129 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:29:10+02:00 (30 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:29:10+02:00 (94 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T21:29:10+02:00 (158 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:31:55+02:00 (56 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:31:55+02:00 (120 s)
+gpu-lauf: Schloss messbahn nach 508 s
+VERSION = "18.546.68"
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":71,"steht":true},"wahl":{"hz":246.66354370117188,"kand":1,"zensus":[["wind",-36.5],["glut",-37.4],["vogel",-45.4]]},"fpsVor":60.3,"bilder":1156,"fenster":119,"r0":{"lagS":0,"r":0.8727602969600775,"n":119,"cvX":0.22544803770860444,"cvY":0.5504611468081262},"best":{"lagS":-0.5,"r":0.8948318172558354,"n":118,"cvX":0.2256690560383419,"cvY":0.5529413960526872}}
+m33 EXIT=0

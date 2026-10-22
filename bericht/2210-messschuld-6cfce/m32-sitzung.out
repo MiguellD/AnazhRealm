@@ -1,0 +1,36 @@
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (327 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (391 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (455 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (519 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (582 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:31:44+02:00 (645 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (46 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (110 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (173 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (236 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (299 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (362 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (425 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (488 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (552 s)
+gpu-lauf: warte auf stadt-takt 2026-10-22T20:42:46+02:00 (616 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:53:47+02:00 (19 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:53:47+02:00 (83 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:53:47+02:00 (146 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:56:47+02:00 (30 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:56:47+02:00 (93 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:56:47+02:00 (157 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:59:42+02:00 (45 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:59:42+02:00 (109 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T20:59:42+02:00 (173 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:02:37+02:00 (61 s)
+gpu-lauf: warte auf tier-satz-3 2026-10-22T21:02:37+02:00 (125 s)
+gpu-lauf: Schloss messbahn nach 1704 s
+start: WERKBANK bereit: Steuer 127.0.0.1:7972 · Seite :7971
+schritt 1 EXIT=0: eval 'return { version: r.constructor.VERSION, gpu: (r.state.renderer && r.state.renderer.backend && r.state.renderer.ba |  "ms": 4 } 
+schritt 2 EXIT=1: !node scripts/diag-kreatur-takt.cjs --werkbank 7972 --proben bewohner |  ❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt. 
+schritt 3 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/pla |  "ms": 17855 } 
+schritt 4 EXIT=1: schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-plat |  "ms": 7 } 
+schritt 5 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/pla |  "ms": 13049 } 
+schritt 6 EXIT=1: schirm --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-plat |  "ms": 3 } 
+ende m32

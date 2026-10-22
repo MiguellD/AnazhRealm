@@ -1,0 +1,9 @@
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :7972) =====
+
+  ❌ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":41,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"tagSek":18.5,"bewohner":81,"trefferMin":0.825,"unter":["wohnhaus/feld #724672: 88 %","wohnhaus/feld #45665: 83 %","wohnhaus/feld #45665: 82 %"],"unterN":3,"stationen":2,"satzGang":{"schlupf":0.023,"wegLeib":611,"spuren":216},"blick":{"n":163,"quote":0.969,"sektorMax":0.18},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.2,"mittel":0.073},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":251,"tuer":251,"falsch":[],"aufWeg":0.942,"wegeMin":4,"wegeMax":7,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":35.9}
+       ↳ Soll-Orte über 24 Spielstunden: min 0.825 (Soll ≥ 0,9 je Bewohner; 3 darunter: wohnhaus/feld #724672: 88 % · wohnhaus/feld #45665: 83 % · wohnhaus/feld #45665: 82 %)
+
+  (36 s)
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.

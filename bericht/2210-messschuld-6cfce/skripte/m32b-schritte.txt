@@ -1,0 +1,6 @@
+eval 'return { version: r.constructor.VERSION }'
+!node scripts/diag-kreatur-takt.cjs --werkbank 7972 --proben bewohner
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/platz-8.js)"
+!node /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/b64png.cjs /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32b-3.txt C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-platz-8uhr-third.png
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/platz-10.js)"
+!node /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/skripte/b64png.cjs /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32b-5.txt C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination/bericht/2210-messschuld-6cfce/m32-platz-10uhr-third.png

@@ -1,0 +1,10 @@
+{
+ "fehler": "--tiere undefined: halten · frei · <n>",
+ "stapel": [
+  "at evaluate (evaluate at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\mess-6cfce\\scripts\\werkbank.cjs:1814:32), <anonymous>:9:73)",
+  "at lauf (evaluate at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\mess-6cfce\\scripts\\werkbank.cjs:1814:32), <anonymous>:320:6)",
+  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)"
+ ],
+ "ms": 7
+}
