@@ -413,6 +413,7 @@ class AnazhRealm_dirigent_takt {
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
+        o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())

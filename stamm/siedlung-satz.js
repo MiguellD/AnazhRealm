@@ -78,28 +78,300 @@ class AnazhRealm_siedlung_satz {
         (st.bauSatzSchmutzig || (st.bauSatzSchmutzig = new Map())).set(key, art);
     }
 
-    // Je Render vor dem Index-Takt des Satzes: jede markierte Gruppe legt ihren Bereich neu (lebt sie) oder verlässt
-    // den Satz (leer, entsorgt).
+    // Je Render vor dem Index-Takt des Satzes: jede markierte Gruppe legt ihren Bereich (lebt sie) oder verlässt den Satz
+    // (leer, entsorgt). DIE KOSTEN AN DER ÄNDERUNG (stadt-takt, Radeon echt, Messort stadt gehend: `_tickBauSatz` 3,08 ms je
+    // Takt ab p95; 2323 Marken an 594 Gruppen in 40 s): vorher legte jede Marke den GANZEN Bereich neu — eine Gruppe mit 48
+    // Laternen rechnete bei jedem Belegen und Freigeben alle 48 (101 Takte p50 1,1 ms), und der Stufen-Wechsel eines Hauses
+    // legte 36k–108k Ecken in EINEM Takt (24 Takte p50 5,9 ms, bis 27,4). Jetzt legt ein stehender Bereich nur die Slots, deren
+    // Stempel (Matrix · Farbe · Instanz-Attribute) sich änderte (`_bauSatzSlots`), und ein großer neuer Bereich tritt in Raten
+    // ein (`_bauSatzRate`, je Takt höchstens BAU_SATZ_ECKEN_JE_TAKT Ecken, nah zuerst — Lehre 14); solange einer in Raten
+    // tritt, wartet jeder Austritt: der alte Stufen-Bereich geht erst, wenn der neue steht. Bis das erste Weltbild steht,
+    // gilt kein Deckel (das Bild wartet auf jedes ganze Haus, `_weltbildSteht`).
     _tickBauSatz() {
-        const sm = this.state.bauSatzSchmutzig;
-        if (!sm || sm.size === 0) return;
-        const groups = this.state.archInstanceGroups;
-        const span = this._voxelChunkConfig().span;
-        for (const [key, art] of sm) {
-            const g = groups ? groups.get(key) : null;
-            if (!g || g.satz !== art || !((g.liveCount || 0) > 0)) {
-                this._chunkSatzAus(art, key);
+        const st = this.state;
+        const sm = st.bauSatzSchmutzig;
+        const raten = st.bauSatzRaten;
+        if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return;
+        const groups = st.archInstanceGroups;
+        const saetze = st.chunkSaetze;
+        let budget = st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
+        const gehen = this._bauSatzGehen || (this._bauSatzGehen = []);
+        gehen.length = 0;
+        if (sm) {
+            for (const [key, art] of sm) {
+                const g = groups ? groups.get(key) : null;
+                const lebt = !!g && g.satz === art && (g.liveCount || 0) > 0;
+                const r = raten ? raten.get(key) : null;
+                if (r) {
+                    if (lebt && r.art === art && r.g === g && r.geom === g.geom) continue; // die Rate legt weiter
+                    this._bauSatzRateFort(r, true);
+                }
+                const s = saetze ? saetze.get(art) : null;
+                const b = s ? s.bloecke.get(key) : null;
+                if (!lebt || (b && b.bau && g.liveCount < b.bau.cnt)) gehen.push(key, art);
+                else budget -= this._bauSatzLege(key, art, g, b, budget);
+            }
+            sm.clear();
+        }
+        if (raten && raten.size > 0) budget = this._bauSatzRaten(budget);
+        const warten = !!raten && raten.size > 0;
+        for (let i = 0; i < gehen.length; i += 2) {
+            const key = gehen[i],
+                art = gehen[i + 1];
+            if (warten) {
+                this._bauSatzMarke(key, art);
                 continue;
             }
-            const a = g.mesh.instanceMatrix.array;
-            this._chunkSatzEin(
-                art,
-                key,
-                this._bauSatzBlock(g),
-                Math.floor(a[12] / span) + "," + Math.floor(a[14] / span)
-            );
+            const g = groups ? groups.get(key) : null;
+            if (g && g.satz === art && (g.liveCount || 0) > 0)
+                this._bauSatzLege(key, art, g, saetze.get(art).bloecke.get(key), Infinity);
+            else this._chunkSatzAus(art, key);
         }
-        sm.clear();
+    }
+
+    // Legt den Bereich einer lebenden Gruppe: steht er, nur die geänderten Slots; sonst ganz — über dem Deckel in Raten.
+    // Rückgabe: die gelegten Ecken (sie zählen gegen den Deckel des Takts).
+    _bauSatzLege(key, art, g, b, budget) {
+        if (b && b.bau && this._bauSatzSlots(b, g)) return b.bau.gelegt;
+        const N = g.geom.attributes.position.count * g.liveCount;
+        if (N > budget && N > AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT) {
+            this._bauSatzRateNeu(key, art, g);
+            return 0;
+        }
+        const a = g.mesh.instanceMatrix.array;
+        const nb = this._chunkSatzEin(art, key, this._bauSatzBlock(g), this._bauSatzChunk(a));
+        nb.bau = this._bauSatzStand(g);
+        return N;
+    }
+
+    // Der Chunk eines Bereichs (die Nah-fern-Ordnung des Satzes): der seiner ersten Instanz.
+    _bauSatzChunk(im) {
+        const span = this._voxelChunkConfig().span;
+        return Math.floor(im[12] / span) + "," + Math.floor(im[14] / span);
+    }
+
+    // Der Stand eines Bau-Bereichs (`b.bau`): seine Vorlage, sein Stoff, seine Instanzen und je Slot der STEMPEL dessen, was
+    // seine Ecken trägt — Matrix (16), Farbe (3), die Instanz-Attribute der Fassade (`je`).
+    _bauSatzStand(g) {
+        const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
+        const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
+        const je = [];
+        let K = 19;
+        for (const [name, is] of attr) {
+            const q = g.geom.attributes[name];
+            if (q && q.isInstancedBufferAttribute === true) {
+                je.push([name, is]);
+                K += is;
+            }
+        }
+        const cnt = g.liveCount | 0;
+        const bau = {
+            geom: g.geom,
+            mat: g.mesh.material,
+            n: g.geom.attributes.position.count,
+            cnt,
+            je,
+            K,
+            stempel: new Float32Array(Math.max(1, cnt) * K),
+            gelegt: 0,
+        };
+        for (let i = 0; i < cnt; i++) this._bauSatzStempel(bau, g, i);
+        return bau;
+    }
+
+    // Stempelt Slot `i` neu; true, wenn sich etwas änderte, das seine Ecken trägt.
+    _bauSatzStempel(bau, g, i) {
+        const S = bau.stempel;
+        const im = g.mesh.instanceMatrix.array;
+        const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+        let k = i * bau.K,
+            anders = false;
+        for (let j = i * 16, e = j + 16; j < e; j++, k++)
+            if (S[k] !== im[j]) {
+                S[k] = im[j];
+                anders = true;
+            }
+        for (let c = 0; c < 3; c++, k++) {
+            const v = ic ? ic[i * 3 + c] : 1;
+            if (S[k] !== v) {
+                S[k] = v;
+                anders = true;
+            }
+        }
+        for (const [name, is] of bau.je) {
+            const A = g.geom.attributes[name].array;
+            for (let c = 0; c < is; c++, k++) {
+                const v = A[i * is + c];
+                if (S[k] !== v) {
+                    S[k] = v;
+                    anders = true;
+                }
+            }
+        }
+        return anders;
+    }
+
+    // DER SLOT-ABGLEICH eines stehenden Bereichs: die Größe folgt der Gruppe (`_bauSatzGroesse`), jeder Lauf geänderter Slots
+    // legt seine Ecken (`_satzBlockEcken` ab seinem ersten Slot), die Zellen legen sich nur neu, wenn Lage oder Zahl sich
+    // ändern (neue Zellen: jeder Pass schreibt sie), sonst folgen die Hüllen der gelegten Slots. false: Vorlage oder Stoff
+    // wechselten — der Bereich legt sich ganz.
+    _bauSatzSlots(b, g) {
+        const bau = b.bau;
+        if (bau.geom !== g.geom || bau.mat !== g.mesh.material) return false;
+        const s = this.state.chunkSaetze.get(g.satz);
+        const c = bau.cnt,
+            c2 = g.liveCount | 0;
+        const v0 = b.vStart;
+        bau.gelegt = 0;
+        if (c2 !== c) this._bauSatzGroesse(s, b, c2);
+        if (bau.stempel.length < c2 * bau.K) {
+            const neu = new Float32Array(Math.ceil(c2 * 1.5) * bau.K);
+            neu.set(bau.stempel);
+            bau.stempel = neu;
+        }
+        const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
+        const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
+        const regler = attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
+        const im = g.mesh.instanceMatrix.array;
+        const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+        let lauf = -1,
+            erst = -1,
+            letzt = -1;
+        for (let i = 0; i <= c2; i++) {
+            if (i < c2 && (this._bauSatzStempel(bau, g, i) || i >= c)) {
+                if (lauf < 0) lauf = i;
+                continue;
+            }
+            if (lauf < 0) continue;
+            const A = this._satzBlockEcken(g.geom, im, ic, i - lauf, attr, g.key, regler, lauf);
+            this._chunkSatzLege(s, b.vStart + lauf * bau.n, A, (i - lauf) * bau.n, false);
+            bau.gelegt += (i - lauf) * bau.n;
+            if (erst < 0) erst = lauf;
+            letzt = i;
+            lauf = -1;
+        }
+        b.geom.quelle = [g.geom, im, ic, c2, attr, g.key, regler];
+        if (c2 !== c || b.vStart !== v0) {
+            const I = this._satzBlockIndex(g.geom, c2);
+            const iAlt = b.iAnzahl;
+            this._chunkSatzZellen(b, I.index.array, b.vStart, I.zellen, null);
+            s.iSumme += b.iAnzahl - iAlt;
+            this._chunkSatzHuelle(s, b);
+        } else if (erst >= 0) this._chunkSatzHuelle(s, b, erst, letzt);
+        return true;
+    }
+
+    // Die Größe eines stehenden Bereichs folgt seiner Gruppe: er schrumpft am Ende, wächst am Ende (am Hochwasser oder in
+    // einen freien Lauf), sonst zieht er um (die gelegten Ecken kopiert, nie neu gerechnet).
+    _bauSatzGroesse(s, b, c2) {
+        const bau = b.bau;
+        const alt = b.vAnzahl,
+            neu = c2 * bau.n;
+        if (neu < alt) this._chunkSatzVFrei(s, b.vStart + neu, alt - neu);
+        else if (neu > alt) {
+            const ende = b.vStart + alt,
+                mehr = neu - alt;
+            if (ende === s.vEnde) {
+                if (ende + mehr > s.vKap)
+                    this._chunkSatzGeometrie(s, Math.max(ende + mehr, Math.ceil(s.vKap * 1.5)), s.iKap);
+                s.vEnde += mehr;
+            } else if (!this._satzFreiAb(s.vFrei, ende, mehr)) {
+                const v = this._chunkSatzVAlloc(s, neu);
+                for (const { name, gis } of s.attr) {
+                    const ga = s.geom.attributes[name];
+                    ga.array.copyWithin(v * gis, b.vStart * gis, ende * gis);
+                    ga.addUpdateRange(v * gis, alt * gis);
+                    ga.needsUpdate = true;
+                }
+                this._chunkSatzVFrei(s, b.vStart, alt);
+                b.vStart = v;
+            }
+        }
+        s.vInhalt += neu - alt;
+        b.vAnzahl = neu;
+        bau.cnt = c2;
+        for (const { name } of s.attr) b.geom.attributes[name].count = neu;
+        this._chunkSatzViews(s, b);
+    }
+
+    // DER EINTRITT IN RATEN (Lehre 14): ein Bereich über dem Deckel nimmt seine Lage im Pool sofort (der Satz verdichtet
+    // nicht, solange sie reserviert ist) und legt je Takt höchstens den Rest des Deckels — ganze Slots oder das Fenster
+    // eines Slots; erst die letzte Rate macht ihn zum Bürger (Zellen, Hüllen), dann zeichnet er.
+    _bauSatzRateNeu(key, art, g) {
+        const st = this.state;
+        const raten = st.bauSatzRaten || (st.bauSatzRaten = new Map());
+        const s = this._chunkSatz(art);
+        const n = g.geom.attributes.position.count,
+            cnt = g.liveCount | 0;
+        const im = g.mesh.instanceMatrix.array;
+        s.reserviert = (s.reserviert | 0) + 1;
+        raten.set(key, {
+            key,
+            art,
+            g,
+            geom: g.geom,
+            s,
+            n,
+            cnt,
+            vStart: this._chunkSatzVAlloc(s, n * cnt),
+            i: 0,
+            v: 0,
+            d2: this._spielerD2(im[12], im[14]),
+            bau: this._bauSatzStand(g),
+        });
+    }
+
+    // Die Raten dieses Takts, nah zuerst; Rückgabe: der Rest des Deckels.
+    _bauSatzRaten(budget) {
+        const reihe = Array.from(this.state.bauSatzRaten.values()).sort((x, y) => x.d2 - y.d2);
+        for (const r of reihe) {
+            if (budget <= 0) break;
+            budget -= this._bauSatzRate(r, budget);
+        }
+        return budget;
+    }
+
+    _bauSatzRate(r, budget) {
+        const g = r.g,
+            n = r.n;
+        const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
+        const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
+        const regler = attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
+        const im = g.mesh.instanceMatrix.array;
+        const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+        let gelegt = 0;
+        while (r.i < r.cnt && gelegt < budget) {
+            const rest = budget - gelegt;
+            const ganz = r.v === 0 && rest >= n;
+            const k = ganz ? Math.min(r.cnt - r.i, Math.floor(rest / n)) : 1;
+            const v1 = ganz ? n : Math.min(n, r.v + rest);
+            const A = this._satzBlockEcken(g.geom, im, ic, k, attr, g.key, regler, r.i, r.v, v1);
+            const m = k * (v1 - r.v);
+            this._chunkSatzLege(r.s, r.vStart + r.i * n + r.v, A, m, false);
+            gelegt += m;
+            if (v1 === n) {
+                r.i += k;
+                r.v = 0;
+            } else r.v = v1;
+        }
+        if (r.i < r.cnt) return gelegt;
+        const N = n * r.cnt;
+        const B = this._satzBlockIndex(r.geom, r.cnt);
+        B.attributes = {};
+        for (const { name, is } of r.s.attr) B.attributes[name] = { array: null, itemSize: is, count: N };
+        B.quelle = [r.geom, im, ic, r.cnt, attr, r.key, regler];
+        this._bauSatzRateFort(r, false);
+        if (r.s.bloecke.has(r.key)) this._chunkSatzAus(r.art, r.key);
+        this._chunkSatzBuerger(r.s, r.key, B, r.vStart, N, this._bauSatzChunk(im)).bau = r.bau;
+        this._bauSatzMarke(r.key, r.art); // der Slot-Abgleich holt nach, was sich während der Raten änderte
+        return gelegt;
+    }
+
+    // Eine Rate endet: sie verlässt die Schlange, ihre Lage ist nicht mehr reserviert — abgebrochen gibt sie sie frei.
+    _bauSatzRateFort(r, frei) {
+        this.state.bauSatzRaten.delete(r.key);
+        r.s.reserviert--;
+        if (frei) this._chunkSatzVFrei(r.s, r.vStart, r.n * r.cnt);
     }
 
     // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes).
@@ -132,10 +404,21 @@ class AnazhRealm_siedlung_satz {
     // 142k Ecken frisch an (~10 MB je Wechsel, dazu die Kopie beim Austritt) — der Heap sprang, die volle Sammlung fiel
     // mitten in den Takt (ein Teil mit 56k Ecken 89–92 ms, sein Nachbar mit 72k Ecken 15 ms).
     _satzBlock(geo, im, ic, cnt, attr, wer, regler) {
-        const A = geo.attributes;
-        const n = A.position.count;
-        const N = n * cnt;
         if (!geo.index || !geo.index.array) throw new Error(`_satzBlock(${wer}): kein Index`);
+        const b = this._satzBlockIndex(geo, cnt);
+        b.attributes = this._satzBlockEcken(geo, im, ic, cnt, attr, wer, regler);
+        b.quelle = [geo, im, ic, cnt, attr, wer, regler];
+        return b;
+    }
+
+    // Die Ecken eines Blocks (`_satzBlock`): die Instanzen [ab, ab + cnt), je Instanz das Fenster ihrer Ecken [v0, v1) —
+    // der Bau-Satz legt so je Slot (`_bauSatzSlots`) und einen großen Bereich in Raten (`_bauSatzRate`), mit denselben Kernen.
+    _satzBlockEcken(geo, im, ic, cnt, attr, wer, regler, ab = 0, v0 = 0, v1 = -1) {
+        const A = geo.attributes;
+        const n0 = A.position.count;
+        if (v1 < 0) v1 = n0;
+        const n = v1 - v0;
+        const N = n * cnt;
         const M = this._bauSatzM || (this._bauSatzM = new THREE.Matrix4());
         const NM = this._bauSatzNM || (this._bauSatzNM = new THREE.Matrix3());
         const attributes = {};
@@ -153,14 +436,15 @@ class AnazhRealm_siedlung_satz {
             if (!q || (!wiegeAttr && q.itemSize !== is))
                 throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
             const out = this._satzWerkbank(name, N * is, Float32Array);
-            const src = q.array;
             const jeInstanz = q.isInstancedBufferAttribute === true;
+            const src = jeInstanz || (v0 === 0 && v1 === n0) ? q.array : q.array.subarray(v0 * is, v1 * is);
             // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
             // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
             // Hauses auf die Stufe 0 fiel in die unoptimierte Rechnung: im Null-Gang ins Dorf ein Teil mit 56k Ecken 34–92 ms
             // beim ersten und zweiten Bau, beim dritten 7 ms (der Heap wuchs um 7–14 MB, jede Zahl ein Objekt).
-            for (let i = 0; i < cnt; i++) {
-                const o0 = i * n * is;
+            for (let j = 0; j < cnt; j++) {
+                const o0 = j * n * is;
+                const i = ab + j;
                 if (name === "position") AnazhRealm._satzKernLage(out, o0, src, n, M.fromArray(im, i * 16).elements);
                 else if (name === "normal")
                     AnazhRealm._satzKernNormale(out, o0, src, n, NM.getNormalMatrix(M.fromArray(im, i * 16)).elements);
@@ -174,6 +458,12 @@ class AnazhRealm_siedlung_satz {
             }
             attributes[name] = { array: out, itemSize: is, count: N };
         }
+        return attributes;
+    }
+
+    // Der Index eines Blocks (`_satzBlock`): `cnt` Instanzen hintereinander, je Instanz eine Zelle.
+    _satzBlockIndex(geo, cnt) {
+        const n = geo.attributes.position.count;
         const li = geo.index.array;
         const iN = li.length;
         const idx = this._satzWerkbank("#index", iN * cnt, Uint32Array);
@@ -189,13 +479,7 @@ class AnazhRealm_siedlung_satz {
             if (b > 0) for (let k = o; k < o + iN; k++) idx[k] += b;
             zellen[i + 1] = o + iN;
         }
-        return {
-            attributes,
-            index: { array: idx },
-            zellen,
-            fluechtig: true,
-            quelle: [geo, im, ic, cnt, attr, wer, regler],
-        };
+        return { attributes: null, index: { array: idx }, zellen, fluechtig: true, quelle: null };
     }
 
     // DIE EINE WERKBANK der Satz-Blöcke (K69): je Attribut-Name ein Array, das mit dem größten Block wächst (×1,5) und nie
@@ -3092,6 +3376,9 @@ AnazhRealm.BAU_SATZ = Object.freeze({
 // Zahlen (die Glut-Stärke je Rezept, Rauheit und Metall nach `metal`) — 24 Satz-Befehle im Hauptbild für sieben Bauten.
 // DIE VERTEX-FORM (K44, wie der Boden-Satz): die Normale snorm8x4, die Farbe float16x4 — die Regler kosten so keinen Byte
 // (60 → 48 B je Vertex; gemessen Genesis Radeon: Bau-Sätze 12,3 MB Inhalt bei 60 B).
+// Der Deckel des Bau-Satzes je Takt (`_tickBauSatz`): so viele Ecken legt ein Takt höchstens in Raten (ein Bereich darüber
+// tritt in Raten ein) — gemessen Radeon 890M, Messort stadt: ~0,1 µs je Ecke, der Deckel hält den Posten unter 1 ms.
+AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT = 8192;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),

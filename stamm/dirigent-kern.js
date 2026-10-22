@@ -78,6 +78,7 @@ class AnazhRealm {
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
             satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
+            bauSatzRaten: null, // Map Gruppen-Schlüssel → der Bereich, der in Raten eintritt (_bauSatzRate)
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen

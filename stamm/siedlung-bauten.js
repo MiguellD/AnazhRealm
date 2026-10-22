@@ -1581,6 +1581,7 @@ class AnazhRealm_siedlung_bauten {
     // des Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der
     // Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
     _chunkSatzVerdichten(s) {
+        if (s.reserviert > 0) return false; // ein Bereich in Raten (`_bauSatzRate`) hält seine Lage, bis er eintritt
         const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
         const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
         let iBedarf = 0;
@@ -1752,6 +1753,23 @@ class AnazhRealm_siedlung_bauten {
         return -1;
     }
 
+    // Nimmt genau [start, start + n) aus der Freiliste (ein Bereich wächst an seinem Ende); false: der Lauf ist nicht frei.
+    _satzFreiAb(frei, start, n) {
+        for (let i = 0; i < frei.length; i++) {
+            const f = frei[i];
+            if (f[0] > start) return false;
+            if (f[0] !== start) continue;
+            if (f[1] < n) return false;
+            if (f[1] === n) frei.splice(i, 1);
+            else {
+                f[0] += n;
+                f[1] -= n;
+            }
+            return true;
+        }
+        return false;
+    }
+
     _satzFreiGib(frei, start, n, ende) {
         let i = 0;
         while (i < frei.length && frei[i][0] < start) i++;
@@ -1810,24 +1828,29 @@ class AnazhRealm_siedlung_bauten {
             }
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
         const vStart = this._chunkSatzVAlloc(s, n);
-        const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
-        // Jedes Attribut lädt nur den Lauf, der sich ändert (K71, `_satzSetze`): ein Bereich, der am selben Ort neu eintritt
-        // (der Cull nahm die letzte Instanz einer Bau-Gruppe), trägt dort meist dieselben Bytes. Ein gepacktes Attribut packt
-        // dann erst in einen Vorrat und vergleicht; an einem fremden Ort packt es direkt.
+        this._chunkSatzLege(s, vStart, geom.attributes, n, !!alt && alt.vStart === vStart);
+        return this._chunkSatzBuerger(s, key, geom, vStart, n, chunkKey);
+    }
+
+    // Legt `n` Ecken (`A`: je Satz-Attribut sein Array) ab `vStart` in die Pool-Geometrie des Satzes. Jedes Attribut lädt
+    // nur den Lauf, der sich ändert (K71, `_satzSetze`): ein Bereich, der am selben Ort neu eintritt (`amOrt`: der Cull
+    // nahm die letzte Instanz einer Bau-Gruppe), trägt dort meist dieselben Bytes. Ein gepacktes Attribut packt dann erst
+    // in einen Vorrat und vergleicht; an einem fremden Ort packt es direkt.
+    _chunkSatzLege(s, vStart, A, n, amOrt) {
+        const g = s.geom;
         const L = this._satzLauf || (this._satzLauf = [0, 0]);
-        const amOrt = !!alt && alt.vStart === vStart;
         for (const { name, is, form, gis, w } of s.attr) {
             const ga = g.attributes[name];
-            let quelle = geom.attributes[name].array;
+            let quelle = A[name].array;
             if (form && amOrt) {
                 const V = this._satzVorrat || (this._satzVorrat = new Map());
                 let vr = V.get(ga.array.constructor);
                 if (!vr || vr.length < n * gis)
                     V.set(ga.array.constructor, (vr = new ga.array.constructor(n * gis * 2)));
-                AnazhRealm._satzPacke(form, quelle, is, vr, 0, n, w && geom.attributes[w].array);
+                AnazhRealm._satzPacke(form, quelle, is, vr, 0, n, w && A[w].array);
                 quelle = vr.subarray(0, n * gis);
             } else if (form) {
-                AnazhRealm._satzPacke(form, quelle, is, ga.array, vStart, n, w && geom.attributes[w].array);
+                AnazhRealm._satzPacke(form, quelle, is, ga.array, vStart, n, w && A[w].array);
                 ga.addUpdateRange(vStart * gis, n * gis);
                 ga.needsUpdate = true;
                 continue;
@@ -1837,6 +1860,11 @@ class AnazhRealm_siedlung_bauten {
             ga.addUpdateRange(vStart * gis + L[0], L[1] - L[0]);
             ga.needsUpdate = true;
         }
+    }
+
+    // Der Bürger eines gelegten Bereichs (`_chunkSatzEin`; der Bau-Satz in Raten, `_bauSatzRate`): seine Views, Zellen und
+    // Hüllen — ab hier zeichnet er.
+    _chunkSatzBuerger(s, key, geom, vStart, n, chunkKey) {
         const li = geom.index.array;
         const ck = String(chunkKey);
         const komma = ck.indexOf(",");
@@ -1971,17 +1999,19 @@ class AnazhRealm_siedlung_bauten {
     // Hang zur Sonne hin wirft über die nahe Ebene). Der Boden-Shader zeichnet zwischen Position und Morph-Ziel; das Ziel
     // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
     // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
-    _chunkSatzHuelle(s, b) {
+    _chunkSatzHuelle(s, b, von = 0, bis = -1) {
         s.stand++;
         const h = b.huelle || (b.huelle = new THREE.Box3());
         h.makeEmpty();
+        if (bis < 0) bis = b.zellen.length;
         const A = b.geom.attributes;
         const P = A.position.array,
             Z = A.aMorphTarget ? A.aMorphTarget.array : null;
         const vs = b.vStart;
         const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
         const hub = s.spec.hub || 0;
-        for (const zelle of b.zellen) {
+        for (let zi = von; zi < bis; zi++) {
+            const zelle = b.zellen[zi];
             const I = zelle.idx;
             let x0 = Infinity,
                 y0 = Infinity,
@@ -2015,9 +2045,9 @@ class AnazhRealm_siedlung_bauten {
                 zh.expandByScalar(rand);
                 zh.min.y -= hub;
                 zh.max.y += hub;
-                h.union(zh);
             }
         }
+        for (const zelle of b.zellen) if (!zelle.huelle.isEmpty()) h.union(zelle.huelle);
     }
 
     // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu
