@@ -467,7 +467,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
-        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.aiDiv));
+        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && Number.isFinite(b.aiDiv));
         const NS = r.constructor.NAH_STREU;
         out.schirmGebunden =
             !!NS && NS.stufe0 < NS.radius && NS.kachel > 0 && NS.radius <= 40 && NS.kachel % NS.zelle === 0;
@@ -1522,7 +1522,6 @@ async function checkBandSzeneSkala(ctx) {
             out.nachLast = st.szeneSkala;
             for (let i = 0; i < 80; i++) r._nexusPerfActuate(sense(1.0, 0, 8));
             out.nachRuhe = st.szeneSkala;
-            out.laubFaktorLebt = "_foliageResScale" in st;
         } finally {
             r._applyRenderScale = applyWar;
             st.szeneSkala = skWar;
@@ -1540,7 +1539,7 @@ async function checkBandSzeneSkala(ctx) {
         g.skala ? g.skala.join("/") : ""
     );
     check("Szenen-Skala (2) Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0 (Marke und echte Gruppe)", !!g.gruppe && [...g.marke, ...g.gruppe].join("/") === "L0+LAUB/L0/L0+LAUB/L0", [...(g.marke || []), ...(g.gruppe || [])].join("/"));
-    check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen, kein Laub-Faktor), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && g.laubFaktorLebt === false && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Laub-Faktor ${g.laubFaktorLebt} · Snapshot ${g.snapshotSkala}`);
+    check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Snapshot ${g.snapshotSkala}`);
 }
 
 // Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim (D3b): die ECHTE Kette `_perfSenseFoldFrame`

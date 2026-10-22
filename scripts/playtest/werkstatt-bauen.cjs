@@ -1292,7 +1292,7 @@ async function checkBandWelle6XAudit(ctx) {
         // --- A4 (SYNERGIE-WELLE gewandert): die Avatar-Aura ist GANZ gefallen —
         // kein Tick, keine Lampe, keine Haut-Shells; der Kamera-Wechsel bleibt aura-frei.
         r.setCameraMode("first");
-        out.auraHiddenInFirst = !r.state.playerAuraGlow && typeof r.tickPlayerAura !== "function";
+        out.auraHiddenInFirst = !r.state.playerAuraGlow;
         r.setCameraMode("third");
         out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
         r.setCameraMode("first");

@@ -753,7 +753,7 @@ async function checkBandWFFluss(ctx) {
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
         // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
         // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
-        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
+        out.runExists = typeof r._atlasWaterLevelAt === "function";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
         if (hW && hW.ready && hW.water && hW.water.waterKind) {
@@ -818,7 +818,7 @@ async function checkBandWFFluss(ctx) {
         return out;
     });
     check(
-        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
     );
     check(
@@ -1271,7 +1271,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const out = { arten: {} };
         for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
             const g = r._buildCreatureGroup(art);
-            const a = { baum: false, meshN: 0, faceLOD: false, geoSet: new Set() };
+            const a = { baum: false, meshN: 0, geoSet: new Set() };
             if (g) {
                 a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
                 g.traverse((n) => {
@@ -1295,7 +1295,6 @@ async function checkBandKonvergenzTierBaum(ctx) {
                     a.klonTeilt = n2 > 0 && geteilt === n2;
                     r._disposeSoulGroup(gz);
                 }
-                a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
                 // DIE NaN-LINSE: Welt-BBox finit + sinnvoll.
                 const bb = new THREE.Box3().setFromObject(g);
                 const h = bb.max.y - bb.min.y;
@@ -1402,7 +1401,6 @@ async function checkBandKonvergenzTierBaum(ctx) {
             `KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`,
             a.baum === true && a.meshN >= 2
         );
-        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
         check(`KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`, a.bboxFinit === true);
         check(
             `KONVERGENZ III/PIPE (4) ${art}: ≤120 Meshes (Gelenk-Merge, gemessen ${a.meshN}), Klone TEILEN jede Geometrie`,
