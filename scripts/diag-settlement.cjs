@@ -1807,7 +1807,8 @@ const FIXTURES = [
                 res.c.blickErr = (e7 && e7.message) || String(e7);
             }
             // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht aus dem Vorlauf-Ring;
-            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot; `haupt` = Haus-Pläne (`ortPlan`) im Haupt-Thread
+            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot; `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread
+            // und im Ort-Faden (`_ortWahlMass.kandidaten`)
             res.c.k5 = {};
             const FC = globalThis.__fachwerkCore;
             const ortPlan0 = FC.ortPlan;
@@ -1829,7 +1830,7 @@ const FIXTURES = [
                 delete wm.settlementCells[key];
                 let [wach, bau, erst, t0, haupt] = [false, 1, null, 0, 1];
                 FC.ortPlan = function (p, ...a) {
-                    haupt += wach && p && p.slots ? p.slots.length : 0;
+                    haupt += wach && p && p.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
                 };
                 const req = r.constructor.prototype._foundryRequestSettlement;
@@ -1872,7 +1873,7 @@ const FIXTURES = [
                     erst && {
                         nH,
                         bau,
-                        haupt,
+                        plaene: haupt + r._ortWahlMass.kandidaten,
                         ms: Math.round(erst.ms),
                         ersterM: +erst.d.toFixed(1),
                         naechstM: +naechst.toFixed(1),
@@ -2820,8 +2821,8 @@ const FIXTURES = [
         z5
     );
     check(
-        "C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Haus-Pläne im Haupt-Thread bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
-        k5.teleport12 && k5.teleport300 && k5.teleport300.haupt / k5.teleport12.haupt <= 1.2,
+        "C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Pläne (Haupt-Thread + Ort-Faden) bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
+        q5("teleport12", "teleport300") && k5.teleport300.plaene / k5.teleport12.plaene <= 1.2,
         z5
     );
     const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
