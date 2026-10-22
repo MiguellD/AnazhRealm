@@ -1639,7 +1639,9 @@ class AnazhRealm_gelaende_boden {
             const neu = new Uint8Array(Math.min(pos.length, ref.length) / 3);
             const bewegt1 = (v) =>
                 (neu[v] =
-                    pos[v * 3] !== ref[v * 3] || pos[v * 3 + 1] !== ref[v * 3 + 1] || pos[v * 3 + 2] !== ref[v * 3 + 2]);
+                    pos[v * 3] !== ref[v * 3] ||
+                    pos[v * 3 + 1] !== ref[v * 3 + 1] ||
+                    pos[v * 3 + 2] !== ref[v * 3 + 2]);
             if (rand) for (const v of rand.rand) bewegt1(v);
             else for (let v = 0; v < neu.length; v++) bewegt1(v);
             maske = new Uint8Array(M * M);

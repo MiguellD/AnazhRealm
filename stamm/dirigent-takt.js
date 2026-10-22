@@ -364,7 +364,9 @@ class AnazhRealm_dirigent_takt {
                               ? `Karten offen ${o.karten}`
                               : o.felder
                                 ? `Felder offen ${o.felder}`
-                                : null;
+                                : o.dorf
+                                  ? `Dorf offen ${o.dorf}`
+                                  : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -386,7 +388,7 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`) und die Leiber der Bewohner,
+    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`) und die Leiber der Bewohner,
     // deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist — `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie
     // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
@@ -394,7 +396,7 @@ class AnazhRealm_dirigent_takt {
         const st = this.state;
         const o =
             this._weltOffenWert ||
-            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0 }); // je Takt, ohne Müll
+            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -410,6 +412,7 @@ class AnazhRealm_dirigent_takt {
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
+        o.dorf = this._dorfOffen();
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
