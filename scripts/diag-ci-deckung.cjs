@@ -1,4 +1,4 @@
-// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (Welle K, CI-Teilung 07.10.; jeder Befund steht in der Commit-Chronik).
+// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (jeder Befund steht in der Commit-Chronik).
 //
 // Die Batterie läuft als Matrix in Gruppen (`strategy.matrix.gruppe`), jede fährt die Vorbereitung und ihre Gate-Schritte
 // (`if: matrix.gruppe == N`). Die Wand nennt jede Art, einen Schritt zu verlieren oder zu vervielfachen, beim Namen:
@@ -8,17 +8,15 @@
 //                braucht sie); fail-fast aus (jede Gruppe meldet ganz); der Deckel je Gruppe höchstens 45 min
 //   (D) DOPPELT  kein Gate-Schritt (sein run-Befehl) und kein Schritt-Name steht zweimal in der CI (alle Jobs)
 //
-// DIE GEGENRICHTUNG (09.10.; Befund: 50 von 152 `gate:*` liefen nirgends automatisch) — die Wand liest beide Richtungen:
+// DIE GEGENRICHTUNG — die Wand liest beide Richtungen:
 //   (W) WAND     jedes `gate:*` aus package.json und jeder Teil von `npm run check` läuft in einem Workflow (`npm run` bis auf die
 //                Befehle aufgelöst: ein Schritt ruft die Wand ODER jeder ihrer Befehle steht in einem) — oder steht in AUSNAHMEN
 //   (A) AUSNAHME  je Eintrag eine Klasse aus KLASSEN und ein Grund; die Liste ist selbst geprüft: ein Eintrag, dessen
 //                Wand es nicht mehr gibt oder die schon in der CI läuft, ist ROT (keine stale Allow-Liste)
 //   (R) REDUNDANT  kein Schritt eines Workflows fährt nur Befehle, die ein anderer Schritt derselben Datei schon fährt
-//   (F) FEHLT     jedes `npm run [-s] X` eines Schritts oder Skripts hat das Skript X in package.json (22.10.: ein Merge nahm
-//                den Schritt eines gefallenen Gates zurück, Gruppe 4 rot in 0 s)
+//   (F) FEHLT     jedes `npm run [-s] X` eines Schritts oder Skripts hat das Skript X in package.json
 //
-// DER ABGESCHALTETE SCHRITT (10.10.; Befund: `|| true`, continue-on-error und der nächtliche Job zählten als Deckung) —
-// gedeckt ist eine Wand nur, wenn ihr Rot den MERGE hält:
+// DER ABGESCHALTETE SCHRITT — gedeckt ist eine Wand nur, wenn ihr Rot den MERGE hält:
 //   (S) STUMM    jeder Befehl trägt den Grund, warum sein Rot verpufft — ein Workflow ohne push/pull_request (ein nächtlicher
 //                Lauf blockt nichts), continue-on-error an Job oder Schritt, eine Bedingung, die im Merge nicht feuert (nur die
 //                Gruppen-Bedingung der eigenen Matrix und success()/always() zählen), `|| …` (außer `|| exit 1` / `|| false`), der
@@ -26,7 +24,7 @@
 //                das letzte Glied einer Kette, die nicht die letzte Zeile ist), eine Shell, die die Linse nicht liest; npm fährt
 //                seine Skripte als `sh -c` ohne errexit (ein `;` macht den Teil davor stumm — STUMM IN SICH). Beim Namen genannt.
 //
-// DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
+// DIE ZWEI STUFEN UND DIE WAAGE. check.yml trägt
 // GENAU zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
 // steht an GENAU einer Stelle (G)/(D), ein weiterer Job ist ROT (außer der Echt-Gruppe (E), er stünde außerhalb der Waage):
 //   (T) WAAGE    je Gruppe der Plan: die Vorbereitung plus die Median-Zeiten ihrer Schritte (spec/ci/ci-zeiten.json, gemessen
@@ -36,8 +34,7 @@
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel der Entscheidung 1110 §2.8, Zweig koordination) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
-// DIE WANDUHR DER VOLLEN BATTERIE (K61, 14.10.; Befund: 22 Jobs auf 20 Plätzen, derselbe Kopf mehrfach gerichtet, die Caches
-// am Lockfile-Hash luden den Chrome je Versions-Stufe neu):
+// DIE WANDUHR DER VOLLEN BATTERIE:
 //   (T) PLÄTZE    die Jobs, die ein voller Lauf zugleich fährt (der Puls und die Voll-Gruppen; ein Job, auf den ein anderer
 //                wartet, endet vor ihm), ≤ LAEUFER_PLAETZE — sonst wartet der Überschuss und trägt die Wanduhr doppelt
 //   (V) KOPF      vor der Batterie richtet der Job `kopf` (unter VOLL_WENN, ohne Matrix, EIN Schritt scripts/ci-kopf.cjs, nie
@@ -46,7 +43,7 @@
 //   (V) SCHLÜSSEL kein Cache hasht package.json/-lock (die Projektversion), jeder trägt restore-keys, setup-node keinen eigenen;
 //                die Schlüssel aus scripts/ci-schluessel.cjs (Inhalt allein), der Schritt vor den Caches, die Caches vor npm ci
 //
-// DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10.; Befund: K15 fiel erst am Merge im vollen Playtest, (W) sah ihn nie):
+// DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE:
 //   (P) PLAYTEST  `npm run playtest` läuft in GENAU einem Schritt aller Workflows, in einer Gruppe der vollen Batterie (ihre Zeit wiegt (T)),
 //                sein Rot hält den Merge, das Verdikt ist die Bedingung: der letzte Befehl greift „Alle Invarianten OK" aus dem
 //                `tee`-Log (ein grüner Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet er mit 0 trotz verletzter Invarianten).

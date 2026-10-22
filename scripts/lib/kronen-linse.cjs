@@ -1,9 +1,7 @@
-// kronen-linse.cjs — DIE LINSEN DER KRONE (S7, 05.10.), aus den gebauten Puffern (asset-worker-harness) gelesen:
+// kronen-linse.cjs — DIE LINSEN DER KRONE, aus den gebauten Puffern (asset-worker-harness) gelesen:
 //
-// (1) DIE BILD-DECKUNG — wie viel vom Bild eine Krone deckt, GERASTERT, nicht ihre Flächen-Summe. Befund (Prüfer W5, R3):
-//     die Deckungs-Linse summierte Flächen (mittlere Projektion nach Cauchy, je Karte Fläche × Atlas-Füllung) und sah
-//     keine Überlappung — sie meldete die neue Nah-Krone mit 0,99 der alten, das Labor-Bild zeigte 0,76 (Eiche 8 m,
-//     Subjekt 0,673 → 0,515). Hier wird die Silhouette gemalt: jedes Dreieck der Krone in 24 orthografischen
+// (1) DIE BILD-DECKUNG — wie viel vom Bild eine Krone deckt, GERASTERT, nicht ihre Flächen-Summe (eine Summe sähe keine
+//     Überlappung). Hier wird die Silhouette gemalt: jedes Dreieck der Krone in 24 orthografischen
 //     Ansichten — acht Azimute (0°, 22,5° … 157,5°) je Blick-Hebung 0°, 30° und 60° VON UNTEN (der Spieler steht am
 //     Boden: eine Krone über ihm liest er schräg von unten, die Mammut-Krone auf 8 m unter 74°) — auf ein festes Raster
 //     (Kante `px` in Vorlagen-Einheiten, für beide Stufen eines Paars dieselbe); Karten-Dreiecke lesen je Pixel die
@@ -13,19 +11,15 @@
 //         krone: [{ kind, pos: Float32Array, idx: Uint32Array, uv: Float32Array|null }] (kroneAus)
 //         atlas: { w, h, alpha: Uint8Array (w×h, Zeile 0 = v 0), schwelle: 0..1 }
 //
-// (2) DIE SCHWEBE — eine Karte ohne Träger. Befund (Prüfer W5, R2): die Nah-Krone strich Zweige unter 0,03·trunkR, ihre
-//     Nadel-Karten schwebten ohne Zweig (Fichte 656 von 1406, Mammut 541 von 905), die Weiden-Strähnen hingen ohne
-//     Peitsche in der Luft (593 von 677). Eine Karte HÄNGT, wenn die Rinde ihre innere Hälfte oder eine ihrer
+// (2) DIE SCHWEBE — eine Karte ohne Träger. Eine Karte HÄNGT, wenn die Rinde ihre innere Hälfte oder eine ihrer
 //     Kanten-Mitten berührt, oder wenn sie an einer hängenden Karte hängt (die Strähne ist eine Kette: Mitten näher als
 //     drei Viertel der halben Diagonalen). schwebe(meshes) → { karten, schwebend, beispiel }.
 //
-// (3) DER BODEN — kein Laub unter dem Boden der Vorlage (y < 0; die Strähnen hingen unter den Boden-Rand, R1).
+// (3) DER BODEN — kein Laub unter dem Boden der Vorlage (y < 0).
 //     unterBoden(krone) → tiefstes y des Laubs.
 //
-// (4) DIE LAGEN (S3, 09.10.) — wie viele Karten-Lagen ein Kronen-Pixel trägt. Befund (Späher S3 pflanzen, Kern
-//     78d66a63): die Budget-Zeile war nur gegen die sättigende BINÄRE Deckung geeicht — die Eiche-L0 trug 1 280 Karten
-//     mit der Kante 0,22 H, 40,8 Quad-Lagen je Kronen-Pixel; jede Lage wird alpha-getestet und schattiert, 65 % ihrer
-//     Fragmente verwirft der Atlas (Kern-Füllung 0,347) — die GPU-Kosten der Krone ohne Bild. Gezählt in DENSELBEN 24
+// (4) DIE LAGEN — wie viele Karten-Lagen ein Kronen-Pixel trägt (jede Lage wird alpha-getestet und schattiert: die
+//     GPU-Kosten der Krone ohne Bild, die die sättigende BINÄRE Deckung nicht sieht). Gezählt in DENSELBEN 24
 //     Ansichten wie die Bild-Deckung, je Pixel-Mitte jede Karte, die sie überdeckt (Quad-Lage), und jede, deren Atlas-
 //     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
 //       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }

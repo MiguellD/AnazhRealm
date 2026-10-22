@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot (Welle K, 07.10.). Befund: der OMEN (GTX 1060, der ruhige Messplatz) fuhr
-// jeden Stand mit einer Befehlsfolge, die in jeder Nachricht neu stand — und zweimal maß er Falsches, ohne dass eine Zahl es
-// zeigte: `band` vor `lauf` (die Bank-Frames ohne rAF füllen den Zeitstempel-Pool, jeder Pass-Stempel danach ist blind) und
-// das „tauende" Wetter (die Bühne hielt die Uhr des Auto-Zugs, ein anderer Schreiber drehte trotzdem sunny → rainy; V18.534
-// in einem B-Boot). Diese Datei IST die Folge: sie startet die Welt (`werkbank start --echt`), fährt die Schritte in fester
+// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot. Diese Datei IST die Folge: sie startet die Welt (`werkbank start --echt`), fährt die Schritte in fester
 // Ordnung, prüft nach jedem Schritt jede Wache und schreibt EIN JSON je Boot — jeder Stand misst gleich.
 //
 //   DIE FOLGE: boot · dorf-aus (`window.__anazhAutoSettlement = false`, vor dem Umstellen) · fenster 1920 1080 · umstellen
@@ -13,8 +9,7 @@
 //   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
 //   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
 //   zählt nie; JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt · stufe · leck · weit · ungemessen) ebenso —
-//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26: bis 13.10. sah der Exit die Linse nie, 1110-12 meldete
-//   „12 von 12 GRÜN" bei 8 von 8 Band-Boots „linse ROT"). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
+//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie. Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -26,16 +21,13 @@
 //     FENSTER  vor und nach jedem messenden Schritt: der Viewport 1920 × 1080;
 //     FOLGE    die Schritte in der Ordnung der FOLGE: kein Lauf nach einem Pool-Füller (gpu-bank, band), die Bühne vor dem
 //              ersten Messen, der Dorf-Zug ruht vor dem Umstellen.
-//   DIE TIERE neben jeder Messung (OMEN 07.10.: sie streuen zwischen Boots von 0 bis 3 Arten im Bild, 11–101 Befehle — der
-//   größte unbenannte Störfaktor jeder ABAB): je messendem Schritt und je Blick der Bank die Zahl gesamt, im Sichtkegel (davon
+//   DIE TIERE neben jeder Messung (der größte unbenannte Störfaktor jeder ABAB): je messendem Schritt und je Blick der Bank die Zahl gesamt, im Sichtkegel (davon
 //   nah), mit Schatten-Wurf je Kaskade (k0/k1) und die Arten (`tierZahl` der Werkbank) — im JSON und in `kurz`, damit Boots
 //   vergleichbar gefiltert werden. Die Zahl ist Weltzustand und nie rot; nur ein fehlender oder zerbrochener Zähler ist ein
 //   Befund (`tierUrteil`: die Messung stünde ohne ihre Tiere).
 //   Die Messwerte stehen roh je Schritt im JSON, dazu die Kurzfassung (`kurz`): fps · Frame p50/p95/max · CPU-Takt · render-EWMA
 //   je Lauf, gpu-bank, Band-Urteil, Profil-Top, die Tiere je Messung. Die render-EWMA ist die WANDUHR der Render-Phase
-//   (`_loopShadowUpdate` + `_loopRender`) und trägt den Takt-Zustand der CPU mit (0710-11, Werkbank an der Wiese: dieselbe feste
-//   Rechnung lief 12–15 % langsamer, wenn der Takt davor leichter war; eine Dosis Rechnung vor dem Render kürzte die Phase,
-//   ein leichterer Takt dehnte sie bei gleichem Render-Pfad um 0,26–0,41 ms) — die Zeile nennt sie so; ein Kosten-Urteil über
+//   (`_loopShadowUpdate` + `_loopRender`) und trägt den Takt-Zustand der CPU mit — die Zeile nennt sie so; ein Kosten-Urteil über
 //   den Render geben gpu-bank, Band und die Frame-Zeit, über die CPU der CPU-Takt (die Summe aller Phasen). Exit 0 = alle Wachen grün, 1 = eine Wache rot (der Lauf
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.

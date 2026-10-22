@@ -1,15 +1,9 @@
 // diag-schatten-werfer.cjs — DIE WERFER-WAND (npm run gate:schatten-werfer).
 //
-// Befund 04.10. (echte GPU, Mess-Wiese, V18.528): beide CSM-Kaskaden zeichneten DIESELBE Werfer-Menge (k0 = k1 = 209
-// Befehle · 1,23 M Dreiecke). Drei Wurzeln: (a) das r184-Addon setzte jede Kaskade auf ein Quadrat mit der Diagonale
-// ihrer Frustum-Scheibe — der Blick deckte ein Viertel —, und es stellte die Lichter NACH den Karten (r184 ruft sein
-// updateBefore nach den Kaskaden-Pässen); (b) die Region-Bundles trugen EIN Urteil für jeden Pass, das der Haupt-Kamera:
-// ein Bundle im Blick warf in beide Kaskaden, eines hinter dem Blick nie; (c) jede Region warf als Ganzes. Die Heilung:
-// `_kaskadenPassen` misst die Box an der Scheibe im Licht-Raum (gerastet, texel-geschnappt, nahe Ebene über dem höchsten
-// Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die Regionen (Werfer-Hülle) und
-// darin die Werfer (Box je Blatt-Mesh) gegen das Frustum der Pass-Kamera. Im Schatten-Pass ist ein Region-Bundle eine
-// Gruppe (die Bundle-Wahrheit am Chokepoint `_renderScene`: unter dem Override-Stoff sammelt kein Render Bundles).
-// Der Boden ist EIN Satz außerhalb jedes Bundles — seine Bereiche sind Hüllen der Box (Empfänger-Band und Werfer).
+// Das Gesetz: `_kaskadenPassen` misst die Box jeder Kaskade an ihrer Scheibe im Licht-Raum (gerastet, texel-geschnappt,
+// nahe Ebene über dem höchsten Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die
+// Regionen (Werfer-Hülle) und darin die Werfer gegen das Frustum der Pass-Kamera; der Boden ist EIN Satz außerhalb jedes
+// Bundles.
 //
 // Diese Linse (Null-Renderer, GPU-frei) fährt die ECHTEN Methoden an einer echten CSM-Instanz (Addon-Init mit der
 // Haupt-Kamera, wie der erste Material-Bau) und der gebooteten Welt:
@@ -21,7 +15,7 @@
 //   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
 //       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
 //       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
-//   K8  die Wahl hält über die Stufen der Sonne (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): dreht das Licht
+//   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht
 //       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
 //       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
 //       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
@@ -42,27 +36,21 @@
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
-//   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
-//       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
+//   W7  die Sätze je Pass: jeder Pass
 //       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
 //       die Höhlen-Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
 //       des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem
 //       Blick (der Hang wirft)
-//   W8  die Instanz-Wahl je Pass (Befund 06.10., echte GPU, Mess-Wiese: jede globale Baum-Gruppe zog in jedem Pass JEDE
-//       Instanz — das Hauptbild auch die Bäume hinter dem Blick, k1 bei schrägem Blick jeden Zwilling, jeder Pass die Stufen,
-//       deren Maske vom Auge alles verwirft): gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
+//   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
 //       Instanzen im Frustum und in ihrem Fenster (nicht hinter dem Blick, nicht jenseits d1), die L0 nicht jenseits d0; der
 //       Zwilling wirft mittags in die nahe Scheibe, nicht in die ferne, ein hoher Zwilling mitten in der fernen Scheibe nur
 //       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
 //       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot; ein Stoff OHNE Maske (die GPU zeichnet jede Instanz
 //       voll) bekommt kein Fenster — seine L1 jenseits d1 zeichnet; die Gruppen der Welt ohne Masken-Stoff stehen beim Namen
-//   W9  DAS EINE GESETZ, DREI LESER (W7-Vereinigung — Befund echte GPU, Mess-Wiese, yaw −0,88: boden k1 173 784 Dreiecke
-//       über der Ratsche 90 845, die Box der fernen Kaskade umschloss den nahen Boden, die Kapsel galt nur den Bäumen):
-//       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
+//   W9  DAS EINE GESETZ, DREI LESER: ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   W10 DIE WURF-EBENE (K72 — Befund 15.10., Radeon, Third: r184 projizierte je Kaskaden-Render 39–72 Nicht-Werfer, die
-//       die Schatten-Funktion erst nach Frustum-Test, Liste und Sortierung verwarf): der Wurf IST die Ebene SHADOW_TWIN_LAYER
+//   W10 DIE WURF-EBENE: der Wurf IST die Ebene SHADOW_TWIN_LAYER
 //       (`castShadow` liest und schreibt ihr Bit, kein Knoten trägt ein eigenes Feld), jede Kaskaden-Kamera sieht NUR sie —
 //       jeder zeichnende Knoten der Szene ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
 //       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)

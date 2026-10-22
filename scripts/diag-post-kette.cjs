@@ -1,14 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette, 06.10., Welle G)
-//
-// Befund (GTX 1060, `werkbank zerlegen` auf dem V18.532-Kandidaten): der Direktpfad ohne Post-Kette — der Rückfall, wenn
-// die Kette scheitert, und die Weiche der Zerleg-Linse (`post`, `leer`) — STÜRZTE: TypeError „Invalid value used as weak
-// map key" in r184 `copyFramebufferToTexture` ← ViewportDepthTextureNode.updateBefore ← renderObject. Die Wurzel: der
-// Ketten-Bau nahm der Leinwand die Tiefe (`renderer.depth = false`, die nie gelesene Leinwand-Tiefe, V18.532), nur der
-// Fang eines Render-Fehlers gab sie zurück — jeder andere Weg in den Direktpfad zeichnete die Szene in ein Rahmen-Ziel
-// ohne Tiefe (kein Tiefentest), und der erste Leser der Szenen-Tiefe (Wasser, Feld-Pass) warf. Und die Godrays tasteten
-// 20× je Pixel auch bei Stärke 0 (0,69 ms je Frame an der Mess-Wiese).
+// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette): der Direktpfad ohne Post-Kette (der
+// Rückfall, wenn die Kette scheitert, und die Weiche der Zerleg-Linse) zeichnet mit Tiefe, die Godrays tasten nur mit Stärke.
 //
 // Die Wand fährt den ECHTEN Renderer des Spiels (WebGPU auf swiftshader, Holz `kienspan`) mit seinem echten Frame
 // (`_loopRender`) an einer eigenen Bühne in der Welt-Szene: eine nahe rote Kiste vor einer fernen grünen, eine Wasser-
@@ -22,25 +15,20 @@
 //       (Bloom samt Mitte), mindestens 24 in Zweigen (Godrays 20 + lokaler Kontrast 4 hinter ihrer Stärke).
 //   (d) GODRAYS — mit der Sonne im Bild trägt der Zweig: das Bild mit Godrays weicht von dem ohne ab (über dem Rausch-Boden
 //       zweier gleicher Aufnahmen).
-//   (f) SAUM (0710-3) — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
-//       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe —
-//       vorher las jedes ungerade x der rechten Hälfte (screenUV, Nearest) den Nachbar-Block: ein heller Saum von 1 px.
+//   (f) SAUM — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
+//       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe.
 //   (e) WASSER — das Wasser über einem hellen Grund (0,3 m) liest das Tiefen-Abbild wie r184s Viewport-Tiefe: bei festen
 //       Uhren dieselbe Farbe mit dem Abbild und mit dem vollen Klon, und ohne Grund eine andere (die Probe hängt an der
-//       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide) —
-//       bis 07.10. lag sie umgekehrt, das Wasser der Wand wurde gezeichnet und gecullt, kein Pixel.
-//   (g) RAHMEN-ZIEL (0910-1) — der Direktpfad zeichnet in r184s Rahmen-Ziel (`_getFrameBufferTarget`, rgba16float +
+//       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide).
+//   (g) RAHMEN-ZIEL — der Direktpfad zeichnet in r184s Rahmen-Ziel (`_getFrameBufferTarget`, rgba16float +
 //       depth24plus, `isPostProcessingRenderTarget` → im Band `tex:r184-ausgabe`); die Post-Kette legt es nie an. Vor dem
-//       ersten Ausflug, nach der Rückkehr und am Ende lebt keines (r184 hielt es bis zur Entsorgung der Leinwand: 0710-6 und
-//       0710-9 maßen `band --ort genesis` nach `zerlegen` mit 23,7 MB davon), im Direktpfad steht es, und die Regel der Band
+//       ersten Ausflug, nach der Rückkehr und am Ende lebt keines, im Direktpfad steht es, und die Regel der Band
 //       (`rahmenZielBefunde`) nennt es.
-//       DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
+//       DIE DRIFT: fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
 //       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
 //   (h) DUNKEL (D3-N2, der Abend) — eine flache Fläche füllt das Bild mit dunklem Szenen-Licht, belichtet gleich hell
 //       (0,05 bei Belichtung 1, 0,0125 bei 4 — ein Schatten 1,6 EV unter dem belichteten Mittelgrau): das Bild ist nicht schwarz
-//       und bei beiden Belichtungen gleich. Vorher lag der Drehpunkt des Kontrasts bei 0,5 in Szenen-Einheiten VOR der
-//       Belichtung (y = 1,06·x − 0,03): jedes Licht unter 0,028 wurde schwarz, gleich wie hell die Belichtung es hob — seit die
-//       Belichtung dem Tag über 1 folgt, wurde der Abend schwarz. Jetzt dreht er über Belichtung 1 um 0,5 nach der Belichtung (25c).
+//       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 //       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
