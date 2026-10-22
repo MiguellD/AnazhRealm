@@ -1183,6 +1183,13 @@ class AnazhRealm_dirigent_takt {
                 },
             },
             {
+                name: "morphFolge",
+                prio: 1, // Welt-Substanz: die Naht eines Nachbarn, dessen Stufe wechselte (`_tickMorphFolge`), nach dem Strom
+                run: (ms) => {
+                    this._tickMorphFolge(st._frameChunksBuilt ? 0 : Math.min(ms, AnazhRealm.MORPH_FOLGE_MS));
+                },
+            },
+            {
                 name: "waterIso",
                 prio: 1, // Welt-Substanz (kein throttle-bares Deko), aber nach dem Terrain
                 run: (ms) => {
