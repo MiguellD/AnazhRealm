@@ -445,7 +445,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const foryouOn = document.getElementById("feed-foryou-panel").hidden === false && meshPanel.hidden === true;
         out.feedTabsWork = meshOn && foryouOn;
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
-        const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
+        const fi = r._feedItems();
         const fkinds = new Set(fi.map((it) => it.kind));
         const hasCreatures = (r.state.creatures || []).length > 0;
         out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
@@ -522,7 +522,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
         // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
-        const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
+        const omniWelt = r._omniboxSearch("welt:");
         out.omniboxWelt =
             Array.isArray(omniWelt) &&
             omniWelt.length >= 1 &&
@@ -1572,9 +1572,6 @@ async function checkBandPhiArchipel(ctx) {
         // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
         // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
         // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
-        const dslEffects = r.constructor.dslEffects || (typeof window !== "undefined" && window.dslEffects);
-        // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
-        // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
         // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
         const keinOp = (op) => !r.dslEffects[op];

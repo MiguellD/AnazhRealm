@@ -1895,7 +1895,6 @@ async function checkBandV18264ShadowCache(ctx) {
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa((r) => typeof r._weatherFieldFor === "function");
         const r = window.anazhRealm;
         if (!r || typeof r._weatherFieldFor !== "function") return { err: "keine Instanz / _weatherFieldFor fehlt" };

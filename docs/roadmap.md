@@ -76,7 +76,7 @@ headless-Zahl als Look-Beweis kann lügen).
 ## §3 · Die Teilsysteme — was EXISTIERT (nicht parallel bauen)
 
 - **Welt-Substanz:** Terrain-Density (`_terrainBaseDensityAt`, main+Worker bit-identisch) ·
-  Hydrosphäre (`_computeHydrosphere`, frozen) · Wasser-Pipeline (CA `waterCells` → Sheet →
+  Hydrosphäre (gelaende-core `hydrosphaere`, im voxel-worker, frozen) · Wasser-Pipeline (CA `waterCells` → Sheet →
   Shader; Fern-Wasser-Atlas) · Voxel-Streaming (`_tickVoxelChunkStreaming`, Ring+LOD+BVH+Worker).
 - **Lebendiges:** das Feld (`auraAt` lesen · `_deposit*` schreiben · δ werten) · Emotion-Kern ·
   Kreaturen (bauTier-Baum + CPG-Gang + Fern-Guss) · der Nexus (Gesten `dsl.history` + Gesetze

@@ -759,7 +759,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Eine Voxel-Welt baut keine Heightfield-Chunks und keine heightData (groundHeightField null,
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
-    const voxelP5c1Results = await safeEvaluate(page, () => {
+    const voxelP5c1Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -767,7 +767,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden (Karte hydro-faden)
         // V9.27 Phase 5c.1: keine Heightfield-Chunks. V18.272 — `chunkMap` ist als
         // totes Sediment gekehrt (ensureChunkAt starb V9.39); die Wahrheit ist
         // jetzt „abwesend ODER leer" (beides = kein Heightfield-Chunk).
@@ -786,14 +786,14 @@ async function checkBandVoxelTerrainCore(ctx) {
         // ist gelöscht.
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true });
         // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
         out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true });
         return out;
     });
 
@@ -1195,14 +1195,14 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
         out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
         // Ein Wasser-Chunk am Wasser-Ort des Gesetzes (`__wasserChunk`: die Heimat trägt seit K16 keinen See).
-        window.__wasserChunk("see");
+        await window.__wasserChunk("see");
         // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
@@ -1343,7 +1343,7 @@ async function checkBandV18132FerneSeen(ctx) {
             return JSON.stringify(v);
         };
         const before = fp();
-        r._ensureHydroTilesAround(-2048, 0, 10); // Kachel WEST (-1,0)
+        await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;

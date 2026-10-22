@@ -746,7 +746,7 @@ async function checkBandM3RittVollendet(ctx) {
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
@@ -798,7 +798,7 @@ async function checkBandWFFluss(ctx) {
         // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
         // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
         // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
-        const o = window.__wasserOrt("see");
+        const o = await window.__wasserOrt("see");
         const boot = (mat) => {
             const bp = mkBoat(mat);
             r.state.blueprints[bp.name] = bp;

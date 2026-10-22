@@ -269,8 +269,8 @@ const LEIB = (k) => {
         const sek = (N - 1 - 30) * dt;
         const toene = (s._schrittKlang ? s._schrittKlang.schritte : 0) - ton0;
         const kadenz = (p.walkPhase - ph0) / Math.PI / sek;
-        // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt (vor K07: 2 × _gaitSchrittLen)
-        const lam = typeof r._gaitGesetz === "function" ? r._gaitGesetz(rig, v).schritt : 2 * r._gaitSchrittLen(rig);
+        // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt
+        const lam = r._gaitGesetz(rig, v).schritt;
         const soll = (2 * v * sek) / lam;
         let wegFuss = 0,
             wegLeib = 0,

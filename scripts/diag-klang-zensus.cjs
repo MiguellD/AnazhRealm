@@ -197,7 +197,7 @@ function werkzeug() {
         let seeZelle = null;
         for (let rx = -2; rx <= 2; rx++)
             for (let rz = -2; rz <= 2; rz++) {
-                r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0);
+                await window.__weltDa(() => !r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0));
                 const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
                 for (const lake of (h && h.lakes) || []) {
                     if (!lake.cells || lake.cells.length < 16 || !(lake.level > st.waterLevel + 2)) continue;

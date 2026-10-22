@@ -1459,7 +1459,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const wl = r.state.waterLevel;
         let carveX = null;
         let carveZ = null;
-        let carveMacro = null;
         for (let cx = -4; cx <= 4 && carveX === null; cx++) {
             for (let cz = -4; cz <= 4 && carveX === null; cz++) {
                 if (cx === testCx && cz === testCz) continue;
@@ -1486,7 +1485,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 ) {
                     carveX = x;
                     carveZ = z;
-                    carveMacro = m;
                 }
             }
         }
@@ -1660,15 +1658,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `diff=${res.cellAfterRemoveAbove}`
         );
     }
-    // Kein isolierter Flach-Spot im Ring = „unmessbar = bestanden“ (nicht jeder Ring hat einen);
-    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot.
-    check(
-        "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
-        true,
-        res.carveSpotFound
-            ? `macroY=${res.carveMacro || "?"}`
-            : "kein isolierter Flach-Spot im Ring — Test übersprungen"
-    );
+    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot (nicht jeder Ring hat einen)
     if (res.carveSpotFound) {
         // Phantom-Schutz (heilige Invariante): ein Carve OHNE Wasser-Quelle in Reichweite bleibt TROCKEN,
         // jede Tiefe; nur nahe einer echten Quelle füllt sich die Mulde reaktiv. Der Spot oben ist via

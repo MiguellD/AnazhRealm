@@ -1039,15 +1039,13 @@ async function probe(arg) {
                 linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
             }
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
-            // Die Pflanzen beiseite (die Blocker der Natur-Einträge) und die Kronen-Grenze eines Vor-Stands neutral: das Soll,
-            // das nur Boden und Bau erzwingen. Der Täter beim Namen: Stamm (Blocker) oder Krone (die Kronen-Grenze).
+            // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen.
             // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
             // Pflanze — er hält die Kamera wie der Bau (K06: die Kugel der Kamera hielt im Ritt 2 von 496 Proben an Natur ohne
             // Pflanzen-Box, die der Mittelstrahl um weniger als ihren Radius verfehlte; die Linse nannte sie „Stamm")
             const pflanzen = st.architectures.filter(
                 (a) => a && natur(a) && a.blockerAABBs && a.blockerAABBs.length && a.blockerAABBs.every((b) => b && b.pflanze === true)
             );
-            const hatKronen = typeof r._kameraKronenGrenze === "function";
             const ohneStaemme = (an) => {
                 for (const a of pflanzen) {
                     if (an) {
@@ -1058,11 +1056,6 @@ async function probe(arg) {
                         delete a.__lkBlocker;
                     }
                 }
-            };
-            const ohneKronen = (an) => {
-                if (!hatKronen) return;
-                if (an) r._kameraKronenGrenze = () => 1;
-                else delete r._kameraKronenGrenze; // die Methode der Klasse gilt wieder
             };
             let T = 1000;
             const arm = () => {
@@ -1089,10 +1082,7 @@ async function probe(arg) {
                         if (!Number.isFinite(hh(x, zz))) continue;
                         stelle(x, zz, L.gier);
                         ohneStaemme(true);
-                        ohneKronen(true);
                         const aSoll = ruhig();
-                        ohneKronen(false);
-                        const aOhneStamm = ruhig();
                         ohneStaemme(false);
                         const aIst = ruhig();
                         z.proben++;
@@ -1100,8 +1090,7 @@ async function probe(arg) {
                         soll.push(aSoll);
                         if (aIst < aSoll - 0.3) {
                             z.pflanzeHaelt++;
-                            if (aOhneStamm < aSoll - 0.3) taeter.add("Krone (`_kameraKronenGrenze`)");
-                            if (aIst < aOhneStamm - 0.3) taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
+                            taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
                         }
                     }
                 }
@@ -1115,10 +1104,7 @@ async function probe(arg) {
                 const fahre = (mitPflanzen) => {
                     let n = 0;
                     let hinaus = 0;
-                    if (!mitPflanzen) {
-                        ohneStaemme(true);
-                        ohneKronen(true);
-                    }
+                    if (!mitPflanzen) ohneStaemme(true);
                     for (const L of linien.slice(0, 8)) {
                         let vor = null;
                         for (let s = 0; s <= 30; s += bildM) {
@@ -1136,10 +1122,7 @@ async function probe(arg) {
                         }
                         ruhig();
                     }
-                    if (!mitPflanzen) {
-                        ohneKronen(false);
-                        ohneStaemme(false);
-                    }
+                    if (!mitPflanzen) ohneStaemme(false);
                     return { n, hinaus };
                 };
                 const jSoll = fahre(false);

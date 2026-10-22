@@ -398,7 +398,7 @@ async function verdeckungPhase(opts) {
             // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort, der Wasser trägt — quer zum Lauf mindestens 2 m
             // nass (K16: der nächste Punkt des Flussnetzes ist oft eine trockene Rinne der Ebene 2; dort zeichnet kein Wasser)
             const [mx, mz] = opts.messort;
-            r._ensureHydroTilesAround(mx, mz, 200);
+            await window.__weltDa(() => !r._ensureHydroTilesAround(mx, mz, 200));
             const h = r._hydroFor(mx, mz);
             let P = null,
                 fl = null,

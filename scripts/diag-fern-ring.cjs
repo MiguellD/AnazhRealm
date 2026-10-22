@@ -985,7 +985,6 @@ const server = statikServer();
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
             res.maskNode = !!(stoffNaht9 && stoffNaht9.maskNode);
-            res.regel = typeof r._fernRingRegel === "function";
             res.loch = loch9;
             res.lochZelle = lochZelle;
             res.lochSeite = lochSeite;
@@ -1580,16 +1579,12 @@ const server = statikServer();
     );
     check(
         "9: DIE NAHT — kein Loch: wo der maskNode verwirft (`_fernRingRegel` 2), trifft der senkrechte Strahl ein Deck (Chunk oder Stich-Band), an allen vier Kanten innen und außen und im Inneren; Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) zeigt Löcher",
-        out.regel === true &&
-            !!out.loch &&
+        !!out.loch &&
             out.loch[1] >= 500 &&
             out.loch[0] === 0 &&
             !!out.lochZelle &&
             out.lochZelle[0] > 0,
-        `regel=${out.regel} verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}` +
-            (out.regel === true
-                ? ""
-                : " — TÄTER: der maskNode hat keinen CPU-Spiegel (`_fernRingRegel`), die ganze Zelle verwirft")
+        `verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}`
     );
     check(
         "9: DIE NAHT — kein Durchstich: wo der Ring zeichnet, liegt er nicht über dem Deck (im Saum um die Weiche gesenkt — er weicht dem Chunk in die Tiefe); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",

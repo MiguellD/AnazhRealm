@@ -77,7 +77,7 @@ function fingerprint(plan) {
     return sha(JSON.stringify(plan));
 }
 
-// DAS ERSTE HAUS (siedlung.K5): die Boxen, die der Export je Haus misst (bis K5 jeder Ziegel eine), dann der Bau des ersten Slots
+// DAS ERSTE HAUS (siedlung.K5): die Boxen, die der Export je Haus misst, dann der Bau des ersten Slots
 const ERSTES_HAUS_GEO = 500;
 function erstesHaus(FC, nH, bau) {
     const B = THREE.BufferGeometry.prototype, cb = B.computeBoundingBox, h = crypto.createHash("sha256"), t0 = performance.now();
@@ -294,7 +294,7 @@ function ortVerdikt(m) {
 }
 const GT_SOLL_M = 60;
 
-// DAS DORF-LICHT DER GASSE (K10 × Pflicht-OFFEN C, 13.10.: „≥ 4 sichtbare Quellen im Nachtbild der Gasse — nie 0 = 0") — rein:
+// DAS DORF-LICHT DER GASSE (K10: ≥ 4 sichtbare Quellen im Nachtbild der Gasse) — rein:
 // quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
 // je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
 // Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
@@ -362,7 +362,7 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
 }
 const GASSE_SOLL = 4;
 
-// DER GT AUF DEM DORFWEG (K10 × Auge 10.10. Bild 05: 8 s Vollgas, 5,2 m — der Wagen hing am Sockel-Kasten): im Browser,
+// DER GT AUF DEM DORFWEG (K10): im Browser,
 // durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) und echte Tasten. Der Weg ist die längste Kette der
 // Hauptwege (gen 0, Weg an Weg, wo der nächste beginnt, wo der vorige endet) des Plans, den die Welt trägt; der Wagen startet
 // 2 m hinter ihrem Anfang in ihrer Richtung, der Fahrer hält W und lenkt (A/D) zum Punkt 6 m voraus auf der Kette. Gemessen:
@@ -1095,10 +1095,7 @@ const FIXTURES = [
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
-        // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Bis K66-2 hielt „je
-        // Platz und je 25 m Weg eine Laterne" die Zahl, während die dichte Gasse des Auto-Dorfs (Pose nacht-wand) auf 61 m keine
-        // trug (`laterneNah`, nachts 83 % schwarz); bis N1 maß die Linse je 25 m eine Marke ≤ 15 m — grün, während die Wand
-        // zwischen zwei Marken dunkel blieb (nacht-wand 69 %). Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
+        // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen: jeder Meter jeder Meter der Weg-Achse, sein Maß der Abstand zur
         // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
         // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
         // wandLaternen), über alle Meter p90 ≤ 10 m. Je
@@ -1532,7 +1529,7 @@ const FIXTURES = [
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
         // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
-        // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
+        // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
         res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0 && window.__fehlt(baueHier.build, /Math\.random/);
         res.gammaStream = ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 && window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
@@ -1550,11 +1547,9 @@ const FIXTURES = [
             ruft(r, "_fundamentLand", r.constructor, "_fundamentRaster", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0 &&
             ruft(r, "_fundamentLand", r, "_landAt", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0;
         r.state.architectures.slice(n0s).forEach((e) => r.removeArchitecture(e));
-        // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
-        // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
+        // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel).
         // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
-        //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
-        //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
+        //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan. Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
         const anker = r._siedlungsAnker;
         let nA = 0;
         r._siedlungsAnker = function (...a) {
@@ -1643,7 +1638,7 @@ const FIXTURES = [
             );
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
-            // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
+            // drosselTakte-ten Takt.
             // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
             // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
             // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in
@@ -1777,7 +1772,6 @@ const FIXTURES = [
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT (Welle L, Leben-Prüfung S-W1): zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
-            // Vorher schlüsselte das Gedächtnis nur den Samen: die zweite (die Stadt `dorf 7 120` neben `dorf 7 18`) blieb ohne Weg.
             try {
                 const orig = r._stlWegeBuild;
                 const formen = [];
@@ -1899,8 +1893,7 @@ const FIXTURES = [
                         const [cx, cz] = [Math.floor(messort[0] / SG.cellM), Math.floor(messort[1] / SG.cellM)];
                         const zelle = (res.zelle = cx + "," + cz);
                         const cells = () => (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
-                        // DER SELBST-TEST (Karte SO; CI Gruppe 14, 16.10.: Häuser 37/16, Laternen 40/17, Plan-Hash ≠, Türen 0/16 — ein
-                        // Dorf, das der Zug früher bestellt hatte, kam im Fenster VOR der Zelle an): ein zweites Dorf im Fenster, die
+                        // DER SELBST-TEST (Karte SO): ein zweites Dorf im Fenster, die
                         // erste Dorf-Zelle des Gesetzes drei Zellen weit (ihr Bau berührt die Zelle nie), kommt zuerst an und wächst zuerst
                         for (let i = 0; i < 49 && !res.zweit; i++) {
                             const [dx, dz] = [(i % 7) - 3, Math.floor(i / 7) - 3];
@@ -2114,7 +2107,7 @@ const FIXTURES = [
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
                     // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
-                    // DIE LATERNE VOR DER WAND (K66, Augen-Runde 15.10.: nachts glühte eine Giebelwand gesättigt orange): je Laterne der
+                    // DIE LATERNE VOR DER WAND (K66): je Laterne der
                     // Zelle der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
                     // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
                     const LGl = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
@@ -2153,7 +2146,7 @@ const FIXTURES = [
                                             lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, q.x, q.z));
                             }
                     res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
-                    // DIE STUFE VOR DER TÜR IST WEG (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): je Haus der Punkt 0,8 m
+                    // DIE STUFE VOR DER TÜR IST WEG (K66): je Haus der Punkt 0,8 m
                     // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
                     // die Wiese über `_pfadFeldAt` und die Natur-Wand lesen) — Grundriss gegen Natur gilt auch für Treppe und Vorplatz
                     let vpOk = 0;
@@ -2240,8 +2233,7 @@ const FIXTURES = [
                         });
                     if (P.ort && pmW) r._tickWegeKarte(pmW.position);
                     res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
-                    // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
-                    // steilen Flächen), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
+                    // DIE WAND DER TERRASSE (K66), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
                     // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
                     // Himmel, steiler als der Schutt-Kandidat (23°), den der Erdbau um > 0,25 m hebt oder senkt und der auf keiner
                     // Fläche des Erdbaus liegt (`erdbauFlaeche`); Wiese ist er, wo sein Fels-Stoff (die Steile über rockLo … rockHi

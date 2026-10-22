@@ -593,7 +593,6 @@ async function checkBandV18197GammaMStrata(ctx) {
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
-        let pt = { x: 0, z: 0 };
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
         // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
@@ -697,30 +696,26 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
         }
 
-        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
-        out.helperExists = typeof r._eisenAderAt === "function";
-        if (out.helperExists) {
-            // Determinismus: zweimal gleicher (x,z) → gleicher Wert
-            const a1 = r._eisenAderAt(123.7, 456.3);
-            const a2 = r._eisenAderAt(123.7, 456.3);
-            out.deterministic = Math.abs(a1 - a2) < 1e-10;
-            // Wert in [0, 1]
-            out.boundedRange = a1 >= 0 && a1 <= 1;
-            // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
-            // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
-            let max = 0,
-                sum = 0;
-            for (let i = 0; i < 500; i++) {
-                const x = (i * 37 + 11) % 5000;
-                const z = (i * 73 - 29) % 5000;
-                const v = r._eisenAderAt(x, z);
-                if (v > max) max = v;
-                sum += v;
-            }
-            out.distMax = max;
-            out.distMean = sum / 500;
-            out.distHasPeaks = max > 0.5;
+        // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
+        const a1 = r._eisenAderAt(123.7, 456.3);
+        const a2 = r._eisenAderAt(123.7, 456.3);
+        out.deterministic = Math.abs(a1 - a2) < 1e-10;
+        // Wert in [0, 1]
+        out.boundedRange = a1 >= 0 && a1 <= 1;
+        // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
+        // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
+        let max = 0,
+            sum = 0;
+        for (let i = 0; i < 500; i++) {
+            const x = (i * 37 + 11) % 5000;
+            const z = (i * 73 - 29) % 5000;
+            const v = r._eisenAderAt(x, z);
+            if (v > max) max = v;
+            sum += v;
         }
+        out.distMax = max;
+        out.distMean = sum / 500;
+        out.distHasPeaks = max > 0.5;
 
         // (I3) MIGRATION-TOLERANZ: _terrainMaterialAt ohne y bleibt
         // bit-identisch (keine Iron-Bands-Aktivierung ohne y-Probe).
@@ -791,7 +786,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
     );
-    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
@@ -827,94 +821,88 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (G1) Helper existiert
-        out.helperExists = typeof r._growTreeBlueprint === "function";
+        // (G2) Determinismus: gleiche seed → gleiche parts
+        const p1 = r._growTreeBlueprint("eiche", "seed-a");
+        const p2 = r._growTreeBlueprint("eiche", "seed-a");
+        out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
 
-        if (out.helperExists) {
-            // (G2) Determinismus: gleiche seed → gleiche parts
-            const p1 = r._growTreeBlueprint("eiche", "seed-a");
-            const p2 = r._growTreeBlueprint("eiche", "seed-a");
-            out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
+        // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
+        const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
+        const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
+        const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
+        out.sixDistinct = uniqueSigs.size === 6;
 
-            // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
-            const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
-            const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
-            const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
-            out.sixDistinct = uniqueSigs.size === 6;
+        // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
+        // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
+        const sample = variants[0];
+        out.partsCount = sample.length;
+        out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
+        out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
+        out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
 
-            // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
-            // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
-            const sample = variants[0];
-            out.partsCount = sample.length;
-            out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
-            out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
-            out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
-
-            // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
-            // alle laub-Parts haben |xz| > 0.4 ODER y > 2. Der Fuß-Saum (die flache Wurzelanlauf-Disk, Ω-K2) sitzt
-            // BEWUSST am Sockel und ist keine Krone (wie V18.211 S3c); seit K24 wächst auch die Bare-Art "eiche" aus dem Gesetz.
-            const laubAwayFromTrunk = sample
-                .filter((p) => p.material === "laub" && !(p.position.y < 1 && p.size.x > p.size.y * 1.5))
-                .every((p) => {
-                    const dist = Math.hypot(p.position.x, p.position.z);
-                    return dist > 0.4 || p.position.y > 2;
-                });
-            out.laubAtBranchEnds = laubAwayFromTrunk;
-
-            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben Affinitäts-MAX wie baum_eiche (holz+laub,
-            // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
-            // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
-            const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
-            // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
-            const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
-            const treeBp = __g6Key && r.state.blueprints[__g6Key];
-            if (treeBp) {
-                const fakeTags = r.computeCompoundTags(fakeBp);
-                const treeTags = r.computeCompoundTags(treeBp);
-                const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-                const diffs = {};
-                let neutral = true;
-                for (const axis of targetAxes) {
-                    const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
-                    diffs[axis] = Number(dt.toFixed(3));
-                    if (Math.abs(dt) > 0.05) neutral = false;
-                }
-                out.tagDiffs = diffs;
-                out.tagNeutral = neutral;
-            }
-
-            // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
-            // size{xyz}
-            out.wellFormed = sample.every(
-                (p) =>
-                    p.shape &&
-                    p.material &&
-                    p.position &&
-                    typeof p.position.x === "number" &&
-                    typeof p.position.y === "number" &&
-                    typeof p.position.z === "number" &&
-                    p.size &&
-                    typeof p.size.x === "number" &&
-                    typeof p.size.y === "number" &&
-                    typeof p.size.z === "number"
-            );
-
-            // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
-            const heights = variants.map((v) => {
-                let maxY = 0;
-                for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
-                return maxY;
+        // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
+        // alle laub-Parts haben |xz| > 0.4 ODER y > 2. Der Fuß-Saum (die flache Wurzelanlauf-Disk, Ω-K2) sitzt
+        // BEWUSST am Sockel und ist keine Krone (wie V18.211 S3c); seit K24 wächst auch die Bare-Art "eiche" aus dem Gesetz.
+        const laubAwayFromTrunk = sample
+            .filter((p) => p.material === "laub" && !(p.position.y < 1 && p.size.x > p.size.y * 1.5))
+            .every((p) => {
+                const dist = Math.hypot(p.position.x, p.position.z);
+                return dist > 0.4 || p.position.y > 2;
             });
-            const hMin = Math.min(...heights);
-            const hMax = Math.max(...heights);
-            out.heightSpread = Number((hMax - hMin).toFixed(2));
-            out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+        out.laubAtBranchEnds = laubAwayFromTrunk;
 
+        // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben Affinitäts-MAX wie baum_eiche (holz+laub,
+        // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
+        // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
+        const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
+        // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
+        const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
+        const treeBp = __g6Key && r.state.blueprints[__g6Key];
+        if (treeBp) {
+            const fakeTags = r.computeCompoundTags(fakeBp);
+            const treeTags = r.computeCompoundTags(treeBp);
+            const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            const diffs = {};
+            let neutral = true;
+            for (const axis of targetAxes) {
+                const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
+                diffs[axis] = Number(dt.toFixed(3));
+                if (Math.abs(dt) > 0.05) neutral = false;
+            }
+            out.tagDiffs = diffs;
+            out.tagNeutral = neutral;
         }
+
+        // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
+        // size{xyz}
+        out.wellFormed = sample.every(
+            (p) =>
+                p.shape &&
+                p.material &&
+                p.position &&
+                typeof p.position.x === "number" &&
+                typeof p.position.y === "number" &&
+                typeof p.position.z === "number" &&
+                p.size &&
+                typeof p.size.x === "number" &&
+                typeof p.size.y === "number" &&
+                typeof p.size.z === "number"
+        );
+
+        // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
+        const heights = variants.map((v) => {
+            let maxY = 0;
+            for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
+            return maxY;
+        });
+        const hMin = Math.min(...heights);
+        const hMax = Math.max(...heights);
+        out.heightSpread = Number((hMax - hMin).toFixed(2));
+        out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+
         return out;
     });
 
-    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
     check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
     check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);

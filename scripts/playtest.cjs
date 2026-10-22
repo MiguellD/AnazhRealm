@@ -170,14 +170,16 @@ if (require.main === module) (async () => {
         // Ringen um den Ursprung, dort die nächste Ozean-Zelle; „fall“: der Wasserfall der nächsten Kachel, die einen trägt
         // (Ringe von Kacheln um den Ursprung bis zum zweiten — die Täler sind das Flussnetz, ein Sturz lebt, wo ein Lauf
         // steil fällt, nicht mehr an den Gruben der Canyon-Maske). Die Kachel wird über den EINEN Kachel-Eingang registriert
-        // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
-        window.__wasserOrt = (art) => {
+        // (`_ensureHydroTilesAround`, die Kachel kommt aus dem Faden: `kachel` wartet auf sie), damit jeder Hydro-Leser
+        // (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
+        window.__wasserOrt = async (art) => {
             const r = window.anazhRealm;
             const G = window.__gelaendeCore;
+            const kachel = (x, z) => window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
             window.__wasserOrtCache = window.__wasserOrtCache || {};
             const c = window.__wasserOrtCache[art];
             if (c) {
-                r._ensureHydroTilesAround(c.x, c.z, 0);
+                await kachel(c.x, c.z);
                 return { ...c, hydro: r._hydroFor(c.x, c.z) };
             }
             const L = r._gelaende();
@@ -194,7 +196,7 @@ if (require.main === module) (async () => {
                     .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
                     .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
                 for (const k of kand) {
-                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
                     const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
                     if (!lake) continue;
@@ -226,7 +228,7 @@ if (require.main === module) (async () => {
                 const geprueft = new Set();
                 for (const k of kand.slice(0, 6)) {
                     if (ort) break;
-                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
                     for (const lake of (h && h.lakes) || []) {
                         if (ort || !(lake.level > wl + 2) || !lake.cells) break;
@@ -261,7 +263,7 @@ if (require.main === module) (async () => {
                     for (let rz = -ring; rz <= ring && !ort; rz++)
                         for (let rx = -ring; rx <= ring && !ort; rx++) {
                             if (Math.max(Math.abs(rx), Math.abs(rz)) !== ring) continue;
-                            r._ensureHydroTilesAround(rx * size, rz * size, 0);
+                            await kachel(rx * size, rz * size);
                             const h = r._hydroFor(rx * size, rz * size);
                             const wf = h && Array.isArray(h.waterfalls) && h.waterfalls.length ? h.waterfalls[0] : null;
                             if (wf) ort = { x: wf.x, z: wf.z, lake: null, fall: wf };
@@ -272,7 +274,7 @@ if (require.main === module) (async () => {
                         const x = R * Math.cos((a / 64) * 2 * Math.PI);
                         const z = R * Math.sin((a / 64) * 2 * Math.PI);
                         if (!(G.hoehe(L, x, z, false) < wl - 4)) continue;
-                        r._ensureHydroTilesAround(x, z, 0);
+                        await kachel(x, z);
                         const h = r._hydroFor(x, z);
                         let best = -1;
                         let bd = Infinity;
@@ -292,10 +294,10 @@ if (require.main === module) (async () => {
         };
         // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
         // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
-        window.__wasserChunk = (art) => {
+        window.__wasserChunk = async (art) => {
             const r = window.anazhRealm;
             if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
-            const ort = window.__wasserOrt(art);
+            const ort = await window.__wasserOrt(art);
             if (!ort) return null;
             const { span } = r._voxelChunkConfig(0);
             const cx = Math.floor(ort.x / span);
@@ -303,6 +305,7 @@ if (require.main === module) (async () => {
             const key = `${cx},${cz}`;
             const da = r.state.voxelChunks.get(key);
             if (da && da.mesh && da.waterCells) return key;
+            await window.__weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
             r._disposeVoxelChunk(key);
             r.state.voxelChunks.delete(key);
             const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });

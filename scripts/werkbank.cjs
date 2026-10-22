@@ -467,7 +467,7 @@ function lauf(k) {
             // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
             // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
             const ruheZustand = () => {
-                const z = typeof r._impostorCensus === "function" ? r._impostorCensus() || {} : {};
+                const z = r._impostorCensus() || {};
                 const pm = st.playerMesh.position;
                 const R2 = (st.architectureCullingRadius || 0) ** 2;
                 let offen = 0;

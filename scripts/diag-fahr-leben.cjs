@@ -1433,7 +1433,7 @@ async function probeBahn(B) {
     }
     phase("F5–F7");
     out.log.push("Dauer: " + uhr.zeilen.join(" · "));
-    hilfe.zeilen = typeof r._hilfeZeilen === "function" ? r._hilfeZeilen() : [];
+    hilfe.zeilen = r._hilfeZeilen();
     out.tacho = tacho;
     out.stimme = stimme;
     out.hilfe = hilfe;

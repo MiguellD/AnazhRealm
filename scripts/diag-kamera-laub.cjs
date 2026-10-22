@@ -982,7 +982,7 @@ async function probe(arg) {
         try {
             if (ort.art) {
                 // der Ort aus der Welt (s. ORTE): findet die Suche keinen, bricht der Ort laut — nie ein Ersatz
-                const see = ort.art === "ufer" ? window.__wasserOrte({}).see : null;
+                const see = ort.art === "ufer" ? (await window.__wasserOrte({})).see : null;
                 const O = ort.art === "ufer" ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] } : window.__weltOrt(ort.art, ort.such);
                 if (!O) throw new Error(`kein Ort der Art ${ort.art} aus der Welt`);
                 z.ortAusWelt = [O.x, O.z];

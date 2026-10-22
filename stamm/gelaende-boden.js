@@ -267,36 +267,95 @@ class AnazhRealm_gelaende_boden {
         }
     }
 
-    // Hydrosphären-Atlas (Drainage-Netz: Flüsse/Seen/Wasserfälle) + Render; Atlas VOR Render (Render
-    // liest state.hydrosphere). Zwei try/catch — keine Stufe darf den Worldgen brechen.
+    // Hydrosphären-Atlas (Drainage-Netz: Flüsse/Seen/Wasserfälle) + Render; Atlas VOR Render (Render liest state.hydrosphere).
+    // DIE HEIMAT ENTSTEHT IM FADEN (Karte hydro-faden, Lehre 14): die Weltgen räumt die alte Wahrheit (die fernen Kacheln des
+    // alten Seeds fallen mit, A3), gibt dem Voxel-Faden den Stand dieser Welt (`_voxelWorkerSyncWorldgenState`) und bestellt
+    // die Heimat (`_hydroBestellen`). Das Versprechen trägt den Rest: mit ihr stehen Band und Wasser-Meshes, und erst dann
+    // fragt der Strom den Faden (`voxelWorkerWorldgenSynced`). Bis zur Karte rechnete der Haupt-Faden sie hier synchron
+    // (Kalt-Boot 168 ms headless). → Promise<Hydrosphäre | null> (null: eine neuere Welt kam ihr zuvor).
     _worldgenComputeAndBuildHydrosphere() {
-        try {
-            // A3 (V18.132) — ein Welt-Regen erneuert die Heimat-Wahrheit: die
-            // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
-            // dem neuen Seed; derived, nie persistiert).
-            this.state.hydroTiles = new Map();
-            const hydro = this._computeHydrosphere();
-            this.state.hydrosphere = hydro;
+        this._hydroWelt = (this._hydroWelt | 0) + 1;
+        this._hydroBestellt = new Map();
+        this.state.hydroTiles = new Map();
+        this.state.hydrosphere = null;
+        this.state.voxelWorkerWorldgenSynced = false;
+        this._computeHydroBand();
+        this._voxelWorkerSyncWorldgenState();
+        return this._hydroBestellen("heim", null).then((hydro) => {
+            if (!hydro) return null;
             this.log(
-                `V9.43-b: Hydrosphäre berechnet — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
+                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
                 "INFO"
             );
-        } catch (e) {
-            this.state.hydrosphere = null;
-            this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
+            try {
+                this._buildHydrosphereMeshes();
+            } catch (e) {
+                this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+            // ab hier fragt der Strom den Faden (`_voxelFadenTraegt`): die Heimat steht in Main und Faden
+            this.state.voxelWorkerWorldgenSynced = true;
+            return hydro;
+        });
+    }
+
+    // DIE BESTELLUNG EINER REGION (Karte hydro-faden): die Heimat (`key` "heim", `origin` null) oder eine ferne Kachel entsteht
+    // im Faden — der EINE Sender des Zustands (`_voxelZustandPost`) trägt den Auftrag an jeden Faden an DERSELBEN Stelle seiner
+    // Reihe (jeder Auftrag dahinter liest sie), der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet
+    // sie nie: ohne Faden bricht es laut (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
+    // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
+    _hydroBestellen(key, origin) {
+        const B = this._hydroBestellt || (this._hydroBestellt = new Map());
+        const da = B.get(key);
+        if (da) return da.zusage;
+        const welt = this._hydroWelt | 0;
+        const e = { faeden: null, ab: null };
+        const zusage = new Promise((ok, ab) => {
+            e.ab = ab;
+            e.post = () => {
+                const requestId = this.state.voxelWorkerNextRequestId++;
+                this.state.voxelWorkerPending.set(requestId, { resolve: ok, reject: ab });
+                e.faeden = new Set(this._nebenFaeden ? this._nebenFaeden.keys() : []);
+                this._voxelZustandPost({ type: "hydro", key, origin, requestId });
+            };
+        });
+        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt, e.faeden));
+        B.set(key, e);
+        if (this.state.voxelWorker) e.post();
+        else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
+        else {
+            this._bruchMelden(
+                `HYDRO-FADEN: die Hydrosphäre (${key}) ohne Voxel-Faden — der Haupt-Faden rechnet sie nie (Lehre 14)`
+            );
+            e.ab(new Error("kein Voxel-Faden für die Hydrosphäre"));
         }
-        // Globales Wasser-Y-Band für die Cell-Klassifikation: alle Chunks teilen es → Cells außerhalb sind
-        // deterministisch gleich (above=AIR, below=WATER), die OOB-Naht bleibt konsistent.
+        if (key !== "heim")
+            e.zusage = e.zusage.catch((err) => {
+                B.delete(key);
+                this._bruchMelden(`HYDRO-FADEN: die Kachel ${key} kam nicht — ${(err && err.message) || err}`);
+                return null;
+            });
+        return e.zusage;
+    }
+
+    // DER EMPFANG EINER REGION (Karte hydro-faden): die Region der eigenen Welt geht in den Zustand (Heimat oder Kachel), das
+    // globale Band folgt (`_computeHydroBand`). Ein Neben-Faden, der nach der Bestellung geboren wurde, trug ihren Auftrag
+    // nicht — er bekommt die Region (sein Geburts-Stand kannte sie noch nicht); jeder andere Faden rechnete sie selbst.
+    _hydroAn(key, h, welt, faeden) {
+        if (welt !== (this._hydroWelt | 0) || !h) return null; // eine Region einer alten Welt fällt
+        if (key === "heim") this.state.hydrosphere = h;
+        else {
+            this.state.hydroTiles.set(key, h);
+            this.log(
+                `A3: Hydro-Kachel ${key} aus dem Faden (${h.rivers.length} Fluesse, ${h.lakes.length} Seen)`,
+                "INFO"
+            );
+        }
         this._computeHydroBand();
-        try {
-            this._buildHydrosphereMeshes();
-        } catch (e) {
-            this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
-        }
-        // Der Worker erhält fertigen Atlas (full state-set); ab
-        // `voxelWorkerSyncedHydroStateGen === voxelWorkerStateGen` traut ihm der Streaming-Pfad.
-        // Bumpt stateGen → in-flight Pre-Worldgen-Requests werden verworfen.
-        this._voxelWorkerSyncWorldgenState();
+        if (this._nebenFaeden)
+            for (const [name, f] of this._nebenFaeden)
+                if (!faeden || !faeden.has(name))
+                    f.worker.postMessage({ type: "state-update", delta: { hydroRegion: { key, h } } });
+        return h;
     }
 
     // Globales Wasser-Y-Band: top = der höchste Spiegel JEDES Wasser-Körpers (waterLevel, jeder See, jeder Punkt jedes Flusses)
@@ -306,26 +365,15 @@ class AnazhRealm_gelaende_boden {
     // Landform im Gelände-Gesetz liegt, steigen die Flüsse in die Täler des Mittelgebirges (Spiegel bis 55 m), das Band endete
     // bei 23,7 m (der höchste See + 10) — der Zell-Bau ließ jede Fluss-Zelle darüber AIR: in der Heimat 344 von 549 Fluss-
     // Segmenten ohne gezeichnetes Wasser (am Bach -744/-872 Wasser-Meshes 0, die Quellen trocken).
+    // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die Thresholds): die Spiegel der fernen Kacheln heben es
+    // mit, sonst übersprünge der Band-Skip ihre Zellen als garantiert-AIR. Der Rechner ist der des Gelände-Kerns (`hydroBand`),
+    // derselbe im Faden.
     _computeHydroBand() {
         const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        let topY = wl;
-        const hebe = (h) => {
-            if (!h) return;
-            if (Array.isArray(h.lakes))
-                for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-            if (Array.isArray(h.rivers))
-                for (const fluss of h.rivers)
-                    for (const p of fluss.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
-        };
-        hebe(this.state.hydrosphere);
-        // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
-        // Thresholds): die Spiegel der fernen Kacheln heben es mit, sonst
-        // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
-        if (this.state.hydroTiles) for (const t of this.state.hydroTiles.values()) hebe(t);
-        this.state.hydroBand = {
-            top: topY + 10,
-            bottom: wl - 10,
-        };
+        const regionen = [this.state.hydrosphere].concat(
+            this.state.hydroTiles ? [...this.state.hydroTiles.values()] : []
+        );
+        this.state.hydroBand = globalThis.__gelaendeCore.hydroBand(wl, regionen);
     }
 
     // Das Wasser-Cell-Feld ist DERIVED (Worldgen-Density + voxelEdits + Architektur-Stempel): Spieler-
@@ -448,10 +496,11 @@ class AnazhRealm_gelaende_boden {
         return h;
     }
 
-    // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, berechnet ist (Heimat "0,0" immer).
-    // Am Chunk-Build-Eingang gerufen = die HARTE Garantie: kein Chunk baut vor seiner Wasser/Erosions-
-    // Wahrheit (keine Kachel-Naht durch Build-Reihenfolge). Neue Kachel → hydroBand neu + voller Worker-
-    // Re-Sync (gen-bump verwirft stale Builds; die Nachrichten-Ordnung garantiert Kachel-vor-Request).
+    // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, da ist oder im Faden entsteht (Heimat "0,0" immer): eine
+    // fehlende wird bestellt (`_hydroBestellen`). Am Chunk-Build-Eingang gerufen (`_hydroSteht`) = die HARTE Garantie: kein
+    // Chunk baut vor seiner Wasser/Erosions-Wahrheit (keine Kachel-Naht durch Build-Reihenfolge). → die Zahl der Kacheln, die
+    // noch fehlen (0 = alle da). Bis zur Karte hydro-faden rechnete der Haupt-Faden jede neue Kachel hier synchron (235 ms
+    // headless) und klonte danach den ganzen Zustand samt aller Kacheln in jeden Faden (0,82 MB je Faden und Kachel).
     _ensureHydroTilesAround(x, z, r) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return 0; // vor dem Worldgen gibt es keine Wahrheit zu kacheln
@@ -461,31 +510,28 @@ class AnazhRealm_gelaende_boden {
         const r1x = Math.floor((x + r + half) / size);
         const r0z = Math.floor((z - r + half) / size);
         const r1z = Math.floor((z + r + half) / size);
-        let made = 0;
+        if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+        let fehlt = 0;
         for (let rx = r0x; rx <= r1x; rx++) {
             for (let rz = r0z; rz <= r1z; rz++) {
                 if (rx === 0 && rz === 0) continue;
                 const key = `${rx},${rz}`;
-                if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
                 if (this.state.hydroTiles.has(key)) continue;
-                const t0 = performance.now();
-                const origin = { x: rx * size - half, z: rz * size - half };
-                this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
-                this._computeHydroBand();
-                made++;
-                const t = this.state.hydroTiles.get(key);
-                this.log(
-                    `A3: Hydro-Kachel ${key} berechnet (${Math.round(performance.now() - t0)} ms — ` +
-                        `${t.rivers ? t.rivers.length : 0} Fluesse, ${t.lakes ? t.lakes.length : 0} Seen)`,
-                    "INFO"
-                );
+                fehlt++;
+                this._hydroBestellen(key, { x: rx * size - half, z: rz * size - half });
             }
         }
-        // NUR einen existierenden Worker syncen, NIE bootstrappen (`_voxelWorkerSyncWorldgenState` würde einen
-        // genullten Worker re-spawnen; ohne Worker baut der Main sync mit der Kachel-Wahrheit). Kein Cache-
-        // Clear nötig: kein Chunk der neuen Kachel wurde je gebaut, in-flight verwirft der gen-bump.
-        if (made && this.state.voxelWorker) this._voxelWorkerSyncState({ op: "state-set" });
-        return made;
+        return fehlt;
+    }
+
+    // DIE WAHRHEIT VOR DEM BAU (Karte hydro-faden): die Heimat steht und jede Kachel um den Chunk (cx, cz) samt 64 m Polster
+    // für die Leser über die Grenze ist da — sonst ist sie bestellt, und der Bau wartet (false).
+    _hydroSteht(cx, cz) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        const { span } = this._voxelChunkConfig(0);
+        const half = span / 2;
+        return !this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
     }
 
     // Slope + Rock-Exposure als abgeleitete Welt-Felder direkt aus `_voxelSurfaceY` — am Genese-Leser
@@ -780,8 +826,8 @@ class AnazhRealm_gelaende_boden {
                         z: origin.z + Math.sin(a) * ring * W.schrittM,
                     };
                     // das Wasser des Kandidaten ist gekachelt, bevor er urteilt — je Kandidat, nie die ganze Suche voraus (eine neue
-                    // Kachel kostet ~200 ms; die Wahl reicht sie erst, wenn ihr Ring sie braucht)
-                    if (this._ensureHydroTilesAround(o.x, o.z, reich)) yield;
+                    // Kachel rechnet der Faden ~200 ms; die Wahl bestellt sie erst, wenn ihr Ring sie braucht, und wartet auf sie)
+                    while (this._ensureHydroTilesAround(o.x, o.z, reich)) yield;
                     const k = globalThis.__fachwerkCore.ortPlan(plan, o, ctx);
                     mass.kandidaten++;
                     yield;
@@ -976,7 +1022,7 @@ class AnazhRealm_gelaende_boden {
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
-        const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
+        const hydroActive = !!(hydro && hydro.ready);
         let hydroCarve = null; // der Fluss-Kanal { P, L, k } (`_hydrosphereCarveAt`) oder null
         let lake = null;
         if (hydroActive) {

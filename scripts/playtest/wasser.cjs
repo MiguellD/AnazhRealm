@@ -14,7 +14,7 @@ async function checkBandHydrosphere(ctx) {
     void errors;
     void finalState;
     // ### Wasserfälle aus dem Hydrosphären-Netz ###
-    // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
+    // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (gelaende-core `hydroExtractWaterfalls`);
     // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
     // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. Das Wasserfall-Material ohne Leser
     // (`_ensureWaterfallMaterial`, nur Tests riefen es) ist mit der Welle L gefallen (W-kD11).
@@ -76,13 +76,16 @@ async function checkBandHydrosphere(ctx) {
     // Deterministisches Drainage-Netz aus der Voxel-Surface: Priority-Flood (Senken → Seen) →
     // D8-Flow-Direction → Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle). Reine
     // Daten, headless-prüfbar.
-    const voxelV943bResults = await safeEvaluate(page, () => {
+    // Die Hydrosphäre entsteht im Faden (Karte hydro-faden): h1 die der Weltgen, h2 ein zweiter Lauf des Fadens.
+    const voxelV943bResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         out.stateDeclared = "hydrosphere" in r.state;
+        const h1 = r.state.hydrosphere;
+        await window.__weltDa(() => !r.state.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
         const t0 = performance.now();
-        const h1 = r._computeHydrosphere();
+        const h2 = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null })).region;
         out.perfMs = performance.now() - t0;
         out.shape =
             !!h1 &&
@@ -103,7 +106,6 @@ async function checkBandHydrosphere(ctx) {
         out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
         out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
         // Determinismus — zwei Läufe, byte-identisches Netz
-        const h2 = r._computeHydrosphere();
         out.deterministic =
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
@@ -120,8 +122,8 @@ async function checkBandHydrosphere(ctx) {
         out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
         // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
         // der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
-        const seeOrt = window.__wasserOrt("see");
-        const meerOrt = window.__wasserOrt("meer");
+        const seeOrt = await window.__wasserOrt("see");
+        const meerOrt = await window.__wasserOrt("meer");
         out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
         out.riverThroughLake =
@@ -291,7 +293,7 @@ async function checkBandHydrosphere(ctx) {
     // ### Das Wasser wird synergetisch ###
     // Fluss-Mündungen erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel` bzw. den
     // Ziel-See-Level), und der Spieler schwimmt im See wie im Meer — Quelle ist `_waterLevelAt`.
-    const voxelV943c2 = await safeEvaluate(page, () => {
+    const voxelV943c2 = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -299,7 +301,7 @@ async function checkBandHydrosphere(ctx) {
         if (!out.hydroReady) return out;
         // _waterLevelAt: über einer GERENDERTEN See-Zelle → der See-Level, gemessen an der Kachel des See-Orts
         // (`__wasserOrt`). V9.45-c: absorbierte Seen (level ≤ waterLevel+2) zählen nicht — die Meeres-Plane vertritt sie.
-        const seeOrt = window.__wasserOrt("see");
+        const seeOrt = await window.__wasserOrt("see");
         const hydro = seeOrt ? seeOrt.hydro : r.state.hydrosphere;
         out.lakeLevelOk = false;
         out.ringFollowsPlane = false;
@@ -350,9 +352,9 @@ async function checkBandHydrosphere(ctx) {
 
     // ### Die Flüsse carven echte Betten ###
     // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) und senkt die Dichte im Fluss-Kanal
-    // + in See-Senken → echte Rinnen mit Ufern + Becken. Zirkel-frei über das `_hydroComputing`-
-    // Suppress-Flag; ohne Hydrosphäre bit-identisch zum Feld ohne Carve.
-    const voxelV943d = await safeEvaluate(page, () => {
+    // + in See-Senken → echte Rinnen mit Ufern + Becken. Zirkel-frei (der Faden hält den Carve aus seiner Rechnung); ohne
+    // Hydrosphäre bit-identisch zum Feld ohne Carve.
+    const voxelV943d = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -408,12 +410,12 @@ async function checkBandHydrosphere(ctx) {
             const sKanal = r._voxelSurfaceY(rx, rz);
             out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
             // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
-            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal, das Suppress-Flag) und Damm.
+            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal: ohne Hydrosphäre) und Damm.
             const y = (r.state.terrainBaseHeight || 0) + 10;
             const dCarve = r._terrainDensityAt(rx, y, rz);
-            r._hydroComputing = true;
+            r.state.hydrosphere = null;
             const dSuppressed = r._terrainDensityAt(rx, y, rz);
-            r._hydroComputing = false;
+            r.state.hydrosphere = hydro;
             let carveSoll = null;
             if (kanal) {
                 const dL = kanal.L - y;
@@ -441,7 +443,7 @@ async function checkBandHydrosphere(ctx) {
         out.lakeSculpted = false;
         out.lakeBedWatertight = false;
         const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
-        const seeOrt = window.__wasserOrt("see");
+        const seeOrt = await window.__wasserOrt("see");
         const seeH = seeOrt ? seeOrt.hydro : hydro;
         for (let li = 0; li < seeH.lakes.length && !out.lakeSculpted; li++) {
             const lk = seeH.lakes[li];
@@ -462,13 +464,10 @@ async function checkBandHydrosphere(ctx) {
                 out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
             }
         }
-        // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
-        // Carve aus der eigenen Berechnung — ein Re-Compute liefert
-        // dasselbe Netz wie der un-gecarvte Worldgen-Compute.
-        const reHydro = r._computeHydrosphere();
+        // (11) Re-Compute ist zirkel-frei: der Faden hält den Carve aus seiner Rechnung — ein zweiter Lauf liefert dasselbe Netz.
+        const reHydro = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null }))
+            .region;
         out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
-        // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
-        out.flagClean = !r._hydroComputing;
         // (13) Das Wasser-Cell-Feld fragt den ATLAS-STRIKTEN Spiegel (`_buildVoxelChunkWaterCells` ruft
         // `_atlasWaterLevelAt` je xz-Spalte), nicht das dilatierende `_waterLevelAt` — sonst
         // Wasserschatten an Hängen.
@@ -516,11 +515,7 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
             d.lakeBedWatertight
         );
-        check(
-            "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",
-            d.recomputeStable
-        );
-        check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
+        check("Voxel V9.43-d: ein Re-Compute im Faden bleibt zirkel-frei (gleiches Netz wie die Weltgen)", d.recomputeStable);
         check(
             "Voxel V13.1: das Wasser-Cell-Feld ruft den Atlas-strikten Spiegel (`_atlasWaterLevelAt`), nie das dilatierende `_waterLevelAt`",
             d.unifiedQueriesRivers
@@ -536,7 +531,7 @@ async function checkBandHydrosphere(ctx) {
     // Das Ohr hört das Wasser über den Hör-Ring (klang:UMWELT.ohr): je Punkt nass (Boden unter dem Spiegel) und
     // Strömung (`_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
     // Pegel — nah hörbar, 5 km fern stumm. Der Ring wird hier einmal ganz gefegt (der Takt fegt ohr.probenJeFrame).
-    const voxelV943e = await safeEvaluate(page, () => {
+    const voxelV943e = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -578,7 +573,7 @@ async function checkBandHydrosphere(ctx) {
             }
             // Der Wasserfall, wo das Gesetz ihn setzt (`__wasserOrt("fall")`): die Heimat-Kachel trug ihre Stürze an den
             // Gruben der Canyon-Maske (K16 gefallen) — der Lauf des Flussnetzes fällt dort nirgends 6 m steil.
-            const wfOrt = window.__wasserOrt("fall");
+            const wfOrt = await window.__wasserOrt("fall");
             const wf = wfOrt ? wfOrt.fall : null;
             out.hasWaterfall = !!wf;
             if (wf) {
@@ -622,7 +617,7 @@ async function checkBandHydrosphere(ctx) {
 // Determinismus an einem streaming-aktiven Chunk.
 async function checkBandWelleC1WaterCells(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
@@ -640,7 +635,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         }
         // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty) — am Wasser-Ort des Gesetzes (`__wasserChunk`: die
         // Heimat trägt seit K16 keinen See; ohne Wasser-Zelle gibt es kein waterCells-Feld).
-        out.wasserChunk = window.__wasserChunk("see");
+        out.wasserChunk = await window.__wasserChunk("see");
         let testKey = null;
         let testEntry = null;
         for (const [key, entry] of r.state.voxelChunks.entries()) {
@@ -800,9 +795,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
-        // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
-        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
-        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         r._drainPendingWaterIso();
@@ -1000,7 +992,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     }
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
     check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
-    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
         res.allChunksTracked,
@@ -1084,7 +1075,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.queueShrankAfterTick = r.state.pendingWaterIso.size < out.enqueuedCount;
         r._drainPendingWaterIso();
         out.drainEmptiesQueue = r.state.pendingWaterIso.size === 0;
-        // ERST DIE LÜCKE (Integration 05.10.): ein Chunk ohne aufgelöstes Sheet baut vor der Auffrischung eines NÄHEREN
+        // ERST DIE LÜCKE: ein Chunk ohne aufgelöstes Sheet baut vor der Auffrischung eines NÄHEREN
         // Chunks mit Sheet — sein leeres Seebett wäre sichtbar (kein Lade-Nebel deckt es), die Auffrischung behält ihr
         // altes Sheet. tick(1) baut genau den ersten der Ordnung.
         const wi = r.state.voxelChunkWaterIso || (r.state.voxelChunkWaterIso = new Map());
@@ -1162,7 +1153,7 @@ async function checkBandV17117FarWater(ctx) {
                         return false;
             return true;
         };
-        const meerOrt = window.__wasserOrt("meer");
+        const meerOrt = await window.__wasserOrt("meer");
         const oCx = meerOrt ? Math.floor(meerOrt.x / span) : null;
         const oCz = meerOrt ? Math.floor(meerOrt.z / span) : null;
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
@@ -1418,7 +1409,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
 // teleportieren, `updateCreatures(0.016)` ticken, Y prüfen.
 async function checkBandWelleV11D2WaterBias(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
@@ -1430,7 +1421,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         // Die Suche läuft um das Ufer des Sees des Gesetzes (`__wasserOrt`: die Heimat trägt seit K16 keinen See): die
         // erste See-Zelle mit einem Land-Nachbarn. Ein tiefer Punkt zählt, wenn auf einer Achse binnen 9 m Land über dem
         // Spiegel steht — die Probe will den Uferweg der Kreatur (der See ist 600 m breit, seine Mitte hat kein Ufer).
-        const seeOrt = window.__wasserOrt("see");
+        const seeOrt = await window.__wasserOrt("see");
         let mx = 0;
         let mz = 0;
         if (seeOrt) {
@@ -1633,7 +1624,7 @@ async function checkBandV18129HochBecken(ctx) {
 // (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const s = r.state;
         const out = {};
@@ -1694,7 +1685,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         if (typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
             // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
-            out.hoehlenChunk = window.__wasserChunk("hoehle");
+            out.hoehlenChunk = await window.__wasserChunk("hoehle");
             const cfg = r._voxelChunkConfig(0);
             const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
             const ZS = r.constructor.CELL_STATE;
@@ -1800,8 +1791,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
     );
 }
 
-// Die Wasser-Wahrheits-Linse (V18.475) — eingefaltet aus gate:wasser-wahrheit (D3b): die stehende Linse der Schöpfer-Browser-Symptome
-// vom 14.07. — F1 „Wasser kriecht Wände hoch" (das Höhen-Gate der Zell-Dächer) · F2 „spiegelnder Filter über Terrain" (die Rim-Wand
+// Die Wasser-Wahrheits-Linse — die stehende Linse der Schöpfer-Browser-Symptome: F1 „Wasser kriecht Wände hoch" (das Höhen-Gate der Zell-Dächer) · F2 „spiegelnder Filter über Terrain" (die Rim-Wand
 // bei −Infinity) · F4 die Stau-Qualifikation · F5 der Ruhe-Fixpunkt (auch nach dem Schnitt, F3 Graben am Fluss) · F6 die
 // geleerte Spalte · F7 das Netz trägt seine Bytes; der Selbsttest an der Naht der Welt (F4 · F5 · F7), nie am Quelltext.
 async function checkBandWasserWahrheit(ctx) {
@@ -1809,7 +1799,7 @@ async function checkBandWasserWahrheit(ctx) {
     await safeEvaluate(page, async () => {
         await window.__weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
     });
-    const out = (await safeEvaluate(page, () => {
+    const out = (await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const AR = r.constructor;
         const o = { fails: [] };
@@ -1904,7 +1894,7 @@ async function checkBandWasserWahrheit(ctx) {
         const gesehen = new Set();
         for (const [rx, rz] of ringe) {
             if (shore) break;
-            r._ensureHydroTilesAround(rx * kachel, rz * kachel, 0);
+            await window.__weltDa(() => !r._ensureHydroTilesAround(rx * kachel, rz * kachel, 0));
             const h = r._hydroFor(rx * kachel, rz * kachel);
             if (!h || gesehen.has(h)) continue;
             gesehen.add(h);
@@ -2040,13 +2030,10 @@ async function checkBandWasserWahrheit(ctx) {
         }
     
         // ── FIXTURE 5 (F5) — DIE RUHE IST DER FIXPUNKT: der erwachte Automat bewegt ruhendes Wasser nicht ──
-        // K37 (Auge 13.10., Solitär-Eiche): jede Werk-Setzung am Ufer weckt den Automaten; die Kappe lag eine Zeile über
-        // der Ruhe, die Deck-Zelle (4b) floss in die Zeile über dem See und aufs Land, die flache Ufer-Spalte leerte sich.
-        // Bühne: See (i ≤ 3, Flut j 4..6, Quelle), Deck-Spalte (i = 4, Boden j ≤ 6, Deck-Zelle j 7), Land (i ≥ 5, Boden
+        // Jede Werk-Setzung am Ufer weckt den Automaten (K37). Bühne: See (i ≤ 3, Flut j 4..6, Quelle), Deck-Spalte (i = 4, Boden j ≤ 6, Deck-Zelle j 7), Land (i ≥ 5, Boden
         // j ≤ 6). Gezählt: Spalten, deren Live-Dach nach 200 Takten vom Flut-Dach abweicht (> 0,6 Zelle oder leer/fremd).
-        // F3 (Graben am Fluss, 17.10.): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge
-        // auf dem Land, j 7) — die Kappe des Gesetzes öffnet dem Land keine Haut (bis F3: Boden + 2 Zellen, die Zunge stand
-        // und floss), über ihr steht kein Wasser mehr.
+        // F3 (Graben am Fluss): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge auf dem
+        // Land, j 7) — die Kappe des Gesetzes öffnet dem Land keine Haut, über ihr steht kein Wasser mehr.
         const runRuhe = (capFn, kappeHoch) => {
             const SOLID = AR.CELL_STATE.SOLID;
             const WATER = AR.CELL_STATE.WATER;
@@ -2112,8 +2099,7 @@ async function checkBandWasserWahrheit(ctx) {
         if (!(o.ruheBroken > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
     
         // ── FIXTURE 6 (F6) — DIE GELEERTE SPALTE IST TROCKEN: nie ein Dach 14 m unter dem Spiegel ──
-        // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1). Bis K37
-        // zeichnete das Sheet sie 14 m unter dem Spiegel (die Klemme des Live-Deltas) — eine Grube mit weißen Wänden.
+        // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1).
         const runLeer = (computeFn) => {
             const WATER = AR.CELL_STATE.WATER;
             const SOLID = AR.CELL_STATE.SOLID;
@@ -2358,7 +2344,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
         if (!s || !s.playerMesh) return { err: "kein Spieler" };
         const px = s.playerMesh.position.x,
             pz = s.playerMesh.position.z;
-        const O = window.__wasserOrte({ mess: [px, pz] });
+        const O = (await window.__wasserOrte({ mess: [px, pz] }));
         // DAS NÄCHSTE WASSER (K16): See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
         // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
         const kand = [];
@@ -2415,7 +2401,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
         }
         // Welt EINFRIEREN: der rAF-Loop würde sonst streamen. `_gameLoopTick` →no-op. Dann `waterCAActive`
         // LEEREN (nichts fliesst → der `waterCAActive`-Gate lässt alle durch). Das Sheet liest den Live-Pegel
-        // nie (05.10.: das GEZEICHNETE Dach, `entry._caDach`); ein Chunk mit Dach im 3×3 baut der Main
+        // nie (das GEZEICHNETE Dach, `entry._caDach`); ein Chunk mit Dach im 3×3 baut der Main
         // (`_waterSheetCaFree` false) — verglichen wird genau die Worker-Route: dachlos = Flood = identisch.
         r._gameLoopTick = () => {};
         if (r.state.waterCAActive) r.state.waterCAActive.clear();

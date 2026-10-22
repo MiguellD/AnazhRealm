@@ -1,18 +1,12 @@
 // diag-werk-im-wasser.cjs — DIE WASSER-WAHRHEIT DER WERKE (Schau-2, Familie wasser-wahrheit): „Werk steht im Wasser" und
-// „Wagen im Wasser ohne Widerstand", je Täter beim Namen. Befund 09.10. (artifacts/profiband/leben-schau-2/befund.md §6 #2,
-// sichtbar gespielt auf der Radeon, Bilder a-ankunft-dorf-bauen 41–44 und b-fahren 25): der Vorführ-Satz der Ziellinie
-// „pflanz mir einen eichenhain am wasser" ließ 6 von 6 Eichen 1,2–4,3 m unter dem gezeichneten Wasser stehen, und der GT
-// fuhr 19 m durch 0,61 m Wasser mit 43 km/h. Jede Probe ruft den Chokepoint selbst im echten Boot (headless, Foundry an,
-// Null-Renderer der Welt), im echten Spiel-Takt (`_gameLoopTick`):
+// „Wagen im Wasser ohne Widerstand", je Täter beim Namen. Jede Probe ruft den Chokepoint selbst im echten Boot (headless,
+// Foundry an, Null-Renderer der Welt), im echten Spiel-Takt (`_gameLoopTick`):
 //
-//   H — DER HAIN AM FLUSS (−872/−1127, der Ort der Schau): der Schau-Ablauf — eine Eiche per Bau 16 m östlich (wie F im
-//       Bau-Modus), dann der Satz, dann 1200 Spiel-Takte (20 s). Je Stamm das gezeichnete Wasser (`_wasserBildAt`) im
-//       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht. Befund V18.537: der Bau weckte den
-//       Wasser-Automaten (15 Chunks), der flutete das Tal — 6 von 6 Stämmen 1,9–3,8 m unter dem Wasser.  Soll 0 · 0 Chunks
-//   S — DAS HAUS AUS DEM SATZ (Gegenprüfung 10.10.): „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt
-//       −935/−1070 und den See −906/−634 (je Zentrum bis zu drei trockene Standorte 18–40 m vom Zentrum). Befund am Kopf
-//       f5714efb: 11 von 11 Fundamenten im Wasser (6–67 von 81 Raster-Punkten, bis 0,92–3,68 m) — der Satz fragte die Mitte,
-//       und die Spieler-Klemme der Wurzel schob das Haus vom Spieler weg ins Wasser. Die Häuser misst Z.  Soll ≥ 5 Häuser
+//   H — DER HAIN AM FLUSS: der Schau-Ablauf — eine Eiche per Bau 16 m östlich (wie F im Bau-Modus), dann der Satz „pflanz
+//       mir einen eichenhain am wasser", dann 1200 Spiel-Takte (20 s). Je Stamm das gezeichnete Wasser (`_wasserBildAt`) im
+//       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht.  Soll 0 · 0 Chunks
+//   S — DAS HAUS AUS DEM SATZ: „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt und den See (je Zentrum
+//       bis zu drei trockene Standorte 18–40 m vom Zentrum). Die Häuser misst Z.  Soll ≥ 5 Häuser
 //   Z — DER ZENSUS DER WERKE: jedes Werk, das während der Probe gesetzt wird (Wald und Unterholz beim Strömen, der Hain, die
 //       Bau-Eiche, die Häuser der Sätze, „dorf" am Fluss: `spawnSettlement` seed 7, 18 Häuser, Brunnen, Stände; kein
 //       Fahrzeug). Der Setz-Punkt `spawnArchitecture` ist Beobachtungs-Punkt: ein Stamm misst das Wasser über seinem Fuß VOR
@@ -29,46 +23,29 @@
 //       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
-//       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
-//       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
-//   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
-//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
-//       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
-//       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
-//   E — DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
-//       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
-//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Befund am Kopf 0302a6c4: „10 Kreaturen
-//       gespawnt" bei 3 und 0, „tempel vor dir gebaut" bei 0, das Fraktal baute bei kaltem Buch still 43 Wasserfälle,
-//       „wasserfall vor dir gebaut" bei 0, „dorf vor dir gebaut" sofort bei 0 Häusern. Soll: die tatsächliche Zahl mit dem
-//       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
-//       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
-//   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
-//       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
-//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Befund am Kopf f5b331ae (900 Takte): 1 Invalidierung, 2 Chunks wach, nasse
-//       Punkte (±60 m) 3 019 → 2 752, gezeichnete Spalten 2 562 → 2 604 — die Weck-Frage las das Gesetz samt Rand-Füllung, die
-//       Zellen dort sind trocken. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
-//   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
-//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Befund am Kopf
-//       e162430b (1800 Takte): 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
-//       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
-//       DER ORT TRÄGT EINEN STAU (K37, 13.10.): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
-//       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
-//       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. D misst das Feld gegen
-//       die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über
-//       der Flut, keine Stau-Quelle ohne Raum über ihrem Boden (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37 (Tal
-//       26/−120 der alten Welt): gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
-//       DIE KLAMM DER PRÜFBÜHNE (werk-ufer, 14.10.): die K16-Welt trägt keinen Ort, an dem ein Damm staut — ihr Fluss liegt
-//       in der Aue (Bett 0,8 m, Ufer 10 m hinter der Kante ≤ 0,96 m über dem Spiegel: das Bankvoll-Bett des Tieflands), das
-//       Stau-Fenster (29 m, Rand auf Spiegel + 0,5 m) hebt dort nichts; von 7 668 Fluss-Punkten in 7 km um die Mess-Wiese lag
-//       keiner in einer Engstelle mit ≥ 4 % Gefälle und ≥ 2,5 m Ufer (außer einer Kaskade von 74 %). Am K16-Fluss −884/−623:
-//       gehoben 0, Stau 498 → 497. Der Damm steht darum in der Klamm S6 der Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 %
-//       Gefälle, 20 m Sohle), geboren wie im Spiel, und er fasst das Ufer: je Seite bis 4 m über dem Spiegel + 1 m.
-//       Kopf werk-ufer: gehoben 34, gefüllt 34, Stau 684 → 898 Punkte, Reload 898.
+//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie
+//       unter dem Spiegel.
+//   C — DER SATZ NENNT DAS ERGEBNIS: am See je Richtung eine Uferkante, der Blick auf den See, „pflanz mir sechs birken"
+//       (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0
+//       „nichts", die gewünschte nur, wenn alles steht.
+//   E — DAS ERGEBNIS JEDES SETZ-OPS: je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler — „spawne kreaturen 10" an
+//       der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall ohne Bauplan, der Tempel
+//       mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem Grund aus der EINEN Tafel
+//       (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und meldet dann die Häuser,
+//       die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
+//   R — DAS DORF DES NEXUS AM SEERAND: Same 1500797043, der Spieler am Rand des Plans (der Anker bleibt der verlangte Ort),
+//       ein haus_provenzalisch am See; die Häuser bekommen ihre Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll:
+//       0 Invalidierungen, das Wasser bleibt (± 1 %).
+//   D — DER DAMM ÜBERSTEHT DEN RELOAD (eigener Browser-Kontext, frische Welt): der Damm des Studios in der Klamm S6 der
+//       Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 % Gefälle, 20 m Sohle — die Aue der Welt staut nicht), geboren wie im
+//       Spiel; er fasst das Ufer je Seite bis 4 m über dem Spiegel + 1 m. 1200 Takte, gespeichert, neu geladen, 1200 Takte,
+//       abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung). D misst
+//       das Stau-Feld gegen die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält
+//       der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
-//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte —
-//       am Kopf e162430b trug er eine eigene: Schüttdichte × Hüll-Quader, GT 1 557 statt 1 341 kg).
+//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -451,6 +428,7 @@ async function probe(A) {
     await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const st = r.state;
+    const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     if (st.renderer) {
@@ -733,6 +711,11 @@ async function probe(A) {
     };
     // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
     const stroemen = async (X, Z, nachlauf) => {
+        // die Kacheln des Orts aus dem Faden (der Haupt-Faden rechnet sie nie): für die Bestellung hängt er ein
+        const aus = st.voxelWorker;
+        st.voxelWorker = faden;
+        await window.__weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
+        st.voxelWorker = aus;
         st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         let last = -1;
         let still = 0;
@@ -2402,7 +2385,7 @@ async function weltOrte(A) {
     out.uferKandidaten = [];
     let R1 = null;
     for (let R = 0; R <= A.R && out.uferKandidaten.length < 4 && !(R1 !== null && R > R1 + 480); R += 6) {
-        if (R % 192 === 0) r._ensureHydroTilesAround(MX, MZ, R);
+        if (R % 192 === 0) await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, R));
         const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
         for (let k = 0; k < n && out.uferKandidaten.length < 4; k++) {
             const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
@@ -2445,7 +2428,7 @@ async function weltOrte(A) {
         .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
         .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
     for (const k of kand) {
-        r._ensureHydroTilesAround(k.x, k.z, 0);
+        await window.__weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
         const h = r._hydroFor(k.x, k.z);
         const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
         if (!lake) continue;

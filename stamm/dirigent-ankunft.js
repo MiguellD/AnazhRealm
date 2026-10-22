@@ -550,7 +550,8 @@ class AnazhRealm_dirigent_ankunft {
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
-        this.generateNewWorld();
+        // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
+        await this.generateNewWorld();
 
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,

@@ -2120,7 +2120,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         if (typeof r.tryMouseBreak === "function") {
             const origRay = r._raycastWorldHit;
             const origPick = r._pickArchitectureAtCrosshair;
-            const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+            const origMode = r.getGameMode();
             r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;

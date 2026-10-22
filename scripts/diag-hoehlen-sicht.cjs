@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
 // diag-hoehlen-sicht.cjs — DIE HÖHLEN-SICHT (Welle 7): die Höhlen-Schicht des Bodens zeichnet nur, was ein Strahl durch
-// Luft erreicht. Befund (echte GPU, Mess-Wiese −900/−850): 68 % der Boden-Dreiecke trennen Fels von HÖHLEN-Luft (Luft unter
-// der obersten festen Ecke ihrer Spalte), 16–52 m tief, und der Boden-Satz zeichnete sie in jedem Pass (Hauptbild, k0, k1)
-// mit. Die Wahl je Pass (`_chunkSatzPass` → `_hoehlenSicht`) läuft vom Auge durch Mündung und Portale (Schirm-Rechteck +
+// Luft erreicht (HÖHLEN-Luft: Luft unter der obersten festen Ecke ihrer Spalte). Die Wahl je Pass (`_chunkSatzPass` → `_hoehlenSicht`) läuft vom Auge durch Mündung und Portale (Schirm-Rechteck +
 // Tiefe), die Kaskade vom sichtbaren Empfänger zum Licht. Die Wand prüft sie gegen eine UNABHÄNGIGE Wahrheit — Strahlen
 // gegen jedes Dreieck des Boden-Satzes (scripts/lib/hoehlen-strahl.cjs) — an der Mess-Wiese, Null-Renderer:
 //   (a) SPIEGEL — Main (`_voxelHoehlenGraph` im Sync-Bau) und Worker (`hoehlenGraph`) liefern für dieselben Chunks

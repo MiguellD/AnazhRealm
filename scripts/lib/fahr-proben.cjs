@@ -2006,7 +2006,7 @@ async function probeLeben(expected) {
         // aus der Welt (`__wasserOrte`), gesucht um seine tiefste Stelle.
         {
             let ort = null;
-            const seeO = window.__wasserOrte({ mess: mo }).see;
+            const seeO = (await window.__wasserOrte({ mess: mo })).see;
             const mitte = seeO ? [seeO.x, seeO.z] : null;
             for (let ring = 0; mitte && ring <= 120 && !ort; ring++)
                 for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {

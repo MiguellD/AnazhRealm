@@ -1723,9 +1723,7 @@ function scanNormalWand(srcRoh) {
     return errs;
 }
 
-// DIE STOFF-WAND (K22, 12.10.): kein stiller Fang im Render- und Stoff-Bau. Bis 1110-11b gab die LOD-Blende bei einem
-// fehlenden Glied still null zurück, und jeder Stoff zeichnete ohne seine Maske weiter (`_blendeBruch` heilte die Blende);
-// dieselbe Klasse lebte daneben in jedem Stoff. Ein FANG ist:
+// DIE STOFF-WAND (K22): kein stiller Fang im Render- und Stoff-Bau. Ein FANG ist:
 //   (a) ein catch im Stoff- oder Render-Bau, der weder wirft noch ERROR meldet (der Fehler verschwindet, das Bild zeichnet
 //       byte-alt weiter);
 //   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
@@ -1741,37 +1739,21 @@ function scanNormalWand(srcRoh) {
 // Grund und Bild-Leser in STOFF_ZWEIGE (eine tote Zeile ist rot). Im Stoff ist auch jede stille Frage ein Fang: `"x" in T`,
 // `!!T.x` frei, `T.x?.(…)`, ein aus TSL gezogenes Glied (`const { pass } = TSL; if (!pass)`), das Ergebnis eines
 // Stoff-Bauers (`if (_su)`).
-// DIE NACHBESSERUNG (13.10., am Kopf f1528195 ROT mit 29: F22 · N7): die Wand maß den Render-Bau am Rumpf-Text (blind für
-// vier ihrer eigenen Schnitte) und kannte den Render-Lauf nicht. Laut brechen jetzt _loopRender (der Render-Lauf der
-// Post-Kette, r184 baut sie dort) · _tickBootFernDeko · _fernRingGpuMal · _feldPanoramaMal · verifyComputeContribution ·
-// _tickWornArmorVisual · _heldFoundryGroup ×3 · _feedPreviewShow · _studioUebergabeEmpfang · _buildArchMeshMerged ·
-// _tickBlueprintPrebake · _foundryIngestRecipes · _nachDorfOrientieren ×2 · _foundryBarkNormalTexture · _foundryBuildGroup ·
-// _foundryPrefetchLibrary · _tryWorkerWaterSheet · _workshopBuildSkeletonPreviewGroup · _workshopStudioPreviewFrom; die
-// Fragen an Stoff-Bauer fallen (_buildPbrNodeMaterial Saison · Tag-Licht · Flatten, _applyVegetationResponse LOD-Satz).
-// Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
-// DIE NACHBESSERUNG 2 (13.10., am Kopf 23d29378 ROT mit 8 Fängen + 2 der Drossel): die Hülle endete nach zwei Ruf-Gliedern
-// und lief zugleich über Abgelegtes (UI-Räume, Hörer: der Chat und P2P „bauten" über die Kreatur-Aura); „laut" hieß
-// „irgendein Satz bricht". Jetzt: die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt
-// (`_ensureAssetFoundry` startet ihn, seine Antwort baut), und JEDER Pfad muss brechen. Laut brechen jetzt
-// _buildHumanGroup (Not-Körper) · _foundryPrefetchLibrary (Karte) · _ensurePortalPreview · _portalApproachPrefetch ·
-// _ensureAssetFoundry ×2 (es gibt keinen Alt-Pfad); generateNewWorld und der Loop fangen ihren Ruf nicht mehr; die Drossel
-// des Loops (`_loopErrorBoundary`) meldet jeden NEUEN Fehler und steht als Zweig mit ihrem Bild.
-// DER HÖRER DES FADENS (Nachbesserung 2, Fortsetzung, an 23d29378 ROT mit 10: die 8 und zwei stille Hörer): der Fehler
-// eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
+// Die Wand misst den Render-Bau am Versuch, nie am Rumpf-Text, samt dem Render-Lauf (`_loopRender`: r184 baut die Post-Kette
+// dort). Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
+// Die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt (`_ensureAssetFoundry` startet ihn,
+// seine Antwort baut), und JEDER Pfad muss brechen; die Drossel des Loops (`_loopErrorBoundary`) meldet jeden NEUEN
+// Fehler und steht als Zweig mit ihrem Bild.
+// DER HÖRER DES FADENS: der Fehler eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
 // dessen Antwort einen Bauer ruft oder im Leser eines Studio-Fadens landet (der Bäcker über `_foundryAntwort`); er trägt
 // einen Hörer, dessen jeder Pfad bricht. Die Klang-Werkstatt baut nichts und bleibt draußen.
-// DIE NACHBESSERUNG 3 (13.10., am Kopf bb9c1179 ROT mit 7 Fängen + dem fehlenden Melder): der Zweig des Loops hing an einem
-// KOMMENTAR (ein leerer catch mit dem Kommentar blieb grün), die Drossel des Loops durfte INFO melden, vier `.catch(… "INFO")`
-// hingen an r184s synchronem render() (der catch an einem Namen zählte nicht als Versuch), und eine Kette aus fremder Quelle
-// stieg still aus (`if (!manifest.length) return;` im Foundry-Boot). Jetzt: ein Fund ist Code (Kommentare geschwärzt), der
+// Ein Fund ist Code (Kommentare geschwärzt), der
 // EINE Melder `_bruchMelden` (STOFF_MELDER) ist laut, wenn er nur ERROR meldet und jeder Pfad meldet oder zählt — die Fänge
 // des Loops rufen ihn über `_loopErrorBoundary` und brauchen keinen Zweig; ein catch an einem Namen misst, was der Name
 // bindet; ein `.then`-Glied, das den gelieferten Wert prüft und ohne Wert zurückkehrt, ist ein Fang (für eine Kette aus
 // einer Methode des Stamms spricht die Methode).
-// DIE NACHBESSERUNG 4 (13.10., am Kopf 53b2c1d7 ROT mit 2 Uhr-Deckeln): ein Bau, der in einer Schleife auf die Uhr wartet,
-// geht nach dem Deckel mit halben Daten weiter — `_foundryPrefetchLibrary` wartete 2 s auf das Studio-Buch und wärmte danach
-// ohne Rezepte (gate:post-kette rot mit FOUNDRY WARM, je nach Takt), `_foundryAwaitBook` pollte. Beide warten jetzt auf das
-// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es) — gate:post-kette danach 2/2 ohne FOUNDRY WARM.
+// Ein Bau, der in einer Schleife auf die Uhr wartet, geht nach dem Deckel mit halben Daten weiter — er wartet auf das
+// EREIGNIS (das Buch: `buchDa`, `_foundryIngestBook` erfüllt es).
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
