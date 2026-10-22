@@ -801,8 +801,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (F6 — das additive Band leuchtete den Boden am streifenden Blick der Ferne aus sich selbst).
         out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
-        const _structMat =
-            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
+        const _structMat = r._buildToonNodeMaterial({ color: 0x808080 });
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
@@ -818,10 +817,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.structDynamicColorPreserved = _dynColorOk;
         // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
-        const _phantomMat =
-            typeof r._buildToonNodeMaterial === "function"
-                ? r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 })
-                : null;
+        const _phantomMat = r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 });
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
@@ -1896,9 +1892,9 @@ async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa((r) => typeof r._weatherFieldFor === "function");
+        await window.__weltDa();
         const r = window.anazhRealm;
-        if (!r || typeof r._weatherFieldFor !== "function") return { err: "keine Instanz / _weatherFieldFor fehlt" };
+        if (!r) return { err: "keine Instanz" };
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");

@@ -33,7 +33,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { r: {}, s: {}, d: {}, w: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._restoreCreatureFromSnapshot !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();

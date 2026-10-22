@@ -29,9 +29,8 @@
 //      `buildStufe` bakt das Blatt haus-lokal und setzte die Hülle noch einmal aufs Scharnier.
 //
 // Die Linse misst die deklarierte Stufe 3 (`buildInstance(…, 3)`, dieselbe Funktion wie das Vogel des Labors
-// `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Vorher (Kern
-// 736e1e8f, die Stufe 3 nicht deklariert, das Vogel des Labors gemessen): Wurf-IoU Median 0,785 · min 0,629, Umriss L1↔L2
-// Median 0,829 · min 0,566, First quer 30/62, Aufblähung Median +1,8 m · max +10,0 m. Rot nennt jede Kultur beim Namen.
+// `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Rot nennt jede
+// Kultur beim Namen.
 // SELBSTTEST (--selftest, im Lauf): ein aufgeblähter, quer gedeckter Körper (die Massen-Hülle als Quader, der First auf
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]

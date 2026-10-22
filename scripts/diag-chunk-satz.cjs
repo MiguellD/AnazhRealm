@@ -740,7 +740,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             // Bereichs-Anfang verschoben) trägt genau die Dreiecke des Chunks, als Viertel-Läufe hintereinander (die
             // Viertel decken ihn lückenlos); jeder Abschnitt eines Passes (hier: das Hauptbild, wie der Haken des Renders
             // ihn legt) trägt seine Viertel byte-gleich hintereinander und in der Richtung der Art (Boden nah → fern,
-            // Wasser fern → nah). Vorher (kein Satz) ist das unmessbar und fällt benannt rot.
+            // Wasser fern → nah).
             const lpc = s.lastPlayerVoxelChunk;
             // die Dreiecke als Multimenge (ordnungsfrei): Summe und XOR eines Hashes je Dreieck
             const mengeVon = (arr, plus) => {

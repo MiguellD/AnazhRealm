@@ -523,8 +523,6 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
 // DAS ENDE DER WERKBANK (Gegenprüfung 07.10.): `/stop` beendet sie samt Chrome; die Folge wartet auf ihr Ende (`frist`). Hängt
 // `/stop` (eine tote Seite, ein hängender Browser), stirbt der ganze Prozess-Baum — Werkbank und Chrome (Windows:
 // `taskkill /T /F`, ein TerminateProcess allein ließe Chrome stehen; sonst SIGTERM, puppeteer räumt Chrome, dann SIGKILL).
-// Vorher stand `kind.kill` in einem unref-Timer direkt vor `process.exit`: er feuerte nie — unter POSIX blieb die Werkbank
-// mit Port und Chrome als Waise stehen (unter Windows riss erst der libuv-Job der Folge sie beim Ende mit, still).
 // Rückgabe: wie sie endete (`stop` · `getoetet` · `beendet` = schon vorher · `waise`).
 async function beendeBaum(kind, frist) {
     const lebt = () => kind.exitCode === null && kind.signalCode === null;

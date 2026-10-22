@@ -386,7 +386,7 @@ async function probe(page, welt, mitAbdruck) {
             // Punkten in drei Höhen über der Makro-Höhe (die Schneegrenze `schnee` des Kerns greift erst
             // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
             // Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
-            // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
+            // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort).
             const leserSha = async () => {
                 const f = new Float64Array(32 * 32 * 10);
                 const c = [0, 0, 0];
@@ -454,11 +454,9 @@ async function probe(page, welt, mitAbdruck) {
             }
             out.warteAck = typeof warteAck === "function";
             // Das lebende Erbgut (die Bühne MUSS ihre Terme tragen, sonst verglich die Linse eine Wildnis-Welt).
-            if (typeof r._erbgut === "function") {
-                const E = r._erbgut();
-                out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
-                out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
-            }
+            const E = r._erbgut();
+            out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
+            out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
             // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
             // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
             // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).

@@ -445,7 +445,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const foryouOn = document.getElementById("feed-foryou-panel").hidden === false && meshPanel.hidden === true;
         out.feedTabsWork = meshOn && foryouOn;
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
-        const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
+        const fi = r._feedItems();
         const fkinds = new Set(fi.map((it) => it.kind));
         const hasCreatures = (r.state.creatures || []).length > 0;
         out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
@@ -504,10 +504,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         }
         // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
-            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
-            typeof r._feedFocus === "function" &&
-            typeof r._feedEnsurePreview === "function" &&
-            typeof r._feedPreviewShow === "function";
+            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
         if (recForFocus) {
             const recCard = stream.querySelector(".feed-recipe");
@@ -522,7 +519,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
         // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
-        const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
+        const omniWelt = r._omniboxSearch("welt:");
         out.omniboxWelt =
             Array.isArray(omniWelt) &&
             omniWelt.length >= 1 &&

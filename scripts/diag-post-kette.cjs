@@ -78,7 +78,7 @@ const DUNKEL_LUMA_MIN = 3;
 const DUNKEL_TOL = 1.5;
 // (h) Die Nacht (D3-2): das Licht des Bodens im Mondlicht (0,02 Szenen-Einheiten bei Belichtung 1, unter dem Schnitt der
 // Tag-Kurve bei 0,028) bei nightFactor 1 zeigt mindestens DUNKEL_LUMA_MIN Luma — der Kontrast fadet zur Nacht aus wie die
-// Entgrauung. Vorher schnitt er auch nachts: der Boden der Wiese um Mitternacht soff ab (61 % schwarz).
+// Entgrauung.
 const DUNKEL_NACHT_LICHT = 0.02;
 
 function urteil(z) {

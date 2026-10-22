@@ -1,5 +1,4 @@
-// software-gpu.cjs — DAS EINE START-REZEPT für jede Linse, die WebGPU fährt (05.10.). Vorher trug jedes Skript seine
-// eigene Schalter-Liste (13 Kopien in 5 Varianten), und jede Variante war auf EINER Plattform falsch:
+// software-gpu.cjs — DAS EINE START-REZEPT für jede Linse, die WebGPU fährt (05.10.).
 //   · Linux (CI-Runner, Chrome 148, Labor-Branch diag/linux-geraet): mit nur Dawns swiftshader-Adapter findet der
 //     GPU-Prozess keine Ablage für die Canvas-Swapchain — shared_image_factory „Could not find SharedImageBackingFactory
 //     … WebgpuSwapChainTexture, RGBA_8888" → „SharedImageStub: Unable to create shared image" → crashpad-Schnappschuss →

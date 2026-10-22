@@ -597,8 +597,7 @@ function validateManifest(m) {
         }
         // K43 (Studio-Welle 1, DIE TOR-STUFEN) — PFLICHT, wo die Art gate lebt: die Kosten liegen im Asset, nicht im Wirt. Das Tor
         // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
-        // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
-        // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern).
         // K64 (die Stufe 2): die Kette L0 → L1 → L2 → Fernform, die Grenze der Stufe 2 jenseits der Stufe 1, tris streng fallend.
         if (ks.gate) {
             const G = B.gate || {};

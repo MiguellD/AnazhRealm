@@ -667,7 +667,7 @@ async function checkBandWelle6APolish(ctx) {
         let topY = null;
         if (entry && entry.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (entry && entry.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -812,7 +812,7 @@ async function checkBandWelle6APolish(ctx) {
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (_entryA3 && _entryA3.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -971,7 +971,7 @@ async function checkBandWelle6APolish(ctx) {
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (!r || typeof r.describeProgram !== "function") return null;
+        if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
@@ -1467,17 +1467,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             // Mesher mit densityFn-Callback: untere Hälfte fest,
             // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
-            out.mesherAcceptsDensity =
-                typeof r._voxelChunkGeometry === "function" &&
-                (() => {
-                    try {
-                        const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
-                        const pos = g && g.getAttribute("position");
-                        return !!(pos && pos.count > 0);
-                    } catch {
-                        return false;
-                    }
-                })();
+            out.mesherAcceptsDensity = (() => {
+                try {
+                    const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                    const pos = g && g.getAttribute("position");
+                    return !!(pos && pos.count > 0);
+                } catch {
+                    return false;
+                }
+            })();
             return out;
         });
         check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
@@ -2096,7 +2094,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         if (typeof r.tryMouseBreak === "function") {
             const origRay = r._raycastWorldHit;
             const origPick = r._pickArchitectureAtCrosshair;
-            const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+            const origMode = r.getGameMode();
             r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;

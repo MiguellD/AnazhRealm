@@ -465,7 +465,7 @@ async function blickStufe(check) {
 
     const out = await page.evaluate(async () => {
         const res = { boot: false, warm: false };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;

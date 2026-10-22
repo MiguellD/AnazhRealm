@@ -5,7 +5,7 @@
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {
     const res = {};
-    await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const VC = window.__vehicleCore;
@@ -71,7 +71,7 @@ async function probeLeben(expected) {
         const sitz = Number.isFinite(me._sitzHeight) ? me._sitzHeight : 0;
         const hub = fz && Number.isFinite(fz.fHub) ? fz.fHub : Number.isFinite(me._rideHeave) ? me._rideHeave : 0;
         if (Math.abs(st.playerMesh.position.y - (me.position.y - 0.5 + sitz + hub)) > 0.05) return true;
-        if (!fz || fz.luft || !Number.isFinite(fz.y) || typeof r._rittAufstand !== "function") return false;
+        if (!fz || fz.luft || !Number.isFinite(fz.y)) return false;
         const a = r._rittAufstand(me);
         const boden = r._fahrBoden(me);
         const yk = (Number.isFinite(me._rideYaw) ? me._rideYaw : 0) - Math.PI / 2; // der Rahmen des Kerns

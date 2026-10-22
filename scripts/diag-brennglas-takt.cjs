@@ -936,8 +936,6 @@ async function probe() {
             ? st.architectures.filter((e) => e && ((e.userData && e.userData.rauchQuelle) || e.chimney))
             : st.architectures.filter((e) => e && e.affordances && e.affordances[k]);
     const vergleiche = (name) => {
-        if (typeof r._blockerMit !== "function")
-            return { name, schluessel: 0, mitglieder: 0, fehler: ["das Spiel kennt kein Verzeichnis (`_blockerMit`)"] };
         const f = [];
         let mitglieder = 0;
         for (const k of schluessel()) {

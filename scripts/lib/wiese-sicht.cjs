@@ -39,7 +39,7 @@ function installWieseSicht() {
     window.__wieseSicht = (r, himmel) => {
         const st = r.state;
         const nw = st.nahWiese;
-        if (!nw || !st.camera || typeof r._nahWieseSicht !== "function") return window.__wieseZaehle(r, null);
+        if (!nw || !st.camera) return window.__wieseZaehle(r, null);
         const auge = st.camera.position;
         let ziel = null;
         let dBest = Infinity;

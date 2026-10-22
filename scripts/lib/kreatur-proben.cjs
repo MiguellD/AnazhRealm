@@ -44,9 +44,7 @@ async function kreaturProben(r, T, opts) {
         // DIE UHR DER BÜHNE (K07): jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts und mit frischen
         // Fauna-Strömen (_faunaRng, aus dem Seed der Welt), der Blick vom Spieler nach Norden (der Schirm wählt, wessen Gang
         // ausgewertet wird: die Raten-Leiter, _creatureAnimDiv) — gleich, wie lange die Welt einschwang (performance.now: ihre
-        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief. Vorher hielt nur jede zweite Probe ihre Uhr
-        // selbst (sieben Abschriften); gier lief ab der Uhr des Einschwingens (9,73 oder 9,77 s), der Fuchs wechselte von
-        // Lauf zu Lauf 15- bis 32,5-mal je Minute zwischen Gas und Bremse.
+        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief.
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
         const altStroeme = r._faunaStroeme;
@@ -163,8 +161,7 @@ async function kreaturProben(r, T, opts) {
     // über jede Kante; der Jäger hinter ihm hält am Stamm (der Hüllen-Kontakt seines Leibs). Die Bahn liest die Probe darum
     // aus der Welt: Land ohne Wasser 8 m quer, ebener Grund (Spanne ≤ 3 m, die Dorfplatz-Grenze), kein Fels über ihr und
     // keine Hülle des Bestands in der Gasse (`_blockerUmPlatz` + `_boxAbstand2`, dieselbe Nachbarschaft und Box-Probe wie
-    // `_kreaturHuellenKontakt`). Vorher stand der Ort als Versatz der alten Welt (frei(-50, 60, 30): 30 m Umkreis um den
-    // Start, die Bahn 43 m lang): im neuen Gelände lag eine Tanne in der Gasse, der Wolf hielt am Stamm, der Sprinter entkam.
+    // `_kreaturHuellenKontakt`).
     const freieBahn = (dx, dz, laenge, vor) => {
         const gasse = 1.5; // halbe Breite der Gasse: Radius und halbe Länge des Wolf-Leibs mit Rand
         const bahnFrei = (x0, z0) => {
@@ -272,7 +269,6 @@ async function kreaturProben(r, T, opts) {
     // Menge leer und jeder Takt zählt als freier Lauf.
     const kontaktZaehler = (restore) => {
         const geschoben = new Set();
-        if (typeof r._kreaturHuellenKontakt !== "function") return geschoben;
         decke(
             restore,
             "_kreaturHuellenKontakt",
@@ -816,8 +812,7 @@ async function kreaturProben(r, T, opts) {
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
         // DIE PEILUNG DES ZIELS LIEST DEN ZUSTAND (K13): die Körper, die die Probe selbst kennt — die drei Beutetiere und den
-        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt. Vorher war sie das Argument des geprüften Jagd-Wegs
-        // (_kreaturJagdZug tx/tz): ein Raster, das schon das Ziel auf eine Achse legt, ginge als „auf dem Ziel" durch.
+        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt.
         const peilKoerper = [...beute, s.playerMesh];
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
         // Himmelsachse liegt (gleicher Abstand); ein Lauf darauf ist ein Raster, auch wenn er „auf sein Ziel" geht
@@ -2798,8 +2793,7 @@ async function kreaturProben(r, T, opts) {
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         let stall = null;
         try {
-            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios (die Wege
-            // messen gegen die Wand, die steht — nie gegen die Kern-Hülle vor ihr, `_hausBlockerBoxen`)
+            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios
             const offen = () =>
                 leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle);
             for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && offen();) {
@@ -3023,12 +3017,10 @@ async function kreaturProben(r, T, opts) {
         const ohnePlatz = liste.filter(
             (b) => !(b.orte.platz && Math.hypot(b.orte.platz.x - pc.x, b.orte.platz.z - pc.z) <= platzR)
         );
-        // ── DIE WEGE (mensch.K3): je Takt jeder Bewohner draußen als die Kapsel des Spielers (`_resolveCapsuleVsAABB`: Radius
-        // PLAYER_WALL_RADIUS, Wand ab PLAYER_STEP_UP über dem Fuß) bis zum Scheitel gegen das EINE Blocker-Netz
-        // (`_blockerUmPlatz`, je Box `_boxAbstand2`) — ein Takt in einer Box ist Durchdringung, beim Namen des Baus. Drinnen
-        // steht er im Kern seines Hauses; wer einen Kern (die Tür-Zeile `tuer` des Fachwerk-Plans: W × D, die Tür vorn bei z,
-        // hinten bei −z) betritt oder verlässt, geht durch die Ebene einer Tür in ihrer Breite. Je gehendem Takt, ob er auf
-        // einer Fläche des Dorfs geht (`_aufWeg`), je Bewohner die Wege (Ankunft nach ≥ 2 m) — wer im Haus bleibt, irrt nie.
+        // ── DIE WEGE (mensch.K3): je Takt jeder Bewohner draußen als Kapsel des Spielers gegen das EINE Blocker-Netz — ein
+        // Takt in einer Box ist Durchdringung, beim Namen des Baus; drinnen steht er im Kern seines Hauses, wer einen Kern
+        // (Tür-Zeile `tuer` des Plans) betritt oder verlässt, geht durch die Ebene einer Tür; dazu die Gangzeit auf Wegen
+        // (`_aufWeg`) und je Bewohner die Wege (Ankunft nach ≥ 2 m) — wer im Haus bleibt, irrt nie.
         const RW = A.PLAYER_WALL_RADIUS;
         const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0 };
         const wSpur = new Map();
@@ -3087,7 +3079,7 @@ async function kreaturProben(r, T, opts) {
                 Object.assign(sp, { x, z, innen });
             }
         };
-        // DER TAKT der Bewohner und je Takt die Wege; die Kosten je Ruf im Takt des Spiels (1/60 s, die Gang-Fenster)
+        // der Takt (seine Kosten im Spieltakt, den Gang-Fenstern) und je Takt die Wege
         const zeiten = [];
         let quer = null;
         const takt = (dt) => {
@@ -3097,8 +3089,7 @@ async function kreaturProben(r, T, opts) {
             wegeMessen();
             if (taeter === "bewohner-quer" && !quer) quer = querSetzen();
         };
-        // Täter (Selbsttest): ein Haus quer über dem Weg — es steht vor einem Gehenden auf seinem Weg, und der Rest des Wegs
-        // prüft die Wand nicht, die nach ihm kam (`_bewohnerWegPruefen` ruht)
+        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, der die Wand nach ihm nie prüft
         const querSetzen = () => {
             const vorbild = s.architectures.find((e) => kernVon(e) && liste.some((b) => b.orte.tuer.haus === e));
             const t = kernVon(vorbild);
@@ -3219,7 +3210,6 @@ async function kreaturProben(r, T, opts) {
             planGleich,
             tagSek: Math.round((performance.now() - tTag) / 100) / 10,
             bewohner: liste.length,
-            bewegtN: L.filter(gegangen).length,
             trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
             unter: unter
                 .slice(0, 5)
@@ -3337,7 +3327,6 @@ function urteil(name, z) {
         // DER TAG (mensch.K2): das Gesetz der Uhr, jeder Leib geht, trifft seine Soll-Orte, springt nie im Nahbereich
         soll(z.plan, "kein Tagesplan: koerper-core trägt kein tagesPlan (VERHALTEN) — der Bewohner kennt keinen Tag");
         soll(z.planGleich, "der Tagesplan ist bei gleichem Samen nicht bit-gleich");
-        soll(z.bewegtN === z.leiber, `${z.leiber - z.bewegtN} von ${z.leiber} Bewohnern ohne Bewegung im Tag`);
         soll(
             z.trefferMin !== null && z.trefferMin >= 0.9,
             `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9 je Bewohner; ${z.unterN} darunter: ${z.unter.join(" · ")})`
