@@ -3797,7 +3797,7 @@ async function starte() {
             console.log(`LATENZ ${x.urteil} (Bild ${x.bildMs} ms) ${x.rot ? x.rot.join(" · ") : x.fehler}`);
         }
         const g = (x) => ((x.reihen || {})["ego/gehen"] || {}).p50; // ein Lauf mit `fehler` trägt keine Reihe
-        const hub = mit && g(mit) - g(o);
+        const hub = mit && +(g(mit) - g(o)).toFixed(1);
         const gut = selbst ? mit.urteil === "ROT" && hub >= 2 * o.bildMs : o.urteil === "GRÜN";
         if (selbst) console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
         process.exit(gut ? 0 : 1);
