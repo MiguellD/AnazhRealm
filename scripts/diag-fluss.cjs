@@ -23,7 +23,10 @@
 //   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
-//   Fahrzeug-Vorrat wärmt nur die Platte
+//   Fahrzeug-Vorrat wärmt nur die Platte · W9 DER BAUER AUF DER ENGINE DER WELT (pipeline.K5): das Netz-Log jedes
+//   Foundry-Fadens (Resource Timing der Plattform, vor dem Boot-Blob abgegriffen, nie der Quelltext) zeigt three nur aus
+//   vendor/three.core (r184), 0 Bytes auf worlds/*/lib/ und 0 synchrone XHR in Boot und Bau; die Gegenprobe (ein Faden,
+//   der r128 lädt und synchron fragt) beweist, dass das Instrument beides sieht
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -424,10 +427,32 @@ const WELT_HAKEN = () => {
     // Die Platte AN unter dem Null-Renderer (nur in dieser Sonde): der Boot-Blob der Transport-Schale trägt
     // cfg.platte=false (gate-deterministisch); hier wird er true — der Host schickt seine Schlüssel ohnehin immer, die
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
+    // W9 DAS NETZ-LOG DES FADENS: das Instrument läuft im Faden VOR seinem Boot-Blob — es fängt jedes synchrone
+    // XMLHttpRequest.open (Boot UND Bau) und antwortet auf `__netz` mit dem Resource Timing der Plattform (jede geladene
+    // URL samt Bytes, auch die Modul-Importe) und der Revision der Engine, die der Faden trägt. Die Gegenprobe der Sonde
+    // fährt dasselbe Instrument (`__fadenNetz`).
+    const FADEN_NETZ = function () {
+        var sync = [];
+        var offen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (_m, u, asynchron) {
+            if (asynchron === false) sync.push(String(u));
+            return offen.apply(this, arguments);
+        };
+        self.addEventListener("message", function (e) {
+            var m = e.data;
+            if (!m || m.type !== "__netz") return;
+            e.stopImmediatePropagation();
+            var res = performance.getEntriesByType("resource").map(function (r) {
+                return { url: r.name, bytes: r.encodedBodySize || r.decodedBodySize || r.transferSize || 0 };
+            });
+            self.postMessage({ type: "__netz", sync: sync, three: (self.THREE && self.THREE.REVISION) || null, res: res });
+        });
+    };
+    window.__fadenNetz = "(" + FADEN_NETZ.toString() + ")();\n";
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
         if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0) {
-            teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
+            teile = [window.__fadenNetz + teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
         }
         return new B0(teile, opt);
     };
@@ -462,6 +487,12 @@ const WELT_HAKEN = () => {
             this.__flNr = fl.faeden++;
             this.addEventListener("message", (e) => {
                 const m = e.data;
+                // W9: das Netz-Log des Fadens geht an die Sonde, nie an den Wirt
+                if (m && m.type === "__netz") {
+                    e.stopImmediatePropagation();
+                    if (this.__netzDa) this.__netzDa(m);
+                    return;
+                }
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
                 if (m && m.type === "asset" && Array.isArray(m.meshes))
                     for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
@@ -571,7 +602,26 @@ const WELT_MESSEN = async () => {
             .slice(0, 4);
     }
     boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
-    if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten) };
+    // W9 — DAS NETZ-LOG JEDES FOUNDRY-FADENS (Werk und Helfer) nach Boot und Bau, und die Gegenprobe: ein Faden mit demselben
+    // Instrument, der three r128 lädt und das Manifest synchron fragt (der Boot vor dem Umzug) — sieht das Instrument das
+    // nicht, misst W9 nichts.
+    const netzVon = (w) =>
+        new Promise((res) => {
+            w.__netzDa = res;
+            w.postMessage({ type: "__netz" });
+            setTimeout(() => res(null), 10000);
+        });
+    const netz = { faeden: [], gegen: null };
+    for (const t of [{ k: 0, w: f.worker }].concat((f.helfer || []).map((h) => ({ k: h.k, w: h.w }))))
+        netz.faeden.push(Object.assign({ k: t.k }, (await netzVon(t.w)) || { fehlt: true }));
+    const gegenQuelle =
+        window.__fadenNetz +
+        `importScripts(${JSON.stringify(location.origin + "/worlds/terrain/lib/three-r128.min.js")});` +
+        `var x = new XMLHttpRequest(); x.open("GET", ${JSON.stringify(location.origin + "/cores.manifest.json")}, false); x.send();`;
+    const gegen = new Worker(URL.createObjectURL(new Blob([gegenQuelle], { type: "text/javascript" })));
+    netz.gegen = (await netzVon(gegen)) || { fehlt: true };
+    gegen.terminate();
+    if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten), netz };
     // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und den toten aWind · aCenter · aType zählt, was
     // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
     const lesen = r.constructor.FOUNDRY_LESEN,
@@ -618,6 +668,7 @@ const WELT_MESSEN = async () => {
         karten,
         wand: { lesen: [...lesen], gelesen: [...gelesen], reist: [...fl.reist] },
         vorrat,
+        netz,
         boot,
         bootMB: fl.antworten.reduce((a, x) => a + x.bytes, 0) / 1048576,
         saison: {
@@ -726,7 +777,37 @@ function urteilWelt(d) {
         vr.arten > 0 && !vr.kalt.length,
         `${vr.arten} Arten` + (vr.kalt.length ? ` · ohne leere Vorrats-Antwort: ${vr.kalt.join(" ")}` : "")
     );
+    const nz = d.netz || { faeden: [], gegen: null };
+    const fb = nz.faeden.map((t) => ({ k: t.k, b: netzBruch(t) })).filter((x) => x.b.length);
+    const gb = netzBruch(nz.gegen);
+    const gegenSieht = gb.some((x) => /three-r128/.test(x)) && gb.some((x) => /synchrone XHR/.test(x));
+    const kern = nz.faeden.map((t) => ((t.res || []).find((x) => NETZ_KERN.test(x.url)) || {}).bytes || 0);
+    pruef(
+        "W9 der Bauer auf der Engine der Welt: jeder Foundry-Faden lädt three r184 als Modul aus vendor/three.core, 0 Bytes auf worlds/*/lib/, 0 synchrone XHR in Boot und Bau",
+        nz.faeden.length >= 2 && !fb.length && gegenSieht,
+        (fb.length
+            ? fb.map((x) => `Faden ${x.k}: ${x.b.join(" · ")}`).join(" | ")
+            : `${nz.faeden.length} Fäden: three r184 aus vendor/three.core (${kern.join("/")} B), 0 fremde Engine, 0 synchrone XHR`) +
+            (gegenSieht ? " · Gegenprobe sieht r128 und das synchrone XHR" : " · Gegenprobe BLIND: " + gb.join(" · "))
+    );
     return aus;
+}
+
+// W9 — der Bruch eines Faden-Netz-Logs beim Namen: eine Datei unter worlds/*/lib/ oder ein three-Bündel außer
+// vendor/three.core (die Engine des Labors, eine zweite Version), ein synchrones XHR, eine Engine, die nicht r184 aus
+// vendor/three.core ist (eine Kopie inline — das Schlupfloch der Text-Absenz).
+const NETZ_FREMD = /\/worlds\/[^/?]+\/lib\/|\/three(?!\.core\.min\.js)[^/?]*\.js(\?|$)/;
+const NETZ_KERN = /\/vendor\/three\.core\.min\.js(\?|$)/;
+function netzBruch(t) {
+    if (!t || t.fehlt) return ["kein Netz-Log (das Instrument antwortet nicht)"];
+    const kurz = (u) => String(u).replace(/^[a-z]+:\/\/[^/]+\//, "").split("?")[0];
+    const b = [];
+    const fremd = (t.res || []).filter((x) => NETZ_FREMD.test(x.url));
+    if (fremd.length) b.push("lädt " + fremd.map((x) => `${kurz(x.url)} (${x.bytes} B)`).join(" "));
+    if ((t.sync || []).length) b.push(`${t.sync.length} synchrone XHR (${t.sync.map(kurz).join(" ")})`);
+    if (t.three !== "184" || !(t.res || []).some((x) => NETZ_KERN.test(x.url)))
+        b.push(`three ${t.three || "fehlt"} nicht aus vendor/three.core`);
+    return b;
 }
 
 async function welt() {
@@ -825,6 +906,22 @@ const VERHALTEN = [
             karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             wand: { lesen: ["position", "color"], gelesen: ["color", "position"], reist: ["position", "color"] },
             vorrat: { arten: 2, kalt: [] },
+            netz: {
+                faeden: [0, 1, 2].map((k) => ({
+                    k,
+                    three: "184",
+                    sync: [],
+                    res: [
+                        { url: "http://h/vendor/three.core.min.js", bytes: 384222 },
+                        { url: "http://h/phyto-core.js?v=1", bytes: 250000 },
+                    ],
+                })),
+                gegen: {
+                    three: "128",
+                    sync: ["http://h/cores.manifest.json"],
+                    res: [{ url: "http://h/worlds/terrain/lib/three-r128.min.js", bytes: 603000 }],
+                },
+            },
             boot: {
                 posts: 200,
                 antworten: 200,
@@ -960,6 +1057,25 @@ const VERHALTEN = [
         check(
             "Selbst-Test 22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread → W8 rot",
             rot(W({ vorrat: { arten: 2, kalt: ["gt"] } }), "W8")
+        );
+        const mitFaden1 = (faden) =>
+            W({ netz: Object.assign({}, gut.netz, { faeden: gut.netz.faeden.map((t) => (t.k === 1 ? Object.assign({}, t, faden) : t)) }) });
+        const r128 = { url: "http://h/worlds/terrain/lib/three-r128.min.js", bytes: 603000 };
+        check(
+            "Selbst-Test 23a: ein Faden lädt three r128 aus worlds/terrain/lib (die zweite Version) → W9 rot",
+            rot(mitFaden1({ three: "128", res: gut.netz.faeden[1].res.concat([r128]) }), "W9")
+        );
+        check(
+            "Selbst-Test 23b: ein Faden fragt das Manifest synchron (XMLHttpRequest, async false) → W9 rot",
+            rot(mitFaden1({ sync: ["http://h/cores.manifest.json?v=1"] }), "W9")
+        );
+        check(
+            "Selbst-Test 23c: die Engine reist inline statt aus vendor/three.core (Text-Absenz) → W9 rot",
+            rot(mitFaden1({ res: [{ url: "http://h/phyto-core.js?v=1", bytes: 250000 }] }), "W9")
+        );
+        check(
+            "Selbst-Test 23d: die Gegenprobe sieht weder r128 noch das synchrone XHR (das Instrument ist blind) → W9 rot",
+            rot(W({ netz: Object.assign({}, gut.netz, { gegen: { three: null, sync: [], res: [] } }) }), "W9")
         );
         check(
             "Selbst-Test 20: das Manifest nennt die Labor-Shell als Brücke → S7f rot (ein UI-Edit leerte den Cache)",
