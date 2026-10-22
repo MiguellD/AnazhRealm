@@ -2697,6 +2697,7 @@ async function checkBandKreaturKosten(ctx) {
                 if (!schrumpf) for (const x of je) dk.push(Object.assign({ pose }, x));
                 return je;
             };
+            cw.rotation.y = Math.PI / 2; // der Leib blickt auf seinen Weg (+x), nie quer
             r._tierBaumNeutralStance(cw);
             messW("stand");
             for (let k = 0; k < 16; k++) {

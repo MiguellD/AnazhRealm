@@ -287,18 +287,17 @@ async function kreaturProben(r, T, opts) {
         );
         // DER EINE LEIB-LÖSER im Sim-Schritt (`_leibKontakte`): ein Leib, den er aus einem anderen oder aus dem Spieler
         // schiebt, prallt — derselbe Anprall wie an der Wand.
-        if (typeof r._leibKontakte === "function")
-            decke(
-                restore,
-                "_leibKontakte",
-                (alt) =>
-                    function (...a) {
-                        const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
-                        const o = alt.apply(this, a);
-                        for (const [p, x, z] of vor) if (p.x !== x || p.z !== z) geschoben.add(p);
-                        return o;
-                    }
-            );
+        decke(
+            restore,
+            "_leibKontakte",
+            (alt) =>
+                function (...a) {
+                    const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
+                    const o = alt.apply(this, a);
+                    for (const [p, x, z] of vor) if (p.x !== x || p.z !== z) geschoben.add(p);
+                    return o;
+                }
+        );
         return geschoben;
     };
 
@@ -1125,17 +1124,16 @@ async function kreaturProben(r, T, opts) {
         // gezählt werden nur die Rufe AUS dem Hüllen-Kontakt (der Leib-Löser der Welle LF liest den Leib auch)
         let leibRufe = 0,
             imKontakt = 0;
-        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
-        if (typeof r._kreaturLeib === "function")
-            decke(
-                restore,
-                "_kreaturLeib",
-                (alt) =>
-                    function (...a) {
-                        if (imKontakt > 0) leibRufe++;
-                        return alt.apply(this, a);
-                    }
-            );
+        const leibVon = A.prototype._kreaturLeib;
+        decke(
+            restore,
+            "_kreaturLeib",
+            (alt) =>
+                function (...a) {
+                    if (imKontakt > 0) leibRufe++;
+                    return alt.apply(this, a);
+                }
+        );
         decke(
             restore,
             "_kreaturHuellenKontakt",
@@ -1269,7 +1267,7 @@ async function kreaturProben(r, T, opts) {
         ruhig(c);
         r.assignCreatureTask(c, "follow_player", {}, { silent: true });
         const geschoben = kontaktZaehler(restore);
-        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
+        const leibVon = A.prototype._kreaturLeib;
         let drin = 0,
             kontaktFrames = 0,
             spielerWand = 0,
