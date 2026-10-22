@@ -44,7 +44,7 @@ async function seitenTakt() {
 // steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
 // ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Der Regler hält, solange sie schwingt — in JEDEM
 // Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging. Der Deckel `max`
-// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
+// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch) — über den EINEN Deckel (`__deckel`, auch seine Hänger-Wand); dann wirft er.
 async function weltStehtNach(takt, max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -54,19 +54,23 @@ async function weltStehtNach(takt, max) {
     st.perfRegulator = false;
     let n = 0;
     try {
-        for (let k = 0; !(n && steht()) && k < (max || 1800); n++) {
+        for (
+            const weiter = window.__deckel("die Welt", max || 1800, () => r._bepflanzungWartet());
+            !(n && steht()) && weiter();
+            n++
+        ) {
             await (takt || window.__seitenTakt)(n);
-            if (!Object.values(r._weltOffen()).some(Boolean) && !r._bepflanzungWartet()) k++;
             if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
         }
+    } catch (f) {
+        throw new Error(
+            `DIE WELT STEHT NICHT nach ${n} Takten: ` +
+                (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`) +
+                ` (${f.message})`
+        );
     } finally {
         st.perfRegulator = regler;
     }
-    if (!steht())
-        throw new Error(
-            `DIE WELT STEHT NICHT nach ${n} Takten: ` +
-                (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`)
-        );
     return n;
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis der Bau steht
@@ -104,12 +108,26 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
 // zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
 // Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
 // Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht).
-function deckel(name, max, offen) {
+// DIE HÄNGER-WAND (echt-haenger): ein Offenes, das sich `haengt` (3 600) Gänge lang um kein Bau-Ereignis rührt, baut kein Takt
+// — der Deckel wirft beim Namen der offenen Felder (CI 39780312347: `Dorf offen 18`, ein Zug ohne Takt, 79 min ohne Ende).
+function deckel(name, max, offen, haengt) {
     let n = 0,
-        k = 0;
+        k = 0,
+        still = 0,
+        vor = "";
     return () => {
         const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
+        const jetzt = Object.entries(o)
+            .filter(([, v]) => v)
+            .map(([f, v]) => `${f} ${v}`)
+            .join(" ");
+        still = jetzt && jetzt === vor ? still + 1 : 0;
+        vor = jetzt;
+        if (still > (haengt || 3600))
+            throw new Error(
+                `DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} seit ${still} Takten ohne Bau-Ereignis`
+            );
         if ((offen === false || (!Object.values(o).some(Boolean) && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
@@ -1084,6 +1102,15 @@ async function selbsttest() {
             (n) => `steht nach ${n} Takten`,
             (x) => x.message
         );
+        // HÄNGT: eine Karte bleibt offen und rührt sich nie — der Deckel wirft nach `haengt` stillen Gängen beim Namen
+        r.offen = 1;
+        aus.haengt = await (async (weiter) => {
+            while (weiter()) await takt();
+        })(window.__deckel("haenger", 5, undefined, 40)).then(
+            () => "endet ohne Wurf",
+            (x) => x.message
+        );
+        r.offen = 0;
         let still = 0;
         r.state = { renderer: {}, perfRegulator: true };
         r._weltSteht = () => still >= 30;
@@ -1138,6 +1165,10 @@ async function selbsttest() {
         [
             !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
+        ],
+        [
+            !!bau && /^DIE WELT HÄNGT: haenger nach 41 Takten — offen karten 1 seit 41 Takten/.test(bau.haengt),
+            `Bau HÄNGT (offen, ohne Bau-Ereignis): ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
