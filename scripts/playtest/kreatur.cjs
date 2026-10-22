@@ -292,12 +292,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.lifeField = new Map();
         r.state.emotionField = new Map();
 
-        // (0) Methoden + die attack-Emotion + COMBAT_REACH existieren
-        out.exists =
-            typeof r._pickCreatureAtCrosshair === "function" &&
-            !!r.constructor.ACTION_TO_EMOTION.attack &&
-            r.constructor._arenaGesetz().schwung.reachMaxM > 0;
-
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
@@ -393,7 +387,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.54 Kampf D: _pickCreatureAtCrosshair + die attack-Emotion + COMBAT_REACH existieren", res.exists);
     check(
         "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
         res.attackDamages

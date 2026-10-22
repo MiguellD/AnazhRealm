@@ -92,7 +92,7 @@
 //                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
 //                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
 //                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
-//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel] [--json datei] | latenz --selbsttest
+//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,hieb] [--json datei] | latenz --selbsttest
 //                                                           DIE LATENZ (leib.K1): Taste (CDP) → erstes Bild mit Leib/Kamera
 //                                                           ≥ 1 cm bewegt, je Sicht × Verb p50/p95, ROT über 50 ms beim Täter
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
@@ -378,11 +378,16 @@ function methodeAusQuelle(quelle, name) {
 // Zerlegung: eingabe (Ereignis → Hörer) · warten (Hörer → Beginn des Takts, der das Bild zeichnet) · takte · bild (Takt →
 // Marke) · regung (das erste Bild ≥ 1 mm: bis dahin die Kette, danach die Gang-Kurve).
 // `verzug` (Selbsttest) hält die Taste n präsentierte Bilder im Eingabe-Pfad zurück (die Leine zeichnet nicht jeden Takt); die Bewegung liest nie das Render-Signal.
+// DER HIEB (halten.K2): der Klick (CDP, Zeiger gefangen) auf ein gehaltenes Tier unter dem Fadenkreuz; Ende das Bild, in dem
+// die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
+// präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
 function latenzAn(k) {
     const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
     if (window.__tiereHalten) window.__tiereHalten();
-    const lage = () => [st.camera.matrixWorld.elements.slice(12, 15), st.playerMesh.position.toArray()];
+    const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
+    const lage = () =>
+        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
     const weg = (a, b) => Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j]))));
     const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();
@@ -394,6 +399,9 @@ function latenzAn(k) {
             if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
             if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
                 Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
+            const sw = p && p.t0 != null && st.player._swing;
+            if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
+            L.swVor = sw && sw.t;
             L.vor = l;
             L.bilder.push(t);
         }
@@ -402,9 +410,9 @@ function latenzAn(k) {
     const hoer = (ev) => {
         if (synth.has(ev)) return;
         const p = L.probe, jetzt = performance.now();
-        if (ev.type === "keydown" && p && p.t0 == null)
+        if (ev.type.endsWith("down") && p && p.t0 == null)
             Object.assign(p, { t0: ev.timeStamp, eingabe: jetzt - ev.timeStamp, hoerer: jetzt, takt: L.takt, ref: L.vor });
-        if (!k.verzug) return;
+        if (!k.verzug || ev.type === "mousedown") return;
         ev.stopImmediatePropagation();
         const kopie = new KeyboardEvent(ev.type, { key: ev.key, code: ev.code, bubbles: true, cancelable: true });
         const eintrag = [ev.target, kopie];
@@ -414,7 +422,9 @@ function latenzAn(k) {
             if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
         })();
     };
-    for (const typ of ["keydown", "keyup"]) window.addEventListener(typ, hoer, true);
+    const nach = () => L.probe && (L.probe.imHoerer = performance.now() - L.probe.hoerer); // die Blase nach dem Hörer
+    for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
+    window.addEventListener("mousedown", nach);
     rend.setAnimationLoop((t) => {
         L.takt++;
         L.taktAm = performance.now();
@@ -423,48 +433,48 @@ function latenzAn(k) {
     });
     // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
     // zufällige Phase gegen den Bild-Takt
-    L.bereit = async (sicht, zurueck) => {
+    L.bereit = async (sicht, zurueck, verb) => {
         L.probe = null;
-        if (zurueck) st.playerMesh.position.copy(L.start);
+        if (zurueck || (L.verb = verb) === "hieb") st.playerMesh.position.copy(L.start);
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
-        for (const bis = L.bilder.length + 240; L.still < 8; await raf()) if (L.bilder.length > bis) return false;
+        if (verb === "hieb" && !(await L.tierStellen())) return false;
+        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await raf()) if (L.bilder.length > bis) return false;
         await new Promise((f) => setTimeout(f, Math.random() * 17));
         return !!(L.probe = {});
     };
     L.treffer = async () => {
         for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await raf();
-        return Object.assign(L.probe, { ref: undefined });
+        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await raf();
+        return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
+    };
+    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
+    L.tierStellen = async () => {
+        const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
+        if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
+        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
+        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await raf();
+        c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
+        c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
+        st.player.stamina = st.player.staminaMax || 100;
+        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await raf()) {
+            const F = r._fadenkreuzStrahl(), v = r._leibMitte(c).sub(F.o).normalize();
+            if (v.distanceTo(F.d) < 0.03) return true;
+            st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
+            st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
+        }
     };
     L.ende = () => {
         for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
         GPUCanvasContext.prototype.getCurrentTexture = gct;
-        for (const typ of ["keydown", "keyup"]) window.removeEventListener(typ, hoer, true);
+        for (const typ of ["keydown", "keyup", "mousedown"]) window.removeEventListener(typ, hoer, true);
+        window.removeEventListener("mousedown", nach);
+        if (L.tier) r.removeCreature(L.tier);
         rend.setAnimationLoop(null);
         st.playerMesh.position.copy(L.start);
         r.setCameraMode(L.sicht);
         const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
         return d[d.length >> 1];
     };
-}
-
-// Das Urteil der Latenz je Sicht × Verb: p50/p95 (Rang), die Zerlegung im Median, ROT über `soll` ms oder bei einer Probe
-// ohne Bewegung — beim Namen der größten Stufe (eingabe · kette bis 1 mm · kurve 1 mm → 1 cm) und der Takte bis zur Bewegung.
-function latenzUrteil(proben, bildMs, soll = 50) {
-    const rang = (v, q) => (v.length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
-    const reihen = {}, rot = [];
-    for (const [name, ps] of Object.entries(proben)) {
-        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]).sort((a, b) => a - b), 0.5);
-        const ms = ok.map((p) => p.ms).sort((a, b) => a - b);
-        for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
-        const z = { eingabe: med("eingabe"), kette: med("kette"), kurve: med("kurve") };
-        const e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
-        Object.assign(e, z, { takte: med("takte") });
-        if (e.fehlt || !(e.p95 <= soll)) {
-            const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
-            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);
-        }
-    }
-    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: bildMs && +bildMs.toFixed(2), reihen, rot, proben };
 }
 
 function lauf(k) {
@@ -1867,10 +1877,13 @@ async function starte() {
                     return send({ fenster: [+b.w || 1920, +b.h || 1080], ms: Date.now() - t0 });
                 }
                 if (req.url === "/latenz") {
-                    const cdp = await page.target().createCDPSession(), proben = {};
+                    const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
                     const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86] };
-                    const druck = (type, [code, key, vk]) =>
-                        cdp.send("Input.dispatchKeyEvent", { type, code, key, windowsVirtualKeyCode: vk });
+                    const tu = (verb, type, [code, key, vk] = taste[verb] || []) =>
+                        code
+                            ? cdp.send("Input.dispatchKeyEvent", { type, code, key, windowsVirtualKeyCode: vk })
+                            : cdp.send("Input.dispatchMouseEvent", { type: type === "keyDown" ? "mousePressed" : "mouseReleased", x: vp.width / 2, y: vp.height / 2, button: "left", clickCount: 1 });
+                    for (const type of ["keyDown", "keyUp"]) await tu("hieb", type); // der Klick fängt den Zeiger, wie beim Spieler
                     await page.evaluate(latenzAn, { verzug: +b.verzug || 0 });
                     let bildMs = null;
                     try {
@@ -1879,21 +1892,22 @@ async function starte() {
                                 const reihe = (proben[`${sicht}/${verb}`] = []);
                                 for (let i = 0; i < +b.proben; i++) {
                                     const s = sicht === "ego" ? "first" : "third";
-                                    if (!(await page.evaluate((s, z) => window.__latenz.bereit(s, z), s, verb === "gehen"))) {
+                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, verb === "gehen", verb))) {
                                         reihe.push({ unruhe: true });
                                         if (reihe.filter((p) => p.unruhe).length < 3) continue;
                                         throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht`);
                                     }
-                                    await druck("keyDown", taste[verb]);
+                                    await tu(verb, "keyDown");
+                                    if (verb === "hieb") await tu(verb, "keyUp"); // gehalten mahlte der Hieb nach
                                     reihe.push(await page.evaluate(() => window.__latenz.treffer()));
-                                    await druck("keyUp", taste[verb]);
+                                    await tu(verb, "keyUp");
                                 }
                             }
                     } finally {
                         bildMs = await page.evaluate(() => window.__latenz.ende());
                         await cdp.detach();
                     }
-                    return send(Object.assign(latenzUrteil(proben, bildMs), { ort: aktOrt, ms: Date.now() - t0 }));
+                    return send(Object.assign(HL.latenzUrteil(proben, bildMs), { ort: aktOrt, ms: Date.now() - t0 }));
                 }
                 if (req.url === "/gpu-bank")
                     return send(

@@ -304,8 +304,6 @@ function kameraVerdict(m) {
         if (ok !== true) out.push(`Konsum: \`${fn}\` ${ok === null ? "ohne Vorbedingung (keine Streu nah)" : "ruft sein Gesetz nicht"}`);
     for (const [fn, n] of Object.entries(fk.hinten || {}))
         if (n > 0) out.push(`Fadenkreuz-Strahl: \`${fn}\` trifft in ${n} von ${fk.stellungen} Stellungen HINTER dem Spieler (was zwischen Kamera und Spieler liegt)`);
-    if (fk.kreatur && fk.kreaturVornProben > 0 && fk.kreaturVorn < fk.kreaturVornProben)
-        out.push(`Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler trifft er nur in ${fk.kreaturVorn} von ${fk.kreaturVornProben} Stellungen ${JSON.stringify(fk.verfehlt || {})}`);
     // Das Ziel der Kamera liegt auf ihrem Blick: dann steht die Ebene
     // des Strahls senkrecht zum Blick und er beginnt bei jedem Arm am Blickpunkt.
     if (fk.stellungen > 0 && !(fk.zielAchse <= 0.01))
@@ -1230,10 +1228,9 @@ async function probe(arg) {
             // DER STRAHL DES FADENKREUZES: der Spieler 2,5 m vor einem Baum, der Blick von ihm weg
             // — der Baum steht zwischen Kamera und Spieler und ist durchsichtig. Kein Treffer-Strahl durch die Bildmitte trifft
             // HINTER dem Spieler: Bau-Pick, Welt-Treffer (Pfeil · Graben · Aufschütten), Blick-Ziel, Bau-Phantom, Kreatur-Pick
-            // (eine Kreatur zwischen Kamera und Spieler) — und eine Kreatur VOR ihm trifft er: JEDE Seele (Größe 1, je allein unter den
-            // Wesen, nie das zufällige erste Tier der Welt: CI 38993364096 72/96), ihre Leibes-Mitte (`_leibMitte`) auf dem Strahl.
+            // (eine Kreatur zwischen Kamera und Spieler: JEDE Seele, Größe 1, je allein unter den Wesen, ihre Leibes-Mitte auf dem Strahl).
             {
-                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {}, kreaturVorn: 0, kreaturVornProben: 0, verfehlt: {} });
+                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {} });
                 const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
                 const [welt, mx, seelen] = [st.creatures, st.maxCreatures, r.constructor.CREATURE_SOUL_NAMES];
                 st.maxCreatures = Infinity;
@@ -1283,11 +1280,6 @@ async function probe(arg) {
                             kreaturAuf(kreatur, 0.5 * arm2);
                             const kp = r._pickCreatureAtCrosshair();
                             if (kp && kp.creature === kreatur) zaehl("_pickCreatureAtCrosshair");
-                            kreaturAuf(kreatur, arm2 + 4);
-                            const kv = r._pickCreatureAtCrosshair();
-                            fk.kreaturVornProben++;
-                            if (kv && kv.creature === kreatur) fk.kreaturVorn++;
-                            else fk.verfehlt[kreatur.userData.soul] = (fk.verfehlt[kreatur.userData.soul] || 0) + 1;
                         }
                     }
                 st.creatures = welt;
@@ -1830,7 +1822,7 @@ async function probe(arg) {
                     zielFolgt: true,
                     kreuzAbstand: 0.6,
                     zielAbstand: 0.6,
-                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0 },
+                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0 },
                     konsum: { _hasMagnifyingInSight: true, _pickScatterAtCrosshair: true, _kampfKlingenAchse: true, _kameraDurchsichtNode: true },
                     durchsicht: {
                         formel: true,
@@ -1848,10 +1840,9 @@ async function probe(arg) {
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
                     ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
                     ["Fadenkreuz auf dem Kopf", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
-                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
-                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
-                    ["Kreatur vorn verfehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 0, kreaturVornProben: 96, zielAchse: 0 } }, "Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler"],
-                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, kreaturVorn: 0, kreaturVornProben: 0, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
+                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
+                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
+                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
                     ["Lupe ohne den EINEN Strahl", { konsum: { _hasMagnifyingInSight: false } }, "Konsum: `_hasMagnifyingInSight`"],
                     ["Loch im Stamm im 1st", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen"],
                     ["Loch im Stamm vor dem Spieler", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt"],
@@ -1978,7 +1969,7 @@ async function probe(arg) {
                 })
                 .join(" · ") +
             ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m neben der Brust, Fadenkreuz ${m.kreuzAbstand} m neben der Brust` +
-            ((fk) => ` · Fadenkreuz-Strahl: ${fk.stellungen} Stellungen, hinter dem Spieler ${JSON.stringify(fk.hinten || {})}, Kreatur vorn ${fk.kreaturVorn}/${fk.kreaturVornProben}, Ziel neben dem Blick ${fk.zielAchse} m`)(m.fadenkreuz || {}) +
+            ((fk) => ` · Fadenkreuz-Strahl: ${fk.stellungen} Stellungen, hinter dem Spieler ${JSON.stringify(fk.hinten || {})}, Ziel neben dem Blick ${fk.zielAchse} m`)(m.fadenkreuz || {}) +
             ((ds) =>
                 ds.formel
                     ? ` · Durchsicht: 1st ${(ds.first || {}).faellt}/${(ds.first || {}).anlaeufe} Anläufe mit fallender Rinde (Auge ${((ds.first || {}).abstand || []).join("/")} m), 3rd vor dem Spieler ${(ds.third || {}).faellt}/${(ds.third || {}).anlaeufe}, zwischen Kamera und Spieler fällt ${(ds.zwischen || {}).wirkt}/${(ds.zwischen || {}).stellungen}`

@@ -2456,7 +2456,8 @@ class AnazhRealm_studio_bruecke {
     // DER TREFFER gegen die Gestalt: kleinste Distanz einer Strecke (die Klinge, der Pfeil-Flug) zu jeder Glied-Kapsel
     // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
     // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
-    // des Kontakts (der Hebel der Klinge, der Ort im Flug). null = vorbei.
+    // des Kontakts (der Hebel der Klinge, der Ort im Flug) und `ein`, den Strecken-Parameter, an dem sie in dieses Glied
+    // eintritt (der Strahl des Fadenkreuzes: der Punkt auf der Haut, _pickCreatureAtCrosshair). null = vorbei.
     // `flaeche` (Welle LF, Posten 2): ein Punkt der Haut (das Ziel unter dem Fadenkreuz) gehört dem Glied, auf dessen Fläche er
     // liegt — die Wahl nach |Abstand − Glied-Radius|, nie nach der Tiefe (die dicke Rumpf-Kapsel reicht in den Hals: der Kopf
     // eines Hirschs wäre Bauch).
@@ -2467,6 +2468,7 @@ class AnazhRealm_studio_bruecke {
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = null;
         let bestTiefe = Infinity;
+        const lang = Math.hypot(bx - ax, by - ay, bz - az);
         for (const g of gl) {
             const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
             const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
@@ -2499,7 +2501,8 @@ class AnazhRealm_studio_bruecke {
                 }
                 zone = brust ? "brust" : "bauch";
             }
-            best = { zone, s: st.s };
+            const ein = lang > 1e-9 ? Math.max(0, st.s - Math.sqrt(Math.max(0, rr * rr - d2)) / lang) : 0;
+            best = { zone, s: st.s, ein };
         }
         return best;
     }
