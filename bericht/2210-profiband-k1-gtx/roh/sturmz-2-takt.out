@@ -1,0 +1,174 @@
+TAKT-SPITZE: CPU-Takt {"p50":22,"p95":31,"p99":45.4,"max":79.8} ms (K2 8 ms), 43 Takte ab p95 (43 mit Proben), Bahn null m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+   16.21  11.73  renderer._renderScene
+   16.18   11.7    _renderScene [three.webgpu.min.js]
+     5.6   4.03      scene.onBeforeRender
+     5.6   4.03        _passSicht
+    3.29   2.51          _chunkSatzPass
+     2.6   1.87            _hoehlenSicht
+    2.33   1.69              _hoehlenSichtLicht
+    0.53   0.52            _chunkSatzAbschnitt
+    1.42   0.96          _instanzWahlPass
+    0.58   0.44            _instanzBehalten
+    0.52   0.24            _arenaTakt
+    0.51   0.22              _takt
+    0.34    0.1                _ordnen
+    0.25      0                  ordnen
+    0.36   0.21          _nahWieseSicht
+    0.32   0.22          _kaskadenPassen
+    4.46   2.82      _renderObjects [three.webgpu.min.js]
+    2.88    1.5        i [three.webgpu.min.js]
+    2.83   1.47          renderer.renderObject
+    2.79   1.41            renderObject [three.webgpu.min.js]
+     2.6   1.25              rend._renderObjectDirect [werkbank]
+    2.56   1.19                renderer._renderObjectDirect
+    2.28   1.07                  zeichne
+    1.05    0.1                    updateForRender [three.webgpu.min.js]
+       1   0.02                      updateAttributes [three.webgpu.min.js]
+       1   0.02                        updateAttribute [three.webgpu.min.js]
+    0.63      0                          createAttribute [three.webgpu.min.js]
+    0.56      0                            P.createBuffer
+    0.56      0                              createBuffer
+     0.3      0                          P.createIndexAttribute
+    0.92   0.71                    needsRefresh [three.webgpu.min.js]
+    0.91   0.69                      o.needsRefresh
+    0.88   0.69                        AnazhRealm._diaetRefresh
+    0.75   0.58                          AnazhRealm._diaetRuhig
+    0.61   0.46                            AnazhRealm._diaetObjektGang
+    0.36   0.25                              update [three.webgpu.min.js]
+    0.26   0.17                                multiplyMatrices [three.core.min.js]
+    0.29   0.25                    P.draw
+    0.29   0.21                      draw [three.webgpu.min.js]
+    0.28   0.19                        _draw [three.webgpu.min.js]
+    1.55    1.3        renderer.renderObject
+    1.54   1.29          renderObject [three.webgpu.min.js]
+    1.42   1.23            rend._renderObjectDirect [werkbank]
+    1.41   1.22              renderer._renderObjectDirect
+    1.23   1.01                zeichne
+    0.59   0.56                  needsRefresh [three.webgpu.min.js]
+    0.59   0.56                    o.needsRefresh
+    0.59   0.55                      AnazhRealm._diaetRefresh
+    0.35   0.32                        AnazhRealm._diaetGeteiltSchreiben
+    0.27    0.2                          _update [three.webgpu.min.js]
+    0.41   0.28                  updateForRender [three.webgpu.min.js]
+    1.96   1.55      _projectObject [three.webgpu.min.js]
+     1.9    1.5        _projectObject [three.webgpu.min.js]
+    1.59   1.36          _projectObject [three.webgpu.min.js]
+     1.5   1.21            _projectObject [three.webgpu.min.js]
+    1.41   1.15              _projectObject [three.webgpu.min.js]
+    1.23   0.94                _projectObject [three.webgpu.min.js]
+    0.58   0.54                  _projectObject [three.webgpu.min.js]
+    0.33   0.31                    _projectObject [three.webgpu.min.js]
+    1.82   1.53      updateMatrixWorld [three.core.min.js]
+    1.79   1.48        updateMatrixWorld [three.core.min.js]
+    1.73   1.37          updateMatrixWorld [three.core.min.js]
+    1.65   1.27            updateMatrixWorld [three.core.min.js]
+     1.6   1.22              updateMatrixWorld [three.core.min.js]
+    1.43   1.05                updateMatrixWorld [three.core.min.js]
+    1.03   0.74                  updateMatrixWorld [three.core.min.js]
+    0.39   0.41                    updateMatrixWorld [three.core.min.js]
+    0.27   0.22                      updateMatrixWorld [three.core.min.js]
+    1.35   1.01      renderer._renderBundles
+    1.26   0.96        _renderBundles [three.webgpu.min.js]
+    1.23   0.96          renderer._renderBundle
+    1.19    0.9            _renderBundle [three.webgpu.min.js]
+    0.64   0.51              needsRefresh [three.webgpu.min.js]
+    0.64   0.51                o.needsRefresh
+    0.63   0.51                  AnazhRealm._diaetRefresh
+    0.41    0.3                    AnazhRealm._diaetRuhig
+    0.29   0.19                      AnazhRealm._diaetObjektGang
+    0.37   0.31              o.needsRefresh
+    0.37    0.3                AnazhRealm._diaetRefresh
+    0.28   0.21                  AnazhRealm._diaetRuhig
+    0.32   0.18      beginRender [three.webgpu.min.js]
+   10.87   4.22  _loopVoxelStreaming
+   10.87   4.22    _runFrameScheduler
+    7.05   1.15      _dispatchFrameJobs
+    7.01   1.13        run
+    6.01   0.07          _tickVoxelChunkStreaming
+    5.88      0            _rebuildVoxelChunk
+    5.26      0              _completeVoxelRebuild
+    5.26      0                _finalizeVoxelChunkBuild
+    3.88      0                  _applyCrossLodGeomorph
+    1.33      0                    _rebuildLodStitchBand
+    0.44      0                      ecke
+    0.37      0                      _chunkSatzEin
+    0.65      0                    _bodenKarteNaht
+    0.65      0                      _bodenKarteAusMesh
+    0.58      0                    trefferVon
+    0.57      0                    _chunkSatzMarke
+    0.47      0                      _chunkSatzHuelle
+    0.98      0                  _buildVoxelChunkWaterIsoSurface
+    0.98      0                    _buildVoxelChunkWaterCellSheet
+    0.94      0                      _computeWaterSheetData
+    0.28      0                        _smoothWetAttr
+    0.55      0              _acquireVoxelChunkBuild
+    0.55      0                _buildVoxelChunkDataFromWorkerMesh
+    0.48      0                  _bodenKarteNaht
+    0.44      0                    _bodenKarteAusMesh
+    0.68   0.83          _tickNahStreu
+    0.31   0.36            _nahStreuBloecke
+    0.31   0.33              _streuNahEin
+    0.31   0.33                _streuNahSatz
+    2.89   2.36      _tickArchitectureLOD
+    1.29   0.92        _lodTreeVisHeight
+    0.97   0.77          _foundrySichtHoehe
+     0.7   0.48            _foundryGestaltFor
+    0.55   0.32              _ortGestaltSame
+    1.22   0.99        _updateFoundryLodBand
+    1.04   0.83          _foundryLodBandPartner
+    0.59   0.52            _foundryBaumHoehe
+    0.34    0.3              _foundryGestaltFor
+    0.55   0.47      _tickScatterLod
+    0.29   0.25        _scatterSichtHoehe
+    4.66   3.42  _loopWeatherAndGrowth
+    4.47   3.19    updateCreatures
+    0.71   0.59      _animateCompoundMotion
+    0.64   0.52        _animateTierBaum
+    0.39   0.27      _creatureGroundY
+    0.31   0.12        _kreaturBlickVoraus
+    0.37   0.25      _kreaturHuellenKontakt
+    0.35   0.17      _standSicht
+     0.3   0.13        _bodenSichtAt
+    0.34   0.06      _tickKreaturZiegel
+     0.3   0.04        _kzLeib
+    0.31   0.23      _applyCreatureSeparation
+    4.38      0  _loopAutoSave
+    3.13      0    saveState
+    1.99      0      buildStateSnapshot
+    1.68      0        (anonym) [stamm/speicher-welten.js:982]
+    1.57      0          _ueberGrund
+    1.43      0            _voxelSurfaceY
+    0.69      0              _terrainColumnContextIn
+    0.38      0                hoehe [gelaende-core.js]
+    0.28      0                  wildnisY [gelaende-core.js]
+    0.45      0      setItem
+    1.25      0    saveToProjectFolder
+    0.55      0      fetch
+    0.54      0      buildStateSnapshot
+    0.43      0        (anonym) [stamm/speicher-welten.js:982]
+    0.41      0          _ueberGrund
+    0.35      0            _voxelSurfaceY
+    0.84   0.34  _loopRender
+     0.6   0.29  tickArchitectureCulling
+    0.51   0.33  _loopFixedStep
+    0.51   0.32    _stepFixedSim
+    0.29   0.17      _stepCharacter
+    0.49   0.07  _perfSenseFoldFrame
+    0.43      0    _flightRecorderTick
+    0.34      0      _flightRecorderSave
+    0.29      0        _flightRecorderBuildTrace
+    0.32   0.38  mark
+    0.28   0.08  (garbage collector)
+TÄTER (Spitze − Mitte ≥ 1 ms): _finalizeVoxelChunkBuild › _applyCrossLodGeomorph (Rest) 2.55 · 0 | _ueberGrund › _voxelSurfaceY 1.43 · 0 | _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest) 1.38 · 0 | _applyCrossLodGeomorph › _rebuildLodStitchBand 1.33 · 0 | _loopWeatherAndGrowth › updateCreatures 4.47 · 3.19 | _loopAutoSave › saveToProjectFolder 1.25 · 0 | _loopAutoSave › saveState (Rest) 1.13 · 0
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\k1\roh\sturmz-2-takt.json
+
+LINSE ROT:
+  Spitzen-Täter _finalizeVoxelChunkBuild › _applyCrossLodGeomorph (Rest): 2.55 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _ueberGrund › _voxelSurfaceY: 1.43 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest): 1.38 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _applyCrossLodGeomorph › _rebuildLodStitchBand: 1.33 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _loopWeatherAndGrowth › updateCreatures: 4.47 ms je Takt ab p95, Mitte 3.19 ms
+  Spitzen-Täter _loopAutoSave › saveToProjectFolder: 1.25 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _loopAutoSave › saveState (Rest): 1.13 ms je Takt ab p95, Mitte 0 ms

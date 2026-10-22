@@ -1,0 +1,94 @@
+TAKT-SPITZE: CPU-Takt {"p50":13,"p95":16.5,"p99":19.9,"max":51.6} ms (K2 8 ms), 60 Takte ab p95 (60 mit Proben), Bahn null m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+   10.63    7.7  renderer._renderScene
+    10.6   7.68    _renderScene [three.webgpu.min.js]
+    3.02      2      _renderObjects [three.webgpu.min.js]
+    1.55   0.91        i [three.webgpu.min.js]
+    1.55    0.9          renderer.renderObject
+    1.49   0.87            renderObject [three.webgpu.min.js]
+    1.32   0.76              rend._renderObjectDirect [werkbank]
+    1.29   0.73                renderer._renderObjectDirect
+    1.11   0.66                  zeichne
+    0.77   0.44                    needsRefresh [three.webgpu.min.js]
+    0.77   0.43                      o.needsRefresh
+    0.77   0.43                        AnazhRealm._diaetRefresh
+    0.65   0.36                          AnazhRealm._diaetRuhig
+    0.55    0.3                            AnazhRealm._diaetObjektGang
+    0.34   0.16                              update [three.webgpu.min.js]
+    0.25   0.16                    P.draw
+    1.43   1.08        renderer.renderObject
+    1.43   1.07          renderObject [three.webgpu.min.js]
+     1.4   1.02            rend._renderObjectDirect [werkbank]
+    1.38      1              renderer._renderObjectDirect
+    1.15    0.8                zeichne
+     0.7   0.46                  needsRefresh [three.webgpu.min.js]
+     0.7   0.46                    o.needsRefresh
+     0.7   0.46                      AnazhRealm._diaetRefresh
+    0.34   0.25                        AnazhRealm._diaetGeteiltSchreiben
+    0.25   0.17                  updateForRender [three.webgpu.min.js]
+    2.07   1.61      updateMatrixWorld [three.core.min.js]
+    2.03   1.55        updateMatrixWorld [three.core.min.js]
+       2   1.49          updateMatrixWorld [three.core.min.js]
+    1.88    1.4            updateMatrixWorld [three.core.min.js]
+    1.75   1.33              updateMatrixWorld [three.core.min.js]
+    1.56   1.19                updateMatrixWorld [three.core.min.js]
+    1.13   0.75                  updateMatrixWorld [three.core.min.js]
+     0.5   0.33                    updateMatrixWorld [three.core.min.js]
+    0.27   0.17                      updateMatrixWorld [three.core.min.js]
+    2.04   1.42      renderer._renderBundles
+    1.97   1.38        _renderBundles [three.webgpu.min.js]
+    1.97   1.37          renderer._renderBundle
+    1.88   1.31            _renderBundle [three.webgpu.min.js]
+    1.37   1.14              needsRefresh [three.webgpu.min.js]
+    1.35   1.13                o.needsRefresh
+    1.34   1.12                  AnazhRealm._diaetRefresh
+    1.04   0.84                    AnazhRealm._diaetRuhig
+    0.74    0.6                      AnazhRealm._diaetObjektGang
+    0.27   0.17                        update [three.webgpu.min.js]
+    0.25    0.2                    AnazhRealm._diaetGeteiltSchreiben
+    0.37   0.14              o.needsRefresh
+    0.37   0.13                AnazhRealm._diaetRefresh
+    0.27   0.08                  AnazhRealm._diaetRuhig
+     1.9   1.48      _projectObject [three.webgpu.min.js]
+    1.83   1.44        _projectObject [three.webgpu.min.js]
+    1.71   1.34          _projectObject [three.webgpu.min.js]
+    1.59   1.25            _projectObject [three.webgpu.min.js]
+    1.51   1.18              _projectObject [three.webgpu.min.js]
+    1.24   0.96                _projectObject [three.webgpu.min.js]
+    0.74   0.54                  _projectObject [three.webgpu.min.js]
+    0.41   0.28                    _projectObject [three.webgpu.min.js]
+    0.82   0.58      scene.onBeforeRender
+    0.82   0.56        _passSicht
+    0.36   0.25          _kaskadenPassen
+     0.3   0.25          _instanzWahlPass
+    4.84    3.8  _loopWeatherAndGrowth
+     4.5   3.54    updateCreatures
+    0.88   0.69      _animateCompoundMotion
+    0.77   0.61        _animateTierBaum
+    0.47   0.37      _kreaturHuellenKontakt
+     0.3   0.23      _applyCreatureSeparation
+    1.67      0  _loopAutoSave
+    1.67      0    saveState
+    1.07      0      buildStateSnapshot
+    0.92      0        (anonym) [stamm/speicher-welten.js:982]
+    0.83      0          _ueberGrund
+    0.79      0            _voxelSurfaceY
+    0.43      0              _terrainColumnContextIn
+     0.3      0                hoehe [gelaende-core.js]
+    0.73   0.07  _perfSenseFoldFrame
+    0.61      0    _flightRecorderTick
+    0.57      0      _flightRecorderSave
+    0.49      0        _flightRecorderBuildTrace
+    0.26      0          _flightRecorderHeapZensus
+    0.26      0            traverse [three.core.min.js]
+    0.26      0              traverse [three.core.min.js]
+    0.55   0.13  _loopRender
+    0.35   0.35  mark
+    0.27   0.14  _loopFixedStep
+    0.25   0.14    _stepFixedSim
+TÄTER (Spitze − Mitte ≥ 1 ms): saveState › buildStateSnapshot 1.07 · 0
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\k1\roh\sturm-1-takt.json
+
+LINSE ROT:
+  Spitzen-Täter saveState › buildStateSnapshot: 1.07 ms je Takt ab p95, Mitte 0 ms

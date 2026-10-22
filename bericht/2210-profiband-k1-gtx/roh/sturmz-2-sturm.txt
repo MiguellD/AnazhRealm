@@ -1,0 +1,10 @@
+{
+ "ergebnis": {
+  "wetter": "stormy",
+  "tiere": 60,
+  "neu": 50,
+  "vorher": 10,
+  "kappe": 60
+ },
+ "ms": 74
+}
