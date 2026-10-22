@@ -1182,7 +1182,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const translatorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r.translatorInitDOM === "function";
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
         const prompt = r._buildTranslatorPrompt();
@@ -1291,7 +1290,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (translatorResults && !translatorResults.error) {
-        check("KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)", translatorResults.methods);
         check(
             "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
             translatorResults.promptNamesSchema
@@ -1750,10 +1748,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostBundle === "function" &&
-            typeof r._runVendorDock === "function" &&
-            typeof r.vendorInitDOM === "function";
+        out.methods = typeof r._vendorPostBundle === "function" && typeof r._runVendorDock === "function";
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
@@ -1862,7 +1857,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     if (vendorResults && !vendorResults.error) {
         check(
-            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock/vendorInitDOM existieren (die Suite ruft sie nie)",
+            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock existieren (die Suite ruft sie nie)",
             vendorResults.methods
         );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);

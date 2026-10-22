@@ -1441,14 +1441,8 @@ class AnazhRealm_vegetation_streu {
             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
             this._archBundleSceneRemove(g.mesh);
             this._instanzAbschied(g.mesh);
-            // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
-            // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
-            // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
-            if (g._foundrySrc) {
-                g._foundrySrc._liveRefs = Math.max(0, (g._foundrySrc._liveRefs || 0) - 1);
-                if (g._foundrySrc._liveRefs <= 0 && g._foundrySrc._evicted)
-                    this._disposeFoundryGroupGeom(g._foundrySrc);
-            }
+            // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor (`_foundryLoslassen`)
+            this._foundryLoslassen(g._foundrySrc);
         }
     }
 

@@ -52,6 +52,9 @@
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: nach erzwungenem GC jeder Geometrie-Puffer beim
 //                                                           Halter (szene · bild · ruhend · verwaist — scripts/lib/draw-
 //                                                           zaehler.cjs `__pufferZensus`) und der VRAM je Schlüssel
+//   node scripts/werkbank.cjs puffer --gang [min]                 DER GANG (profiband K5): Einlauf, dann gehen · fahren · Uhr
+//                                                           über unbereiste Welt; Heap nach GC ≤ 5 MB je Minute, VRAM ≤ 2 MB
+//                                                           zurück am Start, der Halter beim Pfad
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
 //                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
@@ -196,7 +199,7 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
-const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
+const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
@@ -2506,36 +2509,43 @@ async function starte() {
                     });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
-                // DIE PUFFER-LINSE: nach einem erzwungenen GC jeder Geometrie-Puffer beim Halter (szene · bild · ruhend ·
-                // verwaist, `__pufferZensus`) und der VRAM je Schlüssel — ohne Einschwingen, ohne Proben (der Stand jetzt).
-                if (req.url === "/puffer") {
+                // DIE PUFFER-LINSE: nach erzwungenem GC jeder Geometrie-Puffer beim Halter (szene · bild · ruhend · verwaist,
+                // `__pufferZensus`), der VRAM je Schlüssel, der Heap (JS + Typed-Arrays) und mit `halter` jeder Typed-Array-Pfad.
+                const pufferStand = async (halter, top) => {
                     const cdp = await page.target().createCDPSession();
-                    await cdp.send("HeapProfiler.collectGarbage");
+                    for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
+                    const u = await cdp.send("Runtime.getHeapUsage");
                     await cdp.detach();
                     const o = await page.evaluate(
-                        async (top) => {
-                            for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
-                            // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
-                            window.__buehne();
+                        async (halter, top) => {
                             await window.__drawZensus({ top: 1 });
                             window.__kehrausJetzt();
-                            window.__texturZensus();
-                            const puffer = window.__pufferZensus();
-                            const v = window.__vram || {};
-                            const mb = (x) => +(x / 1048576).toFixed(1);
+                            const texturen = window.__texturZensus(),
+                                v = window.__vram || {},
+                                mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
-                                vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
-                                pufferMB: mb(v.puffer || 0),
-                                texturenMB: mb(v.texturen || 0),
-                                gcMB: mb(v.gc || 0),
-                                puffer,
-                                gross: window.__vramBericht ? window.__vramBericht(top) : null,
+                                texturen,
+                                vram: !(v.nTexturen + v.nPuffer > 0) ? null : {
+                                    mb: mb(v.puffer + v.texturen),
+                                    puffer: mb(v.puffer),
+                                    texturen: mb(v.texturen),
+                                    spitze: mb(v.spitze),
+                                    gc: mb(v.gc),
+                                    liste: window.__vramBericht(top),
+                                },
+                                puffer: window.__pufferZensus(),
+                                halter: halter ? window.__heapHalter(window.anazhRealm, 8) : null,
                             };
                         },
-                        Number(b.top) || 30
+                        halter,
+                        top
                     );
-                    return send(Object.assign(o, { ms: Date.now() - t0 }));
-                }
+                    return Object.assign(o, { heapMB: +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1) });
+                };
+                if (req.url === "/puffer")
+                    return send(Object.assign(await pufferStand(false, Number(b.top) || 30), { ms: Date.now() - t0 }));
+                if (req.url === "/gang")
+                    return send(Object.assign(await gangLauf(page, pufferStand, b), { ms: Date.now() - t0 }));
                 if (req.url === "/zaehlen") {
                     const o = await page.evaluate(async (k) => {
                         const r = window.anazhRealm;
@@ -2585,45 +2595,14 @@ async function starte() {
                     const w1 = await stempel();
                     const proben = await page.evaluate(bandProben, { n: Number(b.proben) || 6, zwischen: 20 });
                     const w2 = await stempel();
-                    // DER SPEICHER NACH DEM COLLECTOR: was niemand zerstört, aber auch niemand mehr hält, gibt Chrome mit
-                    // dem GC frei (der Abgriff bucht es dann aus) — gemessen wird das Lebende, nicht die Laune des GC.
-                    const cdp = await page.target().createCDPSession();
-                    await cdp.send("HeapProfiler.collectGarbage");
-                    await cdp.detach();
-                    const roh = await page.evaluate(async () => {
-                        // Die Finalisierer des Collectors laufen als eigene Aufgaben.
-                        for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
+                    // DER SPEICHER NACH DEM COLLECTOR (`pufferStand`): gemessen wird das Lebende, nicht die Laune des GC.
+                    const roh = Object.assign(await pufferStand(false, 1e5), await page.evaluate(() => {
                         // Die Regler-Decke zurück (bandEinschwingen hob sie für die volle Welt).
-                        if (window.__bandDecke != null) {
-                            window.anazhRealm.state.perfTargetMs = window.__bandDecke;
-                            window.__bandDecke = null;
-                        }
-                        // Die Zensus-Linsen zuerst: sie buchen die über ihr three-Objekt benannten Texturen und Puffer im
-                        // Abgriff um (Texturen über ihr Ziel, Puffer über ihren Halter).
-                        window.__kehrausJetzt();
-                        const texturen = window.__texturZensus();
-                        const puffer = window.__pufferZensus();
-                        const v = window.__vram;
-                        const mb = (x) => +(x / 1048576).toFixed(1);
+                        if (window.__bandDecke != null) window.anazhRealm.state.perfTargetMs = window.__bandDecke;
+                        window.__bandDecke = null;
                         const pm = window.anazhRealm.state.playerMesh.position;
-                        return {
-                            texturen,
-                            spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
-                            vram:
-                                v && v.nTexturen + v.nPuffer > 0
-                                    ? {
-                                          mb: mb(v.puffer + v.texturen),
-                                          puffer: mb(v.puffer),
-                                          texturen: mb(v.texturen),
-                                          spitze: mb(v.spitze),
-                                          gc: mb(v.gc || 0),
-                                          liste: window.__vramBericht(100000),
-                                      }
-                                    : null,
-                            puffer,
-                            fluss: window.__flussBericht ? window.__flussBericht() : null,
-                        };
-                    });
+                        return { spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)), fluss: window.__flussBericht ? window.__flussBericht() : null };
+                    }));
                     const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
                     const w3 = await stempel();
                     const ue = (a, c) =>
@@ -3595,7 +3574,12 @@ async function starte() {
     } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist") });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
-    else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "puffer" && argv.includes("--gang")) {
+        o = await rufe("/gang", { min: opt("--gang") });
+        console.log(JSON.stringify(o, null, 1));
+        console.log(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT");
+        process.exit(o.urteil && !o.urteil.length ? 0 : 1);
+    } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "diaet") {
         if (argv.includes("--selbsttest")) {
             const f = DIAET.selbsttest();

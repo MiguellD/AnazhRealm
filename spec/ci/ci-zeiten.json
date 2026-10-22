@@ -413,13 +413,6 @@
       "lauf": "npm run gate:stand-takt",
       "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
     },
-    "Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)": {
-      "s": 9,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:foundry-warm",
-      "laeufe": ["39717395143", "39713640574", "39705665713", "39700100953", "39695580977", "39681952788", "39666422778"]
-    },
     "Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)": {
       "s": 14,
       "n": 7,

@@ -303,11 +303,7 @@ class AnazhRealm_vegetation_wiese {
             a.mesh = null;
         }
         nw.senken.delete(a.key);
-        const src = a.quelle;
-        if (src) {
-            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
-        }
+        this._foundryLoslassen(a.quelle);
     }
 
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis

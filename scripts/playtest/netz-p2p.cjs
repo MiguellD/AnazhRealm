@@ -116,7 +116,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.state.p2p.enabled === "boolean" &&
             typeof r.state.p2p.url === "string" &&
             r.state.p2p.peers instanceof Map;
-        out.allMethodsPresent = typeof r.initP2PUI === "function";
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
         const savedWorldId = r.state.worldMeta.worldId;
@@ -258,7 +257,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
-        check("Ring 11 V1: initP2PUI auf der Klasse (die Suite ruft ihn nie)", ring11Results.allMethodsPresent);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
@@ -699,7 +697,7 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function" && typeof r.meshWorldInitDOM === "function";
+        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
@@ -1129,7 +1127,7 @@ async function checkBandW16Distribution(ctx) {
             w16Results.stateFields
         );
         check(
-            "W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)",
+            "W16: _p2pFetchVendorBundle auf der Klasse (die Suite ruft ihn nie)",
             w16Results.methodsPresent
         );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
@@ -2357,10 +2355,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         p2p.peerId = "self-v834";
         p2p.enabled = false;
 
-        // SYNERGIE-WELLE — die Avatar-Aura ist gefallen: 5 lebende Methoden + die
-        // explizite ABWESENHEIT der zwei Aura-Seiten (Sende + Peer-Sprite).
-        out.methodsExist = typeof r._p2pEnsurePeerAura !== "function" && typeof r._p2pBroadcastAura !== "function";
-
         // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
         const pv1 = p2p.peers.get("pv1");
@@ -2508,9 +2502,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             captured.soulName === r.state.player.soul &&
             typeof captured.name === "string";
 
-        // SYNERGIE-WELLE: tickPlayerAura ist GESCHNITTEN — kein Aura-Cache am Spieler.
-        out.auraOutCached = typeof r.tickPlayerAura !== "function" && !("_auraHueOut" in r.state.player);
-
         // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
         // den dedizierten `soul`-Kanal, NICHT über die DSL.
         out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
@@ -2525,7 +2516,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v834Results && !v834Results.error) {
-        check("V8.34 (SYNERGIE): das Aura-Paar bleibt geschnitten", v834Results.methodsExist);
         check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
@@ -2542,7 +2532,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.34 (SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
         check("V8.34 (SYNERGIE): _p2pUpdatePeer erzeugt KEINEN Aura-Sprite", v834Results.auraSpriteCreated);
         check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
-        check("V8.34 (SYNERGIE): tickPlayerAura ist geschnitten (kein Aura-Cache)", v834Results.auraOutCached);
         check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
         check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Schild", v834Results.peersRemoved);
     } else {
@@ -2700,9 +2689,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const v836Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
-        out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
-
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche
         // (die leere Säule ist Bühne; die Wand-Kugel schiebt nicht seitlich).
         {
@@ -2772,10 +2758,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     if (v836Results && !v836Results.error) {
         // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
         // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
-        check(
-            "V9.36: _applyModifyOpToChunk ist gelöscht (Heightfield-Höhen-Clamp obsolet — Voxel-Feld braucht keinen)",
-            v836Results.digHeightClampObsolete
-        );
         check("V8.36: die Killplane fängt einen Durchfall und stellt den Körper auf die Oberfläche", v836Results.waterGate);
         check("V8.36: das aufgeklappte Logbuch teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
         check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);

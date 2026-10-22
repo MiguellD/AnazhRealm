@@ -791,7 +791,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
     );
-    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
@@ -827,7 +826,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (G1) Helper existiert
         out.helperExists = typeof r._growTreeBlueprint === "function";
 
         if (out.helperExists) {
@@ -914,7 +912,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         return out;
     });
 
-    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
     check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
     check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
@@ -1094,15 +1091,10 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
-        // Methoden · State · Restore-Pfad).
+        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
+        // und State (die Methoden bewacht gate:altlasten).
         out.cConstGone = !A.CANOPY_SHELL;
-        out.cMethodsGone =
-            typeof r._ensureCanopyShell === "undefined" &&
-            typeof r._buildCanopyShell === "undefined" &&
-            typeof r._disposeCanopyShell === "undefined";
         out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
-        out.cRestoreClean = window.__fehlt(r._loadStateRestoreWorldMeta, /_disposeCanopyShell/);
 
         return out;
     });
@@ -1126,9 +1118,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 
     // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
     check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
-    check("N7.4 (C2) Canopy-Shell-Methoden geschnitten (ensure/build/dispose weg)", res.cMethodsGone === true);
     check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
-    check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-

@@ -13,7 +13,7 @@ class AnazhRealm_studio_bruecke {
         if (typeof Worker === "undefined") return false;
         // TEST-HOOK: Gate-Bänder, die die Grammatik-MECHANIK isoliert prüfen (Richter, LOD-Bauplan, Scatter-
         // Promotion, Understory), schalten die Foundry aus; die Foundry als Quelle beweisen
-        // foundry-warm/deadlock/parity/contract.
+        // fluss/deadlock/parity/contract.
         if (typeof window !== "undefined" && window.__anazhGateNoFoundry) return false;
         return true;
     }
@@ -861,6 +861,8 @@ class AnazhRealm_studio_bruecke {
     // Budget halbe Rate (der Stau schrumpft immer, kein LongTask). Ohne dt (Gate/Test): 3 unter / 1 über
     // Budget (gate:leistungs-vertrag).
     _tickFoundryIngest(dtSec) {
+        // eine Rückgabe im letzten Takt (`_foundryLoslassen`): der Ruhe-Deckel wiegt, was untätig wurde
+        if (this._foundry && this._foundry.ruheOffen) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;

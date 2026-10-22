@@ -125,13 +125,6 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // 10. Phase 5: createDynamicAbility/codeParser sind weg
-        out.dynamicCodeMethodsRemoved =
-            typeof r.createDynamicAbility === "undefined" &&
-            typeof r.codeParser === "undefined" &&
-            typeof r.developAdvancedPhysics === "undefined" &&
-            typeof r.developAdvancedRenderer === "undefined";
-
         // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
@@ -195,10 +188,6 @@ async function checkBandRing2Extended(ctx) {
         check(
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
-        );
-        check(
-            "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
-            phase3Results.dynamicCodeMethodsRemoved
         );
         check(
             "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
@@ -1351,9 +1340,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
 
-            // Methode existiert
-            out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
-
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");
             if (rightPalette) {
@@ -1407,10 +1393,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(
             "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
-        );
-        check(
-            "V8.06: _workshopInstallActionButtons existiert (die Suite fährt ihn nicht)",
-            v806Results.hasActionInstall
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
