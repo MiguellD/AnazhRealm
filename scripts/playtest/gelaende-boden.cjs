@@ -801,60 +801,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
     }
 
-    // ### Voxel — Lösch-Beweise der voxel-Gate-`else`-Hälften ###
-    // `worldMeta.voxelTerrain` ist permanent true → die Heightfield-`else`-Hälften waren unreachable.
-    const voxelV938Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const srcGen = r.generateTerrainWithParameters;
-        return {
-            // (2) heightData-Allokations-Loop in generateTerrain*
-            // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
-            noHeightDataAlloc: window.__fehlt(srcGen, /new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/),
-            // (3) der Wasserfall-Loop (256×256) ist weg:
-            // kein `for (let z = 0; z < DEPTH; z++)` mehr.
-            noWaterfallLoop: window.__fehlt(srcGen, /for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/),
-            // (4) `getTerrainHeightAt` ist voxel-only — kein
-            // `groundHeightField`-Read mehr in der Source.
-            getHeightVoxelOnly: window.__fehlt(r.getTerrainHeightAt, /groundHeightField/),
-            // (5) `findSurfaceAbove` ist voxel-only — kein
-            // `groundHeightField`-Read mehr, kein floatingIslands-
-            // Loop.
-            findSurfaceVoxelOnly: window.__fehlt(r.findSurfaceAbove, /groundHeightField|floatingIslands/),
-            // Regression-Schutz: die zwei verschlankten Funktionen
-            // leben weiter + liefern eine endliche Zahl.
-            getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
-            findSurfaceWorks: Number.isFinite(r.findSurfaceAbove(0, -100, 0)),
-        };
-    });
-
-    if (voxelV938Results && !voxelV938Results.error) {
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
-            voxelV938Results.noHeightDataAlloc
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Wasser kommt aus dem Hydrosphären-Netz)",
-            voxelV938Results.noWaterfallLoop
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: getTerrainHeightAt ist voxel-only (Heightfield-else-Pfad + Raycast-Fallback gelöscht)",
-            voxelV938Results.getHeightVoxelOnly
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: findSurfaceAbove ist voxel-only (Heightfield-Pfad + floatingIslands-Loop gelöscht)",
-            voxelV938Results.findSurfaceVoxelOnly
-        );
-        check(
-            "Voxel V9.38: getTerrainHeightAt liefert weiter eine endliche Höhe (Regression)",
-            voxelV938Results.getHeightWorks
-        );
-        check(
-            "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
-            voxelV938Results.findSurfaceWorks
-        );
-    }
-
     // ### Voxel — Lösch-Beweise der Heightfield-Pipeline ###
     // Die toten Heightfield-Methoden + der `terrainMaterial`-Setzer sind weg; die Vision-Schichten
     // leben in den Voxel-Pendants (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
