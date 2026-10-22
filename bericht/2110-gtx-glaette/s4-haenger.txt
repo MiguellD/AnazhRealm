@@ -1,0 +1,7 @@
+HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3522 Frames, 4752 Takte; Frame p50/p95/p99/max 16.7/25.1/33.4/100 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (10) · Wandern bahn · loadScale 1 · Chunks 90 · Wetter sunny · Proben ja (4752 Takt-Marken)
+Pipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module
+Erst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\glaette\s4-haenger.json
