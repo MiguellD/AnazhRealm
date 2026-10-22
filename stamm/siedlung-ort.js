@@ -620,9 +620,13 @@ class AnazhRealm_siedlung_ort {
             const mx = Math.max(r, g, b);
             let e = Math.max(-16, Math.floor(Math.log2(mx || 2 ** -16))) + 16;
             let s = 2 ** (e - 24);
-            if (Math.floor(mx / s + 0.5) === 512) (s *= 2), e++;
+            if (Math.floor(mx / s + 0.5) === 512) ((s *= 2), e++);
             aus[i] =
-                (Math.floor(r / s + 0.5) | (Math.floor(g / s + 0.5) << 9) | (Math.floor(b / s + 0.5) << 18) | (e << 27)) >>> 0;
+                (Math.floor(r / s + 0.5) |
+                    (Math.floor(g / s + 0.5) << 9) |
+                    (Math.floor(b / s + 0.5) << 18) |
+                    (e << 27)) >>>
+                0;
         }
         return aus;
     }
