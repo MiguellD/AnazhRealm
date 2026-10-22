@@ -28,7 +28,8 @@
 //   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot, der Rückweg ein Schreiber, über den
+//               die Stufen-Wahl nie schläft (das Band steht im Ereignis); (4) ein Gedächtnis mit
 //               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
@@ -331,7 +332,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             let vor = -1,
                 ruhig = 0,
                 z = formZensus();
-            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter(); ) {
+            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter();) {
                 await tick(10);
                 z = formZensus();
                 const s = st.architectures.length * 1000 + z.ok;
@@ -495,20 +496,42 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
         res.D2 = await riese();
         // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
-        // Karten-Ding keinen Band-Partner) — D2 muss rot werden ──
+        // Karten-Ding keinen Band-Partner) — D2 muss rot werden, und zurück steht das Band wieder. Der Regler hält
+        // (`perfRegulator` aus — wie unter CI-Last an seiner Klemme: der Cull-Radius steht und weckt die Stufen-Wahl nicht je
+        // Takt); unter dem Tausch geht die Welt, bis das Band fiel UND die Wahl schläft (die Stand-Wache ruht). Der Rückweg
+        // ist ein Schreiber: er ändert, was die Wahl urteilt — die Wahl schläft nie über ihn (`ruht` steht), das Band steht
+        // im Ereignis (`__gebautNach`), nie nach einer Taktzahl (CI 22.10. auf vier Zweigen: „wieder: 165 m L1“, die Wahl
+        // schlief nach 60 Takten noch) ──
         if (riesenEintrag) {
             const e = riesenEintrag;
             stelle(e.position.x - dBand, e.position.z);
+            const regler = st.perfRegulator;
+            st.perfRegulator = false;
             const BP = AR.prototype._foundryLodBandPartner;
             r._foundryLodBandPartner = function (en, d) {
                 const R = this.state.architectureCullingRadius;
                 return Number.isFinite(R) && d > R && this._archKartenPreset(en) ? null : BP.call(this, en, d);
             };
-            await tick(60);
+            const wahl = () => (r._standWache && r._standWache.takte.get("archLod")) || { ruht: 0 };
+            const mitBandS = (z) => z.da && !z.voll && z.partner !== null && z.partner !== z.stufe;
+            const warte = (name, fertig) =>
+                window
+                    .__gebautNach(name, { takt: () => tick(1), fertig })
+                    .then(() => null)
+                    .catch((f) => String(f.message).split("\n")[0]);
+            const ruhte = wahl().ruht;
+            const ohne = await warte(
+                "Riese ohne Band, die Wahl schläft",
+                () => !mitBandS(rieseZustand(e)) && wahl().ruht > ruhte
+            );
             res.S3 = rieseZustand(e);
+            res.S3.ohne = ohne;
             delete r._foundryLodBandPartner;
-            await tick(60);
+            const schlief = wahl().ruht;
+            res.S3.wieder = await warte("Riese wieder im Band", () => mitBandS(rieseZustand(e)));
             res.S3.zurueck = rieseZustand(e);
+            res.S3.schlief = wahl().ruht - schlief; // Takte, die die Wahl über den Rückweg schlief
+            st.perfRegulator = regler;
             stelle(MX, MZ);
             await tick(10);
         }
@@ -639,9 +662,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
     const s3 = out.S3;
     check(
-        "SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot)",
-        !!s3 && !mitBand(s3) && mitBand(s3.zurueck),
-        s3 ? `alt: ${zs(s3)} · wieder: ${zs(s3.zurueck)}` : "kein Riese"
+        "SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot, zurück steht es im Ereignis)",
+        !!s3 && !s3.ohne && !mitBand(s3) && !s3.wieder && mitBand(s3.zurueck) && s3.schlief === 0,
+        s3
+            ? `alt: ${zs(s3)}${s3.ohne ? ` (${s3.ohne})` : ""} · wieder: ${zs(s3.zurueck)}` +
+                  `${s3.wieder ? ` (${s3.wieder})` : ""} · die Wahl schlief über den Rückweg ${s3.schlief} Takte`
+            : "kein Riese"
     );
     const s1 = out.S1;
     const s1Rot =
