@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Welle K, Lehre 25, Gebot 7). Befund 07.10. (OMEN, GTX 1060,
-// Mess-Wiese, Regler voll, der Spieler STEHT): `_loopVoxelStreaming` 3,27 ms je Frame, dazu `tickArchitectureCulling`,
-// `_tickArchitectureLOD`, `_lodTreeVisHeight` und noise2D im Selbstzeit-Top — gezählt an der Radeon (eingeschwungen):
-// je Frame ~6 060 Einheiten (Ring 83, Stufen-Wahl 1 710, Cull 3 512, Streu 480, Nah-Streu 138, Nah-Wiese 6, Saum 128) und
-// 0 Änderungen. Die Wand fährt die Fege-Takte an der Mess-Wiese (Null-Renderer, der Fern-Ring über seinen Haken, die
+// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Welle K, Lehre 25, Gebot 7; der Befund steht in der Stand-Linse).
+// Die Wand fährt die Fege-Takte an der Mess-Wiese (Null-Renderer, der Fern-Ring über seinen Haken, die
 // Foundry an — der Produktions-Pfad) und zählt mit der Stand-Linse (scripts/lib/stand-linse.cjs, dieselbe wie `werkbank
 // stand`) je Frame die Blatt-Rufe jedes Fege-Takts:
 //   (R) RUHE — die Welt steht (der Spieler, das Auge, keine Ankunft): 0 Einheiten in jedem Frame der Ruhe;
 //   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie, jeder Takt geht wie vor der
 //       Welle): jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
-//       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`; bis 07.10. 6 Frames: die Streu
-//       ging 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten — für den Rest der Runde war die Treue blind), und die
-//       Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
+//       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`), und die Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
 //   (X) TÄTER — je Takt, dessen Runde mehrere Gänge braucht (Stufen-Wahl, Streu, Saum), steht in der zweiten Hälfte seiner
 //       Runde eine still verstellte Einheit: die Treue-Phase findet jede;
 //   (W) WECKEN — ein Baum entsteht im Stand: Cull und Stufen-Wahl gehen, der Baum trägt danach seine Stufe, die Wache
@@ -21,6 +16,7 @@
 //   (G) GEHEN — W gehalten: Stufen-Wahlen, Cull und Nah-Streu arbeiten, der Spieler kommt voran — und Gehen kostet nur
 //       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
+//   (B) BAKE-SCHULD — solange die Bake-Uhr Fits abweist, steht die Welt nicht, und ihr Grund nennt die Felder;
 //   (P) kein Page-Error. Dass jeder Takt die Wache fragt und seinen Gang meldet, beweisen (S) und (X) am Verhalten (ein
 //       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext (D3c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
@@ -143,6 +139,7 @@ function selbsttest() {
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
         wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
+        schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
         fixWach: false,
         fix: [
             { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
@@ -411,6 +408,7 @@ function selbsttest() {
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
         ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
+        ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
         [
             "die Welt steht mitten in der Runde der Stufen-Wahl (K-WANDUHR 08c017fb: steht nach 1 Takt, danach wirkte sie 4×)",
             (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
@@ -477,7 +475,7 @@ const server = statikServer();
                 let t = performance.now();
                 const takt = () => {
                     t += 1000 / 60;
-                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still: bis K69-2 schluckte die Linse ihn
+                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still
                     try {
                         r._gameLoopTick(t);
                     } catch (e) {
@@ -1108,8 +1106,7 @@ const server = statikServer();
                     }
                     // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
                     // _satzBlock`), dann ein zweites Mal, jede Gruppe markiert wie bei jedem Stufen-Wechsel — gezählt die Bytes,
-                    // die der Block dabei FRISCH anlegt. Bis K69 legte jeder Eintritt seine Ecken neu im Heap an (ein Haus der
-                    // Stufe 0: 142k Ecken, ~10 MB), die volle Sammlung fiel in den Takt (Null-Gang ins Dorf: 137 ms)
+                    // die der Block dabei FRISCH anlegt
                     {
                         const recs = (r._foundry && r._foundry.recipes) || {};
                         const kultur = Object.keys(recs).find((k) => {
@@ -1353,8 +1350,7 @@ const server = statikServer();
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
                 // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
-                // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu. Bis K69-2
-                // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
+                // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu (CI 38736568849).
                 {
                     const p = st.playerMesh.position;
                     const o = () => r._weltOffen(); // was die Welt noch baut (A9): die Schlange des Walds und die Foundry
@@ -1368,6 +1364,18 @@ const server = statikServer();
                     r._streuWartet(p, warten);
                     aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
                 }
+                // (B) BAKE-SCHULD (CI 39700100953): 24 Fits fragen je Takt — solange die Bake-Uhr abweist, steht die Welt nicht
+                await window.__weltStehtNach(takt);
+                const schuld = new Set(Array.from({ length: 24 }, (_, i) => i));
+                const B = (aus.schuld = { abgewiesen: 0 });
+                B.takte = await window
+                    .__weltStehtNach(() => {
+                        for (const i of schuld) r._weltBakeErlaubt(i) ? schuld.delete(i) : B.abgewiesen++;
+                        takt();
+                        if (schuld.size) B.grund = r._weltStand.grund;
+                    }, 60)
+                    .catch((x) => x.message);
+                B.rest = schuld.size;
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
             },

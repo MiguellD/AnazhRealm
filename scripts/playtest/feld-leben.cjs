@@ -1035,7 +1035,7 @@ async function checkBandWelle6APolish(ctx) {
         out.introPagesGone = typeof r._introPages === "undefined";
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
-        const msg = typeof r._firstWelcomeMessage === "function" ? r._firstWelcomeMessage() : "";
+        const msg = r._firstWelcomeMessage();
         out.welcomeIsInvitation = typeof msg === "string" && msg.length > 0;
         out.welcomeNotManual = !/WASD|Hotbar|Space|Maus|1-9|drücke/i.test(msg);
         // (c) Beim ersten Welt-Start (Flags geleert) spricht der Begleiter diegetisch.
@@ -1393,7 +1393,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             newTreeArch.blockerAABBs.length > 0
         );
         // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
-        if (newTreeArch && typeof r.computeCompoundTags === "function") {
+        if (newTreeArch) {
             const bp = r.state.blueprints[newTreeArch.type];
             const tags = r.computeCompoundTags(bp);
             out.treeTagsLebendig = tags && tags.lebendig > 0.5;
@@ -1782,7 +1782,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 out.archAffinityTags[n] = slim;
                 out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
                 const aff =
-                    typeof r.computeBlueprintAffordances === "function" ? r.computeBlueprintAffordances(bp) : {};
+                    r.computeBlueprintAffordances(bp);
                 out.archBroadcasting[n] = !!(aff && aff.broadcasting);
             }
         }

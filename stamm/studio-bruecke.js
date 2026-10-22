@@ -812,6 +812,7 @@ class AnazhRealm_studio_bruecke {
                 return true;
             }
             f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
+            f.ankunft = (f.ankunft | 0) + 1; // auch das Ende ohne Körper ist eine Antwort: wer auf sie schläft, fragt neu
             return false;
         });
         zug.rang = auftrag.rang;

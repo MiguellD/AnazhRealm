@@ -566,6 +566,9 @@ class AnazhRealm_stoff_material {
             dachMass: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, -1e6, 0))
             ),
+            // die Hülle des Pools (min x, min z, max x, max z) und seine höchste Oberkante — leer ohne Decke (`_dachTakt`)
+            dachHuelle: TSL.uniform(new THREE.Vector4(1, 1, -1, -1)),
+            dachOben: TSL.uniform(-1e6),
             // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
             // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
             lichtGlut: Object.fromEntries(
@@ -1519,7 +1522,18 @@ class AnazhRealm_stoff_material {
         // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
         // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
         const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
-        this._naesseHimmelK = T.select(nass, T.float(1).sub(unter), T.float(0));
+        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Fragment im Kasten um alle Decken und unter ihrer höchsten
+        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht es unter offenem Himmel, ohne Decke ist der Kasten leer.
+        // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
+        // auch ohne ein Dach im Umkreis; das Gesetz selbst +0,05
+        const H = U.dachHuelle;
+        const drin = p.x
+            .greaterThanEqual(H.x)
+            .and(p.x.lessThanEqual(H.z))
+            .and(p.z.greaterThanEqual(H.y))
+            .and(p.z.lessThanEqual(H.w))
+            .and(p.y.lessThanEqual(U.dachOben));
+        this._naesseHimmelK = T.select(nass, T.select(drin, T.float(1).sub(unter), T.float(1)), T.float(0));
         return this._naesseHimmelK;
     }
 
@@ -1570,11 +1584,25 @@ class AnazhRealm_stoff_material {
         }
         decken.sort((a, b) => a.d - b.d);
         const U = this._ensureAtmoUniforms();
+        // die Hülle des Pools: der achsparallele Kasten um alle gewählten Decken (je Decke ihr gedrehter Grundriss) und die höchste
+        // Oberkante — leer (min > max) ohne Decke; `_naesseHimmel` prüft die Plätze nur darin
+        const h = [Infinity, Infinity, -Infinity, -Infinity, -1e6];
         for (let i = 0; i < U.dachLage.length; i++) {
             const d = decken[i];
             U.dachLage[i].value.set(d ? d.x : 0, d ? d.z : 0, d ? d.co : 1, d ? d.si : 0);
             U.dachMass[i].value.set(d ? d.ex : 0, d ? d.ez : 0, d ? d.y : -1e6, 0);
+            if (!d) continue;
+            const hx = Math.abs(d.co) * d.ex + Math.abs(d.si) * d.ez;
+            const hz = Math.abs(d.si) * d.ex + Math.abs(d.co) * d.ez;
+            h[0] = Math.min(h[0], d.x - hx);
+            h[1] = Math.min(h[1], d.z - hz);
+            h[2] = Math.max(h[2], d.x + hx);
+            h[3] = Math.max(h[3], d.z + hz);
+            h[4] = Math.max(h[4], d.y);
         }
+        if (h[0] > h[2]) h.splice(0, 4, 1, 1, -1, -1);
+        U.dachHuelle.value.set(h[0], h[1], h[2], h[3]);
+        U.dachOben.value = h[4];
     }
 
     // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`

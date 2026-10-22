@@ -354,6 +354,9 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         // ein Haken wartet auf den ersten Takt-Platz; der Zufall fällt jederzeit
         const takt = () => alle.some((e) => e.art === "platz" && e.t > tDa);
         for (let i = 0; (art !== "zufall" || z === von) && i < 400 && !takt(); i++) await sleep(50);
+        // die Linie wächst je Zyklus in Löchern, nie in Wanduhr (Lehre 26)
+        const soll = Math.ceil((300 * (z - von + 1)) / (bis - von + 1));
+        for (let i = 0; i < 1200 && g.e + (await page.evaluate(() => window.__ttN[0])) < soll; i++) await sleep(50);
         await sleep(1000 + Math.random() * 5000);
         if (art === "zufall") toeten();
         // scharf: der nächste Schreiber dieser Art hält den Faden an
