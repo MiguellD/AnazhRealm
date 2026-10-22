@@ -497,6 +497,68 @@ async function gtDorfweg(v2, anker, sek) {
 // DIE WÜRFE DES FELDS WEICHEN DEM ORT (K10-6): jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
 // des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`). Bis
+// C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring (−3,−5 und −5,−3).
+// Der Zug läuft je Gang einen Takt (`_tickAutoSettlement`), bis 20 Gänge nichts unterwegs ist (Zug, Foundry, jeder Vorrat
+// fertig) und kein Export beginnt, dann
+// 150 Gänge Ruhe; gezählt
+// werden die Exporte je Zelle (`_foundryRequestSettlement`, der Same nennt sie). `einer`: der Selbsttest hält wieder EINEN Vorrat
+// zur Zeit (jeder neue verdrängt die übrigen) — so lösten die Zellen einander ab. Läuft im Browser (page.evaluate).
+async function vorratAmDorf(messort, einer) {
+    const r = window.anazhRealm;
+    const SG = r.constructor._siedlungGesetz();
+    const [cx, cz] = [Math.floor(messort[0] / SG.cellM), Math.floor(messort[1] / SG.cellM)];
+    const zelle = new Map();
+    for (let i = 0; i < 25; i++) {
+        const z = r._autoSettlementCellInfo(cx + (i % 5) - 2, cz + Math.floor(i / 5) - 2);
+        if (z) zelle.set(z.seed, z.key);
+    }
+    const [vorher, ruhe] = [{}, {}];
+    let n = vorher;
+    const req = r._foundryRequestSettlement;
+    r._foundryRequestSettlement = function (dp, ...a) {
+        const k = zelle.get(dp && dp.seed) || "fremd";
+        n[k] = (n[k] || 0) + 1;
+        return req.call(this, dp, ...a);
+    };
+    const bereiten = r._dorfBereiten;
+    if (einer)
+        r._dorfBereiten = function (key, ...a) {
+            for (const k of this._dorfVorraete.keys()) if (k !== key) this._dorfVorraete.delete(k);
+            return bereiten.call(this, key, ...a);
+        };
+    const hook0 = window.__anazhAutoSettlement;
+    window.__anazhAutoSettlement = true;
+    r._dorfVorraete = new Map();
+    const pm = r.state.playerMesh.position;
+    pm.set(messort[0], r.getTerrainHeightAt(messort[0], messort[1]) + 1, messort[1]);
+    const leer = () =>
+        !r._autoSettlementQueue &&
+        !r._autoSettlementPendingKey &&
+        !r._stlWegePending &&
+        !r._weltOffen().foundry &&
+        [...r._dorfVorraete.values()].every((v) => v.da);
+    const summe = () => Object.values(n).reduce((s, x) => s + x, 0);
+    let gaenge = 0;
+    try {
+        for (let still = 0; still < 20 && gaenge < 600; gaenge++) {
+            const vor = summe();
+            r._tickAutoSettlement(pm);
+            still = leer() && summe() === vor ? still + 1 : 0;
+            await new Promise((ok) => setTimeout(ok, 20));
+        }
+        n = ruhe;
+        for (let g = 0; g < 150; g++) {
+            r._tickAutoSettlement(pm);
+            await new Promise((ok) => setTimeout(ok, 20));
+        }
+    } finally {
+        delete r._foundryRequestSettlement;
+        delete r._dorfBereiten;
+        window.__anazhAutoSettlement = hook0;
+    }
+    return { vorher, ruhe, gaenge, offen: r._weltOffen().foundry };
+}
+
 // K10-6 stand die Feuerstelle als Bau: lag eine im Grundriss des Orts 80 m weit, wählte das Spiel den Ort 96 m weit — die Wahl
 // hing am Lade-Stand der Würfe, und die Linse (ohne Glut-Feld) maß einen anderen Ort als das Spiel. Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
@@ -1846,7 +1908,7 @@ const FIXTURES = [
                 };
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
-                if (vorlauf && r._dorfVorrat) await r._dorfVorrat.fertig;
+                if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const pw = stell(A.nearM - 20);
                 wach = true;
                 t0 = performance.now();
@@ -1890,7 +1952,7 @@ const FIXTURES = [
                 for (const f of ["_autoSettlementCellInfo", "_foundryRequestSettlement", "_spawnSettlementSlot"])
                     delete r[f];
                 [r._autoSettlementRejected, r._stlWegePending, r._autoSettlementQueue] = alt;
-                Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorrat: null });
+                Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorraete: new Map() });
                 wm.settlementCells[key] = zelle;
                 pm.position.copy(p0);
                 // die Zelle geht samt Bauten und Erdbau (für Teil O)
@@ -2516,6 +2578,7 @@ const FIXTURES = [
     ).messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
+    const [K5b, K5bS] = [await page.evaluate(vorratAmDorf, MESSORT_DORF, false), await page.evaluate(vorratAmDorf, MESSORT_DORF, true)];
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const FW = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, false) : { err: "kein Ort" };
     const FWd = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, "bau") : { err: "kein Ort" };
@@ -2822,6 +2885,23 @@ const FIXTURES = [
     );
     const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
     check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", rang, z5);
+    const mehrfach = (e) =>
+        [...new Set([...Object.keys(e.vorher), ...Object.keys(e.ruhe)])]
+            .map((k) => [k, (e.vorher[k] || 0) + (e.ruhe[k] || 0)])
+            .filter(([, x]) => x > 1)
+            .map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
+    const ruht = (e) => !Object.keys(e.ruhe).length && e.offen === 0;
+    check(
+        "C-K5b: EIN VORRAT JE ZELLE — am Mess-Ort dorf bereiten sich zwei Zellen vor, jede mit höchstens EINEM Export",
+        Object.keys(K5b.vorher).length >= 2 && !mehrfach(K5b).length,
+        JSON.stringify(K5b) + " " + mehrfach(K5b).join(" · ")
+    );
+    check("C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen", ruht(K5b), JSON.stringify(K5b));
+    check(
+        "C-K5b Selbsttest: EIN Vorrat zur Zeit (das alte Überspringen) wird ROT beim Namen",
+        mehrfach(K5bS).length > 0 && !ruht(K5bS),
+        mehrfach(K5bS).join(" · ") + " " + JSON.stringify(K5bS)
+    );
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
