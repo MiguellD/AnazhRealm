@@ -3377,6 +3377,70 @@ class AnazhRealm_stoff_instanz {
         if (visH === null && this._ankunftsFerne() > 1) return 2;
         return this._chooseLODForDistance(d, undefined, visH);
     }
+
+    // DIE NORMALE IN EINER ZAHL (oktaedrisch, je Achse 12 Bit — eine ganze Zahl unter 2^24, in f32 exakt): der Gang-Puffer
+    // trägt Lage und Normale in EINEM Texel; `_oktaAus` ist die Umkehrung auf der CPU, `_gangSatzKnoten` die im Shader.
+    static _oktaIn(x, y, z) {
+        const l = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1;
+        let u = x / l;
+        let v = y / l;
+        if (z / l < 0) {
+            const u0 = u;
+            u = (1 - Math.abs(v)) * (u0 >= 0 ? 1 : -1);
+            v = (1 - Math.abs(u0)) * (v >= 0 ? 1 : -1);
+        }
+        return Math.round((u * 0.5 + 0.5) * 4095) * 4096 + Math.round((v * 0.5 + 0.5) * 4095);
+    }
+    static _oktaAus(w) {
+        const qu = Math.floor(w / 4096);
+        const u = (qu / 4095) * 2 - 1;
+        const v = ((w - qu * 4096) / 4095) * 2 - 1;
+        const z = 1 - Math.abs(u) - Math.abs(v);
+        const t = Math.max(-z, 0);
+        const x = u - (u >= 0 ? t : -t);
+        const y = v - (v >= 0 ? t : -t);
+        const l = Math.hypot(x, y, z) || 1;
+        return [x / l, y / l, z / l];
+    }
+    // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
+    // Leibs): je Ecke die Lage zwischen den zwei Phasen um die Phase der Instanz in ihrem Band, gemischt mit dem Stand nach dem
+    // Gewicht des Gangs; die Normale ebenso (oktaedrisch, die Rückseite kehrt sie um) — sie geht als normalLocal in die
+    // Instanz-Normale.
+    static _gangSatzKnoten(tex, n, nv, baender) {
+        const T = THREE.TSL;
+        const W = T.int(tex.image.width);
+        const a = T.attribute("aGang", "vec2");
+        const vid = T.attribute("aVid", "float");
+        const id = T.int(T.abs(vid)).sub(1);
+        const band = T.floor(a.x).mul(n);
+        const f = T.fract(a.x).mul(n);
+        const k0 = T.floor(f);
+        const t = f.sub(k0);
+        const k1 = T.mod(k0.add(1), n);
+        const lies = (k) => {
+            const i = T.int(k).mul(T.int(nv)).add(id);
+            return T.textureLoad(tex, T.ivec2(i.mod(W), i.div(W)), T.int(0));
+        };
+        const s = lies(T.float(baender * n));
+        const p0 = lies(band.add(k0));
+        const p1 = lies(band.add(k1));
+        const dek = (w) => {
+            const qu = T.floor(w.div(4096));
+            const e = T.vec2(qu, w.sub(qu.mul(4096)))
+                .div(4095)
+                .mul(2)
+                .sub(1);
+            const z = T.float(1).sub(T.abs(e.x)).sub(T.abs(e.y));
+            const xy = e.sub(T.sign(e).mul(T.max(z.negate(), 0)));
+            return T.vec3(xy, z);
+        };
+        const lage = T.mix(s.xyz, T.mix(p0.xyz, p1.xyz, t), a.y);
+        const nrm = T.normalize(T.mix(dek(s.w), T.mix(dek(p0.w), dek(p1.w), t), a.y)).mul(T.sign(vid));
+        return T.Fn(() => {
+            T.normalLocal.assign(nrm);
+            return lage;
+        })();
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_instanz]);
 
