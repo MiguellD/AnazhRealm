@@ -1160,6 +1160,13 @@ function selbsttest() {
         `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
     );
     if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
+    // (F) am Täter: die echte check.yml mit dem Schritt vom 22.10. gegen das echte package.json
+    const wf = workflowsLesen();
+    wf[path.basename(DATEI)].jobs[VOLL_JOB].steps.push({ name: "Fernstufe", if: "matrix.gruppe == 4", run: "npm run gate:fahrzeug-fern" });
+    const tf = deckung(require(path.join(root, "package.json")).scripts, wf, AUSNAHMEN).v.filter((x) => x.startsWith("(F)"));
+    const okF = tf.length === 1 && /„Fernstufe" \(check\.yml\/voll\) ruft „npm run gate:fahrzeug-fern"/.test(tf[0]);
+    console.log(`  ${okF ? "✅" : "❌"} Selbsttest „die echte check.yml mit dem gefallenen Schritt" → ${tf.join(" · ") || "grün"}`);
+    if (!okF) f.push("(F) der Schritt Fahrzeug-Fernstufe an der echten check.yml fällt nicht rot beim Namen");
     return f.concat(
         selbsttestWaage(),
         selbsttestGegenrichtung(),
@@ -1403,6 +1410,23 @@ function selbsttestGegenrichtung() {
             "ein Teil von check hinter ; (npm fährt sh -c ohne errexit)",
             (s) => (s.check = s.check.replace("node --check a.js && ", "node --check a.js; ")),
             /\(S\) STUMM IN SICH: „check: node --check a\.js" .*ohne errexit/,
+        ],
+        // (F) DAS GEFALLENE SKRIPT (22.10.: der Merge nahm den Schritt Fahrzeug-Fernstufe zurück, sein Skript war gefallen —
+        // Gruppe 4 rot in 0 s, 39696450043): Schritt UND Skript, auch hinter -s und mitten in einer &&-Kette
+        [
+            "ein Schritt ruft ein gefallenes Skript",
+            (s, d) => d["check.yml"].jobs.check.steps.push({ name: "Fernstufe", run: "npm run gate:fahrzeug-fern" }),
+            /\(F\) FEHLT: „Fernstufe" \(check\.yml\/check\) ruft „npm run gate:fahrzeug-fern" — package\.json kennt es nicht/,
+        ],
+        [
+            "npm run -s mitten in einer &&-Kette",
+            (s, d) => (C(d).run = "npm run -s gate:weg && npm run gate:c"),
+            /\(F\) FEHLT: „C" \(check\.yml\/playtest\) ruft „npm run -s gate:weg"/,
+        ],
+        [
+            "ein Skript ruft ein gefallenes Skript",
+            (s) => (s["gate:c-beide"] = "npm run gate:c && npm run gate:weg"),
+            /\(F\) FEHLT: das Skript „gate:c-beide" ruft „npm run gate:weg"/,
         ],
     ];
     for (const [n, tat, soll] of faelle) {
