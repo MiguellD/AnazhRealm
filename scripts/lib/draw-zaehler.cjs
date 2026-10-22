@@ -515,7 +515,88 @@ function texturZensus() {
     };
 }
 
+// DER HALTER DES HEAPS (profiband K5, `werkbank puffer --gang`): jedes ArrayBuffer-Byte, das die Welt hält, am Pfad seines
+// ersten Halters ab der Welt (Breitensuche = der kürzeste Weg; Map/Set/Array als `[]`, Map-Schlüssel als `[k]`) — die
+// Typed-Arrays sind der Heap der Welt (CDP `Runtime.getHeapUsage` backingStorageSize), der Pfad ist der Täter beim Namen.
+function heapHalter(r, tiefe) {
+    const gesehen = new WeakSet(),
+        je = new Map(),
+        q = [[r, "r"]];
+    for (let i = 0; i < q.length; i++) {
+        const [o, p] = q[i];
+        q[i] = null;
+        const kinder = [];
+        if (o instanceof Map) for (const [k, v] of o) kinder.push([v, p + "[]"], [k, p + "[k]"]);
+        else if (o instanceof Set || Array.isArray(o)) for (const v of o) kinder.push([v, p + "[]"]);
+        for (const k of Object.keys(o))
+            if (!Array.isArray(o) || !/^\d+$/.test(k))
+                try {
+                    kinder.push([o[k], p + "." + k]);
+                } catch (_e) {}
+        for (const [v, pp] of kinder) {
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            const buf = ArrayBuffer.isView(v) ? v.buffer : v instanceof ArrayBuffer ? v : null;
+            if (buf) {
+                if (buf !== v && gesehen.has(buf)) continue;
+                gesehen.add(buf);
+                const k = pp.split(/(?=[.[])/).slice(0, tiefe).join("");
+                je.set(k, (je.get(k) || 0) + buf.byteLength);
+            } else if (v !== globalThis && !(typeof Node !== "undefined" && v instanceof Node)) q.push([v, pp]);
+        }
+    }
+    return [...je];
+}
+// DAS GANG-URTEIL: Heap (JS + Typed-Arrays nach GC) und VRAM am Start vor und nach dem Gang (gehen · fahren · Nacht), je
+// Spielminute; was wuchs, nennt der Halter-Diff (`heapHalter` vorher → nachher) beim Pfad.
+const GANG = { heapMBjeMin: 5, vramMB: 2 };
+function gangUrteil(g) {
+    const f = [];
+    const min = g.nach.min - g.vor.min;
+    if (!(min >= 1)) return [`gang: ${min} min — zu kurz für ein Urteil je Minute`];
+    const rate = (g.nach.heapMB - g.vor.heapMB) / min;
+    const vor = new Map(g.halterVor);
+    const wuchs = g.halterNach
+        .map(([k, b]) => [k, (b - (vor.get(k) || 0)) / 1048576])
+        .filter(([, d]) => d >= 1)
+        .sort((a, b) => b[1] - a[1]);
+    const name = wuchs.slice(0, 3).map(([k, d]) => `${k} +${d.toFixed(1)} MB`).join(" · ") || "kein Pfad über 1 MB";
+    if (rate > GANG.heapMBjeMin)
+        f.push(`heap: +${rate.toFixed(1)} MB/min über ${min.toFixed(1)} min > ${GANG.heapMBjeMin} — Halter: ${name}`);
+    const dv = g.nach.vramMB - g.vor.vramMB;
+    if (dv > GANG.vramMB) f.push(`vram: +${dv.toFixed(1)} MB zurück am Start > ${GANG.vramMB}`);
+    for (const k of ["ruhend", "verwaist"]) if (g.nach[k] > 0) f.push(`buf:${k} ${g.nach[k]} MB`);
+    return f;
+}
+// Selbsttest: ein ungedeckelter Cache ist ROT und steht beim Namen, ein gedeckelter (LRU 2) GRÜN, VRAM-Drift 3 MB ROT.
+function gangSelbsttest() {
+    const f = [];
+    const MB = () => new Float32Array(262144);
+    const r = { state: { lru: new Map(), offen: [] } };
+    const lauf = (offen) => {
+        const vor = heapHalter(r, 3);
+        for (let i = 0; i < 8; i++) {
+            if (offen) r.state.offen.push(MB());
+            r.state.lru.set(i + Math.random(), MB());
+            if (r.state.lru.size > 2) r.state.lru.delete(r.state.lru.keys().next().value);
+        }
+        const nach = heapHalter(r, 3);
+        const sum = (h) => h.reduce((s, [, b]) => s + b, 0) / 1048576;
+        return gangUrteil({ vor: { min: 0, heapMB: sum(vor), vramMB: 50 }, nach: { min: 1, heapMB: sum(nach), vramMB: offen ? 53 : 51 }, halterVor: vor, halterNach: nach });
+    };
+    const gedeckelt = lauf(false);
+    if (gedeckelt.length) f.push("ein gedeckelter Cache ist rot: " + gedeckelt.join(" | "));
+    const offen = lauf(true);
+    if (!offen.some((z) => z.startsWith("heap: +8.0 MB/min") && z.endsWith("Halter: r.state.offen +8.0 MB")))
+        f.push("ein ungedeckelter Cache steht nicht beim Namen: " + offen.join(" | "));
+    if (!offen.some((z) => z.startsWith("vram: +3.0"))) f.push("VRAM-Drift 3 MB ist nicht rot");
+    return f;
+}
+
 module.exports = {
+    heapHalter,
+    gangUrteil,
+    gangSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,
@@ -526,6 +607,7 @@ module.exports = {
         `window.__satzInhalt = ${satzInhalt.toString()};` +
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
+        `window.__heapHalter = ${heapHalter.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,
