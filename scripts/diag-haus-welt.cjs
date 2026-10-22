@@ -1230,7 +1230,7 @@ async function proben(phasen) {
         if (!ort) wb.fehler = "kein trockener Ort 150 m von der Plattform";
         else {
             const [gx, gz] = ort;
-            const vorher = hain(gx, gz, true, "nexus").neu; // der Hain des Felds: das Werk eines Worts wiche nie (`werk`)
+            const vorher = hain(gx, gz, true, "nexus").neu; // der Hain des Felds
             const damm = r.spawnArchitecture(
                 "damm",
                 { x: gx, y: (r.getTerrainHeightAt(gx, gz) || 0) + 0.5, z: gz },
