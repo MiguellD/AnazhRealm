@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette, 06.10., Welle G)
+// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette, Welle G)
 //
 // Befund (GTX 1060, `werkbank zerlegen` auf dem V18.532-Kandidaten): der Direktpfad ohne Post-Kette — der Rückfall, wenn
 // die Kette scheitert, und die Weiche der Zerleg-Linse (`post`, `leer`) — STÜRZTE: TypeError „Invalid value used as weak
@@ -62,7 +62,7 @@ const GODRAY_MIN_PCT = 2;
 // Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN anders.
 // Gemessen 07.10. (kienspan, Leinwand 320×240): Abbild gegen r184 2,5 (das 2×2-Maximum — die Hälfte der Pixel liest den
 // Grund eine Leinwand-Zeile weiter; bei 1080p ist die Zeile 4,5× feiner), Rausch-Boden 0, ohne Grund 37, der vec4-Weg
-// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L (08.10.) las das 2×2-Maximum 6,0
+// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L las das 2×2-Maximum 6,0
 // daneben; das waagrechte Paar (die Zeile ganz) 0.
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;

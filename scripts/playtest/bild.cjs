@@ -802,7 +802,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
         const _structMat =
-            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
+            r._buildToonNodeMaterial({ color: 0x808080 });
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
@@ -1012,7 +1012,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._disposeVoxelChunkGrass === "function" &&
             typeof r._grassInstanceMat === "function";
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
-        // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist Boden-
+        // V18.492: die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
@@ -1443,7 +1443,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.49: updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
     const wave6x4bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};

@@ -1,4 +1,4 @@
-// kreatur-proben.cjs — DIE KREATUR-PROBEN (Welle L, Leben-Prüfung 06.10.): jede Probe ruft den ECHTEN Kreatur-Takt
+// kreatur-proben.cjs — DIE KREATUR-PROBEN (Welle L): jede Probe ruft den ECHTEN Kreatur-Takt
 // (`updateCreatures`, der EINE Chokepoint) und misst, was das Fenster der Leben-Prüfung zeigte — Krebsgang, Hüpf-Sturm,
 // Geister, Geburt im Blick, Beute ohne Flucht, Bewegung am Frustum, Strahl je Frame. Derselbe Seiten-Code läuft headless
 // (gate:kreatur-takt, Null-Renderer, Produktions-Boot) und im sichtbaren Fenster der echten GPU (die Werkbank:
@@ -1497,7 +1497,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── nexus (Leben-Schau 07.10. Neu 1): kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
+    // ── nexus: kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
     // 4–12 und Sprungkraft 8–20 zu (gemessen 11,1 m/s, Sprint 45 m/s, Sprung 18,6 statt 2,6), blähte jedes Tier um ×1,11
     // ohne die bodySize-Achse auf, und `spawn_creature at_player` setzte Geburten in den Blick. Gemessen werden der Würfel
     // (ein fester Strom über den Kompositions-Pool), die Ops selbst (die Werte des Würfels, Quelle nexus: das Ergebnis liegt
@@ -1651,7 +1651,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── temperament (D16 / K-D12, Leben-Schau 07.10.): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
+    // ── temperament (D16 / K-D12): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
     // Tiere sind tag-gleich) — Hirsch und Fuchs blieben „wehrhaft" (aus den Tags), alle Hirsche Wariness −1,0 (neugierig),
     // die Herde drängte auf 0,6 m heran. Gemessen: das Temperament je Seele und Größe, die Wariness vor einem ruhigen
     // Spieler in frieden, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und dass der Kampf dasselbe
@@ -1786,7 +1786,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── abstand (Leben-Schau 07.10., D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
+    // ── abstand (D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
     // Modus frieden kroch auf 0,7 m zusammen (Paar-Abstand 0,66–0,96 m), die Leiber durchdrangen sich und den Spieler. Der
     // Leib ist die EINE benannte Größe (_kreaturLeib: Achse längs der Gier ± halb, Radius); gemessen je Takt die Lücke
     // zwischen zwei Leibern (Kapsel gegen Kapsel in XZ) und zwischen Leib und Spieler-Kapsel (PLAYER_WALL_RADIUS), am Ende
@@ -1964,7 +1964,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── jagdkreis (Leben-Schau 07.10., Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
+    // ── jagdkreis (Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
     // stand still (ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten) und holte keinen Sprinter ein (der
     // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) der Riss (unten); (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
     // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
@@ -2145,7 +2145,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── rudel (Leben-Schau 07.10., Kampf: „Rudel gegen Spieler"): ein Rudel umstellt. Drei Wölfe, die von einer Seite
-    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau; 239° am 06.10.). Gemessen am
+    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau). Gemessen am
     // echten Takt: drei Wölfe in 15 m auf einer Seite des stehenden Spielers (Modus pfad); in jedem Takt, in dem alle drei
     // näher als 2 × jagd.hetzM stehen, die größte Winkel-Lücke ihrer Richtungen um den Spieler, dazu die Lücke beim ersten
     // Biss ──
@@ -2220,7 +2220,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── sockel (Leben-Schau 07.10., D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
+    // ── sockel (D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
     // durchs Dorf, 7,6 % ihrer Takte lagen in einer Hüllen-Box, p50 73 cm tief; ein Hirsch stand 0,35 m tief im Sockel, auf
     // dem der Spieler stand (Bild ls-09) — das Tier las nur den Boden (_standSicht ohne Struktur). Gemessen am echten Takt:
     // ein Sockel aus Stein, seine Oberkante 0,35 m über dem Boden seiner Mitte (wie der Sockel des Hauses), ein Hirsch steht
@@ -2300,7 +2300,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── querhang (Leben-Schau 07.10., D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
+    // ── querhang (D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
     // Beine 20–31° aus dem Lot (sie kippten mit dem Leib, Bild ls-10), der Stand-Schlupf im Lauf lag bei 0,56–1,27 (Soll
     // ≤ 0,2). Gemessen am echten Takt wie in der Leben-Schau: ein Hang von 20–30° nahe dem Spieler; Wolf und Hirsch stehen
     // QUER zur Fall-Linie (warten, 120 Takte): je Bein der Winkel Hüfte → Pfote gegen das Lot und die Sohle über dem Boden
@@ -2503,7 +2503,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
+    // ── ferngang (D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
     // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
     // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Seit S3 trägt jenseits der Stufen-Grenze (`ab` × Größe)
     // die gelenkige Grobstufe das Bild, an die Knochen der feinen gebunden (EIN Skelett, `_gelenkGestalt`). Gemessen am

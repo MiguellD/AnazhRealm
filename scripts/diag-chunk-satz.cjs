@@ -9,7 +9,7 @@
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
 //   (b) WASSER — höchstens EIN Chunk-Wasser-Objekt (der Satz);
-//   (c) STREU-SATZ (W7) — die Draw-Einheit der Nah-Streu (Waldboden 04.10.: Studio-Arten, Kachel-Ring um die Kamera) ist
+//   (c) STREU-SATZ (W7) — die Draw-Einheit der Nah-Streu (Kachel-Ring um die Kamera) ist
 //       ihr STOFF: kein Nah-Streu-Objekt zeichnet selbst (keine `streuNah:`-/`streu-klein`-Mesh im Szenen-Baum), keine
 //       Deck-Streu und keine Fern-Deko (beide fielen); jede Senke (Art × Gestalt × Stufe × Teil) trägt je Kachel einen
 //       Block (Σ n = Anzahl, je Block die Ernte-Identitäten, jeder Block einer lebenden Kachel des Rings), und jeder Block
@@ -31,7 +31,7 @@
 //   (i) WACHSEN (Welle 6) — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
 //       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
 //       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
-//   (j) NEUSCHREIBEN (06.10.) — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
+//   (j) NEUSCHREIBEN — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
 //       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
@@ -44,7 +44,7 @@
 //   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
 //       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
 //       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
-//       (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
+//       (Radeon, Genesis): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
 //       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
@@ -129,7 +129,7 @@ function urteil(z) {
             );
     }
     // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
-    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, gemessen 14.10. Radeon: 14,6 MB des Boden-Satzes)
+    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, 6 MB des Boden-Satzes)
     const SOLL = { normal: "nint8x4", color: "float16x4" };
     for (const f of z.vertexForm || [])
         if (SOLL[f.attr] && f.form !== SOLL[f.attr])
@@ -993,7 +993,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 geos.initGeometry({ geometry: g });
                 res.tauschSicher = !geos._geometryDisposeListeners.has(g) && !g.hasEventListener("dispose", h);
             }
-            // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
+            // (j) NEUSCHREIBEN: kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
             // Chokepoint `_chunkSatzPass` mit Stellvertreter-Ortho-Kameras über dem Spieler: „ruhe" = enge Boxen
             // (k0 ±120 m, k1 ±400 m), „druck" = beide über den ganzen Ring (der Abend mit der Sonne im Rücken trägt fast den
@@ -1139,7 +1139,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             };
             // EINE Vor-Drehung ohne Wertung (K51): die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
             // Umlegen), das die alte Regel danach geschenkt bekam — beide Regeln messen aus demselben gewachsenen Stand
-            // (14.10.: die Formationen buchten im ersten Lauf 1,5 MB Umlegen, im zweiten 0)
+            // (5 MB Umlegen, im zweiten 0)
             drehen(36);
             res.neu.dreh = drehen(36);
             const P = Object.getPrototypeOf(r);

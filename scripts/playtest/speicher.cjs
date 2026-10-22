@@ -140,7 +140,7 @@ async function checkBandRing8(ctx) {
         out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
         const activeId = r.state.worldMeta.worldId;
 
-        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
         // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
         // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
         // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.

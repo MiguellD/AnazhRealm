@@ -71,7 +71,7 @@ const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
 const FELS_FREMD_ANTEIL = 0.01;
 const FELS_STREUUNG_MIN = 0.08;
 const FELS_ALBEDO_MAX = 0.3;
-// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0,4, Koordinator-Auge 13.10.).
+// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0, 4).
 const BANK_CV_MIN = 0.4;
 const FUGE_WELLE_MIN = 0.1;
 const KLUFT_DURCHLAUF_MIN = 0.4;

@@ -1,4 +1,4 @@
-// diag-gegenstand-stoff.cjs — DIE STOFF-LINSE DER GEGENSTÄNDE (W5, 05.10.): was ein Fahrzeug und eine Klinge der WELT
+// diag-gegenstand-stoff.cjs — DIE STOFF-LINSE DER GEGENSTÄNDE (W5): was ein Fahrzeug und eine Klinge der WELT
 // an Albedo liefern, je Stoff gegen das Band der Natur geurteilt (das FARB-GESETZ: ein Paletten-Hex ist eine sRGB-
 // Absicht, die Albedo sein linearer Wert — Kreatur-Bäcker, Vegetation und Gegenstände lesen dieselbe Kurve).
 //

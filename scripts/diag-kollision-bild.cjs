@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-kollision-bild.cjs — KOLLISION = BILD (Leben-Schau 2, 09.10., Familie koerper-bild): was der Körper anfasst, zeigt
+// diag-kollision-bild.cjs — KOLLISION = BILD (Leben-Schau 2, Familie koerper-bild): was der Körper anfasst, zeigt
 // das Bild — und was das Bild zeigt, trägt. Befund (sichtbar gefahren, echte Radeon, Spur B Bilder 38–43): der GT prallte
 // bei −913,7/−900,7 von 46,7 auf −6,4 km/h zurück, gezeichnet standen dort Fichten und Himmel. Der Felsturm stieß als seine
 // Spender-Parts (ein Eisen-Mast 4,4 × 16,8 m), das Studio zeichnete einen Zacken 1,4 × 0,8 m — der Fels-Zweig des Blocker-

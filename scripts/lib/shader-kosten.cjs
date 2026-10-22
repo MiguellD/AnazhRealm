@@ -1,4 +1,4 @@
-// shader-kosten.cjs — DIE SHADER-KOSTEN-LINSE (06.10., Welle G; Gebot 10: die Linse nennt den Täter beim Namen). Befund
+// shader-kosten.cjs — DIE SHADER-KOSTEN-LINSE (Welle G, Gebot 10: die Linse nennt den Täter beim Namen). Befund
 // (GTX 1060, Mess-Wiese, `werkbank zerlegen`): die Fragment-Arbeit trägt den Frame — der Boden-Satz kostete 6,90 ms GPU für
 // 6 Befehle (26 MaterialX-Hash-Rauschen je Pixel), die Godrays tasteten 20× je Pixel auch ohne Sonne im Bild (0,69 ms); die
 // Pass-Stempel und die Zerlegung nennen den Verbraucher, nicht seine Arbeit je Pixel. Was ein Fragment KOSTEN KANN, steht im

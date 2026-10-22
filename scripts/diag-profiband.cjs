@@ -152,7 +152,7 @@ function buendelReiheWand(A) {
     return { errs, n: 6 };
 }
 
-// P — DIE PROJEKTION (S3 pflanzen, 09.10.; GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
+// P — DIE PROJEKTION (S3 pflanzen, GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
 // läuft — Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
 // Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
 // Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
@@ -1076,7 +1076,7 @@ function selbsttest() {
     }
 
     // S31 — H2b DIE FRISCHE (K26) an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
-    // wie sie w2B auf der GTX richtete (gemessen 05.10. auf der Radeon, ohne Version), ist ROT — ohne Version, mit fremder
+    // wie sie w2B auf der GTX richtete (ohne Version), ist ROT — ohne Version, mit fremder
     // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
     {
         const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
@@ -1147,7 +1147,7 @@ function selbsttest() {
                 u31.rot.every((x) => typeof x.schluessel === "string")
         );
         // Die Gesamt-Zeile des Mints ist höchstens die Summe ihrer Zeilen: zwei Läufe, je Erzeuger ein anderes Minimum (6,0 + 4,0
-        // und 5,9 + 4,1, beide 10,0 MB) — die Hülle der Erzeuger ist 5,9 + 4,0 = 9,9, die Gesamt-Zeile zieht mit (14.10.).
+        // und 5,9 + 4,1, beide 10,0 MB) — die Hülle der Erzeuger ist 5,9 + 4,0 = 9,9, die Gesamt-Zeile zieht mit.
         const v32 = (a, b) => ({
             klassen: [],
             summe: { gebunden: { befehle: 1, dreiecke: 1 } },

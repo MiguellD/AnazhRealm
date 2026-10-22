@@ -242,7 +242,7 @@ async function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
-    // S0 — DER STAND (K63-n4; Prüfer K63 R3: die Wand las das Ist vom 07.10. und stand still grün): beide Seiten am Code-
+    // S0 — DER STAND (K63-n4): beide Seiten am Code-
     // Abdruck von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet seit <Commit>` beim Namen; eine Messung
     // ohne Abdrücke → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
     {
@@ -463,7 +463,7 @@ window.__bereit = true;
         server.close();
     }
     // S10 — DIE KRONE VON OBEN (K68-N4, `werkbank licht --laub --oben`): das Zwei-Strom-Band über der gemessenen Blatt-Albedo,
-    // der Täter beim Namen (Radeon 15.10.: Tanne R 0,0739 über [0,0381, 0,0521] — die Krone als EINE besonnte Schale).
+    // der Täter beim Namen (0739 über [0, 0381, 0, 0521] — die Krone als EINE besonnte Schale).
     {
         const LL = require("./lib/licht-linsen.cjs");
         const o = (R, A) => ({ oben: { R, A, tau: [0.5, 1], pixel: 1 }, stoffe: "atlas" });

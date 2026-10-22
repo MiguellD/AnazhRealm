@@ -1084,7 +1084,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.queueShrankAfterTick = r.state.pendingWaterIso.size < out.enqueuedCount;
         r._drainPendingWaterIso();
         out.drainEmptiesQueue = r.state.pendingWaterIso.size === 0;
-        // ERST DIE LÜCKE (Integration 05.10.): ein Chunk ohne aufgelöstes Sheet baut vor der Auffrischung eines NÄHEREN
+        // ERST DIE LÜCKE: ein Chunk ohne aufgelöstes Sheet baut vor der Auffrischung eines NÄHEREN
         // Chunks mit Sheet — sein leeres Seebett wäre sichtbar (kein Lade-Nebel deckt es), die Auffrischung behält ihr
         // altes Sheet. tick(1) baut genau den ersten der Ordnung.
         const wi = r.state.voxelChunkWaterIso || (r.state.voxelChunkWaterIso = new Map());
@@ -2040,11 +2040,11 @@ async function checkBandWasserWahrheit(ctx) {
         }
     
         // ── FIXTURE 5 (F5) — DIE RUHE IST DER FIXPUNKT: der erwachte Automat bewegt ruhendes Wasser nicht ──
-        // K37 (Auge 13.10., Solitär-Eiche): jede Werk-Setzung am Ufer weckt den Automaten; die Kappe lag eine Zeile über
+        // K37 (Solitär-Eiche): jede Werk-Setzung am Ufer weckt den Automaten; die Kappe lag eine Zeile über
         // der Ruhe, die Deck-Zelle (4b) floss in die Zeile über dem See und aufs Land, die flache Ufer-Spalte leerte sich.
         // Bühne: See (i ≤ 3, Flut j 4..6, Quelle), Deck-Spalte (i = 4, Boden j ≤ 6, Deck-Zelle j 7), Land (i ≥ 5, Boden
         // j ≤ 6). Gezählt: Spalten, deren Live-Dach nach 200 Takten vom Flut-Dach abweicht (> 0,6 Zelle oder leer/fremd).
-        // F3 (Graben am Fluss, 17.10.): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge
+        // F3 (Graben am Fluss): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge
         // auf dem Land, j 7) — die Kappe des Gesetzes öffnet dem Land keine Haut (bis F3: Boden + 2 Zellen, die Zunge stand
         // und floss), über ihr steht kein Wasser mehr.
         const runRuhe = (capFn, kappeHoch) => {

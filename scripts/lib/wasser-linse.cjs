@@ -184,7 +184,7 @@ function wasserKoerper(opts) {
         if (seeAm.fehler) return { fehler: seeAm.fehler };
         const see = seeAm.see;
         const spiegel = see.level;
-        // Der Weg des Befunds (06.10., Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
+        // Der Weg des Befunds (Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
         // tief) — kein Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
         const [x0, mz] = o.start || window.__wasserOrte({}).see.ufer;
         const mx = (o.ziel || ziel)[0];
@@ -377,7 +377,7 @@ function wasserKoerper(opts) {
                         r.removeCreature(c);
                     }
                 }
-                // (6b) DAS WESEN OHNE GESTALT-BAUM (Gegenprüfung 07.10., gelb): trägt eine Kreatur keinen `_tierBaum`, liegt
+                // (6b) DAS WESEN OHNE GESTALT-BAUM (gelb): trägt eine Kreatur keinen `_tierBaum`, liegt
                 // ihre Wasserlinie auf der Schwimm-Tiefe des Gesetzes (VERHALTEN.wasser.schwimmTiefeM) — bis dahin 0: sie
                 // stand still AUF dem Spiegel.
                 pm.position.set(mx + 8, spiegel + 1, mz);
@@ -760,7 +760,7 @@ function wasserGraben(opts) {
     })();
 }
 
-// ── Q7-Gestalt: die Ufer-Farbe (Blick 06.10. nach dem Kanal-Schnitt: die Bank trug ein Rauten-Schachbrett) ──
+// ── Q7-Gestalt: die Ufer-Farbe ──
 // Quer zum Fluss, vom Kanal bis 3 m jenseits der Krone in 2-cm-Schritten auf dem Boden (`_voxelSurfaceY`): die EINE
 // Boden-Farbe (`_bodenFarbeAt`) darf dort keinen Sprung tragen — Strand, Schlick, Pfad und Höhen-Feuchte lesen die Höhe
 // über dem Wasser, und wo der Fluss-Spiegel an der Krone endet, sprang der Bezug auf den Meeresspiegel. Ein Sprung =
@@ -786,7 +786,7 @@ function wasserUferFarbe(opts) {
             maxSprung = 0;
         const beispiele = [];
         const c = [0, 0, 0];
-        // U3 — DER SCHILF-BEZUG (Gegenprüfung 07.10., gelb): das Ufer-Band der Nah-Streu (Schilf, Boden-Zeile mit `ufer`) über
+        // U3 — DER SCHILF-BEZUG (gelb): das Ufer-Band der Nah-Streu (Schilf, Boden-Zeile mit `ufer`) über
         // der Höhe über dem Wasser, wie die Kachel es rechnet (`_nahStreuKachel`): vorher `_nahStreuSpiegel` = max(See,
         // Fluss) — an der Krone sprang der Bezug auf den See-/Meeres-Spiegel —, nachher `_nahStreuBodenGewicht` (die
         // Bänder über See und über dem Fluss mit seiner Kronen-Blende, das Maximum). Gemessen wird NUR der Ufer-Faktor
@@ -1052,7 +1052,7 @@ function wasserBild(opts) {
         // Das Licht der Probe fest (das Render-Ziel ist linear und ungetont: im Mittagslicht sättigte der Schaum bei 255
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
-        // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
+        // und Himmel neu (5× heller als bei 60 — das Licht, nicht das Wasser).
         // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum des
         // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
         // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
@@ -1181,7 +1181,7 @@ function wasserBild(opts) {
     })();
 }
 
-// ── Q7-Regen (Befund 06.10.: im Sturm lag kein Tropfen im Bild) ──
+// ── Q7-Regen ──
 // Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
 // Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
@@ -1270,7 +1270,7 @@ function wasserRegen(opts) {
     })();
 }
 
-// ── Q6: die Decke (D11, Gegenprüfung 07.10.) ──
+// ── Q6: die Decke (D11) ──
 // Das Zell-Gesetz hält Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`): je geladener Wasser-Spalte
 // die erste LUFT-Zelle über einer FEST-Zelle, deren Mitte unter dem Spiegel des Gesetzes liegt (`_atlasWaterLevelAt` mit
 // tiefem Boden — See, Fluss, Rand-Spiegel) und über der eine FEST-Zelle steht (die Decke). Ihr Boden (`_fieldSurfaceBelow`)
@@ -1337,7 +1337,7 @@ function wasserHoehle(opts) {
                 if (beispiele.length < 4) beispiele.push([R(h.x, 1), R(h.z, 1), R(h.boden), R(w)]);
             }
         }
-        // DER WAGEN (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): die Tiefe am Wagen (`_fahrTiefe`, der Wasser-Term des
+        // DER WAGEN (Schau-2 wasser-wahrheit): die Tiefe am Wagen (`_fahrTiefe`, der Wasser-Term des
         // Fahr-Schritts) an jedem Höhlen-Boden — ein Wagen, der dort steht, steht trocken. Vorher las sie das Wasser über der
         // obersten Fläche: im Höhlen-Boden unter dem See die volle Tiefe des Sees (kein Vortrieb).
         let wagenNass = 0,
@@ -2282,7 +2282,7 @@ function wasserBach(opts) {
     const P = rv.points;
     const sicht = window.__wasserSichtNetz();
     // DIE ERSTEN `BACH_PROBE_M` METER des Bachs, nie eine Zahl seiner Punkte: die Abtastung der Bahn ist Sache des Gesetzes
-    // (K16: der Mäander tastet nach seinen Knicken ab, zehn Stücke trugen 13.10. nur noch 140 m, F8 fiel LEER)
+    // (K16: der Mäander tastet nach seinen Knicken ab, F8 fiel LEER)
     let segmente = 0;
     for (let lang = 0; segmente < P.length - 1 && lang < BACH_PROBE_M; segmente++)
         lang += Math.hypot(P[segmente + 1].x - P[segmente].x, P[segmente + 1].z - P[segmente].z);

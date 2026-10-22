@@ -22,7 +22,7 @@ const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 // page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf — und der Wurf ist eine verletzte
-// Invariante beim Namen (WUERFE, apparat-diaet 20.10.): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
+// Invariante beim Namen (WUERFE): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
 // darum trug jede Probe ihren Existenz-Wächter; jetzt trägt der Aufruf der Methode ihre Existenz.
 const WUERFE = [];
 async function safeEvaluate(page, fn, ...args) {
@@ -750,7 +750,7 @@ if (require.main === module) (async () => {
             // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(BAND.checkBandWelleV11D3DrinkTask, ctx);
             // V11.0-a..d (Gras-Mesh-Pool) — V18.492 GESCHNITTEN mit dem Pool selbst: die
-            // Wiese ist Boden-Funktion (21.07.), kein Halm-Mesh → kein Pool, kein Band.
+            // Wiese ist Boden-Funktion, kein Halm-Mesh → kein Pool, kein Band.
             // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(BAND.checkBandNahStreu, ctx);
 

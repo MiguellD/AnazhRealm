@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt (Welle K, 07.10.), und frei gehören Uhr und Wetter dem
-// Spieler (Leben-Schau 2, 09.10.).
+// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt (Welle K), und frei gehören Uhr und Wetter dem
+// Spieler (Leben-Schau 2).
 // Befund 1 (OMEN, V18.534, ein B-Boot von vier): die Wetter-Wache der Bühne hielt die Uhr des Auto-Zugs eingefroren, und das
 // Wetter drehte trotzdem sunny → rainy (zweimal der Emotions-Effekt „sorrow → rainy", einmal ein Nexus-Programm). Schnitt: der
 // EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug, solange die Uhr unter 0 steht (der Halt der Bühne).
@@ -298,7 +298,7 @@ function himmelProbe(o) {
     const T0 = performance.now();
     let k = 0;
     window.__taktZeit = 0;
-    // DAS WESEN IM SCHÖPFER-MODUS (Gegenprüfung 10.10.): sein Vorschlag läuft von selbst, ohne Zusage des Spielers — auch
+    // DAS WESEN IM SCHÖPFER-MODUS: sein Vorschlag läuft von selbst, ohne Zusage des Spielers — auch
     // ohne sein Zutun über den Level-Aufstieg. Es schlägt alle `WESEN_SEK` Spiel-Sekunden `wesenWort` vor, über den EINEN
     // Weg aller Vorschläge (`_handleCreatureProposedProgram`, unter ihm die LLM-Antwort und der Level-Aufstieg).
     const pm = st.playerMesh.position;

@@ -667,7 +667,7 @@ async function checkBandWelle6APolish(ctx) {
         let topY = null;
         if (entry && entry.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (entry && entry.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -812,7 +812,7 @@ async function checkBandWelle6APolish(ctx) {
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (_entryA3 && _entryA3.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -1312,7 +1312,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
         // der Leser des Ladeschirms). Die Lücke ist nur das WARTEN, nie das Urteil: „bauten" zählt jedes Bauwerk, ein Haus im Werk
-        // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
+        // sperrte G1 und D2M (n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
             r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");

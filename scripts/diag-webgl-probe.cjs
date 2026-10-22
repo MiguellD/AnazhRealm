@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe, 18.07.)
+// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe)
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf den WebGL2-Backend zurück; die WGSL-Konsumenten
 // (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die V18.267-Falle
 // in GPU-Form). Die Probe erzwingt den Rückfall (window.__anazhForceWebGL, der EINE Hook, alle 5 Renderer-Münzstellen) und
 // beweist auf echtem GL (die CI swiftshader, lokal die Karte):
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)
-//   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") — fail-soft wäre der Bruch (Schöpfer-Wort 17.07.)
+//   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") — fail-soft wäre der Bruch
 //   W3 die Wände halten: kein Feld-Pass · keine Geometrie-Arena (laut: `__arenaOhne`) · keine Region-RenderBundles
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht endlich, der Canvas nach einem echten Frame trägt SUBSTANZ (nicht
 //      schwarz) ohne page-error, und jedes Programm, das das Spiel baut, linkt — sonst ROT beim Stoff-Namen mit Info-Log im
 //      Fehler-Sammler (r184 nennt es namenlos) — „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
-//   W6 (Karten W3 + S5, 16.10., ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
+//   W6 (Karten W3 + S5, ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
 //      GL sie zählt (aktive Sampler × Feldgröße, nie Textur-Objekte), gezählt im GLSL OHNE Link (swiftshader linkt je Programm
 //      20–48 s); Selbsttests: ein Stoff mit 17 Karten fällt beim Namen, ein linkender Zensus ist ROT (r184-Drift)
 //   node scripts/diag-webgl-probe.cjs
@@ -63,7 +63,7 @@ const server = statikServer();
             // W5 — der Substanz-Schuss liest, was der Spieler SIEHT: den Canvas nach einem echten Frame (`_loopRender`), Frame für
             // Frame bis Substanz steht (Ereignis-Zeit, ≤ 120 Frames; bis W3 ein Einmal-Render in ein eigenes Ziel, auf der Radeon
             // schwarz). Er kommt ZUERST: ein Pixel-Lesen wartet auf jede GPU-Arbeit davor — hinter 12 gepumpten Takten stand er
-            // auf swiftshader bis 160 s (16.10.), hinter den Frames des ruhenden Loops kostet er seinen eigenen Frame.
+            // auf swiftshader bis 160 s, hinter den Frames des ruhenden Loops kostet er seinen eigenen Frame.
             const cam = st.camera, rend = st.renderer; // prettier-ignore
             const c2 = Object.assign(document.createElement("canvas"), { width: 96, height: 64 }).getContext("2d", { willReadFrequently: true }); // prettier-ignore
             for (o.schussFrames = 1; o.schussFrames <= 120; o.schussFrames++) {

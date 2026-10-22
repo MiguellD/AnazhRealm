@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-fall-waechter.cjs — DER FALL-WÄCHTER (Leben-Schau 2, 09.10., Familie koerper-bild): jeder Körper steht auf dem Boden
+// diag-fall-waechter.cjs — DER FALL-WÄCHTER (Leben-Schau 2, Familie koerper-bild): jeder Körper steht auf dem Boden
 // UNTER ihm — keiner fällt durch ihn, keiner springt aufs Dach. Befund (sichtbar gefahren, echte Radeon, Spur B Bilder 34–37):
 // der GT flog mit 38 km/h über die Spaltkante (−904/−975), prallte an die Gegenwand, rollte zurück in den Grund und unter den
 // Überhang der Westwand (Fels 22,3–29,5 m, Luft 16–22,3 m) — dort lag sein Boden 12 m ÜBER ihm: der Fahr-Schritt las die
@@ -806,7 +806,7 @@ async function probe(K) {
             proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
         }
     }
-    // DER TOD IN DER HÖHLE (Gegenprüfung 10.10.): der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
+    // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
     // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
     // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
     // die Tiefe darin). Vorher las die Tod-Lage die Oberkante der Säule als Boden: in der Höhle legte sich der Leib nach dem

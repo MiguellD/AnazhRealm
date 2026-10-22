@@ -11,7 +11,7 @@
 //       gier     — die Gier dreht in Frames OHNE Sim-Schritt                                               Soll ≤ 0,5°
 //     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht. T3 das Pferd
 //     (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-Gesetz): teleport 0, weg ±2 %.
-//     T4 (F1 des Schöpfers 17.10.) DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
+//     T4 DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
 //     (die Schwellen am Verdikt `WECHSEL`).
 //
 //   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:

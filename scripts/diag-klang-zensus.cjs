@@ -19,7 +19,7 @@
 //      Stapel) oder ein Wirt-Leser eines benannten klang-Gesetzes (Musik ← klang:GENRES ·
 //      Schritt ← klang:SCHRITT_TIMBRE). Alles andere ist ein STAMM-LITERAL — beim Namen. Dazu STATISCH, unabhängig
 //      von jeder Tour: jede Stelle im Stamm, die eine Quelle baut (Oszillator · Puffer · Konstante), liegt in einem
-//      Wirt-Leser — sonst beim Namen mit Zeile (bis 06.10. klangen drei Sinus-Pings, die keine Tour auslöste).
+//      Wirt-Leser — sonst beim Namen mit Zeile (die keine Tour auslöste).
 //  (H) HÖRBAR-KOSTEN: jede dauernd laufende Quelle (Schleife, Oszillator ohne Stop) gehört
 //      einer Gesetz-Stimme über der Hörschwelle; Quellen-Zahl = Σ der hörbaren Stimmen.
 //  (S) SOLL-KLANG je Ort (Pegel am Welt-Bus, die Lage am Ohr bei mittlerer Böe):
@@ -344,7 +344,7 @@ function werkzeug() {
             orte.wiese = neu || { x: wx, z: wz, ohneOrt: "kein Punkt jenseits der Glut-Hörweite binnen 240 m" };
         }
         // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–24 m neben seinem Fuß (der
-        // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
+        // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L), reicht
         // das Becken eines Falls bis zur Krone seines Kanals: am 9,1-m-Fall der Mess-Wiese ist kein Punkt ≤ 12 m trocken.
         // Das SOLL misst die Ferne mit (SOLL.fallArm).
         // Seit K16 trägt die Kachel der Wiese keinen Fall: der nächste Fall der Kacheln bis zum zweiten Ring (wie der
@@ -490,8 +490,7 @@ function werkzeug() {
                 // ein Wesen 3 m neben dem Ohr (leerer Körper → die Bezugslänge des Gesetzes)
                 const c = new window.THREE.Object3D();
                 c.position.set(st.playerMesh.position.x + 3, st.playerMesh.position.y, st.playerMesh.position.z);
-                if (typeof r._tierRuf === "function") r._tierRuf(c, "freude");
-                else r.playCreaturePing("happy");
+                r._tierRuf(c, "freude");
             },
             4000
         );
