@@ -791,7 +791,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
     );
-    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
@@ -827,7 +826,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (G1) Helper existiert
         out.helperExists = typeof r._growTreeBlueprint === "function";
 
         if (out.helperExists) {
@@ -914,7 +912,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         return out;
     });
 
-    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
     check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
     check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);

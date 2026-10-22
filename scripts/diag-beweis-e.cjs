@@ -72,7 +72,7 @@ const SICHT_FN = async (a) => {
     }
     const bild = async () => {
         try {
-            if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
         r._schattenAlleNeu();
         const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
@@ -123,14 +123,14 @@ const SCHUSS_FN = async (kam) => {
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
     // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
-    const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;
+    const sy = r._voxelSurfaceY(kam.px, kam.pz);
     if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
     cam.lookAt(kam.lx, kam.ly, kam.lz);
     cam.updateMatrixWorld(true);
     // Die March-Uniforms folgen der Kamera über den EINEN Produktions-Pfad (sonst
     // marcht der Pass aus der Kamera des letzten Loop-Takts — falsche Gestalt).
     try {
-        if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+        if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
     } catch (_e) {}
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
@@ -339,10 +339,10 @@ const SCHUSS_FN = async (kam) => {
         };
         setzeMittag();
         const boden = (x, z) => {
-            const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, z) : r.getTerrainHeightAt(x, z);
+            const y = r._voxelSurfaceY(x, z);
             return typeof y === "number" && isFinite(y) ? y : pm.y;
         };
-        const trocken = (x, z) => (typeof r._landAt === "function" ? r._landAt(x, z, 0.3) : true);
+        const trocken = (x, z) => r._landAt(x, z, 0.3);
         // DIE BÜHNE: je Klasse ein FLACHER, TROCKENER Platz um die Mess-Wiese —
         // Höhen-Spanne über Mitte + 2 Ringe (r, r/2 × 8 Richtungen) ≤ tol, alle Proben trocken,
         // Abstand zu den schon vergebenen Bühnen. Kamera und Objekt stehen auf DERSELBEN Bühne.
@@ -545,7 +545,7 @@ const SCHUSS_FN = async (kam) => {
             async (kam, voll) => {
                 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
                 const r = window.anazhRealm;
-                const g = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : kam.py;
+                const g = r._voxelSurfaceY(kam.px, kam.pz);
                 r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
                 // Beim Einschwingen rendert der Takt NICHT (unter swiftshader kostet ein Voll-Render mit
                 // Studio-Meshes Sekunden — die Mesh-Zone würde nie fertig); gerendert wird nur der Schuss.

@@ -553,7 +553,7 @@ function werkzeug() {
     // wird 1e9 — beide bleiben auf ihrer Seite jeder Schwelle.
     W.endlich = (o) =>
         JSON.parse(JSON.stringify(o, (k, v) => (v === Infinity ? 1e9 : v === -Infinity ? -999 : v)));
-    W.zensus = () => (typeof r._klangZensus === "function" && r._klangZensus() ? W.endlich(r._klangZensus()) : null);
+    W.zensus = () => (r._klangZensus() ? W.endlich(r._klangZensus()) : null);
     W.mischung = (lage) => W.endlich(window.__klangCore.umweltMischung(lage));
     return W;
 }

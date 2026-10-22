@@ -465,7 +465,6 @@ async function probe(K) {
     const r = window.anazhRealm;
     const st = r.state;
     const A = r.constructor;
-    const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
     let tMs = performance.now();
     const takt = () => {
         tMs += 1000 / 60;
@@ -620,7 +619,7 @@ async function probe(K) {
     // ── (T) DER EINGESCHMUGGELTE TÄTER: der Boden des Werks liest die Oberkante der Säule (der alte Leser)
     {
         const P = Object.getPrototypeOf(r);
-        r._werkBoden = function (entry) {
+        r._werkBoden = function () {
             return (x, z) => this.getTerrainHeightAt(x, z);
         };
         let t;

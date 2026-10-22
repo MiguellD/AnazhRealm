@@ -270,7 +270,7 @@ async function welt() {
             const x = sx + dx,
                 zz = sz + dz;
             const pm = spieler();
-            const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, zz) : pm.y;
+            const y = r._voxelSurfaceY(x, zz);
             pm.set(x, (Number.isFinite(y) ? y : pm.y) + 1.8, zz);
             await takt(160);
             const wiese = window.__wieseSicht(r);

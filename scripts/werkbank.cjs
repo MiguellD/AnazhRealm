@@ -1,9 +1,5 @@
-// werkbank.cjs — DIE WERKBANK der Look-Arbeit (V18.503): EINE Welt bleibt offen, Fragen gehen per
-// Befehl hinein. Befund 01.10.: jede Hypothese startete die Welt neu (Boot + Einschwingen 3–5 min,
-// swiftshader 15–100 s je Bild) — 15 Läufe an einem Tag für Fragen, die zusammen ~30 s echte
-// Rechenzeit brauchten. Profis tauschen live (Hot-Reload) und lesen Puffer-Ansichten; das hier ist
-// der Weg dorthin: die Welt bleibt stehen, eine Methode aus dem Arbeitsbaum wird in die laufende
-// Seite getauscht, das Terrain-Material neu gebaut, das Bild ist in Sekunden da.
+// werkbank.cjs — DIE WERKBANK der Look-Arbeit: EINE Welt bleibt offen, Fragen gehen per Befehl hinein, eine Methode aus
+// dem Arbeitsbaum wird in die laufende Seite getauscht, das Bild ist in Sekunden da.
 //
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]
 //                                                           Welt + Steuer-Server (bleibt offen); `--ort` der Messort vor
@@ -12,7 +8,7 @@
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
 //                                                           `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug,
 //                                                           Ort-Takt und Sicht (ohne Wahl Ego, K26) des Orts;
-//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
+//                                                           ein Toggle-Ort (buehne) betritt seine Welt, hält Stellgrößen
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
@@ -93,7 +89,7 @@
 //                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
 //                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
 //                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
-//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,hieb] [--json datei] | latenz --selbsttest
+//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste (CDP) → erstes Bild mit Leib/Kamera
 //                                                           ≥ 1 cm bewegt, je Sicht × Verb p50/p95, ROT über 50 ms beim Täter
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
@@ -266,7 +262,7 @@ function sollIstSchreiben(ziele, messung) {
 }
 // DIE TAFEL IN IHRER FORM (F1 + L2, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile, und jede Teil-Klasse einer Messung
 // (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
-// Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
+// Tafel nie
 function tafelText(v, ein = "") {
     if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return `[${v.map((x) => JSON.stringify(x)).join(", ")}]`;
     if (!v || typeof v !== "object") return JSON.stringify(v);
@@ -300,11 +296,9 @@ const ECHT = argv.includes("--echt");
 // DIE GPU-FEHLER-LINSE nur auf Zuruf (`start --gpu-fehler`): sie hüllt jeden Draw in eine JS-Probe — eine Zeit-Messung
 // (lauf, gpu-bank, band) liefe sonst mit ihrer Last.
 const GPU_FEHLER = argv.includes("--gpu-fehler");
-// DER MESSORT VOR DEM BOOT (`start --ort <id>`, OMEN 15.10.): ein Ort ohne Dorf-Zug (`dorfZug: false` im Haushalt) sperrt den
-// Auto-Zug ab dem ersten Skript der Seite. Vorher schaltete ihn erst die Folge nach dem Boot ab — ein Auftrag, der im Boot
-// losging, kam danach an: sein Plan stand (Wege, Platz, der Wald wich dem Grundriss), das Dorf wuchs nie (`dorfWaechst 0/18`),
-// und jeder Boot maß eine andere Szene (Genesis Ego −2 Baum-Befehle, −18k Dreiecke, +6 fps; 1510-k72-abab). `umstellen --ort`
-// stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
+// DER MESSORT VOR DEM BOOT (`start --ort <id>`): ein Ort ohne Dorf-Zug (`dorfZug: false` im Haushalt) sperrt den Auto-Zug ab
+// dem ersten Skript der Seite — sonst käme ein im Boot losgegangener Auftrag danach an, und jeder Boot mäße eine andere Szene.
+// `umstellen --ort` stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
 const START_ORT = argv[0] === "start" ? opt("--ort", null) : null;
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
@@ -373,110 +367,6 @@ function methodeAusQuelle(quelle, name) {
 // (r184-Pool löst den LETZTEN Frame auf, Summe aller Pässe), Befehle/Dreiecke je gerendertem Frame und je Pass
 // (renderer.info, die Quelle von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
 // gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
-// DIE LATENZ (leib.K1): Taste → bewegter Leib im Ausgabe-Bild. Start ist der Zeitstempel des Tasten-Ereignisses (CDP
-// Input.dispatchKeyEvent, `event.timeStamp`), Ende die Marke des präsentierten Bilds (`getCurrentTexture` am Canvas der Welt,
-// wie die Belegungs-Spur), in dem Kamera oder Leib ≥ 1 cm von der Lage des letzten Bilds vor der Taste stehen. Je Probe die
-// Zerlegung: eingabe (Ereignis → Hörer) · warten (Hörer → Beginn des Takts, der das Bild zeichnet) · takte · bild (Takt →
-// Marke) · regung (das erste Bild ≥ 1 mm: bis dahin die Kette, danach die Gang-Kurve).
-// `verzug` (Selbsttest) hält die Taste n präsentierte Bilder im Eingabe-Pfad zurück (die Leine zeichnet nicht jeden Takt); die Bewegung liest nie das Render-Signal.
-// DER HIEB (halten.K2): der Klick (CDP, Zeiger gefangen) auf ein gehaltenes Tier unter dem Fadenkreuz; Ende das Bild, in dem
-// die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
-// präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
-function latenzAn(k) {
-    const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
-    window.__buehne();
-    if (window.__tiereHalten) window.__tiereHalten();
-    const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
-    const lage = () =>
-        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
-    const weg = (a, b) => Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j]))));
-    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
-    L.start = st.playerMesh.position.clone();
-    const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
-    GPUCanvasContext.prototype.getCurrentTexture = function () {
-        if (this.canvas === rend.domElement) {
-            const t = performance.now(), l = lage(), p = L.probe;
-            L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
-            if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
-            if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
-                Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
-            const sw = p && p.t0 != null && st.player._swing;
-            if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
-            L.swVor = sw && sw.t;
-            L.vor = l;
-            L.bilder.push(t);
-        }
-        return gct.call(this);
-    };
-    const hoer = (ev) => {
-        if (synth.has(ev)) return;
-        const p = L.probe, jetzt = performance.now();
-        if (ev.type.endsWith("down") && p && p.t0 == null)
-            Object.assign(p, { t0: ev.timeStamp, eingabe: jetzt - ev.timeStamp, hoerer: jetzt, takt: L.takt, ref: L.vor });
-        if (!k.verzug || ev.type === "mousedown") return;
-        ev.stopImmediatePropagation();
-        const kopie = new KeyboardEvent(ev.type, { key: ev.key, code: ev.code, bubbles: true, cancelable: true });
-        const eintrag = [ev.target, kopie];
-        synth.add(kopie), L.offen.push(eintrag);
-        (async () => {
-            for (const n = L.bilder.length + k.verzug; L.bilder.length < n && L.offen.includes(eintrag); ) await raf();
-            if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
-        })();
-    };
-    const nach = () => L.probe && (L.probe.imHoerer = performance.now() - L.probe.hoerer); // die Blase nach dem Hörer
-    for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
-    window.addEventListener("mousedown", nach);
-    rend.setAnimationLoop((t) => {
-        L.takt++;
-        L.taktAm = performance.now();
-        window.__wetterHalten();
-        r._gameLoopTick(t);
-    });
-    // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
-    // zufällige Phase gegen den Bild-Takt
-    L.bereit = async (sicht, zurueck, verb) => {
-        L.probe = null;
-        if (zurueck || (L.verb = verb) === "hieb") st.playerMesh.position.copy(L.start);
-        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
-        if (verb === "hieb" && !(await L.tierStellen())) return false;
-        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await raf()) if (L.bilder.length > bis) return false;
-        await new Promise((f) => setTimeout(f, Math.random() * 17));
-        return !!(L.probe = {});
-    };
-    L.treffer = async () => {
-        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await raf();
-        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await raf();
-        return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
-    };
-    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
-    L.tierStellen = async () => {
-        const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
-        if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
-        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
-        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await raf();
-        c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
-        c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
-        st.player.stamina = st.player.staminaMax || 100;
-        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await raf()) {
-            const F = r._fadenkreuzStrahl(), v = r._leibMitte(c).sub(F.o).normalize();
-            if (v.distanceTo(F.d) < 0.03) return true;
-            st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
-            st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
-        }
-    };
-    L.ende = () => {
-        for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
-        GPUCanvasContext.prototype.getCurrentTexture = gct;
-        for (const typ of ["keydown", "keyup", "mousedown"]) window.removeEventListener(typ, hoer, true);
-        window.removeEventListener("mousedown", nach);
-        if (L.tier) r.removeCreature(L.tier);
-        rend.setAnimationLoop(null);
-        st.playerMesh.position.copy(L.start);
-        r.setCameraMode(L.sicht);
-        const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
-        return d[d.length >> 1];
-    };
-}
 
 function lauf(k) {
     return (async () => {
@@ -698,8 +588,8 @@ function lauf(k) {
                     const g = proben.filter((p) => p.erledigt);
                     return zahl(g.slice(1).map((p, i) => (p.gpuErledigt - g[i].gpuErledigt) / p.erledigt));
                 })(),
-                // DIE PASS-ZAHL (Befund G8, OMEN 18.10.): die Pascal-Pass-Stempel tragen präsentations-gebundene
-                // Fremdzeit (GTX k0 +0,41 ms in 2–56 % der Pässe), der p50 kippt bei Anteil 0,5. ABAB-Urteile über
+                // DIE PASS-ZAHL: die Pascal-Pass-Stempel tragen präsentations-gebundene Fremdzeit, der p50 kippt bei
+                // Anteil 0,5. ABAB-Urteile über
                 // Pass-Kosten lesen `rein` (unterer Gipfel; `__zweiGipfel`, scripts/lib/zerlege-linse.cjs) oder gpu-bank.
                 gpuJePassMs: Object.fromEntries(
                     Object.entries(jePassFrame).map(([p, e]) => [p, window.__zweiGipfel(Object.values(e))])
@@ -763,7 +653,7 @@ function lauf(k) {
 
 // DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
 // warten. Liegt die GPU je Frame über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je Frame — die rAF-Kadenz rastet
-// am VSync ein und misst nur bei tiefer Schlange die GPU (gemessen 04.10.: 33,5 ms „Boden" war CPU 16 ms + VSync).
+// am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
     return (async () => {
         const r = window.anazhRealm;
@@ -795,8 +685,8 @@ function gpuBank(k) {
     })();
 }
 
-// DER TIER-ZÄHLER (Seiten-Kontext, OMEN 07.10.): die Tiere streuen zwischen Boots stark (0–3 Arten im Bild, 11–101 Befehle)
-// und waren der größte unbenannte Störfaktor jeder ABAB-Folge — je Messung steht ihre Zahl daneben, ein Weltzustand, kein
+// DER TIER-ZÄHLER (Seiten-Kontext): die Tiere streuen zwischen Boots stark und stören jede ABAB-Folge — je Messung steht
+// ihre Zahl daneben, ein Weltzustand, kein
 // Urteil: gesamt, im Sichtkegel des Hauptbilds (davon nah ≤ `ANALOG_NAH_M`), mit Schatten-Wurf je Kaskade (ein sichtbarer
 // werfender Leib, dessen Hülle das Frustum der Kaskaden-Kamera trifft), die Arten (die Gattung) gesamt und im Sichtkegel.
 function tierZahl() {
@@ -977,8 +867,7 @@ async function starte() {
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
         // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
-        // — die Schalter je Plattform trägt das EINE Rezept (die alte Vulkan-Kopie lieferte unter Windows keinen Adapter: die
-        // Werkbank fuhr ohne --echt still WebGL2).
+        // — die Schalter je Plattform trägt das EINE Rezept.
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
     await adapterZeile(browser);
@@ -1000,8 +889,7 @@ async function starte() {
     // `__stempelWache` (scripts/lib/zerlege-linse.cjs), die Warnung belegt, dass es geschah.
     const stempelWarnung = { n: 0 };
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
-    // Der Tod der Seite beim NAMEN (04.10.: zweimal „detached Frame" ohne Spur — Absturz, Schließen oder
-    // Navigation waren nicht zu unterscheiden): jedes Ende landet mit Uhrzeit im Werkbank-Log.
+    // Der Tod der Seite beim NAMEN: jedes Ende (Absturz, Schließen, Navigation) landet mit Uhrzeit im Werkbank-Log.
     const tod = (was) => console.log(`[seite] ${new Date().toISOString()} ${was}`);
     page.on("error", (e) => tod("ABSTURZ " + ((e && e.message) || e)));
     page.on("close", () => tod("GESCHLOSSEN"));
@@ -1072,7 +960,7 @@ async function starte() {
     // DIE SICHT des gestellten Orts (K26): Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
-    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`, 1110-6): die Prüfbühne ist eine geborene Welt — sie betritt die
+    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
     // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
     // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
@@ -1112,8 +1000,8 @@ async function starte() {
                 const r = window.anazhRealm;
                 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
-                // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (am 07.10. zog der
-                // Genesis-Ring 36 m um die Plattform, die Messung stand 36 m daneben und urteilte über einen leeren Rand).
+                // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
+                // die Messung über einen leeren Rand).
                 if (o && o.anker) {
                     const a = r[o.anker]();
                     if (!a || !Number.isFinite(a.x) || !Number.isFinite(a.z) || Math.hypot(a.x - x, a.z - z) > 1)
@@ -1123,11 +1011,9 @@ async function starte() {
                         );
                 }
                 window.__ortTakt = (o && o.takt) || [];
-                // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — an der
-                // Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, die GPU-Bank derselben Seite um 0,2 ms; an der Bühne
-                // stand der Lade-Ring je Sitzung bei 25 oder 81–93 Chunks (der Ring wächst nur bei Kopfraum und vollem
-                // Ring, `_activeRingRadius`), die Bank derselben Pose um 0,8–1,0 ms (1110-6). `ring` setzt Ziel UND aktiven
-                // Ring, wie der Null-Renderer es tut.
+                // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
+                // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
+                // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
                 const FELD = {
                     foliageRadius: ["foliageRadius"],
                     architectureCullingRadius: ["architectureCullingRadius"],
@@ -1267,15 +1153,14 @@ async function starte() {
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
-            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;
-            // `--wahl 0` schießt nur die genannte Pose)
+            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
             const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel" };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
             for (let i = 0; i < 2; i++) {
                 try {
-                    if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
@@ -1341,7 +1226,7 @@ async function starte() {
                 // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
                 // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
                 // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
-                // zeichnet nie ins Bild und bleibt, wie er ist. Vorher hieß das ganze Tor ab L1 „bauSatz“.
+                // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
                 for (const [art, s] of r.state.chunkSaetze || [])
                     if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
@@ -1879,13 +1764,13 @@ async function starte() {
                 }
                 if (req.url === "/latenz") {
                     const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
-                    const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86] };
+                    const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86], springen: ["Space", " ", 32], einsteigen: ["KeyE", "e", 69] }; // hieb klickt
                     const tu = (verb, type, [code, key, vk] = taste[verb] || []) =>
                         code
                             ? cdp.send("Input.dispatchKeyEvent", { type, code, key, windowsVirtualKeyCode: vk })
                             : cdp.send("Input.dispatchMouseEvent", { type: type === "keyDown" ? "mousePressed" : "mouseReleased", x: vp.width / 2, y: vp.height / 2, button: "left", clickCount: 1 });
                     for (const type of ["keyDown", "keyUp"]) await tu("hieb", type); // der Klick fängt den Zeiger, wie beim Spieler
-                    await page.evaluate(latenzAn, { verzug: +b.verzug || 0 });
+                    await page.evaluate(HL.latenzAn, { verzug: +b.verzug || 0 });
                     let bildMs = null;
                     try {
                         for (const sicht of String(b.sichten).split(","))
@@ -1893,7 +1778,8 @@ async function starte() {
                                 const reihe = (proben[`${sicht}/${verb}`] = []);
                                 for (let i = 0; i < +b.proben; i++) {
                                     const s = sicht === "ego" ? "first" : "third";
-                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, verb === "gehen", verb))) {
+                                    if (!taste[verb] && verb !== "hieb") throw new Error(`latenz: kein Verb ${verb}`);
+                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, verb !== "wechsel", verb))) {
                                         reihe.push({ unruhe: true });
                                         if (reihe.filter((p) => p.unruhe).length < 3) continue;
                                         throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht`);
@@ -2022,8 +1908,7 @@ async function starte() {
                         });
                         // DIE WIESE (K55): ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
-                        // Ort, der keine Wiese ist, bricht die Aufstellung laut: bis K55 stand die Mess-Wiese nach K16 in einem
-                        // Nadelwald-Hang (Hang 16,8°), und die ABAB 1410-2 verglich zwei Szenen.
+                        // Ort, der keine Wiese ist, bricht die Aufstellung laut.
                         let wiese = null;
                         if (ort.wiese && !pose) {
                             wiese = await page.evaluate(
@@ -2160,17 +2045,14 @@ async function starte() {
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/albedo" && b.nahFern) {
-                    // DIE ALBEDO NAH GEGEN FERN (0910-8): Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
+                    // DIE ALBEDO NAH GEGEN FERN: Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
                     // Vorher steht die Welt: der Ring der Chunks trägt das Quadrat der Linse (≥ 2, Ziel und aktiv wie `stell.ring`
                     // der Bühne — im Software-Holz wählte der Regler je Sitzung Ring 1 oder 2), kein Chunk ist im Bau, und die
-                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen: nach dem Umstellen hielt die Karte
-                    // bereit 1 mit der Mitte am Spawn, am Messort mischte nichts — nah Y 0,13 wie main). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
+                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
                     // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
                     // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
                     // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
-                    // einem von acht frischen Läufen (Integration V18.542, Software-Holz unter Last) fehlte der Linse die
-                    // Nord-Reihe des Quadrats, die Wiese hatte 1 statt 3 Orte (ROT „wiese: 1 Orte“ ohne Grund).
                     const welt = await page.evaluate(async () => {
                         const r = window.anazhRealm;
                         const st = r.state;
@@ -2242,7 +2124,7 @@ async function starte() {
                         q = quadrat();
                         return zustand(false);
                     });
-                    // DER UPLOAD IM HAUPTBILD (Integration V18.542), VOR der Linse in der stehenden Welt: die Linse schießt in
+                    // DER UPLOAD IM HAUPTBILD, VOR der Linse in der stehenden Welt: die Linse schießt in
                     // einem eigenen Pass — dort baut jedes Render-Objekt neu und lädt jede Textur frisch, das Hauptbild nicht
                     // (die Observer-Diät refresht nur, was sich ändert). Die Daten-Bilder des Boden-Stoffs (Fern-Krone,
                     // Wege-Karte, Kronen-Streu) heben ihre Version, dann laufen drei Takte der Welt: jede muss die GPU erreichen
@@ -2332,8 +2214,7 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
-                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu (gemessen 15.10., Radeon:
-                    // das Haus sprang mit dem Auge am Wagen von L1 auf L2) — jede solche Zeile misst in ihrem eigenen Gang NACH
+                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang
                     const nahZ = t.zeilen.filter((z) => ((z.welt || {}).exemplar || {}).stufeNah);
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), {
@@ -2643,7 +2524,7 @@ async function starte() {
                     // DIE BAND-MESSUNG: einschwingen (bis der Bau ruht), Proben (das Maximum je Klasse × Pass), dann der
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
-                    // Ein Toggle-Ort (bank, 1110-6) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
+                    // Ein Toggle-Ort (bank) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
                     BAND.ratscheVon(BAND.ladeSpec(b.ort));
                     // DAS GERÄT und DIE SICHT (K26): sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
                     // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
@@ -3114,7 +2995,7 @@ async function starte() {
                 }
                 if (req.url === "/stop") {
                     send({ stop: true });
-                    // Ports SOFORT frei geben (sonst fand ein Neustart :4489 noch belegt — gemessen 01.10.).
+                    // Ports SOFORT frei geben (sonst fände ein Neustart :4489 noch belegt).
                     seiten.close();
                     steuer.close();
                     // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
@@ -3182,7 +3063,7 @@ async function starte() {
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {
-        // DIE ALBEDO NAH GEGEN FERN (0910-8): je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
+        // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
         // rauscht), der Boden-Satz doppelt so hell rot mit dem Täter Boden-Satz, ein Ring neben dem Gesetz mit dem Täter
         // Fern-Ring, zu wenige Orte, ein leerer Schuss, ein fehlendes Gesetz und eine Karte, die nicht steht, laut.
@@ -3504,7 +3385,7 @@ async function starte() {
                 // die Karte gegen ihre Gestalt (A7): vor dem Schnitt 1,24 × so hell (Fichte, Genesis) — ROT beim Namen
                 [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.24, dL: 3.7, dC: 1.4 } } } }).befunde.join(), /KARTE fichte: Karte\/Gestalt \(f:fichte:L1\) Luma 1\.24/],
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
-                // die Karte in der Nacht (F6): an der Basis 25f53923 4,74 × so hell wie ihre Gestalt (Fichte, Mess-Wiese, Radeon) — ROT beim Namen der Stunde
+                // die Karte in der Nacht (F6): ROT beim Namen der Stunde
                 [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 4.737, dL: 16.6, dC: 2.73 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 4\.737/],
                 // ohne das Band die Wirts-Zahlen (Rauheit 0,9, Mikro-Kavität): die Karte nachts 0,544 ihrer Gestalt — ROT nach unten
                 [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 0.544, dL: -3.86, dC: -0.53 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 0\.544/],
@@ -3882,9 +3763,14 @@ async function starte() {
     else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
-        // der Selbsttest: 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
+        if (argv.includes("--selbsttest")) {
+            const f = HL.latenzSelbsttest(); // ohne Welt: das Urteil
+            console.log(`SELBSTTEST ${f.length ? "ROT: " + f.join(" · ") : "GRÜN: das Latenz-Urteil nennt jede fehlende Größe beim Namen"}`);
+            process.exit(f.length ? 1 : 0);
+        }
+        // die Verzug-Probe (in der Welt): 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
         const reihe = { proben: opt("--proben", 50), sichten: opt("--sicht", "ego,third"), verben: opt("--verb", "gehen,wechsel") };
-        const selbst = argv.includes("--selbsttest"), klein = { proben: 12, sichten: "ego", verben: "gehen" };
+        const selbst = argv.includes("--verzugprobe"), klein = { proben: 12, sichten: "ego", verben: "gehen" };
         o = await rufe("/latenz", selbst ? klein : reihe);
         const mit = selbst && (await rufe("/latenz", Object.assign({ verzug: 3 }, klein)));
         if (opt("--json")) fs.writeFileSync(opt("--json"), JSON.stringify(selbst ? { ohne: o, mit } : o, null, 1));
@@ -3892,9 +3778,10 @@ async function starte() {
             for (const [n, e] of Object.entries(x.reihen || {})) console.log(n, JSON.stringify(e));
             console.log(`LATENZ ${x.urteil} (Bild ${x.bildMs} ms) ${x.rot ? x.rot.join(" · ") : x.fehler}`);
         }
-        const hub = mit && mit.reihen["ego/gehen"].p50 - o.reihen["ego/gehen"].p50;
+        const g = (x) => ((x.reihen || {})["ego/gehen"] || {}).p50; // ein Lauf mit `fehler` trägt keine Reihe
+        const hub = mit && +(g(mit) - g(o)).toFixed(1);
         const gut = selbst ? mit.urteil === "ROT" && hub >= 2 * o.bildMs : o.urteil === "GRÜN";
-        if (selbst) console.log(`SELBSTTEST ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms`);
+        if (selbst) console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {

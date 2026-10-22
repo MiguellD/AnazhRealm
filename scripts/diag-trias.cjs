@@ -173,7 +173,6 @@ const triasStaticLaws = () => [
         const r = window.anazhRealm;
         if (!r) return { fatal: "kein anazhRealm" };
         const f = r._ensureAssetFoundry();
-        dl = performance.now() + 60000;
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
         if (!res.bookReady) return res;

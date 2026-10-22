@@ -150,7 +150,7 @@ const LEIB = (k) => {
     const T = window.THREE;
     const core = window.__tetrapodaCore;
     const p = s.player;
-    if (!s.playerMesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+    if (!s.playerMesh.userData.rig) r.applyPlayerSoul("human");
     const mesh = s.playerMesh;
     const rig = mesh.userData.rig;
     if (!rig) return { fehler: "Spieler ohne Rig" };
@@ -197,8 +197,8 @@ const LEIB = (k) => {
     // DER KONTAKT DES FUSSES (K07, das Abrollen): Ferse (die Sohle unter dem Knöchel) und Ballen (ballen × R davor, im
     // Gelenk-Maß des Knöchels) — der tiefere Punkt trägt. Rollt der Fuß über den Ballen, steht der Ballen; der Schlupf
     // misst ihn, nie die steigende Ferse. Ohne Abrollen in der Zeile liegt der Ballen auf der Ferse (die Messung von vorher).
-    const zeileB = typeof r._gangZeile === "function" ? r._gangZeile(true) : null;
-    const massB = typeof r._gaitBeinMass === "function" ? r._gaitBeinMass(rig) : null;
+    const zeileB = r._gangZeile(true);
+    const massB = r._gaitBeinMass(rig);
     const ballenL =
         zeileB && zeileB.ballen > 0 && massB && core.gangReich
             ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2)

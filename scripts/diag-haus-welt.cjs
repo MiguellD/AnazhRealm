@@ -948,7 +948,7 @@ async function proben(phasen) {
     // Lichtung ist der PLATZ: der gemessene Kreis der Tore + 4 m — darauf keine Krone, Streu, Natur, Kachel-Pflanze.
     // der Hain der KI: je Ort `spawn_tree` (4 Bäume im 2,5-m-Kreis) und `spawn_studio` (eine Eiche genau am Ort); `bleibt`
     // lässt ihn stehen (sonst fällt er nach der Zählung)
-    const hain = (x, z, bleibt) => {
+    const hain = (x, z, bleibt, quelle = "test") => {
         const y = (r.getTerrainHeightAt(x, z) || 0) + 0.5;
         const vor = new Set(s.architectures);
         const fehler = [];
@@ -958,7 +958,7 @@ async function proben(phasen) {
             ["spawn_studio", "eiche", ["at", x, y, z], 1],
         ]) {
             try {
-                const res = r.dslRun(prog, { source: "test" });
+                const res = r.dslRun(prog, { source: quelle });
                 for (const e of res.log || [])
                     if (e.event === "ergebnis")
                         for (const k of ["haus", "lichtung", "bau"]) weicht[k] += (e.gruende && e.gruende[k]) || 0;
@@ -1214,7 +1214,7 @@ async function proben(phasen) {
         for (let a = 0; a < 16 && !ort; a++) {
             const gx = M0.x + Math.cos((a / 16) * Math.PI * 2) * 150;
             const gz = M0.z + Math.sin((a / 16) * Math.PI * 2) * 150;
-            if (!r._landAt(gx, gz, 0.5)) continue;
+            if (!r._landAt(gx, gz, 0.5) || !r._wildnisTraegt(gx, gz)) continue;
             if (s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60))
                 continue;
             ort = [gx, gz];
@@ -1230,7 +1230,7 @@ async function proben(phasen) {
         if (!ort) wb.fehler = "kein trockener Ort 150 m von der Plattform";
         else {
             const [gx, gz] = ort;
-            const vorher = hain(gx, gz, true).neu;
+            const vorher = hain(gx, gz, true, "nexus").neu; // der Hain des Felds
             const damm = r.spawnArchitecture(
                 "damm",
                 { x: gx, y: (r.getTerrainHeightAt(gx, gz) || 0) + 0.5, z: gz },

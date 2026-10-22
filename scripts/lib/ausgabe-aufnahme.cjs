@@ -216,7 +216,7 @@ function uhrSpion() {
             wert = v;
         },
     });
-    if (typeof r._uhrSetzen === "function" && !Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
+    if (!Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
         r._uhrSetzen = function (t, quelle) {
             const vor = this.state.timeOfDay;
             const q0 = S.quelle,
@@ -369,7 +369,7 @@ function buehne(o) {
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
-    if (typeof r._naesseTakt === "function") r._naesseTakt(o && o.naesse != null ? o.naesse : 1e6);
+    r._naesseTakt(o && o.naesse != null ? o.naesse : 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
@@ -379,7 +379,7 @@ function buehne(o) {
     // E 0,28 statt 1,89). Bis 07.10. erzwang jeder Aufruf eine PMREM-Regeneration (~25 Render-Pässe), und das Einschwingen von
     // `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll — ohne Drift malt der Sprung nichts.
     r._himmelSprung = true;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    r._applyDayNightToScene();
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
 
@@ -400,7 +400,7 @@ function membranOhneFilm(an) {
         if (!mat) continue;
         n++;
         const G =
-            typeof r._membranGraph === "function" && rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+            rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
         if (G && G.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
@@ -773,7 +773,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
                 // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
                 // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
-                if (typeof r._schattenAlleNeu === "function") r._schattenAlleNeu();
+                r._schattenAlleNeu();
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();

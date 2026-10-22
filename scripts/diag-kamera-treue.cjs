@@ -279,7 +279,7 @@ function buehne() {
         gruppe.name = "kamera-treue:BUEHNE";
         gruppe.matrixAutoUpdate = false;
         szene.add(gruppe);
-        const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
+        const diaet = (m) => r._materialObserverDiaet(m);
         const boden = new T.Mesh(
             new T.PlaneGeometry(30, 30),
             diaet(
