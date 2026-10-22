@@ -1,8 +1,6 @@
 // albedo-tafel.cjs — DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e, Gebot 10: die Klasse beim NAMEN, bevor ein Schnitt fällt).
-// Befund (Synthese §2.2 b, Karten): das r128-Labor liest ein Paletten-Hex roh als lineare Albedo, die Welt (r184) liest
-// die Albedo, die der Kern backt — wo das FARB-GESETZ (Lehre 21: Hex = sRGB-Absicht, Albedo = sein linearer Wert) erst im
-// Ofen oder nur in der Welt greift, sieht der Schöpfer im Labor eine andere Farbe als im Spiel (Holz-Griff 0,10 ↔ 0,31,
-// Karamell-Haut 1,4–3,0× je Kanal). Keine Linse maß das je Klasse an BEIDEN Seiten mit DERSELBEN Rechnung.
+// Wo das FARB-GESETZ (Lehre 21: Hex = sRGB-Absicht, Albedo = sein linearer Wert) erst im Ofen oder nur in der Welt greift,
+// sieht der Schöpfer im Labor eine andere Farbe als im Spiel — die Tafel misst je Klasse BEIDE Seiten mit DERSELBEN Rechnung.
 //
 // DIE TAFEL (spec/farbe/albedo-tafel.json): je Klasse (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell ·
 // Klinge) ein Exemplar im Labor (Studio · Vorlage · Stoff-Wähler) und in der Welt (Exemplar · Täter-Klasse · Stoff-Wähler),

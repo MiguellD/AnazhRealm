@@ -1302,8 +1302,7 @@ async function WELLE_L() {
         r.setCameraMode("first");
         // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
-        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
-        // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
+        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt).
         await teil("T16", async () => {
             const hE = setze("wesen");
             const detail = [];
@@ -1745,7 +1744,7 @@ async function WELLE_L() {
         // folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der Gestalt reicht
         // (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte (Ecken des Geräts in
         // Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte im Bild der Ich-Kamera
-        // liegen (Spitze UND Mitte). Befund: im Treffer-Takt stand das Großschwert über dem Kopf (ks02), die Ich-Sicht zeigte keine Klinge (ks01).
+        // liegen (Spitze UND Mitte).
         await teil("T18", async () => {
             const hP = setze("wesen");
             ausruesten("klinge_grossschwert");
@@ -1924,8 +1923,7 @@ async function WELLE_L() {
             }
         });
         // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing bei
-        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns). Befund: 5 je Hieb
-        // für Dolch, Großschwert und Keule (flach).
+        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns).
         await teil("T19", async () => {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
@@ -1963,7 +1961,7 @@ async function WELLE_L() {
         // und danach, erlaubt ist Regen·dt (hp hat kein Regen-Gesetz: 0). Auf das Maximum setzen nur die Wandlung
         // (applyPlayerSoul) und die Rückkehr (_playerDeathRespawn) — die Rufer mit `voll` liest die Probe aus dem Quelltext.
         // Selbst-Test (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei JEDER Neuberechnung) als Hülle → der erste
-        // Rufer heißt equipHeld. Befund K27: 4 Wege zur Voll-Heilung (Gerät, Panel, Boost, Tod-Takt).
+        // Rufer heißt equipHeld.
         await teil("T27", async () => {
             const modeL = r.getGameMode();
             const inv = p.inventory;
@@ -2143,7 +2141,7 @@ async function WELLE_L() {
         });
         // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
         // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
-        // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
+        // seines Leibs (_leibMasse).
         await teil("T20", async () => {
             const reihe = [];
             for (const seele of ["fuchs", "wolf", "wesen", "baer"])
@@ -2175,7 +2173,7 @@ async function WELLE_L() {
         });
         // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was fliegt
         // (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut keinen eigenen
-        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
+        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil.
         await teil("T21", async () => {
             ausruesten("klinge_langbogen");
             const recP = r._heldBogenRecipe();
@@ -2373,7 +2371,6 @@ async function WELLE_L() {
         // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75) — ein Stand von vor
         // dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen rechnet es noch: leibV = 0);
         // voll gespeichert kehrt er voll zurück, halb verwundet halb; ein neuer Stand mit 30 % Leben kehrt mit 30 % zurück.
-        // Befund Gegenprüfung 1: ein voller Hirsch stand nach dem Reload bei 124/168, ein voller Bär bei 159/391.
         await teil("T25", async () => {
             const wunde = [];
             for (const [seele, L] of [
@@ -2421,7 +2418,7 @@ async function WELLE_L() {
         // Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die Gegenwehr). Gemessen im Biss-Takt
         // (damagePlayer / damageCreature): die Geste des Beißers (seine laufende Aktion) und der Spalt zwischen seinem KOPF
         // (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des Gebissenen (die Kapsel des Spielers / die Glieder
-        // des Tiers), dazu der Abstand der Mitten. Befund K-D13: 12 Bisse am stehenden Spieler, 9 ohne Geste, aus 1,36–2,39 m XZ.
+        // des Tiers), dazu der Abstand der Mitten.
         await teil("T23", async () => {
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);

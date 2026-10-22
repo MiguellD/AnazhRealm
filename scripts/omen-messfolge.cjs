@@ -157,8 +157,7 @@ function bankJe(lauf) {
 }
 
 // DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
-// Befund 12.10. (1110-9, Genesis): jeder Eingriff machte das folgende 10-s-Band ~1 ms teurer — auch das Entfernen des
-// Tor-Zwillings. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
 // wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
 // Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).

@@ -126,7 +126,6 @@ function zugVerdict(m) {
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
-// Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
 function rahmenVerdict(m) {
     if (!m || m.gestartet !== true) return ["rahmen start"];
     const out = [];

@@ -166,8 +166,7 @@ function bissVerdict(B) {
 // Befund-Lage (abgewandt, 1,5 · 1,6 · 1,7 m) springt seine Energie nicht (höchstens ×1,25); jede Streuung ist
 // BENANNT — ein Treffer unter voller Wirkung nennt seinen Ort auf der Klinge (griffnah, hand, spitze) — und BEGRENZT (keine
 // Energie unter 0,2 × der stärksten desselben Geräts, der Boden des Kerns); das schwere Schwert schlägt im
-// Mittel nie schwächer als der Dolch. Befund 07.10.: abgewandt 1,6 m 15–18 J (Griff-Drittel), 1,7 m 91 J (×6), schwächer als
-// der Dolch (24–32 J).
+// Mittel nie schwächer als der Dolch.
 const ENERGIE_SOLL = { treffer: 13, befund: 1.25, boden: 0.2 };
 function energieVerdict(E) {
     if (!E || !Array.isArray(E.gross) || !Array.isArray(E.dolch)) return ["energie keine Probe"];
@@ -304,7 +303,7 @@ function poseVerdict(P, E) {
 }
 // (T19) DIE AUSDAUER JE HIEB AUS DER WAFFEN-MASSE (Welle LF kampf, Posten 8 — pure Funktion, Probe UND Selbst-Test): ein Hieb
 // zehrt mit der Masse des Geräts — die Reihe steigt streng mit kg (Faust < Dolch < … < Vorschlaghammer), zwei Geräte
-// verschiedener Masse zehren nie gleich. Befund 07.10.: 5 je Hieb für Dolch, Großschwert und Keule.
+// verschiedener Masse zehren nie gleich.
 function ausdauerVerdict(A) {
     if (!Array.isArray(A) || A.length < 3) return ["ausdauer keine Probe"];
     const v = [];
@@ -319,8 +318,7 @@ function ausdauerVerdict(A) {
 }
 // (T27) LEBENSWERTE SIND ZUSTAND (K27 — pure Funktion, Probe UND Selbst-Test): ein Biss senkt hp, ein Hieb die Ausdauer;
 // kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll. Jede Verletzung
-// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt). Befund K27: recomputePlayerStats setzte hp, Ausdauer
-// und Mana bei JEDER Neuberechnung auf das Maximum.
+// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt).
 const LEBEN_SOLL = { eps: 1e-3 };
 function lebenswerteVerdict(L) {
     if (!L || !Array.isArray(L.schritte) || L.schritte.length < 10) return ["lebenswerte keine Probe"];
@@ -362,7 +360,7 @@ function lebenswerteWege(L) {
 }
 // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Welle LF kampf, Posten 6 — pure Funktion, Probe UND Selbst-Test): Biss, Haut
 // und Leben eines Tiers steigen streng mit der Masse seines Leibs — über alle Gattungen und Größen hinweg (die Masse IST
-// Gattung × Größe). Befund 07.10.: damage 19,75 und defense 11,9 für jede Gattung und Größe.
+// Gattung × Größe).
 function kampfWerteVerdict(R) {
     if (!Array.isArray(R) || R.length < 6) return ["kampfwerte keine Probe"];
     const v = [];
@@ -401,7 +399,7 @@ function pfeilVerdict(P, shell) {
 }
 // (T22) EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
 // der Leib auf der Flanke — die Leibes-Achse waagrecht (|vorn·y| ≤ 0,3), die Hochachse gekippt (oben·y ≤ 0,35) — auch wenn
-// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da. Befund: Kopf senkrecht (vorn·y ≈ 1), nach 22 Takten fort.
+// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da.
 function todVerdict(T) {
     if (!T) return ["tod keine Probe"];
     const v = [];
@@ -450,7 +448,7 @@ function todVerdict(T) {
 }
 // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Welle LF kampf, Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
 // der drei Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) beißt das Tier im Ansprung (die Geste pounce läuft im
-// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m). Befund K-D13: 9 von 12 Bissen ohne Geste, aus 1,36–2,39 m XZ.
+// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m).
 function bissGesteVerdict(B) {
     if (!B) return ["biss-geste keine Probe"];
     const v = [];
@@ -491,8 +489,7 @@ function wundeVerdict(W) {
 // (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (Welle LF kampf Nachbesserung 2 — pure Funktion, Probe
 // UND Selbst-Test): die Wahl der Beute rechnet keine Gestalt eines Tiers jenseits des Grob-Tors (Lehre 25: billige Filter
 // zuerst), und kein Jäger springt einen Leib an, der über seinem Sprung liegt (der Spieler auf einem Sims) — die Gegenprobe:
-// waagrecht stand er in der Weite seines Ansprungs. Befund Gegenprüfung 1: 15 Gestalten je Takt bei 15 Beutetieren außer
-// Reichweite (1,29–2,35 ms je Jäger), unter dem Sims ein Ansprung alle 1,6 s. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
+// waagrecht stand er in der Weite seines Ansprungs. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
 // 1,3 m): mindestens 5 von 6 Ansprüngen beißen — der Biss trifft auch ein Ziel, das größer ist als das Kitz, und dort, wo die
 // Hetze hält.
 // Der Kopf zielt aus der gezeigten Pose (98042fd4, Nachbesserung 3 die Wand): stehen Pose und Ziel still, steht das Ziel der
