@@ -1,0 +1,8 @@
+08:45:14 start 68f9e70c[0]
+08:46:49 verzug EXIT=0 ego/gehen {"n":12,"fehlt":0,"p50":69.9,"p95":77.5,"max":77.5,"eingabe":0.2,"hoerer":null,"kette":49.6,"kurve":9,"takte":9} LATENZ ROT (Bild 16.2 ms) ego/gehen ohne imHoerer (12/12) — eine Pflicht-Größe fehlt in gemessenen Proben · ego/gehen p95 77.5 ms > 50 (fehlt 0) — Täter kette 49.6 ms, 9 Takte VERZUGPROBE GRÜN: Verzug 3 Bilder hebt p50 um 38.1 ms 
+08:56:49 sammel EXIT=124 600 s 
+08:57:21 springen ego EXIT=0 32 s ego/springen {"n":50,"fehlt":0,"p50":21.4,"p95":27.8,"max":28.5,"eingabe":0.3,"hoerer":0.1,"kette":6.8,"kurve":15.7,"takte":3} LATENZ GRÜN (Bild 8.3 ms)  
+08:57:48 springen third EXIT=0 27 s third/springen {"n":50,"fehlt":0,"p50":20.8,"p95":28.2,"max":34.6,"eingabe":0.3,"hoerer":0.1,"kette":11.1,"kurve":9.2,"takte":3} LATENZ GRÜN (Bild 8.3 ms)  
+08:57:58 einsteigen ego EXIT=0 10 s ego/einsteigen {"n":50,"fehlt":0,"p50":17.2,"p95":26.9,"max":39.4,"eingabe":0.3,"hoerer":0.4,"kette":16.5,"kurve":0,"takte":1} LATENZ GRÜN (Bild 8.3 ms)  
+08:58:25 einsteigen third EXIT=0 27 s third/einsteigen {"n":50,"fehlt":0,"p50":12,"p95":17.6,"max":19.4,"eingabe":0.3,"hoerer":0.2,"kette":11.6,"kurve":0,"takte":1} LATENZ GRÜN (Bild 8.3 ms)  
+08:58:31 WELT ENDE

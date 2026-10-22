@@ -1,0 +1,9 @@
+09:38:44 start 10c879c0[0]
+09:40:21 verzug EXIT=0 ego/gehen {"n":12,"fehlt":0,"p50":63.4,"p95":84.4,"max":84.4,"eingabe":0.3,"hoerer":34.5,"kette":46.6,"kurve":17,"takte":8} LATENZ ROT (Bild 15.8 ms) ego/gehen p95 84.4 ms > 50 (fehlt 0) — Täter kette 46.6 ms, 8 Takte VERZUGPROBE GRÜN: Verzug 3 Bilder hebt p50 um 41.099999999999994 ms  
+09:40:37 sammel EXIT=1 16 s ego/gehen {"n":5,"fehlt":0,"p50":33,"p95":38,"max":38,"eingabe":0.2,"hoerer":0.1,"kette":12.9,"kurve":24.8,"takte":4} ego/wechsel {"n":5,"fehlt":0,"p50":27.5,"p95":30.6,"max":30.6,"eingabe":4.9,"hoerer":0.3,"kette":16.8,"kurve":0,"takte":2} ego/hieb {"n":5,"fehlt":0,"p50":7.3,"p95":50.3,"max":50.3,"eingabe":0.3,"hoerer":1.8,"kette":7.2,"kurve":0,"takte":1,"halt":13} third/gehen {"n":5,"fehlt":0,"p50":29.8,"p95":36.7,"max":36.7,"eingabe":1.8,"hoerer":0,"kette":11,"kurve":13.5,"takte":3} third/wechsel {"n":5,"fehlt":0,"p50":20.2,"p95":25.2,"max":25.2,"eingabe":6.2,"hoerer":0.3,"kette":14.9,"kurve":0,"takte":2} third/hieb {"n":5,"fehlt":0,"p50":23.5,"p95":28.5,"max":28.5,"eingabe":8.2,"hoerer":
+09:41:11 springen ego EXIT=0 34 s ego/springen {"n":50,"fehlt":0,"p50":19.4,"p95":27.8,"max":28.2,"eingabe":0.3,"hoerer":0.1,"kette":7.2,"kurve":8.3,"takte":3} LATENZ GRÜN (Bild 9.1 ms)  
+09:41:39 springen third EXIT=0 28 s third/springen {"n":50,"fehlt":0,"p50":20,"p95":39.7,"max":59.1,"eingabe":0.3,"hoerer":0.1,"kette":9.6,"kurve":8.6,"takte":2} LATENZ GRÜN (Bild 10.1 ms)  
+09:41:53 einsteigen ego EXIT=0 13 s ego/einsteigen {"n":50,"fehlt":0,"p50":26.5,"p95":38.3,"max":224,"eingabe":4.8,"hoerer":0.5,"kette":20.8,"kurve":0,"takte":2} LATENZ GRÜN (Bild 14.7 ms)  
+09:42:28 einsteigen third EXIT=0 35 s third/einsteigen {"n":50,"fehlt":0,"p50":15.7,"p95":22.9,"max":23.6,"eingabe":0.3,"hoerer":0.2,"kette":15.1,"kurve":0,"takte":1} LATENZ GRÜN (Bild 15.8 ms)  
+09:42:46 gtbild {"ergebnis":{"gt":[-281.7,-1047.8],"steht":true},"ms":4} {"ergebnis":{"gezeichnet":true},"ms":2}
+09:42:52 WELT ENDE
