@@ -5801,6 +5801,36 @@
         };
         // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
         var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
+        // DAS NETZ DES PROFILS (siedlung.K5): ein Weg-Punkt sucht seinen gepinnten Nachbarn nur in den Zellen, die seine größte
+        // Reichweite (max 1,5 m | halbe Breite) trifft, in der Folge des Profils — dasselbe Urteil wie die Suche über alle
+        // Punkte (gleicher Abstand, der erste gewinnt), ohne die quadratische Schleife (nH 300: 1 206 Punkte je Kandidat)
+        var profilNetz = new Map();
+        var profilR = 0;
+        var profilZ = function (ix, iz) {
+            return (ix + 32768) * 65536 + (iz + 32768);
+        };
+        var profilSetzen = function (pt) {
+            var key = profilZ(Math.floor(pt[0] / 4), Math.floor(pt[1] / 4));
+            var lst = profilNetz.get(key);
+            if (!lst) profilNetz.set(key, (lst = []));
+            lst.push(profil.length);
+            profil.push(pt);
+            profilR = Math.max(profilR, 1.5, pt[3]);
+        };
+        var profilNah = function (x, z) {
+            var out = [];
+            var rz = Math.ceil(profilR / 4) + 1; // eine Zelle Rand: die Rundung am Zellrand fällt nie aus der Suche
+            var ix = Math.floor(x / 4);
+            var iz = Math.floor(z / 4);
+            for (var a = -rz; a <= rz; a++)
+                for (var b = -rz; b <= rz; b++) {
+                    var lst = profilNetz.get(profilZ(ix + a, iz + b));
+                    if (lst) for (var li = 0; li < lst.length; li++) out.push(lst[li]);
+                }
+            return out.sort(function (p, q) {
+                return p - q;
+            });
+        };
         var wege = [];
         var roads = Array.isArray(plan.roads) ? plan.roads : [];
         var k;
@@ -5821,7 +5851,9 @@
                     continue;
                 }
                 var best = Infinity;
-                for (var q = 0; q < profil.length; q++) {
+                var nah = profilNah(pts[k].x, pts[k].z);
+                for (var qi = 0; qi < nah.length; qi++) {
+                    var q = nah[qi];
                     var d = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
                     if (d <= Math.max(1.5, profil[q][3]) && d < best) {
                         best = d;
@@ -5900,7 +5932,7 @@
             }
             for (k = 0; k < n; k++) {
                 ys[k] = r6(ys[k]);
-                profil.push([pts[k].x, pts[k].z, ys[k], hw]);
+                profilSetzen([pts[k].x, pts[k].z, ys[k], hw]);
             }
             // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
             // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand; eine Strecke an der Brücke trägt keine
@@ -5955,8 +5987,14 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
-        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz
-        var eingang = eingangVon;
+        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz — je Slot EINMAL gerechnet
+        // (die Parameter des Hauses, `hausParams`, mischte jeder Schritt der Vorplatz-, Gassen- und Hof-Suche neu: bis 80 je Slot)
+        var eingaenge = new Map();
+        var eingang = function (sl) {
+            var e = eingaenge.get(sl);
+            if (!e) eingaenge.set(sl, (e = eingangVon(sl)));
+            return e;
+        };
         // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
         // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
         // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
