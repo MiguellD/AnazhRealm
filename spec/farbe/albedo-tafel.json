@@ -3,6 +3,8 @@
     "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse des Studio-Befunds (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell · Klinge) ein Exemplar im r128-Labor und in der Welt, gemessen mit EINER Rechnung (scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs `albedoAuswerten`): weißes Umgebungslicht, Schuss hell − Schuss dunkel, Metall auf 0 (Basis-Albedo), jeder geschriebene Pixel, geeicht an der 18-%-Karte (0,180 auf beiden Seiten). Je Zeile Labor-Y, Welt-Y (Rec.-709-Luma, linear), das Verhältnis Labor/Welt und die RATSCHE (|ln Verhältnis| des letzten Nachzugs — sie darf nur fallen, solange W5 das FARB-GESETZ in jedem Kern offen hält). SOLL (W5): jede Zeile innerhalb `toleranz`. Je Studio die 18-%-Karte unter dem Labor-Licht (k·L = Belichtung × Leuchtdichte, Soll: Mittelgrau + 1 EV durch die Tonkurve der Labore, `belichtung.kurve`, gerechnet von `kartenEichung` in scripts/lib/licht-linsen.cjs — dieselbe Rechnung eicht die Welt an ihrer Kurve, AnazhRealm.BELICHTUNG) und der Pixel des Labor-Ausgabe-Wegs. Gemessen: Welt `werkbank.cjs albedo --tafel` am Ort, Labor `diag-albedo-tafel.cjs --labor`, Nachzug `--nachziehen welt.json labor.json`; Wand `npm run gate:albedo-tafel`.",
     "toleranz": 0.1,
     "messRand": 0.04,
+    "stufenToleranz": 0.05,
+    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs)",
     "karte": {
         "albedo": 0.18,
         "eichRand": 0.003
@@ -471,14 +473,15 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "haus_alemannisch",
-                    "radius": 9
+                    "radius": 9,
+                    "stufe": 0
                 },
                 "klasse": "^(bauSatz|f:alemannisch:L[01])$",
                 "stoff": {
                     "seh": "stoff"
                 },
                 "stufen": [
-                    1
+                    0
                 ]
             },
             "quellen": [
@@ -512,6 +515,106 @@
             "ratsche": 0.0579
         },
         {
+            "id": "haus-l1",
+            "gruppe": "Haus",
+            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus), das Labor dasselbe",
+            "labor": {
+                "studio": "fachwerk",
+                "aktion": [
+                    {
+                        "waehle": "#pK",
+                        "wert": "alemannisch"
+                    },
+                    {
+                        "klick": "#pTerrain"
+                    }
+                ],
+                "stoff": {
+                    "seh": "stoff"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_alemannisch",
+                    "radius": 9,
+                    "stufe": 1
+                },
+                "klasse": "^(bauSatz|f:alemannisch:L1)$",
+                "stoff": {
+                    "seh": "stoff"
+                },
+                "stufen": [
+                    1
+                ],
+                "stufeVon": "haus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "haus-l2",
+            "gruppe": "Haus",
+            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus), das Labor dasselbe",
+            "labor": {
+                "studio": "fachwerk",
+                "aktion": [
+                    {
+                        "waehle": "#pK",
+                        "wert": "alemannisch"
+                    },
+                    {
+                        "klick": "#pTerrain"
+                    }
+                ],
+                "stoff": {
+                    "seh": "stoff"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_alemannisch",
+                    "radius": 9,
+                    "stufe": 2
+                },
+                "klasse": "^(bauSatz|f:alemannisch:L2)$",
+                "stoff": {
+                    "seh": "stoff"
+                },
+                "stufen": [
+                    2
+                ],
+                "stufeVon": "haus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
             "id": "lack",
             "gruppe": "Metall/Lack",
             "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
@@ -536,7 +639,7 @@
                     "radius": 4,
                     "nah": 0,
                     "seed": 7,
-                    "stufeNah": true
+                    "stufe": 0
                 },
                 "klasse": "^f:gt:L0$",
                 "stoff": {

@@ -239,30 +239,33 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
-            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufe`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
             // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
-            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
-            // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
-            // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
-            const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
-            if (nahe.length > 1) throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): die Welt wählt die Stufe n ihres Exemplars von einem Auge
+            // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
+            // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+            const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
+            if (nahe.length > 1) throw new Error(`stufe: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
             for (const x of nahe) {
-                const e = x.eintrag;
-                const l0 = () => {
+                const e = x.eintrag,
+                    n = x.zeile.welt.exemplar.stufe,
+                    D = r.constructor.LOD_DISTANCES;
+                const zeigt = () => {
                     for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
-                        if (g && g.slotEntry && g.mesh && /:L0$/.test(r._taeterKlasse(g.mesh) || ""))
+                        if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
                             for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                     return false;
                 };
-                const auge = new T.Vector3(e.position.x + 3, e.position.y + 1.7, e.position.z + 3);
+                const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / Math.SQRT2;
+                const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
                 r._lodAuge = () => auge;
                 try {
-                    await ticke(600, l0);
+                    await ticke(600, zeigt);
                     await ticke(20, () => false);
                 } finally {
                     delete r._lodAuge;
                 }
-                if (!l0()) x.verweigert = `das Exemplar zeigt seine Stufe 0 nicht (das Auge 4,2 m vor ihm, 30 s)`;
+                if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (das Auge ${(ab * Math.SQRT2).toFixed(1)} m vor ihm, 30 s)`;
             }
         }
         const karte = new T.Mesh(
