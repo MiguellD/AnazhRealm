@@ -162,7 +162,7 @@ function readPack(file) {
 }
 
 // ---------------------------------------------------------------------------
-// DER EINE BOOT-PFAD (wie gate:foundry-warm): AnazhRealm headless (Null-Renderer, GPU-frei)
+// DER EINE BOOT-PFAD (wie gate:fluss): AnazhRealm headless (Null-Renderer, GPU-frei)
 // mit ERZWUNGENER Foundry (der Worker bäckt echte Assets im Gate-Kontext; die IDB ist
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
@@ -191,7 +191,7 @@ async function bootRealm(port) {
     return { browser, page, server, pageErrors, close };
 }
 
-// Auf den Worker + das Rezeptbuch warten (die foundry-warm-Disziplin: der Rezept-Reply ist
+// Auf den Worker + das Rezeptbuch warten (der Rezept-Reply ist
 // ein EIGENER Round-Trip nach ready — auf die WAHRHEIT warten, nicht den Timing-Zufall).
 async function waitFoundryReady(page, timeoutMs) {
     return page.evaluate(async (tmo) => {

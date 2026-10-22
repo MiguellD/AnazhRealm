@@ -237,16 +237,32 @@ AnazhRealm._regt = function (q) {
 };
 // DER HALTER hört die Regung seiner Quelle mit (`_anazhHaltR`) — die Werfer-Hülle eines Bündels die Puffer und die Sicht seiner
 // Kinder (`_bundleWerferHuelle`, der Leser der Pass-Sicht). Die Sicht einer Senke (`_instanzZahl`) meldet nur den Haltern.
+// Die Quelle hält ihre Halter SCHWACH: sie lebt oft länger als jeder Halter (der Lager-Puffer einer Arena über jede neue
+// Fassade, `_geoNeu`; ein Kind über seine Bündel) — die starke Liste hielt jeden gefallenen Halter samt seinen Puffern
+// (`werkbank puffer --gang` 22.10.: +178 MB in 2 min am Pfad `renderer.info.memoryMap[k]._anazhHalter[]`).
 AnazhRealm._regtHalter = function (q, n) {
     const h = q._anazhHalter;
     if (h === undefined) return;
     const z = n === undefined ? ++AnazhRealm._regungN : n;
-    for (let i = 0; i < h.length; i++) h[i]._anazhHaltR = z;
+    for (let i = 0; i < h.length; i++) {
+        const o = h[i].deref();
+        if (o !== undefined) o._anazhHaltR = z;
+    }
 };
+// Anmelden räumt die Gefallenen aus der Liste (sie wächst nur mit lebenden Haltern).
 AnazhRealm._regungHalter = function (q, h) {
     const l = q._anazhHalter;
-    if (l === undefined) q._anazhHalter = [h];
-    else if (l.indexOf(h) < 0) l.push(h);
+    if (l === undefined) return void (q._anazhHalter = [new WeakRef(h)]);
+    let w = 0,
+        da = false;
+    for (let i = 0; i < l.length; i++) {
+        const o = l[i].deref();
+        if (o === undefined) continue;
+        da = da || o === h;
+        l[w++] = l[i];
+    }
+    l.length = w;
+    if (!da) l.push(new WeakRef(h));
 };
 // DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
 // Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN: BEWEGLICH ist eine Kette

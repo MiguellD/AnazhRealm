@@ -2191,13 +2191,10 @@ async function checkBandPhaseAFundament(ctx) {
             }
         }
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
-        // kein Mantel). Das Band prüft die ABWESENHEIT (Methoden · Konstante · State · Tick-Aufruf).
+        // kein Mantel). Das Band prüft die ABWESENHEIT von Konstante und State (die Methoden bewacht gate:altlasten).
         out.b2 = {
-            methodsGone:
-                typeof r._ensureHorizonMantle === "undefined" && typeof r._disposeHorizonMantle === "undefined",
             constGone: !r.constructor.HORIZON_MANTLE,
             stateGone: r.state.horizonMantle === undefined && r.state.mantleHoleUniforms === undefined,
-            tickGone: window.__fehlt(r._runFrameScheduler, /_ensureHorizonMantle/),
         };
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
@@ -2245,13 +2242,11 @@ async function checkBandPhaseAFundament(ctx) {
         res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
     );
-    check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
     check(
         "B2/N7.4: kein Mantel-State (horizonMantle/mantleHoleUniforms undefined)",
         res.b2 && res.b2.stateGone === true
     );
-    check("B2/N7.4: der Scheduler ruft keinen Mantel-Tick mehr (Source)", res.b2 && res.b2.tickGone === true);
     check(
         "A6b: _ceilingHeadroom liefert eine Zahl/Infinity (Ammo-Raycast trägt)",
         res.a6Headroom === "inf" || (typeof res.a6Headroom === "number" && res.a6Headroom >= 0)

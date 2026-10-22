@@ -143,6 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         if (ziel) {
             const v = r._foundryVariantFor(1, ziel.preset);
             const key = r._foundryKoerperKey(ziel.preset, v, ziel.lod);
+            await flatMessen(ziel.preset, ziel.lod); // eine untätige Stufe räumte der Ruhe-Deckel: sie reist wieder an
             const grp = r._foundryCacheGet(key);
             const orig = r._foundryFlatVerschmelzen;
             try {
