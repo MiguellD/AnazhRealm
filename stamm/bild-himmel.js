@@ -2453,8 +2453,7 @@ class AnazhRealm_bild_himmel {
         // Körpers in der Ufer-Flut lagen; die Verfolger-Kamera am Seegrund sah klare Luft). Die Kamera-Höhe ist ihr
         // eigener Grund-Bezug: liegt sie unter dem Spiegel, der ihre Spalte füllt, ist sie im Wasser.
         const cam = this.state.camera;
-        const kameraUnterWasser =
-            !!cam && cam.position.y < this._koerperWasser(cam.position.x, cam.position.z, cam.position.y);
+        const kameraUnterWasser = !!cam && this._nassAt(cam.position.x, cam.position.z, 0, cam.position.y);
         this.state.kameraUnterWasser = kameraUnterWasser;
         const luft = this._luftEnsure();
         if (luft) {

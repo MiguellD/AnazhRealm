@@ -74,7 +74,7 @@ class AnazhRealm_vegetation_wiese {
                 if (y === null) continue;
                 const gruen = grund.gruen;
                 if (!(gruen > 0)) continue;
-                if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
+                if (this._nassAt(x, z, 0.1, y)) continue; // nie im Wasser: das EINE Urteil (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
                 // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
@@ -553,7 +553,7 @@ class AnazhRealm_vegetation_wiese {
                         const ordnung = w();
                         const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
-                        if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
+                        if (!A.zeile.ufer && this._nassAt(px, pz, 0.1, py)) continue;
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }

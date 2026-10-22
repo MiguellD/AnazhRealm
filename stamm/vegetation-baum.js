@@ -1625,7 +1625,8 @@ class AnazhRealm_vegetation_baum {
     // wasser-wahrheit): ein benannter Wurf steht nie, wo sein Fuß kein Land ist (`_stammFussLand`: die Achse und der
     // Fuß-Kreis, 5 cm über dem Spiegel — der Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am
     // Fluss grün, und die Wand fragte bis zur Gegenprüfung nur die Achse). Die Nah-Streu (ohne
-    // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
+    // Namen) und die Nah-Wiese fragen beim Wurf dasselbe Urteil (`_nassAt` über ihrem gezeichneten Boden), ihr Schilf steht im
+    // Ufer-Wasser.
     _naturWand(name, position, opts) {
         if (!position) return false;
         const g = this._ortWand(name, position, opts);
