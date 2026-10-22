@@ -921,6 +921,8 @@ function latenzAn(k) {
         L.probe = null;
         if (L.verb !== verb) (L.vor = null), (L.verb = verb); // die Lage wechselt mit dem Verb (bis latenz-verben maß gehen nach hieb die Hand)
         if (st.player.mountedArch != null) r.dismountArchitecture(); // die Probe davor stieg ein
+        if (L.wagen && verb !== "einsteigen") r.removeArchitecture(L.wagen), (L.wagen = null); // die Bühne eines Verbs steht nie im nächsten
+        if (L.tier && verb !== "hieb") r.removeCreature(L.tier), r.equipHeld(null), (L.tier = null);
         if (zurueck || verb === "hieb") st.playerMesh.position.copy(L.start);
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
         if (verb === "hieb" && !(await L.tierStellen())) return false;

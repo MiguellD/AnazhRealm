@@ -78,10 +78,12 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
 - **Die Stufe 3 ist NUR-WURF (S3 haus):** `kindStages` tragen Stufen 0..3; eine Stufe 3 trägt in ihrer
   Budget-Zeile `nurWurf: true` und wird NIE gezeigt — der Wirt serviert sie keinem Distanz-Wunsch
   (`_foundryDeclaredStage` überspringt sie, der Wurf- und Fern-Ruf nennt sie beim Namen). Sie wirft für die Art (B2c
-  `schatten`) und trägt die Fernform (`fernform: "huelle"`: ihre Liste reist als Beipack `__fern` in der Hüllen-Form N5).
+  `schatten`) und trägt die Fernform (`fernform: "huelle"`: ihre Liste reist als Beipack `__fern` in der Hüllen-Form N5) —
+  außer die Art trägt ihre Ferne im Gesetz (`fernform: "gesetz"`, die Gelenk-Gestalt `koerper`): dann wirft sie nur (mensch.K1
+  Staffel 2: der Wurf des Bewohner-Satzes, `_bewohnerSatz`), ohne `__fern`.
   Ihr Stoff ist der EINE Schatten-Stoff (`material.userData.__stoff = "schatten"` — die Brücke reicht ihn als kind
   `schatten`, dieselbe Material-Identität wie der Schatten-Teil der Baum-L1; jede Ecke `aDeckt` 1). Eine Stufe 3 ohne
-  `nurWurf` ist rot (`gate:studio-vertrag`). Träger: fachwerk `haus` [0,1,2,3] und `ausstattung` [0,1,3], porta `gate`
+  `nurWurf` ist rot (`gate:studio-vertrag`). Träger: koerper `koerper` [0,1,2,3] (fernform gesetz), fachwerk `haus` [0,1,2,3] und `ausstattung` [0,1,3], porta `gate`
   [0,3] (1110-9: die gezeigte Stufe 0 wirft nicht mehr selbst — die Karten-Linse zählt NUR-WURF-Stufen nicht als gezeigt).
 - Byte-Beweis: die eingefrorenen Vertrags-Fixtures (`spec/asset-contract/`,
   sha256-Goldens, NIE regenerieren) — jede Domäne bekommt ihren Ordner
