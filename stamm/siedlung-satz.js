@@ -291,7 +291,8 @@ class AnazhRealm_siedlung_satz {
         s.vInhalt += neu - alt;
         b.vAnzahl = neu;
         bau.cnt = c2;
-        for (const { name } of s.attr) b.geom.attributes[name].count = neu;
+        // der Block ist flüchtig (K69): je Attribut ein schlichter Deskriptor — der neue trägt die Zahl seiner Ecken
+        for (const { name } of s.attr) b.geom.attributes[name] = { ...b.geom.attributes[name], count: neu };
         this._chunkSatzViews(s, b);
     }
 

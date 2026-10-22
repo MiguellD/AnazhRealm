@@ -1005,6 +1005,8 @@ class AnazhRealm_dirigent_regler {
             worst: [], // die schlimmsten N Frames (absteigend), mit vollem Kontext
             device: this._flightRecorderDevice(),
             memSeries: [], // V18.294 — Leck-Detektor: Heap + Sammlungs-Größen über Zeit
+            probeAt: -Infinity, // die letzte Leck-Probe (`_flightRecorderMemProbe`, im Leerlauf)
+            probeOffen: false,
             _leakAnnounced: false,
             _announced: false,
             // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die vier Hitch-Summen der
@@ -1250,6 +1252,18 @@ class AnazhRealm_dirigent_regler {
                 fr.worst.push(this._flightRecorderSnapshot(frameMs, f));
                 fr.worst.sort((a, c) => c.frameMs - a.frameMs);
                 if (fr.worst.length > cap) fr.worst.length = cap;
+            }
+            // DIE LECK-PROBE IM LEERLAUF (Lehre 14, stadt-takt): je FLIGHT_RECORDER_PROBE_MS eine Probe der Sammlungen
+            // (`_flightRecorderMemProbe`) — sie läuft, wenn der Haupt-Faden ruht (`_imLeerlauf`, spätestens nach derselben
+            // Frist), nie im Takt; die Speicher-Zeile des HUD und der Leck-Detektor lesen ihre Reihe.
+            const jetzt = performance.now();
+            if (!fr.probeOffen && jetzt - fr.probeAt > AnazhRealm.FLIGHT_RECORDER_PROBE_MS) {
+                fr.probeAt = jetzt;
+                fr.probeOffen = true;
+                this._imLeerlauf(() => {
+                    fr.probeOffen = false;
+                    this._flightRecorderMemProbe();
+                }, AnazhRealm.FLIGHT_RECORDER_PROBE_MS);
             }
         } catch {
             /* der Flugschreiber darf NIE den Loop stören */
@@ -1867,15 +1881,23 @@ class AnazhRealm_dirigent_regler {
 
     // Mess-Punkt in die Reihe (Fenster ~160 s), Wachstum lesen: Heap-Rate (MB/s) + die am stärksten
     // wachsende Sammlung — die Attribution des Lecks.
-    _flightRecorderMemoryReport() {
+    // Eine Probe in die Reihe des Leck-Detektors (Heap + Sammlungs-Größen, ~160 s rollend: 40 Proben je
+    // FLIGHT_RECORDER_PROBE_MS); false, wenn sie misslingt.
+    _flightRecorderMemProbe() {
         const fr = this.state.flightRecorder;
-        if (!fr) return null;
+        if (!fr) return false;
         try {
             fr.memSeries.push(this._flightRecorderSampleSizes());
-            if (fr.memSeries.length > 40) fr.memSeries.shift(); // ~160 s rollend (40 × 4 s)
+            if (fr.memSeries.length > 40) fr.memSeries.shift();
         } catch {
-            return null;
+            return false;
         }
+        return true;
+    }
+
+    _flightRecorderMemoryReport() {
+        const fr = this.state.flightRecorder;
+        if (!fr || !this._flightRecorderMemProbe()) return null;
         const series = fr.memSeries;
         if (series.length < 2) return null;
         const a = series[0],
@@ -2035,9 +2057,11 @@ AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKi
 // render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.
 AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
-// (WORST_CAP) und ab welcher Frame-Zeit ein Frame als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
+// (WORST_CAP), wie oft der Leck-Detektor im Leerlauf eine Probe nimmt (PROBE_MS) und ab welcher Frame-Zeit ein Frame
+// als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
 AnazhRealm.FLIGHT_RECORDER_WORST_CAP = 12;
 AnazhRealm.FLIGHT_RECORDER_FREEZE_MS = 50;
+AnazhRealm.FLIGHT_RECORDER_PROBE_MS = 4000;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der

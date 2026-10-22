@@ -1379,18 +1379,22 @@ class AnazhRealm_dirigent_takt {
             st.isServerSaveInFlight = true;
         }
         if (!lokal && !server) return;
+        this._imLeerlauf(() => {
+            if (lokal) this.saveState();
+            if (server)
+                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                    st.isServerSaveInFlight = false;
+                });
+        }, 2000);
+    }
+
+    // DER LEERLAUF DES HAUPT-FADENS (Lehre 14): `f` läuft im nächsten Leerlauf-Fenster (`requestIdleCallback`), spätestens
+    // nach `fristMs` — nie im Takt; ohne die API im nächsten Task. Leser: das Speichern (`_loopAutoSave`), die Leck-Probe des
+    // Flugschreibers (`_flightRecorderTick`).
+    _imLeerlauf(f, fristMs) {
         const ric = globalThis.requestIdleCallback;
-        const leerlauf = typeof ric === "function" ? ric.bind(globalThis) : (f) => setTimeout(f, 0);
-        leerlauf(
-            () => {
-                if (lokal) this.saveState();
-                if (server)
-                    this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                        st.isServerSaveInFlight = false;
-                    });
-            },
-            { timeout: 2000 }
-        );
+        if (typeof ric === "function") ric.call(globalThis, f, { timeout: fristMs });
+        else setTimeout(f, 0);
     }
 
     _loopRender() {
