@@ -1,0 +1,14 @@
+04:33:56 start 85cec9c1 Änderungen[1]
+04:35:48 1 D {"ergebnis":{"lage":"D","wetter":"rainy","naesse":0,"dachAn":1},"ms":5} bank "gpuJeFrameMs": 12.83 smi 265 MHz, 0x0000000000000001, 77
+04:35:49 2 N1 {"ergebnis":{"lage":"N1","wetter":"rainy","naesse":0.909,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 12.58 smi 1733 MHz, 0x0000000000000001, 78
+04:35:51 3 N0 {"ergebnis":{"lage":"N0","wetter":"rainy","naesse":0.999,"dachAn":0},"ms":2} bank "gpuJeFrameMs": 11.98 smi 1733 MHz, 0x0000000000000001, 79
+04:35:53 4 N0 {"ergebnis":{"lage":"N0","wetter":"rainy","naesse":1,"dachAn":0},"ms":2} bank "gpuJeFrameMs": 12.14 smi 1822 MHz, 0x0000000000000000, 79
+04:35:54 5 N1 {"ergebnis":{"lage":"N1","wetter":"rainy","naesse":1,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 12.54 smi 1708 MHz, 0x0000000000000000, 79
+04:35:56 6 D {"ergebnis":{"lage":"D","wetter":"rainy","naesse":0,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 11.96 smi 1721 MHz, 0x0000000000000001, 79
+04:35:57 7 D {"ergebnis":{"lage":"D","wetter":"rainy","naesse":0,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 11.97 smi 1822 MHz, 0x0000000000000000, 80
+04:35:59 8 N1 {"ergebnis":{"lage":"N1","wetter":"rainy","naesse":0.909,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 12.58 smi 1822 MHz, 0x0000000000000000, 80
+04:36:01 9 N0 {"ergebnis":{"lage":"N0","wetter":"rainy","naesse":0.999,"dachAn":0},"ms":2} bank "gpuJeFrameMs": 11.94 smi 1733 MHz, 0x0000000000000001, 80
+04:36:02 10 N0 {"ergebnis":{"lage":"N0","wetter":"rainy","naesse":1,"dachAn":0},"ms":2} bank "gpuJeFrameMs": 12.07 smi 1721 MHz, 0x0000000000000001, 80
+04:36:04 11 N1 {"ergebnis":{"lage":"N1","wetter":"rainy","naesse":1,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 12.56 smi 1822 MHz, 0x0000000000000000, 80
+04:36:05 12 D {"ergebnis":{"lage":"D","wetter":"rainy","naesse":0,"dachAn":1},"ms":2} bank "gpuJeFrameMs": 12 smi 1721 MHz, 0x0000000000000001, 80
+04:36:14 ENDE Änderungen[0]

@@ -1,0 +1,15 @@
+04:43:08 dorf start 7670a4a1 Änderungen[0]
+04:45:03 dorf huelle {"fehler":"Cannotreadpropertiesofundefined(reading'value')","stapel":["atevaluate(evaluateatIncomingMessage.<anonymous>(C:\\Users\\micha\\De
+04:45:05 dorf 1 D {"ms":5} bank "gpuJeFrameMs": 11.08
+04:45:06 dorf 2 N {"ms":2} bank "gpuJeFrameMs": 11.45
+04:45:07 dorf 3 N {"ms":2} bank "gpuJeFrameMs": 11.54
+04:45:09 dorf 4 D {"ms":1} bank "gpuJeFrameMs": 10.97
+04:45:10 dorf 5 D {"ms":2} bank "gpuJeFrameMs": 11.01
+04:45:11 dorf 6 N {"ms":3} bank "gpuJeFrameMs": 11.51
+04:45:13 dorf 7 N {"ms":2} bank "gpuJeFrameMs": 11.52
+04:45:14 dorf 8 D {"ms":1} bank "gpuJeFrameMs": 11.05
+04:45:15 dorf 9 D {"ms":2} bank "gpuJeFrameMs": 11
+04:45:17 dorf 10 N {"ms":2} bank "gpuJeFrameMs": 11.52
+04:45:18 dorf 11 N {"ms":3} bank "gpuJeFrameMs": 11.54
+04:45:19 dorf 12 D {"ms":2} bank "gpuJeFrameMs": 11.03
+04:45:40 SCHNITT ENDE

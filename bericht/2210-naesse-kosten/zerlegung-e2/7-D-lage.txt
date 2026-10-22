@@ -1,0 +1,9 @@
+{
+ "ergebnis": {
+  "lage": "D",
+  "wetter": "rainy",
+  "naesse": 0,
+  "dachAn": 1
+ },
+ "ms": 2
+}

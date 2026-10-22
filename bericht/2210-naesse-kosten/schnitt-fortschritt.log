@@ -1,0 +1,29 @@
+04:37:41 wiese start 85cec9c1 Änderungen[1]
+04:39:31 wiese huelle {"ergebnis":{"huelle":[1,1,-1,-1],"oben":-1000000,"plaetze":0},"ms":2}
+04:39:33 wiese 1 D {"ms":5} bank "gpuJeFrameMs": 12.51
+04:39:34 wiese 2 N {"ms":2} bank "gpuJeFrameMs": 12.07
+04:39:35 wiese 3 N {"ms":2} bank "gpuJeFrameMs": 12.21
+04:39:37 wiese 4 D {"ms":2} bank "gpuJeFrameMs": 12.14
+04:39:38 wiese 5 D {"ms":2} bank "gpuJeFrameMs": 12.23
+04:39:40 wiese 6 N {"ms":1} bank "gpuJeFrameMs": 12.17
+04:39:41 wiese 7 N {"ms":1} bank "gpuJeFrameMs": 12.3
+04:39:42 wiese 8 D {"ms":2} bank "gpuJeFrameMs": 12.13
+04:39:44 wiese 9 D {"ms":2} bank "gpuJeFrameMs": 12.15
+04:39:45 wiese 10 N {"ms":2} bank "gpuJeFrameMs": 12.2
+04:39:47 wiese 11 N {"ms":2} bank "gpuJeFrameMs": 12.18
+04:39:48 wiese 12 D {"ms":2} bank "gpuJeFrameMs": 12.08
+04:40:19 dorf start 85cec9c1 Änderungen[1]
+04:42:20 dorf huelle {"ergebnis":{"huelle":[-863.3,-845.7,-793.7,-807.7],"oben":91.8,"plaetze":8},"ms":2}
+04:42:21 dorf 1 D {"ms":5} bank "gpuJeFrameMs": 11.67
+04:42:23 dorf 2 N {"ms":1} bank "gpuJeFrameMs": 11.16
+04:42:24 dorf 3 N {"ms":2} bank "gpuJeFrameMs": 11.15
+04:42:25 dorf 4 D {"ms":2} bank "gpuJeFrameMs": 11.03
+04:42:27 dorf 5 D {"ms":1} bank "gpuJeFrameMs": 10.98
+04:42:28 dorf 6 N {"ms":2} bank "gpuJeFrameMs": 11.16
+04:42:29 dorf 7 N {"ms":2} bank "gpuJeFrameMs": 11.13
+04:42:31 dorf 8 D {"ms":2} bank "gpuJeFrameMs": 10.97
+04:42:32 dorf 9 D {"ms":2} bank "gpuJeFrameMs": 11.02
+04:42:33 dorf 10 N {"ms":3} bank "gpuJeFrameMs": 11.14
+04:42:35 dorf 11 N {"ms":2} bank "gpuJeFrameMs": 11.12
+04:42:36 dorf 12 D {"ms":2} bank "gpuJeFrameMs": 10.89
+04:42:57 SCHNITT ENDE

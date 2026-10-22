@@ -1,0 +1,59 @@
+
+> anazhrealm@18.546.59 gate:naesse:echt
+> node scripts/werkbank.cjs licht --naesse --eigen --port 4499
+
+NÄSSE Selbsttest: 5/5
+[linse-gpu] nvidia/pascal
+[seite] 2026-10-22T03:29:44.032Z navigiert http://127.0.0.1:4498/index.html
+WERKBANK bereit: Steuer 127.0.0.1:4499 · Seite :4498
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.992,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 1600,
+   "verhaeltnis": 0.773
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 96
+  },
+  "regenbild": 0.647
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.992,
+  "innen": {
+   "n": 865,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 336,
+   "verhaeltnis": 0.753
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 97
+  },
+  "regenbild": 0.692,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN
+EXIT=0

@@ -1,0 +1,9 @@
+{
+ "ergebnis": {
+  "lage": "N0",
+  "wetter": "rainy",
+  "naesse": 0.999,
+  "dachAn": 0
+ },
+ "ms": 2
+}
