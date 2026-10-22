@@ -2165,10 +2165,12 @@ class AnazhRealm_koerper_leib {
                 // mit nachlaufender Phase bis 0,96 m hinter der Hüfte). Das Maß ist die Kette selbst — eine Schätzung vor
                 // der IK lag 4–9 cm neben ihr —, um den Weg des Leibs in einem Bild (1/60 s) vorausgedacht: der Fuß hebt,
                 // bevor er schleift, nicht ein Bild danach (nie um den Weg einer Raten-Stufe: der Stand schrumpfte dort
-                // auf ein Drittel).
-                if (!stand && dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
+                // auf ein Drittel). Im STAND tritt er (K8 huf, Schritt 1), ohne auf eine andere Pfote zu warten: vorher hielt der
+                // Anker ihn, wo der Lauf endete — der GIGANT, der aus 0,9 m/s anhielt, schwebte 9,9 cm über der Wiese.
+                if (dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
                     const u = ((g.ph[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    if (u >= 0.7 * sw) g.ph[i] += 2 * Math.PI - u;
+                    if (!stand && u >= 0.7 * sw) g.ph[i] += 2 * Math.PI - u;
+                    else if (stand) [fl[i].tritt, fl[i].ax, fl[i].az, tritt] = [0, fl[i].x, fl[i].z, true];
                 }
                 const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
