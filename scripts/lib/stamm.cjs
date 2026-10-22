@@ -97,7 +97,6 @@ function marker(t) {
     }
     return out;
 }
-const istMarker = (z) => MARKER_RX.test(z) || DOMAENE_RX.test(z);
 
 // S(text) → [{ pfad, text, klasse? }] in Lade-Ordnung. Wirft bei jedem Text, den die Umkehrung nicht trüge.
 function schneide(t) {
@@ -1036,7 +1035,6 @@ module.exports = {
     KARTE,
     sha,
     marker,
-    istMarker,
     pfadVon,
     klasseVon,
     karteVon,

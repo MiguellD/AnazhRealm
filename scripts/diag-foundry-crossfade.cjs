@@ -308,7 +308,7 @@ function mitTaeter(glied, taeter) {
 async function runPartB() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const pageErrors = [];

@@ -502,7 +502,7 @@ async function boot(browser, pageErrors) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const pageErrors = [];
     const page = await boot(browser, pageErrors);
     const S = await page.evaluate(probe, {

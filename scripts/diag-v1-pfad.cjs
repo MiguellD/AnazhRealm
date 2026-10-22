@@ -1842,7 +1842,7 @@ async function korpusHaupt() {
     if (korpus) {
         const srv = statikServer({ seiten: echt ? null : { "/api/chat": mitschnitt(ratsche) } });
         await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
-        const browser = await starteBrowser({ art: "linse", frist: 900000 });
+        const browser = await starteBrowser({ art: "null", frist: 900000 });
         const page = await browser.newPage();
         await nullRenderer(page, { foundry: true });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
@@ -2377,7 +2377,7 @@ async function korpusHaupt() {
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await nullRenderer(page, { foundry: true });

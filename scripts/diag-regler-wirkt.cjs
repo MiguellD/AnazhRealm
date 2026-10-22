@@ -98,7 +98,7 @@ const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
     await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(() => {
