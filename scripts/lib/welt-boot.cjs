@@ -930,6 +930,20 @@ async function eigenePorte(...variablen) {
     }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DIE WERKBANK ALS TOR: `werkbank start`, bereit am Ereignis; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout der Seite)
+function werkbankTor(port, zusatz = []) {
+    const cp = require("child_process");
+    const wb = path.join(ROOT, "scripts", "werkbank.cjs");
+    const env = Object.assign({}, process.env, { WERKBANK_PORT: String(port) });
+    const kind = cp.spawn(process.execPath, [wb, "start", "--port", String(port), ...zusatz], { env });
+    const tor = { log: "", rufe: (args, ms) => cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms }) };
+    tor.bereit = new Promise((ok, nein) => {
+        for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
+        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
+    });
+    tor.stop = () => (tor.rufe(["stop"], 30000), kind.kill());
+    return tor;
+}
 // wartet, bis `fn(...args)` in der Seite wahr ist (das Ereignis, je 150 ms gefragt), und gibt die Wartezeit zurück — ohne Frist:
 // ein Hänger endet an der Frist des Browsers (`frist` = protocolTimeout), die Stall-Akte nennt ihn mit `label`
 async function waitFor(page, fn, label, ...args) {
@@ -942,7 +956,8 @@ async function waitFor(page, fn, label, ...args) {
 
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR, Lehre 26: eine Wand urteilt in Bau-Ereignissen, nie in Wanduhr-Sekunden).
 // ROT: eine Schleife wartet selbst auf einen Bau (`!e.mesh` …); eine FRIST — die Wanduhr (`performance.now()` / `Date.now()`)
-// endet die Schleife, im Kopf oder als `if (…) break|return|throw` im Rumpf; ein `__gebautNach(…).catch(() => {})` schluckt
+// endet die Schleife, im Kopf oder als `if (…) break|return|throw` im Rumpf, oder eine Puppeteer-Frist läuft ab und die Linse
+// urteilt weiter (`waitForFunction(…, { timeout }).catch(…)`, werkstatt-weg 8 s); ein `__gebautNach(…).catch(() => {})` schluckt
 // den Deckel. Das EINE Warten ist welt-boot `__gebautNach` / `__deckel` (zählt nur Gänge ohne Offenes) und `__weltDa`.
 // Der REST (spec/ci/frist-rest.json, je Grund Datei → Zahl) schrumpft nur: Messfenster, deren Maß die Zeit ist.
 const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
@@ -994,14 +1009,20 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
             ) {
                 const s = schleifen.filter((l) => l.body.start <= n.start && n.end <= l.body.end).pop();
                 if (s) fristen.add(s);
-            } else if (
-                n.type === "CallExpression" &&
-                n.callee.property &&
-                n.callee.property.name === "catch" &&
-                hat(n.callee.object, (c) => c.property && c.property.name === "__gebautNach")
-            ) {
+            } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch") {
+                const w = n.callee.object;
+                const o = w.callee && w.callee.property && w.callee.property.name === "waitForFunction" && w.arguments[1];
                 const f = n.arguments[0];
-                if (f && f.body && f.body.type === "BlockStatement" && !f.body.body.length)
+                const wirft = f && hat(f, (c) => c.type === "ThrowStatement");
+                if (o && !wirft && (o.properties || []).some((p) => p.key && p.key.name === "timeout" && p.value.value !== 0))
+                    fristen.add(n);
+                else if (
+                    hat(w, (c) => c.property && c.property.name === "__gebautNach") &&
+                    f &&
+                    f.body &&
+                    f.body.type === "BlockStatement" &&
+                    !f.body.body.length
+                )
                     errs.push(
                         `Warte-Wand: ${name}:${zeileVon(src, n.start)} schluckt den Deckel von \`__gebautNach\` — er wirft beim Namen`
                     );
@@ -1045,6 +1066,7 @@ module.exports = {
     eigenePorte,
     sleep,
     waitFor,
+    werkbankTor,
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
 

@@ -689,9 +689,7 @@ async function lauf(welten, taeter) {
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat (K7).
-        await page
-            .waitForFunction(() => !!(window.anazhRealm.state.vibePass && window.anazhRealm.state.vibePass.ready), { timeout: 30000, polling: 200 })
-            .catch(() => console.log("  (der Vibe-Pass steht nach 30 s nicht — K7 wird rot)"));
+        await page.evaluate(() => window.__weltDa((r) => !!(r.state.vibePass && r.state.vibePass.ready)));
         await page.evaluate((M) => {
             const st = window.anazhRealm.state;
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
