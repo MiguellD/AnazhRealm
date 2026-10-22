@@ -1091,15 +1091,10 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
-        // Methoden · State · Restore-Pfad).
+        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
+        // und State (die Methoden bewacht gate:altlasten).
         out.cConstGone = !A.CANOPY_SHELL;
-        out.cMethodsGone =
-            typeof r._ensureCanopyShell === "undefined" &&
-            typeof r._buildCanopyShell === "undefined" &&
-            typeof r._disposeCanopyShell === "undefined";
         out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
-        out.cRestoreClean = window.__fehlt(r._loadStateRestoreWorldMeta, /_disposeCanopyShell/);
 
         return out;
     });
@@ -1123,9 +1118,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 
     // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
     check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
-    check("N7.4 (C2) Canopy-Shell-Methoden geschnitten (ensure/build/dispose weg)", res.cMethodsGone === true);
     check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
-    check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
