@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-kollision-bild.cjs — KOLLISION = BILD (Leben-Schau 2, Familie koerper-bild): was der Körper anfasst, zeigt
-// das Bild — und was das Bild zeigt, trägt. Befund (sichtbar gefahren, echte Radeon, Spur B Bilder 38–43): der GT prallte
-// bei −913,7/−900,7 von 46,7 auf −6,4 km/h zurück, gezeichnet standen dort Fichten und Himmel. Der Felsturm stieß als seine
-// Spender-Parts (ein Eisen-Mast 4,4 × 16,8 m), das Studio zeichnete einen Zacken 1,4 × 0,8 m — der Fels-Zweig des Blocker-
-// Erzeugers (`_populateBlockerAABBs`) nahm nur die `*_var`-Formationen, und auch die maß er in Vorlagen-Größe (die Welt-Skala
-// 0,15–0,42 der Fels-Arten trug nur der Baum). Gezählt an der Mess-Wiese (150 m): 13 von 13 Felstürmen bis 16,46 m über ihrem
-// Bild, 19 von 19 Felsbögen bis 7,66 m, eine Blume 2,1 m.
+// diag-kollision-bild.cjs — KOLLISION = BILD (Familie koerper-bild): was der Körper anfasst, zeigt das Bild — und was das
+// Bild zeigt, trägt (der Blocker-Erzeuger `_populateBlockerAABBs` liest die gezeichnete Gestalt in Welt-Skala).
 // Die Wand (Null-Renderer, Foundry an, eine echte Welt): je Werk, das das Studio zeichnet, das BILD = seine Studio-Gestalt (LOD 0,
 // die gezeichnete Gestalt, die Instanz-Matrix: Lage, Gier, Welt-Skala × Skala) gegen seine KOLLISION (die Blocker-Boxen, jede
 // in ihrem Rahmen — eine gedrehte Box in ihrer obb):
@@ -19,8 +14,7 @@
 //       Öffnung frei, die Flügel öffnen sich vor dem Körper, TUER_GESETZ). Haus und Ausstattung erklärt ihr Gesetzbuch
 //       (`__huelle`, die Teile) nicht ganz als fest: ihr Abstand steht als OFFEN mit Zahl und Ort in der Ausgabe, nie im Grün;
 //   (K) KOSTEN: kein Blocker-Erzeuger baut eine Studio-Gestalt auf dem Haupt-Thread — jeder `buildInstance` eines Kerns während
-//       der Spawns der Exemplare (kaltes Tor-Gedächtnis) ist ein Täter beim Namen (Kern, Rezept, Werk). Gegenprüfung 10.10.: der
-//       Wirt baute jedes Tor beim ersten Spawn seiner Gestalt nach (15–50 ms je Gestalt, 231–244 ms für sieben);
+//       der Spawns der Exemplare (kaltes Tor-Gedächtnis) ist ein Täter beim Namen (Kern, Rezept, Werk);
 //   (G) GESTALT: ein Fels wählt für seinen Blocker dieselbe Gestalt, die gezeichnet ist (der Slot des Bilds gegen
 //       `_foundryVariantFor` mit der Kern-Zahl `_studioGestaltenKern`);
 //   (E) EXEMPLARE: je Klasse eines an der Mess-Wiese gesetzt (Felsturm · Felsbogen · Steinblock · Kiesel · Felsbrocken · Geode ·

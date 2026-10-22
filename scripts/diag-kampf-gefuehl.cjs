@@ -35,8 +35,7 @@
 //      nichts — die Treffer-Messung fließt durch die echte Kapsel-Mathe.
 //      Beide Stubs restauriert (Gate-Hook-Lehre).
 //
-// WELLE L — die Leben-Prüfung „Kampf" (artifacts/profiband/leben/befund-kampf.md) als Linse am ECHTEN
-// Chokepoint, gespielt wie ein Mensch: das Fadenkreuz wird über Gier und Neigung durch die ECHTE Kamera
+// Die Leben-Prüfung „Kampf" als Linse am ECHTEN Chokepoint, gespielt wie ein Mensch: das Fadenkreuz wird über Gier und Neigung durch die ECHTE Kamera
 // (_loopCamera, 1st und 3rd) auf das Ziel geführt, geklickt wird über den EINEN Dispatcher (tryMouseBreak /
 // _tickHarvest / tryMousePlace / Canvas-mousedown), geschlagen über _beginPlayerSwing + _tickKampfSchwung.
 // Gezählt wird nur mitlaufend (damageCreature, _kampfHitJuice, _beginPlayerSwing, dslRun-Voxel-Ops); keine Probe
@@ -68,7 +67,7 @@
 //      vier Gattungen in jeder Größen-Grenze, 90 Spiel-Takte).
 //  (K27 LEBENSWERTE SIND ZUSTAND) T27: im Modus pfad senken Biss und Hieb hp und Ausdauer; kein Rufer der Stat-
 //      Neuberechnung (Gerät · Panel · Boost · Tod-Takt) hebt hp, Ausdauer oder Mana über Regen·dt. (S11) die alte Zeile (jede Neuberechnung = Maximum) als Hülle → der
-//      erste Rufer heißt equipHeld, 4 Wege. Vorher 4 Wege; die Linse lokal ohne T27 84 s, mit T27 61 s.
+//      erste Rufer heißt equipHeld, 4 Wege.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────

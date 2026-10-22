@@ -1065,7 +1065,10 @@ class AnazhRealm_vegetation_wiese {
             jeKachel = new Map();
             this.state.scatterHarvested.set(pick.key, jeKachel);
         }
-        jeKachel.set(pick.id, performance.now());
+        const t = performance.now();
+        jeKachel.set(pick.id, t);
+        // der Nachwuchs schläft bis zur ersten fälligen Ernte (`_tickScatterRegrow`, feld.K3)
+        this._nachwuchsFaellig = Math.min(this._nachwuchsFaellig ?? Infinity, t + AnazhRealm.FORAGE.regrowMs);
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
         // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
         for (const sk of kachel.senken) {
@@ -1085,19 +1088,22 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Der Regrow-Tick (~0.1 Hz): abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand
-    // fällt, der Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder.
+    // Der Regrow-Tick: abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand fällt, der
+    // Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder. DIE RUHE IST DER FIXPUNKT (feld.K3): er schläft bis
+    // zur ersten fälligen Ernte (`_nachwuchsFaellig`, die Ernte setzt sie), nie im 10-s-Takt der Wanduhr über das Gedächtnis
+    // (bis feld.K3: in 60 s Ruhe nach einer Ernte ging er sie bei jedem Blick auf die Uhr durch).
     _tickScatterRegrow(now) {
-        const last = this._lastScatterRegrowCheck ?? -Infinity;
-        if (now - last < 10000) return;
-        this._lastScatterRegrowCheck = now;
+        if (!(now >= this._nachwuchsFaellig)) return;
         const sh = this.state.scatterHarvested;
-        if (!sh || sh.size === 0) return;
         const ttl = AnazhRealm.FORAGE.regrowMs;
         const ns = this.state.nahStreu;
-        for (const [key, jeKachel] of sh) {
+        let naechste = Infinity;
+        for (const [key, jeKachel] of sh || []) {
             const alt = [];
-            for (const [id, t] of jeKachel) if (now - t > ttl) alt.push(id);
+            for (const [id, t] of jeKachel) {
+                if (now - t >= ttl) alt.push(id);
+                else if (t + ttl < naechste) naechste = t + ttl;
+            }
             if (!alt.length) continue;
             this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
             for (const id of alt) jeKachel.delete(id);
@@ -1105,6 +1111,7 @@ class AnazhRealm_vegetation_wiese {
             const k = ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
         }
+        this._nachwuchsFaellig = naechste;
     }
 
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit

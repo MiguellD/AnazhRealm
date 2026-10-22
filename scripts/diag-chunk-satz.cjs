@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-chunk-satz.cjs — DER SATZ (Welle B): die Draw-Einheit ist Material × Geometrie über den ganzen
-// Ring, nie Chunk × Material. Befund (Inventur der echten GPU, Mess-Wiese −900/−850): der Boden zog
-// 78 Chunk-Meshes in JEDEM Pass (234 Befehle), die Klein-Streu je Chunk und Art eine InstancedMesh
-// (162), das Wasser je Chunk ein Mesh, die Fern-Deko einen Deck-Zwilling, der platzierte Bau je
-// 256-m-Region eine Gruppe je Leaf (`@p:`). Die Wand zählt die Render-Bürger je Klasse direkt im
+// diag-chunk-satz.cjs — DER SATZ: die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material.
+// Die Wand zählt die Render-Bürger je Klasse direkt im
 // Szenen-Baum (Null-Renderer — Bundles sind headless reine Gruppen, die Chunk-Meshes werden gebaut):
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
@@ -14,8 +11,7 @@
 //       Deck-Streu und keine Fern-Deko (beide fielen); jede Senke (Art × Gestalt × Stufe × Teil) trägt je Kachel einen
 //       Block (Σ n = Anzahl, je Block die Ernte-Identitäten, jeder Block einer lebenden Kachel des Rings), und jeder Block
 //       mit Pflanzen lebt als Bereich im Streu-Satz seines Stoffs — n × Vertices der Gestalt, die erste Pflanze in
-//       Welt-Lage (Geometrie × Matrix), je Stoff EIN Satz. Befund (echte GPU, Mess-Wiese): je Senke eine InstancedMesh
-//       über den ganzen Ring — 15 Befehle, 46k Dreiecke, auch hinter dem Blick (Haushalt 9 / 40k);
+//       Welt-Lage (Geometrie × Matrix), je Stoff EIN Satz;
 //   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
@@ -23,29 +19,24 @@
 //       Anfang verschoben, genau seine Dreiecke als lückenlose Zell-Läufe — Boden/Wasser Viertel, Bau je Instanz); jeder
 //       Abschnitt (der Haken des Renders legt ihn) trägt seine Zellen byte-gleich hintereinander, Boden nah → fern;
 //   (g) kein Page-Error;
-//   (h) BAU-SATZ (Welle 6) — die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF: jede lebende Gruppe einer
+//   (h) BAU-SATZ — die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF: jede lebende Gruppe einer
 //       Satz-Art (`AnazhRealm.BAU_SATZ` je Rezept-kind: Haus, Fels, Kristall, Säulen; ohne Tür-Flügel) hängt an keinem
 //       Eltern-Knoten (weder Bundle noch Szene) und lebt als Bereich im Satz ihres Stoffs — n × liveCount Vertices, die
-//       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle. Befund (echte GPU, Mess-Wiese):
-//       jede Gestalt zog als eigene Gruppe einen Befehl je Pass — das Dorf 33 (11 Häuser × 3 Stoffe), die Felszacken 34;
-//   (i) WACHSEN (Welle 6) — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
+//       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle;
+//   (i) WACHSEN — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
 //       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
 //       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
 //   (j) NEUSCHREIBEN — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
-//       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
-//       Mess-Wiese, Drehen 1°/Frame): 32 Verdrängungen in 36 Frames, k0 + k1 schrieben einander 2,2 MB je Frame neu.
-//   (k) DER SATZ FOLGT SEINEM INHALT (W7) — trägt die Kapazität eines Satzes `ruheTakte` Takte lang mehr als
+//       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen.
+//   (k) DER SATZ FOLGT SEINEM INHALT — trägt die Kapazität eines Satzes `ruheTakte` Takte lang mehr als
 //       `schwelle` × Ziel, schrumpft er am selben Mesh auf Inhalt × `luft`: leer auf vMin/iMin, belegt dicht nach vorn
-//       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
-//       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
-//       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
-//   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
+//       (jeder Bereich treu, jeder Abschnitt neu gelegt). Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
+//   (n) DER EINE SATZ-STOFF — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
 //       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
-//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
-//       (Radeon, Genesis): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
-//       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
+//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs.
+//       Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.

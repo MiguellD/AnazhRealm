@@ -853,21 +853,61 @@ class AnazhRealm_gelaende_chunks {
     // Wachstum über dem Budget still um: auf der Radeon (Werkbank, Dorf) war das Budget in 60 von 60 und 160 von 160
     // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
     // stand, entschied allein der frei laufende Boot.
+    // DIE RUHE IST DER FIXPUNKT (feld.K3): liegt nach einem Gang kein wartender Chunk im Radius, schläft der Wuchs, bis der
+    // Spieler um den Abstand des nächsten (`frei`) weiterging, der Radius oder die Chunk-Menge sich regt (`_wuchsSchlaf`) —
+    // vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
-        if (!pending || pending.size === 0 || this._bepflanzungWartet()) return;
+        if (!pending || pending.size === 0) return;
+        const pm = this.state.playerMesh;
+        const s = this._wuchsSchlaf;
+        if (
+            s &&
+            s.n === pending.size &&
+            s.welt === (this._weltRegung | 0) &&
+            s.karte === (this._karteRegung | 0) &&
+            s.fr === this.state.foliageRadius &&
+            pm &&
+            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei
+        )
+            return;
+        this._wuchsSchlaf = null;
+        if (this._bepflanzungWartet()) return;
+        // der Abstand des nächsten wartenden Chunks jenseits des Radius: so weit kann der Spieler gehen, ohne dass einer
+        // hineinwächst; geht ein Gang ohne Wuchs zu Ende, schläft der Takt
+        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const { span } = this._voxelChunkConfig();
+        let frei = Infinity;
+        const draussen = (cx, cz) => {
+            if (!pm) return;
+            const d = Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z) - fr;
+            if (d < frei) frei = d;
+        };
+        const schlafe = () => {
+            if (!pm || !(frei > 0)) return;
+            this._wuchsSchlaf = {
+                n: pending.size,
+                welt: this._weltRegung | 0,
+                karte: this._karteRegung | 0,
+                fr: this.state.foliageRadius,
+                x: pm.position.x,
+                z: pm.position.z,
+                frei,
+            };
+        };
         if (this.state._frameOverBudget) {
             const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
             if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
-            const pm = this.state.playerMesh;
-            const { span } = this._voxelChunkConfig();
             let naechster = null;
             let naechsterD = Infinity;
             for (const key of pending) {
                 const ci = key.indexOf(",");
                 const cx = parseInt(key.slice(0, ci), 10),
                     cz = parseInt(key.slice(ci + 1), 10);
-                if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+                if (!this._foliageChunkInRadius(cx, cz)) {
+                    draussen(cx, cz); // noch zu fern → warten
+                    continue;
+                }
                 const d = pm
                     ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
                     : 0;
@@ -876,7 +916,10 @@ class AnazhRealm_gelaende_chunks {
                     naechster = { key, cx, cz };
                 }
             }
-            if (!naechster) return;
+            if (!naechster) {
+                schlafe();
+                return;
+            }
             this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
             pending.delete(naechster.key);
             if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
@@ -885,18 +928,26 @@ class AnazhRealm_gelaende_chunks {
         }
         // zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
         let n = 0;
+        let ganz = true;
         for (const key of pending) {
-            if (!this._kappeOffen(n, 2)) break;
+            if (!this._kappeOffen(n, 2)) {
+                ganz = false;
+                break;
+            }
             const ci = key.indexOf(",");
             const cx = parseInt(key.slice(0, ci), 10),
                 cz = parseInt(key.slice(ci + 1), 10);
-            if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+            if (!this._foliageChunkInRadius(cx, cz)) {
+                draussen(cx, cz); // noch zu fern → warten
+                continue;
+            }
             pending.delete(key);
             if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
                 this._populateVoxelChunkVegetation(cx, cz);
                 n++;
             }
         }
+        if (ganz && n === 0) schlafe();
     }
 
     // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Die Karte trägt ihn nach — die

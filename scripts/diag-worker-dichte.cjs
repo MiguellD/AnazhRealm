@@ -3,18 +3,14 @@
 //
 // Der Worker baut die Dichte-Gitter der Chunks OFF-THREAD (`computeDensityGrid`, Spiegel von
 // `_voxelEditedDensityGrid`); der Main baut den Spieler-Chunk und jeden Edit-Rebuild selbst. Weichen beide ab,
-// lebt der Boden auf zwei Wahrheiten (Naht, Kollision gegen ein anderes Bild). Bis zu dieser Linse zitierte der
-// Kommentar an `_terrainDensityAt` zwei Linsen (diag-density-refactor, diag-worker-chunk), die es nicht mehr gab —
-// der Dichte-Spiegel hatte KEINE Wand (Lehre 10).
+// lebt der Boden auf zwei Wahrheiten (Naht, Kollision gegen ein anderes Bild).
 //
 // Je Welt (Standard: der Boot-Seed; Bühne: spec/pruefbuehne/welt.json, importiert wie im Spiel) und je Ort (die
 // Messorte des Haushalts, ein Fluss-Chunk; auf der Bühne ihre Stationen) wird das Gitter jeder LOD-Stufe 0–3 im
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann mit zwei Kugeln am ersten Ort: einer Schnitz-Kugel
-// im Oberflächen-Band und einer FÜLL-KUGEL ÜBER dem Band (der Band-Befund des Richters 09.10.: der Main legt die
-// Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band). Dazu DIE EDIT-WAHRHEIT (K23): 300 Kugeln
-// über den Spielpfad (`carveVoxelSphere`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
-// sind SHA Main = Worker (bis K23 verdrängte der FIFO-Deckel in `_addVoxelEdit` ab Edit 257 still nur im Main).
+// im Oberflächen-Band und einer FÜLL-KUGEL ÜBER dem Band. Dazu DIE EDIT-WAHRHEIT: 300 Kugeln über den Spielpfad
+// (`carveVoxelSphere`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn sind SHA Main = Worker.
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
 //   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,

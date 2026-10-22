@@ -793,9 +793,15 @@ class AnazhRealm_bild_himmel {
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
             st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
         }
+        // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
+        // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
+        // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
+        const g = this._saisonGemalt;
+        if (g && g.phase === st.seasonPhase && g.su === st.seasonUniforms) return;
         const su = this._ensureSeasonUniforms();
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
         st.season = this._seasonName(st.seasonPhase);
+        this._saisonGemalt = { phase: st.seasonPhase, su };
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
@@ -898,10 +904,21 @@ class AnazhRealm_bild_himmel {
     }
     _tickRain() {
         const st = this.state;
+        // DIE RUHE IST DER FIXPUNKT (feld.K3): regnet es nicht und steht die Nässe an ihrem Ziel (trocken), schläft der Regen
+        // samt Nässe und Dach-Pool, bis das Wort, sein Übergang oder die Nässe sich ändern (`_regenRuht`); die Uhr der Nässe
+        // geht mit, damit das nächste Wort ab seinem Takt benetzt. Bis feld.K3 rechnete er in jedem Bild Feld, Nässe und Pool
+        // (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 21 600 Rufe).
+        const ruht = this._regenRuht;
+        if (ruht && ruht.wort === st.weather && !st.weatherTransition && ruht.naesse === st.naesse) {
+            this._naesseUhr = st.spielZeit;
+            return;
+        }
+        this._regenRuht = null;
         this._naesseTakt(); // der Regen benetzt die Welt, die Sonne trocknet sie (wetter.K2)
         const wf = this._weatherFieldFor(st.weather);
         if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
+            if (st.naesse === 0 && !st.weatherTransition) this._regenRuht = { wort: st.weather, naesse: 0 };
             return;
         }
         const sys = this._ensureRainSystem();
@@ -2782,7 +2799,8 @@ class AnazhRealm_bild_himmel {
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
         const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
-        st.naesse = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
         this._ensureAtmoUniforms().naesse.value = st.naesse;
         this._dachTakt();
         return st.naesse;
