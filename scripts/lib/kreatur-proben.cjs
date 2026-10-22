@@ -266,6 +266,85 @@ async function kreaturProben(r, T, opts) {
         r._leibKontakte();
         r.updateCreatures(dt);
     };
+    // DER GANG IM SATZ (Schlupf wie gate:tier-gang — Bewohner und Tiere, `_gangSatz`): je Senke mit Gang-Puffer die Füße der
+    // Vorlage (`fuesse(geo)`: je Fuß seine Ecken, die tiefere trägt; null = die Senke trägt keine Sohle) an Band, Phase und
+    // Gewicht ihrer Instanz (`aGang`) × Instanz-Matrix — so, wie die GPU sie zeichnet. `leib(x, z)` nennt den Leib der Instanz
+    // ({ key, bein, x, z, ry } oder null). Gezählt wird der Gang geradeaus, eingeschwungen und in einem Band (nie Wende,
+    // Anlauf, Halt, Wechsel); Stand = die untersten 5 % der Beinlänge.
+    const satzGang = (fuesse, leib) => {
+        const memo = new WeakMap();
+        const spuren = new Map();
+        const m4 = new T.Matrix4();
+        const vL = new T.Vector3();
+        let n = 0;
+        const lokal = (m, inst, v) => {
+            const G = m.userData.gang;
+            const a = m.geometry.attributes;
+            const vid = Math.abs(a.aVid.getX(v)) - 1;
+            const x = a.aGang.getX(inst);
+            const r0 = Math.floor(x) * G.n;
+            const f = (x - Math.floor(x)) * G.n;
+            const k0 = Math.floor(f);
+            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
+            const c3 = (c) => {
+                const lauf = at(r0 + k0, c) + (f - k0) * (at(r0 + ((k0 + 1) % G.n), c) - at(r0 + k0, c));
+                return at(G.baender * G.n, c) + a.aGang.getY(inst) * (lauf - at(G.baender * G.n, c));
+            };
+            return vL.set(c3(0), c3(1), c3(2));
+        };
+        const messen = (senken) => {
+            n++;
+            for (const m of senken) {
+                if (!m.userData.gang || !(m.count > 0)) continue;
+                if (!memo.has(m.geometry)) memo.set(m.geometry, fuesse(m.geometry));
+                const F = memo.get(m.geometry);
+                const IM = m.instanceMatrix.array;
+                const aG = m.geometry.attributes.aGang;
+                for (let inst = 0; F && inst < m.count; inst++) {
+                    const L = leib(IM[inst * 16 + 12], IM[inst * 16 + 14]);
+                    const key = L && m.uuid + "|" + L.key;
+                    if (L && !spuren.has(key)) spuren.set(key, { reihe: [], bein: L.bein });
+                    if (!L || spuren.get(key).reihe.length >= 1800) continue;
+                    m4.fromArray(IM, inst * 16);
+                    const fuss = F.map((vs) =>
+                        vs.map((v) => {
+                            const y = lokal(m, inst, v).y;
+                            const w = vL.applyMatrix4(m4);
+                            return { y, x: w.x, z: w.z };
+                        })
+                    );
+                    const b = Math.floor(aG.getX(inst));
+                    spuren.get(key).reihe.push({ fuss, x: L.x, z: L.z, ry: L.ry, w: aG.getY(inst), b, n });
+                }
+            }
+        };
+        const schlupf = () => {
+            let wegFuss = 0;
+            let wegLeib = 0;
+            for (const sp of spuren.values()) {
+                const R = sp.reihe;
+                for (let j = 0; j < R[0].fuss.length; j++) {
+                    let ymin = Infinity;
+                    for (const e of R) for (const p of e.fuss[j]) ymin = Math.min(ymin, p.y);
+                    for (let i = 1; i < R.length; i++) {
+                        const [a0, a1] = [R[i - 1], R[i]];
+                        if (a1.n !== a0.n + 1 || Math.abs(a1.ry - a0.ry) > 1e-3) continue;
+                        if (Math.min(a0.w, a1.w) < 0.99 || a0.b !== a1.b) continue;
+                        let k = 0;
+                        for (let q = 1; q < a1.fuss[j].length; q++) if (a1.fuss[j][q].y < a1.fuss[j][k].y - 1e-4) k = q;
+                        const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
+                        if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
+                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
+                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                    }
+                }
+            }
+            const schlupf = wegLeib > 0 ? Math.round((wegFuss / wegLeib) * 1000) / 1000 : null;
+            return { schlupf, wegLeib: Math.round(wegLeib * 10) / 10, spuren: spuren.size };
+        };
+        // eine Lücke (ein neues Gang-Fenster): kein Paar über sie hinweg
+        return { messen, schlupf, luecke: () => n++ };
+    };
     // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der Hüllen-Kontakt des Tiers läuft unverändert, die Linse
     // merkt nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
     // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse). Die Basis kennt den Kontakt nicht: dort bleibt die
@@ -2571,8 +2650,21 @@ async function kreaturProben(r, T, opts) {
                 tiere.push({ c, zone, spur: [], lage: null });
             });
         const BEINE = ["legFL", "legFR", "legHL", "legHR"];
-        // der sichtbare Leib: die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
+        // der sichtbare Leib: der Satz seiner Gestalt (Phase × Gewicht seiner Instanz, `_tickTierSatz`), die Grobstufe (die
+        // Gelenke ihrer Haut) oder die feine Stufe
+        const imSatz = (c) => {
+            for (const m of s.scene.children) {
+                if (!m.isInstancedMesh || m.userData.inventar !== "tier" || m.userData.teil !== "fell") continue;
+                const e = m.instanceMatrix.array;
+                const a = m.geometry.attributes.aGang;
+                for (let i = 0; i < m.count; i++)
+                    if (Math.hypot(e[i * 16 + 12] - c.position.x, e[i * 16 + 14] - c.position.z) < 1e-3)
+                        return BEINE.map(() => a.getX(i) * a.getY(i) * TAU);
+            }
+            return null;
+        };
         const sichtbar = (c) => {
+            if (c.userData._satz) return { fern: true, beine: imSatz(c) };
             const tb = c.userData._tierBaum;
             const gl = c.userData._gelenk;
             if (!tb || !gl) return { fern: false, beine: null };
@@ -2884,14 +2976,10 @@ async function kreaturProben(r, T, opts) {
             L.filter(
                 (g) => gezeichnet(g) && stationen.some((o) => Math.hypot(g.position.x - o.x, g.position.z - o.z) < 1.5)
             ).length;
-        // DER GANG IM SATZ (Schlupf wie gate:tier-gang): der Fuß jedes gehenden Satz-Bewohners aus dem, was die GPU zeichnet —
-        // jede Senke `bewohner-satz` mit Sohle: die Vorlage (ohne Gang-Puffer `userData.gang` die stehende Geometrie) an Phase
-        // und Gewicht seiner Instanz (`aGang`) × Instanz-Matrix. Ferse und Ballen je Seite, der tiefere trägt; Stand = die
-        // untersten 5 % der Beinlänge.
+        // DER GANG IM SATZ: der Fuß jedes gehenden Satz-Bewohners (`satzGang`) — jede Senke `bewohner-satz` mit Sohle, Ferse
+        // und Ballen je Seite
         const saetze = () => s.scene.children.filter((o) => o && o.name === "bewohner-satz" && o.isInstancedMesh);
-        const fussMemo = new WeakMap();
         const fussIx = (geo) => {
-            if (fussMemo.has(geo)) return fussMemo.get(geo);
             const P = geo.attributes.position;
             const ix = {
                 ymin: Infinity,
@@ -2907,86 +2995,26 @@ async function kreaturProben(r, T, opts) {
                 if (f[0] < 0 || P.getZ(v) < P.getZ(f[0])) f[0] = v;
                 if (f[1] < 0 || P.getZ(v) > P.getZ(f[1])) f[1] = v;
             }
-            fussMemo.set(geo, ix);
-            return ix;
+            // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs — die Haut endet am Knöchel
+            return ix.ymin > -A.PLAYER_FOOT_OFFSET + 0.03 ? null : ix.fuss;
         };
-        const lokal = (m, inst, v, out) => {
-            const G = m.userData.gang;
-            const a = m.geometry.attributes;
-            if (!G) return out.fromBufferAttribute(a.position, v);
-            const vid = Math.abs(a.aVid.getX(v)) - 1;
-            const f = (((a.aGang.getX(inst) % 1) + 1) % 1) * G.n;
-            const k0 = Math.floor(f);
-            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
-            const c3 = (c) => {
-                const lauf = at(k0, c) + (f - k0) * (at((k0 + 1) % G.n, c) - at(k0, c));
-                return at(G.n, c) + a.aGang.getY(inst) * (lauf - at(G.n, c));
-            };
-            return out.set(c3(0), c3(1), c3(2));
-        };
-        const m4 = new T.Matrix4();
-        const vL = new T.Vector3();
-        const spuren = new Map();
+        let gehend = [];
+        const gang = satzGang(fussIx, (x, z) => {
+            const b = gehend.find((q) => Math.hypot(x - q.leib.position.x, z - q.leib.position.z) <= 1e-3);
+            const g = b && b.leib;
+            return b
+                ? {
+                      key: b.same,
+                      bein: (b.beinL || 0.9) / (b.groesse || 1),
+                      x: g.position.x,
+                      z: g.position.z,
+                      ry: g.rotation.y,
+                  }
+                : null;
+        });
         const gangMessen = (SZ) => {
-            const gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
-            for (const m of gehend.length ? SZ : []) {
-                // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs — die Haut endet am Knöchel
-                const ix = fussIx(m.geometry);
-                if (ix.ymin > -A.PLAYER_FOOT_OFFSET + 0.03) continue;
-                const IM = m.instanceMatrix.array;
-                for (const b of gehend) {
-                    const g = b.leib;
-                    let inst = m.count - 1;
-                    while (
-                        inst >= 0 &&
-                        Math.hypot(IM[inst * 16 + 12] - g.position.x, IM[inst * 16 + 14] - g.position.z) > 1e-3
-                    )
-                        inst--;
-                    const key = m.uuid + "|" + b.same;
-                    if (!spuren.has(key)) spuren.set(key, { reihe: [], bein: (b.beinL || 0.9) / (b.groesse || 1) });
-                    const sp = spuren.get(key);
-                    if (inst < 0 || sp.reihe.length >= 1800) {
-                        sp.reihe.push(null);
-                        continue;
-                    }
-                    m4.fromArray(IM, inst * 16);
-                    const fuss = ix.fuss.map((paar) =>
-                        paar.map((v) => {
-                            const y = lokal(m, inst, v, vL).y - ix.ymin;
-                            const w = vL.applyMatrix4(m4);
-                            return { y, x: w.x, z: w.z };
-                        })
-                    );
-                    const w = m.userData.gang ? m.geometry.attributes.aGang.getY(inst) : 1;
-                    sp.reihe.push({ fuss, x: g.position.x, z: g.position.z, ry: g.rotation.y, w });
-                }
-            }
-        };
-        const schlupfVon = () => {
-            let wegFuss = 0;
-            let wegLeib = 0;
-            for (const sp of spuren.values()) {
-                const R = sp.reihe;
-                for (let j = 0; j < 2; j++) {
-                    let ymin = Infinity;
-                    for (const e of R) if (e) ymin = Math.min(ymin, e.fuss[j][0].y, e.fuss[j][1].y);
-                    for (let i = 1; i < R.length; i++) {
-                        const [a0, a1] = [R[i - 1], R[i]];
-                        // gezählt wird der Gang geradeaus und eingeschwungen (wie gate:tier-gang): nie Wende, Anlauf, Halt
-                        if (!a0 || !a1 || Math.abs(a1.ry - a0.ry) > 1e-3 || Math.min(a0.w, a1.w) < 0.99) continue;
-                        const k = a1.fuss[j][1].y < a1.fuss[j][0].y - 1e-4 ? 1 : 0;
-                        const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
-                        if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
-                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
-                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
-                    }
-                }
-            }
-            return {
-                schlupf: wegLeib > 0 ? q3(wegFuss / wegLeib) : null,
-                wegLeib: Math.round(wegLeib),
-                spuren: spuren.size,
-            };
+            gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
+            if (gehend.length) gang.messen(SZ);
         };
         // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort — die Drehung des Leibs, die der
         // Satz zeichnet; dazu die Streuung (der größte Anteil in einem Sektor von 30 Grad)
@@ -3059,7 +3087,7 @@ async function kreaturProben(r, T, opts) {
             }
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause — 10 s im Takt des Spiels (1/60 s)
             if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
-                for (const sp of spuren.values()) sp.luecke = true;
+                gang.luecke(); // das Fenster beginnt jede Spur neu
                 for (let k = 0; k < 600; k++) {
                     r._tickBewohner(1 / 60);
                     // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 (die Pose friert ein)
@@ -3128,7 +3156,7 @@ async function kreaturProben(r, T, opts) {
                 .map((b) => `${b.rolle}/${b.beruf} #${b.heim}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
             unterN: unter.length,
             stationen: stationen.length,
-            satzGang: schlupfVon(),
+            satzGang: gang.schlupf(),
             blick: {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
@@ -3211,108 +3239,43 @@ async function kreaturProben(r, T, opts) {
         ring(40, 15, 55, 101);
         laufen(240);
         const B50 = befehle();
-        // DER GANG IM SATZ: je Senke `fell` die tiefste Ecke je Bein (Quadrant: Seite × vorn/hinten der stehenden Vorlage)
-        const fussMemo = new WeakMap();
-        const fussIx = (geo) => {
-            if (fussMemo.has(geo)) return fussMemo.get(geo);
+        // DER GANG IM SATZ (`satzGang`): je Senke `fell` die tiefste Ecke je Bein (Seite × vorn/hinten der stehenden Vorlage)
+        const fuesse = (geo) => {
             const P = geo.attributes.position;
-            let zMin = Infinity,
-                zMax = -Infinity;
+            let zM = 0;
+            for (let v = 0; v < P.count; v++) zM += P.getZ(v) / P.count;
+            const ix = [[-1], [-1], [-1], [-1]];
             for (let v = 0; v < P.count; v++) {
-                zMin = Math.min(zMin, P.getZ(v));
-                zMax = Math.max(zMax, P.getZ(v));
+                const f = ix[(P.getX(v) < 0 ? 0 : 1) + (P.getZ(v) < zM ? 0 : 2)];
+                if (f[0] < 0 || P.getY(v) < P.getY(f[0])) f[0] = v;
             }
-            const zM = (zMin + zMax) / 2;
-            const ix = [-1, -1, -1, -1];
-            for (let v = 0; v < P.count; v++) {
-                const q = (P.getX(v) < 0 ? 0 : 1) + (P.getZ(v) < zM ? 0 : 2);
-                if (ix[q] < 0 || P.getY(v) < P.getY(ix[q])) ix[q] = v;
-            }
-            fussMemo.set(geo, ix);
             return ix;
         };
-        // die Lage einer Ecke, wie der Gang-Knoten sie zeichnet: Band = ganzer Teil von aGang.x, Phase sein Rest
-        const lokal = (m, inst, v, out) => {
-            const G = m.userData.gang;
-            const a = m.geometry.attributes;
-            const vid = Math.abs(a.aVid.getX(v)) - 1;
-            const x = a.aGang.getX(inst);
-            const band = Math.floor(x);
-            const f = (x - band) * G.n;
-            const k0 = Math.floor(f);
-            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
-            const r0 = band * G.n;
-            const st = G.baender * G.n;
-            const c3 = (c) => {
-                const lauf = at(r0 + k0, c) + (f - k0) * (at(r0 + ((k0 + 1) % G.n), c) - at(r0 + k0, c));
-                return at(st, c) + a.aGang.getY(inst) * (lauf - at(st, c));
-            };
-            return out.set(c3(0), c3(1), c3(2));
-        };
-        const m4 = new T.Matrix4();
-        const vL = new T.Vector3();
-        const spuren = new Map();
-        const gangMessen = () => {
-            const fell = saetze().filter((m) => m.userData.gang && m.userData.teil === "fell" && m.count > 0);
-            for (const m of fell) {
-                const ix = fussIx(m.geometry);
-                const IM = m.instanceMatrix.array;
-                const aG = m.geometry.attributes.aGang;
-                for (let inst = 0; inst < m.count; inst++) {
-                    const x = IM[inst * 16 + 12],
-                        z = IM[inst * 16 + 14];
-                    const c = s.creatures.find((k) => Math.hypot(k.position.x - x, k.position.z - z) < 1e-3);
-                    if (!c) continue;
-                    const key = m.uuid + "|" + c.userData.netId;
-                    if (!spuren.has(key)) spuren.set(key, { reihe: [], bein: c.userData._tierBaum.beinL * c.scale.x });
-                    m4.fromArray(IM, inst * 16);
-                    const fuss = ix.map((v) => {
-                        const y = lokal(m, inst, v, vL).y;
-                        const w = vL.applyMatrix4(m4);
-                        return { y, x: w.x, z: w.z };
-                    });
-                    spuren.get(key).reihe.push({
-                        fuss,
-                        x: c.position.x,
-                        z: c.position.z,
-                        ry: c.rotation.y,
-                        w: aG.getY(inst),
-                        b: Math.floor(aG.getX(inst)),
-                    });
-                }
-            }
-        };
+        const gang = satzGang(fuesse, (x, z) => {
+            const c = s.creatures.find((k) => Math.hypot(k.position.x - x, k.position.z - z) < 1e-3);
+            return c
+                ? {
+                      key: c.userData.netId,
+                      bein: c.userData._tierBaum.beinL,
+                      x: c.position.x,
+                      z: c.position.z,
+                      ry: c.rotation.y,
+                  }
+                : null;
+        });
         for (let i = 0; i < 360; i++) {
             takt(1 / 60);
-            gangMessen();
+            gang.messen(saetze().filter((m) => m.userData.teil === "fell"));
         }
-        let wegFuss = 0,
-            wegLeib = 0;
-        for (const sp of spuren.values()) {
-            const R = sp.reihe;
-            for (let j = 0; j < 4; j++) {
-                let ymin = Infinity;
-                for (const e of R) ymin = Math.min(ymin, e.fuss[j].y);
-                for (let i = 1; i < R.length; i++) {
-                    const [a0, a1] = [R[i - 1], R[i]];
-                    // gezählt wird der Gang geradeaus und eingeschwungen, in einem Band: nie Wende, Anlauf, Halt, Wechsel
-                    if (Math.abs(a1.ry - a0.ry) > 1e-3 || Math.min(a0.w, a1.w) < 0.99 || a0.b !== a1.b) continue;
-                    const [p, q] = [a0.fuss[j], a1.fuss[j]];
-                    if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
-                    wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
-                    wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
-                }
-            }
-        }
-        const q3 = (v) => Math.round(v * 1000) / 1000;
+        const G = gang.schlupf();
         return {
             b10: B10,
             b50: B50,
             nahLeiber: A.KREATUR_SATZ ? A.KREATUR_SATZ.nahLeiber : null,
             senken: saetze().length,
-            satzTiere: spuren.size,
-            schlupf: wegLeib > 0 ? q3(wegFuss / wegLeib) : null,
-            wegLeib: Math.round(wegLeib * 10) / 10,
+            satzTiere: G.spuren,
+            schlupf: G.schlupf,
+            wegLeib: G.wegLeib,
         };
     });
 

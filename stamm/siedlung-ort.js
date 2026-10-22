@@ -1,5 +1,69 @@
 class AnazhRealm_siedlung_ort {
     // ===== ATLAS · Siedlung/ort — Siedlungs-Plan · Bau-Frei · Dorf-Erlebnis · Tore und Membranen · Fahr-Platz =====
+    // DIE NORMALE IN EINER ZAHL (oktaedrisch, je Achse 12 Bit — eine ganze Zahl unter 2^24, in f32 exakt): der Gang-Puffer
+    // trägt Lage und Normale in EINEM Texel; `_oktaAus` ist die Umkehrung auf der CPU, `_gangSatzKnoten` die im Shader.
+    static _oktaIn(x, y, z) {
+        const l = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1;
+        let u = x / l;
+        let v = y / l;
+        if (z / l < 0) {
+            const u0 = u;
+            u = (1 - Math.abs(v)) * (u0 >= 0 ? 1 : -1);
+            v = (1 - Math.abs(u0)) * (v >= 0 ? 1 : -1);
+        }
+        return Math.round((u * 0.5 + 0.5) * 4095) * 4096 + Math.round((v * 0.5 + 0.5) * 4095);
+    }
+    static _oktaAus(w) {
+        const qu = Math.floor(w / 4096);
+        const u = (qu / 4095) * 2 - 1;
+        const v = ((w - qu * 4096) / 4095) * 2 - 1;
+        const z = 1 - Math.abs(u) - Math.abs(v);
+        const t = Math.max(-z, 0);
+        const x = u - (u >= 0 ? t : -t);
+        const y = v - (v >= 0 ? t : -t);
+        const l = Math.hypot(x, y, z) || 1;
+        return [x / l, y / l, z / l];
+    }
+    // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
+    // Leibs): je Ecke die Lage zwischen den zwei Phasen um die Phase der Instanz in ihrem Band, gemischt mit dem Stand nach dem
+    // Gewicht des Gangs; die Normale ebenso (oktaedrisch, die Rückseite kehrt sie um) — sie geht als normalLocal in die
+    // Instanz-Normale.
+    static _gangSatzKnoten(tex, n, nv, baender) {
+        const T = THREE.TSL;
+        const W = T.int(tex.image.width);
+        const a = T.attribute("aGang", "vec2");
+        const vid = T.attribute("aVid", "float");
+        const id = T.int(T.abs(vid)).sub(1);
+        const band = T.floor(a.x).mul(n);
+        const f = T.fract(a.x).mul(n);
+        const k0 = T.floor(f);
+        const t = f.sub(k0);
+        const k1 = T.mod(k0.add(1), n);
+        const lies = (k) => {
+            const i = T.int(k).mul(T.int(nv)).add(id);
+            return T.textureLoad(tex, T.ivec2(i.mod(W), i.div(W)), T.int(0));
+        };
+        const s = lies(T.float(baender * n));
+        const p0 = lies(band.add(k0));
+        const p1 = lies(band.add(k1));
+        const dek = (w) => {
+            const qu = T.floor(w.div(4096));
+            const e = T.vec2(qu, w.sub(qu.mul(4096)))
+                .div(4095)
+                .mul(2)
+                .sub(1);
+            const z = T.float(1).sub(T.abs(e.x)).sub(T.abs(e.y));
+            const xy = e.sub(T.sign(e).mul(T.max(z.negate(), 0)));
+            return T.vec3(xy, z);
+        };
+        const lage = T.mix(s.xyz, T.mix(p0.xyz, p1.xyz, t), a.y);
+        const nrm = T.normalize(T.mix(dek(s.w), T.mix(dek(p0.w), dek(p1.w), t), a.y)).mul(T.sign(vid));
+        return T.Fn(() => {
+            T.normalLocal.assign(nrm);
+            return lage;
+        })();
+    }
+
     // DAS LAND EINES WERKS (Schau-2 wasser-wahrheit): der Boden an (x, z) liegt mehr als `marge` über dem Wasser — dem
     // gezeichneten (`_nassAt`: was das Auge sieht, samt Live-Dach und Ufer) UND dem des Gesetzes, aus dem das Bild wird
     // (`_atlasWaterLevelAt` über dem Boden der Spalte: ein Chunk, dessen Sheet ein Wasser noch nicht zeichnet, trägt es
@@ -1929,17 +1993,14 @@ class AnazhRealm_siedlung_ort {
         if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
     }
 
-    // DER SATZ EINER GESTALT (Lehre 23: WebGPU zieht jeden Draw einzeln — die Kosten der Menge hängen nie an der Kopfzahl): die
-    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) als drei Instanz-Senken über den EINEN Zeichner (`_instanzMesh`):
-    // die Haut in ihrem Stoff, jeder andere Teil (Kleid, Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits
-    // der Armlänge ist ein Auge < 3 px), und der Wurf aus der NUR-WURF-Stufe 3 (Studio-Vertrag B2: sie wird nie gezeigt und
-    // wirft für die Art — die Teile `wurf.seh` der Grobstufen-Zeile, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die
-    // Nah-Wahl). DER GANG IM SATZ: der Satz geht das EINE Gang-Gesetz des nahen Leibs — je Gestalt EIN
-    // Gang-Puffer, eine Textur: `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`), je Phase und Ecke
-    // die Lage im Raum des Leibs und die oktaedrische Normale. Jede Ecke trägt ihre Nummer (`aVid`, negativ = die Rückseite
-    // eines beidseitigen Teils), jede Instanz Phase und Gewicht ihres Gangs (`aGang`, `_bewohnerSatzSchreiben`); der
-    // positionNode liest VOR der Instanz-Matrix (Lehre 22), die Normale mit, und der Wurf liest denselben Puffer (Lehre 26:
-    // der Schatten geht, wie das Auge sieht). Ein Bewohner im Satz ist eine Matrix; der Satz geht mit seiner Siedlung.
+    // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): die
+    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) als drei Senken: die Haut in ihrem Stoff, jeder andere Teil (Kleid,
+    // Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits der Armlänge ist ein Auge < 3 px), und der Wurf aus der
+    // NUR-WURF-Stufe 3 (Studio-Vertrag B2: sie wird nie gezeigt und wirft für die Art — die Teile `wurf.seh` der
+    // Grobstufen-Zeile, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl). DER GANG IM SATZ: der Satz geht das
+    // EINE Gang-Gesetz des nahen Leibs in EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand
+    // (`_bewohnerGangPose`), je Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist
+    // eine Matrix; der Satz geht mit seiner Siedlung.
     _bewohnerSatz(S, G, b) {
         const T = THREE;
         const KC = window.__koerperCore;
@@ -1954,7 +2015,6 @@ class AnazhRealm_siedlung_ort {
         let haut = null;
         let stoff = null;
         let groesst = 0;
-        let nv = 0;
         stufen.forEach((t, si) =>
             t.root.traverse((m) => {
                 if (!m.isSkinnedMesh) return;
@@ -1965,8 +2025,7 @@ class AnazhRealm_siedlung_ort {
                     groesst = tris;
                     stoff = m.material;
                 }
-                const q = { m, basis: nv, beid: m.material.side === T.DoubleSide };
-                nv += m.geometry.attributes.position.count;
+                const q = { m, beid: m.material.side === T.DoubleSide };
                 quellen.push(q);
                 if (si === 0) teilVon[seh === "haut" ? "haut" : "rest"].push(q);
                 else if (z1.wurf.seh.indexOf(seh) >= 0) teilVon.wurf.push(q);
@@ -1978,92 +2037,31 @@ class AnazhRealm_siedlung_ort {
             );
             return false;
         }
-        const N = AnazhRealm.BEWOHNER.gangPhasen;
-        const W = 2048;
-        const H = Math.max(1, Math.ceil(((N + 1) * nv) / W));
-        const tex = new T.DataTexture(new Float32Array(W * H * 4), W, H, T.RGBAFormat, T.FloatType);
-        tex.name = "bewohner-gang";
-        tex.minFilter = tex.magFilter = T.NearestFilter;
-        tex.generateMipmaps = false;
-        const satz = { quellen, n: N, nv, tex, gebacken: 0, geos: [], tempo: b.tempo };
-        // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
-        this._bewohnerGangPose(b.leib, satz, N);
-        tex.needsUpdate = true;
-        // die Stoffe des Satzes: Haut und Kleid als Klon (der Gang-Knoten ist EINER je Gestalt), der Wurf im Kleid
-        const gangKnoten = AnazhRealm._bewohnerGangKnoten(tex, N, nv);
-        satz.stoffe = [haut, stoff].map((st) => {
-            const c = st.clone();
-            c.name = "bewohner-satz";
-            c.positionNode = gangKnoten;
-            return c;
-        });
-        const stoffVon = { haut: satz.stoffe[0], rest: satz.stoffe[1], wurf: satz.stoffe[1] };
-        const D = tex.image.data;
-        const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
-        for (const k of ["haut", "rest", "wurf"]) {
-            const P = [];
-            const Nn = [];
-            const C = [];
-            const V = [];
-            const I = [];
-            for (const q of teilVon[k]) {
-                const a = q.m.geometry.attributes;
-                const ix = q.m.geometry.index.array;
-                const basis = P.length / 3;
-                for (let i = 0; i < a.position.count; i++) {
-                    const o = (N * nv + q.basis + i) * 4;
-                    const n = AnazhRealm._oktaAus(D[o + 3]);
-                    P.push(D[o], D[o + 1], D[o + 2]);
-                    Nn.push(n[0], n[1], n[2]);
-                    C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
-                    V.push(q.basis + i + 1);
-                }
-                for (let t = 0; t < ix.length; t++) I.push(basis + ix[t]);
-                // ein beidseitiger Teil (die Strähnen-Kreuzquads des Haars) trägt im Satz seine Rückseite als eigene Fläche
-                if (q.beid && k !== "wurf") {
-                    const b2 = P.length / 3;
-                    for (let i = basis; i < b2; i++) {
-                        P.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-                        Nn.push(-Nn[i * 3], -Nn[i * 3 + 1], -Nn[i * 3 + 2]);
-                        C.push(C[i * 3], C[i * 3 + 1], C[i * 3 + 2]);
-                        V.push(-V[i]);
-                    }
-                    for (let t = 0; t < ix.length; t += 3) I.push(b2 + ix[t], b2 + ix[t + 2], b2 + ix[t + 1]);
-                }
-            }
-            const geo = new T.BufferGeometry();
-            const n = P.length / 3;
-            geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
-            geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(Nn), 3));
-            geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
-            geo.setAttribute("aVid", new T.BufferAttribute(new Float32Array(V), 1));
-            for (const nm of ["aLodLevel", "aH0", "aH0L"])
-                geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
-            geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(cap * 2), 2));
-            geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), n), 1));
-            geo.computeBoundingSphere();
-            satz.geos.push(geo);
-            const m = AnazhRealm._instanzMesh(geo, stoffVon[k], cap);
-            m.name = "bewohner-satz";
-            m.userData.inventar = "bewohner";
-            m.userData.gang = { n: N, nv, puffer: tex.image.data };
-            m.receiveShadow = k !== "wurf";
-            m.layers.mask = k === "wurf" ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
-            m.castShadow = k === "wurf";
-            AnazhRealm._instanzZahl(m, 0);
-            this.state.scene.add(m);
-            satz[k] = m;
-        }
+        const stoffVon = { haut, rest: stoff, wurf: stoff };
+        const satz = this._gangSatz(
+            {
+                name: "bewohner-satz",
+                inventar: "bewohner",
+                n: AnazhRealm.BEWOHNER.gangPhasen,
+                quellen,
+                cap: S.liste.filter((x) => x.gestalt === b.gestalt).length,
+                senken: ["haut", "rest", "wurf"].map((k) => ({
+                    teil: k,
+                    quellen: teilVon[k],
+                    stoff: stoffVon[k],
+                    wurf: k === "wurf",
+                })),
+            },
+            // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
+            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
+        );
         return satz;
     }
 
     // DIE POSE k DES GANG-PUFFERS (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo
-    // des Leibs, eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib, auf der CPU
-    // geskinnt: je Ecke die gewichtete Matrix ihrer Knochen (Pose × Inverse der Vorlage × Bindung) in den Raum des Leibs, die
-    // Normale oktaedrisch in w. Danach steht der Leib wieder im Stand.
+    // des Leibs, eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib, geskinnt in den
+    // Raum des Leibs (`_gangSatzPose`). Danach steht der Leib wieder im Stand.
     _bewohnerGangPose(g, satz, k) {
-        const T = THREE;
-        const teile = g.userData._tierBaum.teile;
         if (k < satz.n) {
             if (!satz.gang) {
                 const h = {};
@@ -2072,48 +2070,7 @@ class AnazhRealm_siedlung_ort {
             this._animateHuman(g, 0, (2 * Math.PI * k) / satz.n, true, false, null, satz.gang);
         } else this._animateHuman(g, 0, 0, false, false, null);
         this._leibMatrix(g);
-        const inv = (this._bewohnerInv || (this._bewohnerInv = new T.Matrix4())).copy(g.matrixWorld).invert();
-        const D = satz.tex.image.data;
-        const e = new Float32Array(16);
-        for (const q of satz.quellen) {
-            const m = q.m;
-            const a = m.geometry.attributes;
-            const K = m.userData.__skinJoints.map(
-                (nm, j) =>
-                    new T.Matrix4()
-                        .multiplyMatrices(inv, teile[nm].matrixWorld)
-                        .multiply(m.skeleton.boneInverses[j])
-                        .multiply(m.bindMatrix).elements
-            );
-            const si = a.skinIndex;
-            const sw = a.skinWeight;
-            const P = a.position;
-            const Nn = a.normal;
-            for (let i = 0; i < P.count; i++) {
-                e.fill(0);
-                for (let c = 0; c < 4; c++) {
-                    const w = sw.getComponent(i, c);
-                    if (w === 0) continue;
-                    const ke = K[si.getComponent(i, c)];
-                    for (let r = 0; r < 16; r++) e[r] += w * ke[r];
-                }
-                const vx = P.getX(i);
-                const vy = P.getY(i);
-                const vz = P.getZ(i);
-                const nx0 = Nn.getX(i);
-                const ny0 = Nn.getY(i);
-                const nz0 = Nn.getZ(i);
-                const o = (k * satz.nv + q.basis + i) * 4;
-                D[o] = vx * e[0] + vy * e[4] + vz * e[8] + e[12];
-                D[o + 1] = vx * e[1] + vy * e[5] + vz * e[9] + e[13];
-                D[o + 2] = vx * e[2] + vy * e[6] + vz * e[10] + e[14];
-                D[o + 3] = AnazhRealm._oktaIn(
-                    nx0 * e[0] + ny0 * e[4] + nz0 * e[8],
-                    nx0 * e[1] + ny0 * e[5] + nz0 * e[9],
-                    nx0 * e[2] + ny0 * e[6] + nz0 * e[10]
-                );
-            }
-        }
+        this._gangSatzPose(satz, k, g.userData._tierBaum.teile, g.matrixWorld);
         if (k < satz.n) {
             this._animateHuman(g, 0, 0, false, false, null);
             this._leibMatrix(g);
@@ -2139,68 +2096,6 @@ class AnazhRealm_siedlung_ort {
         return fertig;
     }
 
-    // DIE NORMALE IN EINER ZAHL (oktaedrisch, je Achse 12 Bit — eine ganze Zahl unter 2^24, in f32 exakt): der Gang-Puffer
-    // trägt Lage und Normale in EINEM Texel; `_oktaAus` ist die Umkehrung auf der CPU, `_bewohnerGangKnoten` die im Shader.
-    static _oktaIn(x, y, z) {
-        const l = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1;
-        let u = x / l;
-        let v = y / l;
-        if (z / l < 0) {
-            const u0 = u;
-            u = (1 - Math.abs(v)) * (u0 >= 0 ? 1 : -1);
-            v = (1 - Math.abs(u0)) * (v >= 0 ? 1 : -1);
-        }
-        return Math.round((u * 0.5 + 0.5) * 4095) * 4096 + Math.round((v * 0.5 + 0.5) * 4095);
-    }
-    static _oktaAus(w) {
-        const qu = Math.floor(w / 4096);
-        const u = (qu / 4095) * 2 - 1;
-        const v = ((w - qu * 4096) / 4095) * 2 - 1;
-        const z = 1 - Math.abs(u) - Math.abs(v);
-        const t = Math.max(-z, 0);
-        const x = u - (u >= 0 ? t : -t);
-        const y = v - (v >= 0 ? t : -t);
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
-    }
-    // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
-    // Leibs): je Ecke die Lage zwischen den zwei Phasen um die Phase der Instanz, gemischt mit dem Stand nach dem Gewicht des
-    // Gangs; die Normale ebenso (oktaedrisch, die Rückseite kehrt sie um) — sie geht als normalLocal in die Instanz-Normale.
-    static _bewohnerGangKnoten(tex, n, nv) {
-        const T = THREE.TSL;
-        const W = T.int(tex.image.width);
-        const a = T.attribute("aGang", "vec2");
-        const vid = T.attribute("aVid", "float");
-        const id = T.int(T.abs(vid)).sub(1);
-        const f = T.fract(a.x).mul(n);
-        const k0 = T.floor(f);
-        const t = f.sub(k0);
-        const k1 = T.mod(k0.add(1), n);
-        const lies = (k) => {
-            const i = T.int(k).mul(T.int(nv)).add(id);
-            return T.textureLoad(tex, T.ivec2(i.mod(W), i.div(W)), T.int(0));
-        };
-        const s = lies(T.float(n));
-        const p0 = lies(k0);
-        const p1 = lies(k1);
-        const dek = (w) => {
-            const qu = T.floor(w.div(4096));
-            const e = T.vec2(qu, w.sub(qu.mul(4096)))
-                .div(4095)
-                .mul(2)
-                .sub(1);
-            const z = T.float(1).sub(T.abs(e.x)).sub(T.abs(e.y));
-            const xy = e.sub(T.sign(e).mul(T.max(z.negate(), 0)));
-            return T.vec3(xy, z);
-        };
-        const lage = T.mix(s.xyz, T.mix(p0.xyz, p1.xyz, t), a.y);
-        const nrm = T.normalize(T.mix(dek(s.w), T.mix(dek(p0.w), dek(p1.w), t), a.y)).mul(T.sign(vid));
-        return T.Fn(() => {
-            T.normalLocal.assign(nrm);
-            return lage;
-        })();
-    }
-
     // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge
     // (Haut und Kleid) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
     // gebacken ist, der Stand. Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird.
@@ -2210,12 +2105,15 @@ class AnazhRealm_siedlung_ort {
             const Z = G.satz;
             if (!Z) return;
             const zahl = { haut: 0, rest: 0, wurf: 0 };
-            const setze = (k, b) => {
-                const i = zahl[k]++;
-                Z[k].setMatrixAt(i, m4);
-                const ph = Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0;
-                Z[k].geometry.attributes.aGang.setXY(i, ph - Math.floor(ph), Z.fertig ? b._gaitW || 0 : 0);
-            };
+            const setze = (k, b) =>
+                AnazhRealm._gangSatzInstanz(
+                    Z[k],
+                    zahl[k]++,
+                    m4,
+                    0,
+                    Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
+                    Z.fertig ? b._gaitW || 0 : 0
+                );
             for (const b of S.liste) {
                 if (b.gestalt !== gi || !b.leib) continue;
                 const g = b.leib;
@@ -2227,15 +2125,7 @@ class AnazhRealm_siedlung_ort {
                 setze("haut", b);
                 setze("rest", b);
             }
-            for (const k of ["haut", "rest", "wurf"]) {
-                const m = Z[k];
-                AnazhRealm._instanzZahl(m, zahl[k]);
-                if (zahl[k] > 0) {
-                    m.instanceMatrix.needsUpdate = true;
-                    m.geometry.attributes.aGang.needsUpdate = true;
-                    m.boundingSphere = null;
-                }
-            }
+            for (const k of ["haut", "rest", "wurf"]) AnazhRealm._gangSatzZahl(Z[k], zahl[k]);
         });
     }
 
@@ -2756,15 +2646,7 @@ class AnazhRealm_siedlung_ort {
         }
         const memo = AnazhRealm._tierOfenMemo;
         for (const G of S.gestalten || []) {
-            for (const m of G.satz ? [G.satz.haut, G.satz.rest, G.satz.wurf] : []) {
-                if (m.parent) m.parent.remove(m);
-                this._instanzAbschied(m);
-            }
-            for (const geo of G.satz ? G.satz.geos : []) geo.dispose();
-            if (G.satz) {
-                for (const st of G.satz.stoffe) st.dispose();
-                G.satz.tex.dispose();
-            }
+            if (G.satz) this._gangSatzAbschied(G.satz);
             for (const key of G.keys) {
                 const v = memo && memo.get(key);
                 if (v && v.__ofen) v.__ofen.fest = false;

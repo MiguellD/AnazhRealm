@@ -2771,8 +2771,9 @@ class AnazhRealm_kreatur_verhalten {
     // (Tod-Zensus: fern gefallen lag er auf 2 m als Fern-Guss ohne Schatten, nah gefallen trug er auf 40 m die volle Gestalt
     // — 2 400 von 5 460 Leichnam-Takten). Rückgabe: fern?
     _leibSicht(creature, distSq, inFrustum) {
-        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
         const ud = creature.userData;
+        // im Satz (`_tickTierSatz`) zeichnet der Leib nicht
+        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true && !ud._satz;
         const fern = this._gelenkStufe(creature, distSq);
         if (!inFrustum) return fern; // das Bild-Gesetz setzt DERSELBE Frame, in dem der Leib in den Blick kommt
         if (!fern && ud._tierBaum) this._fellBildschirmGesetz(creature, ud._tierBaum);
@@ -3391,7 +3392,9 @@ class AnazhRealm_kreatur_verhalten {
             // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
             {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
-                if (mroles) {
+                // im Satz geht der Satz (`_tickTierSatz`): der Leib zeichnet nicht, sein Weg rückt die Phase
+                if (creature.userData._satz) this._tierSatzGang(creature, dt);
+                else if (mroles) {
                     const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? dt * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
@@ -3468,6 +3471,8 @@ class AnazhRealm_kreatur_verhalten {
             // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
         this._kreaturTaktI = null;
+        // DIE MENGE (profiband.K1): wer nicht als Leib lebt, steht und geht im Satz seiner Gestalt
+        this._tickTierSatz(playerPos);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_verhalten]);

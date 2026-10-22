@@ -3045,6 +3045,189 @@ class AnazhRealm_stoff_instanz {
         // zu projizieren (die Zahl der Projektion war dann die der Kaskade: Instanzen fehlten oder standen doppelt im Bild)
         if (mesh.__zeichner) mesh.__zeichner.__fassade.instanceCount = n;
     }
+    // DER GANG-SATZ — der EINE Baustein jeder Menge gelenkiger Gestalten (Bewohner, Tiere; Lehre 23: WebGPU zieht jeden Draw
+    // einzeln — die Kosten der Menge hängen nie an der Kopfzahl): je Gestalt EIN Gang-Puffer, eine Textur — `baender` Bänder zu
+    // je `n` Phasen des Doppelschritts und der Stand (Zeile baender·n), je Phase und Ecke die Lage im Raum des Leibs und die
+    // oktaedrische Normale (`_gangSatzPose`). Jede Senke (`spec.senken`: ihr Teil, ihre Quellen, ihr Stoff, ob sie wirft) ist
+    // eine Instanz-Senke über den EINEN Zeichner (`_instanzMesh`); jede Ecke trägt ihre Nummer (`aVid`, negativ = die Rückseite
+    // eines beidseitigen Teils), jede Instanz Band + Phase und Gewicht ihres Gangs (`aGang`, `_gangSatzInstanz`). Der Knoten
+    // liest VOR der Instanz-Matrix (Lehre 22), die Normale mit, und der Wurf liest denselben Puffer (Lehre 26: der Schatten
+    // geht, wie das Auge sieht). Ein Stoff wird EINMAL geklont (der Gang-Knoten ist EINER je Gestalt). `stand(satz)` schreibt
+    // die Stand-Zeile, bevor die Senken ihre Ecken aus ihr nehmen. Eine Gestalt im Satz ist eine Matrix.
+    _gangSatz(spec, stand) {
+        const T = THREE;
+        let nv = 0;
+        for (const q of spec.quellen) {
+            q.basis = nv;
+            nv += q.m.geometry.attributes.position.count;
+        }
+        const N = spec.n;
+        const B = spec.baender || 1;
+        const W = 2048;
+        const H = Math.max(1, Math.ceil(((B * N + 1) * nv) / W));
+        const tex = new T.DataTexture(new Float32Array(W * H * 4), W, H, T.RGBAFormat, T.FloatType);
+        tex.name = spec.name + "-gang";
+        tex.minFilter = tex.magFilter = T.NearestFilter;
+        tex.generateMipmaps = false;
+        const satz = {
+            quellen: spec.quellen,
+            n: N,
+            baender: B,
+            nv,
+            tex,
+            geos: [],
+            stoffe: [],
+            senken: [],
+            cap: spec.cap,
+        };
+        stand(satz);
+        tex.needsUpdate = true;
+        const knoten = AnazhRealm._gangSatzKnoten(tex, N, nv, B);
+        const klone = new Map();
+        const D = tex.image.data;
+        const st0 = B * N * nv;
+        for (const sk of spec.senken) {
+            let stoff = klone.get(sk.stoff);
+            if (!stoff) {
+                stoff = sk.stoff.clone();
+                stoff.name = spec.name;
+                stoff.positionNode = knoten;
+                klone.set(sk.stoff, stoff);
+                satz.stoffe.push(stoff);
+            }
+            const P = [];
+            const Nn = [];
+            const C = [];
+            const V = [];
+            const I = [];
+            for (const q of sk.quellen) {
+                const a = q.m.geometry.attributes;
+                const ix = q.m.geometry.index.array;
+                const basis = P.length / 3;
+                for (let i = 0; i < a.position.count; i++) {
+                    const o = (st0 + q.basis + i) * 4;
+                    const n = AnazhRealm._oktaAus(D[o + 3]);
+                    P.push(D[o], D[o + 1], D[o + 2]);
+                    Nn.push(n[0], n[1], n[2]);
+                    C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
+                    V.push(q.basis + i + 1);
+                }
+                for (let t = 0; t < ix.length; t++) I.push(basis + ix[t]);
+                // ein beidseitiger Teil (die Strähnen-Kreuzquads des Haars) trägt im Satz seine Rückseite als eigene Fläche
+                if (q.beid && !sk.wurf) {
+                    const b2 = P.length / 3;
+                    for (let i = basis; i < b2; i++) {
+                        P.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
+                        Nn.push(-Nn[i * 3], -Nn[i * 3 + 1], -Nn[i * 3 + 2]);
+                        C.push(C[i * 3], C[i * 3 + 1], C[i * 3 + 2]);
+                        V.push(-V[i]);
+                    }
+                    for (let t = 0; t < ix.length; t += 3) I.push(b2 + ix[t], b2 + ix[t + 2], b2 + ix[t + 1]);
+                }
+            }
+            const geo = new T.BufferGeometry();
+            const n = P.length / 3;
+            geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
+            geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(Nn), 3));
+            geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
+            geo.setAttribute("aVid", new T.BufferAttribute(new Float32Array(V), 1));
+            for (const nm of ["aLodLevel", "aH0", "aH0L"])
+                geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
+            geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(spec.cap * 2), 2));
+            geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), n), 1));
+            geo.computeBoundingSphere();
+            satz.geos.push(geo);
+            const m = AnazhRealm._instanzMesh(geo, stoff, spec.cap);
+            m.name = spec.name;
+            m.userData.inventar = spec.inventar;
+            m.userData.teil = sk.teil;
+            m.userData.gang = { n: N, nv, baender: B, puffer: D };
+            m.receiveShadow = !sk.wurf;
+            m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
+            m.castShadow = !!sk.wurf;
+            AnazhRealm._instanzZahl(m, 0);
+            this.state.scene.add(m);
+            satz[sk.teil] = m;
+            satz.senken.push(m);
+        }
+        return satz;
+    }
+
+    // DIE ZEILE `zeile` DES GANG-PUFFERS an der gestellten Gestalt, auf der CPU geskinnt: je Ecke die gewichtete Matrix ihrer
+    // Knochen (`teile` je Name, Pose × Inverse der Vorlage × Bindung) in den Raum der Wurzel (`wurzel`, ihre Welt-Matrix), die
+    // Normale oktaedrisch in w. Die Pose stellt der Rufer (der Bewohner mit dem Gang-Gesetz des Menschen, das Tier mit dem
+    // seines Leibs); jede Quelle ist eine geskinnte Stufe mit ihren Knochen-Namen (`__skinJoints`).
+    _gangSatzPose(satz, zeile, teile, wurzel) {
+        const T = THREE;
+        const inv = (this._gangSatzInv || (this._gangSatzInv = new T.Matrix4())).copy(wurzel).invert();
+        const D = satz.tex.image.data;
+        const e = new Float32Array(16);
+        for (const q of satz.quellen) {
+            const m = q.m;
+            const a = m.geometry.attributes;
+            const K = m.userData.__skinJoints.map(
+                (nm, j) =>
+                    new T.Matrix4()
+                        .multiplyMatrices(inv, teile[nm].matrixWorld)
+                        .multiply(m.skeleton.boneInverses[j])
+                        .multiply(m.bindMatrix).elements
+            );
+            const si = a.skinIndex;
+            const sw = a.skinWeight;
+            const P = a.position;
+            const Nn = a.normal;
+            for (let i = 0; i < P.count; i++) {
+                e.fill(0);
+                for (let c = 0; c < 4; c++) {
+                    const w = sw.getComponent(i, c);
+                    if (w === 0) continue;
+                    const ke = K[si.getComponent(i, c)];
+                    for (let r = 0; r < 16; r++) e[r] += w * ke[r];
+                }
+                const vx = P.getX(i);
+                const vy = P.getY(i);
+                const vz = P.getZ(i);
+                const nx0 = Nn.getX(i);
+                const ny0 = Nn.getY(i);
+                const nz0 = Nn.getZ(i);
+                const o = (zeile * satz.nv + q.basis + i) * 4;
+                D[o] = vx * e[0] + vy * e[4] + vz * e[8] + e[12];
+                D[o + 1] = vx * e[1] + vy * e[5] + vz * e[9] + e[13];
+                D[o + 2] = vx * e[2] + vy * e[6] + vz * e[10] + e[14];
+                D[o + 3] = AnazhRealm._oktaIn(
+                    nx0 * e[0] + ny0 * e[4] + nz0 * e[8],
+                    nx0 * e[1] + ny0 * e[5] + nz0 * e[9],
+                    nx0 * e[2] + ny0 * e[6] + nz0 * e[10]
+                );
+            }
+        }
+    }
+
+    // DIE INSTANZ i EINER SENKE DES SATZES: die Matrix und der Gang (Band + Phase in Zyklen — der ganze Teil wählt das Band,
+    // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand)
+    static _gangSatzInstanz(m, i, m4, band, phase, w) {
+        m.setMatrixAt(i, m4);
+        m.geometry.attributes.aGang.setXY(i, band + phase - Math.floor(phase), w);
+    }
+    // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
+    static _gangSatzZahl(m, n) {
+        AnazhRealm._instanzZahl(m, n);
+        if (n > 0) {
+            m.instanceMatrix.needsUpdate = true;
+            m.geometry.attributes.aGang.needsUpdate = true;
+            m.boundingSphere = null;
+        }
+    }
+    // DER ABSCHIED EINES SATZES: jede Senke über `_instanzAbschied`, ihre Geometrien, die geklonten Stoffe, der Gang-Puffer
+    _gangSatzAbschied(satz) {
+        for (const m of satz.senken) {
+            if (m.parent) m.parent.remove(m);
+            this._instanzAbschied(m);
+        }
+        for (const geo of satz.geos) geo.dispose();
+        for (const st of satz.stoffe) st.dispose();
+        satz.tex.dispose();
+    }
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
