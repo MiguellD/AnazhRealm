@@ -33,6 +33,8 @@ class AnazhRealm_klang {
         s.lofi = this._buildLofiLayer(ctx, masterGain);
         // Welle 5 Klang — die Klang-Welt (klang:UMWELT) auf ihrem Bus.
         s.umwelt = this._umweltKlangBauen(ctx, masterGain, UM);
+        // Die Welle des Abrollens (klang:FAHRT, je Kontext einmal) backt beim Einschalten, nie beim Aufsitzen in Fahrt.
+        UM.kern.fahrtWelle(ctx);
 
         s.ctx = ctx;
         s.masterGain = masterGain;
@@ -99,6 +101,8 @@ class AnazhRealm_klang {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
             letzteMischung: -Infinity,
+            folge: 0, // der Teil des Misch-Takts im nächsten Bild (1 Mischung · 2 Graph · 3 Tier-Rufe, `_umweltKlangTick`)
+            rufDt: 0,
             rufSaat: saat || 1,
             lage: null,
             mix: null,
@@ -162,8 +166,9 @@ class AnazhRealm_klang {
         };
     }
 
-    // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt
-    // Lage → Mischung → Graph, die Tier-Rufe würfeln.
+    // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt die
+    // Lage, im nächsten Bild die Mischung, dann der Graph, dann die Tier-Rufe — je Bild höchstens EIN Teil des Misch-Takts
+    // (klang.K5: alle in einem Bild trugen jedes sechste Bild über 0,2 ms, diag-klang-zensus --takt).
     _umweltKlangTick() {
         const s = this.state.symphony;
         const um = s.umwelt;
@@ -172,13 +177,19 @@ class AnazhRealm_klang {
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
         const jetzt = s.ctx.currentTime;
+        const teil = um.folge;
+        if (teil) {
+            um.folge = (teil + 1) % 4;
+            if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
+            else if (teil === 2) um.graph.anwenden(um.mix, jetzt);
+            else this._tierRufTakt(um.rufDt);
+            return;
+        }
         if (jetzt - um.letzteMischung < O.mischSek) return;
-        const dt = Number.isFinite(um.letzteMischung) ? jetzt - um.letzteMischung : 0;
+        um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
         um.letzteMischung = jetzt;
         um.lage = this._umweltLage();
-        um.mix = um.kern.umweltMischung(um.lage);
-        um.graph.anwenden(um.mix, jetzt);
-        this._tierRufTakt(Math.min(1, dt));
+        um.folge = 1;
     }
 
     // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
@@ -886,11 +897,11 @@ class AnazhRealm_klang {
 
     // W4 V3 Phase 2 — die Melodie-Phrase spielen: je Note ein Sinus-Oszillator
     // (klare, weiche Lead-Stimme über dem Dreieck-Pad) mit Pluck-Hüllkurve.
-    _lofiPlayMelody(degree, durSec) {
+    _lofiPlayMelody(degree, durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.melodyGain) return;
         const ctx = s.ctx;
-        const now = ctx.currentTime;
+        const now = t0 != null ? t0 : ctx.currentTime;
         // GENRE-STIMMEN (18.07.) — die LEAD-Stimme des Gesetzbuchs (inst.lead
         // wählt Wellenform/Pegel/Anschlag; tilt.lead mischt) — Flöte singt,
         // LeadSynth sticht, Rhodes perlt. Fail-soft byte-alt (sine, Faktor 1).
@@ -1110,12 +1121,12 @@ class AnazhRealm_klang {
     // W4 V3 Phase 3 — den Groove einer Akkord-Dauer spielen: das Trommel-
     // Muster über das 8-Schritt-Raster, mit Swing. peace dünnt die Off-Beat-
     // Hihats aus (ruhiger), joy lässt sie voll (lebhafter).
-    _lofiPlayGroove(durSec) {
+    _lofiPlayGroove(durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const STEPS = 8;
         const stepDur = durSec / STEPS;
-        const now = s.ctx.currentTime;
+        const now = t0 != null ? t0 : s.ctx.currentTime;
         const pat = this._lofiGroovePattern(); // ZENSUS-REST V18.488 — das Genre wählt
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
@@ -1298,11 +1309,11 @@ class AnazhRealm_klang {
 
     // Bass: folgt der Akkord-Wurzel eine Oktave unter dem Pad, auf den Kick-Schritten.
     // Dreieck statt Sinus — die Obertöne tragen ihn auch auf kleinen Lautsprechern.
-    _lofiPlayBass(degree, durSec) {
+    _lofiPlayBass(degree, durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.bassGain) return;
         const ctx = s.ctx;
-        const now = ctx.currentTime;
+        const now = t0 != null ? t0 : ctx.currentTime;
         const stepDur = durSec / 8;
         const chord = this._lofiChordFromDegree(degree);
         const rootOffset = chord[0];
@@ -1384,11 +1395,11 @@ class AnazhRealm_klang {
     // Einen Akkord spielen: je Ton ein Dreieck-Oszillator (weich, pad-artig)
     // durch eine eigene Hüllkurve (langsamer Anschlag + Ausklang) in die
     // Lofi-Schicht. Die Oszillatoren stoppen selbst nach dem Akkord.
-    _lofiPlayChord(offsets) {
+    _lofiPlayChord(offsets, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
         const ctx = s.ctx;
-        const now = ctx.currentTime;
+        const now = t0 != null ? t0 : ctx.currentTime;
         const durSec = this._lofiChordDurationMs() / 1000;
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const majorLean = (emotions.hope || 0) > 0.6;
@@ -1441,21 +1452,38 @@ class AnazhRealm_klang {
         }
     }
 
-    // Lofi-Scheduler (aus symphonyTick): nach Ablauf der Akkord-Dauer den Akkord der aktuellen
-    // Stufe spielen, dann die nächste Stufe über _lofiNextDegree wählen.
+    // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords (der letzte Einsatz + die
+    // Akkord-Dauer) den Akkord der aktuellen Stufe planen, dann die nächste Stufe über _lofiNextDegree wählen. Pad, Melodie,
+    // Bass, Groove und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
+    // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
     _lofiTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
+        const L = s.lofi;
+        if (L.folge && L.folge.length) return void L.folge.shift()();
         const now = s.ctx.currentTime;
         const durSec = this._lofiChordDurationMs() / 1000;
-        if (now - s.lofi.lastChordAt < durSec) return;
-        const degree = s.lofi.degree;
-        this._lofiPlayChord(this._lofiChordFromDegree(degree));
-        this._lofiPlayMelody(degree, durSec);
-        this._lofiPlayGroove(durSec);
-        this._lofiPlayBass(degree, durSec);
-        s.lofi.lastChordAt = now;
-        s.lofi.degree = this._lofiNextDegree(degree);
+        const V = AnazhRealm.LOFI_VORLAUF_S;
+        const einsatz = Number.isFinite(L.lastChordAt) ? L.lastChordAt + durSec : -Infinity;
+        if (einsatz - now > V) return;
+        // verspätet (der erste Akkord, ein Hänger): ein voller Vorlauf ab jetzt — die Folge endet vor dem Einsatz
+        const t0 = einsatz - now >= V / 2 ? einsatz : now + V;
+        const degree = L.degree;
+        L.lastChordAt = t0;
+        L.degree = this._lofiNextDegree(degree);
+        this._lofiPlayChord(this._lofiChordFromDegree(degree), t0);
+        L.folge = [
+            () => this._lofiPlayMelody(degree, durSec, t0),
+            () => this._lofiPlayBass(degree, durSec, t0),
+            () => this._lofiPlayGroove(durSec, t0),
+            () => this._lofiRaum(durSec),
+        ];
+    }
+
+    // Der Raum des Akkords und das Welt-Timbre — das letzte Bild seiner Folge (`_lofiTick`).
+    _lofiRaum(durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi) return;
         // Raum des Genres: dna.space führt den Wet-Pegel des Delay-Busses (Return = space ·
         // RAUM.hall.returnProSpace); ohne Studio-Rezept bleibt der Bus stumm. Das Echo synct aufs
         // Genre-Tempo (RAUM.echo: punktierte Achtel, geklemmt); je Kanal führt DELAY_SENDS den Send.
@@ -1679,6 +1707,7 @@ AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
 // (`_klangStudioPreset` liest f.recipes[..].fx.klang live).
 AnazhRealm.KLANG_HOST_RECIPE = "lofi";
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
+AnazhRealm.LOFI_VORLAUF_S = 0.3; // so weit vor seinem Einsatz plant `_lofiTick` den Akkord: seine Stimmen fallen je in ein Bild
 // Das Trommel-Muster wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER, Leser _lofiGroovePattern), der
 // Swing in fx.klang.dna.swing je Genre (Leser _grooveSwing) — beide fail-closed.
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß

@@ -1401,13 +1401,22 @@ function drucke(zeilen, offline, kostenErg, lab) {
 // p95 ≤ TAKT_SOLL_MS. `--echt` fährt ein Fenster auf der echten GPU mit echtem Audio-Gerät (die Zahl des Messplatzes);
 // `--selftest`: ein Takt, der je Bild alle Tiere fragt (300 Rufer im Hör-Radius, die Mischung je Bild) → ROT.
 const TAKT_SOLL_MS = 0.2;
-async function taktMessen(page, phase, sek, vorher) {
+// Gehen: W gehalten, je Sekunde ein Tipp auf A (der Weg biegt). Fahrt (`pendeln`): je 2 s Gas (W) und rückwärts (S) im
+// Wechsel — der Motor dreht hoch und runter, und der GT bleibt in der Lichtung der Mess-Wiese statt im nächsten Stamm.
+async function taktMessen(page, phase, sek, vorher, pendeln) {
     await page.evaluate(vorher || (() => {}));
+    const w0 = await page.evaluate(() => window.__klangTakt.weg());
     await page.evaluate((p) => (window.__klangTakt.phase = p), phase);
-    await page.keyboard.down("w");
-    await new Promise((f) => setTimeout(f, sek * 1000));
-    await page.keyboard.up("w");
-    return page.evaluate(
+    for (let i = 0; i < sek; i++) {
+        const k = pendeln && Math.floor(i / 2) % 2 ? "s" : "w";
+        await page.keyboard.down(k);
+        await new Promise((f) => setTimeout(f, 930));
+        if (!pendeln) await page.keyboard.down("a");
+        await new Promise((f) => setTimeout(f, 70));
+        if (!pendeln) await page.keyboard.up("a");
+        await page.keyboard.up(k);
+    }
+    const z = await page.evaluate(
         (p, soll) => {
             const T = window.__klangTakt;
             const b = T.bilder.filter((x) => x.p === p);
@@ -1442,9 +1451,16 @@ async function taktMessen(page, phase, sek, vorher) {
         phase,
         TAKT_SOLL_MS
     );
+    z.weg = Math.round(z.weg - w0);
+    return z;
 }
 async function taktLauf() {
     const ECHT = argv.includes("--echt");
+    // die Seite isoliert (COOP + COEP): performance.now misst auf 5 µs statt auf dem 100-µs-Raster — das Soll sind 2 Raster
+    server.prependListener("request", (_q, res) => {
+        res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+    });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "null",
@@ -1461,10 +1477,11 @@ async function taktLauf() {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
         await warteAufWelt(page, 180000);
         erg.klang = await page.evaluate(
-            async (m, selbst, echt) => {
+            async (m, echt) => {
                 const r = window.anazhRealm;
                 const st = r.state;
                 const P = Object.getPrototypeOf(r);
+                window.__klangMess = m;
                 st.playerMesh.position.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
                 document.getElementById("anazh-symphony-toggle").click();
                 await new Promise((f) => setTimeout(f, 1500));
@@ -1487,12 +1504,17 @@ async function taktLauf() {
                     };
                 };
                 for (const fn of [
-                    "_lofiTick",
+                    "_lofiPlayChord",
+                    "_lofiPlayMelody",
+                    "_lofiPlayGroove",
+                    "_lofiPlayBass",
+                    "_lofiRaum",
                     "_umweltRingProbe",
                     "_umweltLage",
                     "_tierRufTakt",
                     "_fahrtKlangTick",
-                    "_schrittKlangEreignis",
+                    "_schrittMaterialAt",
+                    "_playSchrittOneShot",
                 ])
                     teil(P, fn, fn);
                 const um = st.symphony.umwelt;
@@ -1540,11 +1562,18 @@ async function taktLauf() {
                         return org.apply(this, arguments);
                     };
                 }
-                const p0 = st.playerMesh.position.clone();
+                // der Weg des Spielers, im Sattel der des Wagens
                 let weg = 0,
-                    vor = p0.clone();
-                T.weg = () => ((weg += st.playerMesh.position.distanceTo(vor)), vor.copy(st.playerMesh.position), weg);
+                    vor = null;
+                T.weg = () => {
+                    const e = st.player && st.player.mountedArch != null ? window.__klangGT : null;
+                    const q = e ? e.position : st.playerMesh.position;
+                    if (vor && vor.q === q) weg += Math.hypot(q.x - vor.x, q.z - vor.z);
+                    vor = { q, x: q.x, z: q.z };
+                    return weg;
+                };
                 const bild = () => {
+                    T.weg();
                     if (T.phase) T.bilder.push({ p: T.phase, ms, fragen, schreiben, teile });
                     ms = fragen = schreiben = 0;
                     teile = {};
@@ -1556,8 +1585,9 @@ async function taktLauf() {
                     const takt = (t) => (r._gameLoopTick(t), requestAnimationFrame(takt));
                     requestAnimationFrame(takt);
                 }
-                if (selbst) {
-                    // der Täter des Selbsttests: 300 Rufer im Hör-Radius, und der Takt fragt sie je Bild (statt im Misch-Takt)
+                // der Täter des Selbsttests (Phase „selbst"): 300 Rufer im Hör-Radius, und der Takt fragt sie je Bild
+                window.__klangTaeter = () => {
+                    const m = window.__klangMess;
                     for (let i = 0; i < 300; i++)
                         st.creatures.push({
                             position: { x: m.x + (i % 20) * 2, y: 0, z: m.z + Math.floor(i / 20) * 2 },
@@ -1570,41 +1600,62 @@ async function taktLauf() {
                         for (const c of st.creatures) this._koerperWasser(c.position.x, c.position.z, 0);
                         this._tierRufTakt(1 / 60);
                     };
-                }
+                };
                 const s = st.symphony;
-                return { an: s.enabled, ctx: s.ctx && s.ctx.state, tiere: st.creatures.length };
+                return {
+                    an: s.enabled,
+                    ctx: s.ctx && s.ctx.state,
+                    tiere: st.creatures.length,
+                    isoliert: self.crossOriginIsolated,
+                };
             },
             MESS,
-            SELBST,
             ECHT
         );
         console.log("Klang:", JSON.stringify(erg.klang));
-        await taktMessen(page, "ein", 8);
+        // bereit: W gehalten, bis der Spieler geht (die Ankunft gibt die Kontrolle frei; im Fenster kalt bis 80 s)
+        await page.keyboard.down("w");
+        for (let i = 0; i < 180 && (await page.evaluate(() => window.__klangTakt.weg())) < 3; i++)
+            await new Promise((f) => setTimeout(f, 1000));
+        await page.keyboard.up("w");
+        await taktMessen(page, "ein", 5);
         erg.phasen.gehen = await taktMessen(page, "gehen", 20);
-        erg.phasen.fahrt = await taktMessen(page, "fahrt", 20, async () => {
-            const r = window.anazhRealm,
-                p = r.state.playerMesh.position;
-            const e = r.spawnArchitecture(
-                "fahrzeug_gt",
-                { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z },
-                { silent: true, precise: true }
-            );
-            for (let n = 0; n < 600 && !e.instanced && !e.mesh; n++) await new Promise((f) => requestAnimationFrame(f));
-            window.__klangGT = e;
-            r.mountArchitecture(e);
-        });
+        erg.phasen.fahrt = await taktMessen(
+            page,
+            "fahrt",
+            20,
+            async () => {
+                // zurück in die Mitte der Lichtung (die Mess-Wiese), der Wagen daneben
+                const r = window.anazhRealm,
+                    p = r.state.playerMesh.position,
+                    m = window.__klangMess;
+                p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
+                const e = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z },
+                    { silent: true, precise: true }
+                );
+                for (let n = 0; n < 600 && !e.instanced && !e.mesh; n++)
+                    await new Promise((f) => requestAnimationFrame(f));
+                window.__klangGT = e;
+                r.mountArchitecture(e);
+            },
+            true
+        );
         erg.phasen.fahrt.sattel = await page.evaluate(() => !!window.anazhRealm.state.symphony.fahrt);
         erg.phasen.nacht = await taktMessen(page, "nacht", 20, () => {
             const r = window.anazhRealm;
             if (r.state.player.mountedArch != null) r.dismountArchitecture();
             r.setTimeOfDay(0, "regler");
         });
+        const selbst = SELBST ? await taktMessen(page, "selbst", 10, () => window.__klangTaeter()) : null;
         const rot = [];
         for (const [ph, z] of Object.entries(erg.phasen)) {
             console.log(
                 `── ${ph}: Klang-ms je Bild p50 ${z.p50} · p95 ${z.p95} · max ${z.max} (${z.bilder} Bilder, ${z.weg} m) · je Bild ${z.fragen} Welt-Fragen · ${z.schreiben} Parameter-Schreibungen · über dem Soll trägt ${z.taeter.join(" · ") || "—"} · die Spitze ${z.spitze.join(" · ")}`
             );
             if (!(z.bilder >= 300)) rot.push(`T ${ph}: nur ${z.bilder} Bilder gemessen`);
+            else if (!(z.weg >= 10)) rot.push(`T ${ph}: der Spieler kam nur ${z.weg} m weit — keine Bewegung gemessen`);
             else if (!(z.p95 <= TAKT_SOLL_MS))
                 rot.push(
                     `T ${ph}: Klang-ms je Bild p95 ${z.p95} > ${TAKT_SOLL_MS} (max ${z.max}, ${z.fragen} Welt-Fragen und ${z.schreiben} Parameter-Schreibungen je Bild)`
@@ -1612,23 +1663,22 @@ async function taktLauf() {
         }
         if (!erg.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
         erg.rot = rot;
-        if (SELBST) {
-            const feuert = rot.some((t) => /^T (gehen|nacht): Klang-ms je Bild p95/.test(t));
+        for (const t of rot) console.log("   " + t);
+        console.log(
+            rot.length
+                ? `❌ ROT — Klang-Takt in Bewegung: ${rot.length} Befund(e)`
+                : `✅ GRÜN — Klang-Takt in Bewegung p95 ≤ ${TAKT_SOLL_MS} ms je Bild (gehen · Fahrt · nachts)`
+        );
+        const feuert = !selbst || selbst.p95 > TAKT_SOLL_MS;
+        if (selbst) {
+            erg.selbst = selbst;
             console.log(
                 feuert
-                    ? "✅ SELBSTTEST: der Takt, der je Bild alle Tiere fragt, ist ROT"
-                    : "❌ SELBSTTEST: der Takt, der je Bild alle Tiere fragt, bleibt unbemerkt"
+                    ? `✅ SELBSTTEST: der Takt, der je Bild alle Tiere fragt, ist ROT (p95 ${selbst.p95} ms, ${selbst.fragen} Welt-Fragen je Bild)`
+                    : `❌ SELBSTTEST: der Takt, der je Bild alle Tiere fragt, bleibt unbemerkt (p95 ${selbst.p95} ms)`
             );
-            exit = feuert ? 0 : 1;
-        } else {
-            for (const t of rot) console.log("   " + t);
-            console.log(
-                rot.length
-                    ? `❌ ROT — Klang-Takt in Bewegung: ${rot.length} Befund(e)`
-                    : `✅ GRÜN — Klang-Takt in Bewegung p95 ≤ ${TAKT_SOLL_MS} ms je Bild (gehen · Fahrt · nachts)`
-            );
-            exit = rot.length ? 1 : 0;
         }
+        exit = rot.length === 0 && feuert ? 0 : 1;
     } catch (e) {
         console.log("FEHLER:", e && e.stack ? e.stack : e);
         exit = 1;
