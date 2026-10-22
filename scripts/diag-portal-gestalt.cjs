@@ -44,7 +44,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {}, warm: false };
-        await window.__weltDa((r) => typeof r._ensureAssetFoundry === "function");
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         const f = r._ensureAssetFoundry();

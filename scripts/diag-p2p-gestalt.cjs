@@ -78,7 +78,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
 
         // ── Warm-Anker: Boot → f.ready → mensch-Rezept ──
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._p2pMsgSoul !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const A = r.constructor;

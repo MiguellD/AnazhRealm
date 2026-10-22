@@ -2165,9 +2165,8 @@ function wasserQuelle(opts) {
 }
 
 // DIE KACHELN DER QUELL-PROBE (K61, zweite Prüfung): die Probe legt ihre Regionen FEST — Schlüssel „rx,rz" der Hydro-
-// Kacheln (`kachelSchluessel`, 2048 m; „0,0" die Heimat), nie was `st.hydroTiles` im Augenblick trägt (das lädt der
-// Spiel-Loop mit der Reichweite des PID-Rings). Die zwölf: der Mess-Ring (Mess-Wiese ±1024 m), die Kachel des Sees, die
-// Küste mit der Kachel der Küsten-Suche. Eine Kachel verschwindet nie (sie ist ein Fenster des Gesetzes über dem Seed).
+// Kacheln (`kachelSchluessel`, 2048 m; „0,0" die Heimat). Die zwölf: der Mess-Ring (Mess-Wiese ±1024 m), die Kachel des
+// Sees, die Küste mit der Kachel der Küsten-Suche. Eine Kachel verschwindet nie (sie ist ein Fenster des Gesetzes über dem Seed).
 const QUELL_KACHELN = ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5", "0,5", "0,6", "1,6"];
 
 // Der Teil einer Quelle (K61): aus dem Ort ihres Ursprungs, je Teil-Zahl n fest — der Seiten-Kontext ruft ihn, Node prüft ihn.

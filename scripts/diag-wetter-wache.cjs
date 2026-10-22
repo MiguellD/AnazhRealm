@@ -263,7 +263,7 @@ function uhrRot(U) {
 }
 
 // Die Himmels-Probe im Seiten-Kontext (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick`, Spiel-Zeit in Schritten
-// von `o.schrittSek`), der Nexus und seine Gesetze, die Emotion und der Wetter-Zug laufen mit. Vorher spricht der Spieler.
+// von `o.schrittSek`), der Nexus und seine Gesetze, die Emotion und der Wetter-Zug laufen mit.
 function himmelProbe(o) {
     const r = window.anazhRealm;
     const st = r.state;

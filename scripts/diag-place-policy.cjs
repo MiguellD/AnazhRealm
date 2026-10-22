@@ -37,7 +37,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, d: {}, e: {}, st: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._placePolicyFor !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm bootet nicht" };
         const A = r.constructor;

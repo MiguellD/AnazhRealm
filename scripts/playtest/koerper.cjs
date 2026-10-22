@@ -1450,7 +1450,6 @@ async function checkBandTierFern(ctx) {
         const abKern = BK && BK[1] ? BK[1].ab : null;
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
-        if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
     
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
         for (const c of s.creatures.slice()) r.removeCreature(c);

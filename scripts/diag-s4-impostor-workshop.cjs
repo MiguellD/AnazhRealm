@@ -25,7 +25,7 @@ const server = statikServer();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && typeof r._workshopFoundryPreviewGroup === "function");
+        await window.__weltDa((r) => r.state);
     });
 
     const out = await page.evaluate(async () => {

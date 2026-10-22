@@ -2096,9 +2096,7 @@ async function starte() {
                 }
                 if (req.url === "/albedo" && b.nahFern) {
                     // DIE ALBEDO NAH GEGEN FERN: Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
-                    // Vorher steht die Welt: der Ring der Chunks trägt das Quadrat der Linse (≥ 2, Ziel und aktiv wie `stell.ring`
-                    // der Bühne — im Software-Holz wählte der Regler je Sitzung Ring 1 oder 2), kein Chunk ist im Bau, und die
-                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
+                    // Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
                     // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
                     // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um

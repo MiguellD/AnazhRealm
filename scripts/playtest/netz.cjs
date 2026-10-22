@@ -504,10 +504,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         }
         // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
-            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
-            typeof r._feedFocus === "function" &&
-            typeof r._feedEnsurePreview === "function" &&
-            typeof r._feedPreviewShow === "function";
+            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
         if (recForFocus) {
             const recCard = stream.querySelector(".feed-recipe");

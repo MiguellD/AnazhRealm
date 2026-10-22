@@ -668,7 +668,7 @@ const FIXTURES = [
             await nullRenderer(page, { foundry: true });
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
             const z = await page.evaluate(async (s) => {
-                await window.__weltDa(() => { const r0 = window.anazhRealm; const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null; return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch; });
+                await window.__weltDa((r0) => { const f0 = r0._ensureAssetFoundry(); return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch; });
                 const r = window.anazhRealm;
                 const out = {
                     arten: {},
@@ -1344,10 +1344,7 @@ const FIXTURES = [
 
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa(
-            () => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function")
-        );
-        const r = window.anazhRealm;
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
@@ -1605,7 +1602,7 @@ const FIXTURES = [
             );
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
-            // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
+            // drosselTakte-ten Takt.
             // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
             // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
             // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in
@@ -1723,7 +1720,6 @@ const FIXTURES = [
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT (Welle L, Leben-Prüfung S-W1): zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
-            // Vorher schlüsselte das Gedächtnis nur den Samen: die zweite (die Stadt `dorf 7 120` neben `dorf 7 18`) blieb ohne Weg.
             try {
                 const orig = r._stlWegeBuild;
                 const formen = [];

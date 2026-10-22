@@ -254,7 +254,7 @@ function staticLaws(garage) {
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).

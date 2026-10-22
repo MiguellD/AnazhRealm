@@ -326,7 +326,7 @@ function drawZensus(opts) {
 // `ruhend` im Urteil. Was danach ohne Bild bleibt, kann der Kehraus nicht nehmen: ein Leck.
 function kehrausJetzt() {
     const r = window.anazhRealm;
-    if (!r || typeof r._gpuKehraus !== "function" || !Number.isFinite(window.__zensusCalls)) return 0;
+    if (!r || !Number.isFinite(window.__zensusCalls)) return 0;
     r.state._gpuKehrausT = 0;
     return r._gpuKehraus(window.__zensusCalls, performance.now());
 }

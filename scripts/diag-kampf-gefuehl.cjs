@@ -78,7 +78,7 @@ const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
 // (T13) DAS URTEIL DES RÜCKSTOSSES (0710-2, K-D9 — pure Funktion, Probe UND Selbst-Test): kein Positions-Satz im Treffer-
 // Takt, der Fuchs fliegt, die Masse des Leibs teilt den Stoß (Fuchs ≥ 3 × Bär mit derselben Keule), der Impuls der Waffe
-// wirkt (Keule ≥ 1,15 × Dolch am selben Fuchs). Vorher: 2,16 m für jede Waffe und jedes Ziel, in EINEM Takt.
+// wirkt (Keule ≥ 1,15 × Dolch am selben Fuchs).
 const RUECK = { satzM: 0.05, fuchsMinM: 0.3, masse: 3, waffe: 1.15 };
 function rueckVerdict(R) {
     if (!R || !R.fuchsDolch || !R.fuchsKeule || !R.baerDolch || !R.baerKeule)
@@ -105,7 +105,7 @@ function rueckVerdict(R) {
 // Volumen der geschlossenen Haut (die Linse rechnet es selbst, Divergenz-Satz) mal der Dichte SEINES Kerns (tetrapoda
 // MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3), der Wagen sein Kern-Volumen (carPhys) mal FAHR.masseDichte. Der Wirt hält
 // keine Dichte (kein STOSS.dichteLeib / dichteWagen, kein Kapsel-Leser _kreaturMasse), und die Reihe steht: Fuchs < Wolf <
-// Hirsch < Bär < Wagen. Vorher: Kapsel aus der Hüft-Höhe × 1000 im Wirt — der Hirsch wog 436 kg, der Bär 255.
+// Hirsch < Bär < Wagen.
 const MASSE = { toleranz: 0.02, reihe: ["fuchs", "wolf", "hirsch", "baer", "gt"] };
 function masseVerdict(M) {
     if (!M || !M.leiber) return ["masse keine Probe"];
@@ -137,8 +137,7 @@ function masseVerdict(M) {
 // (T15) DER BISS ALS STOSS (0710-4 — pure Funktion, Probe UND Selbst-Test): Fuchs, Wolf und Bär (Größe 1) beißen je ein
 // Kitz (die Jagd auf Beute — das Kitz, 20 kg, ist die Beute jedes der drei: höchstens jagd.beuteMasse × die Masse des
 // Jägers, Welle LF; den Hirsch, 94 kg, schlägt der Fuchs, 15 kg, nicht) und den Spieler (die Jagd auf den Spieler): das Ziel
-// bekommt seinen Impuls (Δv > 0), und der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär). Vorher: Schaden ohne
-// Rückstoß auf allen Biss-Wegen.
+// bekommt seinen Impuls (Δv > 0), und der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär).
 const BISS_SOLL = { dvMin: 0.01, jaeger: ["fuchs", "wolf", "baer"] };
 function bissVerdict(B) {
     if (!B || !B.beute || !B.spieler) return ["biss keine Probe"];
@@ -227,10 +226,9 @@ function reichVerdict(R) {
 // Dispatcher (tryMouseBreak, nie _beginPlayerSwing direkt): jeder der 96 Fälle macht Schaden; je rotem Fall der Täter beim
 // Namen (kein Schwung · kein Ziel unter dem Fadenkreuz · zu weit · Sweep vorbei). Ein Wolf hinter dem Rücken und ein Begleiter bleiben heil
 // (kein Ziel, kein Schaden); ein Wolf unter dem Fadenkreuz jenseits der Klinge (der Dolch, Reichweite + 0,8 m) bleibt ein Luftschlag mit
-// dem Hinweis — nie ein Pflücken oder Graben dahinter. Vorher: Rumpf 46 von 48, Horizont 0 von 48 („kein Ziel"). DIE ERNTE NEBEN DEM
+// dem Hinweis — nie ein Pflücken oder Graben dahinter. DIE ERNTE NEBEN DEM
 // WILDTIER (Runde 2): trägt das Fadenkreuz in Arm-Länge sein Ziel (Block · Blüte · Boden vor der Spitzhacke), bleibt der Klick dort
 // und ein ruhiger Wolf im Schwung-Kegel heil; ein Bauwerk jenseits der Arm-Länge nimmt dem Hieb den Wolf vor dem Spieler nicht.
-// Vorher (6133e62d): abbau → hieb 38,1 · pflücken → hieb 26,5 · graben → hieb 10,9 — der Kegel nannte das Verb.
 const KLICK_SOLL = { faelle: 96 };
 function klickVerdict(M) {
     if (!M || !Array.isArray(M.faelle) || M.faelle.length !== KLICK_SOLL.faelle)
@@ -499,9 +497,8 @@ function wundeVerdict(W) {
 // Hetze hält.
 // Der Kopf zielt aus der gezeigten Pose (98042fd4, Nachbesserung 3 die Wand): stehen Pose und Ziel still, steht das Ziel der
 // Kopf-Neigung still — zehn Takte _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt
-// nur, wenn der erste Rest ≥ 0,05 rad ist). Vorher summierte sich der Rest je Takt auf das Ziel des Vor-Takts und lief an die
-// Klemme (BISS.kopfNeigung). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher 12–18 von 60,
-// danach 2–8 von 42–84) stehen in der Zeile daneben. Die Probe hält Ort, Haltung und die Gier des Rehs fest (K13b): ihr erster
+// nur, wenn der erste Rest ≥ 0,05 rad ist). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher
+// 12–18 von 60, danach 2–8 von 42–84) stehen in der Zeile daneben. Die Probe hält Ort, Haltung und die Gier des Rehs fest (K13b): ihr erster
 // Rest hing an der Gier, in die das Reh sich unter den Ansprüngen gedreht hatte (20 Läufe: 18 × 0,5871, 2 × 1,0 an der Klemme).
 const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {

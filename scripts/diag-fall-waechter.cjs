@@ -800,8 +800,7 @@ async function probe(K) {
     // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
     // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
     // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
-    // die Tiefe darin). Vorher las die Tod-Lage die Oberkante der Säule als Boden: in der Höhle legte sich der Leib nach dem
-    // Hang des Dachs.
+    // die Tiefe darin).
     const hautAbstand = (c) => {
         c.updateMatrixWorld(true);
         const T = window.THREE || globalThis.THREE;

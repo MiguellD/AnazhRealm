@@ -1206,6 +1206,65 @@ class AnazhRealm_koerper_bewegung {
         return ix * ix + iz * iz;
     }
 
+    // Der waagrechte Abstand² einer STRECKE a → e zu einer Blocker-Box (derselbe Rahmen wie `_boxAbstand2`): 0, wo die Strecke
+    // die Box schneidet (Liang-Barsky), sonst das Kleinste aus ihren Enden gegen die Box und den Ecken der Box gegen sie — die
+    // Kapsel, die längs der Strecke geht. Leser: der Weg der Bewohner (`_bewohnerWand`).
+    _streckeBoxAbstand2(box, ax, az, ex, ez) {
+        const ob = box.obb;
+        let x0, x1, z0, z1, px, pz, qx, qz;
+        if (ob) {
+            x0 = -ob.hx;
+            x1 = ob.hx;
+            z0 = -ob.hz;
+            z1 = ob.hz;
+            px = (ax - ob.cx) * ob.c - (az - ob.cz) * ob.s;
+            pz = (ax - ob.cx) * ob.s + (az - ob.cz) * ob.c;
+            qx = (ex - ob.cx) * ob.c - (ez - ob.cz) * ob.s;
+            qz = (ex - ob.cx) * ob.s + (ez - ob.cz) * ob.c;
+        } else {
+            x0 = box.minX;
+            x1 = box.maxX;
+            z0 = box.minZ;
+            z1 = box.maxZ;
+            px = ax;
+            pz = az;
+            qx = ex;
+            qz = ez;
+        }
+        const dx = qx - px;
+        const dz = qz - pz;
+        let t0 = 0;
+        let t1 = 1;
+        for (let k = 0; k < 4 && t0 <= t1; k++) {
+            const p = k === 0 ? -dx : k === 1 ? dx : k === 2 ? -dz : dz;
+            const q = k === 0 ? px - x0 : k === 1 ? x1 - px : k === 2 ? pz - z0 : z1 - pz;
+            if (p === 0) {
+                if (q < 0) t0 = 2;
+            } else if (p < 0) t0 = Math.max(t0, q / p);
+            else t1 = Math.min(t1, q / p);
+        }
+        if (t0 <= t1) return 0;
+        let d2 = Infinity;
+        for (let k = 0; k < 2; k++) {
+            const x = k ? qx : px;
+            const z = k ? qz : pz;
+            const ix = x - Math.max(x0, Math.min(x, x1));
+            const iz = z - Math.max(z0, Math.min(z, z1));
+            d2 = Math.min(d2, ix * ix + iz * iz);
+        }
+        const L2 = dx * dx + dz * dz;
+        for (let k = 0; k < 4; k++) {
+            const cx = k & 1 ? x1 : x0;
+            const cz = k & 2 ? z1 : z0;
+            let t = L2 > 1e-12 ? ((cx - px) * dx + (cz - pz) * dz) / L2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const ux = px + dx * t - cx;
+            const uz = pz + dz * t - cz;
+            d2 = Math.min(d2, ux * ux + uz * uz);
+        }
+        return d2;
+    }
+
     _loopPlayerMovement(currentTime, dtOverride) {
         this.state._simZeit = currentTime; // die Uhr des Schritts (auch Replay, Lockstep): die Parkour-Wand stempelt und liest sie
         // ### Spielerbewegung ###

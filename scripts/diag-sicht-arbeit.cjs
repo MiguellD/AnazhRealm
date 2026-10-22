@@ -1258,8 +1258,7 @@ const server = statikServer();
             }
             // (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
             // legt es je Frame aus der Kamera) atmen ±1 mm quer, unter dem Halt: keine Lage ändert sich, die Kette arbeitet
-            // nicht, und die Linse nennt es weder Kamera noch Blende. Vorher verglich die Lage die Blende exakt — eine zweite
-            // Signatur neben dem Gesetz des Halts: 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende".
+            // nicht, und die Linse nennt es weder Kamera noch Blende.
             const lu = st.lodUniforms;
             aus.augeAn = !!(lu && lu.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
             if (aus.augeAn) {
