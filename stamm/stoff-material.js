@@ -2925,11 +2925,14 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // `regenAb`; Regen 0,6 nach 10 min 0,91), ohne Regen trocknet die Welt mit τ = `trocknenS` / max(Sonne, 0,2); voll nass geht die
 // Albedo zu ihrem Quadrat, die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs,
 // Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
-// Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`).
+// Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
+// `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
+// der Regen schläft (feld.K3, `_tickRain`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
     benetzenS: 150,
     trocknenS: 1500,
+    ruhe: 1e-3,
     glatt: 0.5,
     poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0 }),
     dachPlaetze: 8,

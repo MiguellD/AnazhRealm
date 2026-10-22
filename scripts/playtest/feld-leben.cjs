@@ -335,7 +335,6 @@ async function checkBandV1742Wohl(ctx) {
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
         r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
-        r._wohlPruneLast = -Infinity;
         r._pruneWohlBaseline(W.pruneAgeSec + 10);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
