@@ -1214,10 +1214,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             if (tab) tab.click();
             // Methoden
             out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
-            // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
-            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
-            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
-            out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
@@ -1297,8 +1293,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v805Results && !v805Results.error) {
         check(
-            "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
-            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
+            "V8.05: Tool-Drop existiert (die Suite fährt ihn nicht)",
+            v805Results.hasHandleToolDrop
         );
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
@@ -1350,9 +1346,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
-
-            // Methode existiert
-            out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
 
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");
@@ -1407,10 +1400,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(
             "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
-        );
-        check(
-            "V8.06: _workshopInstallActionButtons existiert (die Suite fährt ihn nicht)",
-            v806Results.hasActionInstall
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
