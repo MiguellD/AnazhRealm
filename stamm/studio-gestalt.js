@@ -694,20 +694,11 @@ class AnazhRealm_studio_gestalt {
     _foundryRuheDeckel(schone) {
         const f = this._foundry;
         f.ruheOffen = false;
-        // die Nachbar-Stufe eines gezeichneten Körpers ist nicht untätig: in sie blendet der nächste Blick (Crossfade, Band)
-        const lebt = new Set();
-        for (const [k, v] of f.cache) if (v && v._liveRefs > 0) lebt.add(k);
-        const ruht = (k, v) => {
-            if (!v || v._liveRefs > 0) return false;
-            const t = k.split("|"),
-                s = Number(t[2]);
-            return !lebt.has(((t[2] = s - 1), t.join("|"))) && !lebt.has(((t[2] = s + 1), t.join("|")));
-        };
         let ruhe = 0;
-        for (const [k, v] of f.cache) if (ruht(k, v)) ruhe += v._cacheBytes || 0;
+        for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
         for (const [k, v] of f.cache) {
             if (ruhe <= AnazhRealm.FOUNDRY_RUHE_BYTES) break;
-            if (k === schone || !ruht(k, v)) continue;
+            if (k === schone || !v || v._liveRefs > 0) continue;
             ruhe -= v._cacheBytes || 0;
             this._foundryCacheEvict(k);
         }
