@@ -11,7 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 

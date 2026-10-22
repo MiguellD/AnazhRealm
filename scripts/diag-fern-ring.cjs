@@ -1244,7 +1244,6 @@ const server = statikServer();
             const core = globalThis.__phytoCore;
             const fbm = (px, pz) => r._forestFbm(px, pz);
             const wl = r.state.waterLevel;
-            const t = new Float32Array(8);
             let g = 0;
             let ng = 0;
             let a = 0;

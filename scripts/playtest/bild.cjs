@@ -72,7 +72,7 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G3Lebendigkeit(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
@@ -384,7 +384,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
-        if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
+        if (THREE_g3 && THREE_g3.Color) {
             const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
             r.state.player.emotions.awe = 0;
             r.state.player.emotions.sorrow = 0;
@@ -572,7 +572,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G4Atmosphere(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
@@ -646,7 +646,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
         // entry.mesh → lokaler Hook; der Spawn wird IMMER entfernt (auch mesh-los — kein Test-Leck).
         let hasToonMaterial = false;
-        if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
+        if (r.state.blueprints.stein_block) {
             window.__withNoFoundry(() => {
                 const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                 if (arch && arch.mesh) {
@@ -663,7 +663,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     });
                 }
                 // Cleanup — unbedingt (auch ein mesh-loser Spawn verlässt die Test-Welt).
-                if (arch && typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
+                if (arch) r.removeArchitecture(arch);
             });
         }
         out.architectureUsesLambert = hasToonMaterial;
@@ -740,7 +740,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // nicht um den Welt-Ursprung.
         out.sunFollowsCamera = false;
         out.sunNotAtOrigin = false;
-        if (r.state.sunMesh && r.state.camera && typeof r._updateCelestialBodies === "function") {
+        if (r.state.sunMesh && r.state.camera) {
             r._updateCelestialBodies(Math.PI * 0.3, 1.0); // setzt skyOffset
             const camOrig = r.state.camera.position.clone();
             // BÜHNE: ein ferner Spieler für den Himmels-Folger (nur der Abstand zählt)
@@ -1285,14 +1285,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,
         (stammDateien) => {
-            const r = window.anazhRealm;
             const out = {};
             const ring = document.getElementById("slider-ring");
             // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
@@ -1406,7 +1405,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const _baseN849 = r.state.creatures.length;
         r.state.maxCreatures = 70;
         let _g849 = 0;
-        while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function" && _g849++ < 120) {
+        while (r.state.creatures.length < 60 && _g849++ < 120) {
             const p = r.state.playerMesh.position;
             r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
         }
@@ -1429,7 +1428,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
         // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
-        while (r.state.creatures.length > _baseN849 && typeof r.removeCreature === "function") {
+        while (r.state.creatures.length > _baseN849) {
             r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
         }
         r.state.maxCreatures = _saveMax849;

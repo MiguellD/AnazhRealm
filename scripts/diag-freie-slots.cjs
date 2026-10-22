@@ -67,14 +67,12 @@ async function welt() {
     const out = await page.evaluate(async (selbst) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = { boot: false };
-        const t0 = performance.now();
         await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return o;
         o.boot = true;
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        const tF = performance.now();
         await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
         // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur

@@ -3,7 +3,6 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
@@ -622,7 +621,7 @@ async function checkBandV1750Klammer(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6APolish(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
@@ -1036,7 +1035,7 @@ async function checkBandWelle6APolish(ctx) {
         out.introPagesGone = typeof r._introPages === "undefined";
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
-        const msg = typeof r._firstWelcomeMessage === "function" ? r._firstWelcomeMessage() : "";
+        const msg = r._firstWelcomeMessage();
         out.welcomeIsInvitation = typeof msg === "string" && msg.length > 0;
         out.welcomeNotManual = !/WASD|Hotbar|Space|Maus|1-9|drücke/i.test(msg);
         // (c) Beim ersten Welt-Start (Flags geleert) spricht der Begleiter diegetisch.
@@ -1272,7 +1271,7 @@ async function checkBandWelle6APolish(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6GHylomorphism(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Hylomorphismus-Unification ###
@@ -1394,7 +1393,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             newTreeArch.blockerAABBs.length > 0
         );
         // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
-        if (newTreeArch && typeof r.computeCompoundTags === "function") {
+        if (newTreeArch) {
             const bp = r.state.blueprints[newTreeArch.type];
             const tags = r.computeCompoundTags(bp);
             out.treeTagsLebendig = tags && tags.lebendig > 0.5;
@@ -1783,7 +1782,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 out.archAffinityTags[n] = slim;
                 out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
                 const aff =
-                    typeof r.computeBlueprintAffordances === "function" ? r.computeBlueprintAffordances(bp) : {};
+                    r.computeBlueprintAffordances(bp);
                 out.archBroadcasting[n] = !!(aff && aff.broadcasting);
             }
         }

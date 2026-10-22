@@ -313,8 +313,7 @@ function standUrteil(b) {
         return v;
     }
     // DIE RUNDE: eine Treue-Phase geht JEDEN Takt mindestens eine volle Runde (die Einheiten, die er `_standRuht` als Runde
-    // nennt) — ein Teil der Runde sähe eine verschlafene Änderung dahinter nie (bis 07.10. liefen die Phasen 6 Frames: an
-    // der Mess-Wiese ging die Streu 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten, die Stufen-Wahl 1 536 von 1 638).
+    // nennt) — ein Teil der Runde sähe eine verschlafene Änderung dahinter nie.
     const runde = (ph, wo) => {
         for (const n of namen) {
             const t = ph && ph.takte[n];
@@ -429,7 +428,7 @@ function standUrteil(b) {
         runde(X.phase, "mit den Tätern");
     }
     // (U) STUFE (K51-5): ein reiner Stufen-Wechsel (dieselbe Fläche im Gesetz, der Morph trägt sie) regt nur die Boden-Karte —
-    // nie Stufen-Wahl, Cull, Streu, Ring oder Saum, nie Wald-Setzung oder Sichthöhen (vorher je Wechsel ein voller Gang)
+    // nie Stufen-Wahl, Cull, Streu, Ring oder Saum, nie Wald-Setzung oder Sichthöhen
     const U = b.stufe;
     if (!U) v.push("LEER: keine Stufen-Phase");
     else if (!(U.wechsel > 0)) v.push("STUFE: kein Stufen-Wechsel geschah — die Probe ist stumpf");
@@ -446,9 +445,7 @@ function standUrteil(b) {
                 );
     }
     // (O) ORT (K69): ein Erdbau abseits wirft nur, was er ändern kann — der Stand des Walds (an ihm hängt die Gestalt jedes
-    // Orts), die fernen Wald-Zellen, die fernen Chunk-Gedächtnisse und der Stand eines fernen Chunks bleiben. Bis K69 warf jeder
-    // Erdbau die Gedächtnisse der ganzen Welt: der Gang ins Dorf (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen
-    // synchron neu — an der Radeon EIN Frame von 3,1 s (`_forestCellDarts › planForestCell`).
+    // Orts), die fernen Wald-Zellen, die fernen Chunk-Gedächtnisse und der Stand eines fernen Chunks bleiben.
     const O = b.ort;
     if (!O) v.push("LEER: keine Ort-Phase");
     else if (!O.gelegt) v.push("LEER: die Ort-Phase legte keinen Erdbau — die Probe ist stumpf");
@@ -474,7 +471,7 @@ function standUrteil(b) {
                 v.push(
                     `ORT: ${wo} warf ${c.fern - c.gehalten} von ${c.fern} fernen Chunk-Gedächtnissen (${n}, über ${O.fern} m)`
                 );
-        // die Räumung seines Grunds: jeder Abbau speicherte bis K69 die ganze Welt synchron (`removeArchitecture › saveState`)
+        // die Räumung seines Grunds speichert die Welt nie synchron (`removeArchitecture › saveState`)
         const Q = O.raeumung;
         if (!Q || !(Q.abbau > 0)) v.push("LEER: die Ort-Phase räumte keine Natur — der Abbau ist ungeprüft");
         else if (Q.saves > 0)
@@ -492,9 +489,7 @@ function standUrteil(b) {
                     `chimneyTipFromParams › massBau\`, ${H.ms} ms) — die Kamin-Spitze reist mit der Hülle aus dem Worker ` +
                     `(\`__huelle.kamin\` → \`_hausHuelleSetzen\`), der Wirt baut kein Haus`
             );
-        // der Baum in frischem Wald (ein Hof-Baum des Dorfs, `_naturSetzen`): bis K69 plante seine Gestalt jede fehlende Zelle
-        // bis ±6 SYNCHRON im Aufrufer (`_ortGestaltSame › _forestStehtFrei › planForestCell`) — die Ausstattung eines Dorfs
-        // plante beim Gang hinein 366 Zellen in EINER Aufgabe (551 ms); jetzt plant sie die Schlange des Walds im Takt
+        // der Baum in frischem Wald (ein Hof-Baum des Dorfs, `_naturSetzen`): seine Zellen plant die Schlange des Walds im Takt
         const Wd = O.wald;
         if (!Wd || !Wd.gesetzt)
             v.push("LEER: die Ort-Phase setzte keinen Baum in frischem Wald — der Wald-Plan ist ungeprüft");
@@ -516,8 +511,7 @@ function standUrteil(b) {
                         `ihr Budget (\`WALD_PLAN.ms\`) hält nicht`
                 );
         }
-        // das Haus im Satz: sein Wieder-Eintritt (jeder Stufen-Wechsel) legt keine Ecke frisch an — bis K69 schrieb der Block
-        // jede Ecke in neue Arrays (`_satzBlock`), ein Haus der Stufe 0 ~10 MB je Wechsel, die volle Sammlung fiel in den Takt
+        // das Haus im Satz: sein Wieder-Eintritt (jeder Stufen-Wechsel) legt keine Ecke frisch an (`_satzBlock`)
         const SH = O.satzHaus;
         if (!SH || !SH.gesetzt || !(SH.bloecke > 0) || !(SH.ecken >= 1000))
             v.push(
@@ -573,7 +567,7 @@ function standUrteil(b) {
             `STROM: nach dem Sprung an (${T.x}, ${T.z}) steht der Spieler-Chunk nach ${T.takte} Takten nicht — das Streaming verhungert`
         );
     // der Wald am fremden Ort: jede frische Zelle plant die Schlange des Walds (`_tickWaldPlan`, K69) — ein anderer Aufrufer
-    // plant sie am Stück im Takt (bis K69 der Pflanz-Gang des Chunk-Baus: gehend ins Dorf 41 Zellen in EINEM Takt)
+    // plant sie am Stück im Takt
     if (T) {
         const Wd = T.wald;
         if (!Wd) v.push("LEER: die Strom-Phase zählte den Wald-Plan nicht");
@@ -599,6 +593,10 @@ function standUrteil(b) {
         );
     // (W) WACH: ein Fege-Takt mit Offenem hält die Welt wach, beim Namen
     if (!/Fege-Takt[^]*archCull/.test(b.wach || "")) v.push(`WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${b.wach || "—"})`);
+    // (B) BAKE-SCHULD: die Welt steht erst ohne Schuld der Bake-Uhr, „offen" nennt die Felder
+    const BS = b.schuld || {};
+    if (BS.rest !== 0 || !(BS.abgewiesen > 0) || !/Felder offen/.test(BS.grund))
+        v.push(`BAKE-SCHULD: steht nach ${BS.takte} Takten mit ${BS.rest} offenen Fits (${BS.abgewiesen} abgewiesen, ${BS.grund})`);
     // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
     // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
     if (b.fixWach !== false)
