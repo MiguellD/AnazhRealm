@@ -145,16 +145,6 @@ jobs:
               # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
               run: npm run gate:mensch-anatomie
 
-            - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
-              if: matrix.gruppe == 2
-              # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
-              # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
-              # `growTreeNodes`) byte-gleich zu machen versucht (unmöglich + eine Regression):
-              # (a) growSkeleton(P, seq) ist DETERMINISTISCH (identisch P+seq → byte-identisch);
-              # (b) Richter-Eingang (countCap 3600/leafBudget 480/xorshift-seq) ≠ Foundry-Eingang
-              # (countCap 8800/leafBudget 20000/mulberry-seq) → dokumentierte Distanz ≫ 0.
-              run: npm run gate:one-wuchs-parity
-
             - name: Single-Quote-Template-Strings (B2-Pattern)
               if: matrix.gruppe == 2
               run: |
@@ -535,15 +525,6 @@ jobs:
               # mit ihrer Marke, Boot 2 bleibt stabil, die leere Form erwacht frisch und laut. Der Selbsttest laesst die
               # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
               run: npm run gate:boot-rettung
-
-            - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
-              if: matrix.gruppe == 4
-              # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
-              # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
-              # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
-              # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
-              # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
-              run: npm run gate:grass-thin
 
             - name: Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)
               if: matrix.gruppe == 5

@@ -2613,8 +2613,9 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DER ZIEGEL EINES LEIBS: nah das Studio-Tier (mit Hysterese), fern seine Glieder ins Feld — je Takt aus dem Ziegel, und
-    // für einen Leib, den der Blick des Bilds weckt (`_ruheImBild`), direkt vor dem Zeichnen.
-    _kzLeib(cr, playerPos) {
+    // für einen Leib, den der Blick des Bilds weckt (`_ruheImBild`), direkt vor dem Zeichnen. `vorab`: die Glieder backen
+    // schon nah (im Takt des Bakes, ruhend) — ein Leib, der hinausgeht, trägt sein Feld ab dem ersten Schritt (mensch.K2).
+    _kzLeib(cr, playerPos, vorab = false) {
         const N = AnazhRealm.KREATUR_NAH_MESH;
         const dx = cr.position.x - playerPos.x;
         const dz = cr.position.z - playerPos.z;
@@ -2623,6 +2624,11 @@ class AnazhRealm_kreatur_verhalten {
         u._kzNah = u._kzNah === true ? d2 < N.aus * N.aus : d2 < N.ein * N.ein;
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
+            if (vorab && !u._kzGlieder && !u._kzVersuch && this._weltBakeErlaubt(d2)) {
+                u._kzVersuch = true;
+                this._leibMatrix(cr);
+                u._kzGlieder = this._kreaturGliederBacken(cr, false);
+            }
             // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
             if (u._kzGlieder)
                 for (const gl of u._kzGlieder) {
@@ -2658,10 +2664,11 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
-    // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass.
+    // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass. Ein Bewohner in seinem
+    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld.
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
-        return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
+        return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
     }
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
