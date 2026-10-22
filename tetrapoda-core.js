@@ -1319,7 +1319,7 @@
     // ════════════════════════════════════════════════════════════════════
     // DAS GANG-GESETZ (Welle 5, „Gang ohne Gleiten"): der Fuß im Stand steht still auf dem Boden. Die Schritt-Länge je
     // Zyklus wächst mit der relativen Geschwindigkeit (Froude v̂ = v/√(g·L), L = Hüft-Höhe): Λ = L·(1,2 + 2·v̂), gedeckelt
-    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad 0,5) die halbe Schritt-Länge S, die Frequenz folgt
+    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad tast) den Fußweg S = tast · Λ, die Frequenz folgt
     // dem Weg (ω = 2π·v/Λ) — vorher lief der Takt aus dem Gefühls-Profil (Freude 3,2 rad/s, Schritt 0,06 rad) bei jeder
     // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
     // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
@@ -1333,7 +1333,12 @@
         // Sekunde (Natur ~3). Vorher 1,2 + 2,0 · v̂ (8,2 L im Galopp, 1,7 Schritte je Sekunde, langsamer als sein Trab).
         schrittBasis: 1.4,
         schrittFroude: 1.0,
-        tastgrad: 0.5,
+        // DER TASTGRAD DER GANGART (K3, Alexander 1984, Hildebrand 1965): im Schritt steht jeder Fuß zwei Drittel des Takts
+        // (drei Füße tragen, Schritt 0,6–0,7), über die Schwelle des Trabs (GANG_FOLGE.froudeTrab × (1 + hysterese) bis
+        // zum Doppelten) fällt er auf tastgradTrab (die Diagonalen im halben Takt). Vorher stand der Fuß in Schritt und
+        // Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
+        tastgrad: 0.65,
+        tastgradTrab: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
         hub: 0.12, // × h — die Schwung-Höhe des Fußes
         // die Form des Hubs (Welle LF, Stand-Schlupf): sin(Phase)^hubForm — der Fuß hebt steil ab und setzt steil auf. Mit
@@ -1347,8 +1352,11 @@
         // Froude-Zahl über die Schwelle des Galopps (GANG_FOLGE.froudeGalopp) bis tastgradLauf, höchstens bis die Kontaktzeit
         // den Fußweg des Bein-Winkels trägt (Weyand 2000); der Schritt wächst mit der Schwebe. Vorher stand der Fuß in jeder
         // Gangart den halben Takt: der Wolf galoppierte bei v̂ 3,5 mit 7,7 Schritten je Sekunde (Natur ~3), acht Bilder je
-        // Schritt, und die Grenze des Beins hob jeden Fuß vor der Zeit.
+        // Schritt, und die Grenze des Beins hob jeden Fuß vor der Zeit. Im Galopp fegt das Bein weiter (Schulterblatt und
+        // Rücken strecken den Stand, K3): der größte Winkel wächst mit dem Wechsel bis winkelLauf — vorher deckelte
+        // maxWinkel auch den Galopp, der Fuß stand 0,18 des Takts (Natur ~0,3, Walter & Carrier 2007).
         tastgradLauf: 0.3,
+        winkelLauf: 0.48,
     });
     // DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3, VERTRAGS-AKT 20.10.): die Fußfolge folgt der Froude-Zahl Fr = v̂² =
     // v²/(g·L), nie der Stimmung — unter froudeTrab der Schritt in lateraler Folge (nach jedem Hinterfuß der Vorderfuß
@@ -1406,17 +1414,25 @@
             return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub, art: "stand", folge: GANG_FOLGE.schritt };
         var vv = Math.min(v, gangZahl(G, "vMax"));
         var vh = vv / Math.sqrt(g * L);
-        var sMax = 2 * L * Math.tan(gangZahl(G, "maxWinkel"));
+        var mW = gangZahl(G, "maxWinkel");
+        var sMax = 2 * L * Math.tan(mW);
         var lamF = L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh);
-        // die Zeile ohne eigenen Wechsel (die Tiere) läuft ab der Schwelle des Galopps
+        // die Zeile ohne eigenen Wechsel (die Tiere) läuft ab der Schwelle des Galopps und trabt mit tastgradTrab
+        var tier = !(G.laufFroude > 0);
         var tL = gangZahl(G, "tastgradLauf"),
-            fL = G.laufFroude > 0 ? G.laufFroude : GANG_FOLGE.froudeGalopp;
+            fL = tier ? GANG_FOLGE.froudeGalopp : G.laufFroude;
+        if (tier) {
+            var fT = GANG_FOLGE.froudeTrab * (1 + GANG_FOLGE.hysterese);
+            var wT = Math.max(0, Math.min(1, (vh * vh - fT) / fT));
+            tast += (gangZahl(G, "tastgradTrab") - tast) * wT * wT * (3 - 2 * wT);
+        }
         if (tL > 0 && fL > 0) {
             var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
             w = w * w * (3 - 2 * w);
+            if (tier) sMax = 2 * L * Math.tan(mW + (gangZahl(G, "winkelLauf") - mW) * w);
             // im Lauf fegt das Bein höchstens seinen Winkel: der Fußweg bleibt bei sMax, der Tastgrad fällt mit dem Tempo
             // (die Kontaktzeit = sMax / v — Weyand 2000), der Schritt wächst weiter mit der Froude-Zahl
-            tast += (Math.min(tL, sMax / lamF) - tast) * w;
+            tast += ((tier ? tL : Math.min(tL, sMax / lamF)) - tast) * w;
             if (G.hubLauf > 0) hub += (G.hubLauf - hub) * w;
         }
         var lamMax = sMax / tast;
@@ -1425,7 +1441,7 @@
         return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art] };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
-    // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π (byte-gleich zum Tier-Gang).
+    // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π.
     // hubForm aus der Zeile Z (sonst GANG_GESETZ).
     // DAS ABROLLEN DES FUSSES (K07, additiv — die Tiere lesen es nicht: ohne rollWinkel der Zeile oder ohne Reichweite R
     // bleibt der Fuß flach, byte-gleich): ab fersenAb des Stands hebt sich die Ferse, der Fuß rollt über den Ballen
