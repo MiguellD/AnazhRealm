@@ -265,7 +265,7 @@ function albedoSicht(opts) {
                 } finally {
                     delete r._lodAuge;
                 }
-                if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (das Auge ${(ab * Math.SQRT2).toFixed(1)} m vor ihm, 30 s)`;
+                if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
             }
         }
         const karte = new T.Mesh(

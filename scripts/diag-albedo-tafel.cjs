@@ -597,7 +597,7 @@ async function main() {
             karten: m.karten,
             eichung: { welt: g.eichung.welt, labor: m.eichung.labor },
         });
-        if (nur) for (const z of t.zeilen) if (!nur.includes((z.labor || {}).studio)) mm.labor[z.id] = g.labor[z.id];
+        if (nur) for (const z of t.zeilen) if (!nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
         const u = AT.tafelUrteil(t, mm);
         if (nur) {
             u.karten = u.karten.filter((k) => nur.includes(k.studio));

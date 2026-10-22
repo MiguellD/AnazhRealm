@@ -106,7 +106,7 @@ function tafelPruefen(t) {
         ids.add(z.id);
         if (!PFLICHT_GRUPPEN.includes(z.gruppe)) f.push(`${z.id}: gruppe ${z.gruppe} ist keine der acht Klassen`);
         const L = z.labor || {};
-        if (!STUDIOS[L.studio] && !(z.welt || {}).stufeVon) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
+        if (!STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
@@ -213,7 +213,7 @@ function tafelUrteil(t, messung) {
     for (const [s, y] of Object.entries(eich.labor || {}))
         if (!eichOk(y)) rot.push({ art: "eichung", text: `Labor-Karte ${s} liest ${y} statt ${t.karte.albedo}` });
     for (const z of t.zeilen) {
-        const L = messung.labor && messung.labor[z.labor ? z.id : z.welt.stufeVon];
+        const L = messung.labor && messung.labor[z.id];
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
         if (!L || !zahl(L.Y) || !(L.Y > 0))
