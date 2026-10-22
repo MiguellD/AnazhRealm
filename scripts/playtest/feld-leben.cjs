@@ -1030,9 +1030,7 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // (a) Das Anleitungs-Modal ist restlos entfernt.
-        out.introDialogGone = typeof r.initIntroDialog === "undefined";
-        out.introPagesGone = typeof r._introPages === "undefined";
+        // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
         const msg = r._firstWelcomeMessage();
@@ -1057,8 +1055,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wowStartResults) {
-        check("UI-Putz WOW-Start: Anleitungs-Modal (initIntroDialog) entfernt", wowStartResults.introDialogGone);
-        check("UI-Putz WOW-Start: _introPages-Helper entfernt", wowStartResults.introPagesGone);
         check("UI-Putz WOW-Start: kein #intro-dialog im DOM", wowStartResults.noDialogInDom);
         check("UI-Putz WOW-Start: Begrüssung ist eine Einladung (nicht-leer)", wowStartResults.welcomeIsInvitation);
         check("UI-Putz WOW-Start: Begrüssung ist KEINE Steuerungs-Anleitung", wowStartResults.welcomeNotManual);
@@ -1281,14 +1277,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // Spawn-Pfade für Inseln + UFOs leben; die Baum-Helfer (spawnTreeAt, _buildTreeCollision) und die
-        // Ammo-Kollisions-Builder (`_buildIslandCollision`/`_disposeStaticCollision`) sind WEG — die
-        // Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
-        out.islandCollisionHelpersRemoved =
-            typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
-        out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
-        out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
-
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
         const bps = r.state.blueprints || {};
@@ -1464,10 +1452,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gResults && !wave6gResults.error) {
-        check(
-            "Welle 6.G P1.5 → P3: die Ammo-Insel-Kollisions-Helfer sind feld-nativ ersetzt (geschnitten)",
-            wave6gResults.islandCollisionHelpersRemoved
-        );
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
@@ -1577,14 +1561,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
-        check(
-            "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-            wave6gResults.parallelTreeHelperRemoved
-        );
-        check(
-            "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-            wave6gResults.parallelSpawnTreeAtRemoved
-        );
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);

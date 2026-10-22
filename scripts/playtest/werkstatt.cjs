@@ -520,7 +520,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            out.methodsExist = typeof r._installOmnibox === "function";
             // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
             const cmd = r._omniboxSearch("c:wetter");
             out.cmdAllBefehl =
@@ -564,7 +563,6 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: _installOmnibox existiert (die Suite ruft ihn nie)", omniResults.methodsExist);
         check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);

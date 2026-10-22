@@ -708,10 +708,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // Die drei Toggle-Methoden sind GELÖSCHT.
-        out.noSetActive = typeof r.setVoxelTerrainActive !== "function";
-        out.noDormant = typeof r._setHeightfieldDormant !== "function";
-        out.noRestore = typeof r._restoreVoxelTerrain !== "function";
         // Voxel ist beim Init aktiv (kein toggle nötig).
         out.voxelPermanent = r.state.voxelTerrainActive === true;
         out.metaPermanent = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
@@ -725,18 +721,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     });
 
     if (voxelV935ToggleResults && !voxelV935ToggleResults.error) {
-        check(
-            "Voxel V9.35: setVoxelTerrainActive-Methode ist gelöscht (Toggle-Tod)",
-            voxelV935ToggleResults.noSetActive
-        );
-        check(
-            "Voxel V9.35: _setHeightfieldDormant-Methode ist gelöscht (Reversibilitäts-Schicht weg)",
-            voxelV935ToggleResults.noDormant
-        );
-        check(
-            "Voxel V9.35: _restoreVoxelTerrain-Methode ist gelöscht (kein Init-Restore mehr nötig)",
-            voxelV935ToggleResults.noRestore
-        );
         check(
             "Voxel V9.35: voxelTerrainActive ist permanent true (Default + nie umschaltbar)",
             voxelV935ToggleResults.voxelPermanent
@@ -817,55 +801,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
     }
 
-    // ### Voxel — Lösch-Beweise: generateChunk + addTerrainPhysics ###
-    const voxelV930Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        return {
-            noGenerateChunk: typeof r.generateChunk !== "function",
-            noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
-        };
-    });
-
-    if (voxelV930Results && !voxelV930Results.error) {
-        check("Voxel V9.30: generateChunk ist gelöscht (tote Methode, V9.28-Befund)", voxelV930Results.noGenerateChunk);
-        check(
-            "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
-            voxelV930Results.noAddTerrainPhysics
-        );
-    }
-
-    // ### Voxel — Lösch-Beweise toter Heightfield-Schichten ###
-    // `extendTerrain` (ohne Aufrufer) + die `caveData`/`volcanoData`-Float-Arrays (alloziert, nie
-    // gelesen). Wer eine davon wieder anlegt, muss eine echte Notwendigkeit benennen.
-    const voxelV934Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const gen = r.generateTerrainWithParameters;
-        return {
-            noExtendTerrain: typeof r.extendTerrain !== "function",
-            noCaveDataAlloc: window.__fehlt(gen, /const\s+caveData\s*=\s*new\s+Float32Array/),
-            noVolcanoDataAlloc: window.__fehlt(gen, /const\s+volcanoData\s*=\s*new\s+Float32Array/),
-            noCaveDataWrite: window.__fehlt(gen, /caveData\[i\]\s*=/),
-            noVolcanoDataWrite: window.__fehlt(gen, /volcanoData\[i\]\s*=/),
-        };
-    });
-
-    if (voxelV934Results && !voxelV934Results.error) {
-        check(
-            "Voxel V9.34: extendTerrain ist gelöscht (Legacy-direction-API ohne Aufrufer)",
-            voxelV934Results.noExtendTerrain
-        );
-        check(
-            "Voxel V9.34: caveData-Float-Array ist gelöscht (nie gelesen)",
-            voxelV934Results.noCaveDataAlloc && voxelV934Results.noCaveDataWrite
-        );
-        check(
-            "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
-            voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
-        );
-    }
-
     // ### Voxel — Lösch-Beweise der voxel-Gate-`else`-Hälften ###
     // `worldMeta.voxelTerrain` ist permanent true → die Heightfield-`else`-Hälften waren unreachable.
     const voxelV938Results = await safeEvaluate(page, () => {
@@ -873,9 +808,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         if (!r) return null;
         const srcGen = r.generateTerrainWithParameters;
         return {
-            // (1) `calculateTerrainSteepness` ist gelöscht — kein
-            // Aufrufer mehr nach Wasserfall-Loop-Lösch.
-            noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
             // (2) heightData-Allokations-Loop in generateTerrain*
             // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
             noHeightDataAlloc: window.__fehlt(srcGen, /new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/),
@@ -897,10 +829,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     });
 
     if (voxelV938Results && !voxelV938Results.error) {
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: calculateTerrainSteepness ist gelöscht (kein Aufrufer nach Wasserfall-Loop-Lösch)",
-            voxelV938Results.noCalcSteepness
-        );
         check(
             "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
             voxelV938Results.noHeightDataAlloc
@@ -935,47 +863,18 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         return {
-            // (1)-(6) die sechs Methoden sind gelöscht
-            noEnsureChunkAt: typeof r.ensureChunkAt !== "function",
+            // populateChunkVegetation nennt noch ein Log-Text des Stamms, darum steht sie hier und nicht in gate:altlasten
             noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
-            noBuildChunkGrass: typeof r._buildChunkGrass !== "function",
-            noDisposeChunkGrass: typeof r._disposeChunkGrass !== "function",
-            noTerrainHeightAtWorld: typeof r._terrainHeightAtWorld !== "function",
-            noDisposeChunkPhysics: typeof r._disposeChunkPhysics !== "function",
-            noPruneDistantChunks: typeof r.pruneDistantChunks !== "function",
-            noChunkGeometry: typeof r._chunkGeometry !== "function",
-            // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
             terrainMaterialNull: r.state.terrainMaterial === null,
-            // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
-            loopHasNoPrune: typeof r._gameLoopTick === "function" && window.__fehlt(r._gameLoopTick, /pruneDistantChunks/),
-            // (9) `_buildWaterPlane` ist voxel-only: Regex auf das Aufruf-Pattern
-            // `this._terrainHeightAtWorld(`, damit ein Kommentar mit dem Namen nicht falsch-rot wird.
-            waterPlaneVoxelOnly:
-                typeof r._buildWaterPlane === "function" &&
-                window.__fehlt(r._buildWaterPlane, /this\._terrainHeightAtWorld\s*\(/),
-            // (10) Voxel-Pendants leben weiter (Vision-Anker)
             voxelGrassAlive: r.state.voxelChunkGrass instanceof Map,
         };
     });
 
     if (voxelV939Results && !voxelV939Results.error) {
-        check("Voxel V9.39: ensureChunkAt ist gelöscht", voxelV939Results.noEnsureChunkAt);
         check("Voxel V9.39: populateChunkVegetation ist gelöscht", voxelV939Results.noPopulateChunkVegetation);
-        check(
-            "Voxel V9.39: _buildChunkGrass + _disposeChunkGrass sind gelöscht",
-            voxelV939Results.noBuildChunkGrass && voxelV939Results.noDisposeChunkGrass
-        );
-        check("Voxel V9.39: _terrainHeightAtWorld ist gelöscht", voxelV939Results.noTerrainHeightAtWorld);
-        check("Voxel V9.39: _disposeChunkPhysics ist gelöscht", voxelV939Results.noDisposeChunkPhysics);
-        check("Voxel V9.39: pruneDistantChunks ist gelöscht", voxelV939Results.noPruneDistantChunks);
-        check("Voxel V9.39: _chunkGeometry ist gelöscht", voxelV939Results.noChunkGeometry);
         check(
             "Voxel V9.39: state.terrainMaterial wird nicht mehr gesetzt (null nach Welt-Aufbau)",
             voxelV939Results.terrainMaterialNull
-        );
-        check(
-            "Voxel V9.39: _buildWaterPlane ist voxel-only (kein _terrainHeightAtWorld-Aufruf mehr)",
-            voxelV939Results.waterPlaneVoxelOnly
         );
         check(
             "Voxel V9.39: das Voxel-Gras-Register lebt weiter (state.voxelChunkGrass ist eine Map)",

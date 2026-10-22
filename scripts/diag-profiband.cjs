@@ -1183,6 +1183,8 @@ function selbsttest() {
                 BAND.ratschenAlle(haushalt).length === 12
         );
     }
+    // DER GANG (K5, `werkbank puffer --gang`): ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter nicht
+    t("Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad", DZ.gangSelbsttest().length === 0);
 
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);

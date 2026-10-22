@@ -58,7 +58,6 @@ function KALT_PROBE() {
         _rebuildArchitectureMesh: "Bauten",
         _foundryBuildGroup: "Gruppen-Bau",
         _foundryIngestBook: "Buch",
-        _ortWahlScheibe: "Ort-Wahl",
         _spawnSettlementSlot: "Dorf",
     };
     // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker

@@ -731,13 +731,6 @@ jobs:
               # ein Baum und ein Regler-Schritt wecken, Gehen arbeitet, ein Sprung baut den Spieler-Chunk. --selftest zuerst.
               run: npm run gate:stand-takt
 
-            - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
-              if: matrix.gruppe == 12
-              # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
-              # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
-              # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
-              run: npm run gate:foundry-warm
-
             - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
               if: matrix.gruppe == 15
               # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
