@@ -3147,6 +3147,175 @@ async function kreaturProben(r, T, opts) {
         });
     });
 
+    // ── tiersatz (Klasse: die Menge der Tiere als Einzel-Draws, profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere derselben
+    // vier Gattungen im Nah-Kreis um den Spieler, der echte Kreatur-Takt — die Befehle der Tiere (je gezeichnetes Mesh im
+    // Bild und im Wurf, je Senke mit Instanzen) hängen nie an der Kopfzahl; wer nicht als Leib lebt, steht und geht im Satz
+    // seiner Gattung, und dessen Gang gleitet nicht (Schlupf aus dem, was die GPU zeichnet: die Vorlage an Phase, Band und
+    // Gewicht seiner Instanz × Instanz-Matrix, je Bein die tiefste Ecke — wie gate:tier-gang).
+    await buehne("tiersatz", async (restore) => {
+        const SM = A.TETRAPODA_SOUL_MAP;
+        const seelen = ["wolf", "fox", "bear", "deer"].map((g) => Object.keys(SM).find((k) => SM[k] === g));
+        const sichtbar = (o) => {
+            for (let x = o; x; x = x.parent) if (!x.visible) return false;
+            return true;
+        };
+        const saetze = () => s.scene.children.filter((o) => o && o.isInstancedMesh && o.userData.inventar === "tier");
+        const befehle = () => {
+            let haupt = 0,
+                wurf = 0,
+                leiber = 0;
+            for (const c of s.creatures) {
+                let n = 0;
+                c.traverse((o) => {
+                    if (!o.isMesh || !sichtbar(o)) return;
+                    if (o.layers.mask & 1) (haupt++, n++);
+                    if (o.castShadow) wurf++;
+                });
+                if (n > 0) leiber++;
+            }
+            for (const o of saetze())
+                if (o.count > 0 && o.visible) {
+                    if (o.layers.mask & 1) haupt++;
+                    if (o.castShadow) wurf++;
+                }
+            return { haupt, wurf, leiber };
+        };
+        // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl) · der Satz geht schneller, als der Leib läuft
+        if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
+        if (taeter === "tiersatz-gleiten")
+            decke(
+                restore,
+                "_tierSatzSchritt",
+                (alt) =>
+                    function (u, weg, ...rest) {
+                        return alt.call(this, u, weg * 1.5, ...rest);
+                    }
+            );
+        const ring = (n, rMin, rMax, saat) => {
+            let k = 0;
+            for (let i = 0; i < 400 && k < n; i++) {
+                const w = ((saat + i) * 2.39996) % TAU,
+                    d = rMin + (rMax - rMin) * (((saat + i) * 0.618034) % 1);
+                const o = land(Math.cos(w) * d, Math.sin(w) * d);
+                if (Math.hypot(o.x - P0.x, o.z - P0.z) < rMin - 1) continue;
+                tier(o, seelen[s.creatures.length % 4], 1);
+                k++;
+            }
+        };
+        const laufen = (n) => {
+            for (let i = 0; i < n; i++) takt(1 / 60);
+        };
+        ring(10, 15, 30, 1);
+        laufen(240);
+        const B10 = befehle();
+        ring(40, 15, 55, 101);
+        laufen(240);
+        const B50 = befehle();
+        // DER GANG IM SATZ: je Senke `fell` die tiefste Ecke je Bein (Quadrant: Seite × vorn/hinten der stehenden Vorlage)
+        const fussMemo = new WeakMap();
+        const fussIx = (geo) => {
+            if (fussMemo.has(geo)) return fussMemo.get(geo);
+            const P = geo.attributes.position;
+            let zMin = Infinity,
+                zMax = -Infinity;
+            for (let v = 0; v < P.count; v++) {
+                zMin = Math.min(zMin, P.getZ(v));
+                zMax = Math.max(zMax, P.getZ(v));
+            }
+            const zM = (zMin + zMax) / 2;
+            const ix = [-1, -1, -1, -1];
+            for (let v = 0; v < P.count; v++) {
+                const q = (P.getX(v) < 0 ? 0 : 1) + (P.getZ(v) < zM ? 0 : 2);
+                if (ix[q] < 0 || P.getY(v) < P.getY(ix[q])) ix[q] = v;
+            }
+            fussMemo.set(geo, ix);
+            return ix;
+        };
+        // die Lage einer Ecke, wie der Gang-Knoten sie zeichnet: Band = ganzer Teil von aGang.x, Phase sein Rest
+        const lokal = (m, inst, v, out) => {
+            const G = m.userData.gang;
+            const a = m.geometry.attributes;
+            const vid = Math.abs(a.aVid.getX(v)) - 1;
+            const x = a.aGang.getX(inst);
+            const band = Math.floor(x);
+            const f = (x - band) * G.n;
+            const k0 = Math.floor(f);
+            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
+            const r0 = band * G.n;
+            const st = G.baender * G.n;
+            const c3 = (c) => {
+                const lauf = at(r0 + k0, c) + (f - k0) * (at(r0 + ((k0 + 1) % G.n), c) - at(r0 + k0, c));
+                return at(st, c) + a.aGang.getY(inst) * (lauf - at(st, c));
+            };
+            return out.set(c3(0), c3(1), c3(2));
+        };
+        const m4 = new T.Matrix4();
+        const vL = new T.Vector3();
+        const spuren = new Map();
+        const gangMessen = () => {
+            const fell = saetze().filter((m) => m.userData.gang && m.userData.teil === "fell" && m.count > 0);
+            for (const m of fell) {
+                const ix = fussIx(m.geometry);
+                const IM = m.instanceMatrix.array;
+                const aG = m.geometry.attributes.aGang;
+                for (let inst = 0; inst < m.count; inst++) {
+                    const x = IM[inst * 16 + 12],
+                        z = IM[inst * 16 + 14];
+                    const c = s.creatures.find((k) => Math.hypot(k.position.x - x, k.position.z - z) < 1e-3);
+                    if (!c) continue;
+                    const key = m.uuid + "|" + c.userData.netId;
+                    if (!spuren.has(key)) spuren.set(key, { reihe: [], bein: c.userData._tierBaum.beinL * c.scale.x });
+                    m4.fromArray(IM, inst * 16);
+                    const fuss = ix.map((v) => {
+                        const y = lokal(m, inst, v, vL).y;
+                        const w = vL.applyMatrix4(m4);
+                        return { y, x: w.x, z: w.z };
+                    });
+                    spuren.get(key).reihe.push({
+                        fuss,
+                        x: c.position.x,
+                        z: c.position.z,
+                        ry: c.rotation.y,
+                        w: aG.getY(inst),
+                        b: Math.floor(aG.getX(inst)),
+                    });
+                }
+            }
+        };
+        for (let i = 0; i < 360; i++) {
+            takt(1 / 60);
+            gangMessen();
+        }
+        let wegFuss = 0,
+            wegLeib = 0;
+        for (const sp of spuren.values()) {
+            const R = sp.reihe;
+            for (let j = 0; j < 4; j++) {
+                let ymin = Infinity;
+                for (const e of R) ymin = Math.min(ymin, e.fuss[j].y);
+                for (let i = 1; i < R.length; i++) {
+                    const [a0, a1] = [R[i - 1], R[i]];
+                    // gezählt wird der Gang geradeaus und eingeschwungen, in einem Band: nie Wende, Anlauf, Halt, Wechsel
+                    if (Math.abs(a1.ry - a0.ry) > 1e-3 || Math.min(a0.w, a1.w) < 0.99 || a0.b !== a1.b) continue;
+                    const [p, q] = [a0.fuss[j], a1.fuss[j]];
+                    if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
+                    wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
+                    wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                }
+            }
+        }
+        const q3 = (v) => Math.round(v * 1000) / 1000;
+        return {
+            b10: B10,
+            b50: B50,
+            nahLeiber: A.KREATUR_SATZ ? A.KREATUR_SATZ.nahLeiber : null,
+            senken: saetze().length,
+            satzTiere: spuren.size,
+            schlupf: wegLeib > 0 ? q3(wegFuss / wegLeib) : null,
+            wegLeib: Math.round(wegLeib * 10) / 10,
+        };
+    });
+
     return aus;
 }
 
@@ -3176,6 +3345,7 @@ const PROBEN = [
     "ferngang",
     "gestalt",
     "bewohner",
+    "tiersatz",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -3184,6 +3354,21 @@ function urteil(name, z) {
     const soll = (bed, text) => {
         if (!bed) f.push(text);
     };
+    if (name === "tiersatz") {
+        soll(
+            z.b50.haupt === z.b10.haupt && z.b50.wurf === z.b10.wurf,
+            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild + ${z.b10.wurf} Wurf, 50 Tiere ${z.b50.haupt} + ${z.b50.wurf} (Soll gleich: die Menge steht im Satz ihrer Gattung)`
+        );
+        soll(
+            z.nahLeiber != null && z.b50.leiber <= z.nahLeiber,
+            `${z.b50.leiber} von 50 Tieren als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber})`
+        );
+        soll(
+            z.satzTiere >= 10 && z.wegLeib >= 20 && z.schlupf !== null && z.schlupf <= 0.05,
+            `der Satz gleitet: Schlupf ${z.schlupf} über ${z.wegLeib} m Gang von ${z.satzTiere} Satz-Tieren (Soll ≤ 0,05 über ≥ 20 m, ≥ 10 Tiere)`
+        );
+        return { ok: !f.length, grund: f.join(" · ") };
+    }
     if (name === "bewohner") {
         soll(z.leiber > 0, `0 Bewohner im Start-Dorf ${z.dorf} (${z.haeuser} Häuser, Σ leute ${z.sollSumme})`);
         soll(
@@ -3625,6 +3810,10 @@ const TAETER = {
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
     gestalt: [["gestalt", /hängt am ersten Tier/]],
+    tiersatz: [
+        ["tiersatz-kopf", /hängen an der Kopfzahl/],
+        ["tiersatz-gleiten", /der Satz gleitet/],
+    ],
     bewohner: [
         ["bewohner-haus", /Haus ohne Bewohner/],
         ["bewohner-menge", /Leiber als Leib gezeichnet/],
