@@ -664,7 +664,11 @@ async function gangLauf(page, pufferStand, b) {
         page.evaluate(async () => {
             const raf = () => new Promise((f) => requestAnimationFrame(f));
             // eingeschwungen: 120 Bilder in Folge, in denen die Welt nichts offen hat (`_weltOffen`; die Tiere regen sich weiter)
-            for (let k = 0; k < 120; k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1)
+            for (
+                let k = 0, weiter = window.__deckel("die Ruhe der Zählung", Infinity);
+                k < 120 && weiter();
+                k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1
+            )
                 await raf();
         });
     const gehe = async (n) => {

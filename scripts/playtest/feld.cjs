@@ -116,9 +116,7 @@ async function checkRing2Dsl(ctx) {
 
     const phase2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (typeof r._gameLoopTick === "function") {
-            for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
-        }
+        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
             queueLen: r.state.nexusEvolutionQueue.length,
