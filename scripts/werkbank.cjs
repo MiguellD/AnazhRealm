@@ -1338,7 +1338,7 @@ async function starte() {
                         return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
-                        r._tickBauSatz();
+                        r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
                 };
@@ -1811,7 +1811,7 @@ async function starte() {
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
-                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei" });
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
                     await page.evaluate(() => {
                         const r = window.anazhRealm;
                         r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
@@ -3808,7 +3808,7 @@ async function starte() {
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
             const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle") });
+            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), posten: opt("--posten") });
             console.log(w.tabelle);
             if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
             process.exit(w.befunde.length ? 1 : 0);
@@ -3822,6 +3822,7 @@ async function starte() {
             wetter: opt("--wetter"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
+            posten: opt("--posten"),
             probe: argv.includes("--probe"),
             json: opt("--json"),
         });
