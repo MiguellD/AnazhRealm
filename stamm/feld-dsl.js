@@ -1007,7 +1007,7 @@ class AnazhRealm_feld_dsl {
                     const entry = this._naturSetzen(
                         treeKind,
                         { x: pos.x + jx, y: pos.y, z: pos.z + jz },
-                        { seed: treeSeed },
+                        { seed: treeSeed, werk: !this._feldHandelt(ctx) },
                         null,
                         (wo) => (weicht[wo] = (weicht[wo] || 0) + 1)
                     );
@@ -1159,7 +1159,7 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 // der Ort, an dem das ganze Fundament auf dem Land steht (nach der Spieler-Klemme der Wurzel); keiner → benannt
                 const ort = this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
                 if (!ort) {
@@ -1186,6 +1186,7 @@ class AnazhRealm_feld_dsl {
                 const entry = this.spawnArchitecture("waterfall", pos, {
                     seed: s,
                     autonomous: this._feldHandelt(ctx),
+                    werk: !this._feldHandelt(ctx),
                     absage,
                 });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
@@ -1232,7 +1233,7 @@ class AnazhRealm_feld_dsl {
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 // Autonom (Nexus) gespawnte Baupläne unterliegen dem _capNexusStructures-Cap (kein
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
-                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
                 // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
@@ -1724,7 +1725,14 @@ class AnazhRealm_feld_dsl {
                         this.spawnArchitecture(
                             t,
                             { x: cx, y: pos.y, z: cz },
-                            { seed: childSeed, scale, precise: true, autonomous: this._feldHandelt(ctx), absage }
+                            {
+                                seed: childSeed,
+                                scale,
+                                precise: true,
+                                autonomous: this._feldHandelt(ctx),
+                                werk: !this._feldHandelt(ctx),
+                                absage,
+                            }
                         )
                     )
                         spawned++;
@@ -1966,7 +1974,7 @@ class AnazhRealm_feld_dsl {
             let opts = null;
             if (grundriss) {
                 // DAS WERK MIT GRUNDRISS: Drehung und Same zuerst (der Grundriss dreht mit), dann der Ort, der es trägt
-                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2, werk: !this._feldHandelt(ctx) };
                 if (stamp) opts.studioOv = stamp;
                 const off = n > 1 ? Math.max(jitter, 2.5) : 0;
                 const ziel = { x: pos.x + (wurf() - 0.5) * 2 * off, y: pos.y, z: pos.z + (wurf() - 0.5) * 2 * off };
@@ -1993,7 +2001,7 @@ class AnazhRealm_feld_dsl {
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
             const y = Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;
             if (!opts) {
-                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2, werk: !this._feldHandelt(ctx) };
                 if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
                 if (stamp) opts.studioOv = stamp;
             }

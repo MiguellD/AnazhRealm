@@ -612,6 +612,8 @@ class AnazhRealm_speicher_laden {
                 freeBorn: a.freeBorn === true,
                 // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
                 feldWurf: a.feldWurf === true,
+                // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`)
+                werk: a.werk === true,
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,
