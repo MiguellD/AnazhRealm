@@ -1317,7 +1317,7 @@ async function starte() {
                         return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
-                        r._tickBauSatz();
+                        r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
                 };

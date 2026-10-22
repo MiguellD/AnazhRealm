@@ -1675,8 +1675,10 @@ class AnazhRealm_siedlung_ort {
     // zweiter Stand vor der eigenen Tür) · markt der Stand auf dem Platz · feld ein Stand im nächsten Acker des Plans · hof
     // der Stand vor der Tür. Jeder Stand ist frei: kein Grundriss eines Baus (`_imGrundriss`, mit dem Saum des Leibs), Land
     // (`_landAt`) und der persönliche Raum (`BEWOHNER.raumM`) zu jedem anderen; wer im Ring um die Tür keinen findet, steht
-    // weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`).
-    _bewohnerListe(S) {
+    // weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`). IN RATEN (Lehre 14,
+    // stadt-takt: die Stadt legte ihre Liste in EINEM Takt, ~16 ms): nach jedem Haus gibt die Liste den Takt zurück
+    // (`yield`), der Bewohner-Takt legt höchstens `BEWOHNER.haeuserJeTakt` Häuser je Takt.
+    *_bewohnerListe(S) {
         const FC = globalThis.__fachwerkCore;
         if (!FC || typeof FC.leuteVon !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:leuteVon");
         const KC = window.__koerperCore;
@@ -1791,13 +1793,14 @@ class AnazhRealm_siedlung_ort {
             return null;
         };
         const liste = [];
-        plan.slots.forEach((sl, si) => {
+        for (const [si, sl] of plan.slots.entries()) {
+            yield;
             const wx = S.ox + sl.x;
             const wz = S.oz + sl.z;
             const haus = steht.get(`${sl.seed >>> 0}@${Math.round(wx)},${Math.round(wz)}`);
-            if (!haus) return; // kein Haus, keine Leute
+            if (!haus) continue; // kein Haus, keine Leute
             const n = FC.leuteVon(sl.ov);
-            if (!(n > 0)) return;
+            if (!(n > 0)) continue;
             const rolle = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
             const c = Math.cos(sl.phi || 0);
             const s = Math.sin(sl.phi || 0);
@@ -1845,7 +1848,7 @@ class AnazhRealm_siedlung_ort {
                     takt: 0,
                 });
             }
-        });
+        }
         return liste;
     }
 
@@ -2266,15 +2269,20 @@ class AnazhRealm_siedlung_ort {
         for (const S of alle.values()) {
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
-                if (S.liste) this._bewohnerFort(S);
+                if (S.liste || S.listeWerk) this._bewohnerFort(S);
                 continue;
             }
             if (!S.liste) {
                 if (d2 > A.nearM * A.nearM) continue;
                 const q = this._autoSettlementQueue;
                 if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
+                if (!S.listeWerk) S.listeWerk = this._bewohnerListe(S);
+                let w = null;
+                for (let k = 0; k <= BW.haeuserJeTakt && !(w && w.done); k++) w = S.listeWerk.next();
+                if (!w.done) continue;
+                S.listeWerk = null;
                 S.gestalten = this._bewohnerGestalten(S);
-                S.liste = this._bewohnerListe(S);
+                S.liste = w.value;
                 S.planStunde = null;
             }
             let anders = false;
@@ -2771,6 +2779,7 @@ class AnazhRealm_siedlung_ort {
             }
         }
         S.liste = null;
+        S.listeWerk = null;
         S.gestalten = null;
         this._ofenMemoRaeumen();
     }
@@ -3831,7 +3840,7 @@ AnazhRealm.WERK_LAND_M = 0.2;
 // DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
 // Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon) · platzAnteil = so viele
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
-// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
+// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · haeuserJeTakt = so viele Häuser legt die Liste je Takt · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
 // im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
@@ -3845,6 +3854,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     raumM: 1.1,
     saumM: 0.45,
     geburtenJeTakt: 2,
+    haeuserJeTakt: 4,
     fernFaktor: 1.25,
     nahM: 8,
     nahHystM: 1,

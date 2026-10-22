@@ -86,15 +86,16 @@ class AnazhRealm_siedlung_satz {
     // Stempel (Matrix · Farbe · Instanz-Attribute) sich änderte (`_bauSatzSlots`), und ein großer neuer Bereich tritt in Raten
     // ein (`_bauSatzRate`, je Takt höchstens BAU_SATZ_ECKEN_JE_TAKT Ecken, nah zuerst — Lehre 14); solange einer in Raten
     // tritt, wartet jeder Austritt: der alte Stufen-Bereich geht erst, wenn der neue steht. Bis das erste Weltbild steht,
-    // gilt kein Deckel (das Bild wartet auf jedes ganze Haus, `_weltbildSteht`).
-    _tickBauSatz() {
+    // gilt kein Deckel (das Bild wartet auf jedes ganze Haus, `_weltbildSteht`); eine Linse, die den Satz auf die Wahrheit
+    // seiner Gruppen legt, ruft ihn mit `deckel` Infinity (jede Rate tritt ein, jeder Austritt geht).
+    _tickBauSatz(deckel) {
         const st = this.state;
         const sm = st.bauSatzSchmutzig;
         const raten = st.bauSatzRaten;
         if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return;
         const groups = st.archInstanceGroups;
         const saetze = st.chunkSaetze;
-        let budget = st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
+        let budget = deckel != null ? deckel : st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
         const gehen = this._bauSatzGehen || (this._bauSatzGehen = []);
         gehen.length = 0;
         if (sm) {
