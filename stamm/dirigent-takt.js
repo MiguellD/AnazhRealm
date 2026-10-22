@@ -1361,22 +1361,32 @@ class AnazhRealm_dirigent_takt {
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 
+    // DAS SPEICHERN IM LEERLAUF (fahrt-takt, Lehre 14): der Takt entscheidet nur, dass ein Stand fällig ist; Schnappschuss,
+    // JSON und die Schreiber laufen im nächsten Leerlauf-Fenster des Haupt-Fadens (`requestIdleCallback`, Frist 2 s — das
+    // Alter eines Stands bleibt ≤ saveInterval + 2 s), nie im Takt. Bis fahrt-takt trug der Takt beides (Radeon GT-Fahrt
+    // 20 m/s: _loopAutoSave 5,8 ms an der Mess-Wiese, 9,2 ms am Genesis-Ring je Takt ab p95).
     _loopAutoSave(currentTime) {
-        // ### Speichern ###
-        if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
-            this.saveState();
-            this.state.lastSaveUpdate = currentTime;
+        const st = this.state;
+        const lokal = currentTime - st.lastSaveUpdate >= st.saveInterval;
+        const server = !st.isServerSaveInFlight && currentTime - st.lastServerSaveUpdate >= st.serverSaveInterval;
+        if (lokal) st.lastSaveUpdate = currentTime;
+        if (server) {
+            st.lastServerSaveUpdate = currentTime;
+            st.isServerSaveInFlight = true;
         }
-        if (
-            !this.state.isServerSaveInFlight &&
-            currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
-        ) {
-            this.state.isServerSaveInFlight = true;
-            this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                this.state.isServerSaveInFlight = false;
-            });
-            this.state.lastServerSaveUpdate = currentTime;
-        }
+        if (!lokal && !server) return;
+        const ric = globalThis.requestIdleCallback;
+        const leerlauf = typeof ric === "function" ? ric.bind(globalThis) : (f) => setTimeout(f, 0);
+        leerlauf(
+            () => {
+                if (lokal) this.saveState();
+                if (server)
+                    this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                        st.isServerSaveInFlight = false;
+                    });
+            },
+            { timeout: 2000 }
+        );
     }
 
     _loopRender() {
