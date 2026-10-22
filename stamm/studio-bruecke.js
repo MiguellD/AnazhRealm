@@ -2354,18 +2354,26 @@ class AnazhRealm_studio_bruecke {
     }
 
     // Der Fern-Satz einer Kreatur: je Glied EINE Kapsel im Welt-March (Ganz oder gar nicht: reicht der Atlas nicht,
-    // fällt das ganze Tier).
+    // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur das erste
+    // Tier einer Gattung zerlegt die Gestalt — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
+    // der in den Fern-Kreis trat: `_kreaturGliederGruppen` 1,75 ms je Takt ab p95, Radeon echt).
     _kreaturGliederBacken(cr, einblenden) {
-        const G = this._kreaturGliederGruppen(cr);
-        if (!G) return null;
+        const namen = this._gattungGlieder(cr);
+        if (!namen) return null;
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
         // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
+        const tb = cr.userData._tierBaum;
         const glieder = [];
-        for (const [a, g] of G.gruppen) {
+        for (const nm of namen) {
+            const a = nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
+            if (!a) {
+                for (const gl of glieder) this._weltFeldFrei(gl.handle);
+                return null;
+            }
             a.updateMatrixWorld(true);
-            const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapselMemo(key, g), einblenden);
+            const key = nm.key;
+            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -2373,6 +2381,26 @@ class AnazhRealm_studio_bruecke {
             glieder.push({ teil: a, handle });
         }
         return glieder.length ? glieder : null;
+    }
+
+    // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der
+    // Name seines Ankers ("" = die Wurzel) und der Schlüssel seiner Kapsel, gepasst beim ersten Tier der Gattung
+    // (`_kreaturGliederGruppen` + `_gliedKapselMemo`); jedes weitere löst nur die Namen an SEINEN Teilen auf. null: keine Gestalt
+    // (nie gemerkt — ein Leib ohne Teile versucht es beim nächsten Ruf neu).
+    _gattungGlieder(cr) {
+        const gattung = this._kreaturGattung(cr);
+        const memo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
+        if (memo.has(gattung)) return memo.get(gattung);
+        const G = this._kreaturGliederGruppen(cr);
+        if (!G) return null;
+        const namen = [];
+        for (const [a, g] of G.gruppen) {
+            const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
+            this._gliedKapselMemo(key, g);
+            namen.push({ name: a === G.wurzel ? "" : a.name, key });
+        }
+        memo.set(gattung, namen);
+        return namen;
     }
 
     // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
@@ -2394,20 +2422,8 @@ class AnazhRealm_studio_bruecke {
         if (!tc || typeof tc.trefferZone !== "function") AnazhRealm._kernPflichtBruch("tetrapoda:trefferZone");
         const tb = u._tierBaum;
         if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
-        const gattung = this._kreaturGattung(cr);
-        const namenMemo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
-        let namen = namenMemo.get(gattung);
-        if (!namen) {
-            const G = this._kreaturGliederGruppen(cr);
-            if (!G) return (u._trefferGlieder = null);
-            namen = [];
-            for (const [a, g] of G.gruppen) {
-                const name = a === G.wurzel ? "" : a.name;
-                const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-                if (this._gliedKapselMemo(key, g)) namen.push({ name, key });
-            }
-            namenMemo.set(gattung, namen);
-        }
+        const namen = this._gattungGlieder(cr);
+        if (!namen) return (u._trefferGlieder = null);
         const liste = [];
         for (const nm of namen) {
             const anker = nm.name ? tb.teile && tb.teile[nm.name] : tb.wrap || cr;
