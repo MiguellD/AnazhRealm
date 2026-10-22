@@ -1589,7 +1589,7 @@ class AnazhRealm_kampf {
             return true;
         }
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine
-        // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30);
+        // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30, die Gestalt);
         // das Nahkampf-Tor misst vom Schultergelenk des Spielers. EINE REICHWEITE AUS DER WAFFE (Welle LF, Posten 3): das
         // Tor liest, was die Klinge fegt (_kampfSchwungRahmen: Arm und Gerät ab der Schulter, die so gebeugt misst wie im Schwung —
         // _kampfZielAbstand; dazu der Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
@@ -1736,34 +1736,44 @@ class AnazhRealm_kampf {
         return true;
     }
 
-    // Welle 6.H Phase 2F.3 — Raycast-Picker für Kreaturen (analog
-    // _pickArchitectureAtCrosshair). Iteriert state.creatures, traverse
-    // pro Group → Mesh-Liste. Reverse-Map über Map<Mesh, Creature>.
+    // DAS TIER UNTER DEM FADENKREUZ (halten.K2): der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`, far 30 m) gegen die EINE
+    // Gestalt jedes Tiers — seine Treffer-Glieder (`_kreaturGliedTreffer`, dieselben Kapseln, die Klinge, Pfeil und Biss
+    // treffen), vorher das Grob-Tor des Leibs (`_trefferErreichbar`) am Punkt des Strahls, der dem Tier waagrecht am
+    // nächsten liegt. Es gewinnt das Tier, in dessen Gestalt der Strahl zuerst eintritt; `point` ist der Eintritt.
+    // Vorher fragte der Pick die Meshes (Raycaster über jede Haut jedes Tiers, die Knochen je Vertex): 77 ms im Hörer
+    // des Klicks (Radeon, Mess-Wiese) — und traf eine andere Gestalt als die Klinge.
+    // Rückgabe { creature, point } oder null.
     _pickCreatureAtCrosshair() {
-        if (!this.state.scene || !Array.isArray(this.state.creatures)) return null;
+        const cs = this.state.creatures;
+        if (!Array.isArray(cs) || !cs.length) return null;
         const F = this._fadenkreuzStrahl();
         if (!F) return null;
-        const meshes = [];
-        const creatureByMesh = new Map();
-        for (const c of this.state.creatures) {
-            if (!c) continue;
-            c.traverse((node) => {
-                if (node.isMesh) {
-                    meshes.push(node);
-                    creatureByMesh.set(node, c);
-                }
-            });
+        const weit = 30;
+        const ox = F.o.x,
+            oy = F.o.y,
+            oz = F.o.z,
+            dx = F.d.x,
+            dy = F.d.y,
+            dz = F.d.z;
+        const h2 = dx * dx + dz * dz;
+        let best = null;
+        let bestEin = Infinity;
+        for (const c of cs) {
+            if (!c || !c.userData) continue;
+            const u =
+                h2 > 1e-12
+                    ? Math.max(0, Math.min(weit, ((c.position.x - ox) * dx + (c.position.z - oz) * dz) / h2))
+                    : 0;
+            if (!this._trefferErreichbar(c, ox + dx * u, oz + dz * u, 0)) continue;
+            const tr = this._kreaturGliedTreffer(c, ox, oy, oz, ox + dx * weit, oy + dy * weit, oz + dz * weit, 0);
+            if (tr && tr.ein < bestEin) {
+                bestEin = tr.ein;
+                best = c;
+            }
         }
-        if (!meshes.length) return null;
-        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
-        this._tmpRaycaster.set(F.o, F.d);
-        this._tmpRaycaster.far = 30;
-        const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
-        if (!intersects.length) return null;
-        let node = intersects[0].object;
-        while (node && !creatureByMesh.has(node)) node = node.parent;
-        const creature = node ? creatureByMesh.get(node) : null;
-        return creature ? { creature, point: intersects[0].point } : null;
+        if (!best) return null;
+        const m = bestEin * weit;
+        return { creature: best, point: new THREE.Vector3(ox + dx * m, oy + dy * m, oz + dz * m) };
     }
 
     // DER SCHWUNG-KEGEL DER ZIEL-WAHL (K13, schmiede ARENA.schwung.zielKegelUntenRad — Welt und Arena-Lab lesen dieselbe Zeile):

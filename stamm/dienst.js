@@ -1218,15 +1218,23 @@ class AnazhRealm_dienst {
             );
             return false;
         }
+        // DIE SPERRE DES LADENS (speicher.K1): solange loadState die Welt zusammensetzt, ist sie halb — neun Setter riefen
+        // hier vor dem Bau-Restore, jeder Boot legte eine Welt ohne Bauten ab (ein Tod vor dem ersten Takt: fort). Der Wunsch
+        // bleibt: loadState schreibt am Ende EINMAL die ganze Welt.
+        if (this._ladeSperre) {
+            this._ladeSperre.verlangt = true;
+            return false;
+        }
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
         // Legacy-Key zurück, damit nichts still verloren geht.
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
-        // Snapshot-JSON EINMAL bauen: IndexedDB trägt ihn IMMER (async), localStorage ist schneller Spiegel +
-        // Fallback — wirft es QUOTA, hat IndexedDB die Welt schon.
+        // EIN Stand, EIN Stempel: IndexedDB trägt ihn atomar (EINE Transaktion tauscht den vorigen nach `.bak`), der Platz im
+        // localStorage ist sein Abbild mit demselben Stempel (lastPlayed) — die Rettungs-Kette wählt am Stempel, nie am Ort.
         const json = JSON.stringify(stateToSave);
+        const at = Date.now();
         if (worldId) {
-            this._idbPutWorld(worldId, json).then((ok) => {
+            this._idbPutWorld(worldId, json, at).then((ok) => {
                 if (!ok && !this._idbWarned) {
                     this._idbWarned = true;
                     this.log("IndexedDB nicht verfügbar — Welten leben allein im localStorage (5-MB-Wand).", "WARN");
@@ -1235,20 +1243,13 @@ class AnazhRealm_dienst {
         }
         try {
             if (worldId) {
-                // Rotierender Backup: den bisherigen guten Stand VOR dem Überschreiben in den `.bak`-Slot retten
-                // (ein korrupter Write vernichtet ihn nicht); best-effort — Quota am Backup wird geschluckt.
-                try {
-                    const prevGood = localStorage.getItem(this.worldStorageKey(worldId));
-                    if (prevGood) localStorage.setItem(this.worldStorageKey(worldId) + ".bak", prevGood);
-                } catch (_bakErr) {
-                    /* Backup ist best-effort — der Haupt-Pfad + IndexedDB tragen die Welt */
-                }
+                localStorage.removeItem(this.worldStorageKey(worldId) + ".bak"); // der .bak lebt in der Transaktion
                 localStorage.setItem(this.worldStorageKey(worldId), json);
                 this.worldsIndexUpsert({
                     worldId,
                     slug: this.state.worldMeta.slug || "",
-                    bornAt: this.state.worldMeta.bornAt || Date.now(),
-                    lastPlayed: Date.now(),
+                    bornAt: this.state.worldMeta.bornAt || at,
+                    lastPlayed: at,
                 });
                 this.activeWorldSet(worldId);
             } else {
