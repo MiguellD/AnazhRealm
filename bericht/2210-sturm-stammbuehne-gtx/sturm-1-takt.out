@@ -1,0 +1,297 @@
+TAKT-SPITZE: CPU-Takt {"p50":20.9,"p95":30.9,"p99":49.5,"max":91.2} ms (K2 8 ms), 44 Takte ab p95 (44 mit Proben), Weg 83 m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+   19.26  11.14  renderer._renderScene
+   19.21   11.1    _renderScene [three.webgpu.min.js]
+    5.52   4.04      scene.onBeforeRender
+    5.52   4.04        _passSicht
+     3.4   2.54          _chunkSatzPass
+    2.62   1.89            _hoehlenSicht
+    2.36   1.67              _hoehlenSichtLicht
+    0.59   0.56            _chunkSatzAbschnitt
+    1.38   0.92          _instanzWahlPass
+    0.55   0.45            _instanzBehalten
+    0.47    0.2            _arenaTakt
+    0.45   0.19              _takt
+    0.32   0.12                _ordnen
+     0.3   0.19          _nahWieseSicht
+    0.27   0.23          _kaskadenPassen
+    5.19   0.92      renderer._renderBundles
+    5.11   0.88        _renderBundles [three.webgpu.min.js]
+    5.11   0.88          renderer._renderBundle
+    5.08   0.84            _renderBundle [three.webgpu.min.js]
+    4.04   0.05              _renderObjects [three.webgpu.min.js]
+    4.03   0.05                renderer.renderObject
+    4.03   0.05                  renderObject [three.webgpu.min.js]
+    4.03   0.03                    rend._renderObjectDirect [werkbank]
+    4.03   0.03                      renderer._renderObjectDirect
+    3.95   0.03                        zeichne
+    3.85   0.01                          needsRefresh [three.webgpu.min.js]
+    3.81      0                            getMonitor [three.webgpu.min.js]
+    3.81      0                              getNodeBuilderState [three.webgpu.min.js]
+    3.81      0                                N.getForRender [werkbank]
+    3.81      0                                  getForRender [three.webgpu.min.js]
+    3.81      0                                    build [three.webgpu.min.js]
+    2.38      0                                      build [three.webgpu.min.js]
+    2.35      0                                        build [three.webgpu.min.js]
+    2.35      0                                          build [three.webgpu.min.js]
+    1.41      0                                            build [three.webgpu.min.js]
+    1.38      0                                              build [three.webgpu.min.js]
+    1.38      0                                                build [three.webgpu.min.js]
+    1.37      0                                                  build [three.webgpu.min.js]
+    1.37      0                                                    build [three.webgpu.min.js]
+    1.36      0                                                      build [three.webgpu.min.js]
+    1.36      0                                                        build [three.webgpu.min.js]
+    1.36      0                                                          build [three.webgpu.min.js]
+    1.32      0                                                            build [three.webgpu.min.js]
+     1.3      0                                                              build [three.webgpu.min.js]
+    0.81      0                                                                setup [three.webgpu.min.js]
+    0.76      0                                                                  setup [three.webgpu.min.js]
+    0.76      0                                                                    build [three.webgpu.min.js]
+    0.74      0                                                                      build [three.webgpu.min.js]
+    0.74      0                                                                        build [three.webgpu.min.js]
+    0.74      0                                                                          build [three.webgpu.min.js]
+    0.74      0                                                                            build [three.webgpu.min.js]
+    0.73      0                                                                              build [three.webgpu.min.js]
+     0.7      0                                                                                build [three.webgpu.min.js]
+    0.69      0                                                                                  build [three.webgpu.min.js]
+    0.69      0                                                                                    build [three.webgpu.min.js]
+    0.69      0                                                                                      build [three.webgpu.min.js]
+    0.68      0                                                                                        build [three.webgpu.min.js]
+    0.66      0                                                                                          build [three.webgpu.min.js]
+    0.66      0                                                                                            build [three.webgpu.min.js]
+     0.5      0                                                                                              build [three.webgpu.min.js]
+    0.49      0                                                                                                build [three.webgpu.min.js]
+    0.49      0                                                                                                  build [three.webgpu.min.js]
+    0.37      0                                                                                                    build [three.webgpu.min.js]
+    0.34      0                                                                                                      build [three.webgpu.min.js]
+    0.34      0                                                                                                        build [three.webgpu.min.js]
+    0.34      0                                                                                                          build [three.webgpu.min.js]
+     0.5      0                                                                build [three.webgpu.min.js]
+     0.5      0                                                                  build [three.webgpu.min.js]
+    0.49      0                                                                    build [three.webgpu.min.js]
+    0.45      0                                                                      build [three.webgpu.min.js]
+    0.45      0                                                                        build [three.webgpu.min.js]
+    0.43      0                                                                          build [three.webgpu.min.js]
+    0.29      0                                                                            build [three.webgpu.min.js]
+    0.29      0                                                                              build [three.webgpu.min.js]
+    0.29      0                                                                                build [three.webgpu.min.js]
+    0.29      0                                                                                  build [three.webgpu.min.js]
+    0.29      0                                                                                    build [three.webgpu.min.js]
+    0.29      0                                                                                      build [three.webgpu.min.js]
+    0.94      0                                            analyze [three.webgpu.min.js]
+    0.93      0                                              build [three.webgpu.min.js]
+    0.93      0                                                build [three.webgpu.min.js]
+    0.75      0                                                  build [three.webgpu.min.js]
+    0.75      0                                                    analyze [three.webgpu.min.js]
+    0.75      0                                                      build [three.webgpu.min.js]
+    0.75      0                                                        build [three.webgpu.min.js]
+    0.75      0                                                          build [three.webgpu.min.js]
+    0.75      0                                                            analyze [three.webgpu.min.js]
+    0.75      0                                                              build [three.webgpu.min.js]
+    0.75      0                                                                build [three.webgpu.min.js]
+    0.75      0                                                                  build [three.webgpu.min.js]
+    0.72      0                                                                    analyze [three.webgpu.min.js]
+    0.72      0                                                                      build [three.webgpu.min.js]
+    0.72      0                                                                        analyze [three.webgpu.min.js]
+    0.71      0                                                                          build [three.webgpu.min.js]
+    0.71      0                                                                            analyze [three.webgpu.min.js]
+    0.71      0                                                                              build [three.webgpu.min.js]
+    0.71      0                                                                                build [three.webgpu.min.js]
+    0.69      0                                                                                  build [three.webgpu.min.js]
+    0.46      0                                                                                    build [three.webgpu.min.js]
+    0.41      0                                                                                      build [three.webgpu.min.js]
+    0.38      0                                                                                        build [three.webgpu.min.js]
+    1.23      0                                      flowNode [three.webgpu.min.js]
+    1.23      0                                        flowChildNode [three.webgpu.min.js]
+    1.23      0                                          build [three.webgpu.min.js]
+     1.2      0                                            build [three.webgpu.min.js]
+    1.19      0                                              build [three.webgpu.min.js]
+    1.19      0                                                generate [three.webgpu.min.js]
+    1.17      0                                                  build [three.webgpu.min.js]
+    1.16      0                                                    build [three.webgpu.min.js]
+    0.77      0                                                      build [three.webgpu.min.js]
+    0.76      0                                                        generate [three.webgpu.min.js]
+    0.76      0                                                          build [three.webgpu.min.js]
+    0.76      0                                                            build [three.webgpu.min.js]
+    0.76      0                                                              build [three.webgpu.min.js]
+    0.76      0                                                                generate [three.webgpu.min.js]
+    0.76      0                                                                  build [three.webgpu.min.js]
+    0.76      0                                                                    build [three.webgpu.min.js]
+    0.75      0                                                                      build [three.webgpu.min.js]
+    0.66      0                                                                        generate [three.webgpu.min.js]
+    0.66      0                                                                          build [three.webgpu.min.js]
+    0.66      0                                                                            generate [three.webgpu.min.js]
+    0.66      0                                                                              build [three.webgpu.min.js]
+    0.66      0                                                                                generate [three.webgpu.min.js]
+    0.66      0                                                                                  build [three.webgpu.min.js]
+    0.66      0                                                                                    generate [three.webgpu.min.js]
+    0.66      0                                                                                      build [three.webgpu.min.js]
+    0.64      0                                                                                        build [three.webgpu.min.js]
+    0.64      0                                                                                          build [three.webgpu.min.js]
+    0.64      0                                                                                            generate [three.webgpu.min.js]
+    0.64      0                                                                                              build [three.webgpu.min.js]
+    0.63      0                                                                                                build [three.webgpu.min.js]
+    0.62      0                                                                                                  build [three.webgpu.min.js]
+    0.61      0                                                                                                    generate [three.webgpu.min.js]
+     0.6      0                                                                                                      build [three.webgpu.min.js]
+     0.6      0                                                                                                        build [three.webgpu.min.js]
+    0.57      0                                                                                                          build [three.webgpu.min.js]
+    0.37      0                                                                                                            generate [three.webgpu.min.js]
+    0.37      0                                                                                                              build [three.webgpu.min.js]
+    0.25      0                                                                                                                generate [three.webgpu.min.js]
+    0.39      0                                                      generate [three.webgpu.min.js]
+    0.38      0                                                        build [three.webgpu.min.js]
+    0.38      0                                                          build [three.webgpu.min.js]
+    0.38      0                                                            build [three.webgpu.min.js]
+    0.38      0                                                              generate [three.webgpu.min.js]
+    0.38      0                                                                build [three.webgpu.min.js]
+    0.38      0                                                                  build [three.webgpu.min.js]
+    0.37      0                                                                    build [three.webgpu.min.js]
+    0.37      0                                                                      generate [three.webgpu.min.js]
+    0.37      0                                                                        build [three.webgpu.min.js]
+    0.28      0                                                                          build [three.webgpu.min.js]
+    0.28      0                                                                            build [three.webgpu.min.js]
+    0.28      0                                                                              generate [three.webgpu.min.js]
+    0.28      0                                                                                build [three.webgpu.min.js]
+    0.69    0.5              needsRefresh [three.webgpu.min.js]
+    0.69    0.5                o.needsRefresh
+    0.69    0.5                  AnazhRealm._diaetRefresh
+     0.4   0.26                    AnazhRealm._diaetRuhig
+    0.28   0.15                      AnazhRealm._diaetObjektGang
+    0.29   0.27              o.needsRefresh
+    0.29   0.26                AnazhRealm._diaetRefresh
+    0.27   0.19                  AnazhRealm._diaetRuhig
+    3.94   2.65      _renderObjects [three.webgpu.min.js]
+    2.48   1.39        i [three.webgpu.min.js]
+    2.44   1.36          renderer.renderObject
+    2.37   1.33            renderObject [three.webgpu.min.js]
+    2.23   1.22              rend._renderObjectDirect [werkbank]
+    2.19   1.16                renderer._renderObjectDirect
+    2.06   1.03                  zeichne
+    0.98    0.7                    needsRefresh [three.webgpu.min.js]
+    0.98    0.7                      o.needsRefresh
+    0.95   0.69                        AnazhRealm._diaetRefresh
+    0.74   0.55                          AnazhRealm._diaetRuhig
+    0.61   0.44                            AnazhRealm._diaetObjektGang
+    0.27   0.21                              update [three.webgpu.min.js]
+    0.92   0.09                    updateForRender [three.webgpu.min.js]
+     0.8   0.03                      updateAttributes [three.webgpu.min.js]
+    0.79   0.03                        updateAttribute [three.webgpu.min.js]
+    0.79   0.03                          update [three.webgpu.min.js]
+    0.51   0.01                            createAttribute [three.webgpu.min.js]
+    0.51   0.01                              createAttribute [three.webgpu.min.js]
+    0.41   0.01                                P.createBuffer
+    0.41   0.01                                  createBuffer
+    1.42   1.23        renderer.renderObject
+    1.39   1.23          renderObject [three.webgpu.min.js]
+    1.35   1.18            rend._renderObjectDirect [werkbank]
+    1.31   1.16              renderer._renderObjectDirect
+    1.07   0.97                zeichne
+    0.55   0.48                  needsRefresh [three.webgpu.min.js]
+    0.53   0.48                    o.needsRefresh
+    0.51   0.48                      AnazhRealm._diaetRefresh
+    0.29   0.31                        AnazhRealm._diaetGeteiltSchreiben
+    0.32   0.28                  updateForRender [three.webgpu.min.js]
+    1.84   1.42      _projectObject [three.webgpu.min.js]
+    1.74   1.37        _projectObject [three.webgpu.min.js]
+     1.6   1.21          _projectObject [three.webgpu.min.js]
+    1.43   1.14            _projectObject [three.webgpu.min.js]
+    1.37   1.07              _projectObject [three.webgpu.min.js]
+     1.1   0.88                _projectObject [three.webgpu.min.js]
+    0.64   0.47                  _projectObject [three.webgpu.min.js]
+    0.38   0.26                    _projectObject [three.webgpu.min.js]
+    1.79   1.34      updateMatrixWorld [three.core.min.js]
+    1.76   1.29        updateMatrixWorld [three.core.min.js]
+    1.62   1.23          updateMatrixWorld [three.core.min.js]
+    1.59   1.18            updateMatrixWorld [three.core.min.js]
+     1.5    1.1              updateMatrixWorld [three.core.min.js]
+    1.26   0.94                updateMatrixWorld [three.core.min.js]
+     0.7   0.65                  updateMatrixWorld [three.core.min.js]
+    0.35    0.3                    updateMatrixWorld [three.core.min.js]
+    0.26   0.16      _renderTransparents [three.webgpu.min.js]
+    0.26   0.16        _renderObjects [three.webgpu.min.js]
+    0.26   0.16          renderer.renderObject
+    0.26   0.16            renderObject [three.webgpu.min.js]
+   10.43   3.95  _loopVoxelStreaming
+   10.42   3.95    _runFrameScheduler
+    7.06   1.06      _dispatchFrameJobs
+    7.06   1.05        run
+    6.04   0.08          _tickVoxelChunkStreaming
+    5.88   0.02            _rebuildVoxelChunk
+    5.37   0.02              _completeVoxelRebuild
+    5.35   0.02                _finalizeVoxelChunkBuild
+    3.97   0.02                  _applyCrossLodGeomorph
+     1.3   0.01                    _rebuildLodStitchBand
+    0.36      0                      _chunkSatzEin
+    0.26      0                      ecke
+    0.68      0                    _chunkSatzMarke
+    0.59      0                      _chunkSatzHuelle
+    0.64   0.01                    trefferVon
+    0.63      0                    _bodenKarteNaht
+    0.61      0                      _bodenKarteAusMesh
+    0.92      0                  _buildVoxelChunkWaterIsoSurface
+    0.92      0                    _buildVoxelChunkWaterCellSheet
+     0.9      0                      _computeWaterSheetData
+     0.3      0                  _chunkSatzEin
+    0.49      0              _acquireVoxelChunkBuild
+    0.49      0                _buildVoxelChunkDataFromWorkerMesh
+    0.42      0                  _bodenKarteNaht
+    0.37      0                    _bodenKarteAusMesh
+    0.66    0.8          _tickNahStreu
+    2.59   2.21      _tickArchitectureLOD
+    1.05   0.87        _lodTreeVisHeight
+    0.86   0.66          _foundryBaumHoehe
+    0.61    0.4            _foundryGestaltFor
+    0.46    0.3              _ortGestaltSame
+    0.82   0.95        _updateFoundryLodBand
+    0.52   0.69          _lodTreeVisHeight
+    0.42   0.51            _foundryBaumHoehe
+    0.56   0.46      _tickScatterLod
+    0.26   0.22        _scatterSichtHoehe
+    4.65   3.43  _loopWeatherAndGrowth
+    4.41   3.21    updateCreatures
+     0.9   0.51      _animateCompoundMotion
+    0.79   0.43        _animateTierBaum
+    0.52    0.2      _standSicht
+    0.46   0.16        _bodenSichtAt
+    0.42   0.31      _kreaturHuellenKontakt
+    0.35   0.25      _creatureGroundY
+    3.01      0  _loopAutoSave
+    3.01      0    saveState
+     1.9      0      buildStateSnapshot
+    1.48      0        (anonym) [stamm/speicher-welten.js:982]
+    1.26      0          _ueberGrund
+    1.18      0            _voxelSurfaceY
+    0.66      0              _terrainColumnContextIn
+    0.36      0                hoehe [gelaende-core.js]
+    0.29      0                  wildnisY [gelaende-core.js]
+    0.45      0      setItem
+    0.96   0.28  tickArchitectureCulling
+    0.28   0.08    _archKartenPreset
+    0.74    0.3  _loopRender
+    0.42   0.14    _tickChunkSatz
+    0.33      0      _tickBauSatz
+    0.28      0        _chunkSatzEin
+    0.59   0.33  _loopFixedStep
+    0.59   0.32    _stepFixedSim
+    0.37   0.18      _stepCharacter
+    0.47   0.07  _perfSenseFoldFrame
+    0.38      0    _flightRecorderTick
+    0.33      0      _flightRecorderSave
+    0.28      0        _flightRecorderBuildTrace
+    0.43   0.08  (garbage collector)
+    0.31   0.35  mark
+TÄTER (Spitze − Mitte ≥ 1 ms): _finalizeVoxelChunkBuild › _applyCrossLodGeomorph (Rest) 2.67 · 0.01 | _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest) 1.38 · 0 | zeichne › build [three.webgpu.min.js] 1.3 · 0 | _applyCrossLodGeomorph › _rebuildLodStitchBand 1.3 · 0.01 | _loopWeatherAndGrowth › updateCreatures 4.41 · 3.21 | _ueberGrund › _voxelSurfaceY 1.18 · 0 | zeichne › build [three.webgpu.min.js] 1.16 · 0 | _loopAutoSave › saveState (Rest) 1.11 · 0 | renderer._renderObjectDirect › zeichne 2.06 · 1.03
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\sturm2\roh\sturm-1-takt.json
+
+LINSE ROT:
+  Spitzen-Täter _finalizeVoxelChunkBuild › _applyCrossLodGeomorph (Rest): 2.67 ms je Takt ab p95, Mitte 0.01 ms
+  Spitzen-Täter _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest): 1.38 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter zeichne › build [three.webgpu.min.js]: 1.3 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _applyCrossLodGeomorph › _rebuildLodStitchBand: 1.3 ms je Takt ab p95, Mitte 0.01 ms
+  Spitzen-Täter _loopWeatherAndGrowth › updateCreatures: 4.41 ms je Takt ab p95, Mitte 3.21 ms
+  Spitzen-Täter _ueberGrund › _voxelSurfaceY: 1.18 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter zeichne › build [three.webgpu.min.js]: 1.16 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _loopAutoSave › saveState (Rest): 1.11 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter renderer._renderObjectDirect › zeichne: 2.06 ms je Takt ab p95, Mitte 1.03 ms
