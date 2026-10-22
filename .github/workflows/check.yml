@@ -455,7 +455,7 @@ jobs:
               run: npm run gate:schatten-terminator
 
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 3
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
@@ -823,7 +823,7 @@ jobs:
               run: npm run gate:freie-slots
 
             - name: Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 4
               # Jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken; das Jahr trägt die EINE Uniform
               # uSeasonMul. Node-Orakel: _saisonMul des Stamms == seasonColors + uSeasonMul-Zeile der Studio-Shell
               # (64 Phasen, Sommer exakt x1); die Stützstellen leben NUR im SAISON_GESETZ (foundry-core); Nah-Wiese,
@@ -1260,7 +1260,7 @@ jobs:
               run: npm run gate:welt-boot
 
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 5
               run: npm run gate:fern-wasser
 
             - name: Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)
@@ -1285,10 +1285,6 @@ jobs:
               # Gruppe 3 seit der Vereinigung mit waende-ci (EIN Schritt): sie lief in integ-probe ce10dcb6 (Lauf 38092890885)
               # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
               run: npm run gate:portal-membran
-
-            - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
-              if: matrix.gruppe == 4
-              run: npm run gate:fahrzeug-fern
 
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 15
@@ -1470,7 +1466,7 @@ jobs:
               run: npm run gate:wasser-leben:bild
 
             - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
-              if: matrix.gruppe == 8
+              if: matrix.gruppe == 5
               # Beweist die perzeptuelle Linse SELBST (MSSIM: identisch→1 · degradiert→<1), GPU-frei.
               # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
               # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.

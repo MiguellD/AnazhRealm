@@ -1,6 +1,6 @@
 {
   "quelle": "GitHub-API (s): je Schritt der Median der letzten je_schritt Läufe auf integ-probe, je Gruppe der Job-Dauer, die Vorbereitung je Job; kopf der neueste gemessene Lauf — erzeugt von scripts/ci-zeiten.cjs, gelesen von der Waage in gate:ci-deckung",
-  "erzeugt": "2026-10-21",
+  "erzeugt": "2026-10-22",
   "kopf": "b95377818bb4d3e73c3b97eb9bdb9e42a8fb047d",
   "je_schritt": 7,
   "vorbereitung_s": 17,
@@ -821,13 +821,6 @@
       "gruppe": "voll 13",
       "lauf": "npm run gate:portal-membran",
       "laeufe": ["39681952788", "39666422778", "39660149712", "39647516891", "39645926542", "39634927311", "39627539048"]
-    },
-    "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
-      "s": 2,
-      "n": 7,
-      "gruppe": "voll 11",
-      "lauf": "npm run gate:fahrzeug-fern",
-      "laeufe": ["39681952788", "39666422778", "39660149712", "39647516891", "39645926542", "39644490904", "39634927311"]
     },
     "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
       "s": 18,
