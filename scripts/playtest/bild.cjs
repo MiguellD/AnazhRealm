@@ -427,7 +427,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
         // Simuliere zwei Positionen mit verschiedenem lebendig
         const origWFA = r.worldFieldAt;
-        r.worldFieldAt = function (x, z) {
+        r.worldFieldAt = function (x) {
             if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
             return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
         };
@@ -1891,7 +1891,6 @@ async function checkBandV18264ShadowCache(ctx) {
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { err: "keine Instanz" };

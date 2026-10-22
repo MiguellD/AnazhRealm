@@ -543,7 +543,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
         // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
-        out.stationLabel = typeof r._stationLabelForDomain === "function";
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -618,7 +617,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
     check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
         "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",

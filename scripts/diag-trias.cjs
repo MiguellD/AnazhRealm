@@ -168,7 +168,6 @@ const triasStaticLaws = () => [
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
-        let dl = performance.now() + 90000;
         await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "kein anazhRealm" };

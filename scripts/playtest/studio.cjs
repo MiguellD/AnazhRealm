@@ -360,7 +360,6 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 async function checkBandKristallKleid(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();

@@ -497,12 +497,9 @@ async function gtDorfweg(v2, anker, sek) {
 // DIE WÜRFE DES FELDS WEICHEN DEM ORT (K10-6): jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
 // des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`). Bis
-// C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring (−3,−5 und −5,−3).
-// Der Zug läuft je Gang einen Takt (`_tickAutoSettlement`), bis 20 Gänge nichts unterwegs ist (Zug, Foundry, jeder Vorrat
-// fertig) und kein Export beginnt, dann
-// 150 Gänge Ruhe; gezählt
-// werden die Exporte je Zelle (`_foundryRequestSettlement`, der Same nennt sie). `einer`: der Selbsttest hält wieder EINEN Vorrat
-// zur Zeit (jeder neue verdrängt die übrigen) — so lösten die Zellen einander ab. Läuft im Browser (page.evaluate).
+// C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
+// Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Exporte
+// je Zelle. `einer`: der Selbsttest hält EINEN Vorrat zur Zeit, wie bis zum Schnitt. Läuft im Browser.
 async function vorratAmDorf(messort, einer) {
     const r = window.anazhRealm;
     const SG = r.constructor._siedlungGesetz();
@@ -512,12 +509,12 @@ async function vorratAmDorf(messort, einer) {
         const z = r._autoSettlementCellInfo(cx + (i % 5) - 2, cz + Math.floor(i / 5) - 2);
         if (z) zelle.set(z.seed, z.key);
     }
-    const [vorher, ruhe] = [{}, {}];
-    let n = vorher;
+    const e = { exporte: {}, alle: 0, nachZug: -1 };
     const req = r._foundryRequestSettlement;
     r._foundryRequestSettlement = function (dp, ...a) {
         const k = zelle.get(dp && dp.seed) || "fremd";
-        n[k] = (n[k] || 0) + 1;
+        e.exporte[k] = (e.exporte[k] || 0) + 1;
+        e.alle++;
         return req.call(this, dp, ...a);
     };
     const bereiten = r._dorfBereiten;
@@ -537,16 +534,15 @@ async function vorratAmDorf(messort, einer) {
         !r._stlWegePending &&
         !r._weltOffen().foundry &&
         [...r._dorfVorraete.values()].every((v) => v.da);
-    const summe = () => Object.values(n).reduce((s, x) => s + x, 0);
     let gaenge = 0;
     try {
         for (let still = 0; still < 20 && gaenge < 600; gaenge++) {
-            const vor = summe();
+            const vor = e.alle;
             r._tickAutoSettlement(pm);
-            still = leer() && summe() === vor ? still + 1 : 0;
+            still = leer() && e.alle === vor ? still + 1 : 0;
             await new Promise((ok) => setTimeout(ok, 20));
         }
-        n = ruhe;
+        e.nachZug = -e.alle;
         for (let g = 0; g < 150; g++) {
             r._tickAutoSettlement(pm);
             await new Promise((ok) => setTimeout(ok, 20));
@@ -556,7 +552,7 @@ async function vorratAmDorf(messort, einer) {
         delete r._dorfBereiten;
         window.__anazhAutoSettlement = hook0;
     }
-    return { vorher, ruhe, gaenge, offen: r._weltOffen().foundry };
+    return Object.assign(e, { nachZug: e.nachZug + e.alle, gaenge, offen: r._weltOffen().foundry });
 }
 
 // K10-6 stand die Feuerstelle als Bau: lag eine im Grundriss des Orts 80 m weit, wählte das Spiel den Ort 96 m weit — die Wahl
@@ -2885,16 +2881,12 @@ const FIXTURES = [
     );
     const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
     check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", rang, z5);
-    const mehrfach = (e) =>
-        [...new Set([...Object.keys(e.vorher), ...Object.keys(e.ruhe)])]
-            .map((k) => [k, (e.vorher[k] || 0) + (e.ruhe[k] || 0)])
-            .filter(([, x]) => x > 1)
-            .map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
-    const ruht = (e) => !Object.keys(e.ruhe).length && e.offen === 0;
+    const mehrfach = (e) => Object.entries(e.exporte).filter(([, x]) => x > 1).map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
+    const ruht = (e) => !e.nachZug && !e.offen;
     check(
         "C-K5b: EIN VORRAT JE ZELLE — am Mess-Ort dorf bereiten sich zwei Zellen vor, jede mit höchstens EINEM Export",
-        Object.keys(K5b.vorher).length >= 2 && !mehrfach(K5b).length,
-        JSON.stringify(K5b) + " " + mehrfach(K5b).join(" · ")
+        Object.keys(K5b.exporte).length >= 2 && !mehrfach(K5b).length,
+        JSON.stringify(K5b)
     );
     check("C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen", ruht(K5b), JSON.stringify(K5b));
     check(
