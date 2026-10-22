@@ -660,9 +660,11 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
-    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich.
+    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich — ein neuer Block derselben Kachel tritt in den stehenden
+    // Bereich (er legt nur die geänderten Slots, `_streuNahSatz`).
     _streuNahEin(a, kachelKey, matrizen, farben, ids) {
-        if (a.bloecke.has(kachelKey)) this._streuNahAus(a, kachelKey);
+        const alt = a.bloecke.get(kachelKey);
+        if (alt) a.anzahl -= alt.n;
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
@@ -684,42 +686,47 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage
-    // (`_satzBlock`), je Pflanze eine Zelle; ein leerer Block verlässt den Satz.
+    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage, je Pflanze
+    // eine Zelle; ein leerer Block verlässt den Satz. DER EINE LEGER DER STOFF-SÄTZE (Lehre 25, stadt-takt): der Block legt
+    // über den Bau-Satz (`_bauSatzLege`, die Senke ist seine Gruppe) — steht sein Bereich, legen nur die Slots, deren Stempel
+    // (Matrix, Farbe) sich änderten (`_bauSatzSlots`); vorher legte jede Ernte und jeder Neubau der Kachel den ganzen Block.
     _streuNahSatz(a, kachelKey, b) {
         const key = a.key + "@" + kachelKey;
         if (!b || b.n === 0) {
             this._chunkSatzAus(a.satz, key);
             return;
         }
-        const span = this._voxelChunkConfig().span;
-        const attr = this.state.satzStoffe.get(a.satz).attr;
-        this._chunkSatzEin(
-            a.satz,
-            key,
-            this._satzBlock(a.geo, b.matrizen, b.farben, b.n, attr, a.name + "@" + kachelKey),
-            Math.floor(b.matrizen[12] / span) + "," + Math.floor(b.matrizen[14] / span)
-        );
+        const g = {
+            geom: a.geo,
+            satz: a.satz,
+            key: a.name + "@" + kachelKey,
+            liveCount: b.n,
+            mesh: {
+                material: a.geo,
+                instanceMatrix: { array: b.matrizen },
+                instanceColor: b.farben && { array: b.farben },
+            },
+        };
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(a.satz) : null;
+        this._bauSatzLege(key, a.satz, g, s ? s.bloecke.get(key) : null, Infinity);
     }
 
-    // Die Ernte: n Pflanzen ab Block-Index i treten aus dem Block der Kachel aus — der Block schrumpft, sein Bereich legt
-    // sich neu (eine geerntete Pflanze zeichnet nie). Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
-    _streuNahLuecke(a, kachelKey, i, n) {
+    // Die Ernte: die Pflanze am Block-Index i tritt aus dem Block der Kachel aus — die letzte rückt an ihren Platz, der Block
+    // schrumpft um eine (eine geerntete Pflanze zeichnet nie), der Bereich legt den einen Slot neu und gibt den letzten frei.
+    // Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
+    _streuNahLuecke(a, kachelKey, i) {
         const b = a.bloecke.get(kachelKey);
-        const rest = b.n - n;
-        const m = new Float32Array(rest * 16);
-        m.set(b.matrizen.subarray(0, i * 16));
-        m.set(b.matrizen.subarray((i + n) * 16), i * 16);
-        b.matrizen = m;
+        const z = b.n - 1;
+        b.matrizen.copyWithin(i * 16, z * 16, z * 16 + 16);
+        b.matrizen = b.matrizen.subarray(0, z * 16);
         if (b.farben) {
-            const f = new Float32Array(rest * 3);
-            f.set(b.farben.subarray(0, i * 3));
-            f.set(b.farben.subarray((i + n) * 3), i * 3);
-            b.farben = f;
+            b.farben.copyWithin(i * 3, z * 3, z * 3 + 3);
+            b.farben = b.farben.subarray(0, z * 3);
         }
-        b.ids.splice(i, n);
-        b.n = rest;
-        a.anzahl -= n;
+        b.ids[i] = b.ids[z];
+        b.ids.length = z;
+        b.n = z;
+        a.anzahl -= 1;
         this._streuNahSatz(a, kachelKey, b);
     }
 
@@ -1076,7 +1083,7 @@ class AnazhRealm_vegetation_wiese {
             const b = s ? s.bloecke.get(pick.key) : null;
             const i = b ? b.ids.indexOf(pick.id) : -1;
             if (i < 0) continue;
-            this._streuNahLuecke(s, pick.key, i, 1);
+            this._streuNahLuecke(s, pick.key, i);
         }
         const got = this.addMaterialToInventory(a.ernte, 1);
         this.log(

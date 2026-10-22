@@ -693,7 +693,6 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
