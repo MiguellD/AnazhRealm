@@ -7,7 +7,6 @@
 //   (V) VORBEREITUNG  die ersten Schritte sind checkout · setup-node · System-Libs · npm ci, ohne Gruppe (jede Gruppe
 //                braucht sie); fail-fast aus (jede Gruppe meldet ganz); der Deckel je Gruppe höchstens 45 min
 //   (D) DOPPELT  kein Gate-Schritt (sein run-Befehl) und kein Schritt-Name steht zweimal in der CI (alle Jobs)
-//   (Z) VERGLEICH  `--gegen <git-ref>`: die Gate-Schritte (run-Befehle) an <ref> gegen die jetzigen — keiner verloren, keiner doppelt
 //
 // DIE GEGENRICHTUNG (09.10.; Befund: 50 von 152 `gate:*` liefen nirgends automatisch) — die Wand liest beide Richtungen:
 //   (W) WAND     jedes `gate:*` aus package.json und jeder Teil von `npm run check` läuft in einem Workflow (`npm run` bis auf die
@@ -15,6 +14,8 @@
 //   (A) AUSNAHME  je Eintrag eine Klasse aus KLASSEN und ein Grund; die Liste ist selbst geprüft: ein Eintrag, dessen
 //                Wand es nicht mehr gibt oder die schon in der CI läuft, ist ROT (keine stale Allow-Liste)
 //   (R) REDUNDANT  kein Schritt eines Workflows fährt nur Befehle, die ein anderer Schritt derselben Datei schon fährt
+//   (F) FEHLT     jedes `npm run [-s] X` eines Schritts oder Skripts hat das Skript X in package.json (22.10.: ein Merge nahm
+//                den Schritt eines gefallenen Gates zurück, Gruppe 4 rot in 0 s)
 //
 // DER ABGESCHALTETE SCHRITT (10.10.; Befund: `|| true`, continue-on-error und der nächtliche Job zählten als Deckung) —
 // gedeckt ist eine Wand nur, wenn ihr Rot den MERGE hält:
@@ -50,7 +51,7 @@
 //                sein Rot hält den Merge, das Verdikt ist die Bedingung: der letzte Befehl greift „Alle Invarianten OK" aus dem
 //                `tee`-Log (ein grüner Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet er mit 0 trotz verletzter Invarianten).
 //
-//   node scripts/diag-ci-deckung.cjs [--selftest] [--gegen <git-ref>]     (npm run gate:ci-deckung; in npm run check)
+//   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -263,7 +264,7 @@ function befehle(text, shell = shellArt(null)) {
     });
     return out;
 }
-const NPM_RUN = /^npm run ([\w:.@/-]+)$/;
+const NPM_RUN = /^npm run (?:(?:-s|--silent) )?([\w:.@/-]+)$/;
 // Löst `npm run X` bis auf die Befehle auf (je Befehl `{ t, stumm }`; ein stummer Aufruf vererbt seinen Grund, ein
 // Skript läuft unter `sh -c`). Jedes erreichte Skript landet in `erreicht` (Name → Grund oder null, null gewinnt).
 function aufloesen(text, skripte, erreicht = new Map(), tiefe = 0, shell = shellArt(null), erbe = null) {
@@ -344,6 +345,15 @@ function deckung(skripte, docs, ausnahmen) {
         for (const t of s.teile) (t.stumm ? merke(t.t, s, t.stumm) : gefahren.add(t.t));
         for (const [n, g] of s.erreicht) (g ? merke("npm run " + n, s, g) : gerufen.add(n));
     }
+    // (F) jedes `npm run X` eines Schritts oder Skripts braucht das Skript X (npm bricht sonst in 0 s, kein Gate lief)
+    const fehlt = (text, wer) => {
+        for (const b of befehle(text)) {
+            const m = NPM_RUN.exec(b.t);
+            if (m && typeof skripte[m[1]] !== "string") v.push(`(F) FEHLT: ${wer} ruft „${b.t}" — package.json kennt es nicht`);
+        }
+    };
+    for (const s of schritte) fehlt(s.schritt.run, `„${s.name}" (${s.datei}/${s.job})`);
+    for (const [n, t] of Object.entries(skripte)) fehlt(t, `das Skript „${n}"`);
     const W = waende(skripte);
     const inSich = (teile) => teile.filter((t) => t.stumm);
     const laeuft = (n, teile) =>
@@ -838,32 +848,6 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll, alt };
 }
 
-// (Z) die Gate-Schritte zweier Stände: was fehlt nachher, was steht nachher öfter als vorher
-// (ein Schritt, dessen Befehle nachher ein anderer Schritt fährt — z. B. in `npm run check` gewandert — ist nicht verloren)
-function vergleich(vorher, nachher, skripte = {}) {
-    const zahl = (doc) => {
-        const m = new Map();
-        for (const s of gateSchritte(doc)) m.set(s.run, (m.get(s.run) || 0) + 1);
-        return m;
-    };
-    const a = zahl(vorher),
-        b = zahl(nachher);
-    // (Z) ist der Bau-Vergleich der Schritte; ob ein Schritt sein Rot hält, urteilt (W)/(S)
-    const gefahren = new Set(ciSchritte({ nachher }, skripte).flatMap((s) => s.teile.map((t) => t.t)));
-    const verloren = [...a]
-        .filter(([r, n]) => (b.get(r) || 0) < n && !aufloesen(r, skripte).every((t) => gefahren.has(t.t)))
-        .map(([r]) => r);
-    const doppelt = [...b].filter(([r, n]) => n > Math.max(1, a.get(r) || 0)).map(([r]) => r);
-    const neu = [...b].filter(([r]) => !a.has(r)).map(([r]) => r);
-    return {
-        vorher: [...a.values()].reduce((x, y) => x + y, 0),
-        nachher: [...b.values()].reduce((x, y) => x + y, 0),
-        verloren,
-        doppelt,
-        neu,
-    };
-}
-
 // Fixture-Bausteine (K61): der Kopf-Richter in seiner Form, ein Cache-Schritt
 const kopfJob = () => ({
     if: VOLL_WENN,
@@ -1021,18 +1005,6 @@ function selbsttest() {
             },
         },
     });
-    const vorher = {
-        jobs: {
-            check: { steps: [{ name: "Lint", run: "npm run lint" }] },
-            playtest: {
-                steps: prep().concat([
-                    { name: "A", run: "npm run gate:a" },
-                    { name: "B", run: "npm run gate:b" },
-                    { name: "C", run: "npm run gate:c" },
-                ]),
-            },
-        },
-    };
     const V = (d) => d.jobs.voll;
     const faelle = [
         ["ohne Gruppe (er liefe N-fach)", (d) => delete V(d).steps[5].if, /\(G\) N-FACH: „B"/],
@@ -1133,33 +1105,6 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
         if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
     }
-    // (Z) vorher ein Job, nachher die Gruppen: gleich; ein Schritt fällt bei der Teilung, einer doppelt
-    const z0 = vergleich(vorher, gut());
-    if (z0.verloren.length || z0.doppelt.length) f.push("(Z) die gute Teilung meldet " + JSON.stringify(z0));
-    const weg = gut();
-    V(weg).steps.splice(6, 1);
-    const z1 = vergleich(vorher, weg);
-    const ok1 = z1.verloren.length === 1 && z1.verloren[0] === "npm run gate:c";
-    console.log(
-        `  ${ok1 ? "✅" : "❌"} Selbsttest „bei der Teilung verloren" → verloren ${JSON.stringify(z1.verloren)}`
-    );
-    if (!ok1) f.push("(Z) ein bei der Teilung verlorener Schritt steht nicht beim Namen");
-    const zwei = gut();
-    V(zwei).steps.push({ name: "C2", if: "matrix.gruppe == 2", run: "npm run gate:c" });
-    const z2 = vergleich(vorher, zwei);
-    const ok2 = z2.doppelt.length === 1 && z2.doppelt[0] === "npm run gate:c";
-    console.log(`  ${ok2 ? "✅" : "❌"} Selbsttest „bei der Teilung doppelt" → doppelt ${JSON.stringify(z2.doppelt)}`);
-    if (!ok2) f.push("(Z) ein bei der Teilung verdoppelter Schritt steht nicht beim Namen");
-    const z3 = vergleich(
-        { jobs: { check: { steps: [{ name: "Q", run: "npm run gate:q" }] } } },
-        { jobs: { check: { steps: [{ name: "Statik", run: "npm run check" }] } } },
-        { check: "node scripts/q.cjs", "gate:q": "node scripts/q.cjs" }
-    );
-    const ok3 = z3.verloren.length === 0;
-    console.log(
-        `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
-    );
-    if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
     // (F) am Täter: die echte check.yml mit dem Schritt vom 22.10. gegen das echte package.json
     const wf = workflowsLesen();
     wf[path.basename(DATEI)].jobs[VOLL_JOB].steps.push({ name: "Fernstufe", if: "matrix.gruppe == 4", run: "npm run gate:fahrzeug-fern" });
@@ -1412,12 +1357,8 @@ function selbsttestGegenrichtung() {
             /\(S\) STUMM IN SICH: „check: node --check a\.js" .*ohne errexit/,
         ],
         // (F) DAS GEFALLENE SKRIPT (22.10.: der Merge nahm den Schritt Fahrzeug-Fernstufe zurück, sein Skript war gefallen —
-        // Gruppe 4 rot in 0 s, 39696450043): Schritt UND Skript, auch hinter -s und mitten in einer &&-Kette
-        [
-            "ein Schritt ruft ein gefallenes Skript",
-            (s, d) => d["check.yml"].jobs.check.steps.push({ name: "Fernstufe", run: "npm run gate:fahrzeug-fern" }),
-            /\(F\) FEHLT: „Fernstufe" \(check\.yml\/check\) ruft „npm run gate:fahrzeug-fern" — package\.json kennt es nicht/,
-        ],
+        // Gruppe 4 rot in 0 s, 39696450043; der Schritt selbst am Ende von selbsttest() an der echten check.yml): Skript,
+        // hinter -s und mitten in einer &&-Kette
         [
             "npm run -s mitten in einer &&-Kette",
             (s, d) => (C(d).run = "npm run -s gate:weg && npm run gate:c"),
@@ -1556,15 +1497,6 @@ const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
 const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
 const v = urteil(doc);
 v.push(...klassenUrteil(doc, skripte));
-const i = process.argv.indexOf("--gegen");
-let z = null;
-if (i > 0) {
-    const ref = process.argv[i + 1];
-    const alt = yaml.load(execSync(`git show ${ref}:${DATEI}`, { cwd: root, maxBuffer: 1 << 26 }).toString());
-    z = vergleich(alt, doc, skripte);
-    for (const r of z.verloren) v.push(`(Z) VERLOREN gegen ${ref}: „${r.split("\n")[0]}"`);
-    for (const r of z.doppelt) v.push(`(Z) DOPPELT gegen ${ref}: „${r.split("\n")[0]}"`);
-}
 const alleWorkflows = workflowsLesen();
 const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
 v.push(...g.v);
@@ -1594,14 +1526,10 @@ if (w.wanduhr)
     console.log(
         `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg, benannt, sperrt nie): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
     );
-if (z)
-    console.log(
-        `  gegen ${process.argv[i + 1]}: vorher ${z.vorher}, nachher ${z.nachher}, verloren ${z.verloren.length}, doppelt ${z.doppelt.length}, neu ${z.neu.length}`
-    );
 if (v.length) {
     console.error("\n❌ ROT:\n  " + v.join("\n  "));
     process.exit(1);
 }
 console.log(
-    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt im Plan unter ihrem Deckel (Puls 2 min, Voll das Mittel ihrer Klasse + ${minuten(RAND_S)} min; ein Schritt darüber allein), die Zeit-Quelle ist nicht älter als ihre Läufe, ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in einer Voll-Gruppe am Verdikt.`
+    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt im Plan unter ihrem Deckel (Puls 2 min, Voll das Mittel ihrer Klasse + ${minuten(RAND_S)} min; ein Schritt darüber allein), die Zeit-Quelle ist nicht älter als ihre Läufe, ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich, jedes npm run X hat sein Skript, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in einer Voll-Gruppe am Verdikt.`
 );
