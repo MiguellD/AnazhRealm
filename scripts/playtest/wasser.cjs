@@ -13,45 +13,6 @@ async function checkBandHydrosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Wasserfälle aus dem Hydrosphären-Netz ###
-    // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
-    // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
-    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. Das Wasserfall-Material ohne Leser
-    // (`_ensureWaterfallMaterial`, nur Tests riefen es) ist mit der Welle L gefallen (W-kD11).
-    const voxelV943cAblation = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        return {
-            buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
-            disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
-            ensureNoHook: window.__fehlt(r._ensureVoxelChunkAt, /_buildVoxelChunkWaterfalls/),
-            disposeNoHook: window.__fehlt(r._disposeVoxelChunk, /_disposeVoxelChunkWaterfalls/),
-            stateMapGone: !("voxelChunkWaterfalls" in r.state),
-            materialKept: typeof r._ensureWaterfallMaterial === "undefined" && !("waterfallUniforms" in r.state),
-        };
-    });
-
-    if (voxelV943cAblation && !voxelV943cAblation.error) {
-        check(
-            "Voxel V9.43-c: _buildVoxelChunkWaterfalls ist gelöscht (per-Chunk-Spawner abgelöst)",
-            voxelV943cAblation.buildGone
-        );
-        check("Voxel V9.43-c: _disposeVoxelChunkWaterfalls ist gelöscht", voxelV943cAblation.disposeGone);
-        check(
-            "Voxel V9.43-c: _ensureVoxelChunkAt hookt den Wasserfall-Spawner nicht mehr",
-            voxelV943cAblation.ensureNoHook
-        );
-        check(
-            "Voxel V9.43-c: _disposeVoxelChunk hookt den Wasserfall-Spawner nicht mehr",
-            voxelV943cAblation.disposeNoHook
-        );
-        check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
-        check(
-            "Voxel V9.43-c → Welle L: das Wasserfall-Material ohne Leser ist gefallen (kein _ensureWaterfallMaterial, keine waterfallUniforms)",
-            voxelV943cAblation.materialKept
-        );
-    }
-
     // ### Die Kachel-Erosion ist gefallen (K16) ###
     // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
     // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.

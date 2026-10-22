@@ -78,12 +78,6 @@ async function checkBandV1757HeldSlot(ctx) {
         const snap = r.buildStateSnapshot();
         out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
 
-        // (8) UI: kein Rollen-Schloss — der gehaltene Bauplan geht durch den EINEN merged Pfad (wieldBlueprint),
-        // keine getrennte Waffen-Zeile. V18.66 Ich-J2: der „In der Hand"-DROPDOWN ist geschnitten (Parallel-Pfad
-        // zur Hotbar); das Wechseln läuft in der Hand (Hotbar) + Rezeptbuch (wieldBlueprint). Test wandert mit.
-        out.heldDropdownCut = typeof r._equipAppendHeldRow !== "function";
-        out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
-
         // cleanup
         r.equipHeld(null);
         delete r.state.blueprints[wName];
@@ -112,10 +106,6 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldDrivesHarvest
     );
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
-    check(
-        "V18.66 Ich-J2: kein Rollen-Schloss — keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
-        res.noWeaponRow && res.heldDropdownCut
-    );
 }
 
 // V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
@@ -555,10 +545,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
         out.stationLabel = typeof r._stationLabelForDomain === "function";
 
-        // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
-        // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
-        out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
-
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
         // (forging-Domain). ===
@@ -633,10 +619,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         return out;
     });
     check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
-    check(
-        "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
-        res.oldButtonsGone
-    );
     check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
         "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
@@ -1233,23 +1215,11 @@ async function checkBandWelle6DSoul(ctx) {
         const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
         out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-        // (3) Die Avatar-Aura ist gefallen: Probe auf ABWESENHEIT (Tick, Haut-Shells, Hue-Map,
-        // Loop-Aufruf, p2p-Senden). Der p2p-Empfangs-Stub bleibt must-ignore-tolerant (Alt-Peers senden
-        // aura weiter).
+        // (3) Die Avatar-Aura ist gefallen (ihre Namen bewacht gate:altlasten): eine aura-Nachricht eines Alt-Peers ist
+        // ein UNBEKANNTER Typ, der Dispatcher verwirft sie still (kein Crash, kein Handler, kein State).
         r.applyPlayerSoul("human");
-        const sub = r.state.playerMesh.children[0];
-        out.subMeshExists = !!sub && !!sub.material;
-        out.auraTickGone = typeof r.tickPlayerAura !== "function";
-        out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
-        out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
-        out.auraLoopGone = window.__fehlt(r.startEternalLoop, /tickPlayerAura/);
-        out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
-        // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
-        // Nachricht ist ein UNBEKANNTER Typ und wird vom Dispatcher generisch
-        // still verworfen (kein Crash, kein Handler, kein State).
         out.auraStubTolerant = (() => {
             try {
-                if (typeof r._p2pMsgAura === "function") return false;
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
             } catch (_e) {
@@ -1427,12 +1397,6 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
         check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
-        // (3) SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN (das Band wandert, V9.56-i):
-        check("Reflex 3 SYNERGIE: tickPlayerAura ist PHYSISCH raus", reflexResults.auraTickGone);
-        check("Reflex 3 SYNERGIE: die Fresnel-Haut-Shells sind PHYSISCH raus", reflexResults.auraShellsGone);
-        check("Reflex 3 SYNERGIE: AURA_TAG_HUE-Map ist gefallen", reflexResults.auraMapGone);
-        check("Reflex 3 SYNERGIE: der Loop ruft keine Aura mehr", reflexResults.auraLoopGone);
-        check("Reflex 3 SYNERGIE: die p2p-Sende-Seite ist gefallen", reflexResults.auraSendGone);
         check(
             "Reflex 3 (NULL): aura ist dem Dispatcher unbekannt und wird still verworfen",
             reflexResults.auraStubTolerant
@@ -1608,9 +1572,6 @@ async function checkBandWelle6DSoul(ctx) {
             snap.playerEquipped.held === "test_armor_eisen";
         r.equipHeld(null);
 
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: kein Tick, kein Tint (V9.56-i).
-        out.auraSubMeshTinted = typeof r.tickPlayerAura !== "function";
-
         // Cleanup
         r.equipArmor(null);
         r.equipTool(null);
@@ -1668,10 +1629,6 @@ async function checkBandWelle6DSoul(ctx) {
         check(
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
-        );
-        check(
-            "Welle 6.D 3b/SYNERGIE: der Aura-Tint ist mit der Avatar-Aura gefallen (kein Tick mehr)",
-            wave6d3bResults.auraSubMeshTinted
         );
     } else if (wave6d3bResults && wave6d3bResults.error) {
         check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
@@ -2448,8 +2405,6 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
-        out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
         // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
         // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
         // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
@@ -2848,12 +2803,6 @@ async function checkBandPhasenBF(ctx) {
         // if-else-Handler); behavioral: „liste welten“ läuft durch die Tabelle; KONSUM: chatSuggest liest
         // BEIDE Tabellen (der Tippfehler „speichre zustand“ bekommt den System-Vorschlag).
         out.e1OneGate = (() => {
-            const oldHandlersGone =
-                typeof r._chatTryWorldCommand !== "function" &&
-                typeof r._chatTrySystemCommand !== "function" &&
-                typeof r._chatTryAbilityCommand !== "function" &&
-                typeof r._chatTryPersistenceCommand !== "function";
-            if (!oldHandlersGone) return "alte if-else-Handler leben noch";
             const pLw = r.chatSystemPatterns.find((q) => q.re.test("liste welten"));
             if (!pLw) return "Tabelle trägt liste welten nicht";
             const out0 = document.getElementById("chat-output");
@@ -3019,7 +2968,6 @@ async function checkBandPhasenBF(ctx) {
         return;
     }
     check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
-    check("C6/SYNERGIE: die Avatar-Aura (Tick + Haut-Shells) ist PHYSISCH gefallen", res.c6Src);
     check(
         "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
