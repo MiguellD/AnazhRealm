@@ -176,7 +176,7 @@ function urteil(b) {
         if (!AD) v.push("A LEER: der geparkte Wagen wurde nicht neu gestempelt");
         else if (AD.nass || AD.invalidierungen > 0)
             v.push(
-                `A: der geparkte Wagen in ${m(AD.tiefe)} m Wasser ist ein Damm — sein Zell-Stempel verdrängt Wasser und weckt den Automaten (${AD.invalidierungen} Invalidierungen, ${AD.caChunks} Chunks wach)`
+                `A: der geparkte Wagen in ${m(AD.tiefe)} m Wasser ist ein Damm — sein Zell-Stempel verdrängt Wasser und weckt den Automaten (${AD.invalidierungen} Invalidierungen, ${AD.caChunks} Chunks wach${AD.wer ? ", Rufer " + AD.wer : ""})`
             );
         const AL = AN.land;
         if (!AL || !(Math.abs(AL.fussUeberBoden) <= S.aussteigBoden))
@@ -1004,6 +1004,7 @@ async function probe(A) {
                 const invAltA = r._invalidateWaterCapsAround;
                 r._invalidateWaterCapsAround = function () {
                     invA.n++;
+                    invA.wer = new Error().stack.split("\n")[2].trim().split(" ")[1]; // der Rufer beim Namen
                     return invAltA.apply(this, arguments);
                 };
                 try {
@@ -1024,6 +1025,7 @@ async function probe(A) {
                     r._invalidateWaterCapsAround = invAltA;
                 }
                 ansaug.damm = {
+                    wer: invA.wer || null,
                     invalidierungen: invA.n,
                     nass: !!gt._stempelNass,
                     caChunks: st.waterCAActive ? st.waterCAActive.size : 0,
@@ -2129,8 +2131,8 @@ function selbsttest() {
         ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
         [
             "A der geparkte Wagen ist ein Damm (der Kopf c5e8fa44)",
-            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14 }),
-            /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach/,
+            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }),
+            /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach, Rufer AnazhRealm\._stamp/,
         ],
         ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
