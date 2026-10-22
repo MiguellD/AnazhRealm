@@ -65,12 +65,13 @@
 //   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|aus] [--json datei] | takt --auswerten <x.roh.json>
 //                                                           DIE TAKT-SPITZE des Gehens je Methode (scripts/lib/haenger-
 //                                                           linse.cjs); Exit 1 bei einem Spitzen-Täter
-//   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
+//   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten] [--sim s]
 //                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
 //                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
 //                                                           arbeiten — Einheiten, Zeit je Takt, Welt-Matrizen je Frame —
 //                                                           im echten Loop, Folge B A A B (A = die Wache gebrochen;
-//                                                           scripts/lib/stand-linse.cjs); Urteil: Ruhe 0 Einheiten
+//                                                           scripts/lib/stand-linse.cjs), danach `--sim` s (60) die
+//                                                           langsamen Simulationen (feld.K3); Urteil: Ruhe 0 Einheiten
 //   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
 //                                                           [--ein s] [--regler voll]
 //                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
@@ -2428,6 +2429,7 @@ async function starte() {
                         ruhe: b.ruhe != null ? Number(b.ruhe) : 120,
                         regler: b.regler || "voll",
                         tiere: b.tiere || "frei",
+                        sim: b.sim != null ? Number(b.sim) : 60,
                     });
                     return send(
                         Object.assign(o, {
@@ -3574,6 +3576,7 @@ async function starte() {
             ruhe: opt("--ruhe"),
             regler: opt("--regler", "voll"),
             tiere: opt("--tiere", "frei"),
+            sim: opt("--sim"),
         });
     else if (cmd === "sicht")
         o = await rufe("/sicht", {

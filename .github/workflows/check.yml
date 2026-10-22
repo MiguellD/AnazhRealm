@@ -728,7 +728,9 @@ jobs:
               # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse
               # zählt je Frame die Blatt-Rufe der Fege-Takte (Ring, Stufen-Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum).
               # In Ruhe 0 Einheiten; mit gebrochener Wache arbeitet jeder Takt und keiner ändert die Welt (nichts verschlafen);
-              # ein Baum und ein Regler-Schritt wecken, Gehen arbeitet, ein Sprung baut den Spieler-Chunk. --selftest zuerst.
+              # ein Baum und ein Regler-Schritt wecken, Gehen arbeitet, ein Sprung baut den Spieler-Chunk. Die langsamen
+              # Simulationen (feld.K3: Wasser, Regen, Saison, Nachwuchs, Wuchs, Feld) arbeiten in 60 s Ruhe 0 Einheiten und
+              # schlafen nach ihrem Ereignis wieder. --selftest zuerst.
               run: npm run gate:stand-takt
 
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
