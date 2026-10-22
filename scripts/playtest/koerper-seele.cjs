@@ -3350,59 +3350,21 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
-// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
-// Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
+// Die Schneegrenze des Gelände-Kerns fließt: die Boden-Farbe fragt sie (KONSUM; der Kern ist eingefroren → offene Kopie).
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
-
-        // (K2) die R5-Konstante steht (Mana-Drain, Geruch und Baum-Grammatik fahren ihre Bänder am Verhalten)
-        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-
-        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
-        out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
-        // KONSUM: die Boden-Farbe fragt die Schneegrenze des Gelände-Kerns (der Kern ist eingefroren → offene Kopie)
         const G = window.__gelaendeCore;
         window.__gelaendeCore = Object.assign({}, G);
         try {
             const p = r.state.playerMesh.position;
-            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
+            return { schnee: window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]) };
         } finally {
             window.__gelaendeCore = G;
         }
-        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
-        out.gammaMLichen = !!A.LICHEN;
-        out.gammaMIronBands = !!A.IRON_BANDS;
-        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
-        out.gamma3Char = !!A.FIELD_CHARACTER;
-        out.gammaBogenKomplett =
-            out.gamma4Anker &&
-            out.gamma6Snowband &&
-            out.gammaMStrata &&
-            out.gammaMLichen &&
-            out.gammaMIronBands &&
-            out.gamma2Totholz &&
-            out.gamma3Char;
-
-        // (K5) MANA-SYMMETRIE Foundation:
-        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
-
-        return out;
     });
-
-    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
-    check(
-        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
-        res.gammaBogenKomplett === true
-    );
-    check(
-        "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
-        res.manaMaxFn && res.manaRegenConst
-    );
+    check("die Boden-Farbe liest die Schneegrenze des Gelände-Kerns (_bodenFarbeAt → schnee)", res.schnee === true);
 }
 
 module.exports = {

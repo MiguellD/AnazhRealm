@@ -1194,10 +1194,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            // Methoden
-                // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
-            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
-        
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
             const modeBar = document.getElementById("workshop-mode-bar");

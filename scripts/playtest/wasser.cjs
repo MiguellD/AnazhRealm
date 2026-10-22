@@ -583,7 +583,6 @@ async function checkBandWelleC1WaterCells(ctx) {
         const out = {};
         // 1) Konstante CELL_STATE
         const STATE = r.constructor.CELL_STATE;
-        out.hasCellState = !!STATE;
         out.cellStateAir = STATE && STATE.AIR;
         out.cellStateWater = STATE && STATE.WATER;
         out.cellStateSolid = STATE && STATE.SOLID;
@@ -709,7 +708,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         check("Welle C.1 V9.71: Cell-Feld-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.1 V9.71: CELL_STATE existiert + ist freezed", res.hasCellState && res.cellStateFrozen);
+    check("Welle C.1 V9.71: CELL_STATE ist freezed", res.cellStateFrozen === true);
     check(
         "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
         res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
