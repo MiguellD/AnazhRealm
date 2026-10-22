@@ -360,10 +360,10 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
-    // S6t — DER TON DER STUFE (S8): das Haus L2/L0 0,946 (Radeon 22.10.) → ROT beim Namen; gleich (S1) → GRÜN
+    // S6t — DER TON DER STUFE (S8, Radeon 22.10.): Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
     const m6t = messungZumTest(T0);
     m6t.welt["haus-l2"].Y = 0.1892;
-    t("Stufen-Ton: Haus L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
+    t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
@@ -597,7 +597,7 @@ async function main() {
             karten: m.karten,
             eichung: { welt: g.eichung.welt, labor: m.eichung.labor },
         });
-        if (nur) for (const z of t.zeilen) if (!nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
+        if (nur) for (const z of t.zeilen) if (!nur.includes((z.labor || {}).studio)) mm.labor[z.id] = g.labor[z.id];
         const u = AT.tafelUrteil(t, mm);
         if (nur) {
             u.karten = u.karten.filter((k) => nur.includes(k.studio));

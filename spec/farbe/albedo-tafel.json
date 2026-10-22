@@ -517,22 +517,7 @@
         {
             "id": "haus-l1",
             "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus), das Labor dasselbe",
-            "labor": {
-                "studio": "fachwerk",
-                "aktion": [
-                    {
-                        "waehle": "#pK",
-                        "wert": "alemannisch"
-                    },
-                    {
-                        "klick": "#pTerrain"
-                    }
-                ],
-                "stoff": {
-                    "seh": "stoff"
-                }
-            },
+            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus, auch deren Labor)",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -567,22 +552,7 @@
         {
             "id": "haus-l2",
             "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus), das Labor dasselbe",
-            "labor": {
-                "studio": "fachwerk",
-                "aktion": [
-                    {
-                        "waehle": "#pK",
-                        "wert": "alemannisch"
-                    },
-                    {
-                        "klick": "#pTerrain"
-                    }
-                ],
-                "stoff": {
-                    "seh": "stoff"
-                }
-            },
+            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus, auch deren Labor)",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",

@@ -106,7 +106,7 @@ function tafelPruefen(t) {
         ids.add(z.id);
         if (!PFLICHT_GRUPPEN.includes(z.gruppe)) f.push(`${z.id}: gruppe ${z.gruppe} ist keine der acht Klassen`);
         const L = z.labor || {};
-        if (!STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
+        if (!STUDIOS[L.studio] && !(z.welt || {}).stufeVon) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
@@ -213,7 +213,7 @@ function tafelUrteil(t, messung) {
     for (const [s, y] of Object.entries(eich.labor || {}))
         if (!eichOk(y)) rot.push({ art: "eichung", text: `Labor-Karte ${s} liest ${y} statt ${t.karte.albedo}` });
     for (const z of t.zeilen) {
-        const L = messung.labor && messung.labor[z.id];
+        const L = messung.labor && messung.labor[z.labor ? z.id : z.welt.stufeVon];
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
         if (!L || !zahl(L.Y) || !(L.Y > 0))
@@ -236,7 +236,7 @@ function tafelUrteil(t, messung) {
                     text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
                 });
         }
-        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` (Stufe 0) im Band `stufenToleranz`
+        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`
         const W0 = z.welt.stufeVon && messung.welt[z.welt.stufeVon];
         if (W0 && !(Math.abs((e.stufeTon = W && +(W.Y / W0.Y).toFixed(3)) - 1) <= t.stufenToleranz))
             rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${e.stufeTon}` });
