@@ -2206,15 +2206,27 @@ class AnazhRealm_siedlung_ort {
 
     // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge
     // (Haut und Kleid) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
-    // gebacken ist, der Stand. Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird.
+    // gebacken ist, der Stand. Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird. NUR DIE
+    // GEÄNDERTEN (stadt-takt): ein Slot schreibt neu, wenn ein anderer Bewohner ihn hält (`Z.wer`), der Gang fertig wurde oder
+    // sich seine Lage oder sein Gang regte (`b.satzNeu`) — vorher schrieb jede Regung eines Bewohners jede Matrix.
     _bewohnerSatzSchreiben(S) {
         const m4 = this._bewohnerM4 || (this._bewohnerM4 = new THREE.Matrix4());
         S.gestalten.forEach((G, gi) => {
             const Z = G.satz;
             if (!Z) return;
             const zahl = { haut: 0, rest: 0, wurf: 0 };
+            const wer = Z.wer || (Z.wer = { haut: [], rest: [], wurf: [] });
+            const voll = wer.fertig !== Z.fertig;
+            wer.fertig = Z.fertig;
+            const neu = { haut: false, rest: false, wurf: false };
+            let lage = null;
             const setze = (k, b) => {
                 const i = zahl[k]++;
+                if (wer[k][i] === b && !b.satzNeu && !voll) return;
+                wer[k][i] = b;
+                neu[k] = true;
+                if (lage !== b) m4.compose(b.leib.position, b.leib.quaternion, b.leib.scale);
+                lage = b;
                 Z[k].setMatrixAt(i, m4);
                 const ph = Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0;
                 Z[k].geometry.attributes.aGang.setXY(i, ph - Math.floor(ph), Z.fertig ? b._gaitW || 0 : 0);
@@ -2224,16 +2236,18 @@ class AnazhRealm_siedlung_ort {
                 const g = b.leib;
                 g.userData._satz = !!b.kreis && !b.nah;
                 if (!b.kreis) continue;
-                m4.compose(g.position, g.quaternion, g.scale);
                 setze("wurf", b);
-                if (b.nah) continue;
-                setze("haut", b);
-                setze("rest", b);
+                if (!b.nah) {
+                    setze("haut", b);
+                    setze("rest", b);
+                }
+                b.satzNeu = false;
             }
             for (const k of ["haut", "rest", "wurf"]) {
                 const m = Z[k];
                 AnazhRealm._instanzZahl(m, zahl[k]);
-                if (zahl[k] > 0) {
+                wer[k].length = zahl[k];
+                if (neu[k]) {
                     m.instanceMatrix.needsUpdate = true;
                     m.geometry.attributes.aGang.needsUpdate = true;
                     m.boundingSphere = null;
@@ -2329,7 +2343,7 @@ class AnazhRealm_siedlung_ort {
                     if ((b.gehTakt = ((b.gehTakt || 0) + 1) % div) === 0) {
                         const dt = b.gehDt;
                         b.gehDt = 0;
-                        if (this._bewohnerSchritt(b, dt)) anders = b.lageNeu = true;
+                        if (this._bewohnerSchritt(b, dt)) anders = b.lageNeu = b.satzNeu = true;
                         if (b.drinnen) anders = true;
                         // jenseits der Nah-Wahl geht der Leib dasselbe Gang-Gesetz (Phase und Gewicht — der Satz liest sie,
                         // `_bewohnerSatzSchreiben`); fern trägt das Feld die Gestalt: die Glieder gehen den Gang mit
@@ -2371,7 +2385,7 @@ class AnazhRealm_siedlung_ort {
                 b.uhr += delta;
                 b.animDt = (b.animDt || 0) + delta;
                 // DER BLICK AM ZIEL: wer steht, wendet sich seinem Ziel zu (`_bewohnerDrehen`)
-                if (b.drehen != null && this._bewohnerDrehen(b, delta, echt, p)) anders = b.lageNeu = true;
+                if (b.drehen != null && this._bewohnerDrehen(b, delta, echt, p)) anders = b.lageNeu = b.satzNeu = true;
                 // jenseits der Nah-Wahl klingt der Gang im Stand aus (das Gewicht des EINEN Gang-Tick)
                 if (!istNah && !b.weg && b._gaitW > 0) {
                     this._bewohnerGangSchritt(b, 0, delta, echt, p);
@@ -2395,7 +2409,7 @@ class AnazhRealm_siedlung_ort {
                     }
                 }
                 if (neu) this._leibMatrix(g);
-                if (neu && (b.weg || b._gaitW > 0)) anders = true; // sein Wurf geht im Satz mit
+                if (neu && (b.weg || b._gaitW > 0)) anders = b.satzNeu = true; // sein Wurf geht im Satz mit
             }
             if (anders) this._bewohnerSatzSchreiben(S);
         }
@@ -2406,6 +2420,7 @@ class AnazhRealm_siedlung_ort {
     // (`_animateHuman`) und die Glieder folgen (`_kzLeib`). Steht er, klingt das Gewicht aus und fällt unter 1 % auf 0.
     _bewohnerGangSchritt(b, v, dt, echt, p) {
         const g = b.leib;
+        b.satzNeu = true; // Phase und Gewicht regen sich: sein Slot im Satz schreibt neu
         const gang = this._gaitTick(g, b, v, dt, null);
         if (v === 0 && !(b._gaitW > 0.01)) b._gaitW = 0;
         if (echt && !b.drinnen && this._kzBesitztFeld(g)) {
