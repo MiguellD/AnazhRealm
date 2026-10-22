@@ -495,12 +495,12 @@ async function proben(mitWiese, umfang) {
                 c.position.z = sz;
             });
             o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10, traeger };
-            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
-            // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der Kapsel —
-            // die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche: an ihrem Rand, der
-            // Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers (`_stepCharacterStructures`) noch die Auflage des
-            // Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit achsparallelen Boxen im Umkreis 60 m um den Start. Befund
-            // (K24-N1): an der Hang-Stelle stieg das Tier auf die erste Stamm-Fuge einer Tanne, 0,6 m je Takt (K4 Treppe 55,1 cm).
+            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt
+            // höchstens PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der
+            // Wand-Radius der Kapsel — die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen),
+            // ist keine Fläche: an ihrem Rand, der Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers
+            // (`_stepCharacterStructures`) noch die Auflage des Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit
+            // achsparallelen Boxen im Umkreis 60 m um den Start.
             {
                 const R = A.PLAYER_WALL_RADIUS;
                 const SNAP = A.PLAYER_GROUND_SNAP;

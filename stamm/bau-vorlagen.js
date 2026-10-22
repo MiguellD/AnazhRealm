@@ -356,11 +356,11 @@ class AnazhRealm_bau_vorlagen {
                 position: { x: 0, y: 0.3, z: 0 },
                 size: { x: 1.4, y: 0.6, z: 1.4 },
             },
-            // Quarz-Kolben (durchsichtig)
+            // Quarz-Kolben (durchsichtig) — ruht auf dem Untersatz (bauen.K3: er schwebte 0,1 m darüber, ohne Lastpfad)
             {
                 shape: "sphere",
                 material: "quarz",
-                position: { x: 0, y: 1.2, z: 0 },
+                position: { x: 0, y: 1.1, z: 0 },
                 size: { x: 1.0, y: 1.0, z: 1.0 },
                 opacity: 0.55,
             },

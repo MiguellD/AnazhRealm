@@ -2783,9 +2783,9 @@ class AnazhRealm_siedlung_satz {
         // (precise+id) — die heilen beim Ingest/Rewarm. Die Restore-id ist auch eine ZAHL (Worldgen-ids,
         // `_loadStateRestoreArchitectures`): die Wand nahm nur Text-ids, jeder Reload mit noch kaltem Buch warf
         // die Studio-Häuser der Welt weg, und der nächste Save schrieb den Verlust fest (gate:persistence K).
-        const _fdrySpawnHeal =
-            opts.silent === true ||
-            (opts.precise === true && ((typeof opts.id === "string" && opts.id) || Number.isFinite(opts.id)));
+        const wiederkehr =
+            opts.precise === true && ((typeof opts.id === "string" && opts.id) || Number.isFinite(opts.id));
+        const _fdrySpawnHeal = opts.silent === true || wiederkehr;
         if (this._foundryEnabled() && this._foundryNeedsBookForType(type) && !_fdrySpawnHeal) {
             const f = this._foundry;
             if (!f || !f.ready || !f.recipes) {
@@ -2829,6 +2829,22 @@ class AnazhRealm_siedlung_satz {
             opts.autonomous === true || (!opts.silent && !opts.precise && !(typeof opts.id === "string" && opts.id));
         if (_playerClamp && position) {
             position = this._structureSpawnPos(type, position, { state: this.state }, scale);
+        }
+        // DAS STATIK-GESETZ AN DER WURZEL (bauen.K3: was keinen Lastpfad hat, fällt): jedes Setzen — der Bau-Modus, die
+        // Werkstatt, der Satz, die KI, der Mitspieler, eine Kreatur — urteilt am echten Kontakt (`_statikAmOrt`): ein Werk,
+        // unter dem kein Teil ruht, sinkt, bis eines aufsetzt; was dann nicht trägt (Lastpfad, Kippen, Knicken), steht nicht.
+        // Die Welt selbst (das Feld, `silent`) und die Wiederkehr eines Werks (Reload) stehen, wo sie standen. Vorher galt die
+        // Statik nur im Bau-Modus in pfad, und nur als „das Phantom trifft begehbaren Boden".
+        if (position && !opts.silent && !wiederkehr) {
+            const st = this._statikAmOrt(type, position, { rotationY: opts.rotationY, scale });
+            if (!st.steht) {
+                this.log(
+                    `STATIK: ${type} bei ${Math.round(position.x)}/${Math.round(position.z)} — ${AnazhRealm.STATIK_GRUND[st.grund]}.`,
+                    "INFO"
+                );
+                return nein(st.grund);
+            }
+            position = st.ziel;
         }
         // DIE WASSER-WAND DER WERKE an der Wurzel (Schau-2 wasser-wahrheit, Gegenprüfung): ein NEUES Werk mit Grundriss-Gesetz
         // (Haus, Tempel, Ausstattung — `_werkGrundriss`), dessen Ort die Welt wählt (der Satz, der Nexus, ein Programm, die

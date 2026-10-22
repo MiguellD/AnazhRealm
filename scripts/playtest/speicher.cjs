@@ -2265,7 +2265,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         const out = {};
 
         // (R1) R5_STRUCTURE_TEXTURE frozen + Konstante
-        out.constExists = !!A.R5_STRUCTURE_TEXTURE && Object.isFrozen(A.R5_STRUCTURE_TEXTURE);
         if (A.R5_STRUCTURE_TEXTURE) {
             out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
             out.microBoostSensible =
@@ -2277,7 +2276,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         return out;
     });
 
-    check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
     check(
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true

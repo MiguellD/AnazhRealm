@@ -288,7 +288,6 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const out = {};
         const esse = r.state.blueprints["esse"];
         const meister = r.state.blueprints["esse_meister"];
-        out.meisterExists = !!meister && meister.role === "workshop-station";
         out.meisterForging = meister ? r._computeWorkshopDomain(meister) === "forging" : false;
         const esseP = r._workshopStationPrecision(esse);
         const meisterP = meister ? r._workshopStationPrecision(meister) : 0;
@@ -312,7 +311,6 @@ async function checkBandV1777SteigerungVisible(ctx) {
         out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
         return out;
     });
-    check("V17.77: die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
     check("V17.77: ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
     check(
         "V17.77 STEIGERUNG: die Meister-Esse (Eisen) fertigt feiner als die Basis-Esse — bessere Substanz → höherer Cap",
@@ -1204,36 +1202,30 @@ async function checkBandWelle6XAudit(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.X.1 — Audit-Fixes ###
-    // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
+    // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt ein Werk ohne Lastpfad in JEDEM Modus ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
     const wave6x1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
 
-        // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
-        r.setGameMode("pfad");
+        // --- A2: confirmBuild blockt ein Werk ohne Lastpfad (der obere Block schwebt 1 m) — in pfad wie in schöpfer
+        // (bauen.K3: das Statik-Gesetz gilt in jedem Modus), ohne Material zu ziehen
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode();
-        r.setHotbarSlot(0, "stein_block");
-        r.selectHotbarSlot(0);
-        window.__setzOrt("stein_block");
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-        const archBeforeBlock = r.state.architectures.length;
-        const stoneBeforeBlock = r.state.player.inventory[0].count;
-        const blocked = r.confirmBuild();
-        const stoneAfterBlock = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-        out.pfadBlocksUnstable = blocked === false;
-        out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
-        out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
-
-        // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
-        r.setGameMode("schöpfer");
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-        const archBeforeS = r.state.architectures.length;
-        const builtS = r.confirmBuild();
-        out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
-
+        const blk = (y) => ({ shape: "box", material: "stein", position: { x: 0, y, z: 0 }, size: { x: 2, y: 1, z: 2 } });
+        r.state.blueprints._t_a2_schwebt = { name: "_t_a2_schwebt", builtIn: false, parts: [blk(0.5), blk(2.5)] };
+        for (const modus of ["pfad", "schöpfer"]) {
+            r.setGameMode(modus);
+            r._clearBuildMode();
+            r.setHotbarSlot(0, "_t_a2_schwebt");
+            r.selectHotbarSlot(0);
+            window.__setzOrt("_t_a2_schwebt");
+            const [archVor, steinVor] = [r.state.architectures.length, r.state.player.inventory[0].count];
+            const gebaut = r.confirmBuild();
+            const steinNach = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+            out["a2" + modus] = gebaut === false && r.state.architectures.length === archVor && steinVor === steinNach;
+        }
+        delete r.state.blueprints._t_a2_schwebt;
         r._clearBuildMode();
         r.setGameMode("frieden");
 
@@ -1319,10 +1311,8 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x1Results && !wave6x1Results.error) {
-        check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
-        check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
-        check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
-        check("Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate", wave6x1Results.schoepferBypassesUnstable);
+        for (const modus of ["pfad", "schöpfer"])
+            check(`Welle 6.X.1 A2: ${modus} — ein Werk ohne Lastpfad steht nicht, kein Material-Verlust`, wave6x1Results["a2" + modus]);
         check(
             "Welle 6.X.1 A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf",
             wave6x1Results.markListShowsEmergentRole,

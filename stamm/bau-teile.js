@@ -213,7 +213,47 @@ class AnazhRealm_bau_teile {
         if (this._isBroadcasting(bp, t)) out.broadcasting = true;
         if (this._isBalancing(bp, t)) out.balancing = true;
         if (this._isLifting(bp, t)) out.lifting = true;
+        // die Verben der Form (bauen.K5, `WERK_VERBEN`): was fährt, reitet man — sitzen trägt nur, was steht
+        if (!out.moveable && this._isSitzbar(bp)) out.sitzbar = true;
+        if (this._isKletterbar(bp)) out.kletterbar = true;
         return out;
+    }
+
+    // sitzbar (bauen.K5 — die Bank): die Sitz-Fläche des Werks (`_attachPointFor` „sitz", die EINE Sitz-Quelle der Reiter:
+    // explizit oder die oberste flache Fläche) liegt in Sitzhöhe über dem Fuß (Ergonomie: 0,40–0,50 m, Schwellen in
+    // AFFORDANCE_THRESHOLDS.sitzbar) und trägt einen Menschen (je Seite ≥ flaecheMin). Ein Tisch (0,75 m) ist keine Bank.
+    _isSitzbar(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.sitzbar;
+        const sitz = this._attachPointFor(bp, "sitz");
+        if (sitz.part === null) return false;
+        const ext = this._partWorldExtents(bp.parts[sitz.part]);
+        if (Math.min(ext.ex, ext.ez) < T.flaecheMin) return false;
+        const h = sitz.point.y - this._compoundBottomY(bp);
+        return h >= T.hoeheMin && h <= T.hoeheMax;
+    }
+
+    // kletterbar (bauen.K5 — die Leiter): Sprossen — waagrechte schlanke Teile (Dicke ≤ dickeMax, Länge ≥ laengeMin) —,
+    // mindestens sprossenMin übereinander im Abstand abstandMin…abstandMax (Leiter-Norm DIN EN 131: 0,25–0,30 m), ihre
+    // Mitten waagrecht höchstens eine Sprossen-Länge auseinander. Die Form trägt das Verb, kein Name.
+    _isKletterbar(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.kletterbar;
+        const sprossen = [];
+        for (const p of bp.parts) {
+            const e = this._partWorldExtents(p);
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const lang = Math.max(e.ex, e.ez);
+            if (e.ey <= T.dickeMax && Math.min(e.ex, e.ez) <= T.dickeMax && lang >= T.laengeMin)
+                sprossen.push({ x: pos.x || 0, y: pos.y || 0, z: pos.z || 0, lang });
+        }
+        sprossen.sort((a, b) => a.y - b.y);
+        let kette = 1;
+        for (let i = 1; i < sprossen.length && kette < T.sprossenMin; i++) {
+            const [a, b] = [sprossen[i - 1], sprossen[i]];
+            const dy = b.y - a.y;
+            const ueber = Math.hypot(b.x - a.x, b.z - a.z) <= Math.max(a.lang, b.lang);
+            kette = dy >= T.abstandMin && dy <= T.abstandMax && ueber ? kette + 1 : 1;
+        }
+        return sprossen.length > 0 && kette >= T.sprossenMin;
     }
 
     // STÄRKE einer Affordance (0.2..1.0): der Schwellwert in computeBlueprintAffordances ist das Gate,
@@ -2577,6 +2617,10 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         magieMin: 1.5, // stark magie-geladen — es trägt die Hebe-Energie
         dichteMax: 1.0, // genuin leicht — Magie hebt kein Gewicht
     }),
+    // bauen.K5 — sitzbar: die Sitz-Fläche in Sitzhöhe (Ergonomie, Sitzhöhe 0,40–0,50 m; das Band ±0,1 m), je Seite ≥ 0,3 m.
+    sitzbar: Object.freeze({ hoeheMin: 0.35, hoeheMax: 0.6, flaecheMin: 0.3 }),
+    // bauen.K5 — kletterbar: ≥ 3 Sprossen übereinander, Abstand 0,2–0,45 m (DIN EN 131: 0,25–0,30), dünn ≤ 0,12 m, ≥ 0,25 m lang.
+    kletterbar: Object.freeze({ sprossenMin: 3, abstandMin: 0.2, abstandMax: 0.45, dickeMax: 0.12, laengeMin: 0.25 }),
 });
 
 // Substanz-Rolle: Schwellen für body (Seele aus Körper-Symmetrie) + food (Nahrung aus lebendig +

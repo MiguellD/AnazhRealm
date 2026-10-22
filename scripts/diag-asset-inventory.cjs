@@ -457,8 +457,8 @@ const server = statikServer();
                 st.scene.add(fake4);
                 grassSet.add(fake4); // wie ein Eintrag in st.voxelChunkGrass (der Zensus-Schnappschuss)
                 injected.push(fake4);
-                // DER SIEDLUNGS-POOL (CI 37709343976): ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER
-                // Emitter (rot) — derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
+                // DER SIEDLUNGS-POOL: ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER Emitter (rot) —
+                // derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
                 const fake5 = new THREE.InstancedMesh(geo, mat, 3);
                 fake5.count = 3;
                 fake5.name = "siedlung-zaun";

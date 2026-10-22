@@ -296,9 +296,7 @@ const SCHUSS_FN = async (kam) => {
         `Boot OK · V${boot.version} · ${boot.renderer} (WebGPU-Backend=${boot.backendWebGPU}) · Chunks=${boot.chunks} · Foundry=${boot.foundryBereit}`
     );
 
-    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D). Befund 30.09.: am Spawn
-    // stand die Kamera unter der Start-Plattform bzw. im Hang (Bühnen-Spanne bis 13 m) —
-    // alle Klassen stehen darum auf der Wiese, wo Bühne und Kamera wirklich eben sind.
+    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D).
     const wieseStart = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
@@ -560,8 +558,7 @@ const SCHUSS_FN = async (kam) => {
                     offenVor = -1,
                     ohneFortschritt = 0;
                 // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
-                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
-                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                // gröberen Stufe — der feinere Guss ist unterwegs. Vor dem Schuss wird gewartet (≤ 600 Takte).
                 let ziel = null,
                     zielD = Infinity;
                 for (const e of r.state.architectures) {

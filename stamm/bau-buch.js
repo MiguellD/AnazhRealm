@@ -1521,19 +1521,12 @@ class AnazhRealm_bau_buch {
     _compoundCenterOfMass(bp) {
         const out = { com: { x: 0, y: 0, z: 0 }, mass: 0 };
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return out;
-        const mats = this.state.materials || {};
         let mx = 0,
             my = 0,
             mz = 0,
             mass = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const mat = mats[p.material];
-            const dichte = mat && mat.tags && typeof mat.tags.dichte === "number" ? mat.tags.dichte : 0.5;
-            // dichte-Floor 0.05: ein dichte-0-Material (Geist/Luft) hat trotzdem Form-
-            // Masse > 0 (sonst kollabiert der CoM einer rein-leichten Struktur auf 0).
-            const m = vol * Math.max(0.05, dichte);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             mx += (pos.x || 0) * m;
             my += (pos.y || 0) * m;
@@ -1615,25 +1608,24 @@ class AnazhRealm_bau_buch {
     // ═══ Ω-PHYSIS · Ω-Φ2 — STÜTZPOLYGON + STABILITÄT ═══
     // „Steht WIRKLICH" statt „Basis breit" (`_compoundSpread`): sitzt der Schwerpunkt über der konvexen
     // Hülle der Bodenkontakte? (ein breiter kopflastiger Turm kippt). Dasselbe Polygon beurteilt
-    // Fahrzeug-Stabilität UND Kreatur-Stand (CoM über dem Fuß-Stützpolygon).
-    _supportPolygon(bp) {
+    // Fahrzeug-Stabilität UND Kreatur-Stand (CoM über dem Fuß-Stützpolygon). `kontakt[i]`: ruht Teil i (`_statik`).
+    _supportPolygon(bp, kontakt) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const k = kontakt || this._kontaktEbene(bp);
         let minBottom = Infinity,
             maxTop = -Infinity;
-        const aabbs = [];
-        for (const p of bp.parts) {
-            const a = this._partWorldAABB(p);
+        const aabbs = bp.parts.map((p) => this._partWorldAABB(p));
+        for (const a of aabbs) {
             if (!a) continue;
-            aabbs.push(a);
             if (a.min.y < minBottom) minBottom = a.min.y;
             if (a.max.y > maxTop) maxTop = a.max.y;
         }
-        if (!aabbs.length) return null;
+        if (minBottom === Infinity) return null;
         const totalH = Math.max(0.001, maxTop - minBottom);
-        const band = Math.max(0.1, totalH * AnazhRealm.PHYSIS.groundBandFrac);
         const pts = [];
-        for (const a of aabbs) {
-            if (a.min.y > minBottom + band) continue;
+        for (let i = 0; i < aabbs.length; i++) {
+            const a = aabbs[i];
+            if (!a || !k[i]) continue;
             pts.push({ x: a.min.x, z: a.min.z });
             pts.push({ x: a.max.x, z: a.min.z });
             pts.push({ x: a.max.x, z: a.max.z });
@@ -1643,9 +1635,9 @@ class AnazhRealm_bau_buch {
         const area = hull.length >= 3 ? this._polygonArea2D(hull) : 0;
         return { hull, area, contactCount: pts.length / 4, minBottom, totalH };
     }
-    _stability(bp) {
+    _stability(bp, kontakt) {
         const com = this._compoundCenterOfMass(bp);
-        const poly = this._supportPolygon(bp);
+        const poly = this._supportPolygon(bp, kontakt);
         if (!poly || poly.hull.length < 3 || poly.area < 1e-4) {
             // entartete Basis (ein Punkt/eine Linie — ein einbeiniger Mast) → kippt
             return { inside: false, margin: 0, area: poly ? poly.area : 0, com: com.com, mass: com.mass };
@@ -1695,17 +1687,35 @@ class AnazhRealm_bau_buch {
             Imax = Math.max(Ix, Iz);
         return { Ix, Iz, Imin, Imax, anisotropy: Imax / Math.max(1e-6, Imin), area: A };
     }
-    // (b) VERSAGEN: das schlankste last-tragende vertikale Glied + Euler-Knicken; kritische Schlankheit
-    // ∝ √(härte) (1:7-Säule hält, 1:25 knickt). Grob-Sanitäts-Richter, keine FEA.
-    _failsUnderLoad(bp) {
-        const out = { buckles: false, maxSlenderness: 0, criticalSlenderness: 0, slenderPart: -1 };
+    // (b) VERSAGEN — EULER-KNICKEN UNTER DER GETRAGENEN LAST (bauen.K3): ein schlankes vertikales Glied knickt, wenn die
+    // Last, die es trägt, seine kritische Last übersteigt: P > π²·E·I / (K·L)². Die Last fließt den Lastpfad hinab (jedes
+    // Teil gibt seine Masse samt Getragenem zu gleichen Teilen an die Nachbarn eine Stufe näher am Grund, `_loadPath`
+    // `tiefe`), Masse = Volumen × Stoff (`_teilMasse`); E/(ρ·g) = härte · PHYSIS.steife, I das schwache Flächenmoment
+    // (Rechteck a·b³/12, rund π·d⁴/64), K = PHYSIS.knickLaenge (Kragstütze, Kopf frei). Vorher knickte die Schlankheit
+    // allein (h/w > 10–20, ohne Last): Laterne, Brunnen, Marktstand und Webstuhl „knickten", die 6-m-Stange unter dem
+    // Felsblock nicht strenger als die freie. Grob-Richter, keine FEA. `quote` = max P / P_kritisch.
+    _failsUnderLoad(bp, kontakt, lp) {
+        const out = { buckles: false, quote: 0, slenderPart: -1 };
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
+        const parts = bp.parts;
+        const n = parts.length;
+        const pfad = lp || this._loadPath(bp, kontakt);
+        const masse = parts.map((p) => this._teilMasse(p));
+        const last = masse.slice();
+        // die Last den Pfad hinab: tiefste Stufe zuletzt (ohne Tiefe — ein Teil allein, ein Riese — trägt jedes sich selbst)
+        if (pfad.tiefe && pfad.adj) {
+            const reihe = [...Array(n).keys()]
+                .filter((i) => pfad.tiefe[i] > 0)
+                .sort((a, b) => pfad.tiefe[b] - pfad.tiefe[a]);
+            for (const i of reihe) {
+                const unter = pfad.adj[i].filter((j) => pfad.tiefe[j] === pfad.tiefe[i] - 1);
+                for (const j of unter) last[j] += last[i] / unter.length;
+            }
+        }
         const mats = this.state.materials || {};
-        let worst = 0,
-            worstIdx = -1,
-            worstCrit = Infinity;
-        for (let i = 0; i < bp.parts.length; i++) {
-            const p = bp.parts[i];
+        const PH = AnazhRealm.PHYSIS;
+        for (let i = 0; i < n; i++) {
+            const p = parts[i];
             const ext = this._partWorldExtents(p);
             const h = ext.ey || 0;
             const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
@@ -1713,27 +1723,25 @@ class AnazhRealm_bau_buch {
             if (h < w * 1.2) continue; // kein vertikales Glied (Platte/Klotz) → kein Knicken
             // Ein WAND-/Platten-Glied (eine horizontale Dimension ≫ die andere, > wallBraceRatio) ist KEINE freie
             // Euler-Säule — verstrebt durch Breite + Eck-Verbindungen, knickt nicht.
-            if (wmax > w * AnazhRealm.PHYSIS.wallBraceRatio) continue;
-            const slender = h / w;
+            if (wmax > w * PH.wallBraceRatio) continue;
+            const rund = /cylinder|cone|sphere|column|capsule|octahedron/i.test(p.shape || "");
+            const I = rund ? (Math.PI * w ** 4) / 64 : (wmax * w ** 3) / 12;
             const härte = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.härte) || 0.5;
-            const crit = Math.max(
-                AnazhRealm.PHYSIS.bucklingSlendernessMin,
-                Math.min(
-                    AnazhRealm.PHYSIS.bucklingSlendernessMax,
-                    AnazhRealm.PHYSIS.bucklingSlendernessBase * Math.sqrt(Math.max(0.05, härte) / 0.5)
-                )
-            );
-            if (slender > worst) {
-                worst = slender;
-                worstIdx = i;
-                worstCrit = crit;
-            }
+            const kritisch = (Math.PI * Math.PI * härte * PH.steife * I) / (PH.knickLaenge * h) ** 2;
+            const q = (last[i] - masse[i] / 2) / Math.max(1e-9, kritisch); // das Getragene + das halbe eigene Gewicht
+            if (q > out.quote) ((out.quote = q), (out.slenderPart = i));
         }
-        out.maxSlenderness = worst;
-        out.criticalSlenderness = Number.isFinite(worstCrit) ? worstCrit : 0;
-        out.slenderPart = worstIdx;
-        out.buckles = worst > 0 && worst > worstCrit;
+        out.buckles = out.quote > 1;
         return out;
+    }
+
+    // DIE MASSE EINES TEILS — das EINE Körper-Gesetz (Volumen × Stoff): die Box der Größe × dichte des Materials (Boden
+    // 0.05: ein dichte-0-Stoff trägt Form-Masse). Leser: Schwerpunkt, Lastpfad, Knicken, Schwung.
+    _teilMasse(p) {
+        const s = (p && p.size) || { x: 1, y: 1, z: 1 };
+        const mat = this.state.materials && p && this.state.materials[p.material];
+        const dichte = mat && mat.tags && typeof mat.tags.dichte === "number" ? mat.tags.dichte : 0.5;
+        return Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) * Math.max(0.05, dichte);
     }
 
     // ═══ Ω-PHYSIS · Ω-Φ4 — HEBEL + SCHWUNG-TRÄGHEIT ═══
@@ -1769,13 +1777,9 @@ class AnazhRealm_bau_buch {
         const grip = gripPoint || this._inferGripPoint(bp, com);
         out.grip = grip;
         out.balance = Math.hypot(com.com.x - grip.x, com.com.y - grip.y, com.com.z - grip.z);
-        const mats = this.state.materials || {};
         let I = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const d = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5;
-            const m = vol * Math.max(0.05, d);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             I += m * ((pos.x - grip.x) ** 2 + (pos.y - grip.y) ** 2 + (pos.z - grip.z) ** 2);
         }
@@ -1788,7 +1792,9 @@ class AnazhRealm_bau_buch {
     // ═══ Ω-PHYSIS · Ω-Φ5 — LASTPFAD + KONNEKTIVITÄT ═══
     // Die Last muss den Boden erreichen: BFS über räumliche Adjazenz (AABB-Berührung) von den
     // Boden-Kontakten; schwebende Teile tragen 0. Eine Klinge mit Lücke schneidet nicht.
-    _loadPath(bp) {
+    // `kontakt[i]` (`_statik`): ruht Teil i auf Grund oder Bau — ohne ihn die Ebene am tiefsten Fuß (`_kontaktEbene`).
+    // `tiefe[i]` = Stufen bis zum Grund (BFS), `adj` die Berührung: der Lastfluss des Knickens (`_failsUnderLoad`) liest sie.
+    _loadPath(bp, kontakt) {
         // `floatingParts` = Indizes der schwebenden Teile (dieselbe `seen[]`-BFS) → die Werkstatt tintet sie
         // als Warnung. Additiv; intact/floatingFrac bleiben unberührt.
         const out = { intact: true, floatingFrac: 0, floatingCount: 0, groundCount: 0, floatingParts: [] };
@@ -1799,14 +1805,7 @@ class AnazhRealm_bau_buch {
         // verbunden) — optimistisch intakt zurück (der Richter bleibt billig, §1).
         if (n > 120) return out;
         const aabb = bp.parts.map((p) => this._partWorldAABB(p));
-        let minBottom = Infinity,
-            maxTop = -Infinity;
-        for (const a of aabb) {
-            if (!a) continue;
-            if (a.min.y < minBottom) minBottom = a.min.y;
-            if (a.max.y > maxTop) maxTop = a.max.y;
-        }
-        const band = Math.max(0.12, (maxTop - minBottom) * 0.12);
+        const k = kontakt || this._kontaktEbene(bp);
         const adj = Array.from({ length: n }, () => []);
         const e = 0.06;
         const touch = (a, b) =>
@@ -1823,30 +1822,25 @@ class AnazhRealm_bau_buch {
                     adj[j].push(i);
                 }
             }
-        const seen = new Array(n).fill(false);
+        const tiefe = new Array(n).fill(-1);
         const q = [];
         for (let i = 0; i < n; i++) {
-            if (aabb[i] && aabb[i].min.y <= minBottom + band) {
-                seen[i] = true;
+            if (aabb[i] && k[i]) {
+                tiefe[i] = 0;
                 q.push(i);
                 out.groundCount++;
             }
         }
-        while (q.length) {
-            const i = q.pop();
-            for (const j of adj[i]) if (!seen[j]) ((seen[j] = true), q.push(j));
-        }
-        const mats = this.state.materials || {};
+        for (let h = 0; h < q.length; h++)
+            for (const j of adj[q[h]]) if (tiefe[j] < 0) ((tiefe[j] = tiefe[q[h]] + 1), q.push(j));
+        out.tiefe = tiefe;
+        out.adj = adj;
         let total = 0,
             floating = 0;
         for (let i = 0; i < n; i++) {
-            const p = bp.parts[i];
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const m =
-                Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
-                Math.max(0.05, (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5);
+            const m = this._teilMasse(bp.parts[i]);
             total += m;
-            if (!seen[i]) {
+            if (tiefe[i] < 0) {
                 floating += m;
                 out.floatingCount++;
                 out.floatingParts.push(i);
@@ -1855,6 +1849,51 @@ class AnazhRealm_bau_buch {
         out.floatingFrac = total > 0 ? floating / total : 0;
         out.intact = out.floatingFrac < 0.02;
         return out;
+    }
+
+    // DER KONTAKT AUF DER EBENE (Werkstatt, Rollen-Vektor): ein Teil ruht, wenn seine Unterkante höchstens das Kontakt-Band
+    // über dem tiefsten Fuß liegt (`_kontaktBand`) — dasselbe Band, das die Welt am echten Grund misst (`_statikAmOrt`).
+    // Vorher maß der Lastpfad 12 %, das Stützpolygon 15 % der Höhe: zwei Böden für ein Werk.
+    _kontaktEbene(bp) {
+        const aabb = bp.parts.map((p) => this._partWorldAABB(p));
+        let fuss = Infinity;
+        for (const a of aabb) if (a && a.min.y < fuss) fuss = a.min.y;
+        const band = this._kontaktBand(bp);
+        return aabb.map((a) => !!a && a.min.y <= fuss + band);
+    }
+    _kontaktBand(bp) {
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const p of bp.parts) {
+            const a = this._partWorldAABB(p);
+            if (a) ((lo = Math.min(lo, a.min.y)), (hi = Math.max(hi, a.max.y)));
+        }
+        return Math.max(AnazhRealm.PHYSIS.kontaktMin, (hi - lo) * AnazhRealm.PHYSIS.kontaktAnteil);
+    }
+
+    // ═══ Ω-PHYSIS · DAS EINE STATIK-GESETZ (bauen.K3: was keinen Lastpfad hat, fällt) ═══
+    // Steht das Werk? EIN Urteil für die Werkstatt (der Grund ist die Ebene unter dem Fuß) und für jedes Setzen in der Welt
+    // (der echte Kontakt, `_statikAmOrt`): ruht kein Teil, schwebt es; ein Teil ohne Pfad zu den ruhenden fällt (Ω-Φ5);
+    // liegt der Schwerpunkt (Volumen × Stoff) außerhalb des Stützpolygons der ruhenden Teile, kippt es (Ω-Φ2); trägt ein
+    // schlankes Glied seine Last nicht, knickt es (Ω-Φ3-b).
+    // Leser: die Werkstatt (`_workshopPhysicsVerdict`), das Phantom und jedes Setzen (`_setzUrteil`, `spawnArchitecture`).
+    // → { steht, grund: null | "schwebt" | "lastpfad" | "kippt" | "knickt", schwebend, margin, knickTeil, quote }
+    _statik(bp, kontakt) {
+        const out = { steht: true, grund: null, schwebend: [], margin: 1, knickTeil: -1, quote: 0 };
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
+        const k = kontakt || this._kontaktEbene(bp);
+        const nein = (grund) => Object.assign(out, { steht: false, grund });
+        if (!k.some(Boolean)) return nein("schwebt");
+        const lp = this._loadPath(bp, k);
+        out.schwebend = lp.floatingParts;
+        if (lp.floatingParts.length) return nein("lastpfad");
+        const stab = this._stability(bp, k);
+        out.margin = stab.margin;
+        if (!stab.inside) return nein("kippt");
+        const fl = this._failsUnderLoad(bp, k, lp);
+        out.quote = fl.quote;
+        out.knickTeil = fl.slenderPart;
+        return fl.buckles ? nein("knickt") : out;
     }
     // Schneide-Kontinuität: die Parts entlang der Längsachse sortiert — sind die
     // aufeinanderfolgenden räumlich verbunden? Eine Lücke (Loch in der Schneide) senkt
@@ -2398,10 +2437,15 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // Richter ist ein GROB-Sanitäts-Richter (§1-Geltungsbereich), kein FEA-Simulator:
 // diese Schwellen kalibrieren die groben Verstöße (Kippen, Knicken). browser-justierbar.
 AnazhRealm.PHYSIS = {
-    groundBandFrac: 0.15, // Ω-Φ2: das untere Höhen-Band, das als Bodenkontakt zählt
-    bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5
-    bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
-    bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
+    // DAS KONTAKT-BAND (`_kontaktBand`): ein Teil ruht, wenn seine Unterkante höchstens max(kontaktMin, kontaktAnteil ×
+    // Höhe des Werks) über dem tragenden Grund liegt — in der Werkstatt die Ebene am Fuß, in der Welt Boden und Bau.
+    kontaktMin: 0.12,
+    kontaktAnteil: 0.12,
+    hangMax: 0.35, // der Hang, auf den sich ein Werk setzt (`_statikAmOrt`): 35 % — Bauen K2 setzt am Hang ≥ 15 %
+    // Ω-Φ3-b EULER: E/(ρ·g) eines Stoffs mit härte = dichte, in m — Holz 10 GPa/500 kg/m³ ≈ 2,0e6, Stein 30 GPa/2600 ≈
+    // 1,2e6, Eisen 200 GPa/7900 ≈ 2,6e6 (Literatur); die Tag-Skala trägt E ∝ härte, ρ ∝ dichte.
+    steife: 2e6,
+    knickLaenge: 2, // K der Kragstütze (Fuß eingespannt, Kopf frei — die ungünstige Lagerung)
     wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule
 };
 // Stat-Klemme am LESER (taille-spec §3): je Achse die lokale Trag-Decke = max(Built-in-Materialien

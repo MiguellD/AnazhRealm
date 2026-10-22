@@ -1447,17 +1447,13 @@ function scanInstanzWand(srcRoh) {
     return errs;
 }
 
-// DIE ENTSORGUNGS-WAND (AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines
-// Objekts entsorgt, muss ihr BESITZER sein. Befund: vier Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die
-// die Geteilt-Markierung überging — 3 Seelenwechsel legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung; die
-// Text-Wand der dritten Nachbesserung sah nur `.traverse(` + direktes `x.geometry` und verfehlte Kind-Schleifen
-// (`for…of`, `children.forEach`), Zwischen-Variablen (`const g = o.geometry; g.dispose()`) und reine Stoff-Schleifen
-// (`o.material.forEach((m) => m.dispose())`). Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
-// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt, über
-// eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der Besitzer-Liste mit
-// genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der Besitzer entsorgt die
-// Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen Zeilen sind die Besitzer
-// eigener frischer Objekte.
+// DIE ENTSORGUNGS-WAND (AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines Objekts entsorgt, muss ihr
+// BESITZER sein. Die Wand liest den Stamm mit acorn: jede Entsorgung (`.dispose()` oder
+// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt,
+// über eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der
+// Besitzer-Liste mit genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der
+// Besitzer entsorgt die Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen
+// Zeilen sind die Besitzer eigener frischer Objekte.
 const ENTSORGUNG_BESITZER = {
     _disposeSoulGroup: {
         arten: ["geometry"],
@@ -2280,10 +2276,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         e.arguments[1].value === "ERROR";
     const bruchHelfer = new Set();
     // DER MELDER (Nachbesserung 3): ein Melder in STOFF_MELDER (`_bruchMelden`) meldet einen Bruch, der jeden Frame
-    // wiederkommt, nicht jeden Frame — er ist laut, wenn JEDER `this.log` in ihm ERROR meldet, mindestens einer steht, und
-    // jeder Pfad durch ihn ERROR meldet oder den Zähler der Meldung erhöht (`e.n++`: ihr Zähler trägt die nächste Meldung).
-    // Bis hierher hielt ein Zweig mit einem KOMMENTAR als Anker die Fänge des Loops grün, und die Drossel selbst durfte INFO
-    // melden.
+    // wiederkommt, nicht jeden Frame — er ist laut, wenn JEDER `this.log` in ihm ERROR meldet, mindestens einer steht,
+    // und jeder Pfad durch ihn ERROR meldet oder den Zähler der Meldung erhöht (`e.n++`: ihr Zähler trägt die nächste
+    // Meldung).
     let zaehltMit = false;
     const istZaehler = (e) =>
         e.type === "UpdateExpression" && e.operator === "++" && e.argument.type === "MemberExpression";
@@ -2960,12 +2955,12 @@ function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     }
     return errs;
 }
-// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
-// starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
-// ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
-// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
-// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
-// nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
+// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser
+// · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
+// Namen macht. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
+// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit
+// Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei nicht mehr
+// selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
     // die Werkbank: ihr Steuer-Server ist der JSON-Kanal einer offenen Mess-Welt (kein Statik-Boot), ihre Seiten-Fehler sind das
     // Urteil der Wache der Mess-Folge (omen-messfolge `wachenUrteil`) — der Zug in den Fehler-Sammler schärft dieses Urteil

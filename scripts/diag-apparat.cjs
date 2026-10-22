@@ -92,11 +92,11 @@ function scanAnker(playtestSrc, stammSrc) {
     return { entries, errs };
 }
 
-// KLINGE 3 (K38-N2) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
-// die Liste festnagelt (im Regex `_x\(a, b\)\s*\{`, als Text "    _x(a, b) {"), bricht bei jedem neuen Parameter, obwohl das
-// geprüfte Gesetz steht: gate:foundry-crossfade fiel so an `_foundryBaumHoehe(preset, entry, wer)` (Zweig-CI 38651527401,
-// voll 4/11). Der Name wandert mit: im Regex `_x\([^)]*\)`, im Text `stammLib.kopf(text, "_x")`. Die Klinge liest JEDE Linse
-// (scripts/, spec/) Token für Token (acorn) und nennt jede Stelle mit Datei:Zeile; der Bestand ist 0 und bleibt 0.
+// KLINGE 3 (K38-N2) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der die
+// Liste festnagelt (im Regex `_x\(a, b\)\s*\{`, als Text " _x(a, b) {"), bricht bei jedem neuen Parameter, obwohl das
+// geprüfte Gesetz steht: gate:foundry-crossfade fiel so an `_foundryBaumHoehe(preset, entry, wer)`. Der Name wandert
+// mit: im Regex `_x\([^)]*\)`, im Text `stammLib.kopf(text, "_x")`. Die Klinge liest JEDE Linse (scripts/, spec/) Token
+// für Token (acorn) und nennt jede Stelle mit Datei:Zeile; der Bestand ist 0 und bleibt 0.
 const PARAM_ANKER_RX = /(_[\w$]+)\\\(((?:[^\\)\n]|\\[^()])*?)\\\)(?:\\s\*|\\s\+| )?\\\{/g;
 const PARAM_FREI = "[^)]*";
 const KOPF_TEXT_RX = /^\n?[ ]*(?:static\s+|async\s+)*([A-Za-z_$][\w$]*)\(([^()]*)\)\s*\{\s*$/;
@@ -250,10 +250,10 @@ function tasteNachWanduhr(name, src) {
     return errs;
 }
 // KLINGE 6 (D2-N1) — DER EINE RUMPF-SCHNEIDER: eine Linse schneidet einen Block über `stammLib.rumpf` (den Block an
-// seiner DEFINITION), nie mit eigenem Klammer-Zähler. Zweiundzwanzig Schneider in zwanzig Linsen setzten am ERSTEN Text-
-// Treffer an; nach dem Umzug nach Domäne schnitt gate:vehicle-drive A5 den Aufruf in siedlung-ort.js statt der Definition
-// (Zweig-CI 38894453753, voll 11/18). Ein Klammer-Zähler ist ein Vergleich mit "{" (Token: `=== "{"`, `"{" ===`,
-// `case "{"`); frei sind der EINE Schneider und der WGSL-Leser, Kommentare zählen nicht.
+// seiner DEFINITION), nie mit eigenem Klammer-Zähler. Zweiundzwanzig Schneider in zwanzig Linsen setzten am ERSTEN
+// Text- Treffer an; nach dem Umzug nach Domäne schnitt gate:vehicle-drive A5 den Aufruf in siedlung-ort.js statt der
+// Definition. Ein Klammer-Zähler ist ein Vergleich mit "{" (Token: `=== "{"`, `"{" ===`, `case "{"`); frei sind der
+// EINE Schneider und der WGSL-Leser, Kommentare zählen nicht.
 const SCHNEIDER_FREI = new Set(["scripts/lib/stamm.cjs", "scripts/lib/shader-kosten.cjs"]);
 function eigenerSchneider(name, src) {
     if (SCHNEIDER_FREI.has(name)) return [];
@@ -270,11 +270,12 @@ function eigenerSchneider(name, src) {
         .filter((t, i) => t.type.label === "string" && t.value === klammer && (vergleich(toks[i - 1]) || vergleich(toks[i + 1])))
         .map((t) => `${name}:${t.loc.start.line} zählt Klammern selbst — der Block an seiner Definition: stammLib.rumpf(text, kopf) (Klinge 6)`);
 }
-// Klinge 6, zweite Schneide (D2-N2): kein ERSTER TEXT-TREFFER auf dem ganzen Stamm. `quelle.replace('this._bauSame("insel")',
-// …)` mutierte vor dem Umzug chatDslPatterns, danach spawnIslandAt — gate:werkstatt-weg wurde vakuös (Zweig-CI 38908372005,
-// voll 14/18). Die Herkunft wird am Gültigkeitsbereich verfolgt: stammLib.text/textAusRev, durch ohneKommentare, replace,
-// ersetze, Zuweisung und Parameter einer gerufenen Funktion; ROT sind dort replace · indexOf · lastIndexOf (ohne Startpunkt) ·
-// search · match · exec mit festem Ziel (Literal, Konstante, Parameter, Schleifen-Variable; ein /g-Muster trifft alle).
+// Klinge 6, zweite Schneide (D2-N2): kein ERSTER TEXT-TREFFER auf dem ganzen Stamm.
+// `quelle.replace('this._bauSame("insel")', …)` mutierte vor dem Umzug chatDslPatterns, danach spawnIslandAt —
+// gate:werkstatt-weg wurde vakuös. Die Herkunft wird am Gültigkeitsbereich verfolgt: stammLib.text/textAusRev, durch
+// ohneKommentare, replace, ersetze, Zuweisung und Parameter einer gerufenen Funktion; ROT sind dort replace · indexOf ·
+// lastIndexOf (ohne Startpunkt) · search · match · exec mit festem Ziel (Literal, Konstante, Parameter,
+// Schleifen-Variable; ein /g-Muster trifft alle).
 function ersterTreffer(name, src) {
     if (SCHNEIDER_FREI.has(name) || !/lib\/stamm\.cjs/.test(src)) return [];
     let baum;

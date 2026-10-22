@@ -1,12 +1,9 @@
 #!/usr/bin/env node
-// diag-profiband.cjs — DIE BAND-WAND (W0): EINE Wand statt Diag-Flut, der headless-Teil des Profi-Band-Richters.
-// Befund 04.10.: fünf Linsen (Zensus, VRAM, Kosten, Fluss, Takt) zählten je für sich, keine kannte das Band (208 GPU-
-// Befehle · 680k Dreiecke · 118 MB an der Mess-Wiese), der Draw-Zähler nannte 229 von 1076 Befehlen „Mesh"/„bundle:
-// Mesh" und der VRAM-Abgriff 236 MB Karten „tex:?". Die Band-Linse nennt jeden Befehl, jedes Dreieck und jedes MB beim
-// Täter — die Täter-Klasse ist die des Stamms (`AnazhRealm#_taeterKlasse`, `_instanzKlasse`, `_taeterName`: dieselbe
-// für Draw-Zähler, Flugschreiber, Albedo-Sicht und den Szenen-Zensus des Playtests) — und urteilt gegen den Haushalt
-// und die Ratsche (spec/profiband/, scripts/lib/band-urteil.cjs): auf der echten GPU `node scripts/werkbank.cjs band`,
-// hier ohne GPU:
+// diag-profiband.cjs — DIE BAND-WAND (W0): EINE Wand statt Diag-Flut, der headless-Teil des Profi-Band-Richters. Die
+// Band-Linse nennt jeden Befehl, jedes Dreieck und jedes MB beim Täter — die Täter-Klasse ist die des Stamms
+// (`AnazhRealm#_taeterKlasse`, `_instanzKlasse`, `_taeterName`: dieselbe für Draw-Zähler, Flugschreiber, Albedo-Sicht
+// und den Szenen-Zensus des Playtests) — und urteilt gegen den Haushalt und die Ratsche (spec/profiband/,
+// scripts/lib/band-urteil.cjs): auf der echten GPU `node scripts/werkbank.cjs band`, hier ohne GPU:
 //
 //   H1  der Haushalt hält das Band: Summe der Klassen <= 208 Befehle und <= 680k Dreiecke, Schema gültig, KEINE
 //       Sammelzeile (`rest`), jedes Muster verankert
@@ -152,16 +149,15 @@ function buendelReiheWand(A) {
     return { errs, n: 6 };
 }
 
-// P — DIE PROJEKTION (S3 pflanzen, GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
-// läuft — Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
-// Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
-// Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
-// tree[1] 10 000 rechnete nie gegen ihn (Band V18.536: baum 417k, die Projektion 421k). Pflicht ab dem Vertrags-Akt (die
-// eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
-// H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
-// vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
-// (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
-// Welt. Bis K55 stand die Mess-Wiese als Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
+// P — DIE PROJEKTION (S3 pflanzen, GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt läuft —
+// Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
+// Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über
+// die Golden-Samen) ≤ Haushalt der Klasse. Pflicht ab dem Vertrags-Akt (die eingefrorene render-config trägt
+// tree[0].lagen); vorher zeigt sie die Zahl. H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am
+// GESETZ — der Wirt ohne Browser ist die echte Klasse im vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von
+// derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft (`wieseMessen`): Hang, Wasser, Kronen-Deckung,
+// Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die Welt. Bis K55 stand die Mess-Wiese als
+// Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
 let _wirt = null;
 function wieseAmGesetz(haushalt) {
     const WO = require("./lib/welt-orte.cjs");

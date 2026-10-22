@@ -695,6 +695,8 @@ class AnazhRealm {
                 // Mount-State: null oder entry.id der befahrenen Architektur; der Tick zieht deren Position dem
                 // Spieler nach.
                 mountedArch: null,
+                // An der Leiter: null oder { id, dx, dz } (die Leiter und die Seite, an der er hängt, `_leiterGreifen`).
+                klettert: null,
                 walkPhase: 0,
                 animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
@@ -873,10 +875,6 @@ class AnazhRealm {
                 blueprintName: null,
                 phantomMesh: null,
                 phantomDistance: 5,
-                // Welle 6.A5 — wird pro tickBuildMode aus dem Raycast-Hit
-                // gesetzt: true = stabile (begehbare) Oberfläche unter dem
-                // Phantom, false = schwebt frei oder zeigt auf Wand.
-                phantomOnGround: false,
             },
         };
         this.core = {

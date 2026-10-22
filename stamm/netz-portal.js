@@ -1783,34 +1783,6 @@ class AnazhRealm_netz_portal {
         banner.appendChild(tierEl);
         banner.appendChild(row);
     }
-
-    // W12 Phase 1 — E-Tasten-Pfad: ist ein Portal in Reichweite, betritt es.
-    // Liefert true wenn betreten — die E-Taste fällt dann nicht auf Mount.
-    _tryEnterPortalAtPlayer() {
-        if (this._portalOverlay) return false;
-        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
-        if (!entry) return false;
-        const res = this.enterPortal(entry);
-        return !!(res && res.ok);
-    }
-
-    // W12 Phase 1 — pro Frame (via tickAffordances): zeigt den Prompt
-    // „E — Portal betreten", wenn ein Portal in Reichweite ist. Läuft nur
-    // in der Heimat-Welt — im Portal selbst ist der Loop eingefroren.
-    _tickPortalAffordance() {
-        if (typeof document === "undefined") return;
-        const prompt = document.getElementById("portal-prompt");
-        if (!prompt) return;
-        const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
-        if (entry) {
-            const bp = this.state.blueprints && this.state.blueprints[entry.type];
-            const label = (bp && bp.portalMeta && bp.portalMeta.label) || entry.type;
-            prompt.textContent = `E — Portal betreten: ${label}`;
-            prompt.hidden = false;
-        } else if (!prompt.hidden) {
-            prompt.hidden = true;
-        }
-    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_netz_portal]);
 

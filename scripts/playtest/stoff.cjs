@@ -296,8 +296,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
         const au = r.state.atmoUniforms;
-        out.geoRockUniform = !!(au && au.geoRock && Number.isFinite(au.geoRock.value));
-        out.geoMossUniform = !!(au && au.geoMoss && Number.isFinite(au.geoMoss.value));
         out.geoRockDefault1 = !!(au && au.geoRock && Math.abs(au.geoRock.value - 1) < 1e-9);
         out.geoMossDefault1 = !!(au && au.geoMoss && Math.abs(au.geoMoss.value - 1) < 1e-9);
 
@@ -417,8 +415,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
 
-    check("Ω-OPSIS S1 (C1) geoRock-Uniform existiert + endlich", res.geoRockUniform === true);
-    check("Ω-OPSIS S1 (C2) geoMoss-Uniform existiert + endlich", res.geoMossUniform === true);
     check("Ω-OPSIS S1 (C3) geoRock default 1 (volle Säule)", res.geoRockDefault1 === true);
     check("Ω-OPSIS S1 (C4) geoMoss default 1 (volle Säule)", res.geoMossDefault1 === true);
 

@@ -347,7 +347,8 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         const solid = P([pt(0, 0, 0, 4, 1, 4)]);
         const mOf = (bp) => r._compoundCenterOfMass(bp).mass;
         o.hollowEfficient = r._bendingStiffness(ring).Imin / mOf(ring) > r._bendingStiffness(solid).Imin / mOf(solid);
-        o.slenderBuckles = r._failsUnderLoad(P([pt(0, 0, 0, 0.2, 5, 0.2)])).buckles === true;
+        const stange = (last) => P([pt(0, 2.5, 0, 0.06, 5, 0.06, light)].concat(last ? [pt(0, 5.2, 0, 3, 0.4, 3)] : []));
+        o.slenderBuckles = r._failsUnderLoad(stange(true)).buckles && !r._failsUnderLoad(stange(false)).buckles;
         o.stockyHolds = r._failsUnderLoad(P([pt(0, 0, 0, 1, 5, 1)])).buckles === false;
         // ── Ω-Φ4 Hebel + Schwung ──
         const headHeavy = P([pt(0, 0.3, 0, 0.2, 0.6, 0.2, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)]);
@@ -412,7 +413,7 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         res.tableStable && res.tippyTips && res.mastUnstable
     );
     check("Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)", res.boardAniso && res.hollowEfficient);
-    check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
+    check("Ω-Φ3b: die schlanke Stange knickt unter der Last, frei steht sie, die stämmige trägt", res.slenderBuckles && res.stockyHolds);
     check("Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller", res.headHeavier && res.balancedFaster);
     check("Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad", res.stackIntact && res.floatBreaks);
     check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);

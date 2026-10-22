@@ -1232,9 +1232,6 @@ async function checkBandWelle6HCreatures(ctx) {
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
-        // confirmBuild prüft im pfad-Modus phantomOnGround; headless läuft tickBuildMode (Raycast-
-        // Stabilität) nicht → stabilen Phantom-Stand simulieren.
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
         const archBeforePfad = r.state.architectures.length;
         const stoneBeforePfad = r.state.player.inventory[0].count;
         const builtPfad = r.confirmBuild();

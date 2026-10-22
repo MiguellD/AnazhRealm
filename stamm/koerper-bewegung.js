@@ -705,10 +705,11 @@ class AnazhRealm_koerper_bewegung {
             // Horizontale nur ohne Zug (`_loopPlayerMovement`, schwimmen.drag) — bis V18.531 bremste es JEDEN Schritt
             // auch den Zug (Kraulen 0,141 m/s = 14 % des Gesetzes).
             vy = this._swimVerticalVelocity(vy, waterY - brustM - feet0, dive, rise);
-        } else if (s._parkourKletter > 0) {
+        } else if (s._parkourKletter > 0 || (s.player && s.player.klettert)) {
             // PARKOUR — der Griff hält: KLETTERN ersetzt die Schwerkraft (Input-
             // seitig gegated: W + frische Wand + Ausdauer; der Steig-Wert reist
-            // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
+            // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt. An der Leiter (`_leiterSchritt`) hält er
+            // auch ohne Taste (0) und steigt ab (< 0).
             vy = s._parkourKletter;
         } else {
             vy += s.gravity * dt;
@@ -1463,7 +1464,13 @@ class AnazhRealm_koerper_bewegung {
             // GEGEN heißt hinein: der Blick höchstens 45° neben der Wand-Normalen — wer an einer Wand entlang geht (die
             // Türzarge, der Flur), klettert nicht (siedlung.K1: vorher stieg der Spieler an jeder gestreiften Wand auf).
             let kletterV = 0;
-            if (
+            // DIE LEITER TRÄGT (bauen.K5, `_leiterSchritt`): wer an ihr hängt, steigt mit W, steigt mit S ab, hält ohne Taste —
+            // waagrecht hängt er an ihr (kein Zug, kein Schub).
+            const leiterV = this._leiterSchritt(parkG);
+            if (leiterV !== null) {
+                kletterV = leiterV;
+                this.state.playerVel.setValue(0, this.state.playerVel.y(), 0);
+            } else if (
                 parkG &&
                 this.state.keys["w"] &&
                 !slide &&

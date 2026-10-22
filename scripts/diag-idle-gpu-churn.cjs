@@ -31,9 +31,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
     let pageErr = null;
     page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; console.log("[PAGE-ERROR]", pageErr); });
-    // DER TÄTER BEIM NAMEN (CI 37588394666: „Takt (Idle-Frame 13)" riss die Frist von 300 s und nannte nur den Aufruf):
-    // jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer, BEVOR er kompiliert — die
-    // Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der Schlüssel-Warmup nennt seine Schlüssel selbst.
+    // DER TÄTER BEIM NAMEN: jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer,
+    // BEVOR er kompiliert — die Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der
+    // Schlüssel-Warmup nennt seine Schlüssel selbst.
     page.on("console", (m) => { const t = m.text(); if (t.startsWith("[Linse]")) console.log(`  ${t.slice(0, 600)} — im Aufruf „${laufenderRuf}"`); });
     // DAS HOLZ DER LINSE: sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
     // selbst „kienspan" vor (Ring 2, keine Schatten, kein Fern-Wasser; die Auto-Wahl erkennt es nur unter WebGPU, der
@@ -58,9 +58,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(AUSGABE_INSTALL);
 
-    // JEDER AUFRUF HAT EINEN NAMEN (CI 37122984563: die Linse riss nach 860 s die Protokoll-Frist und sagte nicht, in
-    // welchem Aufruf). `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen Compiles), und der
-    // Crash-Pfad nennt den Aufruf, der die Frist riss.
+    // JEDER AUFRUF HAT EINEN NAMEN. `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen
+    // Compiles), und der Crash-Pfad nennt den Aufruf, der die Frist riss.
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     const LANG_MS = 20000;
@@ -203,9 +202,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
-        // DAS BAU-BUCH (CI 37643706020: „Bauten 147 → 146" ohne Täter): die beiden Schreiber der Bau-Menge (`spawnArchitecture`
-        // legt an, `removeArchitecture` nimmt weg; `state.architectures` schreibt sonst nur das Laden) buchen ab der Bühne
-        // je Wirkung Art, Typ und die Spiel-Rahmen des Stapels — eine Drift der Bauten trägt ihren Täter beim Namen.
+        // DAS BAU-BUCH: die beiden Schreiber der Bau-Menge (`spawnArchitecture` legt an, `removeArchitecture` nimmt
+        // weg; `state.architectures` schreibt sonst nur das Laden) buchen ab der Bühne je Wirkung Art, Typ und die
+        // Spiel-Rahmen des Stapels — eine Drift der Bauten trägt ihren Täter beim Namen.
         window.__bauBuch = [];
         const werBau = () => {
             const zeilen = String(new Error().stack || "").split("\n");
@@ -230,23 +229,21 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return v;
             };
         }
-        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ← dslEval ←
-        // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
+        // DIE PROGRAMM-WACHE: die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
         // jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr des Wetter-Zugs,
-        // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht Quelle und
-        // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide. Bis 08.10. überschrieb die Linse
-        // `dslEval` selbst (ein Zwilling des Halts, der jedes Programm schluckte).
+        // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht
+        // Quelle und Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide.
         window.__weltaktSpion();
         window.__weltaktSeq0 = window.__weltaktBuch(0).seq;
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
-        // DER SCHLÜSSEL-WARMUP (CI 37077860950 · 37122984563): auf swiftshader kostet EIN schwerer Erst-Compile
-        // 50–90 s, und ein Aufruf trägt die Summe seiner neuen Programme — der erste volle Frame trug 265 (WebGL2),
-        // eine 16er-Scheibe noch mehrere. Ein Programm folgt aus Objekt-Art · Stoff · Attribut-Satz; je Aufruf
-        // rendert die Linse die Objekte EINES noch kalten Schlüssels allein (Hauptbild UND Kaskaden, derselbe
-        // `_loopRender`) und hört nach dem ersten Schlüssel auf, der kompiliert hat (oder nach 8 s): kein Aufruf
-        // trägt mehr als EINEN kompilierenden Schlüssel, gleich wie groß die Welt oder wie langsam das Holz ist.
+        // DER SCHLÜSSEL-WARMUP: auf swiftshader kostet EIN schwerer Erst-Compile 50–90 s, und ein Aufruf trägt die
+        // Summe seiner neuen Programme — der erste volle Frame trug 265 (WebGL2), eine 16er-Scheibe noch mehrere.
+        // Ein Programm folgt aus Objekt-Art · Stoff · Attribut-Satz; je Aufruf rendert die Linse die Objekte EINES
+        // noch kalten Schlüssels allein (Hauptbild UND Kaskaden, derselbe `_loopRender`) und hört nach dem ersten
+        // Schlüssel auf, der kompiliert hat (oder nach 8 s): kein Aufruf trägt mehr als EINEN kompilierenden
+        // Schlüssel, gleich wie groß die Welt oder wie langsam das Holz ist.
         const schluessel = (o) => {
             const ms = Array.isArray(o.material) ? o.material : [o.material];
             const g = o.geometry;

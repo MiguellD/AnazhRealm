@@ -1273,7 +1273,6 @@ async function checkBandLateMultiUser(ctx) {
             active: true,
             blueprintName: "stein_block",
             phantomMesh: phantomBei(30, 4, 30),
-            phantomOnGround: true,
         };
         const builtOk = r.confirmBuild();
         const builtInProg = sent[sent.length - 1];
@@ -1296,7 +1295,6 @@ async function checkBandLateMultiUser(ctx) {
                 active: true,
                 blueprintName: cloneName,
                 phantomMesh: phantomBei(33, 4, 33),
-                phantomOnGround: true,
             };
             r.confirmBuild();
             const customProg = sent[sent.length - 1];
@@ -1312,8 +1310,7 @@ async function checkBandLateMultiUser(ctx) {
         r.state.p2p.enabled = false;
         // das Phantom, das das Setzen gezogen hat, verlässt die Szene (kein Geist bleibt für die Tests danach)
         r._clearBuildMode();
-        // buildMode-Original wiederherstellen (Tests danach lesen
-        // sein phantomOnGround-Feld); aktiv aus.
+        // buildMode-Original wiederherstellen; aktiv aus.
         r.state.buildMode = origBuildMode;
         r.state.buildMode.active = false;
 

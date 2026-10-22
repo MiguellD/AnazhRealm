@@ -2235,6 +2235,13 @@ AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     wagen: "in einem Wagen wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
 });
+// Das Urteil des Statik-Gesetzes im Satz des Spielers (`_statik`, bauen.K3; Leser: `SETZ_GRUND`, `confirmBuild`, das Bau-HUD).
+AnazhRealm.STATIK_GRUND = Object.freeze({
+    schwebt: "unter ihm trägt kein Grund in Reichweite",
+    lastpfad: "ein Teil hat keinen Lastpfad zum Grund und fällt",
+    kippt: "der Schwerpunkt liegt außerhalb der Standfläche, es kippt",
+    knickt: "ein schlankes Glied trägt seine Last nicht, es knickt",
+});
 // DIE GRÜNDE DES ERGEBNIS-SATZES (`_ergebnisSatz`, Schau-2 Runde 3): jeder Wurf, der nicht steht, trägt einen — die Wand
 // (`NATUR_WAND_GRUND`), das Budget des Programms, die Obergrenze der Kreaturen (die Zahl liest der Satz aus dem Zustand), das
 // Buch des Studios, ein unbekannter Bauplan, eine unbekannte Seele, eine Gestalt, die nicht gegossen wurde, die fehlende
@@ -2242,6 +2249,7 @@ AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
 // Absage ihren Grund nicht nannte (die Linse verbietet ihn).
 AnazhRealm.SETZ_GRUND = Object.freeze({
     ...AnazhRealm.NATUR_WAND_GRUND,
+    ...AnazhRealm.STATIK_GRUND,
     budget: "das Werk-Budget dieses Satzes ist aufgebraucht",
     obergrenze: "die Welt trägt nicht mehr Kreaturen",
     buch: "das Studio-Buch ist noch nicht geladen",

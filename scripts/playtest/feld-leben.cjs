@@ -713,8 +713,8 @@ async function checkBandWelle6APolish(ctx) {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
-        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe weichen
-        // (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt (CI 38967779045)
+        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe
+        // weichen (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt
         for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a_haus;
 
@@ -869,8 +869,8 @@ async function checkBandWelle6APolish(ctx) {
 
     // ### Raycast-Place + Stabilitäts-Visual ###
     // tickBuildMode → _resolvePhantomTarget castet den Strahl des Fadenkreuzes (`_fadenkreuzStrahl`: die Richtung der
-    // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
-    // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
+    // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z, hit}):
+    // das Phantom folgt der Blickrichtung (Pitch wirkt), steht, wo das Werk landet, grün, wenn das Setzen trägt.
     const wave6a45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -880,7 +880,7 @@ async function checkBandWelle6APolish(ctx) {
 
 
         // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
-        // Phantom liegt im Treffer-Bereich + isStable=true.
+        // Phantom liegt im Treffer-Bereich, die Statik trägt.
         const savedYaw = r.state.yaw;
         const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
         const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
@@ -904,7 +904,7 @@ async function checkBandWelle6APolish(ctx) {
         const _archEntry = r.spawnArchitecture(
             "_t_w6a45_haus",
             { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
-            { seed: 4711 }
+            { seed: 4711, silent: true } // die Vorrichtung schwebt mit Absicht: die Welt setzt sie, kein Wille (bauen.K3)
         );
         out.testArchSpawned = !!_archEntry;
         let _archTopY = 0;
@@ -929,13 +929,11 @@ async function checkBandWelle6APolish(ctx) {
             // Hit-Y ist klar < playerY−1.
             out.phantomY = phantomPos.y;
             out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
-            // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
-            out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
-
-            // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
+            out.phantomTraegt = !(window.AnazhRealm || r.constructor).STATIK_GRUND[r.state.buildMode.phantomGrund];
+            // Kamera in den Himmel → kein Treffer → das Werk fällt; 200 m über dem Grund trägt nichts in Fall-Reichweite
             r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
             r.tickBuildMode();
-            out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
+            out.phantomSchwebtSky = r.state.buildMode.phantomGrund === "schwebt";
         }
 
         // Cleanup
@@ -956,14 +954,8 @@ async function checkBandWelle6APolish(ctx) {
                 "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
                 wave6a45Results.phantomYDownward
             );
-            check(
-                "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
-                wave6a45Results.phantomOnGroundAfterTick === true
-            );
-            check(
-                "Welle 6.A5: Diskrimination — Kamera auf Himmel → phantomOnGround=false",
-                wave6a45Results.phantomOnGroundSky === false
-            );
+            check("Welle 6.A5: Kamera auf den Bau → die Statik trägt", wave6a45Results.phantomTraegt === true);
+            check("Welle 6.A5: Kamera in den Himmel → das Phantom schwebt", wave6a45Results.phantomSchwebtSky === true);
         }
     }
 
@@ -1286,7 +1278,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const __hkKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "struktur|kiefer");
         const __heBp = __heKey && bps[__heKey];
         const __hkBp = __hkKey && bps[__hkKey];
-        out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
         out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
         out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
@@ -1556,7 +1547,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
-        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);

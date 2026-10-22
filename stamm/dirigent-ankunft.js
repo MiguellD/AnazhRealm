@@ -629,10 +629,10 @@ class AnazhRealm_dirigent_ankunft {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
             } else if (event.code === AnazhRealm.FAHR_TASTEN.einsteigen.code) {
-                // E toggelt Mount/Dismount für moveable-Architekturen, nur außerhalb des Werkstatt-Drawers (dort ist
-                // E der Rotate-Modus). Ein Portal in Reichweite schlägt das Reiten (_tryEnterPortalAtPlayer zuerst).
+                // E ist das Verb des Werks in Reichweite (die EINE Verb-Tafel `WERK_VERBEN`: Portal, Ritt, Sitzen,
+                // Klettern — und wieder hinaus), nur außerhalb des Werkstatt-Drawers (dort ist E der Rotate-Modus).
                 if (this.state.uiActiveDrawer !== "werkstatt") {
-                    if (!this._tryEnterPortalAtPlayer()) this.toggleMountAtPlayer();
+                    this._werkVerbAmSpieler();
                     event.preventDefault();
                 }
             } else if (event.code === "KeyZ") {

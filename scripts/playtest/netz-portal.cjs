@@ -1139,7 +1139,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_portal-Bauplan.
         const wp = r.state.blueprints && r.state.blueprints.welt_portal;
-        out.builtinExists = !!wp && wp.builtIn === true;
         out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
         out.builtinMeta =
             !!wp &&
@@ -1256,7 +1255,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
         check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
-        check("W12 P1: Built-in welt_portal-Bauplan existiert", w12c1Results.builtinExists);
         check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
         check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
         check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
@@ -1386,25 +1384,25 @@ async function checkBandW12WorldPortal(ctx) {
         const badEnter = r.enterPortal({ type: "stein_block", affordances: {} });
         out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
 
-        // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist. Spieler AUF die Portal-Position
+        // Der Hinweis der Verb-Tafel (`_tickWerkVerbHinweis`) nennt das nahe Portal. Spieler AUF die Portal-Position
         // setzen: Zwischen-Ticks lassen ihn sonst zu Boden aus PORTAL_REACH (4,5 m, 3D inkl. y) driften.
         if (portalEntry && pm && pm.set) {
             pm.set(portalEntry.position.x, portalEntry.position.y, portalEntry.position.z);
         }
-        r._tickPortalAffordance();
+        r._tickWerkVerbHinweis();
         const promptEl = document.getElementById("portal-prompt");
         out.promptShownNearPortal =
             !!promptEl && !promptEl.hidden && /Portal betreten/.test(promptEl.textContent || "");
 
-        // _tryEnterPortalAtPlayer betritt das nahe Portal.
-        out.tryEnterWorks = r._tryEnterPortalAtPlayer() === true && !!r._portalOverlay;
+        // Die Taste E (`_werkVerbAmSpieler`, die Verb-Tafel) betritt das nahe Portal.
+        out.tryEnterWorks = r._werkVerbAmSpieler().verb === "portal" && !!r._portalOverlay;
         r.exitPortal();
 
         // Portal entfernen → Prompt verschwindet, _tryEnter scheitert.
         if (portalEntry) r.removeArchitecture(portalEntry);
-        r._tickPortalAffordance();
+        r._tickWerkVerbHinweis();
         out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
-        out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
+        out.tryEnterFailsWhenNone = r._werkVerbAmSpieler().verb !== "portal" && !r._portalOverlay;
 
         return out;
     });
@@ -1425,10 +1423,10 @@ async function checkBandW12WorldPortal(ctx) {
         );
         check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
         check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
-        check("W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal", w12c3Results.promptShownNearPortal);
-        check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
+        check("W12 P1 C3: der Hinweis der Verb-Tafel zeigt das Portal", w12c3Results.promptShownNearPortal);
+        check("W12 P1 C3: E (die Verb-Tafel) betritt ein nahes Portal", w12c3Results.tryEnterWorks);
         check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
-        check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
+        check("W12 P1 C3: E betritt ohne Portal in Reichweite keines", w12c3Results.tryEnterFailsWhenNone);
     } else {
         check(
             "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
@@ -1444,7 +1442,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
-        out.stromExists = !!ws && ws.builtIn === true;
         out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
         out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
 
@@ -1471,7 +1468,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p2Results && !w12p2Results.error) {
-        check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
         check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
@@ -1578,7 +1574,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
-        out.terrainExists = !!wt && wt.builtIn === true;
         out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
         out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
         out.terrainManifest =
@@ -1608,7 +1603,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
         check("W12 P2: welt_terrain trägt ein DSL-Manifest (eiche/wald/neu)", w12terrainResults.terrainManifest);
@@ -1631,7 +1625,6 @@ async function checkBandW12WorldPortal(ctx) {
         const REG = r.constructor.WORLD_REGISTRY;
 
         // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
-        out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
         out.registryShape =
             !!REG &&
             REG.fluid.world === "worlds/fluid/index.html" &&
@@ -1692,7 +1685,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12registryResults && !w12registryResults.error) {
-        check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
         check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
         check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
         check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);

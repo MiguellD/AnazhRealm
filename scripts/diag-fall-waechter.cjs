@@ -692,10 +692,10 @@ async function probe(K) {
             }
         }
     }
-    // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste Wand zu
-    // (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2 m/s in sie
-    // hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des Körpers fiel auf
-    // die Oberkante der Säule (CI 38009273564: ein gestoßener Wolf 11,88 m auf dem Dach der Höhle).
+    // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste
+    // Wand zu (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2
+    // m/s in sie hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des
+    // Körpers fiel auf die Oberkante der Säule.
     const steuerRoh = A._steuerGesetz;
     const kappe = st.maxCreatures;
     // DIE STIRN eines Leibs (Prüfung 2 K02a): wie hoch der Boden eine halbe Länge voraus (längs `gier`) über dem eine halbe

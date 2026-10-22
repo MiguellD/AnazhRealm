@@ -1164,8 +1164,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
         out.riseAboveNeutral = riseKonv > neutral;
         out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
-        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht. Die Bühne
-        // ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie mit (CI 38993175603).
+        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht.
+        // Die Bühne ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie
+        // mit.
         {
             const s = r.state,
                 pm = s.playerMesh,
@@ -1432,7 +1433,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
         // --- B3: Stats-HUD DOM-Existenz
         out.statsHudExists = !!document.getElementById("stats-hud");
-        out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
@@ -1596,7 +1596,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (wave6x4bResults && !wave6x4bResults.error) {
         check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);

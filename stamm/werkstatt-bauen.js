@@ -135,25 +135,102 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // DAS URTEIL DES SETZENS (Integration V18.536, Auflage 2 der zweiten Werkstatt-Gegenprüfung): was `confirmBuild` am
-    // Ort `ziel` ablehnen wird, in seiner Reihenfolge — pfad: der Standort trägt nicht (das Phantom ist instabil); pfad: keine
-    // Werkstatt der Domäne in der Nähe (`_workshopStationGate`); ein Natur-Werk: die Natur-Wand (`_naturWand`); frieden und
-    // pfad: das Material (`_bauVorabTor`, fragt ohne zu ziehen). Leser: das Phantom (`tickBuildMode` — grün nur, wenn das
-    // Setzen trägt) und das Setzen selbst (Standort und Werkstatt; Natur-Wand und Material urteilen dort die Akte, die sie
-    // tun). Befund: die Tönung urteilte nur über den Ort — auf dem Hotbar-Weg in frieden ohne Material stand das Phantom
-    // grün, das Setzen lehnte ab. Rückgabe { ok, grund: standort | werkstatt | natur | material, … }.
-    _setzUrteil(name, ziel, stabil) {
-        if (this.getGameMode() === "pfad" && !stabil) return { ok: false, grund: "standort" };
+    // Ort `ziel` ablehnen wird, in seiner Reihenfolge — in jedem Modus die Statik (`_statikAmOrt`, das EINE Gesetz der
+    // Wurzel: ein schwebendes Werk fällt nach `ziel` des Urteils, was dort nicht trägt, steht nicht); pfad: keine Werkstatt
+    // der Domäne in der Nähe (`_workshopStationGate`); ein Natur-Werk: die Natur-Wand (`_naturWand`); frieden und pfad: das
+    // Material (`_bauVorabTor`, fragt ohne zu ziehen). Leser: das Phantom (`tickBuildMode` — es steht, wo das Werk landet,
+    // grün nur, wenn das Setzen trägt) und das Setzen selbst (Statik und Werkstatt; Natur-Wand und Material urteilen dort
+    // die Akte, die sie tun). Befund: die Tönung urteilte nur über den Ort — auf dem Hotbar-Weg in frieden ohne Material
+    // stand das Phantom grün, das Setzen lehnte ab; die Statik galt nur in pfad und nur als „Phantom auf dem Boden".
+    // Rückgabe { ok, grund: STATIK_GRUND | werkstatt | natur | material, ziel, … }.
+    _setzUrteil(name, ziel, dreh) {
+        const st = this._statikAmOrt(name, ziel, { rotationY: dreh });
+        if (!st.steht) return { ok: false, grund: st.grund, ziel: st.ziel };
+        ziel = st.ziel;
         const station = this._workshopStationGate(name, ziel);
         if (!station.ok) {
             const d = station.neededDomain;
             const domaene = (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[d]) || d;
-            return { ok: false, grund: "werkstatt", domaene };
+            return { ok: false, grund: "werkstatt", domaene, ziel };
         }
         const wand = this._istNatur({ type: name }) ? this._naturWand(name, ziel, {}) : false;
-        if (wand) return { ok: false, grund: "natur", wand };
+        if (wand) return { ok: false, grund: "natur", wand, ziel };
         const vorab = this._bauVorabTor(name);
-        if (!vorab.ok) return Object.assign({ grund: "material" }, vorab);
-        return { ok: true, grund: null };
+        if (!vorab.ok) return Object.assign({ grund: "material", ziel }, vorab);
+        return { ok: true, grund: null, ziel };
+    }
+
+    // DIE STATIK AM ORT (bauen.K3 — EIN Gesetz, jeder Weg des Setzens: Bau-Modus, Werkstatt, Satz, KI, Mitspieler): das
+    // Statik-Gesetz (`_statik`) am echten Kontakt. Jedes Teil steht in seiner Lage (Ort, Gier, Größe — dieselbe Hülle wie
+    // `_blockerComputePartAABB`) und RUHT, wenn unter der Mitte seiner Unterkante der tragende Grund (`_traegerUnter`: Boden
+    // oder die Oberkante eines stehenden Baus) höchstens das Kontakt-Band (`_kontaktBand`) tiefer liegt — ein eingesunkener
+    // Fuß ruht. Ruht kein Teil, FÄLLT das Werk: es sinkt, bis sein erstes Teil aufsetzt, und wird dort geurteilt (`ziel`).
+    // Natur (verwurzelt, gewachsen nach ihrem Gesetz) und eine Studio-Gestalt (Zeile `studioGestalt` oder Art-Präfix der
+    // KIND_POLICY) stehen nach ihrem Gesetzbuch — ihre Teile sind Substanz, nicht Form (gemessen: Kiefer, Tanne und die fünf
+    // Studio-Wagen tragen schwebende Spender-Teile) —, für sie urteilt der Kontakt ihres Fußes.
+    // → { steht, grund (STATIK_GRUND), ziel, gefallen, … }
+    _statikAmOrt(type, position, opts = {}) {
+        const bp = this.state.blueprints && this.state.blueprints[type];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length || !position)
+            return { steht: true, grund: null, ziel: position, gefallen: false };
+        const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
+        const lage = { position, rotationY: Number.isFinite(opts.rotationY) ? opts.rotationY : 0, scale };
+        const gestalt =
+            typeof bp.studioGestalt === "string" || this._foundryNeedsBookForType(type) || this._istNatur({ type });
+        const fuss = position.y - 0.5; // die Basis jedes Werks (`_rebuildArchitectureMesh`)
+        const boxen = gestalt
+            ? [{ minX: position.x, maxX: position.x, minZ: position.z, maxZ: position.z, botY: fuss }]
+            : bp.parts.map((p) => this._blockerComputePartAABB(lage, p));
+        const band = this._kontaktBand(bp) * scale;
+        const mitte = (b) => [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2];
+        // DER HANG: ein waagrecht gesetztes Werk setzt sich auf den Hang unter seinem Ort — ein Fuß ruht, solange er höchstens
+        // Band + sein Abstand × das Gefälle (`getTerrainHeightAt`, gedeckelt PHYSIS.hangMax) über dem Grund liegt; steiler
+        // hängt er. Gemessen: mit dem Band allein kippten Tisch, Brücke und Bogen am leichten Hang der Wiese.
+        const h = (dx, dz) => this.getTerrainHeightAt(position.x + dx, position.z + dz);
+        const hang = Math.min(Math.hypot(h(1, 0) - h(-1, 0), h(0, 1) - h(0, -1)) / 2, AnazhRealm.PHYSIS.hangMax);
+        const kontakt = boxen.map((b) => {
+            if (!b) return false;
+            const [x, z] = mitte(b);
+            const spiel = band + hang * Math.hypot(x - position.x, z - position.z);
+            const t = this._traegerUnter(x, z, b.botY + band, band + spiel);
+            return t !== null && b.botY - t <= spiel;
+        });
+        if (!kontakt.some(Boolean)) {
+            if (opts.gefallen) return { steht: false, grund: "schwebt", ziel: position, gefallen: true };
+            // der Fall: die Teile am Fuß (im Band über der tiefsten Unterkante) suchen den Grund, das erste setzt auf
+            const tiefst = Math.min(...boxen.map((b) => (b ? b.botY : Infinity)));
+            let fall = Infinity;
+            for (const b of boxen) {
+                if (!b || b.botY > tiefst + band) continue;
+                const t = this._traegerUnter(...mitte(b), b.botY, AnazhRealm.STATIK_FALL_TIEFE);
+                if (t !== null) fall = Math.min(fall, b.botY - t);
+            }
+            if (!Number.isFinite(fall)) return { steht: false, grund: "schwebt", ziel: position, gefallen: false };
+            const ziel = { x: position.x, y: position.y - fall, z: position.z };
+            return this._statikAmOrt(type, ziel, Object.assign({}, opts, { gefallen: true }));
+        }
+        const u = gestalt ? { steht: true, grund: null } : this._statik(bp, kontakt);
+        return Object.assign(u, { ziel: position, gefallen: opts.gefallen === true });
+    }
+
+    // DER TRAGENDE GRUND unter (x, z) ab der Höhe y abwärts, höchstens `tief` m: die Oberkante des Bodens (`_fieldSurfaceBelow`
+    // — ein eingesunkener Fuß findet sie über sich) oder eines stehenden Baus, dessen Blocker-Box den Punkt deckt (Natur und
+    // was fährt tragen nichts, wie in `_bauDachUnter`). null: nichts trägt in Reichweite. Leser: `_statikAmOrt`. Der Boden
+    // sucht eine Raster-Stufe tiefer (`_fieldSurfaceBelow` probt auf y = k · 0,5 m): eine kürzere Suche träfe keine Probe —
+    // gemessen: der Tisch (Band 0,12 m) „schwebte" auf der Wiese.
+    _traegerUnter(x, z, y, tief) {
+        let t = this._fieldSurfaceBelow(x, y, z, tief + 0.5);
+        // tiefer eingesunken, als die Suche aufwärts reicht: der Grund umschließt den Fuß
+        if (t === null && this._fieldSolid(x, y, z, this._terrainColumnContext(x, z))) t = y;
+        const nahe = this._blockerNahe(x, z, 0, -Infinity, (this._traegerNahe = this._traegerNahe || []));
+        for (const e of nahe) {
+            if ((e.affordances && e.affordances.moveable) || this._istNatur(e)) continue;
+            for (const b of e.blockerAABBs || [])
+                if (b.topY <= y && b.topY >= y - tief && (t === null || b.topY > t))
+                    if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ) t = b.topY;
+        }
+        nahe.length = 0;
+        return t;
     }
 
     // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
@@ -372,10 +449,12 @@ class AnazhRealm_werkstatt_bauen {
         const label = String((bpL && bpL.label) || name).split(/\s[·—(]/)[0];
         // Jede Absage des Setzens spricht der Spieler-Kanal (`_spielerSagt`, Welle L Folge — Befund: „nicht genug
         // Material" stand nur im eingeklappten Log, der Rechtsklick blieb stumm). Das Urteil ist das des Phantoms
-        // (`_setzUrteil`): Standort und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
-        const urteil = this._setzUrteil(name, spawnPos, bm.phantomOnGround);
-        if (urteil.grund === "standort") {
-            this._spielerSagt(`${label}: der Standort trägt nicht (rote Markierung) — ziel auf ebenen Boden.`);
+        // (`_setzUrteil`): Statik und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
+        const rot = bm.phantomMesh.rotation;
+        const dreh = rot && Number.isFinite(rot.y) ? rot.y : 0;
+        const urteil = this._setzUrteil(name, spawnPos, dreh);
+        if (AnazhRealm.STATIK_GRUND[urteil.grund]) {
+            this._spielerSagt(`${label}: ${AnazhRealm.STATIK_GRUND[urteil.grund]} — so steht es nicht.`);
             return false;
         }
         if (urteil.grund === "werkstatt") {
@@ -401,8 +480,6 @@ class AnazhRealm_werkstatt_bauen {
         // Wurf der Werkstatt, sonst der Same dieses Setzens), seine Drehung die des Phantoms; beides reist zum Mitspieler.
         // Befund: der Standard-Same der Wurzel war Math.random, das Werk stand mit Drehung 0, der Mitspieler bekam den Samen 0.
         const same = this._werkSame(bpL, name, bm);
-        const rot = bm.phantomMesh.rotation;
-        const dreh = rot && Number.isFinite(rot.y) ? rot.y : 0;
         let gate = null;
         let wand = null;
         const setzen = () => {
@@ -496,13 +573,15 @@ class AnazhRealm_werkstatt_bauen {
                 }
             }
         }
-        bm.phantomMesh.position.set(target.x, target.y, target.z);
-        bm.phantomMesh.rotation.y = -this.state.yaw;
-        bm.phantomOnGround = target.isStable;
-        // Das Phantom sagt vor dem Klick, was das Setzen sagen wird (das EINE Urteil `_setzUrteil`): grün nur, wenn das
-        // Setzen trägt; ein Natur-Werk über der Lichtung oder in einem Haus, ein Ort ohne die Werkstatt der Domäne, ein
-        // Bauplan ohne Material steht rot, das HUD nennt den Grund.
-        const urteil = this._setzUrteil(bm.blueprintName, target, target.isStable);
+        // Das Phantom sagt vor dem Klick, was das Setzen sagen wird (das EINE Urteil `_setzUrteil`): es steht, wo das Werk
+        // landet (ein schwebendes fällt, `_statikAmOrt` — die Basis liegt 0,5 unter dem Ort des Setzens wie in `confirmBuild`),
+        // grün nur, wenn das Setzen trägt; ein Werk ohne Lastpfad, ein kippendes, ein Natur-Werk über der Lichtung oder in einem
+        // Haus, ein Ort ohne die Werkstatt der Domäne, ein Bauplan ohne Material steht rot, das HUD nennt den Grund.
+        const dreh = -this.state.yaw;
+        const urteil = this._setzUrteil(bm.blueprintName, { x: target.x, y: target.y + 0.5, z: target.z }, dreh);
+        const wo = urteil.ziel;
+        bm.phantomMesh.position.set(wo.x, wo.y - 0.5, wo.z);
+        bm.phantomMesh.rotation.y = dreh;
         const wand = urteil.grund === "natur" ? urteil.wand : false;
         const grund = urteil.grund === "werkstatt" ? "werkstatt:" + urteil.domaene : urteil.grund;
         if (wand !== bm.phantomWand || grund !== bm.phantomGrund) {
@@ -510,12 +589,12 @@ class AnazhRealm_werkstatt_bauen {
             bm.phantomGrund = grund;
             this._updateBuildModeHud();
         }
-        this._applyPhantomTint(bm.phantomMesh, target.isStable && urteil.ok);
+        this._applyPhantomTint(bm.phantomMesh, urteil.ok);
     }
 
     // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) gegen die Physik-Welt: erster Treffer in 30 m = Phantom-Position
-    // (der Pitch steuert die Distanz). Ohne Treffer yaw×distance-Fallback, Phantom „instabil“ (schwebt frei).
-    // Stabil = Hit-Normal-Y > 0.5 (begehbar, wie hang.maxSlopeY); nur ein Flag (Verbot beim Aufrufer).
+    // (der Pitch steuert die Distanz). Ohne Treffer yaw×distance-Fallback — ob das Werk dort trägt oder fällt, urteilt die
+    // Statik (`_setzUrteil` → `_statikAmOrt`), nie die Normale des Treffers.
     _resolvePhantomTarget() {
         const bm = this.state.buildMode;
         const p = this.state.playerMesh.position;
@@ -525,7 +604,7 @@ class AnazhRealm_werkstatt_bauen {
         const fallbackX = p.x + vorn.x * bm.phantomDistance;
         const fallbackY = p.y - 0.5;
         const fallbackZ = p.z + vorn.z * bm.phantomDistance;
-        const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
+        const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, hit: false };
         // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
         // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`, v1-ankunft): ohne Kamera der Ort vor dem Spieler, beide durch
         // die Spieler-Klemme (`_phantomAusserhalb`).
@@ -544,14 +623,7 @@ class AnazhRealm_werkstatt_bauen {
         const result = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
             if (!hit) return fallback;
             const point = cb.get_m_hitPointWorld();
-            const nrm = cb.get_m_hitNormalWorld();
-            return {
-                x: point.x() * sf,
-                y: point.y() * sf,
-                z: point.z() * sf,
-                isStable: nrm.y() > 0.5,
-                hit: true,
-            };
+            return { x: point.x() * sf, y: point.y() * sf, z: point.z() * sf, hit: true };
         });
         return this._phantomAusserhalb(result);
     }
@@ -560,8 +632,7 @@ class AnazhRealm_werkstatt_bauen {
     // unten stellte die Eiche 0,4 m neben den Spieler —, und das Setzen stellt das Werk bit-treu an das Phantom, ohne Klemme):
     // der Ort des Phantoms geht durch die EINE Spieler-Klemme der Wurzel (`_structureSpawnPos`: Footprint + Rand nach außen,
     // kleine Werke bleiben, wo der Blick trifft) — mit der Reichweite der Gestalt, die gesetzt wird (`_phantomReichweite`).
-    // Am geschobenen Ort steht es auf dem Boden des Gesetzes und trägt, wenn der Boden begehbar ist (Normale-Y > 0,5 wie
-    // der Blick-Strahl).
+    // Am geschobenen Ort steht es auf dem Boden des Gesetzes.
     _phantomAusserhalb(ziel) {
         const bm = this.state.buildMode;
         const weg =
@@ -572,10 +643,7 @@ class AnazhRealm_werkstatt_bauen {
                   })
                 : ziel;
         if (weg === ziel) return ziel;
-        const h = (dx, dz) => this.getTerrainHeightAt(weg.x + dx, weg.z + dz);
-        const gx = (h(1, 0) - h(-1, 0)) / 2;
-        const gz = (h(0, 1) - h(0, -1)) / 2;
-        return { x: weg.x, y: h(0, 0), z: weg.z, isStable: 1 / Math.sqrt(1 + gx * gx + gz * gz) > 0.5, hit: true };
+        return { x: weg.x, y: this.getTerrainHeightAt(weg.x, weg.z), z: weg.z, hit: true };
     }
 
     // DIE REICHWEITE DES PHANTOMS (Integration V18.536, Auflage 4 der zweiten Werkstatt-Gegenprüfung): wie weit die Gestalt,
@@ -614,7 +682,7 @@ class AnazhRealm_werkstatt_bauen {
         return r;
     }
 
-    // Tint 30 % grün (0x88ff88), wenn das Setzen trägt (stabiler Kontakt und `_setzUrteil`), sonst rot (0xff8888) — dort,
+    // Tint 30 % grün (0x88ff88), wenn das Setzen trägt (`_setzUrteil`), sonst rot (0xff8888) — dort,
     // wo der Stoff seine Farbe liest: ein
     // Studio-Stoff (colorNode) über den EINEN Tönungs-Uniform (`_phantomTint`, im Geist-Stoff verdrahtet), ein Stoff ohne
     // colorNode (der Spender-Geist) über `material.color` — Original-Farbe EINMAL je Mesh cachen (sonst Drift).
@@ -1078,15 +1146,15 @@ class AnazhRealm_werkstatt_bauen {
                 costLine = ` · <span style="color:#a8c8ff">Schöpfer: frei</span>`;
             }
             // Das Urteil am Phantom (`tickBuildMode` → `_setzUrteil`): der Grund, warum das Setzen hier ablehnt (die Natur-
-            // Wand, die fehlende Werkstatt, der Standort; fehlendes Material steht rot in der Kosten-Zeile).
+            // Wand, die fehlende Werkstatt, die Statik; fehlendes Material steht rot in der Kosten-Zeile).
             const rotLine = (t) => ` · <span style="color:#e57b6c">${t}</span>`;
             const grund = bm.phantomGrund || "";
             const wandLine = bm.phantomWand
                 ? rotLine(`${AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]} — weiter weg setzen`)
                 : grund.startsWith("werkstatt:")
                   ? rotLine(`du brauchst eine Werkstatt der Domäne „${grund.slice(10)}" in der Nähe`)
-                  : grund === "standort"
-                    ? rotLine("der Standort trägt nicht — ziel auf ebenen Boden")
+                  : AnazhRealm.STATIK_GRUND[grund]
+                    ? rotLine(`${AnazhRealm.STATIK_GRUND[grund]} — so steht es nicht`)
                     : "";
             hud.innerHTML =
                 `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
@@ -3500,6 +3568,9 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // 32 m (2 Chunk-Breiten) deckt eine Basis — „in der Nähe" meint das Werkstatt-Areal. Gilt für die
 // Prozess-Erkennung UND das Schmiede-Tor.
 AnazhRealm.WORKSHOP_PROXIMITY_M = 32;
+// DER FALL DES STATIK-GESETZES (`_statikAmOrt`): so tief sucht ein Werk, unter dem nichts ruht, den tragenden Grund —
+// tiefer trägt nichts in Reichweite, es steht nicht („schwebt").
+AnazhRealm.STATIK_FALL_TIEFE = 64;
 // V17.90 — die INVERS-dichte Stats (0.8 + (1−dichte)·…): ihr Tag-Input MUSS auf [0,1] gekappt bleiben, sonst
 // macht dichte>1 sie negativ. Der Werte-Readout liest sie aus dem tagsLo-Set (die schweren Stats aus tagsHi).
 AnazhRealm.INVERSE_DICHTE_STATS = Object.freeze({ attackSpeed: true, speed: true, jumpPower: true, staminaMax: true });
@@ -3539,6 +3610,8 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     broadcasting: "sendend",
     balancing: "gründend",
     lifting: "hebend",
+    sitzbar: "sitzbar",
+    kletterbar: "kletterbar",
 });
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({

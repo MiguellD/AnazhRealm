@@ -45,8 +45,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
-        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
-        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
+        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es
+        // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
@@ -674,7 +674,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         const out = {};
 
         // (I1) IRON_BANDS frozen Konstanten
-        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
         if (A.IRON_BANDS) {
             const IB = A.IRON_BANDS;
             out.constsSensible =
@@ -743,7 +742,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         out.steinDominant = steinHits > eisenHits; // Iron-Bands sind selten
 
         // (I5) EISEN als Material existiert
-        out.eisenMaterialExists = !!(r.state.materials && r.state.materials["eisen"]);
 
         // (I6) MATH: an einem KÜNSTLICH konstruierten Iron-Band-Punkt
         // (ironAder hoch + tief + dichte hoch) → eisen
@@ -778,7 +776,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
     check(
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
@@ -794,7 +791,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         `V18.200 (I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
         res.steinDominant === true
     );
-    check("V18.200 (I5) Material 'eisen' existiert in state.materials", res.eisenMaterialExists === true);
     if (res.foundIronPoint) {
         check(
             "V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen",

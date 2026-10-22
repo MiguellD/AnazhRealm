@@ -227,7 +227,6 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 active: true,
                 blueprintName: "stein_block",
                 phantomMesh: phantom,
-                phantomOnGround: true,
             };
             r.confirmBuild();
             r._clearBuildMode();

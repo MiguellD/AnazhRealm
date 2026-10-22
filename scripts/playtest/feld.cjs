@@ -1714,7 +1714,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         };
 
         // (1) die Resonanz-Tabelle + der schöpferische Akt
-        out.tableExists = !!T2E && typeof T2E.lebendig === "object" && typeof T2E.dichte === "object";
         out.createAct = !!A2E && typeof A2E.create === "object";
 
         // (2) _appraiseSubstance — die Substanz färbt das Gefühl
@@ -1770,7 +1769,7 @@ async function checkBandV1746EmotionSubstance(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
+    check("V17.46 Substanz: der create-Akt", res.createAct);
     check(
         "V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt",
         res.lebendigPeace && res.dichteHope

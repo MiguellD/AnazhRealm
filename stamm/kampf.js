@@ -1359,6 +1359,8 @@ class AnazhRealm_kampf {
         // zahlt), nie in die Hand genommen (Befund 7: der Wagen rutschte in die Hand).
         if (role === "portal" || role === "workshop-station" || role === "machine" || role === "vehicle")
             return "place"; // Welt-Apparate
+        // Was ein Verb der Welt aus seiner Form trägt (die Bank, die Leiter — `WERK_VERBEN`, bauen.K5), stellt man hin.
+        if (this._isSitzbar(bp) || this._isKletterbar(bp)) return "place";
         // architecture / rollenlos: die FORM entscheidet (_isGraspableImplementForm) — spitz/klingen ODER
         // griff-elongiert und handgroß → „hold“; sonst „place“ (konservativ, bricht keinen Block).
         return this._isGraspableImplementForm(bp) ? "hold" : "place";

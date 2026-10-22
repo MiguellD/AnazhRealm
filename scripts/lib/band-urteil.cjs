@@ -127,11 +127,9 @@ function ortGier(ort) {
 }
 
 // DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
-// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Bis 07.10. nahm die
-// Linse den Ort aus dem Aufruf (`band --ort`) und prüfte nur den Abstand des Spielers: eine Serie mit laufendem Dorf-Zug
-// oder anderem Blick zog die Ratsche eines Orts, dessen Zustand sie nie hatte. Ein Lauf ohne Aufzeichnung (vor dem
-// 07.10.) ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
-// gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
+// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne
+// Aufzeichnung (vor dem 07.10.) ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte
+// (ego | third), `z.sicht` die gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
 function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
     const f = [];
@@ -1053,10 +1051,9 @@ function versionAbstand(kopf, gemessen) {
 }
 
 // H2b DIE FRISCHE (K26, rein): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht), steht gemessen, an
-// höchstens einer Version vor dem Kopf, an ihrem Ort, Gerät und in ihrer Sicht; ihre Gesamt-Zeile ist höchstens die Summe der
-// Klassen (darüber feuert sie nie — die Mess-Wiese trug 4 095 487 Dreiecke über 1 295 324); und gegen jede gegebene Messung
-// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen
-// 05.–11.10. auf der Radeon, gerichtet auf der GTX, nie nachgezogen.
+// höchstens einer Version vor dem Kopf, an ihrem Ort, Gerät und in ihrer Sicht; ihre Gesamt-Zeile ist höchstens die
+// Summe der Klassen (darüber feuert sie nie — die Mess-Wiese trug 4 095 487 Dreiecke über 1 295 324); und gegen jede
+// gegebene Messung (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit.
 function ratscheFrische({ haushalt, version, ratschen, messungen }) {
     const rot = [];
     const paesse = haushalt.paesse;

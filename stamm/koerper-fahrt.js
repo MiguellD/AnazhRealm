@@ -534,8 +534,13 @@ class AnazhRealm_koerper_fahrt {
             // reist ins Profil (die Wasserlinien-Quelle: Archimedes statt
             // Erst-Wurf-0.25; dieselbe Messung wie das floats-Gate).
             dichte: dichteMittel,
+            // ein Werk ohne Antrieb (die Bank, `sitzbar` — nie zugleich moveable) trägt den Sitzenden und fährt nicht
             topSpeedMul:
-                1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
+                entry.affordances && entry.affordances.sitzbar
+                    ? 0
+                    : 1 +
+                      Math.min(HE.radCap, radCount * HE.radMul) +
+                      (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
             kBrake:
                 radCount > 0
@@ -746,8 +751,11 @@ class AnazhRealm_koerper_fahrt {
         return id !== null && id !== undefined && !!e && e.id === id;
     }
 
+    // Aufsitzen: auf ein Werk, das fährt (moveable), oder auf eines, das trägt, ohne zu fahren (sitzbar — die Bank: der Ritt
+    // ohne Antrieb, `_vehicleProfile` gibt ihm kein Tempo).
     mountArchitecture(entry) {
-        if (!entry || !entry.affordances || !entry.affordances.moveable) {
+        const a = entry && entry.affordances;
+        if (!a || !(a.moveable || a.sitzbar)) {
             this.log("Mount: Architektur ist nicht fahrbar", "INFO");
             return { ok: false, reason: "not_moveable" };
         }
@@ -932,18 +940,112 @@ class AnazhRealm_koerper_fahrt {
         return null;
     }
 
-    // Toggle: wenn nicht-mounted und Mount-Kandidat in Reichweite → mount.
-    // Wenn schon mounted → dismount. Single-Pfad für die E-Taste.
-    toggleMountAtPlayer() {
-        if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
-            return this.dismountArchitecture();
+    // DIE TASTE E (`FAHR_TASTEN.einsteigen`, bauen.K5): wer reitet oder sitzt, steigt ab; wer an einer Leiter hängt, lässt
+    // los; sonst geht sie die EINE Verb-Tafel (`WERK_VERBEN`) in ihrer Reihe — das nächste Werk in Reichweite, das das Verb
+    // aus seiner Form trägt (`entry.affordances`), und sein Akt. Vorher kannte E zwei Verben in zwei Zwillingen (Portal, dann
+    // Ritt), Sitzen und Klettern gab es nicht. → { ok, verb, … }
+    _werkVerbAmSpieler() {
+        const pl = this.state.player;
+        if (pl.mountedArch !== null && pl.mountedArch !== undefined)
+            return Object.assign({ verb: "absteigen" }, this.dismountArchitecture());
+        if (pl.klettert) return Object.assign({ verb: "loslassen" }, this._leiterLassen());
+        if (this._portalOverlay) return { ok: false, reason: "im_portal" };
+        for (const v of AnazhRealm.WERK_VERBEN) {
+            const entry = this._findNearestAffordanceEntry(v.aff, AnazhRealm[v.reich]);
+            if (entry) return Object.assign({ verb: v.verb }, this[v.tun](entry));
         }
-        const entry = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
-        if (!entry) {
-            this.log("Mount: kein fahrbares Compound in Reichweite", "INFO");
-            return { ok: false, reason: "none_in_range" };
+        this.log("E: kein Werk mit einem Verb in Reichweite", "INFO");
+        return { ok: false, reason: "none_in_range" };
+    }
+
+    // Der Hinweis am Bild (je Frame über `tickAffordances`): „E — <Verb>: <Werk>" für das Verb, das E jetzt täte (dieselbe
+    // Reihe wie `_werkVerbAmSpieler`). Läuft nur in der Heimat-Welt — im Portal ist der Loop eingefroren.
+    _tickWerkVerbHinweis() {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("portal-prompt");
+        if (!el) return;
+        const pl = this.state.player;
+        let text = null;
+        if (pl && pl.klettert) text = "E — loslassen";
+        else if (pl && pl.mountedArch == null)
+            for (const v of AnazhRealm.WERK_VERBEN) {
+                const e = this._findNearestAffordanceEntry(v.aff, AnazhRealm[v.reich]);
+                if (!e) continue;
+                const bp = this.state.blueprints && this.state.blueprints[e.type];
+                const name = (bp && ((bp.portalMeta && bp.portalMeta.label) || bp.label)) || e.type;
+                text = `E — ${v.wort}: ${name}`;
+                break;
+            }
+        if (text) {
+            if (el.textContent !== text) el.textContent = text;
+            el.hidden = false;
+        } else if (!el.hidden) el.hidden = true;
+    }
+
+    // KLETTERN (bauen.K5 — die Leiter trägt): der Spieler greift die Leiter an der Seite, auf der er steht (sein Rand eine
+    // Wand-Breite vor ihrer Hülle), und hängt an ihr (`player.klettert`); der Schritt der Bewegung (`_leiterSchritt`) trägt ihn.
+    _leiterGreifen(entry) {
+        const r = this._leiterRahmen(entry);
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!r || !pm) return { ok: false, reason: "keine_huelle" };
+        let dx = pm.x - r.cx;
+        let dz = pm.z - r.cz;
+        const d = Math.hypot(dx, dz) || 1;
+        dx /= d;
+        dz /= d;
+        const weg = Math.abs(dx) * r.hx + Math.abs(dz) * r.hz + AnazhRealm.PLAYER_WALL_RADIUS;
+        pm.x = r.cx + dx * weg;
+        pm.z = r.cz + dz * weg;
+        pm.y = Math.max(pm.y, r.fuss + AnazhRealm.PLAYER_FOOT_OFFSET);
+        if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+        this.state._fieldVy = 0;
+        this.state.player.klettert = { id: entry.id, dx, dz };
+        return { ok: true, entry };
+    }
+    _leiterLassen() {
+        this.state.player.klettert = null;
+        this.state._parkourKletter = 0;
+        return { ok: true };
+    }
+    // Die Hülle einer Leiter in der Welt (ihre Blocker-Boxen): Mitte, halbe Weiten, Krone und Fuß.
+    _leiterRahmen(entry) {
+        const boxen = entry && entry.blockerAABBs;
+        if (!boxen || !boxen.length) return null;
+        let [x0, x1, z0, z1, top] = [Infinity, -Infinity, Infinity, -Infinity, -Infinity];
+        for (const b of boxen) {
+            x0 = Math.min(x0, b.minX);
+            x1 = Math.max(x1, b.maxX);
+            z0 = Math.min(z0, b.minZ);
+            z1 = Math.max(z1, b.maxZ);
+            top = Math.max(top, b.topY);
         }
-        return this.mountArchitecture(entry);
+        const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
+        return { cx, cz, hx: (x1 - x0) / 2, hz: (z1 - z0) / 2, top, fuss: entry.position.y - 0.5 };
+    }
+    // DER SCHRITT AN DER LEITER (Leser: die Bewegung je Sim-Schritt, `_parkourKletter`): W steigt, S steigt ab, ohne Taste
+    // hält er — im Steig-Tempo des Parkour-Gesetzes, ohne Ausdauer (die Leiter trägt). An der Krone tritt W auf das, was
+    // dahinter in Kronen-Höhe trägt (`_traegerUnter`), sonst hält er oben; am Fuß lässt S los. Ohne Leiter (abgebaut) oder
+    // ohne Gesetz lässt er los. → die Steig-Geschwindigkeit, null: er hängt an keiner.
+    _leiterSchritt(parkG) {
+        const k = this.state.player && this.state.player.klettert;
+        if (!k) return null;
+        const entry = (this.state.architectures || []).find((e) => e.id === k.id);
+        const r = entry ? this._leiterRahmen(entry) : null;
+        if (!r || !parkG) return (this._leiterLassen(), null);
+        const keys = this.state.keys;
+        const pm = this.state.playerMesh.position;
+        const fuss = pm.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+        if (keys.w && fuss >= r.top - 0.05) {
+            const weg = Math.abs(k.dx) * r.hx + Math.abs(k.dz) * r.hz + AnazhRealm.PLAYER_WALL_RADIUS;
+            const [bx, bz] = [r.cx - k.dx * weg, r.cz - k.dz * weg];
+            const t = this._traegerUnter(bx, bz, r.top + AnazhRealm.PLAYER_STEP_UP, 2 * AnazhRealm.PLAYER_STEP_UP);
+            if (t === null) return 0;
+            pm.set(bx, t + AnazhRealm.PLAYER_FOOT_OFFSET, bz);
+            this._leiterLassen();
+            return null;
+        }
+        if (keys.s && fuss <= r.fuss + 0.05) return (this._leiterLassen(), null);
+        return (keys.w ? parkG.kletterV : 0) - (keys.s ? parkG.kletterV : 0);
     }
 
     // DIE AUFSTANDSPUNKTE eines gerittenen Werks (m, Fahrt-Rahmen: vorn/hinten längs, quer zur Seite): ein
@@ -1786,7 +1888,7 @@ class AnazhRealm_koerper_fahrt {
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
         this._tickLiftingAffordances();
-        this._tickPortalAffordance();
+        this._tickWerkVerbHinweis();
     }
 
     // Bauplan mit role="soul" als Seele anwenden: parts → bodyParts in state.customSouls (eindeutiger
@@ -2319,6 +2421,40 @@ Object.defineProperties(AnazhRealm, {
     },
 });
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// DIE EINE VERB-TAFEL DER WERKE (bauen.K5: jedes gesetzte Werk trägt seine Verben): je Verb die Affordanz, die das Werk aus
+// seiner Form trägt (`computeBlueprintAffordances`), die Reichweite (Name der Konstante), das Wort am Bild und der Akt. Die
+// Taste E geht sie in dieser Reihe (`_werkVerbAmSpieler`: ein Portal schlägt den Ritt), der Hinweis liest sie
+// (`_tickWerkVerbHinweis`). Sitzen ist der Ritt auf einem Werk ohne Antrieb (dieselbe Sitz-Quelle `_attachPointFor`).
+AnazhRealm.WERK_VERBEN = Object.freeze([
+    Object.freeze({
+        verb: "portal",
+        aff: "isPortal",
+        reich: "PORTAL_REACH_M",
+        wort: "Portal betreten",
+        tun: "enterPortal",
+    }),
+    Object.freeze({
+        verb: "fahren",
+        aff: "moveable",
+        reich: "MOUNT_RANGE_M",
+        wort: "einsteigen",
+        tun: "mountArchitecture",
+    }),
+    Object.freeze({
+        verb: "sitzen",
+        aff: "sitzbar",
+        reich: "MOUNT_RANGE_M",
+        wort: "hinsetzen",
+        tun: "mountArchitecture",
+    }),
+    Object.freeze({
+        verb: "klettern",
+        aff: "kletterbar",
+        reich: "MOUNT_RANGE_M",
+        wort: "klettern",
+        tun: "_leiterGreifen",
+    }),
+]);
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal), auf die `_kamFov` Tempo und Bogen-Auszug legt
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

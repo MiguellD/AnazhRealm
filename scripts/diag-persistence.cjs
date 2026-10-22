@@ -137,9 +137,9 @@ async function serverLauf(quelle, tod) {
 }
 
 // (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
-// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
-// `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
-// unter derselben Version). Bis 1310-16 sandte der Server keinen Validator — jeder Zweit-Boot lud 8,84 MB neu.
+// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die
+// Frage mit `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag
+// (kein alter Code unter derselben Version).
 async function cacheProbe(quelle) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
     fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");

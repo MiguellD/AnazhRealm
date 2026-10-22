@@ -23,7 +23,8 @@ class AnazhRealm_gelaende_kollision {
     // umhüllen. Nie max(sx,sz)-Quadrat: dünne Wände würden Quadrate (Tür-Lücken zu), rotierte Parts
     // ragten hinaus. Der EINE Chokepoint für Spieler-Kapsel · Raycast · Wasser-Stempel.
     _blockerComputePartAABB(entry, part, mul = 1) {
-        if (!part || !part.size || !part.position) return null;
+        if (!part || !part.size) return null;
+        const pos = part.position || {}; // ohne Lage steht das Teil im Ursprung, wie Mesh und Bau-Buch es lesen
         // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden
         // (groupOrigin + part.position·scale, Größe part.size·scale — der
         // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Werks
@@ -32,9 +33,9 @@ class AnazhRealm_gelaende_kollision {
         const hx = ((part.size.x || 1) / 2) * scale;
         const hy = ((part.size.y || 1) / 2) * scale;
         const hz = ((part.size.z || 1) / 2) * scale;
-        const px = (part.position.x || 0) * scale;
-        const py = (part.position.y || 0) * scale;
-        const pz = (part.position.z || 0) * scale;
+        const px = (pos.x || 0) * scale;
+        const py = (pos.y || 0) * scale;
+        const pz = (pos.z || 0) * scale;
         // Part-Euler (XYZ, Spiegel von THREE.Euler 'XYZ' — die Mesh-Wahrheit).
         const pr = part.rotation || null;
         const ax = pr ? pr.x || 0 : 0;

@@ -1266,11 +1266,9 @@ function probe(selbsttest) {
         if (tot && tot.parent) r.removeCreature(tot);
     }
 
-    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer. Befund 15.10. (Radeon, Genesis/Wiese Third,
-    // Zerlegung je Kaskaden-Render): r184 projizierte je Render 39–72 Nicht-Werfer (Frustum-Test, Fassade, Liste,
-    // Sortierung), die die Schatten-Funktion danach verwarf — die Kaskaden-Kamera sah die Ebene der Welt. Der Wurf IST die
-    // Ebene SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein
-    // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
+    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer. Der Wurf IST die Ebene
+    // SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein Knoten
+    // trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
     // der Szene: gesehen ⇔ wirft. ──
     {
         const E = 1 << r.constructor.SHADOW_TWIN_LAYER;

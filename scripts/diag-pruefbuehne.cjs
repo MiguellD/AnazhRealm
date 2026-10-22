@@ -649,34 +649,34 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 }
 
 // (7) DAS BILD DER S0-PROBE (`--licht`, K11 Abnahme): ECHTER Renderer (swiftshader und das Holz kienspan; `--echt` die
-// Hardware-GPU im Fenster), dieselbe Bühne, dieselbe Feuerstelle über den Satz des Menschen, die Nacht still (Mitternacht,
-// Sonne, Sommer — `__buehne`, Lehre 17), das Auge 2 m vor dem Feuer in Augenhöhe, Blick auf das Bett; aufgenommen über den
-// AUSGABE-PFAD (`__ausgabeAufnahme`: Tonkurve + sRGB + Post, was der Spieler sieht). Gemessen wird der FEUERKREIS: der Boden in
-// 0,75 / 1,25 / 1,75 m um die Feuerstelle (je 24 Winkel, auf den Schirm projiziert, 3×3 gemittelt), Luma der Ausgabe. Die
-// Abnahme der Karte: Luma ≥ 0,15. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und der Licht-Pool in jedem Stoff
-// (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der Kreis MUSS unter die Schwelle fallen
-// und den Pool beim Namen nennen.
-// DIE FRIST (Kartenkopf: eine Linse ≤ 3 min CI): der ganze Lauf steht unter EINER Uhr (`S0_FRIST_S`), jede Phase (Laden,
-// Boot, Satz, Gestalt, Schuss, Schein) läuft gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase (bis
-// 12.10. hielt nur die Protokoll-Grenze von 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur
-// Versuche). Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
-// auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
-// Warte-Takten (24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
-// die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
-// DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Feuerkreis liest nur Boden, Feuer,
-// Pool und Ausgabe — der Schuss zeichnet über den Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) aus der
-// Welt-Szene GENAU das: den Boden-Satz und die Feuerstelle (ihren Bau-Satz, ihre Gruppe), dazu die fremden Szenen (Post,
-// PMREM) und die Lichter; die Zellen beider Sätze und jede gewählte Instanz urteilt das EINE Gesetz der Pass-Wahl
+// Hardware-GPU im Fenster), dieselbe Bühne, dieselbe Feuerstelle über den Satz des Menschen, die Nacht still
+// (Mitternacht, Sonne, Sommer — `__buehne`, Lehre 17), das Auge 2 m vor dem Feuer in Augenhöhe, Blick auf das Bett;
+// aufgenommen über den AUSGABE-PFAD (`__ausgabeAufnahme`: Tonkurve + sRGB + Post, was der Spieler sieht). Gemessen wird
+// der FEUERKREIS: der Boden in 0,75 / 1,25 / 1,75 m um die Feuerstelle (je 24 Winkel, auf den Schirm projiziert, 3×3
+// gemittelt), Luma der Ausgabe. Die Abnahme der Karte: Luma ≥ 0,15. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und
+// der Licht-Pool in jedem Stoff (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der
+// Kreis MUSS unter die Schwelle fallen und den Pool beim Namen nennen. DIE FRIST (Kartenkopf: eine Linse ≤ 3 min CI):
+// der ganze Lauf steht unter EINER Uhr (`S0_FRIST_S`), jede Phase (Laden, Boot, Satz, Gestalt, Schuss, Schein) läuft
+// gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase (bis 12.10. hielt nur die Protokoll-Grenze von
+// 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur Versuche). Und DIE STILLE BIS ZUM
+// SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet auf alles, was davor in die
+// Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den Warte-Takten (24
+// Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet die Seite nichts
+// (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames). DIE NAH-BÜHNE DES SCHUSSES
+// (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe —
+// der Schuss zeichnet über den Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) aus der Welt-Szene
+// GENAU das: den Boden-Satz und die Feuerstelle (ihren Bau-Satz, ihre Gruppe), dazu die fremden Szenen (Post, PMREM)
+// und die Lichter; die Zellen beider Sätze und jede gewählte Instanz urteilt das EINE Gesetz der Pass-Wahl
 // (`_passTrifft`) mit der Kugel um das Feuer. Gemessen 12.10.: die ganze Welt übersetzte im ersten Schuss 54 Programme
-// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s). Bis K60-N2 urteilte die Hülle (Kugel in Welt-
-// Lage gegen die Kugel um das Feuer, Sätze mit der Überall-Hülle 1e9 immer nah) und je Befund ein Stempel (der Fern-Ring K16,
-// der Portal-Nebel 14.10.) — jedes Mal riss die Frist, ehe der nächste Gast seinen Stempel bekam. K60-N2: die Tore des
-// Genesis-Platzes (Bau-Satz, Hülle 2–4 m vom Feuer) standen im Schuss, wenn die Welt sie vor ihm gebaut hatte — Kopf
-// 91dff111 lokal 11 Befehle, Programme/Pipelines [10,11,11] neben 6 und [8,8,8] (je nach Rennen), auf dem Runner riss die
-// Frist zweimal in Folge (CI 38628426005, 38662750291); der Himmel und seine Sterne zeichneten in jedem Schuss.
-// DIE WAND: was der Renderer im Schuss zeichnet (`_objects.get`) und der Feuerkreis nicht liest, ist ROT beim Namen (Bau-
-// Sätze mit den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt
-// (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
+// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s). Bis K60-N2 urteilte die Hülle (Kugel in
+// Welt- Lage gegen die Kugel um das Feuer, Sätze mit der Überall-Hülle 1e9 immer nah) und je Befund ein Stempel (der
+// Fern-Ring K16, der Portal-Nebel 14.10.) — jedes Mal riss die Frist, ehe der nächste Gast seinen Stempel bekam.
+// K60-N2: die Tore des Genesis-Platzes (Bau-Satz, Hülle 2–4 m vom Feuer) standen im Schuss, wenn die Welt sie vor ihm
+// gebaut hatte — Kopf 91dff111 lokal 11 Befehle, Programme/Pipelines [10,11,11] neben 6 und [8,8,8] (je nach Rennen),
+// auf dem Runner riss die Frist zweimal in Folge; der Himmel und seine Sterne zeichneten in jedem Schuss. DIE WAND: was
+// der Renderer im Schuss zeichnet (`_objects.get`) und der Feuerkreis nicht liest, ist ROT beim Namen (Bau- Sätze mit
+// den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt (jede
+// gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
 const S0_NAH_INSTALL = () => {
     window.__s0Nah = (mitte, radius, mit) => {
         const st = window.anazhRealm.state;
@@ -798,11 +798,10 @@ const S0_NAH_INSTALL = () => {
         };
     };
 };
-// DAS URTEIL ÜBER DIE GESTALT DER FEUERSTELLE (K10-6 Nachbesserung 2): wartet die Linse auf die Feuerstelle, nennt sie, was
-// fehlt, beim Namen — fiel sie aus der Welt, steht der Rufer von `removeArchitecture` (die Wache, `__s0Wache`) im Urteil, und
-// die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das Buch, die Schlange,
-// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt. Befund (CI 38660872064, voll 11/18): „die
-// Feuerstelle wächst" 158 s lang, ohne Täter — lokal und in jedem anderen Lauf stand sie nach 1–3 s.
+// DAS URTEIL ÜBER DIE GESTALT DER FEUERSTELLE (K10-6 Nachbesserung 2): wartet die Linse auf die Feuerstelle, nennt sie,
+// was fehlt, beim Namen — fiel sie aus der Welt, steht der Rufer von `removeArchitecture` (die Wache, `__s0Wache`) im
+// Urteil, und die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das
+// Buch, die Schlange, was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt.
 const S0_GESTALT_INSTALL = () => {
     const r = window.anazhRealm;
     const weg = Object.getPrototypeOf(r).removeArchitecture;
@@ -1168,12 +1167,10 @@ async function lichtLauf() {
                             window.__s0Wache = feuer; // wer sie ab jetzt aus der Welt nimmt, steht im Urteil beim Namen
                             return feuer ? null : "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)";
                         }
-                        // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
-                        // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
-                        // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
-                        // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
-                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle.
-                        // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
+                        // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im
+                        // Instanz-Pool, `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN
+                        // Weltbild-Urteils `_weltbildFehlt`: der Ring bis `RING_EXIST_FLOOR`). Das Urteil
+                        // (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
                         for (const weiter = window.__deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {

@@ -408,18 +408,10 @@ async function checkBandOmegaGrammatik(ctx) {
         o.doricNoBuckle = r._failsUnderLoad(temple).buckles === false;
         const small = { parts: r._buildClassicalTemple("dorisch", { columnsFront: 4, columnsSide: 5 }) };
         o.loadCloses = r._loadPath(small).intact === true && r._loadPath(small).floatingParts.length === 0;
-        // KONTRAST: über-schlank knickt
-        o.overSlenderBuckles =
-            r._failsUnderLoad({
-                parts: [
-                    {
-                        shape: "flutedColumn",
-                        material: "stein",
-                        size: { x: 0.2, y: 6, z: 0.164 },
-                        position: { x: 0, y: 3, z: 0 },
-                    },
-                ],
-            }).buckles === true;
+        // KONTRAST: die über-schlanke Säule unter dem Steinblock knickt (Euler mit Last)
+        const saeule = { shape: "flutedColumn", material: "stein", size: { x: 0.2, y: 6, z: 0.164 }, position: { x: 0, y: 3, z: 0 } };
+        const block = { shape: "box", material: "stein", size: { x: 3, y: 1, z: 3 }, position: { x: 0, y: 6.5, z: 0 } };
+        o.overSlenderBuckles = r._failsUnderLoad({ parts: [saeule, block] }).buckles === true;
         // die WAND-Verfeinerung (V18.242): eine breite tragende Wand knickt NICHT (keine freie Säule)
         o.wallNoBuckle =
             r._failsUnderLoad({
@@ -1328,10 +1320,10 @@ async function checkBandWave10b(ctx) {
             ];
             const ppos = r.state.playerMesh.position;
             const entry = r.spawnArchitecture("test_10b3_car", { x: ppos.x, y: ppos.y, z: ppos.z }, { silent: true });
-            const mountRes = r.toggleMountAtPlayer();
+            const mountRes = r._werkVerbAmSpieler();
             out.mountSucceeds = mountRes && mountRes.ok === true;
             out.playerMountedTo = r.state.player.mountedArch === entry.id;
-            const dismountRes = r.toggleMountAtPlayer();
+            const dismountRes = r._werkVerbAmSpieler();
             out.dismountSucceeds = dismountRes && dismountRes.ok === true;
             out.playerDismounted = r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
             const dummy = { affordances: { moveable: false } };
@@ -1344,7 +1336,7 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
             r.cloneBlueprint("test_10b3_car", "test_10b3_far");
             r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
-            const farMountRes = r.toggleMountAtPlayer();
+            const farMountRes = r._werkVerbAmSpieler();
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
             r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
 
@@ -1421,11 +1413,11 @@ async function checkBandWave10b(ctx) {
 
     if (wave10b3Results && !wave10b3Results.error) {
         check(
-            "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
+            "Welle 10b.3: E (die Verb-Tafel) → mount erfolgreich + mountedArch = entry.id",
             wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
         );
         check(
-            "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
+            "Welle 10b.3: E nochmal → dismount + mountedArch null",
             wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
         );
         check(

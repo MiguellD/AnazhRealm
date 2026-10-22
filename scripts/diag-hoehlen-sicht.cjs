@@ -1497,10 +1497,10 @@ const server = statikServer();
             } catch (e) {
                 aus.code.graphFehler = String((e && e.message) || e).split("\n")[0];
             }
-            // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und `schuttKorn`
-            // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
-            // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
-            // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
+            // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und
+            // `schuttKorn` mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das
+            // Gesetz rechnet: über einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das
+            // Zahlen-Rechenwerk des Kerns an 400 Punkten.
             aus.code.feinEigenHash = !window.__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;

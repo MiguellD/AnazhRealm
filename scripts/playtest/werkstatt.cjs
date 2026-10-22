@@ -59,7 +59,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
             Math.abs(vLean.leanDir.x) + Math.abs(vLean.leanDir.z) > 0.1;
         const vFloat = r._workshopPhysicsVerdict(floatTower);
         o.floatMarked = vFloat.floatingParts.length > 0 && lineHas(vFloat, /schwebend|Lastpfad/);
-        const vSlender = r._workshopPhysicsVerdict(P([pt(0, 0, 0, 0.2, 5, 0.2)], "architecture"));
+        const vSlender = r._workshopPhysicsVerdict(P([pt(0, 2.5, 0, 0.06, 5, 0.06, light), pt(0, 5.2, 0, 3, 0.4, 3)], "architecture"));
         o.slenderKnickt = vSlender.buckles === true && lineHas(vSlender, /schlank|knickt/);
         const table = P(
             [
@@ -92,7 +92,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
     check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
     check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
-    check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
+    check("Ω-W3: die Stange unter dem Block knickt (Versagen sichtbar)", res.slenderKnickt === true);
     check("Ω-W3: stabiles Bauwerk RUHT (lean 0, steht, keine Warnung)", res.stableRuht === true);
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
@@ -556,7 +556,6 @@ async function checkBandCadWorkshop(ctx) {
                 out.triggerOpens = overlay.hidden === false;
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             }
-            out.triggerExists = !!trigger;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -572,7 +571,6 @@ async function checkBandCadWorkshop(ctx) {
         check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
         check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
-        check("V18.47 Omnibox: der Maus-Trigger in der Topbar existiert (⌕ Suche)", omniResults.triggerExists);
         check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
         check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);

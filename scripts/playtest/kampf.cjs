@@ -13,6 +13,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
+        const pm = r.state.playerMesh.position;
         const H = r.constructor.HARVEST;
         const savedTool = p.equipped ? p.equipped.held : null;
         const savedStam = p.stamina;
@@ -67,12 +68,12 @@ async function checkBandV1755HarvestEffort(ctx) {
         p.stamina = 1e6;
         clearInv();
         p.equipped.held = null;
-        const aHand = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        const aHand = r.spawnArchitecture("stein_block", { x: pm.x + 8, y: pm.y, z: pm.z });
         const handStrikes = strikeUntilGone(aHand, 200);
         const steinHand = steinCount();
         clearInv();
         p.equipped.held = "stein_block";
-        const aTool = r.spawnArchitecture("stein_block", { x: p.x + 12, y: p.y, z: p.z });
+        const aTool = r.spawnArchitecture("stein_block", { x: pm.x + 12, y: pm.y, z: pm.z });
         const toolStrikes = strikeUntilGone(aTool, 200);
         const steinTool = steinCount();
         out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
@@ -91,7 +92,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         r.setGameMode("pfad");
         p.equipped.held = null;
         p.stamina = 100;
-        const aS = r.spawnArchitecture("stein_block", { x: p.x + 16, y: p.y, z: p.z });
+        const aS = r.spawnArchitecture("stein_block", { x: pm.x + 16, y: pm.y, z: pm.z });
         const stamBefore = p.stamina;
         r._strikeArchitecture(aS);
         out.staminaDrains = p.stamina < stamBefore;
@@ -143,6 +144,7 @@ async function checkBandV1755W2Profile(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
+        const pm = r.state.playerMesh.position;
         const blu = r.state.blueprints;
         const savedTool = p.equipped ? p.equipped.held : null;
         const savedWeapon = p.equipped ? p.equipped.held : null;
@@ -204,7 +206,7 @@ async function checkBandV1755W2Profile(ctx) {
         r.setGameMode("frieden");
         p.stamina = 1e6;
         p.equipped.held = "__w2_maul";
-        const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        const aRock = r.spawnArchitecture("stein_block", { x: pm.x + 8, y: pm.y, z: pm.z });
         let rs = 0;
         while (aRock && r.state.architectures.indexOf(aRock) !== -1 && rs < 300) {
             r._strikeArchitecture(aRock);
