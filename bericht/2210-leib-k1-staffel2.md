@@ -20,3 +20,20 @@ Roh: OMEN `p3/n2210/hieb/` (staffel2/, probe/, Sammel-Lauf); hier `bericht/2210-
 
 Status ZWISCHENSTAND + Übergabe:
 - Leib K1 St. 2 an der GTX: hieb ist gemessen. springen und einsteigen brauchen die Verben in der Linse selbst (der Patch reicht nicht mehr); das ist eine Werkzeug-Karte.
+
+## Nachtrag 22.10. 12:56: gehen am Kopf e3dd2b67 (nach 60b26c9b, Erdungs-Cache auf der Schritt-Uhr)
+`werkbank latenz --verb gehen --sicht ego,third --proben 50` an der GTX, frischer Boot (n2010-b2a an e3dd2b67, sauber), Wiese, 1920×1080, Einschwingen `lauf 10 --ein 20 --ruhe 300 --regler voll --tiere frei`. Ego und Third liefen in einem Aufruf ohne Hänger (EXIT 0, 2 min). LATENZ GRÜN (Bild 15,9 ms).
+
+Werte in ms:
+
+| gehen | p50 | p95 | max | Kette | Kurve | Takte | n |
+|---|---|---|---|---|---|---|---|
+| Ego | 29,7 | **38,7** | 46,8 | 13,0 | 16,6 | 4 | 50/50 |
+| Third | 30,5 | **43,1** | 45,9 | 11,3 | 17,0 | 4 | 50/50 |
+
+- Das Eingabe-Glied ist 0,3 ms, Hörer 0 ms.
+- Gegen 2160be58 (21.10., ebenfalls EIN Boot): Ego p95 41,0 → 38,7, Third p95 40,9 → 43,1, p50 29,6/32,2 → 29,7/30,5.
+- Je Sicht ist das ein Boot gegen einen Boot. Die Verschiebung von ±2 ms in entgegengesetzter Richtung liegt im Streu-Rahmen, der Pfad wird nicht schneller oder langsamer gesprochen.
+- Der Weg vom Tastendruck zum Bild bleibt vier Takte. Die Kurve (Schritt-Hochlauf ~17 ms) trägt den größten Teil, die Kette 11–13 ms.
+
+Roh: OMEN `p3/n2210/lg/`, hier `bericht/2210-leib-k1-staffel2/gehen-e3dd/`.
