@@ -802,30 +802,19 @@ async function checkBandWFFluss(ctx) {
         const boot = (mat) => {
             const bp = mkBoat(mat);
             r.state.blueprints[bp.name] = bp;
-            const e = r.spawnArchitecture(
-                bp.name,
-                { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z },
-                { silent: true, precise: true }
-            );
+            const e = r.spawnArchitecture(bp.name, { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z }, { silent: true, precise: true });
             try {
-                const g = r._fahrzeugGestalt(e),
-                    w = r._werkBoden(e)(o.x, o.z),
-                    s = r._koerperWasser(o.x, o.z, w);
+                const g = r._fahrzeugGestalt(e), w = r._werkBoden(e)(o.x, o.z), s = r._koerperWasser(o.x, o.z, w);
                 return { g, w, s, f: r._fahrBoden(e)(o.x, o.z) };
             } finally {
                 if (e) r.removeArchitecture(e);
                 delete r.state.blueprints[bp.name];
             }
         };
-        const holz = o ? boot("holz") : null,
-            stein = o ? boot("stein") : null;
+        const holz = o ? boot("holz") : null, stein = o ? boot("stein") : null;
         out.tickFloatConsumed =
-            !!holz &&
-            holz.g.linie < Infinity &&
-            holz.s - holz.w > holz.g.linie &&
-            Math.abs(holz.f - (holz.s - holz.g.linie)) < 1e-6 &&
-            !!stein &&
-            stein.f === stein.w;
+            !!holz && holz.g.linie < Infinity && holz.s - holz.w > holz.g.linie && Math.abs(holz.f - (holz.s - holz.g.linie)) < 1e-6 &&
+            !!stein && stein.f === stein.w;
         return out;
     });
     check(
@@ -850,6 +839,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
+
 
         // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
@@ -1044,6 +1034,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
             if (savedSoul) r.applyPlayerSoul(savedSoul);
         }
 
+
         return out;
     });
 
@@ -1164,6 +1155,7 @@ async function checkBandV18206SpeedTrade(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
+
 
         const savedSoul = r.state.player && r.state.player.soul;
         const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
@@ -1454,7 +1446,7 @@ async function checkBandTierFern(ctx) {
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
         if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
-
+    
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
         for (const c of s.creatures.slice()) r.removeCreature(c);
         const saveMax = s.maxCreatures;
@@ -1463,7 +1455,7 @@ async function checkBandTierFern(ctx) {
         r.isInFrustum = function () {
             return true; // Bild-Gesetz und ferner Gang laufen nur inFrustum — für die Messung immer „im Bild"
         };
-
+    
         // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
         // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
         let zTris = 0,
@@ -1519,7 +1511,7 @@ async function checkBandTierFern(ctx) {
             r.updateCreatures(0.02);
             pin(dist);
         };
-
+    
         // ── (N) NAH voll · FERN grob — was die Haupt-Kamera zeichnet ──
         tick(0.4 * fern);
         o.nahMeshes = sichtbar(c);
@@ -1535,7 +1527,7 @@ async function checkBandTierFern(ctx) {
         o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
         o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
         o.checks.nFernGelenkig = o.fernBones >= 20; // fern ist die Grobstufe gelenkig (dieselben Knochen)
-
+    
         // ── (S) SELBST-TEST: der Schalter gestubbt (immer nah — der volle Baum auf jede Distanz) wird ERKANNT ──
         const saveStufe = r._gelenkStufe;
         r._gelenkStufe = function (gruppe) {
@@ -1546,7 +1538,7 @@ async function checkBandTierFern(ctx) {
         o.sAltTris = zTris;
         o.checks.sLensFires = !(o.sAltMeshes < 20 && o.sAltMeshes < o.nahMeshes && o.sAltTris < o.nahTris / 4);
         r._gelenkStufe = saveStufe; // restaurieren (Gate-Hook-Lehre)
-
+    
         // ── (H) HYSTERESE: Pendeln an der Kante schaltet nicht, gießt nicht ──
         const memo = A._tierOfenMemo;
         const memoVor = memo ? memo.size : -1;
@@ -1596,7 +1588,7 @@ async function checkBandTierFern(ctx) {
         o.memoDelta = memo ? memo.size - memoVor : -1;
         o.checks.hKeinGuss = gussCalls === 0 && o.memoDelta === 0;
         r.removeCreature(c);
-
+    
         // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter ──
         const mulberry32 = (a) => () => {
             a |= 0;
@@ -1678,50 +1670,25 @@ async function checkBandTierFern(ctx) {
             o.dLen = spurMit.length;
             o.checks.dIdentisch = diffAt === -1 && spurMit.length === spurOhne.length;
         }
-
+    
         r.isInFrustum = saveFrustum; // restaurieren (Gate-Hook-Lehre)
         s.maxCreatures = saveMax;
         return o;
     });
-    if (!out || out.error)
-        return check(
-            "Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)",
-            false,
-            out ? out.error : "keine Antwort der Seite"
-        );
+    if (!out || out.error) return check("Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)", false, out ? out.error : "keine Antwort der Seite");
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
-    const n = rot(
-        "fernGebaut",
-        "zeileGelesen",
-        "nToggleNah",
-        "nToggleFern",
-        "nFernGelenkig",
-        "nNahVoll",
-        "nFernGrob",
-        "nFernKleiner"
-    );
+    const n = rot("fernGebaut", "zeileGelesen", "nToggleNah", "nToggleFern", "nFernGelenkig", "nNahVoll", "nFernGrob", "nFernKleiner");
     check(
         `Tier-Fern (N): nah die feine Stufe (Haut ${out.nahBones} Bones), fern die gelenkige Grobstufe aus der Kern-Zeile (ab ${out.abKern} m, hyst ${out.hyst}): ${out.nahMeshes} → ${out.fernMeshes} Meshes, ${Math.round(out.nahTris)} → ${Math.round(out.fernTris)} Dreiecke`,
         !n,
         n && "ROT: " + n
     );
-    check(
-        `Tier-Fern SELBSTTEST (S): mit gestubbtem Schalter erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes = nah)`,
-        c.sLensFires === true
-    );
+    check(`Tier-Fern SELBSTTEST (S): mit gestubbtem Schalter erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes = nah)`, c.sLensFires === true);
     const h = rot("hKeinFlackern", "hKeinFlackernFern", "hToggleLebt", "hKeinGuss");
-    check(
-        `Tier-Fern (H): Eng-Pendeln schaltet nie (${out.flipsEng}/${out.flipsEngFern} Flips), weites Pendeln schaltet (${out.flipsWeit}), kein Guss im Takt (${out.gussCalls})`,
-        !h,
-        h && "ROT: " + h
-    );
+    check(`Tier-Fern (H): Eng-Pendeln schaltet nie (${out.flipsEng}/${out.flipsEngFern} Flips), weites Pendeln schaltet (${out.flipsWeit}), kein Guss im Takt (${out.gussCalls})`, !h, h && "ROT: " + h);
     const d = rot("dLaufe", "dFernAktiv", "dIdentisch");
-    check(
-        `Tier-Fern (D): die Sim-Spur ist BYTE-GLEICH mit/ohne Stufen-Schalter (${out.dLen || 0} Werte, FERN aktiv ${out.dFernAktivTicks}/60 Ticks)`,
-        !d,
-        d && `ROT: ${d}${out.dDiffAt >= 0 ? ` (erste Differenz @${out.dDiffAt})` : ""}`
-    );
+    check(`Tier-Fern (D): die Sim-Spur ist BYTE-GLEICH mit/ohne Stufen-Schalter (${out.dLen || 0} Werte, FERN aktiv ${out.dFernAktivTicks}/60 Ticks)`, !d, d && `ROT: ${d}${out.dDiffAt >= 0 ? ` (erste Differenz @${out.dDiffAt})` : ""}`);
 }
 
 // Der Körper geht den Weg, nicht die Uhr — eingefaltet aus gate:koerper-bewegung (D3b, Orakel Bogen 2): die Gang-Gesetze am ECHTEN
@@ -1757,27 +1724,12 @@ async function checkBandKoerperBewegung(ctx) {
         {
             const g = r._buildHumanGroup();
             const pp = s.playerMesh.position;
-            const peer = {
-                mesh: g,
-                x: pp.x + 5,
-                y: pp.y + 1,
-                z: pp.z,
-                yaw: 0,
-                meshKind: "soul",
-                soulName: "human",
-                walkPhase: 0,
-                lastMovedAt: performance.now() / 1000,
-                _gaitPX: pp.x + 4.95,
-                _gaitPZ: pp.z,
-            };
-            o.checks.konsumPeer = window.__consumes(r, "_p2pUpdatePeer", r, "_gaitTick", [
-                peer,
-                performance.now() / 1000,
-                1 / 60,
-            ]);
+            const peer = { mesh: g, x: pp.x + 5, y: pp.y + 1, z: pp.z, yaw: 0, meshKind: "soul", soulName: "human",
+                walkPhase: 0, lastMovedAt: performance.now() / 1000, _gaitPX: pp.x + 4.95, _gaitPZ: pp.z };
+            o.checks.konsumPeer = window.__consumes(r, "_p2pUpdatePeer", r, "_gaitTick", [peer, performance.now() / 1000, 1 / 60]);
             r._disposeSoulGroup(g);
         }
-
+    
         // ── (B) ZWEI-KNOCHEN-IK pur — Fußfehler über ein Ziel-Raster ──
         {
             const l1 = 0.45,
@@ -1831,7 +1783,7 @@ async function checkBandKoerperBewegung(ctx) {
                 r._gaitGesetz(rg, 0).omega === 0 &&
                 r._gaitGesetz(rg, NaN).omega === 0;
         }
-
+    
         // ── Spieler-Konsumenten-Bühne: human-Rig + gestubbte Velocity ──
         const p = s.player;
         const mesh = s.playerMesh;
@@ -1859,7 +1811,7 @@ async function checkBandKoerperBewegung(ctx) {
             for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
             return p.walkPhase - ph0;
         };
-
+    
         // ── (A) WEG-PHASE am ECHTEN Konsumenten ──
         const d1 = fahre(3, 1.0, 100);
         const d2 = fahre(6, 1.0, 200);
@@ -1882,7 +1834,7 @@ async function checkBandKoerperBewegung(ctx) {
             soll2 = r._gaitGesetz(rgA, 6).schritt / 2;
         o.checks.aSchrittKonstant =
             sd1 > 0 && Math.abs(sd1 / soll1 - 1) <= 0.1 && Math.abs(sd2 / soll2 - 1) <= 0.1 && sd2 > sd1;
-
+    
         // ── (C) POSEN-BLEND stetig am Konsumenten (Schwellen-Sprung) ──
         const blendLauf = () => {
             let maxJump = 0;
@@ -1911,7 +1863,7 @@ async function checkBandKoerperBewegung(ctx) {
         o.checks.cBlendStetig = bl.maxJump <= 0.2 + 1e-9;
         o.checks.cBlendKonvergiert = bl.wOben > 0.8 && bl.wUnten < 0.2;
         o.checks.cBlendNaNWand = Number.isFinite(r._gaitBlendStep(NaN, NaN, NaN));
-
+    
         // ── (S1) SELBST-TEST: hartes Blend gestubbt → die Messung sieht den Sprung ──
         const savedBlend = r._gaitBlendStep;
         r._gaitBlendStep = function (_w, speed) {
@@ -1921,7 +1873,7 @@ async function checkBandKoerperBewegung(ctx) {
         r._gaitBlendStep = savedBlend; // restaurieren (Gate-Hook-Lehre)
         o.s1MaxJump = blStub.maxJump;
         o.checks.s1LensFires = blStub.maxJump > 0.2;
-
+    
         // ── (E) FUSS-IK-KONSUM: Becken senkt sich auf gesenktem Boden, Abgrund ohne NaN ──
         {
             const rig = pmesh.userData.rig;
@@ -1983,7 +1935,7 @@ async function checkBandKoerperBewegung(ctx) {
             o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;
             o.checks.eAbgrundOhneNaN = alleFinite;
         }
-
+    
         // Spieler-Bühne restaurieren
         s.playerVel = savedVel;
         s.playerUnderwater = savedUw;
@@ -1992,7 +1944,7 @@ async function checkBandKoerperBewegung(ctx) {
         p._gaitW = savedW;
         p.animationLastTick = savedTick;
         if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
-
+    
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {
             const pm = s.playerMesh.position;
@@ -2047,58 +1999,29 @@ async function checkBandKoerperBewegung(ctx) {
             r.removeCreature(c);
             s.maxCreatures = saveMax;
         }
-
+    
         return o;
     });
-    if (!out || out.error)
-        return check("Körper-Bewegung: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    if (!out || out.error) return check("Körper-Bewegung: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const f = (v, n = 2) => (typeof v === "number" ? v.toFixed(n) : String(v));
     const k = rot("konsumPeer");
     check("Körper-Bewegung KONSUM: der Peer ruft den EINEN Gang-Tick wie der Spieler", !k, k && "ROT: " + k);
     const a = rot("ratePur", "aRateVerdoppelt", "aSchrittKonstant");
-    check(
-        `Körper-Bewegung (A): doppeltes Tempo ⇒ die Phasen-Rate des Gang-Gesetzes (${f(out.rateRatio)}× ≈ ${f(out.rateSoll)}×), die Schritt-Distanz des Gesetzes (${f(out.schritt1)} / ${f(out.schritt2)} m)`,
-        !a,
-        a && "ROT: " + a
-    );
+    check(`Körper-Bewegung (A): doppeltes Tempo ⇒ die Phasen-Rate des Gang-Gesetzes (${f(out.rateRatio)}× ≈ ${f(out.rateSoll)}×), die Schritt-Distanz des Gesetzes (${f(out.schritt1)} / ${f(out.schritt2)} m)`, !a, a && "ROT: " + a);
     const b = rot("ikErreichbar", "ikGestreckt", "ikNaNWand");
-    check(
-        `Körper-Bewegung (B) IK: in Reichweite < 1 cm (max ${f(out.ikMaxErr * 100, 3)} cm), außer Reichweite gestreckt, nie NaN`,
-        !b,
-        b && "ROT: " + b
-    );
+    check(`Körper-Bewegung (B) IK: in Reichweite < 1 cm (max ${f(out.ikMaxErr * 100, 3)} cm), außer Reichweite gestreckt, nie NaN`, !b, b && "ROT: " + b);
     const cc = rot("cBlendStetig", "cBlendKonvergiert", "cBlendNaNWand", "s1LensFires");
-    check(
-        `Körper-Bewegung (C) Blend stetig (max Δw ${f(out.blend && out.blend.maxJump, 3)}), konvergiert, NaN-Wand; SELBSTTEST S1 hartes Blend sichtbar (Δw ${f(out.s1MaxJump)})`,
-        !cc,
-        cc && "ROT: " + cc
-    );
+    check(`Körper-Bewegung (C) Blend stetig (max Δw ${f(out.blend && out.blend.maxJump, 3)}), konvergiert, NaN-Wand; SELBSTTEST S1 hartes Blend sichtbar (Δw ${f(out.s1MaxJump)})`, !cc, cc && "ROT: " + cc);
     const d = rot("dPitch30", "dGeerdet", "s2LensFires", "pitchPur", "pitchNaNWand");
-    check(
-        `Körper-Bewegung (D) der Tier-Root folgt dem 30°-Hang (${f(out.tierPitchDeg, 1)}°), geerdet; SELBSTTEST S2 _slopePitch ≡ 0 (${f(out.s2PitchDeg, 1)}°), die Hang-Formel pur`,
-        !d,
-        d && "ROT: " + d
-    );
+    check(`Körper-Bewegung (D) der Tier-Root folgt dem 30°-Hang (${f(out.tierPitchDeg, 1)}°), geerdet; SELBSTTEST S2 _slopePitch ≡ 0 (${f(out.s2PitchDeg, 1)}°), die Hang-Formel pur`, !d, d && "ROT: " + d);
     const e = rot("eBeckenSenkt", "eAbgrundOhneNaN", "eLuftSperre");
-    check(
-        `Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`,
-        !e,
-        e && "ROT: " + e
-    );
+    check(`Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`, !e, e && "ROT: " + e);
 }
 
 module.exports = {
-    checkBandV1764ForgeAvatar,
-    checkBandRing5Soul,
-    checkBandM3RittVollendet,
-    checkBandWFFluss,
-    checkBandV18195AvatarSizeHp,
-    checkBandV18196ManaSymmetry,
-    checkBandV18201ManaKonsum,
-    checkBandV18206SpeedTrade,
-    checkBandKonvergenzTierBaum,
-    checkBandTierFern,
-    checkBandKoerperBewegung,
+    checkBandV1764ForgeAvatar, checkBandRing5Soul, checkBandM3RittVollendet, checkBandWFFluss,
+    checkBandV18195AvatarSizeHp, checkBandV18196ManaSymmetry, checkBandV18201ManaKonsum, checkBandV18206SpeedTrade,
+    checkBandKonvergenzTierBaum, checkBandTierFern, checkBandKoerperBewegung,
 };
