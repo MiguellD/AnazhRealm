@@ -25,7 +25,6 @@ const server = statikServer();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
         await window.__weltDa((r) => r.state && typeof r._workshopFoundryPreviewGroup === "function");
     });
 
@@ -35,7 +34,6 @@ const server = statikServer();
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
         try {
             const f = r._ensureAssetFoundry();
-            const dl = performance.now() + 40000;
             await window.__weltDa(() => !(f && !f.ready));
             res.behavior.foundryReady = !!(f && f.ready);
             // Einen Baum-Bauplan finden (die grammatik-gewachsenen Built-ins baum_*).

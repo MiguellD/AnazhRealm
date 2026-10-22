@@ -3,7 +3,6 @@
 // 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
@@ -938,7 +937,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // (S1) K24: jede Kern-Art wächst aus dem Gesetzbuch — `_phytoArt` löst den Welt-Namen auf die Rezept-Zeile der
@@ -1833,7 +1831,6 @@ async function checkBandV18219bisVollendung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
@@ -2290,7 +2287,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
 

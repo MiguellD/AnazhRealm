@@ -8,7 +8,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 // V9.52-b Sub-Welle b — Band-Funktion (W17 — Multiplayer-Sub-Welten (B-Relay, JS-Compute, Phase C, Decl, Vendor)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW17Multiplayer(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W17 Phase B-Relay — das Mesh-als-Server ###
@@ -1121,7 +1121,7 @@ async function checkBandW17Multiplayer(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (W12 Phase 1 (Portal-Rolle + Skelett + Betreten) + Phase 2 (fremde Welten + Registry + DSL-Brücke) + Phase 3 (Ereignisse zurück + Manifest)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW12WorldPortal(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###

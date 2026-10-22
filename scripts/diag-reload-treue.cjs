@@ -37,7 +37,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._restoreCreatureFromSnapshot !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
-        const A = r.constructor;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };

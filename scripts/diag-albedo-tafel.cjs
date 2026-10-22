@@ -526,7 +526,6 @@ async function neuMessen(t, ids) {
     const wlog = path.join(ordner, "werkbank.log");
     const fd = fs.openSync(wlog, "w");
     const w = spawn(process.execPath, [WB, "start", "--port", WP], { stdio: ["ignore", fd, fd] });
-    const t0 = Date.now();
     const wd = path.join(ordner, "welt.json");
     console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
     try {

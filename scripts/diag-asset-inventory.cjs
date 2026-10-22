@@ -77,7 +77,6 @@ const server = statikServer();
         const r = window.anazhRealm;
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        const t0 = performance.now();
         await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundryReady = !!(f && f.ready);
         for (let it = 0; it < 350; it++) {
@@ -96,7 +95,6 @@ const server = statikServer();
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
-            const tS = performance.now();
             await window
                 .__gebautNach("noch: f.pending && f.pending.size > 0", {
                     fertig: () => !!(!(f.pending && f.pending.size > 0)),
