@@ -1,0 +1,14 @@
+{
+ "ergebnis": {
+  "ok": true,
+  "inst": true,
+  "takte": 4,
+  "pos": [
+   -247,
+   -1062
+  ],
+  "v": 10,
+  "sicht": "third"
+ },
+ "ms": 4726
+}
