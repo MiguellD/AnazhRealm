@@ -31,9 +31,8 @@
 //       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
-//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (das Reh im Stand je Bein, je
-//       Größen-Band ein Reh an seiner Obergrenze — Identität und Kreatur-Uhr fest, sein Weg hängt nie an der Last —, es zählt
-//       das schlechteste; vorher EIN Reh, dessen Größe und Weg die Zahl der Vorläufer würfelte: 1,4–3,5 cm je Lauf), das Rad
+//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
+//       Bein, das schlechteste), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
@@ -931,18 +930,12 @@ async function rollen(n) {
         );
         s.keys.w = false;
         streuJetzt();
-        // der Huf: je Größen-Band (tetrapoda VERHALTEN.groessen) ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im
-        // Gang (die Beine im Stand: Hub 0 ihres Ziels). Seine Identität (netId: der Wander-Kurs) und die Kreatur-Uhr (der
-        // Wander-Takt) stehen fest — vorher würfelte die Zahl der Vorläufer (die Fauna, die die Welt bis dahin rief) Größe
-        // und Weg, die Zahl hing an der Last des Läufers. Es zählt das schlechteste Reh.
+        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0
+        // ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm (vorher 1,4–3,5 cm je Lauf)
         const P = pm.position;
-        const max = s.maxCreatures;
-        const seq = s._creatureNetSeq;
-        const hufe = [];
+        const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
         for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {
-            s.maxCreatures = Math.max(max || 0, s.creatures.length + 3);
-            s._creatureNetSeq = 900000 + k;
-            s.creatureAnimationTime = 1000;
+            [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,
                 r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5,
@@ -953,8 +946,7 @@ async function rollen(n) {
                     bodySize: band.max,
                 }
             );
-            s.maxCreatures = max;
-            s._creatureNetSeq = seq;
+            [s.maxCreatures, s._creatureNetSeq] = [max, seq];
             const tb = reh && reh.userData._tierBaum;
             if (!tb) continue;
             const huf = sohle(reh, [tb.teile.flP, tb.teile.frP, tb.teile.hlP, tb.teile.hrP]);
@@ -965,12 +957,8 @@ async function rollen(n) {
                     for (let j = 0; Zg && j < 4; j++) if (Zg[j][3] === 0 && (v.y = huf(j)) !== null) a.push(v.y);
                 })
             );
-            hufe.push({ ...m, band: band.name });
+            if (!R.huf || m.p95 > R.huf.p95) R.huf = { ...m, median: band.name + " " + m.median };
             r.removeCreature(reh);
-        }
-        if (hufe.length) {
-            const w = hufe.reduce((x, y) => (y.p95 > x.p95 ? y : x));
-            R.huf = { ...w, n: Math.min(...hufe.map((x) => x.n)), je: hufe.map((x) => x.band + " " + x.p95).join("/") };
         }
         // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x)
         const e = r.spawnArchitecture(
@@ -1126,7 +1114,7 @@ const zeileK8 = (o) =>
                   Object.keys(K8_ROLLEN)
                       .map(
                           (k) =>
-                              `${k} ${o[ort][k] ? o[ort][k].p95 + " (" + o[ort][k].median + ", n " + o[ort][k].n + (o[ort][k].je ? ", " + o[ort][k].je : "") + ")" : "?"}`
+                              `${k} ${o[ort][k] ? o[ort][k].p95 + " (" + o[ort][k].median + ", n " + o[ort][k].n + ")" : "?"}`
                       )
                       .join(" · ")
                 : `K8 ${ort} ?`

@@ -114,7 +114,7 @@ async function checkBandV1764ForgeAvatar(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 5 — createPlayerSoul V1 ###
@@ -907,8 +907,6 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
             // (S5) Größer ist NICHT schneller: die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
             // oder attackSpeed.
-            const smallSpeed = smallComputed.stats.speed;
-            const largeSpeed = largeComputed.stats.speed;
             // Keine speed-Identität (Tags variieren je Compound), aber keine systematische Beschleunigung der
             // Großen: |speed_large/speed_small| ≈ Tag-Verhältnis, NICHT sqrt(sizeFactor).
             out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil

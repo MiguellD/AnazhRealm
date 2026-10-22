@@ -19,7 +19,6 @@ const server = statikServer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Welt bereit (gameLoopTick als Funktion — renderer-unabhängig korrekt).
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
         await window.__weltDa((r) => r.state && r.state.blueprints);
     });
 
@@ -43,7 +42,6 @@ const server = statikServer();
             }
             // auf f.ready warten (der Worker bootet die Studio-Kette + meldet ready über self.postMessage)
             const t0 = performance.now();
-            const dl = t0 + 60000;
             await window.__weltDa(() => !(!f.ready));
             out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
             // N2 (V9.56-i): f.worker entsteht seit dem manifest-getriebenen Boot ASYNC im

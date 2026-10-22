@@ -501,7 +501,6 @@ const WELT_MESSEN = async () => {
     }
     const r = window.anazhRealm;
     const f = r._ensureAssetFoundry();
-    const t0 = performance.now();
     await window.__weltDa(() => !!(!(f && !f.ready)));
     const pump = async (n) => {
         for (let i = 0; i < n; i++) {
