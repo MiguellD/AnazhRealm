@@ -2,8 +2,8 @@
     "version": 1,
     "zweck": "DIE RATSCHE dorf × gtx × ego (K26): ungemessen bis zur Re-Mint-Serie dieses Orts × Geräts × Sicht (werkbank ratsche --neu); Gesetz (Toleranz, freie Klassen) und Form wie ratsche-dorf-radeon-ego.json. Das Band-Urteil nennt sie rot („ungemessen\"), gate:profiband H2b ebenso.",
     "gemessen": {
-        "datum": "2026-10-15T15:48:26.791Z",
-        "version": "18.546.2",
+        "datum": "2026-10-22T00:13:56.790Z",
+        "version": "18.546.55",
         "ort": "dorf",
         "geraet": "gtx",
         "geraetText": "nvidia pascal",
@@ -34,33 +34,33 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": 100,
-        "dreiecke": 362987,
-        "vramMB": 100
+        "befehle": 117,
+        "dreiecke": 583417,
+        "vramMB": 107.1
     },
     "klassen": {
         "boden": {
             "haupt": {
                 "befehle": 7,
-                "dreiecke": 61490
+                "dreiecke": 61848
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 21856
+                "dreiecke": 21741
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 14813
+                "dreiecke": 15112
             }
         },
         "streu": {
             "haupt": {
-                "befehle": 4,
-                "dreiecke": 21116
+                "befehle": 3,
+                "dreiecke": 14079
             },
             "k0": {
-                "befehle": 2,
-                "dreiecke": 8744
+                "befehle": 1,
+                "dreiecke": 3840
             },
             "k1": {
                 "befehle": 0,
@@ -70,7 +70,7 @@
         "karten": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 876
+                "dreiecke": 880
             },
             "k0": {
                 "befehle": 0,
@@ -83,16 +83,16 @@
         },
         "baum": {
             "haupt": {
-                "befehle": 28,
-                "dreiecke": 75310
+                "befehle": 31,
+                "dreiecke": 64044
             },
             "k0": {
                 "befehle": 12,
-                "dreiecke": 15024
+                "dreiecke": 12326
             },
             "k1": {
-                "befehle": 4,
-                "dreiecke": 2026
+                "befehle": 3,
+                "dreiecke": 1884
             }
         },
         "busch": {
@@ -112,7 +112,7 @@
         "nahWiese": {
             "haupt": {
                 "befehle": 4,
-                "dreiecke": 51444
+                "dreiecke": 54188
             },
             "k0": {
                 "befehle": 0,
@@ -139,30 +139,30 @@
         },
         "bewohner": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 8,
+                "dreiecke": 86307
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 4,
+                "dreiecke": 77987
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 4,
+                "dreiecke": 77987
             }
         },
         "bau": {
             "haupt": {
-                "befehle": 6,
-                "dreiecke": 38347
+                "befehle": 7,
+                "dreiecke": 38817
             },
             "k0": {
                 "befehle": 3,
-                "dreiecke": 4242
+                "dreiecke": 4548
             },
             "k1": {
                 "befehle": 2,
-                "dreiecke": 692
+                "dreiecke": 822
             }
         },
         "formationen": {
@@ -223,35 +223,41 @@
         }
     },
     "vramMB": {
-        "buf:szene": 20.6,
-        "tex:TRAANode.history": 0,
         "tex:TRAANode.resolve": 31.6,
+        "buf:szene": 23.2,
         "tex:kaskade0": 8,
         "tex:kaskade1": 8,
-        "tex:karte-albedo": 5.7,
         "tex:output": 4.4,
         "tex:depth": 4.4,
         "tex:wege-karte": 4,
-        "tex:karte-normal": 2.8,
+        "tex:TRAANode.flacker": 4,
+        "tex:karte-albedo": 3,
+        "tex:spiegel": 2.7,
         "tex:szene": 2.2,
         "tex:fluss-karte": 2,
         "tex:feld-pass-panorama": 1.9,
+        "tex:karte-normal": 1.5,
         "tex:laub-cluster-atlas": 1.3,
         "tex:PMREM.cubeUv": 1,
         "tex:rausch-atlas": 0.8,
-        "tex:welt-march-liste": 0.5,
+        "tex:karte-licht": 0.6,
         "tex:kronen-streu": 0.5,
+        "tex:horizont-karte": 0.5,
+        "tex:welt-march-liste": 0.5,
         "tex:welt-march-kapseln": 0.3,
-        "tex:himmel-umgebung": 0,
-        "buf:bindingBuffer": 0,
+        "buf:bindingBuffer": 0.2,
+        "tex:atmo-himmel": 0.2,
+        "tex:atmo-durchlass": 0.1,
+        "buf:bindingBufferundefined_UniformBuffer_": 0.1,
+        "tex:himmel-umgebung": 0.1,
         "buf:buffer_timestamp_resolve_render": 0,
         "buf:buffer_timestamp_result_render": 0,
         "tex:fern-krone-nah": 0,
-        "buf:bindingBufferundefined_UniformBuffer_": 0,
-        "tex:portal-membran": 0,
+        "tex:atmo-mehrfach": 0,
+        "tex:welt-licht-himmel": 0,
         "tex:fern-ring-maske": 0,
         "tex:DFG_LUT": 0,
-        "buf:bild": 0,
-        "buf:?": 0
+        "tex:atmo-bestrahlung": 0,
+        "buf:bild": 0
     }
 }
