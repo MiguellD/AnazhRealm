@@ -1,0 +1,4 @@
+14:15:24 STADT START Kopf e2208673[0]
+14:19:37 stadt-1 fps 32.3 F95 66.7 F99 125 C95 65 Bel95 69.73 Weg 120 Wetter sunny | umstellen[{"ort":"stadt","sicht":"ego","pose":null,"welt":null,"spieler":[552.2,416],"wiese":null,"takte":1342,"steht":true,"chunks":81,"gier":1.5181,"dorfZug":true,"ortT] takt EXIT=1 TAKT-SPITZE: CPU-Takt {"p50":18.5,"p95":41.5,"p99":67.6,"max":185} ms (K2 8 ms), 42 Takte ab p95 (42 mit Proben), Weg 83 m
+14:24:34 stadt-2 fps 31.9 F95 75 F99 116.7 C95 69.3 Bel95 72.51 Weg 120 Wetter sunny | umstellen[{"ort":"stadt","sicht":"ego","pose":null,"welt":null,"spieler":[552.2,416],"wiese":null,"takte":1675,"steht":true,"chunks":81,"gier":1.5181,"dorfZug":true,"ortT] takt EXIT=1 TAKT-SPITZE: CPU-Takt {"p50":18.5,"p95":40.7,"p99":71.2,"max":239.1} ms (K2 8 ms), 43 Takte ab p95 (43 mit Proben), Weg 84 m
+14:24:49 STADT ENDE Kopf-Status[0]

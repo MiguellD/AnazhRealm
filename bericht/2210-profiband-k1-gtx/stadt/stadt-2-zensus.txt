@@ -1,0 +1,12 @@
+{
+ "ergebnis": {
+  "haeuser": [
+   "Siedlung „Villaalto\" (grossstadt, Seed 7): 111 Häuser platziert, 16 Slots übersprungen; Mitte 250 m Radius.",
+   "Siedlung „Steintal\" gewachsen (Zelle start, 18 Slots).",
+   "Siedlung „Steinheim\" gewachsen (Zelle 2,0, 13 Slots).",
+   "Siedlung „Westerhausen\" gewachsen (Zelle 1,1, 13 Slots)."
+  ],
+  "tiere": 7
+ },
+ "ms": 2
+}

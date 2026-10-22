@@ -106,3 +106,67 @@ Roh: OMEN `p3/n2210/k1/` (serie.sh, sturm-zer.sh, sturm.js, geher.js, fahrt.js, 
   - **Fahrt:** Chunk-Fertigstellung im Takt (`_applyCrossLodGeomorph`, `_fernRingHoch › computeVertexNormals`, `createBuffer`) plus der Autosave-Snapshot.
   - **Sturm:** die Tiere als Einzel-Draws in haupt + k0 (+42 / +25 Befehle, Render +5–7 ms) und `updateCreatures` (+2,8 ms).
 - Messort stadt: Werkzeug fehlt (Haushalt `messorte`).
+
+## Nachtrag 22.10. 14:30: Werkpaket k1-buehnen (51c2f0be [ci voll]) und die Stadt-Zelle an der GTX
+
+**Geschnitten** (Zweig `k1-buehnen` ab main e3dd2b67, Kopf 51c2f0be [ci voll]; gemessen am selben Baum e2208673, nur die Message trägt jetzt [ci voll]):
+- **Bühne „Sturm + n Tiere“:** `werkbank lauf|takt|haenger --wetter <wort> --tiere <n>`.
+  - Das Wort hält die Bühne als Spieler-Wort, die Wetter-Wache liest jetzt erst nach der Bühne.
+  - `__buehne` stellt n Tiere frei im Ring 15–60 m (`spawnCreatureAt`, EIN Same). Ein zweiter Ruf füllt nur auf; ohne Platz bricht die Bühne laut ab („DIE BÜHNE: x von n Tieren stehen“).
+  - Am Ende des Laufs `BÜHNE ROT`, wenn Tiere fehlen.
+  - Selbsttest in `lauf --selbsttest` (ohne Welt, im check): 50 im Ring auf Land, Auffüllen, laut ohne Platz. Er feuert gegen drei Mutationen.
+- **Messort stadt** in `spec/profiband/haushalt.json`:
+  - `gruendung`: Wort `dorf 7 120`, Platz 400/400 mit Blick, Anker 663/423, dazu `bahn` (die Hauptgasse West → Ost, 225 m).
+  - `umstellen --ort stadt` sagt das Wort über den Chat (`_chatDispatchLegacyCommand`), wie der Spieler, und wartet über `__deckel`.
+  - Die Stadt muss ±1 m am Anker stehen, sonst bricht das Umstellen laut ab.
+  - Die Bahn wird Meter für Meter auf der Gasse geprüft (`_aufWeg`).
+  - Kein Band-Ort (`istBandOrt`), also keine Ratsche. Das Schema prüft `gruendung` und `bahn`.
+  - Gegründet stehen 111 von 127 Slots (Großstadt „Villaalto“); nH 120 ist die Klemme des Kerns.
+  - In fünf Proben-Orten setzte keiner ≥ 120 Häuser (89–111), das Gelände nimmt den Rest.
+- **Der Geher-Fehler:** `--wandern bahn` geht die Kette des Orts (Wiese: −z 60 m wie bisher).
+  - Der Geher lebt IM Lauf; kein Prüf-Skript kann ihn vor dem `takt` beenden.
+  - `bahnM` ist jetzt der gemessene Weg des Spielers im Mess-Fenster. `takt` druckt „Weg x m“, eine stehende Zerlegung heißt „Weg 0 m“.
+- **Decke:** scripts −146, Prüf gesamt −103 (gate:betriebsgesetz GRÜN). Bezahlt mit:
+  - Datums-Gliedern in Chronik-Klammern: 312 Klammern, je Glied mit TT.MM.; Erklärungen und Kennungen (K16 …) bleiben.
+  - 15 Existenz-Proben auf Stamm-Methoden, dazu zwei tote else-Zweige dahinter (klang-zensus, schatten-bias).
+  - Chronik in drei Haushalt-Titeln.
+- **Prüfungen:** `npm run check` EXIT 0, `playtest:fast` 21 ✅ 0 ❌.
+
+**Gemessen: Stadt-Zelle GTX**
+- **Aufbau:** Kopf e2208673, 2 frische Boots, 1920×1080, Regler voll, Tiere frei (7 im Bild), Dorf-Zug an.
+  - Neben der Stadt wachsen Steintal (18), Steinheim (13) und Westerhausen (13).
+  - Gehend: `lauf 30 --ein 2 --wandern bahn`, Weg 120 m je 30 s.
+
+| Boot | fps | Frame p50 / **p95** / p99 | CPU-Takt p50 / **p95** | Belegung p95 | GPU p95 | Dreiecke Mittel | Befehle haupt / k0 | VRAM | Staffel 1 |
+|---|---|---|---|---|---|---|---|---|---|
+| stadt-1 | 32,3 | 25,0 / **66,7** / 125 | 21,7 / **65,0** | 69,7 (ROT) | 2,40 | 1,77 M | 46 / 22 | 207,8 MB | **ROT** |
+| stadt-2 | 31,9 | 25,0 / **75,0** / 117 | 23,0 / **69,3** | 72,5 (ROT) | 2,49 | 1,75 M | 45 / 22 | 188,4 MB | **ROT** |
+
+Die GPU trägt 2,4–2,5 ms je Bild. Der Faden ist der Engpass: `takt` p95 41,5 / 40,7, max 185 / 239.
+
+**Zerlegung beim Namen** (`takt 20 --wandern bahn`, Weg 83 / 84 m; Spitze · Mitte ms je Takt, über beide Boots stabil):
+
+| Wurzel | stadt-1 | stadt-2 | Darunter (Spitzen-Täter, Linse ROT) |
+|---|---|---|---|
+| `_loopVoxelStreaming` | 15,7 · 4,0 | 17,4 · 4,1 | Chunk-Fertigstellung `_applyCrossLodGeomorph` 6,1 (Rest 2,7 / 2,2, `_rebuildLodStitchBand` 1,9 / 2,0, `trefferVon` 1,5 / 1,4), `_fernRingHoch › computeVertexNormals` 1,7 / 1,8, `createBuffer` 1,6 / 2,3 |
+| `renderer._renderScene` | 15,3 · 9,1 | 15,1 · 9,0 | `_renderObjects` 6,4 · 2,6, `_passSicht` 6,0 · 4,2; im Bild 1,6 M Dreiecke im Hauptpass |
+| `_loopRender › _tickChunkSatz › _tickBauSatz` | 8,6 · 0,3 | 9,0 · 0,4 | **das Bau-Satz-Packen der Stadt**: `_chunkSatzEin › _satzPacke` 3,3 / 3,1, `_bauSatzBlock › _satzBlock` 3,0 / 3,0, `_chunkSatzHuelle` 1,1 |
+| `_loopWeatherAndGrowth` | 6,3 · 1,5 | 5,9 · 1,6 | **`_tickBewohner`** 5,9 · 1,0 (Rest 2,7); `_kreaturGliederGruppen` 1,2–1,6 |
+| `_loopAutoSave` | 4,7 · 0 | 4,8 · 0 | `saveState` 1,9; dazu `_perfSenseFoldFrame › _flightRecorderSave` 3,5 · 0 (`_flightRecorderBuildTrace` 1,7) |
+
+- **Lesart:** Die Stadt kommt mit 1,75 M Dreiecken ins Bild, und der Faden hat schon im Mittel 22 ms je Takt (Gehen Wiese 10,5).
+  - Gehend durch die Gasse zieht jeder neue Chunk die Fertigstellung (Geomorph) und das Neu-Packen der Bau-Sätze in den Takt.
+  - Die Bewohner, Autosave und Flugschreiber legen ihre Spitzen dazu.
+- **Staffel 1 an der GTX:** ROT in drei von sechs Zellen — Fahrt, Sturm und Stadt.
+
+**Offen**
+- Die Werkzeug-Lücken der K1-Zellen sind geschlossen (Sturm-Bühne, Messort stadt). Die Sturm-Zelle ist mit dem Stamm-Werkzeug nicht neu gemessen; die Zahlen oben kommen aus `sturm.js`, dieselbe Bühne.
+- CI des Kopfs 51c2f0be [ci voll] ist zu lesen.
+- Die Belegungs-Linse steht in der Stadt ROT (Pflicht außerhalb des Takts p95 > 1 ms), in Sturm und Stadt gemessen, nicht gejagt.
+
+Roh: OMEN `p3/n2210/kb/` (stadt.sh, roh/), hier `bericht/2210-profiband-k1-gtx/stadt/`.
+
+**Status ZWISCHENSTAND + Übergabe:**
+- k1-buehnen 51c2f0be gepusht.
+- Die Stadt-Zelle reißt Staffel 1 mit Frame p95 66,7 / 75,0 und CPU-Takt p95 65 / 69.
+- Ihre Täter beim Namen: Bau-Satz-Packen, Chunk-Geomorph, Bewohner, Autosave, Flugschreiber.
