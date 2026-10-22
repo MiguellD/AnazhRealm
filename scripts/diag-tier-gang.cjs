@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // diag-tier-gang.cjs — DIE GLEIT-LINSE DER TIERE (Welle 5, „Gang ohne Gleiten"; npm run gate:tier-gang).
 // Am ECHTEN Chokepoint (_animateCompoundMotion → _animateTierBaum, headless Null-Renderer, Produktions-Boot): jede
-// Gattung läuft geradeaus mit fester Geschwindigkeit (0,8 · 1,6 · 3,0 m/s), je Takt wird der Aufsetz-Punkt jeder Pfote
-// (der Boden-Punkt unter der Handwurzel in der Ruhe-Pose, im Gelenk-Raum der Pfote mitgeführt) gemessen. Im STAND
-// (der Punkt liegt in den untersten 2,5 % der Beinlänge) darf er nicht mit dem Leib wandern: der SCHLUPF = Weg des
+// Gattung läuft geradeaus bei v̂ 0,3 · 0,74 · 1,2 · 3,5, je Takt der Aufsetz-Punkt jeder Pfote (der Boden-Punkt unter
+// der Handwurzel in der Ruhe-Pose, im Gelenk-Raum der Pfote mitgeführt). Im STAND (unterste 5 % der Hüft-Höhe) darf er nicht mit dem Leib wandern: der SCHLUPF = Weg des
 // Stand-Fußes / Weg des Leibs in denselben Takten. Soll ≤ 0,05 (eine Pfote, die mit dem Leib gleitet, hat 1).
 // UNTER LAST (Integration W5-Körper): das Zielgerät läuft 30 fps, das Wesen steht im 1/4-Band der Anim-Raten-Leiter
 // (_creatureAnimDiv auf 0,8 × Fern-Distanz, mit dem Takt des Gangs) — gemessen wird zwischen zwei Auswertungen (der
@@ -61,7 +60,6 @@ const LAUF = (k) => {
     const roles = r._motionRolesForSoul(cr.userData.soul);
     const Tt = tb.teile;
     const pfoten = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
-    // Kalibrieren: Ruhe-Pose, Boden-Punkt unter der Handwurzel → Pfoten-Raum
     r._tierBaumNeutralStance(cr);
     cr.updateMatrixWorld(true);
     const boden = cr.position.y;
@@ -588,7 +586,6 @@ const GANG = (k) => {
             const zeilen = [];
             for (const seele of Object.values(LABOR_WELT)) {
                 for (const vh of VH) zeilen.push(await page.evaluate(LAUF, { seele, vh, stub: SELBST }));
-                // unter Last: 30 fps, die Raten-Leiter 1/4
                 for (const vh of [0.74, 1.2])
                     zeilen.push(await page.evaluate(LAUF, { seele, vh, stub: SELBST, fps: 30, last: true }));
             }
