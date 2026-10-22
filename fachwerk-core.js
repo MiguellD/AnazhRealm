@@ -186,7 +186,11 @@
     return zP; };
   const roofUnderY=(x,z)=> { if(ROOFMODE==='dome')return eaveY+0.35; if(ROOFMODE==='flat')return eaveY+0.05; const s=roofSkinY(x,z); return s===Infinity?Infinity:s-0.05; };   // knapp unter die Ziegel
   // ════ METAGESETZ · EINDECKEN einer Dachfläche (EINE Schräge): Lattung + Ziegelreihen, parametrisch über First(rY)/Traufabwurf(eaveDropY)/Spanne(eZ)/First-z(zMid)/Ortgang(xRangeAt). EINE Quelle für Haupt- UND Wing-Sattel­dach — kein paralleler Deckungscode mehr. ════
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=(typeof P!=='undefined'&&P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
+  // DIE RANGFOLGE DES VERZICHTS über der Zeile (P.__sehne, buildInstance streckt höchstens viermal; auf der Zeile bleibt jeder Bau byte-gleich): zuerst das GROSSFORMAT
+  // jedes Verbands — Ziegel, Backstein (Gefach und Giebel), Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
+  // 3,5 cm); ÜBER dem Großformat trägt das Gefach seine Fläche (die Flächen-Stufe, der Fugen-Ton reist mit); in der fernen Stufe (ohne Ständer) fluchten die Riegel
+  const GROSSFORMAT=()=>(P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, UEBER_GROSSFORMAT=()=>P.__sehne>2.56;
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -423,6 +427,9 @@
           S.push({horiz:F.h,fixed:F.f,lo:f.lo,hi:f.hi,c:f.c,yLo,yHi,type:t,corner,brick,win,sillY,lintelY}); }); }); });
     return S; }
   const WALLS=wallSpec();
+  // DOPPELHAUS-INNEN: die geteilte Seite (Einheit A an +x, Einheit B unter SHIFT an −x) liegt in der EINEN Brandwand — ihre Fassade (Gefach, Riegel, Streben, Nägel, Fenster, Giebel) sieht kein Auge, der Bau legt sie nicht an
+  const BRANDSEITE=x=>!!P.doppel&&(SHIFT?x<0:x>0), INNEN=w=>!w.horiz&&BRANDSEITE(w.fixed);
+  const FERNFENSTER=[];   // DIE FERNE STUFE (Marke nur.fern: L2 und die Turm-L1 zeichnen den Körper der Liste und das Fern-Fenster): die Öffnungen der Teilbauten (Turm, Hof), die dort ihr Fern-Fenster tragen — `s` ist ihre Außenseite
   if(P.brandwand){ WALLS.forEach(w=>{                                                        // BRANDWAND-GESETZ: anliegende Seiten sind fensterlose Brandmauern — dasselbe Feld→Wand-Prinzip wie die Fenster-Okklusion
     const seite = w.horiz ? (w.fixed>0?'z1':'z0') : (w.fixed>0?'x1':'x0');
     if(P.brandwand[seite]){ w.type='wand'; w.win=null; w.brand=1; } }); }
@@ -562,8 +569,8 @@
   // Querwände treffen den Giebel daher am Pfosten ZWISCHEN den Fensterfeldern. Kein Veto nötig, kein Fenster blockiert.
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;
     if(brick===false){ if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
-    const bw=0.32,bh=0.15,m=0.025,bt=0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen
-    if(P.flaechig){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
+    const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
+    if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
     if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor)
     for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
@@ -571,11 +578,15 @@
         if(horiz)beam(g,cc,by,fixed,w,rh-m,bt,'backstein'); else beam(g,fixed,by,cc,bt,rh-m,w,'backstein'); } } }
 
   function riegel(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                 // STIL modern: keine Riegel → glatte Putzwand
-    const rail=(lo,hi,y,f,h)=>{const c=(lo+hi)/2,l=hi-lo; if(l<0.05)return; if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz');};
+    const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
+    const rail=(lo,hi,y,f,h)=>{const c=(lo+hi)/2,l=hi-lo; if(l<0.05)return; if(_flucht){ const k=(h?1:0)+'|'+f+'|'+y; if(!_fl.has(k))_fl.set(k,[]); _fl.get(k).push([lo,hi]); return; } if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz');};
     const postV=(a,y0,y1,f,h)=>{const yc=(y0+y1)/2,yl=y1-y0; if(yl<0.05)return; if(h)beam(g,a,yc,f,0.1,yl,0.13,'holz'); else beam(g,f,yc,a,0.13,yl,0.1,'holz');};
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor')return;          // alle Türöffnungen frei: keine Riegel quer
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||INNEN(w))return;          // alle Türöffnungen frei: keine Riegel quer
       rail(w.lo,w.hi,w.sillY,w.fixed,w.horiz); rail(w.lo,w.hi,w.lintelY,w.fixed,w.horiz);          // Brüstungs- + Sturzriegel (fluchtendes Band)
-      if(w.type==='window'){ const wd=winW(w); postV(w.c-wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); postV(w.c+wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); } }); return g; }
+      if(w.type==='window'){ const wd=winW(w); postV(w.c-wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); postV(w.c+wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); } });
+    _fl.forEach((iv,k)=>{ const q=k.split('|'), h=q[0]==='1', f=+q[1], y=+q[2]; iv.sort((a,b)=>a[0]-b[0]); let a=iv[0][0], b=iv[0][1];   // die Lücke eines Ständers (2·ps) schließt der Balken
+      for(let i=1;i<=iv.length;i++){ const n=iv[i]; if(n&&n[0]<=b+2*ps+0.01){ b=Math.max(b,n[1]); continue; } const c=(a+b)/2,l=b-a; if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz'); if(n){ a=n[0]; b=n[1]; } } });
+    return g; }
 
   function streben(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                // STIL modern: keine Streben → glatte Putzwand (kein Fachwerk-Relief)
     const seg=(fixed,horiz,x0,y0,x1,y1,no)=>{ const f=fixed+(no||0); if(horiz)strut(g,x0,y0,f,x1,y1,f,0.1,'holz'); else strut(g,f,y0,x0,f,y1,x1,0.1,'holz'); };
@@ -586,13 +597,13 @@
       else { seg(fixed,horiz,a0,y0,a1,y1,+0.022); seg(fixed,horiz,a1,y0,a0,y1,-0.022); } };
     const corner=(w)=>{ const a0=w.lo-ps,a1=w.hi+ps, oc=w.corner==='lo'?a0:a1, ic=w.corner==='lo'?a1:a0, H=w.yHi-w.yLo;  // Fuß- + Kopfband am Eckständer
       seg(w.fixed,w.horiz, oc,w.yLo, ic,w.yLo+H*0.5, +0.022); seg(w.fixed,w.horiz, oc,w.yHi, ic,w.yHi-H*0.5, -0.022); };
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor')return;          // alle Türöffnungen frei: kein Brüstungsmotiv quer
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||INNEN(w))return;          // alle Türöffnungen frei: kein Brüstungsmotiv quer
       motif(w.lo-ps,w.hi+ps, w.yLo, w.sillY, w.fixed, w.horiz);                                      // Brüstungsmotiv (durchgehendes Band, fluchtet)
       if(w.type==='corner') corner(w); });                                                            // + Eckstreben
     return g; }
 
   function gefache(){const g=grp(); if(ROUND)return g;
-    WALLS.forEach(w=>{ if(w.type==='door'){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
+    WALLS.forEach(w=>{ if(w.type==='door'||INNEN(w)){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
       if(w.type==='door2'){ const dh=baseY+P.doorH, cx=backDoor?backDoor.cx:w.c, oL=cx-0.62, oR=cx+0.62;   // Hintertür: Öffnung nur türbreit — daneben + oben Gefach (sauberer Schnitt)
         if(w.yHi>dh+0.05) infill(g,w.lo,w.hi,dh,w.yHi,w.fixed,w.horiz,w.brick);
         infill(g,w.lo,oL,w.yLo,dh,w.fixed,w.horiz,w.brick); infill(g,oR,w.hi,w.yLo,dh,w.fixed,w.horiz,w.brick); return; }
@@ -628,10 +639,11 @@
     return (eaveY-ovZ*tanP+off) + ((ridgeY+off)-(eaveY-ovZ*tanP+off))*(hz-Math.abs(z))/hz; }
 
   function giebel(){const g=grp(); if(ROOFMODE!=='sattel'||P.hip>0.985) return g;
-    [1,-1].forEach(sx=>{ const gw = wings.some(w=>(sx>0?w.side==='E':w.side==='W')) ? null : gableWin;       // Giebel trägt einen Flügel davor → KEIN Estrichfenster dort (nur auf der Seite, wo wirklich ein E/W-Flügel steht)
+    [1,-1].forEach(sx=>{ if(BRANDSEITE(sx)){ rnd(); return; }   // DOPPELHAUS-INNEN: der Giebel an der Brandwand liegt im gemeinsamen Dach (sein Würfel fällt wie gebaut — der Strom der Einheit bleibt)
+      const gw = wings.some(w=>(sx>0?w.side==='E':w.side==='W')) ? null : gableWin;       // Giebel trägt einen Flügel davor → KEIN Estrichfenster dort (nur auf der Seite, wo wirklich ein E/W-Flügel steht)
       const xf=sx*(W/2-0.02), apexY=hipStartY, half=gzTop;
       beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                          // Schwellrähm
-      const gbrick=rnd()>0.5, bw=0.32,bh=0.15,m=0.025,bt=0.075;
+      const gbrick=rnd()>0.5, _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.075;
       const zHalf=y=>eaveZ+(half-eaveZ)*(y-eaveY)/Math.max(0.1,apexY-eaveY);
       { const topY = half>0.02?apexY:ridgeY, nh=Math.max(3,Math.round((topY-eaveY)/0.24)), rh=(topY-eaveY)/nh;   // Hinterfüllung als Streifen — Fensteröffnung ECHT ausgespart (nicht nur Backstein)
         for(let r=0;r<nh;r++){ const by=eaveY+(r+0.5)*rh, zh=(half>0.02)?zHalf(by):eaveZ*(ridgeY-by)/Math.max(0.1,ridgeY-eaveY);
@@ -646,6 +658,8 @@
           } else beam(g,xf,by,0,0.05,rh,2*zh,'lehm'); } }
       if(gbrick){ const nr=Math.max(1,Math.round((apexY-eaveY)/bh)),rh=(apexY-eaveY)/nr;                  // Backstein im Dreieck (geklippt, Fensteröffnung ausgespart)
         for(let r=0;r<nr;r++){ const by=eaveY+(r+0.5)*rh, zh=zHalf(by), ox=(r%2)*bw*0.5;
+          if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein').userData.__fuge={mat:mat('lehm'),anteil:(bw-m)/bw}; };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (die Stoßfugen reisen als Fugen-Ton), die Öffnung bleibt frei
+            if(gw && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05){ band(-zh,Math.min(zh,gw.z0-0.05)); band(Math.max(-zh,gw.z1+0.05),zh); } else band(-zh,zh); continue; }
           for(let z0=Math.floor((-zh-ox)/bw)*bw+ox; z0<zh-0.02; z0+=bw){ const cl=Math.max(-zh,z0),cr=Math.min(zh,z0+bw),wz=cr-cl-m; if(wz<0.06)continue;   // FIX: Backstein-Spalten auf festem z-Raster (Ursprung 0, Phase ox) → senkrechte Stossfugen wie die Hauptwand, an der Schräge geschnitten (vorher: Ursprung −zh wanderte je Zeile → seitliche Drift)
             if(gw && cr>gw.z0-0.05 && cl<gw.z1+0.05 && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05) continue;     // Öffnung frei
             beam(g,xf,by,(cl+cr)/2,bt,rh-m,wz,'backstein'); } } }
@@ -750,7 +764,7 @@
 
   const Wi=W/2-0.08, Di=Dp/2-0.08;  // Treppe (stW/wx0/wx1/wz1/STAIR) im Weltmodell oben definiert
   function boeden(){const g=grp(); if(ROUND)return g; let levelTop;
-    const rect=(y,x0,x1,z0,z1,role,sol)=>{ if(x1-x0<0.08||z1-z0<0.08)return; const w=x1-x0,d=z1-z0,nb=P.flaechig?1:Math.max(1,Math.round(d/0.28)),cx=(x0+x1)/2;   // FLÄCHEN-STUFE: der Boden als EINE Platte — seine Kante schließt den Geschoss-Schlitz der Fassade
+    const rect=(y,x0,x1,z0,z1,role,sol)=>{ if(x1-x0<0.08||z1-z0<0.08)return; const w=x1-x0,d=z1-z0,nb=P.flaechig?1:Math.max(1,Math.round(d/(0.28*GROSSFORMAT()))),cx=(x0+x1)/2;   // FLÄCHEN-STUFE: der Boden als EINE Platte — seine Kante schließt den Geschoss-Schlitz der Fassade
       for(let i=0;i<nb;i++){const z=z0+(i+0.5)*d/nb; beam(g,cx,y,z,w,0.06,d/nb*0.98,role);} if(sol!==false)addSolid(cx,y,(z0+z1)/2,w,0.12,d); };
     const railSeg=(x0,z0,x1,z1,hcx,hcz)=>{ if(P.flaechig)return; const hh=0.95,dx=x1-x0,dz=z1-z0,len=Math.hypot(dx,dz),h=Math.abs(dx)>=Math.abs(dz),cx=(x0+x1)/2,cz=(z0+z1)/2;
       beam(g,cx,levelTop+hh,cz,h?len:0.07,0.08,h?0.07:len,'holz');
@@ -933,7 +947,7 @@
     // die Bogenlänge der Laibung (dicht abgetastet) → N Keile gleicher Länge
     const M=96, tab=[], L=[0]; for(let k=0;k<=M;k++){ tab.push(bogenKurve(kurve,R,f,k/M)); if(k)L.push(L[k-1]+Math.hypot(tab[k][0]-tab[k-1][0],tab[k][1]-tab[k-1][1])); }
     const at=(l)=>{ let k=1; while(k<M && L[k]<l)k++; const a=tab[k-1], b=tab[k], q=(L[k]-L[k-1])>0?Math.max(0,Math.min(1,(l-L[k-1])/(L[k]-L[k-1]))):0, nu=a[2]+(b[2]-a[2])*q, nv=a[3]+(b[3]-a[3])*q, nl=Math.hypot(nu,nv)||1; return [a[0]+(b[0]-a[0])*q, a[1]+(b[1]-a[1])*q, nu/nl, nv/nl]; };
-    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/0.34)); if(N%2===0)N++;
+    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/(0.34*GROSSFORMAT()))); if(N%2===0)N++;
     const eb=(d)=>({horiz,cx,cz,w0:vs-d/2,w1:vs+d/2}), ext=(q,tt)=>[q[0]+q[2]*tt, q[1]+q[3]*tt], vO=(q)=>[q[0],yS+q[1]];
     const Q=[]; for(let i=0;i<=N;i++){ const q=at(Lg*i/N); Q.push({p:[q[0],q[1]], n:q, r:ext(q,t)}); }
     for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
@@ -958,7 +972,7 @@
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
-  function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win)return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
+  function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
     if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;
       beam(g,c,y0+rH,zr,rW,0.06,0.05,'metall'); beam(g,c,y0+0.10,zr,rW,0.05,0.05,'metall');   // Handlauf + Fussschiene
@@ -1126,16 +1140,16 @@
 
   // ════════ ZIMMERMANN (Holzverbindungen: Zapfen · Holznägel · Balkenköpfe) ════════
   function zimmermann(){const g=grp(); if(ROUND)return g; const zf=Dp/2-0.02, xf=W/2-0.02;
-    const peg=(x,y,z,face)=>{ const d=0.035,L=0.135;                                // Holznagel: klein, bündig eingetrieben
+    const peg=(x,y,z,face)=>{ if(P.__sehne>1)return; const d=0.035,L=0.135;                                // Holznagel: klein, bündig eingetrieben
       if(face==='z') beam(g,x,y,z,d,d,L,'nagel',[0,0,Math.PI/4]); else beam(g,x,y,z,L,d,d,'nagel',[Math.PI/4,0,0]); };
     const kopf=(x,y,zc,len)=>beam(g,x,y,zc,0.13,P.balkenH+0.02,len,'holz');         // Balkenkopf (Zapfennase über Rähm)
     levels.forEach(L=>{ const y0=L.y,h=L.h;                                          // 1) Ständer↔Schwelle/Rähm verstiftet (auf dem Ständer)
       bx.forEach(x=>{[zf,-zf].forEach(z=>{ if(z<0&&Math.abs(x-doorX)<doorW/2+0.2)return;          // Haustür-Öffnung (vorne −z) → kein Ständer, kein Nagel
         if(backDoor&&z>0&&x>backDoor.lo-0.2&&x<backDoor.hi+0.2)return;                              // Hintertür-Öffnung (hinten +z) → GLEICHE Regel, kein schwebender Nagel
         peg(x,y0+0.20,z,'z'); peg(x,y0+h-0.20,z,'z'); });});
-      bz.forEach(z=>{ if(Math.abs(z)<Dp/2-0.1)[xf,-xf].forEach(x=>{ peg(x,y0+0.20,z,'x'); peg(x,y0+h-0.20,z,'x'); }); });
+      bz.forEach(z=>{ if(Math.abs(z)<Dp/2-0.1)[xf,-xf].forEach(x=>{ if(BRANDSEITE(x))return; peg(x,y0+0.20,z,'x'); peg(x,y0+h-0.20,z,'x'); }); });
       [doorX-doorW/2-ps,doorX+doorW/2+ps].forEach(x=>{ peg(x,y0+0.20,-zf,'z'); peg(x,y0+h-0.20,-zf,'z'); }); });
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||w.win)return;   // 2) Kreuzungsnagel NUR in geschlossenen Brüstungsfeldern — alle Öffnungen (Türen, Fenster) frei (war inkonsistent: nur 'door' übersprungen → schwebender Nagel in Hintertür)
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||w.win||INNEN(w))return;   // 2) Kreuzungsnagel NUR in geschlossenen Brüstungsfeldern — alle Öffnungen (Türen, Fenster) frei (war inkonsistent: nur 'door' übersprungen → schwebender Nagel in Hintertür)
       const a=(w.lo+w.hi)/2, y=(w.yLo+w.sillY)/2, f=w.fixed;
       if(P.brace==='andreas'||P.brace==='wild'){ if(w.horiz)peg(a,y,f,'z'); else peg(f,y,a,'x'); } });
     const rows=levels.map(L=>L.top-P.balkenH/2).concat([eaveY-P.balkenH/2]);          // 3) Deckenbalkenköpfe über Rähm + Nagel
@@ -1152,7 +1166,7 @@
     beam(g,xc,wy0+0.02,zc,gw,0.06,gd,'boden'); addSolid(xc,wy0,zc,gw,0.12,gd);
     [[xin,z0],[xin,z1],[xout,z0],[xout,z1]].forEach(([x,z])=>{ const yt=yR(x); beam(g,x,(wy0+yt)/2,z,0.14,yt-wy0,0.14,'holz'); });
     beam(g,xin,yHigh-0.07,zc,0.14,0.14,gd,'holz'); beam(g,xout,yLow-0.07,zc,0.14,0.14,gd,'holz');
-    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n;
+    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=P.flaechig?1:Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n;   // FLÄCHEN-STUFE: die Bretterwand als EINE Fläche (die Fuge 1 % der Breite)
       for(let i=0;i<n;i++)beam(g,x,(y0+y1)/2,za+(i+0.5)*bw,0.05,y1-y0,bw*0.99,'holz'); };
     const stripTrap=(a,b,z,yb)=>{ if(b-a<0.04)return; const n=Math.max(1,Math.round((b-a)/0.26)),bw=(b-a)/n;
       for(let i=0;i<n;i++){ const x=a+(i+0.5)*bw, yt=yR(x); if(yt-yb>0.05)beam(g,x,(yb+yt)/2,z,bw*0.99,yt-yb,0.05,'holz'); }
@@ -1189,6 +1203,7 @@
     { const nS=Math.max(2,Math.round(gd/0.7)); for(let i=0;i<=nS;i++){ const z=z0+gd*i/nS; strut(g,xoO,yOut,z, xin,yHigh,z, P.spar,'holz'); } }
     { const z0e=z0-ovZ, z1e=z1+ovZ, lift=0.07, tcw=0.26, tcl=0.34, stp=0.205*Math.cos(th);
       for(let i=0;i<200;i++){ const x=xin + sx*i*stp; if(sx*(x-xoO)>0.02)break; const y=yR(x);
+        if(P.flaechig){ beam(g,x,y+lift,zc,tcl,0.03,z1e-z0e,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE: das Pultdach trägt je Reihe EIN Ziegel-Band wie das Hauptdach, keine Lattung (vorher trug die L1 des Anbaus seine L0: pueblo annexN=2 L1/L0 0,544)
         if(i%2===0)beam(g,x,y+lift-0.04,zc,0.05,0.03,z1e-z0e,'lattung');
         const off=(i%2)*tcw*0.5, nz=Math.ceil((z1e-z0e)/tcw)+1;
         for(let j=0;j<nz;j++){ const z=z0e+off+j*tcw+tcw/2; if(z>z1e+0.02)continue; beam(g,x,y+lift,z,tcl,0.03,tcw*0.92,'ziegel',[0,0,-sx*th]); } } }
@@ -1365,22 +1380,26 @@
     // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
     // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
+    // DIE FERNE STUFE (Marke `fern`): die Arme trägt der Körper der Liste ('hofarm': Wand und Dach), ihre Fenster das Fern-Fenster — der Hof legt nur Pflaster
+    // und Brunnen (vorher zeichnete die L2 jeden Arm zweimal: marokkanisch Hofbau 3528 Dreiecke über dem Körper); Massen und Solids bleiben
+    const _fern=(P.nur||{}).fern===true, hb=(...a)=>_fern?null:beam(...a);
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
       addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
-      beam(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
-      const xWall=(zz)=>{ if(!gate){ beam(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
+      hb(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
+      const xWall=(zz)=>{ if(!gate){ hb(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
         const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
-        if(L>0.05){ beam(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ beam(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
-        if(wH>lh+0.05){ beam(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
+        if(L>0.05){ hb(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ hb(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
+        if(wH>lh+0.05){ hb(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
       xWall(z0); xWall(z1);
       { const nzW=Math.max(1,Math.round(lz/2.2)), wcy=baseY+Math.min(wH-0.55,1.5), wfw=Math.min(0.8,lz/nzW*0.4), wfh=0.9, zh=[];   // HOF-FENSTER-GESETZ: Arme schauen in den Hof UND zur Strasse — LOCHWAND
         for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; zh.push({c:pz,w:wfw+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03}); }
-        lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } }
-      if(ROOFMODE==='flat'){ beam(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
+        if(_fern){ for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; for(const xw of [x0,x1]) FERNFENSTER.push({cx:SHIFT?xw+SHIFT:xw, cy:wcy, cz:pz, w:wfw, h:wfh, perp:'x', kind:'hof', s:xw<cx?-1:1, schlaf:fensterSchlaeft(P.seed,'x',xw,pz,wcy)}); } }
+        else { lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
+        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } } }
+      if(ROOFMODE==='flat'){ hb(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
-      [1,-1].forEach(s=>{ if(alongZ) beam(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
-                          else beam(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
+      [1,-1].forEach(s=>{ if(alongZ) hb(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
+                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
     bar(-W/2,-W/2+armW,zC+gateW,zF,true);            // linker Arm (First entlang z)   // Arm stößt an den Torriegel — kein Dach-Kreuz
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
@@ -1397,7 +1416,7 @@
     const hTop=deckY+1.05, B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,hTop-0.035,len,0.07,0.09); B((a0+a1)/2,deckY+0.10,len,0.06,0.07);                                    // Handlauf (OK 1.05) + Fußriegel
     const nP=Math.max(1,Math.round(len/1.5)); for(let i=0;i<=nP;i++)B(a0+len*i/nP,(deckY+hTop)/2,0.07,hTop-deckY,0.07);   // Pfosten
-    const nS=Math.max(2,Math.ceil(len/0.16)); for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045,hTop-deckY-0.16,0.045); }   // Stäbe: Pitch ≤0.16 → licht ≤0.115
+    const _gf=P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); if(!(P.nur&&P.nur.fern)) for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe ohne Stäbe (4,5 cm unter 1,5 Pixel: sie flimmerten nur)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
   function bruestungRect(g,xa,xb,za,zb,deckY,role){ bruestungSeg(g,'z',xa,xb,za,za,deckY,role); bruestungSeg(g,'z',xa,xb,zb,zb,deckY,role); bruestungSeg(g,'x',xa,xa,za,zb,deckY,role); bruestungSeg(g,'x',xb,xb,za,zb,deckY,role); }
   // MERLON-GESETZ (Burgenbau) — Brustwehr mannshoch (Sims ≥1.0 über Deck, man fällt nicht durchs Crenel), Merlon:Crenel ≈ 3:2 — GETEILT von Ringmauer UND Turm
   function merlonSeg(g,axis,x0,x1,z0,z1,deckY,role,dpt){ const hor=(axis==='z'), a0=hor?x0:z0, a1=hor?x1:z1, fix=hor?z0:x0, len=a1-a0; if(len<0.4)return; dpt=dpt||0.42;
@@ -1543,7 +1562,8 @@
     const fw2=Math.min(0.85,tw*0.5), fh=1.05, nLv=Math.max(1,Math.floor(h*0.72/2.4)), pw2=Math.min(0.6,tw*0.36), pH=1.55;
     const zF=tz-tw/2+twT/2, zB=tz+tw/2-twT/2, xL=tx-tw/2+twT/2, xR=tx+tw/2-twT/2, zP=(szT<0?zF:zB), zQ=(szT<0?zB:zF), lvH=2.4, nB=Math.ceil(h/lvH);   // GESCHOSS-BAND-GESETZ: jede Fassade bandweise — lochWand je Ebene (Löcher übereinander sauber getrennt)
     const _tN=P.nur||{};   // DIE STUFEN-FLAGS GELTEN AUCH DEM TURM (pipeline.K3): die ferne Stufe (fenster/tueren/boeden false) trägt keine Löcher und keine Geschossböden — der Schaft steht geschlossen
-    const _nBand=(_tN.fenster===false&&_tN.tueren===false)?1:nB, _bH=_nBand===1?h:lvH;   // ohne Löcher trägt EIN Band die ganze Höhe (die Bänder trennen nur Löcher)
+    const _fern=_tN.fern===true;   // DIE FERNE STUFE (die Marke `fern` der Masken DESTNUR und TURMNUR: die Stufen, die den Körper der Liste und das Fern-Fenster zeichnen): Schaft und Helm trägt der Körper der Liste ('turm'), die Fenster das Fern-Fenster — der Turm legt nur, was der Körper nicht trägt (vorher zeichnete die L2 den Turm zweimal: marokkanisch turm=1 L2 7614 > 7250)
+    const _nBand=_fern?0:nB, _bH=_nBand===1?h:lvH;   // ohne Löcher trägt EIN Band die ganze Höhe (die Bänder trennen nur Löcher)
     for(let s=0;s<_nBand;s++){ const y0=baseY+s*_bH, y1=Math.min(baseY+h, y0+_bH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv)&&_tN.fenster!==false;
       const wHole=hasW?[{c:tx,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[], sHole=hasW?[{c:tz,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[];
       lochWand(g,true, zP, tx-tw/2, tx+tw/2, y0, y1, (s===0&&_tN.tueren!==false?[{c:tx,w:pw2*2-0.02,b:y0-0.02,t:baseY+pH}]:wHole), wr, twT);   // Front: EG=Portal, darüber Fenster
@@ -1551,8 +1571,10 @@
       lochWand(g,false, xL, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT);
       lochWand(g,false, xR, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT); }
     for(let s=1;s<=nLv&&_tN.boeden!==false;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
-    bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2);   // Blendbogen + Torblatt in der Laibung + Stufen
+    if(!(_fern&&_tN.tueren===false)){ bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2); }   // Blendbogen + Torblatt in der Laibung + Stufen (die ferne Stufe ohne Türen: der Körper steht geschlossen)
     { for(let s=1;s<nLv;s++){ const cy=baseY+1.8+s*2.4;
+      if(_fern){ const ff=(cx,cz,perp,sg,wand,u)=>FERNFENSTER.push({cx:SHIFT?cx+SHIFT:cx, cy, cz, w:fw2, h:fh, perp, kind:'turm', s:sg, schlaf:fensterSchlaeft(P.seed,perp,wand,u,cy)});   // der Würfel aus derselben Lage wie fensterAt der nahen Stufen
+        ff(tx,tz-tw/2,'z',-1,tz-tw/2-0.02,tx); ff(tx,tz+tw/2,'z',1,tz+tw/2+0.02,tx); ff(tx-tw/2,tz,'x',-1,tx-tw/2-0.02,tz); ff(tx+tw/2,tz,'x',1,tx+tw/2+0.02,tz); continue; }
       fensterAt(g,tx,cy,tz-tw/2-0.02,fw2,fh,true); fensterAt(g,tx,cy,tz+tw/2+0.02,fw2,fh,true);
       fensterAt(g,tx-tw/2-0.02,cy,tz,fw2,fh,false); fensterAt(g,tx+tw/2+0.02,cy,tz,fw2,fh,false); } }
     if(P.zinnen){ const dy=baseY+h, e2=tw/2+0.25; beam(g,tx,dy+0.06,tz,tw+0.5,0.12,tw+0.5,'stein');   // WEHRPLATTFORM + Zinnenkranz
@@ -1637,9 +1659,13 @@
   function build(enabled){const root=grp(); order.forEach(k=>{ if(!enabled||enabled[k]!==false){ subsystems[k].position.y=0; root.add(subsystems[k]); } }); return root; }
   const spawn={x:0,y:baseY+1.6,z:-Dp/2-2.0};
   const windowOpenings=[];
-  WALLS.forEach(w=>{ if(!w.win)return; const wd=winW(w),c=(w.lo+w.hi)/2; windowOpenings.push({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}); });
-  if(gableWin){ [1,-1].forEach(sx=>windowOpenings.push({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'})); }
+  const _oeffnungenDerEinheit=()=>{ const dx=SHIFT;   // die Öffnungen EINER Einheit — das Doppelhaus trägt die der Einheit B um +W (vorher stand B in der L2 blind), keine an der Brandwand
+    const auf=(o,wand,u)=>{ if(dx){ o.cx+=dx; o.schlaf=fensterSchlaeft(P.seed,o.perp,wand,u,o.cy); } windowOpenings.push(o); };   // der Würfel der Einheit B aus ihrer eigenen Lage (EIN Würfel je Fenster, wie ihr Bau)
+    WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; auf({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}, w.fixed, c); });
+    if(gableWin){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); } };
+  _oeffnungenDerEinheit(); if(P.doppel){ SHIFT=W; _oeffnungenDerEinheit(); SHIFT=0; }
   GAs.forEach(A=>windowOpenings.push({cx:A.xout, cy:0.06+1.2, cz:A.zc, w:0.8, h:0.55, perp:'x', kind:'anbau'}));   // Anbau-Fenster außen — seitenrichtig (war x1)
+  for(const f of FERNFENSTER) windowOpenings.push(f);   // die Teilbauten der fernen Stufe (Turm, Hof): ihr Fern-Fenster
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
@@ -1909,9 +1935,9 @@
     // prettier-ignore
     const KULLVOL=0.012;
     // prettier-ignore
-    const DESTNUR={kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
-    const TURMNUR={gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
+    const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
     const MASSNUR={geruest:false,riegel:false,streben:false,zimmermann:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // MASS-BUILD: 9 Verdichter aus, 4 Maß-Träger (dachdeckung/tueren/fenster/herd) eager — Δext=0 über 96 Kombos bewiesen                                                              // Destillat: Kleinst-Prims (Einzelziegel, Latten) fallen
     // prettier-ignore
@@ -2092,7 +2118,7 @@
       idx.push(...(x*n[0]+y*n[1]+z*n[2]>0?[v0,v0+1,v0+2,v0,v0+2,v0+3]:[v0,v0+2,v0+1,v0,v0+3,v0+2])); }
     const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); pg.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); pg.setIndex(idx);
     grp2.add(new THREE.Mesh(pg,mat)); };
-  for(const o of liste){ const z=o.perp==='z', s=z?(o.cz<0?-1:1):(o.cx<0?-1:1), u=z?o.cx:o.cz, schlaf=fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
+  for(const o of liste){ const z=o.perp==='z', s=o.s||(z?(o.cz<0?-1:1):(o.cx<0?-1:1)), u=z?o.cx:o.cz, schlaf=o.schlaf!=null?o.schlaf:fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
     const e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
     const rw=(o.w+0.2)/2, rh=(o.h+0.2)/2, y0=o.cy-rh, y1=o.cy+rh, d0=-0.02, d1=RAHMEN_TIEFE;   // der Kasten greift 2 cm in die Wand: keine Fuge zum Körper (der liegt 1,5 cm innen)
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)

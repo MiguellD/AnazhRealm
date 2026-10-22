@@ -40,17 +40,12 @@
     "reglerBudget": {
         "zweck": "Ein Regler, dessen Rand-Wert (min oder max) eine Stufe über ihre Budget-Zeile treibt (Studio-Vertrag B2c: PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]): der Bau steht, das Gesetz bricht. gate:asset-contract baut nur die Rezepte ohne ov; die Stufen-Probe von gate:regler-wirkt baut jede Stufe jeder Budget-Art an jedem Rezept und jedem Regler-Rand über die echte Brücke (die Ofen-Arten am Host-Ofen). staffel = die Decke der Ratsche (Karte pipeline.K3: Staffel 1 ≤ 3, Staffel 2 = 0); quote = die Stufen über ihrer Reduktion (L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke, das Höchste über Rezepte × Rand), Schlüssel art:Lstufe. Schlüssel kern:art:id, Wert = der Befund.",
         "soll": 0,
-        "staffel": 3,
+        "staffel": 0,
         "sollQuelle": "Studio-Vertrag B2c: jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers (Heilung am Studio, Lehre 19)",
-        "bruch": {
-            "fachwerk:haus:doppel": "doppel=1 an gotisch L0: tris 150872 > 132000 (12 Stufen; die zweite Einheit verdoppelt den Bau, das Großformat der Ziegel trägt sie nicht)",
-            "fachwerk:haus:storeys": "storeys=12 an alpenchalet L0: tris 139840 > 132000 (18 Rezepte; Backstein, Holz und Böden wachsen je Geschoss)",
-            "fachwerk:haus:turm": "turm=1 an marokkanisch L2: tris 7614 > 7250 (der Turm-Körper der Massen trägt die ferne Stufe doppelt)"
-        },
+        "bruch": {},
         "quote": {
             "gate:L1": "0.810 an kathedrale mass=0",
-            "gate:L2": "0.385 an kathedrale wLace=0",
-            "haus:L1": "0.544 an pueblo annexN=2"
+            "gate:L2": "0.385 an kathedrale wLace=0"
         }
     }
 }
