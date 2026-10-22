@@ -15,7 +15,7 @@
 //                (Terrain-Chunks · Wasser [isHydrosphere] · Himmel/Gestirne · Kreaturen ·
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
 //                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
-//                Emitter, an der QUELLE geklärt; die Klein-Streu ist seit 04.10. Studio, das Fernfeld fiel).
+//                Emitter, an der QUELLE geklärt; die Klein-Streu ist Studio, das Fernfeld fiel).
 //   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (start_plattform + fliegende Inseln [E-F]); im Parity-Shot seit
 //                W2 versteckt, in der Welt daheim. (E-E „glut = Nicht-Studio-Silhouette" fiel 06.10.: die Feuerstelle
 //                trägt die Gestalt des Gesetzbuchs — ein Bauplan mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen,
@@ -199,7 +199,7 @@ const server = statikServer();
         // H3 — DAS INVENTAR-WÖRTERBUCH der gestempelten Bau-Quellen (userData.inventar am
         // Bau-Chokepoint; die einst 222 unbekannten Emitter, per Instrumentierung an der
         // QUELLE geklärt statt geraten):
-        //   (streu-klein   — die Senken der Nah-Streu sind seit 04.10. STUDIO, über ihren Leaf-Key oben geklärt;
+        //   (streu-klein   — die Senken der Nah-Streu sind STUDIO, über ihren Leaf-Key oben geklärt;
         //                    ein streu-klein-Stempel OHNE Key ist unbekannt → Verletzung. deko-fernfeld fiel.)
         //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
         //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)

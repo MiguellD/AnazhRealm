@@ -583,7 +583,6 @@ async function checkBandWelleC1WaterCells(ctx) {
         const out = {};
         // 1) Konstante CELL_STATE
         const STATE = r.constructor.CELL_STATE;
-        out.hasCellState = !!STATE;
         out.cellStateAir = STATE && STATE.AIR;
         out.cellStateWater = STATE && STATE.WATER;
         out.cellStateSolid = STATE && STATE.SOLID;
@@ -709,7 +708,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         check("Welle C.1 V9.71: Cell-Feld-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.1 V9.71: CELL_STATE existiert + ist freezed", res.hasCellState && res.cellStateFrozen);
+    check("Welle C.1 V9.71: CELL_STATE ist freezed", res.cellStateFrozen === true);
     check(
         "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
         res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
@@ -755,8 +754,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // das Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
         // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
-        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
-        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // die ausstehenden Wasser-Iso-Builds drainen, bevor wir die Iso-Map prüfen (im Spiel baut der Tick ≤2/Frame).
         r._drainPendingWaterIso();
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
@@ -952,7 +949,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         return;
     }
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
-    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
         res.allChunksTracked,

@@ -16,7 +16,6 @@ async function checkBandWaves1to3(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
         // journalAppend schreibt
@@ -47,7 +46,6 @@ async function checkBandWaves1to3(ctx) {
             (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);

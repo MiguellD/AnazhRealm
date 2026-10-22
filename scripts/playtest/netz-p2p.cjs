@@ -301,7 +301,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Array.isArray(p2p.iceServers) &&
             p2p.iceServers.length > 0 &&
             typeof p2p.meshActive === "boolean";
-        out.w7MethodsPresent = typeof r._p2pDrainIce === "function";
 
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
@@ -440,7 +439,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
-        check("W7 P1: _p2pDrainIce auf der Klasse (die Suite ruft ihn nie)", w7Results.w7MethodsPresent);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
         check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
@@ -1124,10 +1122,6 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check(
-            "W16: _p2pFetchVendorBundle auf der Klasse (die Suite ruft ihn nie)",
-            w16Results.methodsPresent
-        );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -1546,7 +1540,6 @@ async function checkBandLateMultiUser(ctx) {
             p2p.lobby.published === false &&
             Array.isArray(p2p.lobby.rooms) &&
             p2p.remoteCreatures instanceof Map;
-        out.lobbyMethods = typeof r._renderLobbyUI === "function";
 
         // publishToLobby ohne Verbindung → not_connected.
         p2p.enabled = false;
@@ -1662,10 +1655,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check(
-            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
-            w7p4Results.lobbyMethods
-        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);

@@ -1082,7 +1082,7 @@ async function lichtLauf() {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
-                async (json, rest) => {
+                async (json) => {
                     await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
@@ -1118,7 +1118,7 @@ async function lichtLauf() {
         ]) {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
-                    async (st, gestalt, rest) => {
+                    async (st, gestalt) => {
                         const r = window.anazhRealm;
                         const s = r.state;
                                                 s.renderer.setAnimationLoop(null);

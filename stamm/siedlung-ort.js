@@ -2357,7 +2357,7 @@ class AnazhRealm_siedlung_ort {
         this._autoSettlementPendingKey = key;
         return this._dorfBereiten(key, i2).then((b) => {
             this._autoSettlementPendingKey = null;
-            if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat = null;
+            this._dorfVorraete.delete(key); // die Zelle ist erwacht: ihr Vorrat ist verbraucht
             if (!b) return null; // fail-closed (Foundry kalt)
             // DER ORT WIRD WELT: die Wahl steht im Gedächtnis des Orts (`_ortPlaene`), der Ruf legt ihren Erdbau, bevor das
             // erste Haus steht, und rückt den Anker an den Ort des Plans
@@ -2381,7 +2381,7 @@ class AnazhRealm_siedlung_ort {
     _ortWahlWartet(key) {
         return (e) => {
             if (this._autoSettlementPendingKey === key) this._autoSettlementPendingKey = null;
-            if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat = null;
+            if (this._dorfVorraete) this._dorfVorraete.delete(key);
             this.log(`ORT: die Zelle ${key} wartet auf die Ort-Wahl — ${(e && e.message) || e}`, "INFO");
             return null;
         };
@@ -2390,11 +2390,14 @@ class AnazhRealm_siedlung_ort {
     // tritt (`AUTO_SETTLEMENT.vorlaufM` vor `nearM`), im Foundry- und im Ort-Faden — ihr Erdbau liegt erst, wenn sie
     // erwacht (`_autoSettlementSpawnCell`). Bis K5 begann beides beim Erwachen: der Export baut jedes Haus zur Probe (der
     // Mass-Bau misst die Welt-Box, die das Layout braucht), das erste Haus der Zelle wartete mit nH (Export nH 12 0,29 s,
-    // nH 300 2,0 s). EIN Vorrat zur Zeit, ein Ruf mit demselben Schlüssel nimmt ihn. Rückgabe: Promise {plan, anker} | null.
+    // nH 300 2,0 s). EIN Vorrat JE ZELLE (`_dorfVorraete`, Karte vorrat-pingpong): ein Ruf mit demselben Schlüssel nimmt ihn, das
+    // Erwachen der Zelle verbraucht ihn. Mit EINEM Vorrat zur Zeit lösten zwei Zellen im Vorlauf-Ring einander ab, jede fertige
+    // rechnete im nächsten Takt neu (Messort dorf, −3,−5 ↔ −5,−3: die Welt stand nie). Rückgabe: Promise {plan, anker} | null.
     _dorfBereiten(key, i2) {
-        const v = this._dorfVorrat;
-        if (v && v.key === key) return v.fertig;
-        const fertig = this._foundryRequestSettlement(
+        const M = this._dorfVorraete || (this._dorfVorraete = new Map());
+        if (M.has(key)) return M.get(key).fertig;
+        const v = { da: false, x: i2.x, z: i2.z };
+        v.fertig = this._foundryRequestSettlement(
             {
                 seed: i2.seed,
                 nH: i2.nH,
@@ -2403,7 +2406,7 @@ class AnazhRealm_siedlung_ort {
             key === "start"
         ).then((plan) => {
             if (!plan || !Array.isArray(plan.slots)) {
-                if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat = null; // der nächste Takt fragt neu
+                if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu
                 return null;
             }
             // Der Anker misst den Plan selbst (`_siedlungsAnker`, die EINE Regel jedes Dorfs): nie um den Spieler —
@@ -2411,12 +2414,12 @@ class AnazhRealm_siedlung_ort {
             const anker = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
             // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker in Takt-Scheiben (Lehre 14), ohne den Erdbau zu legen
             return this._ortWahl(plan, Object.assign({}, anker), false).then(() => {
-                if (this._dorfVorrat && this._dorfVorrat.key === key) this._dorfVorrat.da = true;
+                v.da = true;
                 return { plan, anker };
             });
         });
-        this._dorfVorrat = { key, fertig, da: false };
-        return fertig;
+        M.set(key, v);
+        return v.fertig;
     }
     // DER RANG DES ZUGS (siedlung.K5): die Häuser eines Plans heben in der Reihe ihres Abstands zum Spieler (`reihe`, das
     // nächste zuerst, gleich weit die Slot-Folge) — bis K5 in der Slot-Folge des Layouts, die vom Kern des Dorfs nach außen
@@ -2582,6 +2585,15 @@ class AnazhRealm_siedlung_ort {
         const cellM = SGz.cellM;
         const pcx = Math.floor(playerPos.x / cellM);
         const pcz = Math.floor(playerPos.z / cellM);
+        // die Vorräte (`_dorfBereiten`): EIN Export zur Zeit fliegt; ein fertiger, dessen Zelle hinter dem Spieler zurückbleibt
+        // (jenseits des doppelten Vorlauf-Rings), fällt — kehrt er zurück, bereitet sie sich neu vor
+        const V = this._dorfVorraete || (this._dorfVorraete = new Map());
+        let fliegt = false;
+        for (const [k, w] of V) {
+            fliegt = fliegt || !w.da;
+            if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + 2 * A.vorlaufM) ** 2)
+                V.delete(k);
+        }
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const cx = pcx + dx;
@@ -2597,8 +2609,7 @@ class AnazhRealm_siedlung_ort {
                 const ddz = info.z - playerPos.z;
                 const d2 = ddx * ddx + ddz * ddz;
                 const vor = d2 > A.nearM * A.nearM; // noch nicht erwacht: im Vorlauf-Ring bereitet sie sich vor, ferner später
-                const v = this._dorfVorrat;
-                if (vor && (d2 > (A.nearM + A.vorlaufM) ** 2 || (v && (v.key === key || !v.da)))) continue;
+                if (vor && (d2 > (A.nearM + A.vorlaufM) ** 2 || V.has(key) || fliegt)) continue;
                 const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
                 if (!site) {
                     this._autoSettlementRejected.add(key); // die ganze Zelle untauglich (Wasser/steil/Spawn-nah)
