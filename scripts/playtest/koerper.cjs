@@ -1794,7 +1794,7 @@ async function checkBandKoerperBewegung(ctx) {
         const mesh = s.playerMesh;
         if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
         const savedSoul = p.soul;
-        if (!mesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        if (!mesh.userData.rig) r.applyPlayerSoul("human");
         const pmesh = s.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         const savedVel = s.playerVel;
@@ -1948,7 +1948,7 @@ async function checkBandKoerperBewegung(ctx) {
         p.walkPhase = savedPhase;
         p._gaitW = savedW;
         p.animationLastTick = savedTick;
-        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+        if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
     
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {

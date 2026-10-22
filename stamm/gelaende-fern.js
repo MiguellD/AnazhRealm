@@ -1261,9 +1261,10 @@ class AnazhRealm_gelaende_fern {
             fr.zoneVerts = rows * F.winkel;
         }
         // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
-        // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
-        // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
-        // Cursor +0), und weckte sie später ein Chunk-Wechsel, löschte sie alle 1 081 Rand-Flächen.
+        // (`_fernRingFeldY`) fällt nur an den Ecken in der Reichweite des neuen Edits (gelaende-core `editReich`, die seiner
+        // Form; bis editform-kern Radius + 4 m), und die Edit-Generation weckt die Wache. Vorher stand die Prüfung hinter der
+        // Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-Cursor +0), und weckte sie später ein Chunk-Wechsel,
+        // löschte sie alle 1 081 Rand-Flächen.
         const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         const edN = Array.isArray(ed) ? ed.length : 0;
         if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
@@ -1272,10 +1273,10 @@ class AnazhRealm_gelaende_fern {
                 for (let k = fr.feldEditsN | 0; k < edN; k++) {
                     const e = ed[k];
                     if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
-                    const r2 = ((Number(e.r) || 0) + 4) ** 2;
+                    const r2 = globalThis.__gelaendeCore.editReich(e) ** 2;
                     for (let i = 0; i < fr.zoneVerts; i++) {
                         const p = this._fernRingPunkt(fr, i);
-                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 <= r2) fr.feldY[p.g] = NaN;
+                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < r2) fr.feldY[p.g] = NaN;
                     }
                 }
             } else fr.feldY.fill(NaN);

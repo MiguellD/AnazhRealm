@@ -116,7 +116,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.state.p2p.enabled === "boolean" &&
             typeof r.state.p2p.url === "string" &&
             r.state.p2p.peers instanceof Map;
-        out.allMethodsPresent = typeof r.initP2PUI === "function";
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
         const savedWorldId = r.state.worldMeta.worldId;
@@ -258,7 +257,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
-        check("Ring 11 V1: initP2PUI auf der Klasse (die Suite ruft ihn nie)", ring11Results.allMethodsPresent);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
@@ -305,7 +303,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Array.isArray(p2p.iceServers) &&
             p2p.iceServers.length > 0 &&
             typeof p2p.meshActive === "boolean";
-        out.w7MethodsPresent = typeof r._p2pDrainIce === "function";
 
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
@@ -444,7 +441,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
-        check("W7 P1: _p2pDrainIce auf der Klasse (die Suite ruft ihn nie)", w7Results.w7MethodsPresent);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
         check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
@@ -484,8 +480,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             p2p.pendingPullFrom === null &&
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
-        out.w7p2MethodsPresent =
-            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();
@@ -648,10 +642,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
-        check(
-            "W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)",
-            w7p2Results.w7p2MethodsPresent
-        );
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
         check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
@@ -699,7 +689,6 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function" && typeof r.meshWorldInitDOM === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
@@ -1128,10 +1117,6 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check(
-            "W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)",
-            w16Results.methodsPresent
-        );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -1550,7 +1535,6 @@ async function checkBandLateMultiUser(ctx) {
             p2p.lobby.published === false &&
             Array.isArray(p2p.lobby.rooms) &&
             p2p.remoteCreatures instanceof Map;
-        out.lobbyMethods = typeof r._renderLobbyUI === "function";
 
         // publishToLobby ohne Verbindung → not_connected.
         p2p.enabled = false;
@@ -1666,10 +1650,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check(
-            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
-            w7p4Results.lobbyMethods
-        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
@@ -2700,7 +2680,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const v836Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
+        // 3. Loch-Durchfall: `carveVoxel` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche

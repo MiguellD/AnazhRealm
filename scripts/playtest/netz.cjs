@@ -445,7 +445,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const foryouOn = document.getElementById("feed-foryou-panel").hidden === false && meshPanel.hidden === true;
         out.feedTabsWork = meshOn && foryouOn;
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
-        const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
+        const fi = r._feedItems();
         const fkinds = new Set(fi.map((it) => it.kind));
         const hasCreatures = (r.state.creatures || []).length > 0;
         out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
@@ -522,7 +522,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
         // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
-        const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
+        const omniWelt = r._omniboxSearch("welt:");
         out.omniboxWelt =
             Array.isArray(omniWelt) &&
             omniWelt.length >= 1 &&
@@ -2150,7 +2150,7 @@ async function checkBandPhi7PortalHalls(ctx) {
 
         // Aufräumen: spawned-Portale + Halle aus dem Test.
         for (const e of spawned) {
-            if (typeof r.removeArchitecture === "function" && e.id !== undefined) {
+            if (e.id !== undefined) {
                 try {
                     r.removeArchitecture(e.id);
                 } catch {

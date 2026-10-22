@@ -658,7 +658,7 @@ const server = statikServer();
 
         // sauberes Dirty-Set, dann Carve (der Edit-Call selbst heilt nach T1 den Footprint sync)
         if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
-        r.carveVoxelSphere(cx0, cy0, cz0, 3.5);
+        r.carveVoxel(cx0, cy0, cz0, 3.5);
 
         // T1-MASS: welche Chunks heilten IM Edit-Call (uuid schon geändert, BEVOR ein Tick lief)?
         const inEdit = [];
@@ -691,7 +691,7 @@ const server = statikServer();
         // --- SYNC-Drain-Referenz: ein Drain heilt jeden Rest in EINEM Schritt (die T1-Maschinerie) ---
         if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
         const cz1 = dcx !== 0 ? (pcz + 0.5) * span : cz0; // leicht versetzt, frischer Edit
-        r.carveVoxelSphere(cx0, cy0 + 0.2, cz1, 3.5);
+        r.carveVoxel(cx0, cy0 + 0.2, cz1, 3.5);
         const dirtyBeforeDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
         const built = r._drainDirtyVoxelChunks();
         const dirtyAfterDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;

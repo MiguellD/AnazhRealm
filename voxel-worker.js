@@ -67,7 +67,7 @@ const state = {
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
-    voxelEdits: [], // Array of { x, y, z, r, strength, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
+    voxelEdits: [], // Array of { x, y, z, r, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
     spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
     bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
@@ -355,20 +355,13 @@ function voxelSurfaceY(x, z) {
     return null;
 }
 
-// Mirror von `_voxelEditsFillTop`: die höchste Füll-Kugel (Krone y + r), gemerkt je Edit-Liste und Länge.
+// Wie `_voxelEditsFillTop`: die Krone der Füll-Edits (`G.editKrone`), gemerkt je Edit-Liste und Länge.
 let fillTopMerk = null;
 function editsFillTop() {
     const edits = state.voxelEdits;
     const len = edits ? edits.length : 0;
     if (fillTopMerk && fillTopMerk.edits === edits && fillTopMerk.len === len) return fillTopMerk.top;
-    let topY = -Infinity;
-    for (let i = 0; i < len; i++) {
-        const e = edits[i];
-        if (e && e.mode === "fill") {
-            const t = (Number(e.y) || 0) + (Number(e.r) || 0);
-            if (t > topY) topY = t;
-        }
-    }
+    const topY = G.editKrone(edits);
     fillTopMerk = { edits, len, top: topY };
     return topY;
 }
@@ -492,8 +485,8 @@ function applyStateDelta(delta) {
     applyStateSnapshot(delta);
 }
 
-// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Kugel ihn samt einem
-// Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
+// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Reichweite ihn samt einem
+// Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `G.editReich`), in Setz-Reihenfolge.
 // Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
 // nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
 // zur Main (gate:worker-dichte, 300 Edits).
@@ -510,7 +503,7 @@ function editKarteFrisch() {
         while (k.n < edits.length) {
             const ed = edits[k.n++];
             if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-            const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+            const r = G.editReich(ed); // die Reichweite der Form (das Gesetz des Kerns)
             const kax = Math.floor((ed.x - r) / span);
             const kbx = Math.floor((ed.x + r) / span);
             const kaz = Math.floor((ed.z - r) / span);
@@ -563,13 +556,9 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const Ny = dimY + 1;
     const Nz = dimZ + 1;
     const density = new Float32Array(Nx * Ny * Nz);
-    // Welle F (mirror von `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur
-    // die j-Ebenen um die Oberfläche samplen, über `surf+Roughness` Luft (−1),
-    // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
+    // Welle F (wie `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur die j-Ebenen um die Oberfläche samplen, über dem
+    // Band Luft (−1), unter ihm Fels (+1); das Band ist das Gesetz des Kerns (`G.bandOben`/`G.bandUnten`).
     const base = state.baseHeight || 0;
-    const ROUGH = 12;
-    // V17.103 (mirror): Band-Top-Margin deckt den Normalen-eps (1.5 Zellen) + Puffer.
-    const topMargin = 4 * step;
     // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
     // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
     // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
@@ -579,9 +568,8 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
             const wx = ox + i * step;
             const ctx = state.noise ? terrainColumnContext(wx, wz) : null;
             const surf = ctx ? ctx.surf : G.hoehe(state, wx, wz, true);
-            const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
-            // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
-            const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
+            const bandTopJ = G.bandOben(surf, oy, step);
+            const bandBotJ = G.bandUnten(surf, base, oy, step);
             const colBase = i + k * Nx * Ny;
             for (let j = 0; j < Ny; j++) {
                 const idx = colBase + j * Nx;
@@ -591,53 +579,15 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
             }
         }
     }
-    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Kugel über ihren Index-Kasten
-    // und in Float32 — auch über und unter dem Band. Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine
-    // Füll-Kugel über dem Band stand im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0
-    // 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
-    applyVoxelEditsGrid(density, ox, oy, oz, Nx, Ny, Nz, step);
-    return density;
-}
-
-// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (Stamm) — dieselben Kästen, dieselbe Reihenfolge,
-// dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
-function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
-    const edits = editsImKasten(gox, gox + (Nx - 1) * step, goz, goz + (Nz - 1) * step);
-    if (!edits.length) return;
-    for (let e = 0; e < edits.length; e++) {
-        const ed = edits[e];
-        if (!ed) continue;
-        const r = ed.r;
-        const r2 = r * r;
-        const strength = ed.strength || 48;
-        const isFill = ed.mode === "fill";
-        const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
-        const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
-        const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
-        const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
-        const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
-        const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
-        for (let k = k0; k <= k1; k++) {
-            const wz = goz + k * step;
-            const dz = wz - ed.z;
-            for (let j = j0; j <= j1; j++) {
-                const wy = goy + j * step;
-                const dy = wy - ed.y;
-                for (let i = i0; i <= i1; i++) {
-                    const wx = gox + i * step;
-                    const dx = wx - ed.x;
-                    const dist2 = dx * dx + dy * dy + dz * dz;
-                    if (dist2 < r2) {
-                        const fall = 1 - Math.sqrt(dist2) / r;
-                        const amt = fall * strength;
-                        const idx = i + j * Nx + k * Nx * Ny;
-                        if (isFill) out[idx] += amt;
-                        else out[idx] -= amt;
-                    }
-                }
-            }
-        }
-    }
+    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Edit über seinen Index-Kasten und in
+    // Float32 — auch über und unter dem Band, das ihre Reichweite deckt: dieselbe Form des Kerns (`G.bandUmEdits`,
+    // `G.editsImGitter`). Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine Füll-Kugel über dem Band stand
+    // im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
+    const edits = editsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step);
+    if (!edits.length) return density;
+    if (state.noise)
+        G.bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, terrainColumnContext, terrainBaseDensityCol);
+    return G.editsImGitter(density, ox, oy, oz, Nx, Ny, Nz, step, edits);
 }
 
 // =============================================================================
@@ -715,29 +665,12 @@ function terrainBaseDensityCol(x, y, z, ctx) {
     return d;
 }
 
-// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel, gefragt wird die Karte des Chunks (Spiegel von
-// `_voxelEditDeltaAt`).
-function applyVoxelEdits(d, x, y, z) {
+// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel die Form des Kerns (`G.mitEdits`), gefragt wird die Karte des
+// Chunks (wie `_mitEdits` im Stamm).
+function applyVoxelEdits(basis, x, y, z) {
     const k = state.voxelEdits && state.voxelEdits.length ? editKarteFrisch() : null;
     const edits = k ? k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
-    if (edits) {
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const dx = x - ed.x;
-            const dy = y - ed.y;
-            const dz = z - ed.z;
-            const dist2 = dx * dx + dy * dy + dz * dz;
-            const r = ed.r;
-            if (dist2 < r * r) {
-                const fall = 1 - Math.sqrt(dist2) / r;
-                const amt = fall * (ed.strength || 48);
-                if (ed.mode === "fill") d += amt;
-                else d -= amt;
-            }
-        }
-    }
-    return d;
+    return G.mitEdits(basis, x, y, z, edits);
 }
 
 // Volle Density an EINEM Punkt mit gegebenem Spalten-Kontext (base-col + edits) — der Hoist-Pfad.

@@ -1712,11 +1712,11 @@ class AnazhRealm_kampf {
             }
             dig.progress = 0;
         }
-        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch). carveRadius 3.5 m spannt ~140 Voxel —
-        // eine begehbare Mulde; kleiner wäre eine Nadel.
+        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
+        // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;
         // Graben läuft durch dslRun (source:"human" → p2pBroadcastDsl), damit Mitspieler dieselbe Mulde
-        // sehen; lokal ruft voxel_carve dieselbe carveVoxelSphere. Der DSL-Op ist der EINE Broadcast-Anker
+        // sehen; lokal ruft voxel_carve dieselbe carveVoxel. Der DSL-Op ist der EINE Broadcast-Anker
         // — ein direkter API-Call wäre eine Sync-Lücke.
         this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
         // Der Boden gibt Materie wie harvestArchitecture: Material aus dem Welt-Affinitäts-Feld am Grabe-Ort
@@ -1886,7 +1886,7 @@ class AnazhRealm_kampf {
                 return false;
             }
             this._consumeMouseStamina();
-            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxelSphere). Der Material-Konsum
+            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxel). Der Material-Konsum
             // (matGate oben) bleibt lokal — Inventar-Geste, nicht broadcastbar.
             this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
             if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");

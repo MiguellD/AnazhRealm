@@ -671,7 +671,7 @@ function shaderKostenSeite(o) {
             if (pp && ro.object === pp._quadMesh) return "post:ausgabe";
             if (traa && ro.material === traa._resolveMaterial) return "TRAA.resolve";
             try {
-                return typeof r._taeterKlasse === "function" ? r._taeterKlasse(ro.object) : ro.object.type;
+                return r._taeterKlasse(ro.object);
             } catch (_e) {
                 return (ro.object && (ro.object.name || ro.object.type)) || "?";
             }

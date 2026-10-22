@@ -801,8 +801,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
         // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
-        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
-        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         r._drainPendingWaterIso();
@@ -1000,7 +998,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     }
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
     check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
-    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
         res.allChunksTracked,

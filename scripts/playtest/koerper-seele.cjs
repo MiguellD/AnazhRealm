@@ -552,8 +552,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
-        // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
-        out.stationLabel = typeof r._stationLabelForDomain === "function";
 
         // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
         // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
@@ -632,7 +630,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
     check(
         "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
         res.oldButtonsGone

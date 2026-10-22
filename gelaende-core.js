@@ -1748,6 +1748,164 @@
         return w;
     }
 
+    // DIE FORM DES EDITS (F2a „hoch bauen", Karte editform-kern): jeder Edit des Spielers (Graben, Aufschütten, hoch bauen) ist
+    // die SÄULE seines Maßes r — Radius r, halbe Höhe r, die Kanten gerundet (`kanteM`, höchstens r/2), oben und unten eben:
+    // Aufschütten vereinigt sie mit dem Boden, Graben nimmt sie heraus (weiches Maximum/Minimum, die Kehle `rundM`), in
+    // Setz-Reihenfolge, in jeder Höhe und Tiefe gleich. Gerechnet wird in Metern auf der GEKAPPTEN Dichte n = clamp(Basis,
+    // ±tiefeM) gegen das Abstandsfeld s der Säule (positiv innen); `tiefeM` über zwei 1,8-m-Zellen legt den Knick der
+    // Vereinigung jenseits der Kanten um die Fläche. EBEN, weil der Boden ein 1,8-m-Gitter ist: die Kuppe einer Kugel trug das
+    // Netz 0,14–1,1 m unter dem Gesetz, eine Ebene trägt es genau — wer baut, steht auf dem, was er sieht. Bis editform-kern
+    // legte jeder Edit an vier Stellen (Stamm und voxel-worker, je Punkt und Gitter) einen additiven Kegel der Stärke 48 auf die
+    // Basis: h m über dem Boden blieb von ihm r · (1 − h/48), ein Turm wurde je Schuss schmaler (10 Edits r 3,5 hoben 24,5 m,
+    // Hub 3,26 → 1,90 m). Leser: der Punkt (`mitEdits`) und das Gitter (`editsImGitter`) in Stamm und Worker; die Reichweite
+    // (`editReich`) die Edit-Karte, die Weckung um einen Edit und die Wache des Fern-Rings.
+    const EDIT_FORM = Object.freeze({ tiefeM: 4, rundM: 1, kanteM: 0.5 });
+    function editForm(n, ed, dx, dy, dz) {
+        if (!(ed.r > 0)) return n; // ein Edit ohne Maß (Alt-Daten) ändert nichts
+        const k = EDIT_FORM.rundM;
+        const c = Math.min(EDIT_FORM.kanteM, ed.r * 0.5);
+        const qx = Math.sqrt(dx * dx + dz * dz) - ed.r + c;
+        const qy = Math.abs(dy) - ed.r + c;
+        const s = c - Math.min(Math.max(qx, qy), 0) - Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2);
+        if (ed.mode === "fill") {
+            const h = Math.max(k - Math.abs(n - s), 0) / k;
+            return Math.max(n, s) + h * h * k * 0.25;
+        }
+        const h = Math.max(k - Math.abs(n + s), 0) / k;
+        return Math.min(n, -s) - h * h * k * 0.25;
+    }
+    // so weit ändert ein Edit die Dichte: jenseits liegt seine Säule (die Ecke im Abstand r·√2) um mehr als tiefeM + rundM unter
+    // der gekappten Dichte
+    function editReich(ed) {
+        return (Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1) * Math.SQRT2 + EDIT_FORM.tiefeM + EDIT_FORM.rundM;
+    }
+    function editKappe(basis) {
+        const K = EDIT_FORM.tiefeM;
+        return basis < -K ? -K : basis > K ? K : basis;
+    }
+    // DIE KRONE: die höchste Oberkante der Füll-Edits einer Liste (y + r — dort endet die Säule eben; −Infinity ohne Füllung).
+    // Darüber ist Luft: die Flächen-Probe (`_voxelSurfaceY`, Worker `voxelSurfaceY`) hebt ihre Garantie-Luft bis dorthin.
+    function editKrone(edits) {
+        let top = -Infinity;
+        for (let i = 0; edits && i < edits.length; i++) {
+            const e = edits[i];
+            if (e && e.mode === "fill") {
+                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
+                if (t > top) top = t;
+            }
+        }
+        return top;
+    }
+    // DER PUNKT: die Dichte über `basis` an (x, y, z) mit den Edits `edits` (Setz-Reihenfolge; ohne Liste die Basis) —
+    // max(1, |Basis|/tiefeM) · n: stetig, gleich der Basis, wo kein Edit sie ändert, um jede Säule ihr Abstand (die Wand-Proben
+    // des Leibs lesen ihn).
+    function mitEdits(basis, x, y, z, edits) {
+        if (!edits) return basis;
+        let n = editKappe(basis);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const dx = x - ed.x;
+            const dy = y - ed.y;
+            const dz = z - ed.z;
+            const R = editReich(ed);
+            if (dx * dx + dy * dy + dz * dz < R * R) n = editForm(n, ed, dx, dy, dz);
+        }
+        return Math.max(1, Math.abs(basis) / EDIT_FORM.tiefeM) * n;
+    }
+    // DAS GITTER (Float32, Index i + j·Nx + k·Nx·Ny ab gox|goy|goz): jede Ecke in der Reichweite eines Edits (sein Kasten)
+    // beginnt bei ihrer gekappten Basis und nimmt die Edits in Setz-Reihenfolge; sie trägt n (dieselbe Fläche wie der Punkt, ohne
+    // dessen Maß — die Kanten des Gitters sehen das Abstandsfeld der Säule), wo kein Edit die Kappe änderte, wieder ihre Basis:
+    // unberührter Boden bleibt byte-alt (die Kappe allein verschob die Interpolation steiler Kanten bis an den Rand der
+    // Reichweite). Liefert eine Kopie, `basis` bleibt.
+    function editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
+        const out = new Float32Array(basis);
+        const beruehrt = new Uint8Array(out.length);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const R = editReich(ed);
+            const R2 = R * R;
+            const i0 = Math.max(0, Math.floor((ed.x - R - gox) / step));
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + R - gox) / step));
+            const j0 = Math.max(0, Math.floor((ed.y - R - goy) / step));
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + R - goy) / step));
+            const k0 = Math.max(0, Math.floor((ed.z - R - goz) / step));
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + R - goz) / step));
+            for (let k = k0; k <= k1; k++) {
+                const dz = goz + k * step - ed.z;
+                for (let j = j0; j <= j1; j++) {
+                    const dy = goy + j * step - ed.y;
+                    for (let i = i0; i <= i1; i++) {
+                        const dx = gox + i * step - ed.x;
+                        if (dx * dx + dy * dy + dz * dz >= R2) continue;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (!beruehrt[idx]) {
+                            beruehrt[idx] = 1;
+                            out[idx] = editKappe(basis[idx]);
+                        }
+                        out[idx] = editForm(out[idx], ed, dx, dy, dz);
+                    }
+                }
+            }
+        }
+        for (let idx = 0; idx < out.length; idx++)
+            if (beruehrt[idx] && out[idx] === editKappe(basis[idx])) out[idx] = basis[idx];
+        return out;
+    }
+    // DAS BAND DES GITTERS: je Spalte sampelt das Gitter nur die Ebenen um ihre Fläche `surf` — über `bandOben` ist garantiert
+    // Luft (surf + 12, die größte 3D-Rauheit noise·7 + noise·5, + 4 Zellen: der Gradient-eps der Normalen, 1,5 Zellen — ein
+    // Gipfel-Vertex sampelt +eps nach oben, sonst kippt seine Normale), unter `bandUnten` garantiert Fels (min(surf, base) − 40,
+    // das Höhlen-Band endet base − 28; es folgt surf — in einer Tiefsee-Rinne, ~−75 m, füllte ein fixes base − 40 die Wassersäule
+    // als Fels). Leser: das Gitter in Stamm und Worker.
+    function bandOben(surf, oy, step) {
+        return Math.floor((surf + 12 + 4 * step - oy) / step) + 1;
+    }
+    function bandUnten(surf, base, oy, step) {
+        return Math.floor((Math.min(surf, base) - 40 - oy) / step);
+    }
+    // DAS BAND DECKT DIE EDITS: über dem Band trägt das Gitter Luft −1, unter ihm Fels +1 — bit-identisch, solange dort keine
+    // Fläche liegt. Ein Edit legt seine Fläche dorthin (der Turm über dem Band, die tiefe Grube), und die Kappe der Form braucht
+    // die wahre Basis: in der Reichweite jedes Edits (+ 4 Zellen, die Marge des Bands) sampelt jede Spalte `probe(x, y, z, ctx)`
+    // (ctx = `spalte(x, z)`, sein `surf` legt das Band), wo das Band übersprang — je Spalte die Hülle der Edits, die sie
+    // erreichen. Schreibt `density` an Ort und Stelle.
+    function bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, spalte, probe) {
+        if (!edits || !edits.length) return;
+        const huelle = new Map(); // Spalte i + k·Nx → [unterste, oberste] Ebene der Edits, die sie erreichen
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const r = editReich(ed);
+            const i0 = Math.max(0, Math.floor((ed.x - r - ox) / step) - 4);
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - ox) / step) + 4);
+            const j0 = Math.max(0, Math.floor((ed.y - r - oy) / step) - 4);
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - oy) / step) + 4);
+            const k0 = Math.max(0, Math.floor((ed.z - r - oz) / step) - 4);
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - oz) / step) + 4);
+            if (j0 > j1) continue;
+            for (let k = k0; k <= k1; k++)
+                for (let i = i0; i <= i1; i++) {
+                    const h = huelle.get(i + k * Nx);
+                    if (!h) huelle.set(i + k * Nx, [j0, j1]);
+                    else {
+                        if (j0 < h[0]) h[0] = j0;
+                        if (j1 > h[1]) h[1] = j1;
+                    }
+                }
+        }
+        for (const [s, h] of huelle) {
+            const i = s % Nx;
+            const k = (s - i) / Nx;
+            const wx = ox + i * step;
+            const wz = oz + k * step;
+            const ctx = spalte(wx, wz);
+            const oben = bandOben(ctx.surf, oy, step);
+            const unten = bandUnten(ctx.surf, base, oy, step);
+            for (let j = h[0]; j <= h[1]; j++)
+                if (j > oben || j < unten) density[i + j * Nx + k * Nx * Ny] = probe(wx, oy + j * step, wz, ctx);
+        }
+    }
+
     // DER ORT LIEST DAS GELÄNDE (K10): die Lese-Funktionen, die der Plan v2 (fachwerk `ortPlan`) an der Lage L erhält — die
     // Höhe samt dem Erdbau früherer Orte (`hoehe`) und die Fläche seiner eigenen Splats (`erdbauFlaeche`). EIN ctx für den
     // Wirt (`_ortPlanSetzen` über seine lebende Lage), das Fachwerk-Studio (`buildDorf` über `lageGrund`) und die Linse
@@ -3709,6 +3867,15 @@
         erdbauHohl: erdbauHohl,
         erdbauKeller: erdbauKeller,
         erdbauSchnitt: erdbauSchnitt,
+        EDIT_FORM: EDIT_FORM,
+        editForm: editForm,
+        editReich: editReich,
+        editKrone: editKrone,
+        mitEdits: mitEdits,
+        editsImGitter: editsImGitter,
+        bandOben: bandOben,
+        bandUnten: bandUnten,
+        bandUmEdits: bandUmEdits,
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,

@@ -310,7 +310,7 @@ async function s0Probe(page, station, schein) {
             }
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
-            out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
+            out.verzeichnis = r._blockerMit("licht").includes(feuer);
             // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`) — an
             // der ersten Stelle des Rings, die die Wände des Hebe-Chokepoints selbst frei nennen (Wasser `_landAt`, Bau
             // `_bauFreiRund`): das Feuer landet je Maschine anders (CI 1,46|0,86, lokal −0,6|2,26), fest +6 m in z fiel still.

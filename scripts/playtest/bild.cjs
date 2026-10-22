@@ -801,8 +801,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (F6 — das additive Band leuchtete den Boden am streifenden Blick der Ferne aus sich selbst).
         out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
-        const _structMat =
-            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
+        const _structMat = r._buildToonNodeMaterial({ color: 0x808080 });
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
@@ -818,10 +817,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.structDynamicColorPreserved = _dynColorOk;
         // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
-        const _phantomMat =
-            typeof r._buildToonNodeMaterial === "function"
-                ? r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 })
-                : null;
+        const _phantomMat = r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 });
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
@@ -1007,10 +1003,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Instanced-Gras (Voxel-Gras-Pendant) ---
         // Lebenszyklus: `_buildVoxelChunkGrass` / `_disposeVoxelChunkGrass` / `state.voxelChunkGrass`;
         // `_grassInstanceMat` (Wind-Material) ist geteilt.
-        out.grassMethodsExist =
-            typeof r._buildVoxelChunkGrass === "function" &&
-            typeof r._disposeVoxelChunkGrass === "function" &&
-            typeof r._grassInstanceMat === "function";
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
         // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
@@ -1124,10 +1116,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 JSON.stringify(e)
             );
         }
-        check(
-            "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
-            v829Results.grassMethodsExist
-        );
         check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
         check(
             "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
