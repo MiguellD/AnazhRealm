@@ -387,21 +387,31 @@ function latenzAn(k) {
     const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
     const lage = () =>
         L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
-    const weg = (a, b) => Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j]))));
+    // der Weg zwischen zwei Lagen DERSELBEN Form (hieb: die Hand; sonst Kamera und Leib) — eine andere Form ist kein Stillstand
+    const weg = (a, b) => (!b || a.length !== b.length ? Infinity : Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))));
     const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();
     const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
     GPUCanvasContext.prototype.getCurrentTexture = function () {
+        // DER HAKEN ZEICHNET IMMER (latenz-verben): ein Fehler der Messung wird festgehalten (L.fehler, die Wache nennt ihn), nie an
+        // r184 weitergereicht — bis dahin warf `weg` nach einem Verb-Wechsel (hieb → gehen: die Lage wechselte die Form) in JEDEM
+        // Bild, kein Bild wurde mehr präsentiert, und die Fristen in Bildern warteten ewig (der Sammel-Lauf hing 25 min)
         if (this.canvas === rend.domElement) {
-            const t = performance.now(), l = lage(), p = L.probe;
-            L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
-            if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
-            if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
-                Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
-            const sw = p && p.t0 != null && st.player._swing;
-            if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
-            L.swVor = sw && sw.t;
-            L.vor = l;
+            const t = performance.now();
+            try {
+                const l = lage(), p = L.probe;
+                L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
+                if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
+                if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
+                    Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
+                const sw = p && p.t0 != null && st.player._swing;
+                if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
+                L.swVor = sw && sw.t;
+                L.vor = l;
+            } catch (e) {
+                L.fehler = L.fehler || `Bild-Haken (${L.verb || "-"}): ${String((e && e.stack) || e).slice(0, 300)}`;
+            }
+            L.rafAmBild = L.raf;
             L.bilder.push(t);
         }
         return gct.call(this);
@@ -422,32 +432,52 @@ function latenzAn(k) {
         })();
     };
     // die Blase nach dem Hörer des Spiels — an der Taste wie am Klick (latenz-verben: bis dahin nur am Klick, jede Tasten-Probe
-    // trug kein imHoerer und das Urteil brach an ihr)
-    const nach = (ev) => L.probe && L.probe.hoerer != null && L.probe.imHoerer == null && !synth.has(ev) && (L.probe.imHoerer = performance.now() - L.probe.hoerer);
+    // trug kein imHoerer und das Urteil brach an ihr); im Verzug zählt die verzögerte Kopie, die das Spiel erst hört
+    const nach = () => L.probe && L.probe.hoerer != null && L.probe.imHoerer == null && (L.probe.imHoerer = performance.now() - L.probe.hoerer);
     for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
     for (const typ of ["keydown", "mousedown"]) window.addEventListener(typ, nach);
     rend.setAnimationLoop((t) => {
         L.takt++;
         L.taktAm = performance.now();
         window.__wetterHalten();
-        r._gameLoopTick(t);
+        try {
+            r._gameLoopTick(t);
+        } catch (e) {
+            L.fehler = L.fehler || `Takt ${L.takt} (${L.verb || "-"}): ${String((e && e.stack) || e).slice(0, 400)}`;
+            throw e;
+        }
     });
+    // DIE WACHE DER FRISTEN (latenz-verben): jede Frist zählt rAF-Durchläufe, nie nur präsentierte Bilder — wirft der Takt, fordert
+    // r184 kein Bild mehr an, `L.bilder` wächst nie, und eine Frist in Bildern wartete ewig (der Sammel-Lauf hing 25 min).
+    // 120 rAF ohne Bild brechen laut mit der Ausnahme des Takts beim Namen.
+    L.raf = 0;
+    L.rafAmBild = 0;
+    const wache = async () => {
+        await raf();
+        if (L.fehler) throw new Error(`latenz: ${L.fehler}`);
+        if (++L.raf - L.rafAmBild > 120)
+            throw new Error(`latenz: die Welt zeichnet seit ${L.raf - L.rafAmBild} rAF kein Bild (Verb ${L.verb || "-"}) — ${L.fehler || "der Takt warf nichts"}`);
+    };
     // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
     // zufällige Phase gegen den Bild-Takt
     L.bereit = async (sicht, zurueck, verb) => {
         L.probe = null;
+        // das Verb gilt ab hier für die Lage jedes Bilds (bis latenz-verben setzte es nur ohne Rücksprung: im Sammel-Lauf maß
+        // gehen nach hieb die Hand)
+        if (L.verb !== verb) (L.vor = null), (L.still = 0); // die Lage wechselt mit dem Verb die Form (Hand gegen Kamera und Leib)
+        L.verb = verb;
         if (st.player.mountedArch != null) r.dismountArchitecture(); // die Probe davor stieg ein
-        if (zurueck || (L.verb = verb) === "hieb") st.playerMesh.position.copy(L.start);
+        if (zurueck || verb === "hieb") st.playerMesh.position.copy(L.start);
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
         if (verb === "hieb" && !(await L.tierStellen())) return false;
         if (verb === "einsteigen") await L.wagenStellen();
-        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await raf()) if (L.bilder.length > bis) return false;
+        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await wache()) if (L.bilder.length > bis) return false;
         await new Promise((f) => setTimeout(f, Math.random() * 17));
         return !!(L.probe = {});
     };
     L.treffer = async () => {
-        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await raf();
-        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await raf();
+        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await wache();
+        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await wache();
         return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
     };
     // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
@@ -455,11 +485,11 @@ function latenzAn(k) {
         const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
         if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
         const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
-        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await raf();
+        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await wache();
         c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
         c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
         st.player.stamina = st.player.staminaMax || 100;
-        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await raf()) {
+        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await wache()) {
             const F = r._fadenkreuzStrahl(), v = r._leibMitte(c).sub(F.o).normalize();
             if (v.distanceTo(F.d) < 0.03) return true;
             st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
@@ -475,7 +505,7 @@ function latenzAn(k) {
             L.wagen = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: st.yaw });
             if (!L.wagen) throw new Error("latenz einsteigen: der GT steht nicht (spawnArchitecture fahrzeug_gt)");
         }
-        for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await raf()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
+        for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await wache()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
         if (!r._archIsRendered(L.wagen)) throw new Error("latenz einsteigen: der GT ist nach 1800 Bildern nicht gezeichnet (_archIsRendered)");
     };
     L.ende = () => {
