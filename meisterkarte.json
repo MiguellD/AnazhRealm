@@ -1,15 +1,15 @@
 {
   "stand": "2026-10-22",
-  "kopf": "b9537781",
-  "version": "V18.546.55",
+  "kopf": "7670a4a1",
+  "version": "V18.546.56",
   "skala": "2.0",
-  "summe": 35,
+  "summe": 37,
   "max": 330,
   "gruppen": [
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 10,
+      "summe": 11,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -53,7 +53,7 @@
     {
       "key": "schoepfung",
       "titel": "IV · SCHÖPFUNG — die Studios, die Pipeline, die KI im System, Spieler-Bauen",
-      "summe": 4,
+      "summe": 5,
       "max": 40,
       "bereiche": [
         "studios",
@@ -226,7 +226,7 @@
       "key": "wetter",
       "titel": "Wetter und Klima — Front, Nässe, Kreislauf, Schnee, Wind",
       "gruppe": "physis",
-      "punkte": 2,
+      "punkte": 3,
       "pfad": "Feature-Stopp bis v1.0 — der Hebel der Messbarkeit (Wetter und Saison als Spieler-Wort) ist gemergt (428fb6fe)",
       "dateien": "`phyto-core.js` WX_GESETZ · `foundry-core.js` REGEN_GESETZ · `stamm/bild-himmel.js` · `stamm/dirigent-takt.js` · `stamm/feld-leben.js`",
       "aaaa": "Wetter ist ein Feld des Kerns über Ort × Zeit × Saat, plus die Schreib-Akte (Spieler-Wort, DSL-Regeln, der Wunsch der Emotion über die Weltregeln). Eine Regenfront zieht mit dem Wind; vom Hügel sieht der Spieler den Vorhang 2 km entfernt, und jeder Mitspieler sieht denselben Himmel. Regen benetzt, was er trifft: poröser Boden fällt auf 0,5–0,8 × Albedo, die Rauheit sinkt, Pfützen in Mulden spiegeln den Himmel, unter dem Dach bleibt es trocken, und nach dem Schauer trocknet es in 5–15 min. Regen speist die Bäche (Pegel +0,2–1 m, verzögert um die Laufzeit des Einzugsgebiets), Dürre leert sie. Die Jahreszeit ist Temperatur: Schnee-Decke mit Tiefe, in der der Fuß einsinkt. Wind ist EIN Feld, vom Gelände geformt (Lee, Tal-Düse), gelesen von allem, was sich bewegt. Wetter ≤ 1 ms GPU, ≤ 0,3 ms CPU auf beiden Geräten. **Wo wir die Besten schlagen:** RDR2 und Forza Horizon 4 bauen Wetter-Regionen und Jahreszeiten je Karte von Hand; bei uns kommt das Wetter aus demselben Gesetz wie das Gelände — die Front füllt das Flussnetz, das sie quert, und die Klimazonen folgen der Höhe des Gesetzes in einer unendlichen Welt.",
@@ -248,12 +248,12 @@
         },
         {
           "name": "Nässe: Regen benetzt — EIN Zustand, EIN Soll",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose · 2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
           "messung": "werkbank bild an Mess-Wiese und Dorfgasse, klar gegen 10 min Regen (Spieler-Wort; die Bühne hält das Wetter, nicht Mittag): poröse Stoffe (Boden, Putz, Rinde) Luma 0,5–0,8 × trocken, dichte (Metall, Glas) unverändert, Glanz-Anteil ≥ 2×; Pfützen nur in den Senken des Kerns (Korrelation mit der Krümmung r ≥ 0,5) mit spiegelTreue ≥ 0,5; im Haus 0 Regen-Pixel und gleiche Luma; Trocknen 5–15 min Spielzeit ohne Sprung — zählt erst nach gemessener Benetzung; Fall ≤ 9,2 m/s.",
-          "beleg": "Im Boden- und Bau-Stoff gibt es keinen Nässe-Term (`stamm/stoff-material.js`: 0 Treffer auf nass/wet; `_terrainGeologyAlbedo` `:1755` ohne Wetter). Der Regen-Kasten folgt dem Auge ohne Dach-Verdeckung (`stamm/bild-himmel.js:898-935` `_tickRain`) und fällt 42 m/s (`foundry-core.js:171`). Nässe lesen nur Klang, Journal und Tier-Laune (`stamm/klang.js:279`, `stamm/kreatur-verhalten.js:2199`).",
+          "beleg": "SCHNITT naesse, auf main 7670a4a1 (V18.546.56, Merge efdc388c), mit Welt-Byte: b357dbac EIN Zustand aus dem Wetter-Feld (`_naesseTakt`, `stamm/bild-himmel.js`: Regen benetzt mit tau 150 s, die Sonne trocknet in 1 500 s) und EIN Gesetz im Welt-Stoff (`_naesseImStoff` an der Engstelle `_leuchtStoff`, `stamm/stoff-material.js`: Albedo → Albedo², Rauheit × 0,5 nach Lagarde und Lekner-Dorf, Gewicht Nässe × Himmels-Sicht × Poren × (1 − Metall)); 74b460a4 der Faktor auf die ganze Albedo; 4bcbe9ea EIN Dach-Pool auch für Bauten ohne Haus-Hülle; cde74c22 die trockene Welt zahlt den Dach-Pool nie. Die Linse d255e650 (`werkbank licht --naesse`, Regen als Spieler-Wort über `__buehne`, klar gegen 10 min Regen aus dem Ausgabe-Pfad) stand an der Basis 5951786f ROT (Wiese und Dorf draußen 1,000). Radeon gate:naesse:echt am Kopf cde74c22: Wiese 0,773 · Dorf draußen 0,753 · Dorf innen unter dem Dach 1,000 im selben Schuss · Metall 1,000 · Regen innen 0, draußen 97–98 % · Dach-Bauten trocken 2/2 → Staffel 1; Frost, Ego-Schatten und licht-weg:echt grün; Zweig-CI 39689716546 21/21. OMEN-ABAB (koordination `bericht/2110-abab-naesse.md`, b9537781 gegen 7670a4a1, GTX): bei Sonne nicht langsamer (Genesis Third; Wiese Ego Frame p95 16,8 ↔ 16,8, CPU-Takt p95 4,2 ↔ 4,2, gpu-bank im Rauschen, −1,5 fps an der k0-Lage), im Regen nach 10 min +1,2 ms GPU-Durchsatz (12,40 → 13,60, der Nässe-Term je Pixel; benannt, Werkpaket naesse-kosten). Frisch: `git log cde74c22..7670a4a1` über den Pfad trägt nur die Katalog-Reihe von bauen-k1 (`_katalogRang`, `stamm/siedlung-satz.js`), nicht die Nässe. Offen für die 2: Glanz 16 steht am Gesetz, nicht im Bild; keine Pfützen in den Mulden; die Trocken-Kurve ungemessen (1 500 s gegen das Soll 5–15 min); Third, die GTX im Bild; der Regen fällt 42 m/s (`foundry-core.js:171`).",
           "schlupfloch": "Ein globales Abdunkeln bestünde den Luma-Teil: darum porös gegen dicht im SELBEN Schuss, der Dach-Test und die Mulden-Korrelation. „Trocken unter dem Dach“ und „trocknet“ sind ohne Nässe wahr: die Trocken-Kurve zählt erst nach der Benetzung (B13).",
-          "aenderung": "Nässe stand zweimal (Wetter K2, Material K5) mit zwei Soll und zwei geplanten Quellen — ein Zwilling vor dem Bau (B15, V23); jetzt EIN Kriterium, EINE Overlay-Achse."
+          "aenderung": "Nässe stand zweimal (Wetter K2, Material K5) mit zwei Soll und zwei geplanten Quellen — ein Zwilling vor dem Bau (B15, V23); jetzt EIN Kriterium, EIN Zustand; Schnitt naesse 0 → 1 (7670a4a1)."
         },
         {
           "name": "Der Wasser-Kreislauf: Regen speist die Flüsse, Dürre leert sie",
@@ -299,17 +299,17 @@
           "v1": false
         },
         {
-          "name": "EINE Nässe als Feld-Achse: Dach, Mulde, Trocknen, Leser im Stoff",
+          "name": "Die Nässe ganz: Pfützen in den Mulden, Glanz im Bild, Trocken-Kurve, beide Geräte (Zustand, Dach und Stoff stehen seit naesse)",
           "bewegt": [
-            "wetter.K2+2"
+            "wetter.K2+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
-            2.5,
-            2.5
+            1.5,
+            2
           ],
-          "p_je_tag": 0.8,
-          "wurzel": "Nässe-Achse im Feld-Overlay (`stamm/feld-leben.js`, auraAt-Familie, 2-m-Zellen, lazy-decay = Trocknen); Verdeckung von oben (Kaskade oder Blocker-Netz); Leser `_terrainGeologyAlbedo` (`stamm/stoff-material.js:1755`) und `_substanceCharacter` (`:1578`), Pfützen im `_wasserBlick` (`stamm/wasser-hydro.js:1538`); Regen-Fall 42 → ≤ 9 m/s (`foundry-core.js:171`).",
+          "p_je_tag": 0.57,
+          "wurzel": "Der Zustand `_naesseTakt` (`stamm/bild-himmel.js:2775`) und das Gesetz `_naesseImStoff` (`stamm/stoff-material.js:1462`) stehen; der Rest: Pfützen in den Senken des Kerns im `_wasserBlick` (`stamm/wasser-hydro.js:1538`), der Glanz nass/trocken im Ausgabe-Bild statt am Gesetz, die Trocknung 1 500 s auf 5–15 min Spielzeit, Regen-Fall 42 → ≤ 9 m/s (`foundry-core.js:171`), Third und die GTX; die +1,2 ms GPU im Regen an der GTX (Werkpaket naesse-kosten) zahlt der Term je Pixel.",
           "pflicht": "—",
           "v1": false
         },
@@ -361,7 +361,7 @@
       ],
       "feststeck": {
         "versucht": "Keine wiederholten Wellen, sondern Blindheit: jede Bild-Sonde hält Mittag, Sonne und Sommer (Lehre 17, `__wetterHalten`), und gate:season-meadow schreibt fest, dass die Saison eine Farbe ist. So konnte kein Wetter-Punkt entstehen oder fallen.",
-        "anders": "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Der erste Schritt steht seit main f2904a72 (wetter-saat, 428fb6fe): das Wetter zieht aus der Saat, `werkbank bild --wetter/--saison` setzt Wetter und Saison als Spieler-Wort."
+        "anders": "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Der erste Schritt steht seit main f2904a72 (wetter-saat, 428fb6fe): das Wetter zieht aus der Saat, `werkbank bild --wetter/--saison` setzt Wetter und Saison als Spieler-Wort; der zweite seit main 7670a4a1 (naesse: der Regen benetzt den Welt-Stoff, Wetter K2 0 → 1)."
       }
     },
     {
@@ -2786,7 +2786,7 @@
       "key": "bauen",
       "titel": "Spieler-Bauen — Teil, Haus, Ort, Höhe, Gebrauch",
       "gruppe": "schoepfung",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (in der Werkstatt bauen, benutzen)",
       "dateien": "`stamm/werkstatt-*.js` (confirmBuild, `_setzUrteil`, Vorschau) · `stamm/bau-buch.js` · `stamm/bau-teile.js` · `gelaende-core.js` (ERDBAU) · `fachwerk-core.js` (ortPlan)",
       "aaaa": "Mit ≤ 3 Eingaben und in ≤ 1 s steht, was der Spieler will: Eiche, Haus, Wagen oder ein eigenes Teil aus bis zu 32 Grundformen. Alles gehorcht dem Gesetz: die Statik (Schwerpunkt, Stützpolygon, Lastpfad, Knicken) gilt beim Setzen in der Welt, und ein Brennglas zündet mittags, weil seine Form das Licht bündelt. Ein gesetztes Haus gehört dem Ort wie ein Dorfhaus: Erdbau, Vorplatz, Gasse, ein begehbarer Keller, und im Ortsradius wird es Slot des Plans. Gebaut wird in jeder Höhe — ein Turm aus 20 Blöcken trägt ≥ 60 m über dem Gelände —, und jedes gesetzte Werk trägt seine Verben: die Tür öffnet, der Wagen fährt, die Leiter trägt. **Wo wir die Besten schlagen:** Valheim und Enshrouded setzen statische Assets, TotK verklebt handgemachte Objekte, Townscaper kennt einen Stil; bei uns ist das Haus das Fachwerk-Gesetz (6 Regionen × 9 Epochen, 21 Regler), der Ort ist ortPlan, die Funktion eines Teils folgt aus seiner Form, und alles reist als Funktion (Saat + ov).",
@@ -2799,12 +2799,12 @@
       "kriterien": [
         {
           "name": "Vom Willen zum stehenden Werk: ≤ 3 Eingaben, ≤ 1 s, auf jedem Weg",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom · 2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
           "messung": "Spielgang-Station bauen über die echte UI: Eiche, Haus, GT und ein eigener Teil-Bauplan, je über Werkstatt, Rezeptbuch und Hotbar, in schöpfer, frieden und pfad, Ego und Third. Die Klick-Zahl zählt nur hier (Spielgang K1 verweist).",
-          "beleg": "diag-werkstatt-weg.cjs L-WERKSTATT: drei Wege × drei Lagen stellen das Werk, das Material wird genau einmal gezogen (vorher „0 von 3 Wegen“) — aber die Probe ruft die Chokepoints selbst (Kopf der Datei: „Jede Probe ruft den Chokepoint selbst“); Eingaben und Zeit zählt keine Linse.",
-          "schlupfloch": "Schritte per Methoden-Aufruf statt per Klick (heute): gezählt werden echte Eingabe-Ereignisse; ein vorgewärmter Cache täuscht Tempo vor: je Lauf eine Kalt-Variante.",
-          "aenderung": "Die 1 der Synthese stand auf Chokepoint-Aufrufen (B52) → 0."
+          "beleg": "SCHNITT bauen-k1, auf main 7670a4a1 (V18.546.56), mit Welt-Byte und Linse. Linse 64e153f2 L-WERKSTATT (`scripts/diag-werkstatt-weg.cjs`): Eiche, Haus, GT und eigene Hütte × Werkstatt, Rezeptbuch, Hotbar × schöpfer, frieden mit und ohne Material, pfad × Ego, Third über page.keyboard/page.mouse, gezählt pointerdown, keydown und wheel mit isTrusted am Ereignis-Strom; der Selbsttest (ein Bestätigungs-Klick zu viel) ist ROT beim Namen. An der Basis b9537781 standen 72/72 über echte Ereignisse, aber mit Eingaben Werkstatt 5–16, Rezeptbuch 3–24 (Mausrad), Hotbar 2 — 36 Täter über 3. Schnitt b0c842a9 „die Wahl stellt das Werk“: `fertigeBlueprint` (`stamm/koerper-seele.js`) setzt für Werkstatt-FERTIGEN und Rezeptbuch im selben Akt (`tickBuildMode` + `confirmBuild`), wohin der Spieler blickt, lehnt der Ort ab, bleibt das Phantom; die Reihe des Katalogs `_katalogRang`/`_katalogReihe` (`stamm/siedlung-satz.js`) legt eigene Werke, dann die Hotbar nach oben. Am Schnitt 72/72 über echte Ereignisse, Täter 36 → 0, Eingaben Werkstatt 3, Rezeptbuch 2, Hotbar 2 → Staffel 1; Zweig-CI 39693723217 21/21. Zeit an der Radeon: Werkstatt kalt 1 052/1 519 ms, Rezeptbuch GT kalt 518/2 346 ms, Hotbar warm 321/452 ms (Roh: `artifacts/werkstatt-weg/weg.json` am Radeon-Platz, nicht im Baum). Frisch: `git log b0c842a9..7670a4a1` über `stamm/koerper-seele.js`, `stamm/werkstatt-*.js` und die Linse ist leer; naesse berührt `stamm/siedlung-satz.js` nur am Stoff des Zauns und am Platz eines Foundry-Baus ohne Haus-Hülle (`_dachKastenSetzen`, ein Bau ohne Dach-Art merkt sein Nein) — nicht die Eingabe. Offen für die 2: kalt über 1 s (1 519 und 2 346 ms), das erste Bild in L0 ist ungeprüft, die GTX ungemessen.",
+          "schlupfloch": "Schritte per Methoden-Aufruf statt per Klick: gezählt werden echte Eingabe-Ereignisse (isTrusted); ein vorgewärmter Cache täuscht Tempo vor: je Lauf eine Kalt-Variante.",
+          "aenderung": "Die 1 der Synthese stand auf Chokepoint-Aufrufen (B52) → 0; mit echten Eingaben gemessen und geschnitten 0 → 1 (bauen-k1, 7670a4a1)."
         },
         {
           "name": "Das gesetzte Haus gehört dem Ort: EIN Grund-Datum, Slot im Plan",
@@ -2889,17 +2889,17 @@
           "v1": true
         },
         {
-          "name": "Eingaben und Zeit im Spielgang zählen, dann den überzähligen Schritt schneiden",
+          "name": "Das Werk in ≤ 1 s im ersten Bild in L0, kalt und warm, beide Geräte (die Eingaben stehen seit bauen-k1)",
           "bewegt": [
-            "bauen.K1+2"
+            "bauen.K1+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1,
             1.5
           ],
-          "p_je_tag": 1.6,
-          "wurzel": "`scripts/diag-werkstatt-weg.cjs` (echte DOM-Ereignisse, Ausgabe-Bild) + `stamm/werkstatt-bauen.js` (Hotbar-, Werkstatt- und Rezeptbuch-Weg).",
+          "p_je_tag": 0.8,
+          "wurzel": "L-WERKSTATT (`scripts/diag-werkstatt-weg.cjs`) zählt Eingaben und ms je Lauf; der Rest ist die Zeit kalt (Radeon: Werkstatt 1 052/1 519 ms, Rezeptbuch GT 518/2 346 ms) bis zum ersten Ausgabe-Bild in L0 — gemessen am Ausgabe-Pfad statt an `confirmBuild` —, dann der Schnitt am Täter des kalten Baus und die GTX.",
           "pflicht": "—",
           "v1": true
         },
@@ -4127,7 +4127,7 @@
           "punkte": 0,
           "staffel": "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
           "messung": "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
-          "beleg": "Zuletzt hielt die GPU-Seite im Stand am 14.10./18.10. (VRAM 99,6–111,2 MB, Befehle 75–191, Dreiecke 286k–587k; GTX-Ratsche V18.546.2 vom 16.10.; Radeon VRAM 50 MB, GPU p50 8,35–8,4 ms am 19.10.). Das ABAB vom 20.10. zählte weder Befehle noch Dreiecke noch VRAM, und seither änderten S6, f1-rest, E-Diät und der Karten-Bake den Render-Pfad: am Kopf veraltet. Gemessen 21.10. (Messschuld M13, `werkbank band --ort` je Ort × Sicht, --echt, 1920×1080), ROT an beiden Geräten: GTX an main 2160be58 (OMEN, koordination `bericht/2110-gtx-messschuld-3.md` § M13) Befehle 90–139 und Dreiecke 284k–658k halten (Dorf Third 0,97×), VRAM reißt an Genesis Third 118,9 > 118 MB, GPU je Bild an 4 von 6 Zellen 12,47–13,13 > 12 ms; Linse ROT an 5 von 6 Zellen (baum haupt über der Ratsche vom 16.10., VRAM gebunden +3…+6 MB, im Dorf `bewohner-satz` 16 Befehle ohne Haushalt-Klasse, +220k…+240k Dreiecke). Radeon an main 816f26b4 (`bericht/2110-messschuld-radeon-2.md` § M13) 2 von 6 Zellen im Band (Wiese Ego/Third), VRAM Genesis und Dorf 122–123 MB lastfrei ROT, GPU 26,9–30,1 ms unter Fremdlast. Seither änderte bausatz-absage den Render-Pfad (Diät-Prüfungen 8 → 1 je Frame, ATTRIBUTE GELÖSCHT 7 → 0, 53cf0438); der Tor-Atlas rgb9e5 der OMEN (Zweig profiband-k3) ist ungemergt und zählt nicht. In Bewegung zählt niemand.",
+          "beleg": "Zuletzt hielt die GPU-Seite im Stand am 14.10./18.10. (VRAM 99,6–111,2 MB, Befehle 75–191, Dreiecke 286k–587k; GTX-Ratsche V18.546.2 vom 16.10.; Radeon VRAM 50 MB, GPU p50 8,35–8,4 ms am 19.10.). Das ABAB vom 20.10. zählte weder Befehle noch Dreiecke noch VRAM, und seither änderten S6, f1-rest, E-Diät und der Karten-Bake den Render-Pfad: am Kopf veraltet. Gemessen 21.10. (Messschuld M13, `werkbank band --ort` je Ort × Sicht, --echt, 1920×1080), ROT an beiden Geräten: GTX an main 2160be58 (OMEN, koordination `bericht/2110-gtx-messschuld-3.md` § M13) Befehle 90–139 und Dreiecke 284k–658k halten (Dorf Third 0,97×), VRAM reißt an Genesis Third 118,9 > 118 MB, GPU je Bild an 4 von 6 Zellen 12,47–13,13 > 12 ms; Linse ROT an 5 von 6 Zellen (baum haupt über der Ratsche vom 16.10., VRAM gebunden +3…+6 MB, im Dorf `bewohner-satz` 16 Befehle ohne Haushalt-Klasse, +220k…+240k Dreiecke). Radeon an main 816f26b4 (`bericht/2110-messschuld-radeon-2.md` § M13) 2 von 6 Zellen im Band (Wiese Ego/Third), VRAM Genesis und Dorf 122–123 MB lastfrei ROT, GPU 26,9–30,1 ms unter Fremdlast. Seither änderte bausatz-absage den Render-Pfad (Diät-Prüfungen 8 → 1 je Frame, ATTRIBUTE GELÖSCHT 7 → 0, 53cf0438); der Tor-Atlas rgb9e5 der OMEN (profiband-k3: VRAM Genesis Third 119,0 → 115,4 MB) liegt in integ-probe 85cec9c1, nicht auf main, und zählt nicht. In Bewegung zählt niemand.",
           "schlupfloch": "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
           "aenderung": "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung (M13, 21.10.) stellte ihn nicht wieder her: ROT an beiden Geräten — das Vorher."
         },
@@ -4135,8 +4135,8 @@
           "name": "Glätte: keine Hänger",
           "punkte": 0,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
-          "messung": "`werkbank haenger 60 --wandern kreis` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`).",
-          "beleg": "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend Genesis Third 47,4 → 37,5 ms (Bündel 2, 8ba1510d; Frames > 100 ms nicht gezählt), schwere Boots auf beiden Seiten als Sitzungs-Zustand benannt; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
+          "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
+          "beleg": "Gemessen 22.10. an der GTX (OMEN, koordination `bericht/2110-gtx-glaette.md`, main b9537781, Wiese Ego, je Sitzung ein frischer Boot `--echt` 1920×1080, Tiere frei, `haenger 60 --wandern bahn`, 4 m/s): 4 von 4 Sitzungen ohne Frame > 100 ms (max 83,2 · 83,2 · 83,6 · 100,0 ms, p99 33,4 ms, 0 Hänger je Klasse) — aber unter `--regler voll`: R8 verlangt für die Glätte den Regler des Spielers, darum zählt die 1 nicht (Messschuld M29). Der Pfad im Takt steht seither unverändert: das naesse-ABAB (`bericht/2110-abab-naesse.md`, b9537781 gegen 7670a4a1) nennt Wiese Ego bei Sonne nicht langsamer (Frame p95 16,8 ↔ 16,8, CPU-Takt p95 4,2 ↔ 4,2, gpu-bank im Rauschen). Früher: GTX gehend ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`); Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie). Für die 2 fehlen Fahrt, Sicht-Wechsel, Einsteigen, beide Geräte und ≤ 1 % > 33 ms.",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt."
         },
         {
@@ -4536,7 +4536,7 @@
       "id": "M13",
       "kriterium": "profiband.K3",
       "messung": "Haushalt + Ratsche am Kopf, beide Geräte (Befehle, Dreiecke, VRAM, GPU)",
-      "erwartung": "gemessen 21.10. ROT an beiden Geräten — GTX an 2160be58: VRAM Genesis Third 118,9 > 118 MB, GPU 12,47–13,13 > 12 ms an 4/6 Zellen, Linse `bewohner-satz` ohne Haushalt-Klasse, Ratschen vom 16.10. veraltet; Radeon an 816f26b4: 2/6 Zellen im Band, VRAM Genesis/Dorf 122–123 MB; der Tor-Atlas rgb9e5 der OMEN (Zweig profiband-k3) ist ungemergt — das Vorher"
+      "erwartung": "gemessen 21.10. ROT an beiden Geräten — GTX an 2160be58: VRAM Genesis Third 118,9 > 118 MB, GPU 12,47–13,13 > 12 ms an 4/6 Zellen, Linse `bewohner-satz` ohne Haushalt-Klasse, Ratschen vom 16.10. veraltet; Radeon an 816f26b4: 2/6 Zellen im Band, VRAM Genesis/Dorf 122–123 MB; der Tor-Atlas rgb9e5 der OMEN (profiband-k3, VRAM Genesis Third 119,0 → 115,4 MB) liegt in integ-probe 85cec9c1, nicht auf main — das Vorher"
     },
     {
       "id": "M14",
@@ -4597,6 +4597,12 @@
       "kriterium": "leib.K2",
       "messung": "Der Fuß auf Stufen und 0 Steckenbleiber auf dem Spielgang — das Werkzeug fehlt: K8 kennt keine Treppe, der Spielgang (SG1) ist ungemergt",
       "erwartung": "ROT (GTX 2160be58: Fuß Ego/Third 3,4/3,1 cm); der Zehen-Spike trägt (21.10., Mess-Patch, kein Gelenk): ohne Zehe Wiese 3,6 → 1,6/2,3, Hang 3,3 → 2,2/2,5 cm — das Gelenk ist Leib H1"
+    },
+    {
+      "id": "M29",
+      "kriterium": "profiband.K4",
+      "messung": "`werkbank haenger 60 --regler frei --wandern bahn` an der GTX, Wiese Ego, 4 frische Sitzungen (R8: der Regler des Spielers)",
+      "erwartung": "1, wenn ≥ 3 von 4 ohne Frame > 100 ms — unter `--regler voll` an b9537781 4/4 (max 83,2 · 83,2 · 83,6 · 100,0 ms, koordination `bericht/2110-gtx-glaette.md`); das zählt nach R8 nicht"
     }
   ],
   "top5": [
@@ -4659,18 +4665,18 @@
       "pflicht": "B"
     },
     {
-      "bereich": "bauen",
-      "hebel": "Eingaben und Zeit im Spielgang zählen, dann den überzähligen Schritt schneiden",
+      "bereich": "material",
+      "hebel": "Mikro-Detail an den Schirm gebunden",
       "bewegt": [
-        "bauen.K1+2"
+        "material.K2+2"
       ],
       "punkte": 2,
       "tage": [
-        1,
+        1.5,
         1.5
       ],
-      "p_je_tag": 1.6,
-      "pflicht": "—"
+      "p_je_tag": 1.33,
+      "pflicht": "A (boden-nah)"
     }
   ],
   "verlauf": [
@@ -4746,20 +4752,28 @@
       "was": "main-Vorlauf 32b37933..5951786f (e-bauart-spitze, kamera-fuss, anfahren; OMEN-ABAB nicht langsamer): Leib K1 0 → 1 (Gehen p95 GTX 37/43 ms, Radeon 42/41 ms), Leib K4 0 → 1 (Kamera-Kugel nie in der Wand)"
     },
     {
+      "skala": "2.0",
+      "max": 330,
       "stand": "2026-10-22",
       "kopf": "b9537781",
       "summe": 35,
+      "was": "Nachgezogen am main-Vorlauf 816f26b4..b9537781 (bewohner, haus-innen, bausatz-absage) und an der Messschuld vom 21.10. (Radeon an 816f26b4, koordination `bericht/2110-messschuld-radeon-2.md`; GTX an 2160be58, `bericht/2110-gtx-messschuld-3.md`); je Kriterium `git log` Mess-SHA..b9537781 über die Dateien des Pfads. Schnitt mit Welt-Byte: Siedlung K1 0 → 1 (haus-innen 2b31ea31 + 60b26c9b: der Stab trägt keinen Leib, Klettern heißt hinein; gate:haus-welt W10 Tür → Flur → um den Schacht → Keller → Dachboden in 8 Gängen, Hub 0,56–0,59 → ≤ 0,20 m, Kletter-Schritte 843 → 0; Zweig-CI 39673975786 22/22, integ-CI an b9537781 22/22 samt echt). Gemessen: Gelände K2 0 → 1 (Graben 9/10, 0 doppelt, 0 über dem Spiegel, gefüllt ≤ 336 ms), Klang K2 0 → 1 (Wind Bild ↔ Ohr r 0,80), Klang K4 0 → 1 (Schritte erde 359 · glut 1 721 · stein 2 404 Hz), Ökologie K5 0 → 1 (das gebundene Tier folgt 10 min, p95 3,6 m über 684 m und 160 s Hang > 15°), Gelände K5 1 → 2 (K8 an der GTX: alle Rollen an Wiese und Hang in beiden Sichten im Soll, Rad in Fahrt, Ratsche; mit der Radeon beide Geräte). Ohne Wechsel gemessen: Klang K5 1 (Takt 0,3/0,5 > 0,2 ms in Bewegung, 0 Aussetzer), Speicher K1 ROT (Tab-Tod 10,00–10,01 s an jedem Haken, einmal 30,77 s), K2 1 (je Bild p95 0 ms), K4 1 (Bild-Rundlauf 6,75 %: das Wasser der Edit-Grube kehrt nicht zurück), K5 1 (kein Korpus), Halten K2 ROT (p95 126/151 ms, `tryMouseBreak`), Profiband K5 ROT (Heap +932 MB, VRAM +13,1 MB in 21 min), Profiband K3 ROT (GTX VRAM Genesis Third 118,9, GPU > 12 ms an 4/6 Zellen; Radeon VRAM Genesis/Dorf 122–123; der Tor-Atlas der OMEN ungemergt), Leib K1 1 (GTX gehen, springen, einsteigen, wechsel im Soll; schwingen fehlt), Tiere K3 1 (Werkzeug fehlt, Stand-Anteil 0,50–0,55 < 0,6), Leib K2 0 (der Zehen-Spike trägt: ohne Zehe 1,6–2,5 cm). Messschuld M2, M19 und M26 fallen gebucht, M4, M17 und M27 mit ihrem schon gebuchten Kriterium; M13–M16, M18, M25 und M28 tragen ihr Ergebnis. Vier Hebel schrumpfen auf ihren Rest (Gelände H1, Klang H2, Ökologie H5, Siedlung H4)."
+    },
+    {
+      "stand": "2026-10-22",
+      "kopf": "7670a4a1",
+      "summe": 37,
       "max": 330,
       "skala": "2.0",
-      "was": "Nachgezogen am main-Vorlauf 816f26b4..b9537781 (bewohner, haus-innen, bausatz-absage) und an der Messschuld vom 21.10. (Radeon an 816f26b4, koordination `bericht/2110-messschuld-radeon-2.md`; GTX an 2160be58, `bericht/2110-gtx-messschuld-3.md`); je Kriterium `git log` Mess-SHA..b9537781 über die Dateien des Pfads. Schnitt mit Welt-Byte: Siedlung K1 0 → 1 (haus-innen 2b31ea31 + 60b26c9b: der Stab trägt keinen Leib, Klettern heißt hinein; gate:haus-welt W10 Tür → Flur → um den Schacht → Keller → Dachboden in 8 Gängen, Hub 0,56–0,59 → ≤ 0,20 m, Kletter-Schritte 843 → 0; Zweig-CI 39673975786 22/22, integ-CI an b9537781 22/22 samt echt). Gemessen: Gelände K2 0 → 1 (Graben 9/10, 0 doppelt, 0 über dem Spiegel, gefüllt ≤ 336 ms), Klang K2 0 → 1 (Wind Bild ↔ Ohr r 0,80), Klang K4 0 → 1 (Schritte erde 359 · glut 1 721 · stein 2 404 Hz), Ökologie K5 0 → 1 (das gebundene Tier folgt 10 min, p95 3,6 m über 684 m und 160 s Hang > 15°), Gelände K5 1 → 2 (K8 an der GTX: alle Rollen an Wiese und Hang in beiden Sichten im Soll, Rad in Fahrt, Ratsche; mit der Radeon beide Geräte). Ohne Wechsel gemessen: Klang K5 1 (Takt 0,3/0,5 > 0,2 ms in Bewegung, 0 Aussetzer), Speicher K1 ROT (Tab-Tod 10,00–10,01 s an jedem Haken, einmal 30,77 s), K2 1 (je Bild p95 0 ms), K4 1 (Bild-Rundlauf 6,75 %: das Wasser der Edit-Grube kehrt nicht zurück), K5 1 (kein Korpus), Halten K2 ROT (p95 126/151 ms, `tryMouseBreak`), Profiband K5 ROT (Heap +932 MB, VRAM +13,1 MB in 21 min), Profiband K3 ROT (GTX VRAM Genesis Third 118,9, GPU > 12 ms an 4/6 Zellen; Radeon VRAM Genesis/Dorf 122–123; der Tor-Atlas der OMEN ungemergt), Leib K1 1 (GTX gehen, springen, einsteigen, wechsel im Soll; schwingen fehlt), Tiere K3 1 (Werkzeug fehlt, Stand-Anteil 0,50–0,55 < 0,6), Leib K2 0 (der Zehen-Spike trägt: ohne Zehe 1,6–2,5 cm). Messschuld M2, M19 und M26 fallen gebucht, M4, M17 und M27 mit ihrem schon gebuchten Kriterium; M13–M16, M18, M25 und M28 tragen ihr Ergebnis. Vier Hebel schrumpfen auf ihren Rest (Gelände H1, Klang H2, Ökologie H5, Siedlung H4)."
+      "was": "main-Vorlauf b9537781..7670a4a1 (bauen-k1, naesse; V18.546.56); je Kriterium `git log` Mess-SHA..7670a4a1 über die Dateien des Pfads — die zwei Schnitte kreuzen sich nur in `stamm/siedlung-satz.js` (Katalog-Reihe gegen Zaun-Stoff und Dach-Kasten), keiner am Pfad des anderen. Schnitt mit Welt-Byte: Bauen K1 0 → 1 (bauen-k1 b0c842a9: die Wahl stellt das Werk; L-WERKSTATT mit echten Eingaben am Ereignis-Strom 72/72, Täter 36 → 0, Eingaben Werkstatt 5–16 → 3, Rezeptbuch 3–24 → 2, Hotbar 2; Radeon kalt bis 1 519 / 2 346 ms, Zweig-CI 39693723217 21/21), Wetter K2 0 → 1 (naesse b357dbac..cde74c22: EIN Nässe-Zustand aus dem Wetter-Feld, `_naesseImStoff` an `_leuchtStoff`, EIN Dach-Pool; Radeon gate:naesse:echt Wiese 1,000 → 0,773, Dorf draußen 1,000 → 0,753, innen 1,000 im selben Schuss, Metall 1,000, Regen innen 0, Dach-Bauten 2/2; OMEN-ABAB bei Sonne nicht langsamer, im Regen +1,2 ms GPU an der GTX benannt). Nicht gebucht: Profiband K4 bleibt 0 — die GTX-Glätte an b9537781 (4/4 Sitzungen ohne Frame > 100 ms, max 83,2–100,0 ms) lief unter `--regler voll`, R8 verlangt für die Glätte den Regler des Spielers (Messschuld M29). Zwei Hebel schrumpfen auf ihren Rest (Bauen H4, Wetter H2); neue Feststeck-Zeile E · die GPU-Bank der GTX (11,48–13,51 ms bei gleicher Szene, 16 von 24 Ratschen-Läufen über 12 ms, kein Täter ≥ 0,5 ms)."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 22.10.2026, Kopf main b9537781 (V18.546.55)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 22.10.2026, Kopf main 7670a4a1 (V18.546.56)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
-      "Die Meisterkarte ist die Belohnung: was sie zählt, wird gebaut. Version 2.0 zählt, was der SPIELER erlebt oder was ein ECHTER LESER im Spiel verbraucht — nie, was der Prüf-Apparat über sich selbst meldet. Für jeden Bereich steht die 10/10 (AAAA), die Besten mit ihrem Weg, fünf Kriterien mit Staffel, Messung, Beleg und geschlossenem Schlupfloch, dann die Hebel nach Punkten je Tag und das ehrliche Feststecken mit dem anderen Weg. Es zählt, was am Kopf main b9537781 im Code steht UND gemessen ist; ein Zweig zählt erst nach dem Merge nach main (W0). integ-probe steht davor auf 7670a4a1 (V18.546.56: bauen-k1, naesse) und zählt erst nach dem Merge.",
+      "Die Meisterkarte ist die Belohnung: was sie zählt, wird gebaut. Version 2.0 zählt, was der SPIELER erlebt oder was ein ECHTER LESER im Spiel verbraucht — nie, was der Prüf-Apparat über sich selbst meldet. Für jeden Bereich steht die 10/10 (AAAA), die Besten mit ihrem Weg, fünf Kriterien mit Staffel, Messung, Beleg und geschlossenem Schlupfloch, dann die Hebel nach Punkten je Tag und das ehrliche Feststecken mit dem anderen Weg. Es zählt, was am Kopf main 7670a4a1 im Code steht UND gemessen ist; ein Zweig zählt erst nach dem Merge nach main (W0). integ-probe steht davor auf 85cec9c1 (V18.546.58: pipeline-k3, profiband-k3) und zählt erst nach dem Merge.",
       "Der Scope bleibt `docs/PFLICHT-OFFEN.md` (A AAAA je Klasse · B Ankunft ≤ 5 s · E Profi-Band); die Karte setzt keinen Eintrag, sie ordnet die Hebel und nennt, welche Pflicht jeder trägt. Bis v1.0 gilt der Feature-Stopp: die TOP-5 wählt nur Hebel auf dem v1-Pfad oder mit Pflicht. Die Daten stehen in `meisterkarte.json` (Schema der Karte 1.0, erweitert); `node gen.cjs render` schreibt diese Datei aus der json, `node gen.cjs check` prüft Summen, Staffeln und die EINE Hebel-Tafel."
     ],
     "aaaaKopf": [
@@ -4825,6 +4839,11 @@
         "E · der CPU-Takt der GTX",
         "Stehend 6,0–7,8 (14.10.) → 5,70 (19.10.) → 6,0/6,3 ms (20.10.) → 6,1/6,3 ms (Bündel 2, 8ba1510d: A hält 5,8 in 1 von 4 Boots, B in 0); fünf Wellen um 0,2 ms an einer Pose, die der Spieler selten hält; die E-Diät spart netto nichts (`_diaetRefresh` 1,99 → 2,02 → 1,94 ms), während gehend 19,5–20,3 ms und in Fahrt 31 ms stehen",
         "Den Takt in Bewegung richten: Profil gehend gegen stehend beim Namen, EINE Kappe für Strom- und Bau-Jobs (Profiband H1), Kosten je Render-Objekt (EIN Zeichner je Stoff und Chunk, Profiband H3), die Welt-Arbeit auf den Welt-Faden."
+      ],
+      [
+        "E · die GPU-Bank der GTX (Profiband K3)",
+        "Die gpu-bank an Wiese Ego streut über 10 Boots von 11,48 bis 13,51 ms (Median ≈ 12,3) bei gleicher Szene (38/49 Befehle, 263,5k Dreiecke, 108,6 MB), in den 6 neuen GTX-Ratschen liegen 16 von 24 Läufen über 12 ms (Dorf 12,8–13,7); die Zerlegung bei 11,71 ms nennt nur stetige Verbraucher (baum 3,53 · karten 1,14 · traa 0,88), keinen einzelnen Täter ≥ 0,5 ms, und der obere Modus kam in 4 weiteren Boots nicht wieder (OMEN `bericht/2110-profiband-k3.md`)",
+        "Die stetigen Verbraucher senken statt den oberen Modus zu jagen: baum 3,53 ms (30 %, 50 Befehle) und im Dorf der Bewohner-Satz mit 242k Dreiecken, 3× seiner Klasse (die Kosten ins Asset, Lehre 19); gerichtet wird je Zelle über ≥ 4 Boots."
       ],
       [
         "S7 · die Tag-Achse",
@@ -4897,7 +4916,7 @@
         "Die Stadt ist der Beweis von Gebot 7: Export mit Rang (trägt B, Siedlung H1), dann der Messort stadt im Band (Profiband K1)."
       ]
     ],
-    "messschuldErwartung": "Hält alles, was eine 1 erwarten lässt, stehen nach der Messschuld bis ≈ +3 Punkte mehr (M9, M10, M11) — sie werden erst mit der Messung am Kopf gebucht und im Verlauf als „gemessen“ geführt, nie als Schnitt.",
+    "messschuldErwartung": "Hält alles, was eine 1 erwarten lässt, stehen nach der Messschuld bis ≈ +4 Punkte mehr (M9, M10, M11, M29) — sie werden erst mit der Messung am Kopf gebucht und im Verlauf als „gemessen“ geführt, nie als Schnitt.",
     "ohneBereich": [
       [
         "Reichweite der Geräte und Browser",
@@ -5713,6 +5732,7 @@
       "Ein gemergter Hebel fällt aus seiner Liste; ein neuer Hebel nennt die Kriterien, die er bewegt, Aufwand, Wurzel und Pflicht. Neue Pflicht-Einträge setzt nur der Schöpfer; die Karte setzt keinen."
     ],
     "nichtWeiss": [
+      "Am Kopf 7670a4a1 nachgezogen nur bauen-k1 und naesse: `git log` b0c842a9..7670a4a1 über Werkstatt, `stamm/koerper-seele.js` und L-WERKSTATT, cde74c22..7670a4a1 über den Nässe-Pfad — beide kreuzen sich nur in `stamm/siedlung-satz.js` außerhalb des jeweils gemessenen Pfads. naesse legt `_naesseImStoff` an `_leuchtStoff`, also an jeden beleuchteten Welt-Stoff; bei Sonne ist das Gewicht 0 (Faktor 1, Rauheit × 1) und das ABAB nennt Sonne nicht langsamer — die Bild-Punkte unter Sonne tragen ihre Messung weiter, ein byte-Diff des Ausgabe-Bilds bei Sonne ist nicht gefahren. Die Zeiten von Bauen K1 stammen vom Radeon-Lauf des Koordinators; die Rohdatei liegt nicht im Baum.",
       "Am Kopf b9537781 nachgezogen nur die Messschuld vom 21.10. (Radeon an 816f26b4, GTX an 2160be58) und haus-innen: je Kriterium `git log` Mess-SHA..b9537781 über die Dateien seines Pfads — leer für Graben, Klang, Folgen, haus-innen und den K8 der GTX; der K8 der Radeon (57a9f2ab) trägt seither den Naht-Morph von gehen-takt (byte-gleich, 136 Morphs mit 0 Abweichungen) und den Konstanten-Halter. Die ROT-Zahlen von Profiband K3 und K5, Speicher und Halten stammen von 816f26b4 bzw. 2160be58; seither zogen bewohner (Leiber im Start-Dorf, `_tickBewohner` im Takt, `_bewohnerFortAlle` beim Laden) und bausatz-absage (Render-Pfad) durch — als Vorher stehen sie, am Kopf sind sie nicht nachgefahren.",
       "Am Kopf 57a9f2ab nachgezogen nur je Kriterium der Top-Hebel (Fahrzeug K3, KI K1/K5, Gelände K5, Leib K2) und der Ankunft (K1, K5): jede Zahl am Kopf neu gemessen, Lauf-Befehl und Rohdatei in koordination `bericht/2110-mk-kopf/` (kette*.sh). Die übrigen Punkte tragen ihre Messung von f2904a72 weiter; wo die fünf Merges ihren Pfad berühren (die Frist-Klasse und `_standRuht` in wanduhr-klasse, der Ring in b-blick), ist die Frische nach R6 nicht einzeln nachgefahren. Der K8 je Sicht lief als lokale Kopie mit gesetzter Sicht (`k8-sicht.diff`), die Garage bei vmax als Kopie von gate:garage-labor (`garage-mk.diff`) — beide nur Messung, kein Schnitt.",
       "Am Kopf f2904a72 nachgezogen: je Kriterium, das ein Merge seit dc6702ab berührt, die Merge-Message, die Linse am Kopf (CI 39498582018: voll 18/18 und echt grün an f2904a72) und das OMEN-Bündel-2-ABAB (`bericht/2010-buendel2-abab.md`, an 8ba1510d — vor tiere-kreislauf, leib-wechsel R2 und wetter-saat: seine Zahlen beschreiben den Kopf nur, wo diese drei den Pfad nicht berühren). Die Leib-Wahl (ich-bühne-wolf, leib-wechsel) hat kein Heim-Kriterium und bewegt keinen Punkt.",
