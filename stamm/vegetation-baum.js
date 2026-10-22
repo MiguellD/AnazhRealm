@@ -2298,8 +2298,10 @@ class AnazhRealm_vegetation_baum {
                 }
             }
         }
-        // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt.
+        // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt. Wartet nur ein Satz
+        // (die Bake-Uhr, seine Flat, das Buch), weckt ihn ihr nächstes Fenster oder der Stempel, kein Bild (`_standRuht`).
         const offen = nahOffen.length + ziegelOffen.length;
+        const nurSatz = !nahOffen.length;
         // Mesh-Bauten NAH ZUERST (die Mesh-Zone, dahinter die Karten-Zone der Karten-Dinge): budgetiert; über Budget
         // mit Takt-Garantie (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die
         // Mesh-Zone für immer Feld.
@@ -2389,7 +2391,7 @@ class AnazhRealm_vegetation_baum {
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
-        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0);
+        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist
