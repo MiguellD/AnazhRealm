@@ -17,3 +17,22 @@
 Roh: OMEN `p3/n2210/glaette/`; hier `bericht/2110-gtx-glaette/` (s1–s4 haenger.txt/.json, serie.sh, fortschritt.log).
 
 Status ZWISCHENSTAND + Übergabe: Profiband K4 Staffel 1 an der GTX gemessen. Als Nächstes läuft naesse-kosten (Zerlegung in einer Welt).
+
+---
+
+## Nachtrag 22.10. 04:46–05:26 — R8: der Regler des Spielers (`--regler frei`), main 7670a4a1
+
+Der erste Lauf fuhr `haenger --regler voll`. R8 verlangt für Glätte den Regler des Spielers, darum dieselbe Messung noch einmal: 4 frische Sitzungen, Wiese Ego, `lauf 30 --ein 20 --ruhe 300 --regler frei` + `haenger 60 --regler frei --tiere frei --wandern bahn`, Kopf main 7670a4a1 (n2010-b2b, sauber).
+
+**Urteil: Staffel 1 an der GTX auch mit dem Regler des Spielers erreicht — 4 von 4 Sitzungen ohne Frame > 100 ms.**
+
+| Sitzung | Frames in 60 s | Frames > 100 ms | Frame p50/p95/p99/max ms | Ursachen (TAKT · NEBEN · GC · GPU) |
+|---|---|---|---|---|
+| s1 | 3749 | **0** | 16,6 / 25 / 33,4 / 75,0 | 0 · 0 · 0 · 0 |
+| s2 | 3772 | **0** | 16,6 / 25 / 33,4 / 74,9 | 0 · 0 · 0 · 0 |
+| s3 | 3730 | **0** | 16,6 / 25,1 / 33,5 / 91,6 | 0 · 0 · 0 · 0 |
+| s4 | 3776 | **0** | 16,6 / 25 / 33,3 / 66,7 | 0 · 0 · 0 · 0 |
+
+- Mit dem Regler des Spielers ist der längste Frame kürzer als unter `voll` (66,7–91,6 gegen 83,2–100,0 ms), bei rund 6 % mehr Frames.
+- Zwischen s2 und s3 lief ein CI-echt-Job mit Vorfahrt (bis 05:15); s3 begann danach mit CI-Ruhe.
+- Roh: OMEN `p3/n2210/glaette-frei/`; hier `bericht/2110-gtx-glaette/regler-frei/`.

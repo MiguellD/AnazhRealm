@@ -1,0 +1,8 @@
+04:46:12 s1 start 7670a4a1[0]
+04:49:22 s1 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3749 Frames, 5796 Takte; Frame p50/p95/p99/max 16.6/25/33.4/75 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms 
+04:49:53 s2 start 7670a4a1[0]
+04:53:08 s2 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3772 Frames, 5747 Takte; Frame p50/p95/p99/max 16.6/25/33.4/74.9 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms 
+05:18:48 s3 start 7670a4a1[0]
+05:22:02 s3 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3730 Frames, 5742 Takte; Frame p50/p95/p99/max 16.6/25.1/33.5/91.6 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms 
+05:22:33 s4 start 7670a4a1[0]
+05:25:47 s4 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3776 Frames, 5670 Takte; Frame p50/p95/p99/max 16.6/25/33.3/66.7 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms 
