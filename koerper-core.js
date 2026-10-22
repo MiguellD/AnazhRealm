@@ -50,7 +50,9 @@
                     // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
                     // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
                     // auf die Zeile; sie wirft über die NUR-WURF-Stufe 3 (der Wurf-Satz trägt sie).
-                    2: { tris: 4000, draws: 6, schatten: 2 },
+                    // Re-Mint mensch.K1 Staffel 2 (Lehre 19, die Kosten der Menge im Asset): 3 995 → 1 695 Dreiecke — die Glieder unter
+                    // FERN_KLEIN (Finger, Nasenflügel; ab 8 m unter zwei Pixeln) fallen wie im Wurf, das Auge bleibt (Haushalt bewohner).
+                    2: { tris: 1700, draws: 6, schatten: 2 },
                     // DIE NUR-WURF-STUFE (mensch.K1 Staffel 2, rein additiv, Studio-Vertrag B2): nie gezeigt, sie IST der Wurf jedes
                     // Bewohners im Nah-Kreis (der Wurf-Satz, `_bewohnerSatz`) — die Kosten der Menge in den Kaskaden; dieselbe Pipe,
                     // die Hüllen kollabieren auf `band` (ihre Säume stehen fest: der Kollaps landet ~30 darüber), `tris` ist die Decke.

@@ -7174,10 +7174,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
-            if (fern && (k === "eye" || k === "iris" || k === "pupil" || k === "socket" || k === "lips" || k === "shadow"))
-                return new THREE.Group();
-            // im Wurf fallen die Glieder unter FERN_KLEIN der Lab-Höhe (Finger, Nasenflügel: unter einem Kaskaden-Texel)
-            if (fern && r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1) < FERN_KLEIN * 6) return new THREE.Group();
+            const auge = k === "eye" || k === "iris" || k === "pupil" || k === "socket" || k === "lips" || k === "shadow";
+            if (fern && auge) return new THREE.Group();
+            // in der Menge fallen die Glieder unter FERN_KLEIN der Lab-Höhe (Finger, Nasenflügel: im Wurf unter einem Kaskaden-
+            // Texel, in der Mengen-Stufe ab 8 m unter zwei Pixeln) — die Mengen-Stufe behält das Auge (Stufe 3 byte-gleich)
+            if (menge && !auge && r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1) < FERN_KLEIN * 6) return new THREE.Group();
             // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
             const AR = !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket") ? kern.MENSCH_GESTALT.augeRaster : null;
             const [w, h] = AR ? [AR.w, AR.h] : menge ? __kugelRaster(r, sc, 6, segW, segH, fern ? 3 : 4, fern ? 2 : 3) : [segW, segH];
@@ -7186,7 +7187,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             return mesh;
         },
         zylinder: (rt, rb, h, k) =>
-            fern && Math.max(rt, rb, h / 2) < FERN_KLEIN * 6
+            menge && Math.max(rt, rb, h / 2) < FERN_KLEIN * 6
                 ? new THREE.Group()
                 : new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
     };
