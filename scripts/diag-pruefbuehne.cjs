@@ -511,7 +511,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             {
                 let n = -1;
                 let still = 0;
-                const t0 = performance.now();
                 await window
                     .__gebautNach("noch: still < 4", {
                         fertig: () => !!(!(still < 4)),

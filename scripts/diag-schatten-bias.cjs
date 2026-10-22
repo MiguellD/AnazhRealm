@@ -270,7 +270,6 @@ const server = statikServer();
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const dl = performance.now() + 300000;
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;

@@ -397,7 +397,6 @@ const SELBST = process.argv.includes("--selftest");
                 try {
                     r._foundry = null;
                     const f = r._ensureAssetFoundry();
-                    const t0 = performance.now();
                     await window.__weltDa(() => !!(!(f && !f.worker)));
                     aus10.geboren = !!(f && f.worker);
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });

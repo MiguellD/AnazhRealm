@@ -180,7 +180,6 @@ async function bootRealm(port) {
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
         await window.__weltDa((r) => r.state && r.state.blueprints);
     });
     const close = async () => {
@@ -201,7 +200,6 @@ async function waitFoundryReady(page, timeoutMs) {
         const f = r._ensureAssetFoundry();
         if (!f) return out;
         const t0 = performance.now();
-        const dl = t0 + tmo;
         await window.__weltDa(() => !(!f.ready));
         out.ready = !!f.ready;
         out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
@@ -218,7 +216,6 @@ async function waitLibraryWarm(page, timeoutMs) {
     return page.evaluate(async (tmo) => {
         const r = window.anazhRealm;
         const f = r._foundry;
-        const dl = performance.now() + tmo;
         await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
         return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
