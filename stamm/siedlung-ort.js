@@ -2973,8 +2973,10 @@ class AnazhRealm_siedlung_ort {
         return akt;
     }
     // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt samt dem Export ihrer Zelle (`_tickAutoSettlement`)
+    // — der Zug nur, solange sein Takt lebt (`_dorfTaktLebt`, dasselbe Urteil wie der Term „dorf" des ersten Weltbilds): ein Ort
+    // ohne Dorf-Zug hält ihn an, und ein Zug, den kein Takt baut, hielt die Welt ewig offen (CI 39780312347: „Dorf offen 18").
     _dorfOffen() {
-        const q = this._autoSettlementQueue;
+        const q = this._dorfTaktLebt() && this._autoSettlementQueue;
         const zug = q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) : 0;
         return (this._dorfImFlug | 0) + zug + (this._autoSettlementPendingKey ? 1 : 0);
     }

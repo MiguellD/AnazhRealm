@@ -489,7 +489,7 @@ async function checkBandRing5Soul(ctx) {
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
-        if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        r._gameLoopTick(performance.now());
         return {
             playerYaw: r.state.yaw,
             playerRotationY: r.state.playerMesh.rotation.y,
@@ -519,7 +519,7 @@ async function checkBandRing5Soul(ctx) {
                 r.state.playerVel.setValue(0, 0, 0);
                 r.state._fieldVy = 0;
             }
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
             const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,

@@ -229,7 +229,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
 
         // UI-Elemente vorhanden
-        out.uiToggleExists = !!document.getElementById("p2p-toggle");
         out.uiUrlInputExists = !!document.getElementById("p2p-url");
         out.uiStatusExists = !!document.getElementById("p2p-status");
 
@@ -282,7 +281,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
         check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
         check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
-        check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
         check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
         check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
         check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);

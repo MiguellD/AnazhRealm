@@ -44,7 +44,7 @@ async function seitenTakt() {
 // steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
 // ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Der Regler hält, solange sie schwingt — in JEDEM
 // Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging. Der Deckel `max`
-// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch) — über den EINEN Deckel (`__deckel`, auch seine Hänger-Wand); dann wirft er.
+// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
 async function weltStehtNach(takt, max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -108,9 +108,8 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
 // zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
 // Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
 // Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht).
-// DIE HÄNGER-WAND (echt-haenger): ein Offenes, das sich `haengt` (3 600) Gänge lang um kein Bau-Ereignis rührt, baut kein Takt
-// — der Deckel wirft beim Namen der offenen Felder (CI 39780312347: `Dorf offen 18`, ein Zug ohne Takt, 79 min ohne Ende).
-function deckel(name, max, offen, haengt) {
+// Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen (CI 39780312347: Dorf offen 18, 79 min).
+function deckel(name, max, offen) {
     let n = 0,
         k = 0,
         still = 0,
@@ -118,17 +117,13 @@ function deckel(name, max, offen, haengt) {
     return () => {
         const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
-        const jetzt = Object.entries(o)
-            .filter(([, v]) => v)
-            .map(([f, v]) => `${f} ${v}`)
-            .join(" ");
-        still = jetzt && jetzt === vor ? still + 1 : 0;
+        const auf = Object.values(o).some(Boolean);
+        const jetzt = JSON.stringify(o);
+        still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
-        if (still > (haengt || 3600))
-            throw new Error(
-                `DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} seit ${still} Takten ohne Bau-Ereignis`
-            );
-        if ((offen === false || (!Object.values(o).some(Boolean) && !(offen && offen()))) && ++k > (max || 120))
+        if (still > 3600)
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis`);
+        if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
             );
@@ -1102,14 +1097,13 @@ async function selbsttest() {
             (n) => `steht nach ${n} Takten`,
             (x) => x.message
         );
-        // HÄNGT: eine Karte bleibt offen und rührt sich nie — der Deckel wirft nach `haengt` stillen Gängen beim Namen
+        // HÄNGT: eine Karte bleibt offen und rührt sich nie
         r.offen = 1;
-        aus.haengt = await (async (weiter) => {
-            while (weiter()) await takt();
-        })(window.__deckel("haenger", 5, undefined, 40)).then(
-            () => "endet ohne Wurf",
-            (x) => x.message
-        );
+        try {
+            for (const weiter = window.__deckel("haenger", 5); weiter(););
+        } catch (x) {
+            aus.haengt = x.message;
+        }
         r.offen = 0;
         let still = 0;
         r.state = { renderer: {}, perfRegulator: true };
@@ -1167,8 +1161,8 @@ async function selbsttest() {
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
         ],
         [
-            !!bau && /^DIE WELT HÄNGT: haenger nach 41 Takten — offen karten 1 seit 41 Takten/.test(bau.haengt),
-            `Bau HÄNGT (offen, ohne Bau-Ereignis): ${bau ? bau.haengt : "kein Befund"}`,
+            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — offen .*"karten":1/.test(bau.haengt),
+            `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,

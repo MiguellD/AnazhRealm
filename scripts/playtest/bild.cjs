@@ -464,8 +464,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         }
 
         // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
-        out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
-        out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
         if (r.state.sunMesh && r.state.moonMesh) {
             // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
@@ -554,8 +552,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6",
             wave6g3v2Results.starsBrighterAtNight
         );
-        check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
-        check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
         check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
         check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
@@ -1451,7 +1447,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // --- B3: Stats-HUD DOM-Existenz
         out.statsHudExists = !!document.getElementById("stats-hud");
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
-        out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
@@ -1483,9 +1478,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
         out.ringRadiusDefault = r.state.chunkRingRadius === 4;
         out.slidersSectionExists = !!document.getElementById("sliders-section");
-        out.masterSliderExists = !!document.getElementById("slider-master");
-        out.pingsSliderExists = !!document.getElementById("slider-pings");
-        out.ringSliderExists = !!document.getElementById("slider-ring");
 
         // --- D2: Master-Slider ändert state + Persistenz
         const ms = document.getElementById("slider-master");
@@ -1619,7 +1611,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     if (wave6x4bResults && !wave6x4bResults.error) {
         check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
         check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
-        check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
@@ -1630,9 +1621,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
         check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
         check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
-        check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
-        check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
-        check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
         check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
         check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
         check(

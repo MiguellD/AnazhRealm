@@ -2129,7 +2129,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
                 // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
                 for (let k = 0; k < 12; k++)
-                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+                    r._gameLoopTick(performance.now());
                 const cam = r.state.camera;
                 const pm = r.state.playerMesh;
                 const savedPos = cam.position.clone();
