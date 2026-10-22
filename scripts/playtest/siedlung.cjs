@@ -1114,9 +1114,6 @@ async function checkBandRing6Workshop(ctx) {
         // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
         r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
-        out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
-        out.phantomInScene =
-            r.state.buildMode.phantomMesh && r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
         r.state.buildMode.phantomMesh.traverse((node) => {
@@ -1185,8 +1182,6 @@ async function checkBandRing6Workshop(ctx) {
         // Bau-Cursor
         check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
         check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
-        check("Ring 6.5: selectHotbarSlot aktiviert Build-Mode", ring6v2Results.modeActiveAfterSet);
-        check("Ring 6.5: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
         check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
         check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
         check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);

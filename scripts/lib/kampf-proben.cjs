@@ -1254,16 +1254,7 @@ async function WELLE_L() {
             delete r.tryMouseBreak;
             p.breakHeld = false;
         }
-        // (M5) FERTIGEN eines Bauwerks (die Eiche) → der Bau-Modus, nicht die Hand
-        r.setGameMode("schöpfer");
-        const fert = r.fertigeBlueprint("baum_eiche");
-        w.z.fertigen = {
-            ok: !!(fert && fert.ok),
-            hand: (p.equipped && p.equipped.held) || null,
-            bauModus: !!(s.buildMode && s.buildMode.active && s.buildMode.blueprintName === "baum_eiche"),
-        };
-        w.c.fertigenBaut = w.z.fertigen.bauModus && w.z.fertigen.hand !== "baum_eiche";
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        // (M5) FERTIGEN eines Bauwerks fährt diag-werkstatt-weg mit echten Klicks (das Werk steht, nie in der Hand)
         ausruesten(null);
         r.setGameMode(saved.mode);
         s.isPointerLocked = saved.lock;

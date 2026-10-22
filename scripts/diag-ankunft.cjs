@@ -433,7 +433,7 @@ async function probe(arg) {
         st._weltbildDa = 0;
         m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
         st._weltbildDa = daVor;
-        if (ls && typeof r._ankunftsBild === "function") {
+        if (ls) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick und wieder vor den Fällen: die
             // Mesh-Zone wächst im Rundblick, ein Baum im Werden hielte jeden Fall (lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
             const steht = async () => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt().length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
@@ -488,7 +488,7 @@ async function probe(arg) {
                 const w0 = warnt();
                 schaffe();
                 if (vorbereiten) vorbereiten();
-                const terme = typeof r._weltbildLuecken === "function" ? r._weltbildLuecken().map((l) => l.term) : null;
+                const terme = r._weltbildLuecken().map((l) => l.term);
                 r._ankunftsBild();
                 const weg = ls.classList.contains("weg");
                 m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0), terme };
@@ -590,10 +590,10 @@ async function probe(arg) {
             const wmD = st.worldMeta || (st.worldMeta = {});
             const ohneStart = Object.assign({}, wmD.settlementCells || {});
             delete ohneStart.start;
-            const gMD = typeof r._genesisMitte === "function" ? r._genesisMitte() : null;
+            const gMD = r._genesisMitte();
             const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
             const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
-            const kanal = typeof r._autoSettlementChannelLive === "function" && r._autoSettlementChannelLive();
+            const kanal = r._autoSettlementChannelLive();
             if (amOrt && kanal) fallMit("dorfFaellig", dorfAn, [wmD, { settlementCells: ohneStart }], [r, { _autoSettlementStartHopeless: false }]);
             else
                 m.ohneFall.dorfFaellig = !kanal
@@ -621,7 +621,7 @@ async function probe(arg) {
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             if (baum)
                 fall("lueckeRuht", baumWeg(false), baumHer, () => {
-                    const sig = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                    const sig = r._weltbildFehlt().join(" · ");
                     st._weltbildLuecke = sig;
                     st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                 });
@@ -633,7 +633,7 @@ async function probe(arg) {
                     () => (fo.ready = false),
                     () => (fo.ready = merkBuch),
                     () => {
-                        st._weltbildLuecke = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                        st._weltbildLuecke = r._weltbildFehlt().join(" · ");
                         st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                     }
                 );
@@ -687,7 +687,7 @@ async function probe(arg) {
                 const v = { ohneLeser: [], karten: 0, kartenBsp: [], phaseBestellung: [] };
                 m.vorrat = v;
                 const f = r._foundry;
-                if (!f || !f.ready || typeof r._foundryPrefetchLibrary !== "function") v.fehler = "keine lebende Foundry";
+                if (!f || !f.ready) v.fehler = "keine lebende Foundry";
                 else {
                     const P = Object.getPrototypeOf(r);
                     const alt = {};
@@ -1005,7 +1005,7 @@ async function probe(arg) {
         out.kamera = m;
         const pl = st.architectures.find((a) => a && a.type === "start_plattform");
         const P = pl ? pl.position : st.playerMesh.position;
-        const natur = (a) => (typeof r._istNatur === "function" ? r._istNatur(a) : /^(baum_|busch_|grown_)/.test((a && a.type) || ""));
+        const natur = (a) => r._istNatur(a);
         const naheBaeume = () =>
             st.architectures
                 .filter((a) => a && /^baum_/.test(a.type) && a.blockerAABBs && a.blockerAABBs.length)
@@ -1482,7 +1482,7 @@ async function probe(arg) {
         const tg = document.getElementById("llm-toggle");
         if (tg) tg.click();
         await sleep(1500);
-        if (typeof r._llmErreichbarkeit === "function") await r._llmErreichbarkeit();
+        await r._llmErreichbarkeit();
         m.status = (document.getElementById("llm-status") || {}).textContent || "";
         // (b) ein Cloud-Begleiter ohne Schlüssel, der Schalter steht an
         const defs = r.llmProviderDefs();
@@ -1496,7 +1496,7 @@ async function probe(arg) {
         m.ohneSchluessel = zeilen().slice(n0 + 1).find((z) => /schweigt|Fehler/.test(z)) || null;
         // (c) der Proxy: der Ursprung der Seite (der Linsen-Server kennt /api/proxy/llm nicht → 404)
         m.ursprung = location.origin;
-        m.proxyUrl = typeof r._llmProxyUrl === "function" ? r._llmProxyUrl() : "http://localhost:4312/api/proxy/llm";
+        m.proxyUrl = r._llmProxyUrl();
         llm.provider = "ollama";
         llm.enabled = true;
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
@@ -1655,7 +1655,7 @@ async function probe(arg) {
             llm.enabled = altE;
             llm.provider = altProv;
         }
-        if (typeof r._dslAbsageSatz === "function") r._chatEcho(r._dslAbsageSatz([{ event: "op_exception", fehler: "x" }]));
+        r._chatEcho(r._dslAbsageSatz([{ event: "op_exception", fehler: "x" }]));
         k.zeilen = k.zeilen.concat(zeilen().slice(z1));
         for (const a of st.architectures.filter((a) => !vor.has(a) && /^baum_birke/.test(a.type)).reverse()) r.removeArchitecture(a);
         k.gestartet = true;

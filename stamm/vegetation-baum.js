@@ -729,8 +729,8 @@ class AnazhRealm_vegetation_baum {
         let m = this._treeShadowTwinMats.get(key);
         if (m) return m;
         m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        m.userData.shadowTwin = true; // vor dem Leuchten: der Zwilling zeichnet keine Farbe, er wird nie nass
         this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
-        m.userData.shadowTwin = true;
         this._baumWindStoff(m, "schatten", baumWind || null);
         this._treeShadowTwinMats.set(key, m);
         return m;

@@ -186,7 +186,7 @@
     return zP; };
   const roofUnderY=(x,z)=> { if(ROOFMODE==='dome')return eaveY+0.35; if(ROOFMODE==='flat')return eaveY+0.05; const s=roofSkinY(x,z); return s===Infinity?Infinity:s-0.05; };   // knapp unter die Ziegel
   // ════ METAGESETZ · EINDECKEN einer Dachfläche (EINE Schräge): Lattung + Ziegelreihen, parametrisch über First(rY)/Traufabwurf(eaveDropY)/Spanne(eZ)/First-z(zMid)/Ortgang(xRangeAt). EINE Quelle für Haupt- UND Wing-Sattel­dach — kein paralleler Deckungscode mehr. ════
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), tw=0.26, tl=0.34, tt=0.03, cs=0.205; const ax=o.axis||'z';
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=(typeof P!=='undefined'&&P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -232,7 +232,8 @@
     return [X,Y,Z]; }
   // FELD-ACHSEN-GESETZ (V18.500): das Feld hängt ohne Biegung nur an (Y,Z) — entlang x ist es konstant, unter der Traufe die Identität. Die Segment-Schrittweite misst darum die (Y,Z)-Länge: gleicher maximaler Sehnenfehler (chinesisch 16,5/3,0 mm, japanisch 10,6/1,8 mm), 40 % weniger Dreiecke
   const defYZ=r=>Math.hypot(r[1],r[2]);
-  function defSeg(L,Lyz,min,step,cap,yTop){ if(DEF_bk>0) return L>min?Math.min(cap,Math.ceil(L/step)):1; if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
+  // BIEGE-ACHSEN-GESETZ (pipeline.K3): die Biegung krümmt nur entlang x — für festes x ist das Feld in (y,z) linear (X=r·sin θ, Z=r·cos θ−R, r=R+z), die Teilung misst die x-Länge Lx; der Schwung darüber misst wie ohne Biegung die (Y,Z)-Länge (gleicher Sehnenfehler, die gerade Strebe entlang z bleibt EIN Segment)
+  function defSeg(L,Lyz,min,step,cap,yTop,Lx){ if(P.__sehne>1) step*=P.__sehne; if(DEF_bk>0){ const nb=Lx>min?Math.min(cap,Math.ceil(Lx/step)):1; return (DEF_cv>0&&yTop>eaveY-1e-6&&Lyz>min)?Math.max(nb,Math.min(cap,Math.ceil(Lyz/step))):nb; } if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
   function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
@@ -242,7 +243,7 @@
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
     if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
-    const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz), P=[];
+    const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz, Ln*Math.abs(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)[0])), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
       for(let k=0;k<12;k++){ const A=c[_BF[k][0]],B=c[_BF[k][1]],C=c[_BF[k][2]]; P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]); } }
@@ -251,7 +252,7 @@
   const Vc=(x,y,z)=>new THREE.Vector3(x,y,z);
   function strut(g,x0,y0,z0,x1,y1,z1,th,role){ const dx=x1-x0,dy=y1-y0,dz=z1-z0, len=Math.hypot(dx,dy,dz); if(len<1e-4)return;
     if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(_HG?_hgBox(th,len,th):new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
-    const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
+    const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th, Math.abs(dx)), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
     let px=-uy,py=ux,pz=0, pl=Math.hypot(px,py,pz); if(pl<0.01){px=1;py=0;pz=0;pl=1;} px/=pl;py/=pl;pz/=pl;
     const qx=uy*pz-uz*py, qy=uz*px-ux*pz, qz=ux*py-uy*px;
     const cor=(t,sp,sq)=>{ const nx=x0+dx*t,ny=y0+dy*t,nz=z0+dz*t; return deform(nx+(px*sp+qx*sq)*h, ny+(py*sp+qy*sq)*h, nz+(pz*sp+qz*sq)*h); };
@@ -262,7 +263,7 @@
   function tri(g,a,b,c,role){
     if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute([a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]],3)); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat(role)); m.castShadow=m.receiveShadow=true; g.add(m); return tintWood(m,role,(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3,(a[2]+b[2]+c[2])/3); }
     const e1=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]), e2=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]), e3=Math.hypot(c[0]-b[0],c[1]-b[1],c[2]-b[2]), em=Math.max(e1,e2,e3);
-    const n=defSeg(em, Math.max(Math.hypot(b[1]-a[1],b[2]-a[2]),Math.hypot(c[1]-a[1],c[2]-a[2]),Math.hypot(c[1]-b[1],c[2]-b[2])), 0.9, 0.45, 16, Math.max(a[1],b[1],c[1])), P=[];   // FLÄCHE unterteilt → jeder Punkt durch deform, folgt dem Bogen wie der Frame
+    const n=defSeg(em, Math.max(Math.hypot(b[1]-a[1],b[2]-a[2]),Math.hypot(c[1]-a[1],c[2]-a[2]),Math.hypot(c[1]-b[1],c[2]-b[2])), 0.9, 0.45, 16, Math.max(a[1],b[1],c[1]), Math.max(Math.abs(b[0]-a[0]),Math.abs(c[0]-a[0]),Math.abs(c[0]-b[0]))), P=[];   // FLÄCHE unterteilt → jeder Punkt durch deform, folgt dem Bogen wie der Frame
     const pt=(i,j)=>{ const u=i/n, v=j/n; return deform(a[0]+(b[0]-a[0])*u+(c[0]-a[0])*v, a[1]+(b[1]-a[1])*u+(c[1]-a[1])*v, a[2]+(b[2]-a[2])*u+(c[2]-a[2])*v); };
     for(let i=0;i<n;i++)for(let j=0;j<n-i;j++){ const A=pt(i,j),B=pt(i+1,j),C=pt(i,j+1); P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]); if(i+j<n-1){ const D=pt(i+1,j+1); P.push(B[0],B[1],B[2],D[0],D[1],D[2],C[0],C[1],C[2]); } }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat(role)); m.castShadow=m.receiveShadow=true; g.add(m); return tintWood(m,role,(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3,(a[2]+b[2]+c[2])/3); }
@@ -735,6 +736,7 @@
       for(let i=0;i<nH;i++){ const y=hipStartY+0.02+ i*csH*Math.sin(th); if(y>ridgeY+0.05)break;
         const x=sx*(W/2+(rH-W/2)*Math.min(1,(y-hipStartY)/span)), zw=gzTop*Math.max(0,(ridgeY-y))/span;
         const n=Math.ceil(2*zw/tw)+2, ox=(i%2)*tw*0.5;
+        if(P.flaechig&&P.__sehne>1){ if(zw>0.02) beam(g,x,y+lift,0,tl+0.07,tt,2*zw+tw*0.97,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE über der Zeile: auch der Walm trägt je Reihe EIN Band
         for(let j=0;j<n;j++){ const z=-zw-tw*0.5+ox+tw*0.5+j*tw; if(Math.abs(z)>zw+0.06)continue; beam(g,x,y+lift,z,tl+0.07,tt,tw*0.97,'ziegel',[0,0,-sx*th]); } } };
       layHip(-1); layHip(1); }
     beam(g,0,ridgeY+0.15,0,2*rH+2*ovX*(1-P.hip)+0.25,0.16,0.24,'ziegel');                            // Firstziegel
@@ -1540,13 +1542,15 @@
     addMasse({art:'turm',x0:tx-tw/2,x1:tx+tw/2,z0:tz-tw/2,z1:tz+tw/2,y0:baseY,y1:baseY+h,spitze:P.zinnen?0:tw*2.4,zinnen:P.zinnen?1:0});   // TURM-VERZICHTS-GESETZ: kein freier Platz an der Hülle — ehrlich statt Kollision (E→W→Heck-Mitte)
     const fw2=Math.min(0.85,tw*0.5), fh=1.05, nLv=Math.max(1,Math.floor(h*0.72/2.4)), pw2=Math.min(0.6,tw*0.36), pH=1.55;
     const zF=tz-tw/2+twT/2, zB=tz+tw/2-twT/2, xL=tx-tw/2+twT/2, xR=tx+tw/2-twT/2, zP=(szT<0?zF:zB), zQ=(szT<0?zB:zF), lvH=2.4, nB=Math.ceil(h/lvH);   // GESCHOSS-BAND-GESETZ: jede Fassade bandweise — lochWand je Ebene (Löcher übereinander sauber getrennt)
-    for(let s=0;s<nB;s++){ const y0=baseY+s*lvH, y1=Math.min(baseY+h, y0+lvH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv);
+    const _tN=P.nur||{};   // DIE STUFEN-FLAGS GELTEN AUCH DEM TURM (pipeline.K3): die ferne Stufe (fenster/tueren/boeden false) trägt keine Löcher und keine Geschossböden — der Schaft steht geschlossen
+    const _nBand=(_tN.fenster===false&&_tN.tueren===false)?1:nB, _bH=_nBand===1?h:lvH;   // ohne Löcher trägt EIN Band die ganze Höhe (die Bänder trennen nur Löcher)
+    for(let s=0;s<_nBand;s++){ const y0=baseY+s*_bH, y1=Math.min(baseY+h, y0+_bH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv)&&_tN.fenster!==false;
       const wHole=hasW?[{c:tx,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[], sHole=hasW?[{c:tz,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[];
-      lochWand(g,true, zP, tx-tw/2, tx+tw/2, y0, y1, (s===0?[{c:tx,w:pw2*2-0.02,b:y0-0.02,t:baseY+pH}]:wHole), wr, twT);   // Front: EG=Portal, darüber Fenster
+      lochWand(g,true, zP, tx-tw/2, tx+tw/2, y0, y1, (s===0&&_tN.tueren!==false?[{c:tx,w:pw2*2-0.02,b:y0-0.02,t:baseY+pH}]:wHole), wr, twT);   // Front: EG=Portal, darüber Fenster
       lochWand(g,true, zQ, tx-tw/2, tx+tw/2, y0, y1, wHole, wr, twT);
       lochWand(g,false, xL, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT);
       lochWand(g,false, xR, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT); }
-    for(let s=1;s<=nLv;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
+    for(let s=1;s<=nLv&&_tN.boeden!==false;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
     bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2);   // Blendbogen + Torblatt in der Laibung + Stufen
     { for(let s=1;s<nLv;s++){ const cy=baseY+1.8+s*2.4;
       fensterAt(g,tx,cy,tz-tw/2-0.02,fw2,fh,true); fensterAt(g,tx,cy,tz+tw/2+0.02,fw2,fh,true);
@@ -1591,7 +1595,7 @@
       beam(g,0,hW+0.05,zW+0.03,(x1-x0)+0.8,0.09,0.12,'dunkel'); }   // WANDANSCHLUSS-Schürze
     return g; }
   function kuppel(){ const g=grp(); if(!P.kuppel||ROUND) return g;   // KUPPEL auf PENDENTIFS (Byzanz/Osmanen) — sphärische Zwickel tragen Quadrat→Kreis, dann Tambour-Trommel, dann Dom
-    const rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=24, bands=18;
+    const _ks=P.__sehne>1?P.__sehne:1, rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=Math.max(8,Math.round(24/_ks)), bands=Math.max(6,Math.round(18/_ks));   // über der Zeile (P.__sehne, buildInstance): weniger Meridiane und Bänder, dieselbe Silhouette
     addMasse({art:'kuppel',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,rad,base,springY,y1:springY+rad*1.4});
     const prof=t=>{ const y=springY+rad*1.4*t, r=rad*Math.pow(Math.cos(t*Math.PI*0.5),0.62)*(1+0.30*Math.sin(t*Math.PI)); return [Math.max(0.02,r),y]; };   // ab Springlinie: breit → Zwiebelbauch → Spitze
     { const seg2=8; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>{ const cxp=sx*(W/2-0.04), czp=sz*(Dp/2-0.04), cd=Math.atan2(czp,cxp); for(let k=0;k<seg2;k++){ const a0=cd-Math.PI/4+(k/seg2)*Math.PI/2, a1=cd-Math.PI/4+((k+1)/seg2)*Math.PI/2; tri(g,[cxp,base,czp],[rad*Math.cos(a0),springY,rad*Math.sin(a0)],[rad*Math.cos(a1),springY,rad*Math.sin(a1)],'putz'); } }); }   // PENDENTIFS: vier sphärische Eckzwickel
@@ -3743,6 +3747,16 @@
     // ov.seed überstimmt bewusst das seed-Argument). Ausgang: EINE THREE.Group
     // (je Rolle EIN gebakter Mesh, Vertex-Farben tragen Kultur×AO×Illusion),
     // Welt-Matrizen aktualisiert — die Naht sind die Float32-Attribute (G2.2).
+    function hausDreiecke(gm) {
+        var n = 0;
+        for (var r in gm) if (gm[r] && gm[r].idx) n += gm[r].idx.length / 3;
+        (gm.__tuerFluegel || []).forEach(function (w) {
+            w.traverse(function (o) {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+        });
+        return n;
+    }
     function buildInstance(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre) return null;
@@ -3755,7 +3769,21 @@
         var L = lod | 0;
         var stufe = HOST_STUFEN[0];
         for (var i = 0; i < HOST_STUFEN.length; i++) if (HOST_STUFEN[i] <= L) stufe = HOST_STUFEN[i];
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Teilung des Verformungs-Felds
+        // (Biegung, Schwung) misst die Sehne der Stufe — die gebogene Stufe 1 steht ab 12 m, die 2 ab 26 m, ihr Schritt
+        // streckt sich um 2 bzw. 3 (gleicher Sehnenfehler im Bild); trägt der Bau mehr Dreiecke als die Zeile, streckt er
+        // sich weiter (höchstens vier Mal). Ein Bau ohne Feld oder auf seiner Zeile bleibt byte-gleich.
+        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe] || {}).tris;
+        if (p.bend > 0) p.__sehne = [1, 2, 3, 1][stufe];
         var gm = buildStufe(p, stufe);
+        // der Schritt folgt dem Überschuss (n / Zeile, mindestens 1,5); bewegt ein Schritt weniger als 2 %, trägt die Stufe
+        // kein Feld und keine Fläche, die sich streckt — der Bau bleibt, die Linse nennt ihn
+        for (var versuch = 0, n = hausDreiecke(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
+            p.__sehne = (p.__sehne || 1) * Math.max(1.5, n / zeile);
+            gm = buildStufe(p, stufe);
+            vorher = n;
+            n = hausDreiecke(gm);
+        }
         var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
@@ -4083,6 +4111,7 @@
     // nach innen zurückläuft (Korb, Eimer), dreht seine Normale selbst nach innen. `jitter(i, k)` darf je Ring-Punkt
     // den Radius verformen (Rinde, Glut).
     function ausDreh(profil, seg, boden, deckel, jitter) {
+        if (_ausDetail < 1) seg = Math.max(Math.min(seg, 3), Math.round(seg * _ausDetail));
         var pos = [],
             idx = [],
             ring = [],
@@ -4326,11 +4355,17 @@
             zV = ausZufall(seed, 0x54);
         var R = 0.58 * G;
         // DER STEINRING — Feldsteine tangential gelegt, ein Drittel eingesunken; die der Glut zugewandte Seite trägt Ruß.
-        var nStein = 11 + Math.round(F * 3 + zR() * 2);
+        var nStein = 11 + Math.round(F * 3 + zR() * 2),
+            steinBreit = 1;
+        // über der Zeile (buildAusstattung): die ferne Stufe legt weniger, breitere Steine — der Ring bleibt geschlossen
+        if (_ausDetail < 1 && !fein) {
+            steinBreit = nStein / Math.max(8, Math.round(nStein * _ausDetail));
+            nStein = Math.round(nStein / steinBreit);
+        }
         for (var i = 0; i < nStein; i++) {
             var w = ((i + 0.5 + (zR() - 0.5) * 0.4) / nStein) * Math.PI * 2;
             var rr = R + (zR() - 0.5) * 0.07 * G;
-            var b = (0.17 + zR() * 0.1) * G,
+            var b = (0.17 + zR() * 0.1) * G * steinBreit,
                 tq = b * (0.68 + zR() * 0.3),
                 h = b * (0.52 + zR() * 0.26);
             var ton = ausTon(zR, 0.13, 0.04),
@@ -5183,6 +5218,7 @@
     }
     // B2 der Ausstattung: buildInstance(id, seed, lod, ov) → EINE Gruppe, je Rolle EIN gebakter Mesh (die Glut wirft
     // nicht), Stufe = die größte deklarierte ≤ lod (sonst die kleinste). ov.seed überstimmt das seed-Argument.
+    var _ausDetail = 1; // die Teilung der Drehkörper der Ausstattung (1 = das Lab-Maß; buildAusstattung senkt sie nur über der Zeile)
     function buildAusstattung(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre || pre.kind !== "ausstattung" || !AUS_BAU[rezeptId]) return null;
@@ -5195,14 +5231,33 @@
             stufe = AUS_STUFEN[0];
         for (var i = 0; i < AUS_STUFEN.length; i++) if (AUS_STUFEN[i] <= L) stufe = AUS_STUFEN[i];
         var kol = ausFarben(rezeptId, sd);
-        var roh = new THREE.Group();
         var wahl = stufe === 3 ? ausWahl(rezeptId, p, sd, kol) : null;
-        if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
-        else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
-        roh.updateMatrixWorld(true);
-        var geoms = {};
-        bakeLOD(roh, kol, geoms, 0, true);
-        var g = geomsZuGruppe(geoms);
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Fülle legt Steine und Scheite
+        // zu, die Zeile der Stufe wächst nicht; trägt der Bau mehr Dreiecke, fällt die Teilung jedes Drehkörpers um das
+        // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
+        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.ausstattung[stufe] || {}).tris;
+        try {
+            for (var versuch = 0; ; versuch++) {
+                var roh = new THREE.Group();
+                if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
+                else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
+                roh.updateMatrixWorld(true);
+                var geoms = {};
+                bakeLOD(roh, kol, geoms, 0, true);
+                var g = geomsZuGruppe(geoms);
+                var n = 0;
+                g.traverse(function (o) {
+                    if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                });
+                if (!(n > zeile) || stufe === 3 || versuch === 4) break;
+                g.traverse(function (o) {
+                    if (o.geometry) o.geometry.dispose();
+                });
+                _ausDetail *= Math.min(0.97, zeile / n);
+            }
+        } finally {
+            _ausDetail = 1;
+        }
         g.traverse(function (o) {
             if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
         });

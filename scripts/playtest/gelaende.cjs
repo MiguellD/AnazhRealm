@@ -1017,12 +1017,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         if (!r) return null;
         const out = {};
 
-        // Inventar öffnen → Rezeptbuch + Equip-Status rendern.
+        // Inventar öffnen → Equip-Status rendern (das Rezeptbuch fährt diag-werkstatt-weg mit echten Klicks).
         r.toggleInventoryOverlay(true);
-        const recipes = document.getElementById("inventory-recipes");
-        out.recipesContainerExists = !!recipes;
-        out.recipeRowCount = recipes ? recipes.querySelectorAll(".recipe-row").length : 0;
-        out.recipeRowsPresent = out.recipeRowCount >= 1;
         const equip = document.getElementById("inventory-equip");
         out.equipSlotsPresent = !!equip && equip.querySelectorAll(".equip-slot").length === 2;
 
@@ -1052,12 +1048,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (recipeBookResults) {
-        check("UI-Putz Rezeptbuch: Container im DOM", recipeBookResults.recipesContainerExists);
-        check(
-            "UI-Putz Rezeptbuch: listet craftbare Baupläne",
-            recipeBookResults.recipeRowsPresent,
-            `rows=${recipeBookResults.recipeRowCount}`
-        );
         check(
             "UI-Putz Rezeptbuch: Equip-Status zeigt beide Slots (Hand + Rüstung)",
             recipeBookResults.equipSlotsPresent
