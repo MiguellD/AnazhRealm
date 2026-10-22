@@ -1,0 +1,1 @@
+const b = window.__buehne; if (!b.__regen) { window.__buehne = Object.assign((o) => b(Object.assign({ wetter: "rainy", naesse: 600 }, o || {})), { __regen: true }); } window.__buehne(); const st = r.state; return { wetter: st.weather, naesse: typeof r._naesseTakt === "function" }
