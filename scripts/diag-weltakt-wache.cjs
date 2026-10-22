@@ -17,9 +17,9 @@
 //   (Q) QUELLE: jeder Op der DSL hat ein Urteil (Welt-Akt oder benannt frei, die Liste nennt nur Ops, die es gibt); jedes
 //       Programm, das der Nexus komponiert, trägt nur Welt-Akte der Liste, das Wetter und die freien Ops (dass `dslEval`
 //       Liste und Halt liest, beweisen H und F am Verhalten); (K) KI: der Prompt der Welt-KI (`llmBuildSystemPrompt`) nennt
-//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe (bis 16.10.: 40 von 70 Ops); jeder Op
+//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe; jeder Op
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
-//       (bis 16.10.: remove_architecture und sechs Kreatur-Verben tot an der Id der Welt, modify_terrain in einer Liste);
+//       (modify_terrain in einer Liste);
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
 // und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb, `formUrteil`

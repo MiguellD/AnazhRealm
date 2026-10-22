@@ -1,9 +1,7 @@
-// kronen-linse.cjs — DIE LINSEN DER KRONE (S7, 05.10.), aus den gebauten Puffern (asset-worker-harness) gelesen:
+// kronen-linse.cjs — DIE LINSEN DER KRONE, aus den gebauten Puffern (asset-worker-harness) gelesen:
 //
-// (1) DIE BILD-DECKUNG — wie viel vom Bild eine Krone deckt, GERASTERT, nicht ihre Flächen-Summe. Befund (Prüfer W5, R3):
-//     die Deckungs-Linse summierte Flächen (mittlere Projektion nach Cauchy, je Karte Fläche × Atlas-Füllung) und sah
-//     keine Überlappung — sie meldete die neue Nah-Krone mit 0,99 der alten, das Labor-Bild zeigte 0,76 (Eiche 8 m,
-//     Subjekt 0,673 → 0,515). Hier wird die Silhouette gemalt: jedes Dreieck der Krone in 24 orthografischen
+// (1) DIE BILD-DECKUNG — wie viel vom Bild eine Krone deckt, GERASTERT, nicht ihre Flächen-Summe (eine Summe sähe keine
+//     Überlappung). Hier wird die Silhouette gemalt: jedes Dreieck der Krone in 24 orthografischen
 //     Ansichten — acht Azimute (0°, 22,5° … 157,5°) je Blick-Hebung 0°, 30° und 60° VON UNTEN (der Spieler steht am
 //     Boden: eine Krone über ihm liest er schräg von unten, die Mammut-Krone auf 8 m unter 74°) — auf ein festes Raster
 //     (Kante `px` in Vorlagen-Einheiten, für beide Stufen eines Paars dieselbe); Karten-Dreiecke lesen je Pixel die
@@ -13,19 +11,15 @@
 //         krone: [{ kind, pos: Float32Array, idx: Uint32Array, uv: Float32Array|null }] (kroneAus)
 //         atlas: { w, h, alpha: Uint8Array (w×h, Zeile 0 = v 0), schwelle: 0..1 }
 //
-// (2) DIE SCHWEBE — eine Karte ohne Träger. Befund (Prüfer W5, R2): die Nah-Krone strich Zweige unter 0,03·trunkR, ihre
-//     Nadel-Karten schwebten ohne Zweig (Fichte 656 von 1406, Mammut 541 von 905), die Weiden-Strähnen hingen ohne
-//     Peitsche in der Luft (593 von 677). Eine Karte HÄNGT, wenn die Rinde ihre innere Hälfte oder eine ihrer
+// (2) DIE SCHWEBE — eine Karte ohne Träger. Eine Karte HÄNGT, wenn die Rinde ihre innere Hälfte oder eine ihrer
 //     Kanten-Mitten berührt, oder wenn sie an einer hängenden Karte hängt (die Strähne ist eine Kette: Mitten näher als
 //     drei Viertel der halben Diagonalen). schwebe(meshes) → { karten, schwebend, beispiel }.
 //
-// (3) DER BODEN — kein Laub unter dem Boden der Vorlage (y < 0; die Strähnen hingen unter den Boden-Rand, R1).
+// (3) DER BODEN — kein Laub unter dem Boden der Vorlage (y < 0).
 //     unterBoden(krone) → tiefstes y des Laubs.
 //
-// (4) DIE LAGEN (S3, 09.10.) — wie viele Karten-Lagen ein Kronen-Pixel trägt. Befund (Späher S3 pflanzen, Kern
-//     78d66a63): die Budget-Zeile war nur gegen die sättigende BINÄRE Deckung geeicht — die Eiche-L0 trug 1 280 Karten
-//     mit der Kante 0,22 H, 40,8 Quad-Lagen je Kronen-Pixel; jede Lage wird alpha-getestet und schattiert, 65 % ihrer
-//     Fragmente verwirft der Atlas (Kern-Füllung 0,347) — die GPU-Kosten der Krone ohne Bild. Gezählt in DENSELBEN 24
+// (4) DIE LAGEN — wie viele Karten-Lagen ein Kronen-Pixel trägt (jede Lage wird alpha-getestet und schattiert: die
+//     GPU-Kosten der Krone ohne Bild, die die sättigende BINÄRE Deckung nicht sieht). Gezählt in DENSELBEN 24
 //     Ansichten wie die Bild-Deckung, je Pixel-Mitte jede Karte, die sie überdeckt (Quad-Lage), und jede, deren Atlas-
 //     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
 //       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }
@@ -128,7 +122,7 @@ function bildDeckung(meshes, atlas, px) {
     }
     return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
 }
-// Das Bild JE BLICK-HEBUNG (Gegenprüfung S3 R1, 09.10.): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
+// Das Bild JE BLICK-HEBUNG (Gegenprüfung S3 R1): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
 // unten) — das Mittel über alle 24 Ansichten wog die Seitenansicht mit einem Drittel: die flachen Wedel der Koniferen
 // deckten von unten 12–35 % mehr, als die Seitenansicht verlor (Tanne-L1 0° 0,70 des Bilds von V18.536, Mittel 0,93).
 function jeHebung(je) {
@@ -323,7 +317,7 @@ function rindeAus(meshes) {
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
     dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-// Nächster Punkt eines Dreiecks (Ericson, Real-Time Collision Detection 5.1.5).
+// Nächster Punkt eines Dreiecks (Ericson).
 function naechster(p, a, b, c) {
     const ab = sub(b, a),
         ac = sub(c, a),
@@ -415,7 +409,7 @@ function schwebe(meshes) {
     const fest = karten.map((k) => {
         if (abstand(k.m, k.h * 0.5) <= k.h * 0.5) return true;
         const tol = Math.max(k.h * 0.15, H * 0.003);
-        // die Kante berührt die Rinde: ihre Mitte — und (S3, 09.10.) acht weitere Proben je Kante: der Wedel tritt aus dem
+        // die Kante berührt die Rinde: ihre Mitte — und (S3) acht weitere Proben je Kante: der Wedel tritt aus dem
         // offenen Ende seiner Röhre, seine Ansatz-Kante kreuzt die Röhren-Wand, ihre Mitte liegt auf der Achse (r entfernt)
         for (let e = 0; e < 4; e++) {
             const A = k.c[e],
@@ -445,7 +439,7 @@ function schwebe(meshes) {
                 for (let z = c[2] - 1; z <= c[2] + 1; z++)
                     for (const i of G2.get(x + "," + y + "," + z) || []) {
                         if (fest[i]) continue;
-                        // S3 (09.10.): eine Kanten-Mitte der Karte liegt IN der hängenden Karte (die Glieder einer Strähne
+                        // S3: eine Kanten-Mitte der Karte liegt IN der hängenden Karte (die Glieder einer Strähne
                         // überlappen je ein Zehntel — der Wedel teilt seine Bahn in Stücke von Nadel-Maß, schmaler als die
                         // Mitten-Regel reicht)
                         const ki = karten[i];

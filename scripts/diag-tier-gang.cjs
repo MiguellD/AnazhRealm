@@ -207,11 +207,7 @@ const LEIB = (k) => {
             ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2)
             : 0;
     const lokalB = lokal.map((v) => v.clone().add(new T.Vector3(0, 0, ballenL)));
-    const beinM =
-        typeof r._gaitBeinMass === "function"
-            ? r._gaitBeinMass(rig).L
-            : (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) *
-              (rig.legL.hip.getWorldScale(new T.Vector3()).y || 1);
+    const beinM = massB.L;
     // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
     // trägt es ihn danach nicht mehr, hat die Fuß-IK den stehenden Fuß gelöst
     const zaehl = { stand: 0, loeser: 0, wo: [], takt: 0 };
@@ -273,7 +269,7 @@ const LEIB = (k) => {
         const toene = (s._schrittKlang ? s._schrittKlang.schritte : 0) - ton0;
         const kadenz = (p.walkPhase - ph0) / Math.PI / sek;
         // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt (vor K07: 2 × _gaitSchrittLen)
-        const lam = typeof r._gaitGesetz === "function" ? r._gaitGesetz(rig, v).schritt : 2 * r._gaitSchrittLen(rig);
+        const lam = r._gaitGesetz(rig, v).schritt;
         const soll = (2 * v * sek) / lam;
         const sl = window.__schlupf(spur, leib, 30, beinM);
         zeilen.push({
@@ -302,8 +298,7 @@ const LEIB = (k) => {
     s._kapselStruktur = gespeichert.st;
     mesh.position.copy(pos0);
     mesh.rotation.y = rot0;
-    const taeter =
-        typeof r._gaitGesetz === "function" ? "_gaitGesetz (fx.bewegung.gang)" : "_gaitSchrittLen (schritt.kalib)";
+    const taeter = "_gaitGesetz (fx.bewegung.gang)";
     // der flache Fuß (K07): ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
     // Becken im Doppel-Stand so tief, wie ein flacher Fuß hinten und vorn die Kette verlangt — das Knie knickt ein
     const gangZ = r._gangZeile ? r._gangZeile(true) : null;

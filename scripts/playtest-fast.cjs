@@ -304,10 +304,8 @@ function check(name, ok) {
             // STATS: der Spieler hat sinnvolle Werte (hp in state.player.hp, speed in state.speed)
             out.playerStats = safe(() => {
                 let hpMax = null;
-                if (typeof r.computePlayerStats === "function") {
-                    const cs = r.computePlayerStats();
-                    hpMax = cs && cs.stats ? cs.stats.hpMax : null;
-                }
+                const cs = r.computePlayerStats();
+                hpMax = cs && cs.stats ? cs.stats.hpMax : null;
                 return {
                     hp: st.player ? st.player.hp : null,
                     hpMax,

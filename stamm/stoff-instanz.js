@@ -3212,11 +3212,13 @@ class AnazhRealm_stoff_instanz {
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {
         AnazhRealm._instanzZahl(m, n);
-        if (n > 0) {
-            m.instanceMatrix.needsUpdate = true;
-            m.geometry.attributes.aGang.needsUpdate = true;
-            m.boundingSphere = null;
-        }
+        if (n > 0) AnazhRealm._gangSatzNeu(m);
+    }
+    // WAS SICH IN EINER SENKE DES SATZES SCHRIEB, LÄDT NEU: Matrizen und Gang, die Kugel misst neu
+    static _gangSatzNeu(m) {
+        m.instanceMatrix.needsUpdate = true;
+        m.geometry.attributes.aGang.needsUpdate = true;
+        m.boundingSphere = null;
     }
     // DER ABSCHIED EINES SATZES: jede Senke über `_instanzAbschied`, ihre Geometrien, die geklonten Stoffe, der Gang-Puffer
     _gangSatzAbschied(satz) {

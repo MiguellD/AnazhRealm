@@ -68,8 +68,7 @@ function schaleVon() {
 // Solitär behält ihren Samen.
 // K42 — DIE STEMPEL-PROBE: der Platten-Stempel (die Formel der Schale, in Node nachgerechnet: pack-kanon computeStamp)
 // bleibt bei einem UI-Edit am Pflanzen-Labor gleich und springt bei einem Edit an der Brücke. `lies` (DARF) färbt eine
-// Quelle für den Selbsttest. Vorher hashte der Stempel die ganze Labor-Shell: jeder Regler-Edit im Labor leerte den
-// Asset-Cache aller Spieler.
+// Quelle für den Selbsttest.
 const LABOR_SHELL = "worlds/terrain/phytogenesis.js";
 function stempelProbe(lies) {
     const PK = require("./lib/pack-kanon.cjs");

@@ -55,7 +55,7 @@ const FROZEN = {
     swirlK: 0.5,
     openK: [0.4, 0.6],
     centerK: 0.55,
-    // D8 (15.10., ein erklärter Vertrags-Akt): der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block fallen —
+    // D8 (ein erklärter Vertrags-Akt): der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block fallen —
     // die Öffnung zeigt das Ziel-Panorama über die Stellvertreter-Kugel, darüber der Seifenfilm (Rand gezähmt)
     film: {
         kugel: 4.0,

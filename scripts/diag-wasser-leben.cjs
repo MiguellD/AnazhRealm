@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7; Befund 06.10., Gegenprüfung 07.10.,
-// Schau-2, K16, K40, F3 — jede Zahl zuerst ROT am Vorher, die Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
+// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7 — jede Zahl zuerst ROT am Vorher, die
+// Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
 //                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel (K5); ein Tier liegt an seiner
@@ -14,11 +14,12 @@
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
 //   F5 · F8 · F10   jede Quelle ein Rinnsal aus der Hülle des Gesetzes; Körper und Bild je Punkt gleich nass (Quelle, Bach,
 //                   See-Fenster) — Breite gegen Breite, nie je Querschnitt. F9: keine Pflanze im gezeichneten Wasser.
-//   F7 · FP · K12   die Bank nie steiler als der Fels; der Kanal Main = Worker (NaN = Probe kaputt); Klang, Tier-Scheu,
-//                   Küsten-Sheet und Trink-Ziel lesen die EINE Wahrheit. K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   F7 · FP · K12   die Bank nie steiler als der Fels; der Kanal Main = Worker (NaN = Probe kaputt); Klang und Küsten-Sheet
+//                   lesen die EINE Wahrheit, und an 50 Zufalls-Punkten folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier,
+//                   Wagen, Scheu, Trink-Ziel, Klang, Natur). K8: keine Ufer-Flut nach dem Wecken des Automaten.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
-// Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
+// Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
 //   node scripts/diag-wasser-leben.cjs              F + K (Null-Renderer, Mess-Wiese)      npm run gate:wasser-leben
@@ -49,8 +50,7 @@ const SCHWELLE = {
 };
 
 // B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
-// ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
-// (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Absenz über den EINEN Helfer (stammLib.fehlt: das Glied
+// ±π beliebig ungenau (swiftshader rechnet sin genau und sieht nichts). Die Absenz über den EINEN Helfer (stammLib.fehlt: das Glied
 // am Namen, Kommentare fallen, ein fehlender Stoff wirft) nennt die Zeile; `quelle` ein Text statt des Stamms (Selbsttest).
 const hashSin = (quelle) => (stammLib.fehlt("_ensureHydroSurfaceMaterial", /\bsin\s*\(/, quelle) ? null : stammLib.fehlt.wo);
 
@@ -105,7 +105,7 @@ function urteil(b) {
         }
     }
     // FP = die Kanal-PARITÄT (Main ↔ Worker, Lehre 7) — nie „F5": F5 ist die Quelle (W-F5). Eine NaN-Zelle ist eine kaputte
-    // Probe, nie ein Befund (an der Basis zählte NaN !== NaN 19074 von 19074 Zellen „abweichend" bei maxDelta null).
+    // Probe, nie ein Befund.
     if (b.kanal) {
         const k = b.kanal;
         if (k.fehler) v.push(`FP SPIEGEL: ${k.fehler}`);
@@ -159,7 +159,7 @@ function urteil(b) {
                 );
         }
     }
-    // F8 = der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3): das gezeichnete Wasser gegen den Körper
+    // F8 = der Bach der Mess-Wiese: das gezeichnete Wasser gegen den Körper
     if (b.bach) {
         const k = b.bach;
         if (k.fehler) v.push(`F8: ${k.fehler}`);
@@ -325,18 +325,6 @@ function urteil(b) {
                     `K12 KLANG: in ${l.klang} von ${l.spalten} Spalten hört der Klang (_nassAt) Wasser anders, als der Körper ` +
                         `es trägt (z. B. ${JSON.stringify((bs.klang || [])[0] || null)})`
                 );
-            if (l.scheu > 0)
-                v.push(
-                    `K12 TIER-SCHEU: in ${l.scheu} von ${l.spalten} Spalten sieht die Ufer-Scheu der Tiere Wasser anders, als ` +
-                        `der Körper es trägt (z. B. ${JSON.stringify((bs.scheu || [])[0] || null)})`
-                );
-            const t = l.trinken || {};
-            if (!(t.gefunden >= 50)) v.push(`K12 LEER: nur ${t.gefunden || 0} Trink-Ziele gefunden`);
-            else if (t.trocken > 0)
-                v.push(
-                    `K12 TRINKEN: ${t.trocken} von ${t.gefunden} Trink-Zielen der Tiere liegen trocken (der Körper trägt dort ` +
-                        `kein Wasser; z. B. ${JSON.stringify((bs.trinken || [])[0] || null)})`
-                );
             const k = l.kueste || {};
             if (!(k.sichtbar >= 20))
                 v.push(`K12 LEER: nur ${k.sichtbar || 0} Küsten-Spalten mit Sheet-Wasser über Atlas-Land`);
@@ -345,6 +333,32 @@ function urteil(b) {
                     `K12 KÜSTE: in ${k.trocken} von ${k.sichtbar} Spalten zeichnet das Sheet den Küsten-Aquifer über dem Boden, ` +
                         `der Körper steht dort trocken`
                 );
+        }
+    }
+    // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach
+    if (b.mutation) {
+        const m = b.mutation;
+        if (m.fehler) v.push(`K12 M: ${m.fehler}`);
+        else {
+            if (!(m.punkte >= 50)) v.push(`K12 M LEER: nur ${m.punkte} Punkte trockenen Lands (${m.versuche} Versuche)`);
+            for (const [k, l] of Object.entries(m.leser)) {
+                const was = `${k.toUpperCase()}: ${l.wer}`;
+                if (!(l.n >= m.punkte)) v.push(`K12 M LEER: ${was} urteilte nur an ${l.n} von ${m.punkte} Punkten`);
+                else if (k === "kontrolle") {
+                    if (l.nach > 0) v.push(`K12 M BLIND: ${was} folgt an ${l.nach} Punkten — die Mutation trifft nicht den Kern`);
+                } else if (l.vor > 0 || l.nach < l.n)
+                    v.push(
+                        `K12 M ${was} liest eine eigene Fläche: vorher nass an ${l.vor}, nach der Mutation trocken an ` +
+                            `${l.n - l.nach} von ${l.n} Punkten (z. B. ${JSON.stringify(l.bsp)})`
+                    );
+            }
+            const fv = m.flora.vor || {},
+                fn = m.flora.nach || {};
+            if (!(fv.wiese >= 20 && fv.streu >= 10))
+                v.push(`K12 M LEER: in den Scheiben vorher nur ${fv.wiese} Büschel der Nah-Wiese und ${fv.streu} Pflanzen der Nah-Streu`);
+            for (const art of ["wiese", "streu"])
+                if (fn[art] > 0)
+                    v.push(`K12 M ${art.toUpperCase()}: nach der Mutation stehen ${fn[art]} von ${fv[art]} Pflanzen im Wasser der Scheiben`);
         }
     }
     if (b.ufer) {
@@ -593,10 +607,18 @@ function selbsttest() {
             spalten: 26000,
             nass: 6000,
             klang: 0,
-            scheu: 0,
             kueste: { sichtbar: 110, trocken: 0 },
-            trinken: { proben: 480, gefunden: 450, trocken: 0 },
-            beispiele: { klang: [], scheu: [], kueste: [], trinken: [] },
+            beispiele: { klang: [], kueste: [] },
+        },
+        mutation: {
+            punkte: 50,
+            versuche: 546,
+            leser: Object.fromEntries(
+                ["leib", "kamera", "tier", "wagen", "scheu", "trinken", "klang", "schritt", "wand", "land", "kontrolle"].map(
+                    (k) => [k, { wer: k, n: 50, vor: 0, nach: k === "kontrolle" ? 0 : 50, bsp: null }]
+                )
+            ),
+            flora: { vor: { wiese: 603, streu: 137 }, nach: { wiese: 0, streu: 0 } },
         },
         uferFarbe: {
             proben: 24,
@@ -715,11 +737,18 @@ function selbsttest() {
         ["K9 LEER", (b) => delete b.licht],
         ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
         ["K12 KLANG", (b) => (b.leser.klang = 163)],
-        ["K12 TIER-SCHEU", (b) => (b.leser.scheu = 173)],
         ["K12 KÜSTE", (b) => (b.leser.kueste.trocken = 110)],
         ["K12 LEER", (b) => (b.leser.kueste.sichtbar = 0)],
-        ["K12 TRINKEN", (b) => (b.leser.trinken.trocken = 34)],
         ["K6 BAUMLOS", (b) => (b.koerper.baumlos.sohleUnterSpiegel = 0)],
+        // K12 M an der Basis e3dd2b67: die Spalten-Probe las ihre Obergrenze selbst — Klang, Trink-Ziel, Natur-Wand und Land
+        // blieben im See der Wahrheit an 50 von 50 Punkten trocken
+        ["K12 M KLANG", (b) => (b.mutation.leser.klang.nach = 0)],
+        ["K12 M TRINKEN", (b) => (b.mutation.leser.trinken.nach = 0)],
+        ["K12 M WAND", (b) => Object.assign(b.mutation.leser.wand, { vor: 3 })],
+        ["K12 M BLIND", (b) => (b.mutation.leser.kontrolle.nach = 50)],
+        ["K12 M WIESE", (b) => (b.mutation.flora.nach.wiese = 12)],
+        ["K12 M LEER", (b) => (b.mutation.punkte = 31)],
+        ["K12 M LEER: TIER", (b) => (b.mutation.leser.tier.n = 0)],
         ["U3 SCHILF-SPRUNG", (b) => Object.assign(b.uferFarbe.schilf, { spruenge: 12, maxSprung: 0.61 })],
         ["U3 LEER", (b) => (b.uferFarbe.schilf.schritte = 0)],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
@@ -990,6 +1019,8 @@ async function lauf() {
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
             if (soll("leser"))
                 befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
+            if (soll("mutation"))
+                befund.mutation = await page.evaluate((o) => window.__wasserMutation({ ort: o.see.ufer }), ORTE);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) {
                 const teil0 = await page.evaluate(

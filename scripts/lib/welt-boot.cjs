@@ -54,19 +54,23 @@ async function weltStehtNach(takt, max) {
     st.perfRegulator = false;
     let n = 0;
     try {
-        for (let k = 0; !(n && steht()) && k < (max || 1800); n++) {
+        for (
+            const weiter = window.__deckel("die Welt", max || 1800, () => r._bepflanzungWartet());
+            !(n && steht()) && weiter();
+            n++
+        ) {
             await (takt || window.__seitenTakt)(n);
-            if (!Object.values(r._weltOffen()).some(Boolean) && !r._bepflanzungWartet()) k++;
             if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
         }
+    } catch (f) {
+        throw new Error(
+            `DIE WELT STEHT NICHT nach ${n} Takten: ` +
+                (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`) +
+                ` (${f.message})`
+        );
     } finally {
         st.perfRegulator = regler;
     }
-    if (!steht())
-        throw new Error(
-            `DIE WELT STEHT NICHT nach ${n} Takten: ` +
-                (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`)
-        );
     return n;
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis der Bau steht
@@ -104,13 +108,22 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
 // zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
 // Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
 // Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht).
+// Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen (CI 39780312347: Dorf offen 18, 79 min).
 function deckel(name, max, offen) {
     let n = 0,
-        k = 0;
+        k = 0,
+        still = 0,
+        vor = "";
     return () => {
         const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
-        if ((offen === false || (!Object.values(o).some(Boolean) && !(offen && offen()))) && ++k > (max || 120))
+        const auf = Object.values(o).some(Boolean);
+        const jetzt = JSON.stringify(o);
+        still = auf && jetzt === vor ? still + 1 : 0;
+        vor = jetzt;
+        if (still > 3600)
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis`);
+        if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
             );
@@ -1084,6 +1097,14 @@ async function selbsttest() {
             (n) => `steht nach ${n} Takten`,
             (x) => x.message
         );
+        // HÄNGT: eine Karte bleibt offen und rührt sich nie
+        r.offen = 1;
+        try {
+            for (const weiter = window.__deckel("haenger", 5); weiter(););
+        } catch (x) {
+            aus.haengt = x.message;
+        }
+        r.offen = 0;
         let still = 0;
         r.state = { renderer: {}, perfRegulator: true };
         r._weltSteht = () => still >= 30;
@@ -1138,6 +1159,10 @@ async function selbsttest() {
         [
             !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
+        ],
+        [
+            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — offen .*"karten":1/.test(bau.haengt),
+            `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,

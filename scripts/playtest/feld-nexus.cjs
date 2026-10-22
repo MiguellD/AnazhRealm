@@ -971,7 +971,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
         out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
         // 2. Validator: erlaubtes Programm
@@ -1102,10 +1101,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
+            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
                 wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.hasRareEventTrigger &&
                 wave6hP2eV3Results.rareEventGap
         );
         check(

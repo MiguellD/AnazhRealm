@@ -210,7 +210,7 @@ function albedoSicht(opts) {
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
                 else if (ex.typ === "boden" && ex.wald) {
-                    // DER WALD-BODEN AN SEINER STELLE (A5; gemessen 16.10., Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
+                    // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
                     // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
                     // Kronen-Tafel (T2 f6fa9f63) von −48/−19 nach 0/36 (Welt-Y 0,0837 → 0,0739, der Stoff an der alten Stelle 0,0833 →
                     // 0,0837; die ersten acht Wald-Stellen 0,071–0,110). Dort steht das Wald-Gesetz (`_forestCellDarts` →
@@ -351,7 +351,7 @@ function albedoSicht(opts) {
         };
         // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
         // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
-        // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236 (gemessen 07.10.).
+        // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
         // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
         const lu = st.lodUniforms;
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
@@ -497,7 +497,7 @@ function albedoSicht(opts) {
                     const passt = (m) =>
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
-                    // DIE POSE DES LABORS (Karte WL; gemessen 16.10., Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
+                    // DIE POSE DES LABORS (Karte WL, Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
                     // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0) — mitten im Schritt eingefroren las das
                     // Fell je Phase 0,1746 bis 0,1862, im Stand 0,1849 bis 0,1853
                     if (ex.kreatur) {
@@ -548,7 +548,7 @@ function albedoSicht(opts) {
                     cam.updateProjectionMatrix();
                     // DIE TAFEL-BLICKE (`TAFEL_BLICKE`, dieselben im Labor): vier Dreiviertel-Seiten und oben, die übrige Welt aus;
                     // die Albedo ist das Mittel über alle Blicke — ein einziger Blick las den Wolf je nach seiner Wendung 0,17
-                    // oder 0,24 (Rücken gegen Bauch, gemessen 07.10. in zwei Welten).
+                    // oder 0,24 (Rücken gegen Bauch).
                     const stellungen = [];
                     if (w.blick === "oben") {
                         const y = r._voxelSurfaceY(um.x, um.z);
@@ -578,7 +578,7 @@ function albedoSicht(opts) {
                             }
                         }
                     // Die Ahnen der gewählten Züge stehen für den Schuss sichtbar: die Ich-Sicht verbirgt den eigenen Leib
-                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar — 0 Pixel, gemessen 07.10.).
+                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar — 0 Pixel).
                     for (const m of sel)
                         for (let a = m.parent; a && a !== sc; a = a.parent)
                             if (!ahnenAlt.has(a)) {
@@ -730,12 +730,10 @@ function lichtBilanz() {
         // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
         // Boden; der Hillaire-Richter des D3-Spikes rechnete dieselbe Höhe, git 637de30b), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
         const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
-        if (typeof r._atmoTakt === "function") {
-            st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
-            st.camera.updateMatrixWorld(true);
-            r._applyDayNightToScene();
-            r._ensureSkyEnvironment(true);
-        }
+        st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
+        st.camera.updateMatrixWorld(true);
+        r._applyDayNightToScene();
+        r._ensureSkyEnvironment(true);
         const meshes = [];
         sc.traverse((o) => {
             if ((o.isMesh || o.isSprite || o.isPoints) && o !== karte) meshes.push(o);

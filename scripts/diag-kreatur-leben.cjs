@@ -2,7 +2,7 @@
 // gate:kreatur-leben — DIE LEBENS-LINSE (Klasse: „tote reisende Daten").
 //
 // V18.476 reiste das tetrapoda-hunt-Preset ins Buch — und KEIN Pfad wählte es
-// je (gemessen 16.07.: _motionProfileName kannte nur Emotions-Achsen). Diese
+// je. Diese
 // Linse hält die Klasse tot:
 //   A) DECKUNG — jede Verhaltens-Aktion/Stimmung des Kerns zeigt auf EXISTIERENDE
 //      Aktionen, die Seelen-Blöcke reisen im Buch (kein toter Verweis).

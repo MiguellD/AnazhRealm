@@ -1194,7 +1194,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
+// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1405,7 +1405,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
-    // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+    // ### Welle 6.X.3 — Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
@@ -1569,7 +1569,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 — Identity (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 — Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1962,7 +1962,6 @@ async function checkBandWGGelenke(ctx) {
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
-        out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
         return out;
     });
@@ -1979,8 +1978,8 @@ async function checkBandWGGelenke(ctx) {
         res.axisGhosts && res.axisTeachAttached && res.axisNoError
     );
     check(
-        "W-G(c) Gelenk-Probe: Methode + Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
-        res.probeMethod && res.probeBtn && res.probeInRAF
+        "W-G(c) Gelenk-Probe: Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
+        res.probeBtn && res.probeInRAF
     );
 }
 

@@ -12,7 +12,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     void errors;
     void finalState;
     // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
-    // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2, 16.10.: der letzte Name fiel aus einer DSL-Liste);
+    // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
@@ -229,7 +229,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
 
         // UI-Elemente vorhanden
-        out.uiToggleExists = !!document.getElementById("p2p-toggle");
         out.uiUrlInputExists = !!document.getElementById("p2p-url");
         out.uiStatusExists = !!document.getElementById("p2p-status");
 
@@ -282,7 +281,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
         check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
         check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
-        check("Ring 11 V1: UI-Toggle-Element im DOM", ring11Results.uiToggleExists);
         check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
         check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
         check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
@@ -481,7 +479,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
         out.w7p2MethodsPresent =
-            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
+            typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();

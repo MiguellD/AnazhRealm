@@ -34,7 +34,7 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const server = statikServer();
 
-// ── H-F (W5 Gegenstände, 05.10.) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
+// ── H-F (W5 Gegenstände) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
 // Studio-Klinge in der Hand des Studio-Menschen, gemessen in WELT-Metern:
 //   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (vorher 0,14: das Langschwert 1,228 m maß 0,17 m — die Hand
 //                       skalierte im Anker-Raum, das Handgelenk misst 0,27 Welt je Studio-Einheit)
@@ -113,7 +113,7 @@ function staticLaws(q) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, d: {}, p: {}, e: {}, f: {}, h: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
