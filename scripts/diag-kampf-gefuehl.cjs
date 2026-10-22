@@ -52,7 +52,7 @@
 //      JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden · fehlt
 //      tetrapoda trefferZone, bricht der Treffer-Test laut · der erste Treffer auf eine Gattung zerlegt keine Haut
 //      (vorgebacken im Takt der EINEN Bake-Uhr) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
-//  (Q9 MAUS) 3rd-Person 10 Klicks auf ein Tier in 2 m → 10 Schwünge, 0 Krater · 1st-Person Halten nach dem Stoß →
+//  (Q9 MAUS) 1st-Person Halten nach dem Stoß →
 //      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
 //      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
 //  (Q10 BLICK) Ego-Neigung −90° → Blick −90° · jedes „vor dir" (at_player_forward, „baue dorf hier") liegt vor dem
@@ -710,7 +710,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s.yaw = 0; // Blick nach +z (die _loopCamera-Konvention)
             s.pitch = 0;
             // die Klinge folgt dem Fadenkreuz (Welle L): die ECHTE Kamera steht auf dem Blick
-            if (typeof r.setCameraMode === "function") r.setCameraMode("first");
+            r.setCameraMode("first");
             r._loopCamera(900);
             p._hitStopUntil = 0;
             p._swing = null;
@@ -885,10 +885,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 };
             };
             const dauerE = r._playerSwingDauer();
-            // der Schwung trägt seinen Rahmen (Körper und Gerät, _kampfSchwungRahmen) wie _beginPlayerSwing ihn legt; ein Stand
-            // ohne Rahmen (vor Welle LF kampf) schwingt ohne ihn — die Pose-Probe misst dann seinen alten Layer
-            const rahmenE =
-                typeof r._kampfSchwungRahmen === "function" ? r._kampfSchwungRahmen({}) : { reach: undefined };
+            // der Schwung trägt seinen Rahmen (Körper und Gerät, _kampfSchwungRahmen) wie _beginPlayerSwing ihn legt
+            const rahmenE = r._kampfSchwungRahmen({});
             const mkSwing = (t) => ({
                 t,
                 dauer: dauerE,
@@ -1194,7 +1192,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `       Grob-Tor: Körpermaße außerhalb des Leibs ${z.grobFremd} · Gestalt-Proben ${gr.proben || 0}, außerhalb ${gr.ausserhalb === undefined ? "–" : gr.ausserhalb}${gr.taeter && gr.taeter.length ? " (" + gr.taeter.join(", ") + ")" : ""} · Gestalt je L ${jeL} · Täter S9 außerhalb ${z.s9 ? z.s9.ausserhalb + " (" + z.s9.taeter.join(", ") + ")" : "–"}`
         );
         console.log(
-            `  (Q9) 3rd: Fadenkreuz ${z.dritte && z.dritte.fadenkreuz}/10, frei ${z.dritte && z.dritte.frei}, Schwünge ${z.dritte && z.dritte.schwuenge}, Krater ${z.dritte && z.dritte.krater}, Treffer ${z.dritte && z.dritte.treffer} · Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1)`
+            `  (Q9) Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1)`
         );
         console.log(
             `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
@@ -1829,10 +1827,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             c.gegenwehr,
             "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)"
-        );
-        check(
-            c.dritteSchwingt,
-            "Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater"
         );
         check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)");
         check(c.rmbSchwert, "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)");

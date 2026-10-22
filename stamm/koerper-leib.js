@@ -1687,6 +1687,38 @@ class AnazhRealm_koerper_leib {
         t0._beinMass = mass;
         return mass;
     }
+    // DIE KÖRPER-KUGEL TRÄGT DIE BEINE (K3): die Kugel der Hüllen (`_ofenAssembleAsset`, Bind-Hülle × 1,25) reichte nicht
+    // an das gestreckte Bein — am Hirsch lag die hintere Pfote im vorwärts gehenden Schritt bis 0,18 m außerhalb (die Probe
+    // gate:kreatur-kosten (R)). Je Bein das Hüft-Gelenk und die gestreckte Kette (Glieder und Sohle, die Länge, über die
+    // die IK nie streckt): die Kugel wächst, bis sie jede umschließt (die Senke zieht die Hüfte zur Mitte, nie fort).
+    // Einmal je Vorlage, vor dem ersten Klon (Klone und die Grobstufe erben die Kugel).
+    static _tierReichKugel(t0) {
+        if (t0._reichKugel) return;
+        t0._reichKugel = true;
+        const T = t0.teile;
+        t0.root.updateMatrixWorld(true);
+        const meshes = [];
+        t0.root.traverse((n) => {
+            if (n.isSkinnedMesh && n.boundingSphere) meshes.push(n);
+        });
+        if (!meshes.length) return;
+        const kugel = meshes[0].boundingSphere.clone().applyMatrix4(meshes[0].matrixWorld);
+        const lage = (o) => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
+        for (const K of [
+            [T.legFL, T.flL, T.flP],
+            [T.legFR, T.frL, T.frP],
+            [T.legHL, T.hlC, T.hlP],
+            [T.legHR, T.hrC, T.hrP],
+        ]) {
+            const p0 = lage(K[0]),
+                p1 = lage(K[1]),
+                p2 = lage(K[2]);
+            const kette = p0.distanceTo(p1) + p1.distanceTo(p2) + (p2.y - t0.minY);
+            kugel.radius = Math.max(kugel.radius, kugel.center.distanceTo(p0) + kette);
+        }
+        const inv = new THREE.Matrix4();
+        for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
+    }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
     // nicht PD-geglättet). Deterministisch (Stand-Unruhe aus t-Sinus); der CPG-Zustand wohnt an
@@ -2284,6 +2316,7 @@ class AnazhRealm_koerper_leib {
             // der Wolf steht mit 0,8 m am Widerrist. Vorher maß die Gestalt sich an der Scheitel-Höhe der Seelen-Teile,
             // und die Allometrie-Schleife überschrieb diese Skala mit 1: die Welt zeigte Lab-Einheiten als Meter.
             const f2 = window.__tetrapodaCore.MASSSTAB.meterJeEinheit;
+            AnazhRealm._tierReichKugel(t0);
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {

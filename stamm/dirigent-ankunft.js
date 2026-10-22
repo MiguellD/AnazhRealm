@@ -94,7 +94,7 @@ class AnazhRealm_dirigent_ankunft {
         // Aktive Welt-Identität VOR ensureWorldMeta laden, sonst triggert fresh=true (neue UUID + Genesis)
         // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save. DIE RETTUNGS-KETTE DES BOOTS
         // (Gegenprüfung Runde 4): erst der IndexedDB-Stand der aktiven Welt (V18.151, Faden #6), dann fragt die Vorlade die
-        // EINE Kette (Platz → .bak → IndexedDB), BEVOR ensureWorldMeta eine neue Id vergibt.
+        // EINE Kette (IndexedDB ⇄ Abbild am Stempel → .bak), BEVOR ensureWorldMeta eine neue Id vergibt.
         await this._idbPreload();
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
@@ -546,7 +546,7 @@ class AnazhRealm_dirigent_ankunft {
         this.state._fieldVy = 0;
         this.state.selfAwareness.components.push("fieldController");
 
-        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (Platz → .bak → IndexedDB; der IDB-Stand
+        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (IndexedDB ⇄ Abbild → .bak; der IDB-Stand
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
