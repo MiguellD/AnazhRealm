@@ -2696,6 +2696,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 420; k++) {
             pm.copy(P0);
             takt(dt);
+            r._ruheImBild(); // der Blick des Bilds schreibt den Satz (`_tierSatzImBild`)
             for (const t of tiere) {
                 const c = t.c;
                 const p = { x: c.position.x, z: c.position.z };
@@ -3329,7 +3330,8 @@ async function kreaturProben(r, T, opts) {
             let haupt = 0,
                 wurf = 0,
                 leiber = 0,
-                satz = 0;
+                satz = 0,
+                satzW = 0;
             for (const c of s.creatures) {
                 let n = 0;
                 c.traverse((o) => {
@@ -3342,9 +3344,9 @@ async function kreaturProben(r, T, opts) {
             for (const o of saetze())
                 if (o.count > 0 && o.visible) {
                     if (o.layers.mask & 1) (haupt++, satz++);
-                    if (o.castShadow) wurf++;
+                    if (o.castShadow) (wurf++, satzW++);
                 }
-            return { haupt, wurf, leiber, satz };
+            return { haupt, wurf, leiber, satz, satzW };
         };
         // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl) · der Satz geht schneller, als der Leib läuft
         if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
@@ -3403,7 +3405,8 @@ async function kreaturProben(r, T, opts) {
         const B50 = befehle();
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit rückt keinen Gang — er schreibt nur die Plätze der
         // Satz-Tiere, deren Lage oder Drehung sich rührte (je Tier höchstens eine Instanz je Senke); der Blick nach +x: das Auge trägt jedes Satz-Tier, dessen Lage
-        // der Frustum enthält (keines fehlt), und nicht alle; der Wurf jedes Satz-Tier
+        // der Frustum enthält (keines fehlt), und nicht alle; der Wurf jedes, das das Auge trägt, und nicht alle (sein Schatten
+        // fällt nicht ins Bild)
         const schreibe = A._gangSatzInstanz;
         let schriebe = 0;
         A._gangSatzInstanz = function (...a) {
@@ -3570,8 +3573,10 @@ function urteil(name, z) {
     };
     if (name === "tiersatz") {
         soll(
-            z.b50.haupt - z.b50.satz === z.b10.haupt - z.b10.satz && z.b50.satz <= z.senken && z.b50.wurf === z.b10.wurf,
-            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild (${z.b10.satz} Satz) + ${z.b10.wurf} Wurf, 50 Tiere ${z.b50.haupt} (${z.b50.satz}) + ${z.b50.wurf} (Soll: die Leiber gleich, je Senke höchstens ein Befehl — ${z.senken} Senken, Wurf gleich)`
+            z.b50.haupt - z.b50.satz === z.b10.haupt - z.b10.satz &&
+                z.b50.wurf - z.b50.satzW === z.b10.wurf - z.b10.satzW &&
+                z.b50.satz + z.b50.satzW <= z.senken,
+            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild + ${z.b10.wurf} Wurf (Satz ${z.b10.satz} + ${z.b10.satzW}), 50 Tiere ${z.b50.haupt} + ${z.b50.wurf} (${z.b50.satz} + ${z.b50.satzW}) (Soll: die Leiber gleich, je Senke höchstens ein Befehl — ${z.senken} Senken)`
         );
         soll(
             z.nahLeiber != null && z.b50.leiber <= z.nahLeiber,
@@ -3588,8 +3593,8 @@ function urteil(name, z) {
         );
         const B = z.blick;
         soll(
-            B.satz >= 10 && B.fell < B.satz && B.wurf === B.satz,
-            `das Auge zeichnet den Satz außer Blick: ${B.fell} Fell-Instanzen bei ${B.imBlick} von ${B.satz} Satz-Tieren im Blick, Wurf ${B.wurf} (Soll Auge < alle, Wurf = alle)`
+            B.satz >= 10 && B.fell < B.satz && B.fell <= B.wurf && B.wurf < B.satz,
+            `das Auge zeichnet den Satz außer Blick: ${B.fell} Fell-Instanzen bei ${B.imBlick} von ${B.satz} Satz-Tieren im Blick, Wurf ${B.wurf} (Soll Auge ≤ Wurf < alle)`
         );
         soll(B.fehlt === 0, `dem Auge fehlen ${B.fehlt} von ${B.imBlick} Satz-Tieren im Blick (Soll 0)`);
         const Kp = z.kopie;

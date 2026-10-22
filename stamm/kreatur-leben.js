@@ -1856,15 +1856,13 @@ class AnazhRealm_kreatur_leben {
             if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
             if (Z.satz.senken[0].parent !== st.scene) for (const m of Z.satz.senken) st.scene.add(m);
             // die Reihe hält (wer bleibt, behält seinen Platz; wer ging, fällt heraus); wer sich rührte, zählt seine Fassung
-            // hoch (`_tierSatzStempel`). Der Wurf trägt jedes Tier des Satzes (die Kaskade sieht weiter als das Auge), das
-            // Auge schreibt der Blick des Bilds (`_tierSatzImBild`).
+            // hoch (`_tierSatzStempel`). Auge und Wurf schreibt der Blick des Bilds (`_tierSatzImBild`).
             let w = 0;
             for (const cr of Z.glieder)
                 if (cr.userData._satz === Z && cr.userData._satzTakt === takt) Z.glieder[w++] = cr;
             Z.glieder.length = w;
             for (const cr of Z.glieder)
                 if (this._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
-            this._tierSatzPlaetze(Z.platzW, aus ? [] : Z.glieder);
             // ein Satz ohne Tier geht nach `leerTakte` Takten (seine Gestalt kommt wieder: er backt neu)
             Z.leer = w > 0 ? 0 : Z.leer + 1;
             if (Z.leer > K.leerTakte) {
@@ -1876,17 +1874,25 @@ class AnazhRealm_kreatur_leben {
 
     // DER BLICK DES BILDS AUF DEN SATZ (im Render-Pfad, `_ruheImBild`: der Frustum DIESES Bilds): das Auge zeichnet jedes
     // Satz-Tier, das nicht außer Blick ist (`_kreaturAusserBlick`, die Körper-Kugel samt Saum — dieselbe Frage wie die Ruhe),
-    // kein anderes (Gebot 7: die Kosten am Schirm)
+    // der Wurf jedes, dessen Schatten den Blick treffen kann (`_kreaturWurfAusserBlick`) — kein anderes: ein Instanz-Satz
+    // cullt nicht je Instanz, weder im Auge noch in den Kaskaden (Gebot 7: die Kosten am Schirm)
     _tierSatzImBild(fr) {
         const M = this._tierSaetze;
         if (!M) return;
         const aus = this.state.creaturesHidden === true;
+        const licht = this._kreaturLicht();
         const sicht = this._tierSatzSicht || (this._tierSatzSicht = []);
+        const wurf = this._tierSatzWurf || (this._tierSatzWurf = []);
         for (const Z of M.values()) {
             if (!Z) continue;
-            sicht.length = 0;
-            if (!aus) for (const cr of Z.glieder) if (!this._kreaturAusserBlick(cr, fr, 0)) sicht.push(cr);
+            sicht.length = wurf.length = 0;
+            for (const cr of aus ? [] : Z.glieder) {
+                if (!this._kreaturAusserBlick(cr, fr, 0)) sicht.push(cr);
+                else if (this._kreaturWurfAusserBlick(cr, fr, licht)) continue;
+                wurf.push(cr);
+            }
             this._tierSatzPlaetze(Z.platzB, sicht);
+            this._tierSatzPlaetze(Z.platzW, wurf);
         }
     }
     // DIE PLÄTZE EINER SENKEN-ART des Satzes (Auge oder Wurf: `platz.senken`): dicht je Tier der Liste; ein Platz schreibt

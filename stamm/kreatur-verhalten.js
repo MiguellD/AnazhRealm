@@ -2883,6 +2883,30 @@ class AnazhRealm_kreatur_verhalten {
         return !frustum.intersectsSphere(s);
     }
 
+    // DIE RICHTUNG DES SCHATTENS (die EINE Licht-Quelle der Kaskaden, `directionalLight`): waagrecht weg vom Licht (`x`, `z`)
+    // und die Länge je Meter Höhe des Werfers (`cot`, der Kotangens der Licht-Höhe); null ohne Licht
+    _kreaturLicht() {
+        const dl = this.state.directionalLight;
+        if (!dl) return null;
+        const v = (this._kreaturLichtV || (this._kreaturLichtV = new THREE.Vector3()))
+            .subVectors(dl.position, dl.target.position)
+            .normalize();
+        const h = Math.hypot(v.x, v.z) || 1;
+        return { x: -v.x / h, z: -v.z / h, cot: h / Math.max(v.y, 1e-3) };
+    }
+    // DER WURF AUSSER BLICK: der Leib ist außer Blick, und sein Schatten auch — die Körper-Kugel längs des Schattens (Länge
+    // Höhe × `licht.cot`, gekappt bei `KREATUR_RUHE.wurfM`), um die halbe Länge gewachsen, gegen den Frustum
+    _kreaturWurfAusserBlick(c, frustum, licht) {
+        if (!this._kreaturAusserBlick(c, frustum, 0)) return false;
+        if (!licht) return true;
+        const u = c.userData;
+        const L = Math.min(AnazhRealm.KREATUR_RUHE.wurfM, 2 * u._ruheKugelH * licht.cot);
+        const s = this._ruheKugel;
+        s.center.set(c.position.x + 0.5 * L * licht.x, c.position.y + u._ruheKugelH, c.position.z + 0.5 * L * licht.z);
+        s.radius = u._ruheKugelR + AnazhRealm.KREATUR_RUHE.saumM + 0.5 * L;
+        return !frustum.intersectsSphere(s);
+    }
+
     // DIE ZEIT DES SCHRITTS (der grobe Takt): ein ruhender Leib sammelt die Frame-Zeit und geht nur in seinem Fenster
     // (`slot` % takt === 0) mit allem Gesammelten — null = kein Schritt in diesem Frame; ein erwachter trägt den Rest in
     // seinen ersten Schritt. `_taktN` = die Frames, die dieser Schritt trägt (wach 1): die KI rechnet, wenn in ihre Spanne
@@ -3691,8 +3715,9 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
 // Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
 // des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
-// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
-AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens
+// `wurfM` m weit (`_kreaturWurfAusserBlick`).
+AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60, wurfM: 12 });
 // Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
 // `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.
