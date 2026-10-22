@@ -1377,11 +1377,11 @@ const FIXTURES = [
         // Der zweite Akt steht auf dem geräumten Ort: die Bau-Wand (_bauFrei) setzt kein Haus in ein Haus — neben dem ersten
         // Dorf entstünde am selben Anker keines (Integration Welle L, gate:haus-welt W7). Die folgenden Proben lesen die
         // lebenden Einträge des zweiten Akts.
-        // der Akt hebt über den Zug (K5): Häuser in der Aufgabe des ersten
+        // der Akt hebt über den Zug (K5): Häuser vor dem ersten Bild nach dem ersten
         const lift0 = r._spawnSettlementSlot;
         let [zugAkt, aus] = [0, false];
         r._spawnSettlementSlot = function (...a) {
-            if (!zugAkt) setTimeout(() => (aus = true), 0);
+            if (!zugAkt) requestAnimationFrame(() => (aus = true));
             zugAkt += !aus;
             return lift0.apply(this, a);
         };
@@ -2561,7 +2561,7 @@ const FIXTURES = [
     );
     check("B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}", out.fundamentTravels === true);
     check(
-        "B: DER AKT hebt über den Zug — in der Aufgabe des ersten Hauses höchstens perTick (K5)",
+        "B: DER AKT hebt über den Zug — vor dem ersten Bild nach dem ersten Haus höchstens perTick (K5)",
         out.zugAkt === true
     );
     check(
