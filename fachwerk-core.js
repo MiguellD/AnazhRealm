@@ -2045,6 +2045,187 @@
       s0+=(C2[a]+C2[b]+C2[c])/3*ar; s1+=(C2[a+1]+C2[b+1]+C2[c+1])/3*ar; s2+=(C2[a+2]+C2[b+2]+C2[c+2])/3*ar; w+=ar; } }
   return w>1.5? [s0/w,s1/w,s2/w] : null;
 }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DER STUFEN-TON (S8, material.K3): jede ferne Stufe zeigt die Albedo der nahen — gemessen, nie aus Rollen-Tönen
+    //  vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch, 9 Blicke —
+    //  8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), je Blick-Klasse (wand |n.y| < 0,25,
+    //  flach sonst) die mittlere Vertex-Farbe der tragenden Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton),
+    //  übertragen wird die Leuchtdichte je Klasse.
+    //  Die Stufe 1 misst sich im Warm-Pfad (`B.sichtTon`, fragFuer); die Stufe 2 und die Hülle (Stufe 3, Fernform
+    //  `__fern`) messen sich selbst und tragen je Klasse den Faktor Soll/Ist (`tonUebertrag`). Bis S8 kam der Ton der L2
+    //  aus Rollen-Farben × EINEM Wand-Ton (`wandTonAus`, Fenster 2,6..Traufe): der Giebel trug die Dach-Farbe, das
+    //  Erdgeschoss den Ton des Obergeschosses — L2/L0 0,704 (gotisch) bis 1,108 (pueblo), 31 von 64 Häusern im Band.
+    // ═══════════════════════════════════════════════════════════════════════
+    var SICHT_N = 64;
+    // Die Achsen stehen als Zahlen (cos/sin von 22,5° + k · 45°), normiert mit der Wurzel: plattformgleich (IEEE rundet
+    // sqrt exakt, Transzendente nie — die Plattform-Probe des Vertrags kippt cos/sin/hypot um 1 ULP).
+    var SICHT_BLICKE = (function () {
+        var c = 0.923880, s = 0.382683, b = [], ring = [[c, s], [s, c], [-s, c], [-c, s], [-c, -s], [-s, -c], [s, -c], [c, -s]];
+        for (var a = 0; a < 8; a++) {
+            var d = [ring[a][0], a % 2 ? 0.25 : 0.6, ring[a][1]],
+                l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            b.push([d[0] / l, d[1] / l, d[2] / l]);
+        }
+        b.push([0, 1, 0]);
+        return b;
+    })();
+    function _tonTraegt(rolle) {
+        var m = materials()[rolle];
+        var seh = m && m.userData && m.userData.__seh;
+        return !!m && !m.transparent && (seh === "stoff" || seh === "metall");
+    }
+    function _sichtKlasse(ny, l) {
+        return l > 0 && Math.abs(ny / l) < 0.25 ? 0 : 1;
+    }
+    // geoms (je Rolle { pos, nrm, col, idx }, Welt-Lage) → { k: [[r, g, b, n] wand, [r, g, b, n] flach], alle: [r, g, b, n] }
+    function sichtTon(geoms) {
+        var tri = [],
+            lo = [Infinity, Infinity, Infinity],
+            hi = [-Infinity, -Infinity, -Infinity];
+        for (var rolle in geoms) {
+            var G = geoms[rolle];
+            if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
+            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(G, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
+            for (var v = 0; v < G.pos.length; v += 3)
+                for (var c = 0; c < 3; c++) {
+                    if (G.pos[v + c] < lo[c]) lo[c] = G.pos[v + c];
+                    if (G.pos[v + c] > hi[c]) hi[c] = G.pos[v + c];
+                }
+        }
+        var aus = { k: [[0, 0, 0, 0], [0, 0, 0, 0]], alle: [0, 0, 0, 0] };
+        if (!tri.length) return aus;
+        var mx = (lo[0] + hi[0]) / 2,
+            my = (lo[1] + hi[1]) / 2,
+            mz = (lo[2] + hi[2]) / 2;
+        var dx = hi[0] - lo[0],
+            dy = hi[1] - lo[1],
+            dz = hi[2] - lo[2];
+        var rad = Math.max(0.5, Math.sqrt(dx * dx + dy * dy + dz * dz) / 2);
+        var N = SICHT_N,
+            zb = new Float64Array(N * N),
+            ti = new Int32Array(N * N),
+            wb = new Float64Array(N * N * 2);
+        var X = [0, 0, 0],
+            Y = [0, 0, 0],
+            Z = [0, 0, 0];
+        for (var b = 0; b < SICHT_BLICKE.length; b++) {
+            var f = SICHT_BLICKE[b];
+            // die Achsen des Blicks: f zeigt zum Auge, r nach rechts, u nach oben
+            var r = Math.abs(f[1]) > 0.99 ? [1, 0, 0] : [f[2], 0, -f[0]];
+            var rl = Math.sqrt(r[0] * r[0] + r[2] * r[2]);
+            r = [r[0] / rl, r[1] / rl, r[2] / rl];
+            var u = [f[1] * r[2] - f[2] * r[1], f[2] * r[0] - f[0] * r[2], f[0] * r[1] - f[1] * r[0]];
+            zb.fill(-Infinity);
+            ti.fill(-1);
+            for (var t = 0; t < tri.length; t += 4) {
+                var P = tri[t].pos;
+                for (var e = 0; e < 3; e++) {
+                    var q = tri[t + 1 + e] * 3,
+                        px = P[q] - mx,
+                        py = P[q + 1] - my,
+                        pz = P[q + 2] - mz;
+                    X[e] = ((px * r[0] + py * r[1] + pz * r[2]) / rad) * 0.5 * N + 0.5 * N;
+                    Y[e] = ((px * u[0] + py * u[1] + pz * u[2]) / rad) * 0.5 * N + 0.5 * N;
+                    Z[e] = px * f[0] + py * f[1] + pz * f[2];
+                }
+                var den = (Y[1] - Y[2]) * (X[0] - X[2]) + (X[2] - X[1]) * (Y[0] - Y[2]);
+                if (Math.abs(den) < 1e-12) continue;
+                var x0 = Math.max(0, Math.floor(Math.min(X[0], X[1], X[2]))),
+                    x1 = Math.min(N - 1, Math.ceil(Math.max(X[0], X[1], X[2]))),
+                    y0 = Math.max(0, Math.floor(Math.min(Y[0], Y[1], Y[2]))),
+                    y1 = Math.min(N - 1, Math.ceil(Math.max(Y[0], Y[1], Y[2])));
+                for (var yy = y0; yy <= y1; yy++)
+                    for (var xx = x0; xx <= x1; xx++) {
+                        var sx = xx + 0.5,
+                            sy = yy + 0.5;
+                        var w0 = ((Y[1] - Y[2]) * (sx - X[2]) + (X[2] - X[1]) * (sy - Y[2])) / den,
+                            w1 = ((Y[2] - Y[0]) * (sx - X[2]) + (X[0] - X[2]) * (sy - Y[2])) / den,
+                            w2 = 1 - w0 - w1;
+                        if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                        var zz = w0 * Z[0] + w1 * Z[1] + w2 * Z[2],
+                            k = yy * N + xx;
+                        if (zz > zb[k]) {
+                            zb[k] = zz;
+                            ti[k] = t;
+                            wb[k * 2] = w0;
+                            wb[k * 2 + 1] = w1;
+                        }
+                    }
+            }
+            for (var k2 = 0; k2 < N * N; k2++) {
+                var t2 = ti[k2];
+                if (t2 < 0) continue;
+                var G2 = tri[t2],
+                    a0 = tri[t2 + 1] * 3,
+                    a1 = tri[t2 + 2] * 3,
+                    a2 = tri[t2 + 3] * 3,
+                    P2 = G2.pos;
+                var e1 = [P2[a1] - P2[a0], P2[a1 + 1] - P2[a0 + 1], P2[a1 + 2] - P2[a0 + 2]],
+                    e2 = [P2[a2] - P2[a0], P2[a2 + 1] - P2[a0 + 1], P2[a2 + 2] - P2[a0 + 2]];
+                var nx = e1[1] * e2[2] - e1[2] * e2[1],
+                    ny = e1[2] * e2[0] - e1[0] * e2[2],
+                    nz = e1[0] * e2[1] - e1[1] * e2[0];
+                var S = aus.k[_sichtKlasse(ny, Math.sqrt(nx * nx + ny * ny + nz * nz))],
+                    v0 = wb[k2 * 2],
+                    v1 = wb[k2 * 2 + 1],
+                    v2 = 1 - v0 - v1;
+                for (var ch = 0; ch < 3; ch++) {
+                    var cv = v0 * G2.col[a0 + ch] + v1 * G2.col[a1 + ch] + v2 * G2.col[a2 + ch];
+                    S[ch] += cv;
+                    aus.alle[ch] += cv;
+                }
+                S[3]++;
+                aus.alle[3]++;
+            }
+        }
+        return aus;
+    }
+    // DER WARM-PFAD (der EINE, S8): das Soll jeder fernen Stufe ist die gemessene Stufe 1 — fehlt sie, baut der Bau sie
+    // einmal (das Fragment fällt, Wand-Ton und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
+    function stufe1Ton(B) {
+        if (!B.sichtTon) {
+            fragFuer(B, 1);
+            B.frag = null;
+            B.fragStufe = undefined;
+        }
+        return B.sichtTon;
+    }
+    // Der Faktor je Klasse: die Leuchtdichte Soll/Ist (Rec. 709 — der Farbton jeder Stufe bleibt ihr eigener: die Scheibe der L2
+    // zeigt den Raum dahinter in seiner Farbe, gate:haus-fern G), eine Klasse unter 1 % der gesehenen Pixel trägt den Faktor
+    // des Ganzen; auf dem Raster 2^-10 — eine Drift der Eingänge um 1 ULP kippt fast nie einen Faktor (Plattform-Probe).
+    function tonFaktoren(soll, ist) {
+        var Y = function (s) {
+            return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2]) / s[3];
+        };
+        var ganz = function (s, i) {
+            var q = s[3] && i[3] && Y(i) > 0 ? Y(s) / Y(i) : 1;
+            q = Math.round(Math.min(4, Math.max(0.25, q)) * 1024) / 1024;
+            return [q, q, q];
+        };
+        var alle = ganz(soll.alle, ist.alle);
+        return [0, 1].map(function (k) {
+            return soll.k[k][3] >= 0.01 * soll.alle[3] && ist.k[k][3] >= 0.01 * ist.alle[3] ? ganz(soll.k[k], ist.k[k]) : alle;
+        });
+    }
+    // Die Stufe trägt den Ton ihres Solls: jede Ecke der tragenden Stoffe × den Faktor ihrer Klasse (nach ihrer Normale).
+    function tonUebertrag(geoms, soll) {
+        if (!soll || !soll.alle[3]) return geoms;
+        var F = tonFaktoren(soll, sichtTon(geoms));
+        for (var rolle in geoms) {
+            var G = geoms[rolle];
+            if (!G || !G.col || !_tonTraegt(rolle)) continue;
+            for (var v = 0; v < G.col.length; v += 3) {
+                var n0 = G.nrm[v],
+                    n1 = G.nrm[v + 1],
+                    n2 = G.nrm[v + 2];
+                var f = F[_sichtKlasse(n1, Math.sqrt(n0 * n0 + n1 * n1 + n2 * n2))];
+                G.col[v] *= f[0];
+                G.col[v + 1] *= f[1];
+                G.col[v + 2] *= f[2];
+            }
+        }
+        return geoms;
+    }
     // prettier-ignore
     function stapelBau(hp, flags, extraNur){
   if(extraNur) hp=Object.assign({},hp,{nur:Object.assign({},hp.nur||{},extraNur)});                                                               // TURM-STAPEL-GESETZ: Türme sind gestapelte ECHTE builds
@@ -2682,10 +2863,32 @@
     function huelleVonBau(B) {
         return {
             stufe: 3,
-            teile: koerperListe(B).map(function (x) {
-                return x.teil;
-            }),
+            teile: koerperTeile(B),
         };
+    }
+    // DIE TEILE DER HÜLLE IM TON DER STUFE 1 (S8): je Teil seine Farbe × den Faktor seiner Blick-Klassen (`tonFaktoren`
+    // der Hülle gegen `B.sichtTon`), gewichtet nach den Flächen, die ein Auge an ihm sieht — der Kasten vier Wände und
+    // den Deckel, Keil und Kapsel ihre Schräge. Gitter (Stufe 3) und Fernform (`__fern`, der Welt-March) lesen DIESE Liste.
+    function koerperTeile(B) {
+        if (B.koerperTeile) return B.koerperTeile;
+        var soll = stufe1Ton(B);
+        var teile = koerperListe(B).map(function (x) {
+            return x.teil;
+        });
+        if (soll.alle[3]) {
+            var F = tonFaktoren(soll, sichtTon(huelleGeoms(teile, {}, B.q)));
+            teile = teile.map(function (t) {
+                if (!t.farbe) return t;
+                var aw = t.art === "box" ? 4 * t.h[1] * (t.h[0] + t.h[2]) : 0,
+                    af = t.art === "box" ? t.h[0] * t.h[2] : 1,
+                    n = Object.assign({}, t);
+                n.farbe = _hr3([0, 1, 2].map(function (c) {
+                    return (t.farbe[c] * (aw * F[0][c] + af * F[1][c])) / (aw + af);
+                }));
+                return n;
+            });
+        }
+        return (B.koerperTeile = teile);
     }
     // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest".
     function huelleAusBoxen(stufe, boxen) {
@@ -2734,13 +2937,7 @@
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        var B = planBau(p);
-        if (!((p.storeys || 1) >= 6)) {
-            fragFuer(B, 1);
-            B.frag = null;
-            B.fragStufe = undefined;
-        }
-        return huelleVonBau(B);
+        return huelleVonBau(planBau(p));
     }
     // prettier-ignore
     // DER BAU-ORT (K10): der Rahmen, in dem ein Haus der Siedlung bakt — Gier phi, Ort x/z und sein BODEN y (der Plan v2,
@@ -2812,8 +3009,9 @@
     // prettier-ignore
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
+  if(stufe>=2) stufe1Ton(B);                                                                  // DER WARM-PFAD (S8): jede ferne Stufe baut auf der gemessenen Stufe 1 (Wand-Ton, Sicht-Ton)
   const geoms={};
-  if(stufe===3){ huelleGeoms(koerperListe(B).map(x=>x.teil), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
+  if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
@@ -2833,6 +3031,8 @@
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
     if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
+  if(stufe===1&&!B.sichtTon) B.sichtTon=sichtTon(geoms);                                    // DER STUFEN-TON (S8): die Stufe 1 misst, was das Auge an ihr sieht — das Soll jeder fernen Stufe
+  if(stufe===2) tonUebertrag(geoms, B.sichtTon);                                              // die Stufe 2 trägt je Blick-Klasse den Ton der Stufe 1
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -3644,7 +3844,6 @@
     function buildStufe(p, stufe) {
         materials();
         var geoms = {};
-        var turm = (p.storeys || 1) >= 6;
         if (stufe === 0) {
             var hp2 = stufe0Param(p);
             var st = stufe0Bau(hp2);
@@ -3704,22 +3903,9 @@
             // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
             // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe). Ihre Massen
             // kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
-            var B3 = planBau(p);
-            if (!turm) {
-                fragFuer(B3, 1);
-                B3.frag = null;
-                B3.fragStufe = undefined;
-            }
-            geoms = wurfVon(B3);
+            geoms = wurfVon(planBau(p));
         } else {
             var B = massBau(p);
-            if (stufe === 2 && !turm) {
-                // ≡ LOD-Sonde WARM-PFAD: wandTon wie im Dorf beim Abstieg aus Stufe 1
-                // gemessen (Fragment verworfen, Ton bleibt — lod2Koerper liest ihn).
-                fragFuer(B, 1);
-                B.frag = null;
-                B.fragStufe = undefined;
-            }
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
             B.frag = null;
             B.fragStufe = undefined;
@@ -6497,6 +6683,7 @@
         bakeHaus: bakeHaus,
         bakeLOD: bakeLOD,
         wandTonAus: wandTonAus,
+        sichtTon: sichtTon,
         stapelBau: stapelBau,
         fensterFern: fensterFern,
         fensterSchlaeft: fensterSchlaeft,
