@@ -130,19 +130,13 @@ class AnazhRealm_kreatur_leben {
         // bornAt = Identitäts-Marker: persistierte Kreaturen behalten ihn über Reload, neue bekommen jetzt.
         group.userData.bornAt = Date.now();
         // Guss-Stempel der Studio-Dials: Restore-Dials kehren am Wesen zurück; sonst frieren wir die JETZT
-        // wirksame Übergabe der Gattung ein — nur wenn eine aktiv war (Default-Kreaturen bleiben feld-los).
-        // So trägt der Snapshot die Guss-Wahrheit, nicht die spätere Übergabe.
+        // wirksame Prägung der Gattung ein — nur wenn eine aktiv war (Default-Kreaturen bleiben feld-los).
+        // So trägt der Snapshot die Guss-Wahrheit, nicht die spätere Prägung.
         {
             const recIdS = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul];
             if (gussOv) {
                 group.userData.gussDials = gussOv;
-            } else if (
-                recIdS &&
-                this.state.studioUebergabe &&
-                this.state.studioUebergabe.kreatur &&
-                this.state.studioUebergabe.kreatur[recIdS] &&
-                this.state.studioUebergabe.kreatur[recIdS].s
-            ) {
+            } else if (recIdS && this._studioPraegung(recIdS)) {
                 const eff = this._tetrapodaStudioDials(recIdS);
                 if (eff && typeof eff === "object") {
                     try {
@@ -256,14 +250,14 @@ class AnazhRealm_kreatur_leben {
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {
         if (!snap || !snap.position) return null;
         // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns).
-        // Guss-Dials laufen durch DENSELBEN Validator (Kreatur-PARAMS-Clamps) — ein hand-editierter Save
+        // Guss-Dials laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save
         // schleust keine Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
         let restoreDials;
         if (snap.gussDials && typeof snap.gussDials === "object" && !Array.isArray(snap.gussDials)) {
             const recIdR = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
             if (recIdR) {
-                const clean = this._studioUebergabeValidate("kreatur", { gattung: recIdR, s: snap.gussDials });
-                if (clean && clean.s) restoreDials = clean.s;
+                const clean = this._studioWerkPruefen("kreatur", recIdR, snap.gussDials);
+                if (clean && Object.keys(clean).length) restoreDials = clean;
             }
         }
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {

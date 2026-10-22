@@ -222,9 +222,8 @@ class AnazhRealm_netz_portal {
             // Inversion: DSL-Daten in die Quarantäne-Queue, NIE ausgeführt —
             // gewährt wird nur souverän).
             else if (msg.type === "capability") this._portalReceiveCapability(msg);
-            // Studio-Übergabe: das Studio reicht die LIVE-Bearbeitung (Dials + Gestalt-Wahlen) an die Welt —
-            // additiver Zusatz-Kanal wie settlement/event. Nur TRUSTED Welten; fail-closed am EINEN Empfänger
-            // _studioUebergabeEmpfang (kind-Positivliste · Kern-Buch-Clamps · Taille-Cap · must-ignore).
+            // DER EINE ÜBERGABE-KANAL: die Hülle eines Studios reicht sein Werk (Art · Rezept · Same · Prägung) an die Welt. Nur
+            // TRUSTED Welten; fail-closed am EINEN Empfänger _studioUebergabeEmpfang (Kern-Klemme · Taille-Cap · must-ignore).
             else if (msg.type === "uebergabe" && po.trust !== "sandboxed") this._studioUebergabeEmpfang(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
@@ -1168,141 +1167,97 @@ class AnazhRealm_netz_portal {
         return true;
     }
 
-    // ═══ STUDIO-ÜBERGABE — DER W12-EMPFÄNGER ═══
-    // {type:"uebergabe"} (Dials + Gestalt-Wahlen) — DIESER Chokepoint validiert fail-closed: plain-object
-    // · kind-Positivliste (koerper|kreatur) · Clamps auf PARAMS des GELADENEN Kern-Buchs · String-Wahlen
-    // gegen dessen Tabellen · Taille-Cap (TAILLE_UNKNOWN_FIELD_MAX) · must-ignore; kaltes Buch → null.
-    // Auch Snapshot-Restore; Leser _koerperStudioDials/_tetrapodaStudioDials. gate:studio-uebergabe
-    _studioUebergabeValidate(kind, msg) {
-        if (!msg || typeof msg !== "object" || Array.isArray(msg)) return null;
-        // Taille-Cap (das studioOv-Muster): ein Riesen-Payload ist ein
-        // Quota-DoS, keine Übergabe — er fällt GANZ (still, kein Wurf).
+    // ═══ DER EINE ÜBERGABE-KANAL (pipeline.K1) ═══
+    // {type:"uebergabe", kind, preset, seed, ov} — das Werk eines Studios, gesendet von der Hülle (`werk`). DIESER Prüfer klemmt
+    // es fail-closed am GELADENEN Kern (index.html lädt jeden): die Art trägt Regler-Zeilen (PARAMS_BY_KIND) · das Rezept ist
+    // eines dieser Art · jede Zahl auf ihre Zeile geklemmt · eine Wahl nur, wo das Rezept sie trägt (fx.gestalt) und die Tafel
+    // des Kerns sie kennt · ein Charakter nur als Zeile seiner Tafel · der Same ganzzahlig (`__gestalt`, Leser `_foundryGestaltFor`) · Taille-Cap · must-ignore. Ohne Art
+    // (Restore) gilt die Art des Rezepts. Rückgabe die Prägung oder null; auch Restore und Mitspieler laufen hier durch.
+    _studioWerkPruefen(kind, preset, ov, seed) {
         try {
-            if (JSON.stringify(msg).length > AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) return null;
+            if (JSON.stringify({ kind, preset, ov, seed }).length > AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) return null;
         } catch (_e) {
             return null;
         }
+        if (typeof preset !== "string" || (kind != null && typeof kind !== "string")) return null;
         const W = typeof window !== "undefined" ? window : globalThis;
-        const FORM = /^[a-z0-9_-]{1,32}$/; // die Form-Wand jeder String-Wahl
-        if (kind === "koerper") {
-            const core = W.__koerperCore;
-            const rows =
-                core && core.PARAMS_BY_KIND && Array.isArray(core.PARAMS_BY_KIND.koerper)
-                    ? core.PARAMS_BY_KIND.koerper
-                    : null;
-            if (!rows || !core.START_PARAMS) return null; // kaltes Kern-Buch → fail-closed
-            const s = {};
-            let nS = 0;
-            const sIn = msg.s;
-            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
-                // Dial-Positivliste = die B4-PARAMS-Zeilen des Buchs; je Zeile
-                // Finite-Wache + Clamp auf [min, max]. Fremde/NaN-Schlüssel: must-ignore.
-                for (const row of rows) {
-                    if (!row || typeof row.id !== "string") continue;
-                    const v = Number(sIn[row.id]);
-                    if (!Number.isFinite(v)) continue;
-                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
-                    nS++;
-                }
+        let kern = null;
+        let rec = null;
+        let zeilen = null;
+        for (const ns of Object.values(AnazhRealm.GESETZ_KERNE)) {
+            const k = W[ns];
+            const buch = k && (k.PHYTO_PRESETS || k.PRESETS);
+            const r = buch && Object.prototype.hasOwnProperty.call(buch, preset) ? buch[preset] : null;
+            // die Pflanzen-Tafeln trägt foundry-core top-level (var), nicht im Terrain-Namensraum — gelesen ohne Kern-Edit
+            // (der Platten-Stempel hasht die Kern-Quelle)
+            const tafeln = k && (k.PHYTO_PRESETS ? W.PARAMS_BY_KIND : k.PARAMS_BY_KIND);
+            if (r && (kind == null || r.kind === kind) && tafeln && Array.isArray(tafeln[r.kind])) {
+                kern = k;
+                rec = r;
+                zeilen = tafeln[r.kind];
+                break;
             }
-            // Gestalt-Positivliste AUS DEM BUCH: die nicht-numerischen
-            // START_PARAMS-Schlüssel SIND die Gestalt-Wahlen (skinTone/hairStyle/
-            // hairColor/top/topColor/bottom/bottomColor/shoes/shoeColor).
-            const gestalt = {};
-            let nG = 0;
-            const gIn = msg.gestalt;
-            if (gIn && typeof gIn === "object" && !Array.isArray(gIn)) {
-                for (const k in core.START_PARAMS) {
-                    if (!Object.prototype.hasOwnProperty.call(core.START_PARAMS, k)) continue;
-                    if (typeof core.START_PARAMS[k] === "number") continue;
-                    const v = gIn[k];
-                    if (typeof v !== "string" || !FORM.test(v)) continue;
-                    if (k === "skinTone") {
-                        if (!core.SKIN_TONES || !Object.prototype.hasOwnProperty.call(core.SKIN_TONES, v)) continue;
-                    } else if (k === "hairColor") {
-                        if (!core.HAIR_COLORS || !Object.prototype.hasOwnProperty.call(core.HAIR_COLORS, v)) continue;
-                    } else if (/Color$/.test(k)) {
-                        if (!core.CLOTH_COLORS || !Object.prototype.hasOwnProperty.call(core.CLOTH_COLORS, v)) continue;
-                    } else if (k === "hairStyle") {
-                        // Stil-Liste FUNKTIONAL aus dem Buch: ein erfundener Name fiele in haarStreu still auf den
-                        // Kern-Fallback "mittel" — deshalb gar nicht erst hinein (must-ignore).
-                        if (typeof core.haarStreu !== "function") continue;
-                        try {
-                            if (
-                                v !== "mittel" &&
-                                JSON.stringify(core.haarStreu({ hairStyle: v, hairLen: 1, hairVol: 1 })) ===
-                                    JSON.stringify(core.haarStreu({ hairStyle: "mittel", hairLen: 1, hairVol: 1 }))
-                            )
-                                continue;
-                        } catch (_e2) {
-                            continue;
-                        }
-                    }
-                    gestalt[k] = v;
-                    nG++;
-                }
-            }
-            if (!nS && !nG) return null; // leere Übergabe trägt nichts
-            return { s, gestalt };
         }
-        if (kind === "kreatur") {
-            const core = W.__tetrapodaCore;
-            const rows =
-                core && core.PARAMS_BY_KIND && Array.isArray(core.PARAMS_BY_KIND.kreatur)
-                    ? core.PARAMS_BY_KIND.kreatur
-                    : null;
-            const gatt = typeof msg.gattung === "string" ? msg.gattung : "";
-            // Gattungs-Positivliste = die GATTUNGEN-Tabelle des Buchs (kein Literal).
-            if (!rows || !core.GATTUNGEN || !Object.prototype.hasOwnProperty.call(core.GATTUNGEN, gatt)) return null;
-            const s = {};
-            let nS = 0;
-            const sIn = msg.s;
-            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
-                for (const row of rows) {
-                    if (!row || typeof row.id !== "string") continue;
-                    const v = Number(sIn[row.id]);
-                    if (!Number.isFinite(v)) continue;
-                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
-                    nS++;
-                }
-            }
-            if (!nS) return null;
-            return { gattung: gatt, s };
+        if (!kern) return null; // Art ohne Regler-Zeilen, fremdes Rezept oder kalter Kern
+        const roh = ov && typeof ov === "object" && !Array.isArray(ov) ? ov : {};
+        const out = {};
+        for (const z of zeilen) {
+            const v = z && typeof z.id === "string" ? roh[z.id] : undefined;
+            if (typeof v === "number" && Number.isFinite(v)) out[z.id] = Math.min(z.max, Math.max(z.min, v));
         }
-        return null; // unbekannter kind: must-ignore (fail-closed)
+        // Die Wahlen des Rezepts (der Körper: Haut, Haar, Kleid) gegen die Tafeln des Kerns; ein erfundener Haar-Stil fiele in
+        // haarStreu still auf "mittel" — er kommt gar nicht erst hinein.
+        const tafel = (t, v) => !!(t && Object.prototype.hasOwnProperty.call(t, v));
+        const gilt = (k, v) => {
+            if (!/^[a-z0-9_-]{1,32}$/.test(v)) return false;
+            if (k === "skinTone") return tafel(kern.SKIN_TONES, v);
+            if (k === "hairColor") return tafel(kern.HAIR_COLORS, v);
+            if (/Color$/.test(k)) return tafel(kern.CLOTH_COLORS, v);
+            if (k !== "hairStyle") return true;
+            if (typeof kern.haarStreu !== "function") return false;
+            try {
+                const streu = (st) => JSON.stringify(kern.haarStreu({ hairStyle: st, hairLen: 1, hairVol: 1 }));
+                return v === "mittel" || streu(v) !== streu("mittel");
+            } catch (_e) {
+                return false;
+            }
+        };
+        const wahlen = rec.fx && rec.fx.gestalt && typeof rec.fx.gestalt === "object" ? rec.fx.gestalt : {};
+        for (const k of Object.keys(wahlen)) if (typeof roh[k] === "string" && gilt(k, roh[k])) out[k] = roh[k];
+        // Der Charakter der Art (KIND_CHARAKTER: die Tradition der Klinge, die Kultur des Wagens) reist, wenn das Werk eine Zeile
+        // seiner Tafel trägt — dieselbe Prägung, die das präge-Verb der Welt schreibt.
+        const achse = AnazhRealm.KIND_CHARAKTER[rec.kind];
+        const tab = achse && W[achse.ns] ? W[achse.ns][achse.tabelle] : null;
+        for (const name of tab ? Object.keys(tab) : []) {
+            const zeile = achse.ov(name, tab);
+            const ks = Object.keys(zeile);
+            if (ks.length && ks.every((k) => JSON.stringify(roh[k]) === JSON.stringify(zeile[k]))) {
+                Object.assign(out, zeile);
+                break;
+            }
+        }
+        if (Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff) out.__gestalt = seed;
+        return out;
     }
+    // Der Empfang schreibt das geprüfte Werk in den EINEN Prägungs-Speicher ws.studioOv[Rezept]. Die lebenden Leser folgen
+    // sofort: der Avatar gießt neu (er liest die Prägung des Mensch-Rezepts, `_koerperStudioDials`), der Klang der Welt spielt das
+    // Genre (`_klangStudioPreset`); jede andere Art trägt das nächste gesetzte Werk (`_studioStampFor`) bzw. der nächste Spawn
+    // ihrer Gattung (`_tetrapodaStudioDials`). gate:studio-uebergabe
     _studioUebergabeEmpfang(msg) {
-        if (!msg || typeof msg !== "object" || Array.isArray(msg)) return false;
-        const kind = msg.kind === "koerper" || msg.kind === "kreatur" ? msg.kind : null; // Positivliste
-        if (!kind) return false;
-        const clean = this._studioUebergabeValidate(kind, msg);
-        if (!clean) return false;
-        const ue =
-            this.state.studioUebergabe && typeof this.state.studioUebergabe === "object"
-                ? this.state.studioUebergabe
-                : (this.state.studioUebergabe = { koerper: null, kreatur: {} });
-        if (kind === "koerper") {
-            ue.koerper = { s: clean.s, gestalt: clean.gestalt };
-            // Live-Neu-Guss über den EINEN Seelen-Chokepoint (Position/Physik/Held reisen mit). Der
-            // Mensch-Ofen-Memo-Key trägt Dials+Gestalt + Guss-Farben → die Übergabe prägt einen EIGENEN Key,
-            // der Default-Eintrag bleibt unvergiftet.
+        if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.kind !== "string") return false;
+        const praegung = this._studioWerkPruefen(msg.kind, msg.preset, msg.ov, msg.seed);
+        if (!praegung) return false;
+        this._ensureWorkshopState().studioOv[msg.preset] = praegung;
+        if (msg.preset === AnazhRealm.KOERPER_HOST_RECIPE) {
             try {
                 this.applyPlayerSoul((this.state.player && this.state.player.soul) || "human");
             } catch (_e) {
                 this._stoffBruch("der Avatar (Studio-Übergabe)", _e);
             }
-            this.log("Studio-Übergabe angenommen: der Avatar trägt die Schöpfer-Gestalt (Da-Vinci-Studio).", "INFO");
-            // KÖRPER GANZ (T6) — die Übergabe ist SICHTBAR am mensch-Eintrag des
-            // Ich-Selects (✦ Studio-Gestalt): die Sicht folgt dem State sofort.
+            // die Sicht folgt dem State sofort: der mensch-Eintrag des Ich-Selects trägt „✦ Studio-Gestalt"
             if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-        } else {
-            if (!ue.kreatur || typeof ue.kreatur !== "object") ue.kreatur = {};
-            ue.kreatur[clean.gattung] = { s: clean.s };
-            // Guss-Semantik: geprägt wird beim GUSS — künftige Spawns der Gattung
-            // lesen die Dials über die EINE Quelle (_tetrapodaStudioDials →
-            // _ofenKreaturDials/_tetrapodaSoulParts); bestehende Kreaturen bleiben.
-            this.log(`Studio-Übergabe angenommen: künftige „${clean.gattung}"-Spawns tragen die Studio-Dials.`, "INFO");
-        }
+        } else if (msg.kind === "klang") this.state.klangPreset = msg.preset;
+        this.log(`Studio-Übergabe: das Werk „${msg.preset}" (${msg.kind}) steht in der Prägung der Welt.`, "INFO");
         return true;
     }
 
