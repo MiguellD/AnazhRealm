@@ -1637,7 +1637,8 @@ class AnazhRealm_koerper_leib {
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
     // (alle Gelenke 0) in der Sagittal-Ebene (y, z) des Rumpfs vermessen — a = Bein-Gelenk → Unterglied-Gelenk (Kette[2]),
-    // b = Unterglied-Gelenk → Pfoten-Gelenk (Kette[3]), c = Pfoten-Gelenk → Aufsetz-Punkt (am Boden darunter), phi0 =
+    // b = Unterglied-Gelenk → Pfoten-Gelenk (Kette[3]), c = Pfoten-Gelenk → Aufsetz-Punkt (die Sohle DIESER Pfote, ihr tiefster
+    // Haut-Vertex — vorher die Sohle der ganzen Gestalt: die Vorderpfote des GIGANTEN schwebte 3,6 cm über der Wiese), phi0 =
     // Ruhe-Winkel von a nach b, zr = Aufsetz-Punkt vor dem Bein-Gelenk, h = Gelenk-Höhe über dem Boden. In Metern (× f),
     // memoisiert an der Vorlage.
     static _tierBeinMass(t0, f) {
@@ -1651,7 +1652,20 @@ class AnazhRealm_koerper_leib {
         ];
         t0.root.updateMatrixWorld(true);
         const lage = (o) => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
-        const mass = ketten.map((K) => {
+        const sohle = ketten.map(() => Infinity);
+        const v = new THREE.Vector3();
+        t0.root.traverse((n) => {
+            const A = n.isSkinnedMesh && n.geometry.attributes;
+            if (!A || A.aSchale) return; // die Haut, nie das Fell (wie minY)
+            const bi = ketten.map((K) => n.skeleton.bones.indexOf(K[3]));
+            for (let i = 0; i < A.skinIndex.count; i++)
+                for (let k = 0; k < 4; k++) {
+                    const j = bi.indexOf(A.skinIndex.getComponent(i, k));
+                    if (j < 0 || !(A.skinWeight.getComponent(i, k) > 0.5)) continue;
+                    sohle[j] = Math.min(sohle[j], v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld).y);
+                }
+        });
+        const mass = ketten.map((K, j) => {
             const p0 = lage(K[0]),
                 p1 = lage(K[2]),
                 p2 = lage(K[3]);
@@ -1664,7 +1678,7 @@ class AnazhRealm_koerper_leib {
                 p0: [p0w.x * f, p0w.y * f, p0w.z * f],
                 a: [ay, az],
                 b: [by, bz],
-                c: [(t0.minY - p2.y) * f, 0],
+                c: [((Number.isFinite(sohle[j]) ? sohle[j] : t0.minY) - p2.y) * f, 0],
                 phi0: Math.atan2(ay * bz - az * by, ay * by + az * bz),
                 zr: (p2.z - p0.z) * f,
                 h: (p0.y - t0.minY) * f,
