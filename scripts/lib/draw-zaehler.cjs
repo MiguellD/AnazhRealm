@@ -649,7 +649,8 @@ async function gangLauf(page, pufferStand, b) {
     const ruhig = () =>
         page.evaluate(async () => {
             const raf = () => new Promise((f) => requestAnimationFrame(f));
-            for (const weiter = window.__deckel("Gang: die Welt steht"); !window.anazhRealm._weltSteht() && weiter();)
+            // eingeschwungen: 120 Bilder in Folge, in denen die Welt nichts offen hat (`_weltOffen`; die Tiere regen sich weiter)
+            for (let k = 0; k < 120; k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1)
                 await raf();
         });
     const gehe = async (n) => (await taste("w", "keyDown"), await bilder(n, true), await taste("w", "keyUp"));
