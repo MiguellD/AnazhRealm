@@ -1344,7 +1344,9 @@ class AnazhRealm_siedlung_ort {
                 }
                 continue;
             }
-            const g = this._grundrissVon(e);
+            // ein Werk ohne Boxen und Grundriss (der gepflanzte Baum, die Wiederkehr) sperrt seinen Fuß, wie die Natur-Wand ihn hält
+            // (0,8 m, `_naturWand`) — es weicht keinem Haus, also steht keins auf ihm
+            const g = this._grundrissVon(e) || (e.werk === true ? { ex: 0.8, ez: 0.8, ox: 0, oz: 0 } : null);
             if (!g) continue;
             const ery = Number.isFinite(e.rotationY) ? e.rotationY : 0;
             b2.c = Math.cos(ery);
@@ -3742,9 +3744,12 @@ class AnazhRealm_siedlung_ort {
     // (`_bauFrei`) und fällt im Grundriss eines Baus und auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur,
     // wenn er NACH dem Bau kam: eine Feuerstelle im Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m. Es
     // entscheidet die HERKUNFT, nie die Art: bis K10-6 Nachbesserung 2 wich auch die Feuerstelle des Satzes und des Bau-Modus
-    // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art").
+    // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art"). Bis zur Wiederkehr wich auch das Werk eines Worts
+    // aus dem Stoff der Natur (ein stein_block ist basalt): auf der Lichtung beim Satz erlaubt, beim Reload geräumt
+    // (gate:persistence Teil W 0/2). Das Werk (`werk`, die Herkunft an der Wurzel `spawnArchitecture`) weicht nie.
     _weichtDemBau(e) {
-        return this._istNatur(e) || (!!e && e.feldWurf === true);
+        if (!e || e.werk === true) return false;
+        return e.feldWurf === true || this._istNatur(e);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_ort]);
