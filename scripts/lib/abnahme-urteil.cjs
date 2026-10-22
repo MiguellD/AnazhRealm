@@ -2361,7 +2361,7 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
         // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß; A10
-        // (17.10.): boden-nah-farbe hieß geheilt, die Neumessung 9,27 < 10,7 — die Zeile ROT „er ist zurück", der Schreiber schreibt
+        //: boden-nah-farbe hieß geheilt, die Neumessung 9,27 < 10,7 — die Zeile ROT „er ist zurück", der Schreiber schreibt
         [
             // das Maß FRISCH gestempelt (am heutigen Code), sonst stünde es veraltet und der Widerspruch ruhte bis zur Neumessung
             "geheilt neben einem roten Maß",
@@ -2374,7 +2374,7 @@ function sollTafelSelbsttest(tafel, q) {
             "heißt geheilt, das Maß zweiton ist ROT — er ist zurück",
             "zeile",
         ],
-        // K63-n8 (Koordinator 15.10.): das Bild der Messung im Scratch (AppData) — ein Verweis aus dem Baum hinaus
+        // K63-n8: das Bild der Messung im Scratch (AppData) — ein Verweis aus dem Baum hinaus
         [
             "Bild im Scratch",
             (t) => (mitMessung(t).mass.messung.bild = "../../../../AppData/Local/Temp/claude/x/boden.png"),

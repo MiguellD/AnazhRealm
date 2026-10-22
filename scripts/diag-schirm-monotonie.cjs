@@ -1,4 +1,4 @@
-// diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie, 06.10.): ein kleinerer Schirm trägt höchstens
+// diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie): ein kleinerer Schirm trägt höchstens
 // gleich viel Welt — je Pass und Täter-Klasse —, und jedes Gesetz liest den Schirm aus der EINEN Quelle (`_schirm`).
 //
 // Befund (OMEN GTX 1060, main 2b60988b, EINE Welt, gleiche Stellgrößen): „beim Verkleinern des Fensters verdoppeln sich

@@ -39,7 +39,7 @@ async function checkRing2Dsl(ctx) {
         const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
-        // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
+        // DIE KÖRPER-GESETZE SIND GESETZ: player_jump_power wiegt nur im Gesetz-Band des Leibs — der
         // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon; dslEval weist sie benannt ab).
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);

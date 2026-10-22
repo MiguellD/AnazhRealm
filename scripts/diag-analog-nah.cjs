@@ -1,4 +1,4 @@
-// diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah, 04.10.): nah und mittel ist das Studio-Mesh die Gestalt
+// diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt
 // (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah-
 // Grenze `ANALOG_NAH_M` (64 m). Befund (Blick-Tour 1, echte GPU, Mess-Wiese, unter Last): eine Baumkrone in 40 m als
 // glatter Ellipsoid-Klumpen mit Kegel-Stamm, nach der Rückkehr an die Mess-Wiese 165 Analog-Sätze < 64 m, die 20 s

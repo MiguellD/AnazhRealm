@@ -68,7 +68,7 @@ function pageHtml() {
     for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
     return btoa(s);
   };
-  // DER ATLAS-STECKBRIEF gegen den MALER (04.10.): der Kern-Maler malt den EINEN Blatt-Atlas hier im
+  // DER ATLAS-STECKBRIEF gegen den MALER: der Kern-Maler malt den EINEN Blatt-Atlas hier im
   // Seiten-Kontext — je Zelle (0..2 Breitblatt, 3 Nadel) die Ausdehnung von Alpha>0 um die Zellmitte (Anteil
   // der halben Zelle) und die mittlere Alpha-Deckung der ganzen Zelle.
   window.__atlas = () => {
@@ -101,7 +101,7 @@ function pageHtml() {
     for (let i = 0; i < a.length; i++) a[i] = b.daten[i * 4 + 3];
     return { w: b.breite, h: b.hoehe, b64: b64(a) };
   };
-  // DAS ATLAS-BILD ganz (05.10., gate:pflanzen-nah F): jede Mip-Stufe (rgba, Textur-Ordnung) und der Wert — der
+  // DAS ATLAS-BILD ganz (gate:pflanzen-nah F): jede Mip-Stufe (rgba, Textur-Ordnung) und der Wert — der
   // Aufrufer macht daraus die Fracht des Wirts (phyto-core blattAtlasFracht) und misst Labor gegen Welt je Format.
   window.__atlasBild = () => {
     const b = window.__phytoCore.bakeLeafAtlasBild(document);

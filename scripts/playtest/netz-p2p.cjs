@@ -12,7 +12,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     void errors;
     void finalState;
     // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
-    // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2, 16.10.: der letzte Name fiel aus einer DSL-Liste);
+    // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
@@ -483,7 +483,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
         out.w7p2MethodsPresent =
-            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
+            typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();

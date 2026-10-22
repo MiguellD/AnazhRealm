@@ -1,4 +1,4 @@
-// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6, 06.10.).
+// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6).
 //
 // Die Nah-Wiese legt ihre Senken (`nahWiese:L<stufe>:<v>:<teil>`, jede ein oberster Knoten der Szene) je Frame im
 // Haupt-Pass neu: `_passSicht` → `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
@@ -76,7 +76,7 @@ function installWieseSicht() {
         o.erwartet = window.__wieseErwartet(r, kam, S.frustum);
         return o;
     };
-    // DAS SOLL JE SENKE (Integration W5 × W6, 06.10.): wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
+    // DAS SOLL JE SENKE (Integration W5 × W6): wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
     // Büschels im Frustum der Linsen-Kamera (die Sicht-Kugel des Büschels umschließt ihren Fuß: jeder solche Büschel
     // trifft), das Rand-Band dünnt wie im Satz (Würfel-Ordnung gegen den Anteil), die Stufe nur, wo sie ohne Hysterese
     // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2). Ein dünner Ring (der Waldboden unter der

@@ -1,4 +1,4 @@
-// diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Welle L 06.10., Klasse Q4).
+// diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Klasse Q4).
 // Befund der Leben-Prüfung (Synthese Q4, Kritik §2.1): die Sim steht auf dem Gesetz, die Sicht muss auf dem stehen, was das
 // Auge sieht. Gemessen war: die Fuß-IK zog Becken und Sohlen 0,25 m ins Haus-Podest (die Probe las das Gelände unter
 // dem Träger), im Sprung sank das Becken 0,25 m, während die Kapsel stieg (N-D1); in jeder Höhle las die Probe die Wiese

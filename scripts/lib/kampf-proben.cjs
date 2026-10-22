@@ -591,7 +591,7 @@ async function WELLE_L() {
             w.z.keSpanne = ke.length ? +(ke[ke.length - 1] / ke[0]).toFixed(1) : null;
             w.c.hitStopEnergie = ke.length >= 15 && gruppe <= 3;
         }
-        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (Welle LF 08.10., K-D12): 20 Treffer mit Rückstoß aus 1,6 m
+        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (K-D12): 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
         // Vorher lief die Probe am Hirsch, den die Substanz-Tags „wehrhaft" nannten.
         r.setGameMode("pfad");
@@ -1299,7 +1299,7 @@ async function WELLE_L() {
             w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
         }
 
-        // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
+        // ═══ WELLE LF KAMPF — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
         r.setCameraMode("first");
         // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der

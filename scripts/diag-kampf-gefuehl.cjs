@@ -35,7 +35,7 @@
 //      nichts — die Treffer-Messung fließt durch die echte Kapsel-Mathe.
 //      Beide Stubs restauriert (Gate-Hook-Lehre).
 //
-// WELLE L (06.10.) — die Leben-Prüfung „Kampf" (artifacts/profiband/leben/befund-kampf.md) als Linse am ECHTEN
+// WELLE L — die Leben-Prüfung „Kampf" (artifacts/profiband/leben/befund-kampf.md) als Linse am ECHTEN
 // Chokepoint, gespielt wie ein Mensch: das Fadenkreuz wird über Gier und Neigung durch die ECHTE Kamera
 // (_loopCamera, 1st und 3rd) auf das Ziel geführt, geklickt wird über den EINEN Dispatcher (tryMouseBreak /
 // _tickHarvest / tryMousePlace / Canvas-mousedown), geschlagen über _beginPlayerSwing + _tickKampfSchwung.
@@ -955,7 +955,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             tick(Math.ceil((GT.kippDauerSec + GT.leichnamSec - 1.4) / 0.1) + 3, 0.1);
             o.checks.dDespawnNachFrist = liegtNoch && (s.leichname || []).indexOf(cTod) === -1 && !cTod.parent;
 
-            // ── EINHEITSBREI-WAND (18.07.) — die 13 Gattungen differenzieren ──
+            // ── EINHEITSBREI-WAND — die 13 Gattungen differenzieren ──
             // Fake-Blueprints mit BYTE-GLEICHEN Donor-Parts (KIND_SUBSTANCE.
             // geraet_schwert) aber verschiedener studioGestalt: unterscheiden
             // sich Dauer/Reichweite/Schaden, KANN die Quelle nur der Kern sein

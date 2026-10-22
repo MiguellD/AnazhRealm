@@ -1199,7 +1199,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
+// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1431,7 +1431,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
-    // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+    // ### Welle 6.X.3 — Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
@@ -1595,7 +1595,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 — Identity (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 — Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;

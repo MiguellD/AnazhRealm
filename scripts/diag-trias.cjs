@@ -40,7 +40,7 @@ const HAUS_L2_MAX_TRIS = 8000;
 // ── AUSLÖSCHUNGS-WELLE — DIE SUBSTANZ-PARITAET (stehende Linse, Teil N4) ──
 // Die Judge-Substanz der fuenf gefallenen Donor-Blueprints lebt EINGEFROREN in
 // AnazhRealm.KIND_SUBSTANCE (je EINE Zeile `    <name>: {...json...},`). Die Muenzen
-// (sha256 ueber JSON.stringify der geparsten Zeile, Mint 10.07.2026) machen jede
+// (sha256 ueber JSON.stringify der geparsten Zeile) machen jede
 // Drift der Substanz laut.
 const KIND_SUBSTANCE_MINT = {
     geraet_schwert: "fbd9f91fa5f8e26c9dd99959ce99f0c8906cbe82662ee1f82035003529e4ff9b",

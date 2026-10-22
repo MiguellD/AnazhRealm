@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot (Welle K, 07.10.). Befund: der OMEN (GTX 1060, der ruhige Messplatz) fuhr
+// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot (Welle K). Befund: der OMEN (GTX 1060, der ruhige Messplatz) fuhr
 // jeden Stand mit einer Befehlsfolge, die in jeder Nachricht neu stand — und zweimal maß er Falsches, ohne dass eine Zahl es
 // zeigte: `band` vor `lauf` (die Bank-Frames ohne rAF füllen den Zeitstempel-Pool, jeder Pass-Stempel danach ist blind) und
 // das „tauende" Wetter (die Bühne hielt die Uhr des Auto-Zugs, ein anderer Schreiber drehte trotzdem sunny → rainy; V18.534
@@ -172,7 +172,7 @@ function bankJe(lauf) {
 // Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
 // `bloecke` = [{ zustand: "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in
 // Zeitfolge. DAS RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-
-// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme, 13.10.: 1796 → 1765 MHz) fällt so
+// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so
 // aus Rauschen UND Schalter heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-
 // Block gegen das Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
 const SCHALTER_MIN_BLOECKE = 2;
@@ -520,7 +520,7 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
     return v;
 }
 
-// DAS ENDE DER WERKBANK (Gegenprüfung 07.10.): `/stop` beendet sie samt Chrome; die Folge wartet auf ihr Ende (`frist`). Hängt
+// DAS ENDE DER WERKBANK: `/stop` beendet sie samt Chrome; die Folge wartet auf ihr Ende (`frist`). Hängt
 // `/stop` (eine tote Seite, ein hängender Browser), stirbt der ganze Prozess-Baum — Werkbank und Chrome (Windows:
 // `taskkill /T /F`, ein TerminateProcess allein ließe Chrome stehen; sonst SIGTERM, puppeteer räumt Chrome, dann SIGKILL).
 // Vorher stand `kind.kill` in einem unref-Timer direkt vor `process.exit`: er feuerte nie — unter POSIX blieb die Werkbank
@@ -595,7 +595,7 @@ function rufe(port, weg, nutzlast) {
     });
 }
 
-// DER NEULAUF (OMEN 15.10.): ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
+// DER NEULAUF: ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
 // eine Schlange), misst eine andere Szene als seine Geschwister und trägt kein Urteil (1510-k72-abab: an Genesis 7 von 16
 // Boots, −2 Baum-Befehle, +6 fps). Die Folge fährt ihn neu, höchstens NEULAUF_MAX-mal — ein Erst-Boot einer Serie mit
 // frischem Profil, sonst wäre der Neulauf ein Zweit-Boot; schwingt auch der letzte nicht ein, ist er ROT beim Namen
@@ -1482,7 +1482,7 @@ async function selbsttest() {
         /Block 6 ohne Grund-Block davor UND danach/
     );
     }
-    // DER NEULAUF und der Ort vor dem Boot (OMEN 15.10.): ein nicht eingeschwungener Lauf fährt neu, ein Abbruch nie; der letzte
+    // DER NEULAUF und der Ort vor dem Boot: ein nicht eingeschwungener Lauf fährt neu, ein Abbruch nie; der letzte
     // Versuch nennt sich ROT; ein schwebender Dorf-Plan ist ein Befund; die Werkbank startet mit dem Ort, und jeder Messort
     // sagt, ob sein Dorf-Zug läuft (die Werkbank sperrt ihn danach vor dem ersten Skript).
     const offen = { eingeschwungen: false, takte: 4213, offen: { dorfWaechst: "0/18" } };

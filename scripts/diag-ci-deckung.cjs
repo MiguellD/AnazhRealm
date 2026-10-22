@@ -1,4 +1,4 @@
-// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (Welle K, CI-Teilung 07.10.; jeder Befund steht in der Commit-Chronik).
+// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (Welle K, jeder Befund steht in der Commit-Chronik).
 //
 // Die Batterie läuft als Matrix in Gruppen (`strategy.matrix.gruppe`), jede fährt die Vorbereitung und ihre Gate-Schritte
 // (`if: matrix.gruppe == N`). Die Wand nennt jede Art, einen Schritt zu verlieren oder zu vervielfachen, beim Namen:
@@ -26,7 +26,7 @@
 //                das letzte Glied einer Kette, die nicht die letzte Zeile ist), eine Shell, die die Linse nicht liest; npm fährt
 //                seine Skripte als `sh -c` ohne errexit (ein `;` macht den Teil davor stumm — STUMM IN SICH). Beim Namen genannt.
 //
-// DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
+// DIE ZWEI STUFEN UND DIE WAAGE (K14, Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
 // GENAU zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
 // steht an GENAU einer Stelle (G)/(D), ein weiterer Job ist ROT (außer der Echt-Gruppe (E), er stünde außerhalb der Waage):
 //   (T) WAAGE    je Gruppe der Plan: die Vorbereitung plus die Median-Zeiten ihrer Schritte (spec/ci/ci-zeiten.json, gemessen

@@ -1668,7 +1668,7 @@ async function checkBandReglerSim(ctx) {
                 const pStark = prof({ vendor: "nvidia", architecture: "ampere" }, 24, 32, 1, 1920, 1080);
                 const pSchwach = prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
                 const pMittel = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 1440, 765);
-                // DER SCHIRM IST KEIN SEED (06.10., gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
+                // DER SCHIRM IST KEIN SEED (gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
                 // 4 MPix 0,1–0,2 ab — ein größerer Schirm startete mit weniger Welt. Dasselbe Gerät auf 4K: derselbe Seed.
                 const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
                 o.s5 = { pStark, pSchwach, pMittel, pMittelGross };

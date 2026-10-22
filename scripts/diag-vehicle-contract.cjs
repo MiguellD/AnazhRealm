@@ -73,7 +73,7 @@ function caseKey(c) {
     }
     check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
 
-    // 2) Seed-Semantik (cv:3, Re-Mint W5 05.10. — s. Kopf): die GEOMETRIE ist seed-invariant, der Same wählt den Lack.
+    // 2) Seed-Semantik (cv:3): die GEOMETRIE ist seed-invariant, der Same wählt den Lack.
     let seedInv = true;
     for (const g of GATTUNGEN)
         if (

@@ -1517,7 +1517,7 @@ async function checkBandGammaGenese(ctx) {
                 if (a0 <= 0.7) aff = { a0, a1: r.spawnAffinityForBlueprint("baum_eiche", x, z, 1) };
             }
             if (aff) out.affDelta = aff.a1 - aff.a0;
-            // (4) Γ2 — DAS BODEN-GESETZ (Waldboden 04.10., die Host-Kronen-Lesart fiel): die Studio-Zeilen, die die
+            // (4) Γ2 — DAS BODEN-GESETZ (die Host-Kronen-Lesart fiel): die Studio-Zeilen, die die
             // Nah-Streu liest, differenzieren an kontrollierten Umwelten — Farn im Schatten (die Feuchte hebt seine
             // Licht-Grenze), Schilf nur am gemessenen Ufer (Pflicht-Band), Blume im Licht.
             const boden =

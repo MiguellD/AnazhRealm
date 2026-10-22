@@ -81,7 +81,7 @@
 //                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
 //                                                           des Spiels), Drehen (1°/Frame), Gehen
 //                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
-//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s] [--wandern bahn]
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei|n] [--wetter w] [--ruhe max-s] [--wandern bahn]
 //                                 | lauf --selbsttest
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach `--ein` s
 //                                                           Einschwingen misst er `sek` s Frame-Zeit · GPU-Zeit (timestamp-
@@ -374,15 +374,19 @@ function lauf(k) {
         const st = r.state;
         const rend = st.renderer;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        // DIE WETTER-WACHE: der Zustand vor dem Lauf (Wort und Uhr des Auto-Zugs — eine Uhr unter 0 ist eingefroren, der Halt)
-        // und die Marke im Buch des Wetter-Spions. Dreht im Lauf ein Schreiber das Wetter (nicht die Bühne), schreibt einer am
+        // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
+        // (`--tiere 50`) — Profiband K1 „Sturm"
+        const tiereN = /^\d+$/.test(k.tiere) ? Number(k.tiere) : 0;
+        if (!tiereN && k.tiere !== "frei" && k.tiere !== "halten") throw new Error(`--tiere ${k.tiere}: halten · frei · <n>`);
+        window.__buehne({ wetter: k.wetter, tiere: tiereN });
+        // DIE WETTER-WACHE: der Zustand nach der Bühne (Wort und Uhr des Auto-Zugs — eine Uhr unter 0 ist eingefroren, der Halt)
+        // und die Marke im Buch des Wetter-Spions. Dreht im Lauf ein Schreiber das Wetter, schreibt einer am
         // `_setWeather` vorbei, taut die Uhr oder ist ein eingefrorenes Wort danach ein anderes, ist der Lauf ROT und nennt den
         // Täter (`wetterUrteil`, scripts/lib/ausgabe-aufnahme.cjs).
         const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
-        window.__buehne();
-        // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei`: der Halte-Griff setzt x/z je Takt zurück,
+        // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere !== "frei" && window.__tiereHalten) window.__tiereHalten();
+        if (k.tiere === "halten" && window.__tiereHalten) window.__tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         if (st.playerMesh) st.playerMesh.visible = true;
@@ -396,8 +400,9 @@ function lauf(k) {
         let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
-        // DIE BAHN (`wandern: "bahn"`, die OMEN-Zellen „geht"): 4 m/s −z 0 → −60 m und zurück, je Takt vor dem Spiel-Takt; das
-        // Ende stellt an den Anfang zurück — jeder Gang geht dieselbe Bahn.
+        // DIE BAHN (`wandern: "bahn"`, die OMEN-Zellen „geht"): 4 m/s die Kette des Orts (haushalt.json `bahn`, die Hauptgasse
+        // der Stadt) oder −z 0 → −60 m, hin und zurück, je Takt vor dem Spiel-Takt; das Ende stellt an den Anfang zurück — jeder
+        // Gang geht dieselbe Bahn. Der Geher lebt IM Lauf: eine Zerlegung kann ihn nicht vorher beenden (K1).
         const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
@@ -406,6 +411,11 @@ function lauf(k) {
         };
         const ort = st.playerMesh.position.clone();
         const bahn = k.wandern === "bahn" ? { t0: null, weg: 0 } : null;
+        const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
+        const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
+        // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
+        const lage = ort.clone();
+        let weg = 0;
         let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         rend.setAnimationLoop((t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
@@ -419,7 +429,15 @@ function lauf(k) {
             if (H) snap = Object.assign({}, H.acc);
             if (bahn) {
                 bahn.weg = (4 * (t - (bahn.t0 ??= t))) / 1000;
-                st.playerMesh.position.set(ort.x, st.playerMesh.position.y, ort.z - 60 + Math.abs((bahn.weg % 120) - 60));
+                let s = laenge - Math.abs((bahn.weg % (2 * laenge)) - laenge);
+                for (let i = 1; i < kette.length; i++) {
+                    const [ax, az] = kette[i - 1], [bx, bz] = kette[i], l = Math.hypot(bx - ax, bz - az);
+                    if (s > l && i < kette.length - 1) s -= l;
+                    else {
+                        st.playerMesh.position.set(ax + ((bx - ax) * s) / l, st.playerMesh.position.y, az + ((bz - az) * s) / l);
+                        break;
+                    }
+                }
             }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
@@ -435,6 +453,9 @@ function lauf(k) {
             if (H) snap = Object.assign({}, H.acc);
             // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
             const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
+            const pm = st.playerMesh.position;
+            if (messen) weg += Math.hypot(pm.x - lage.x, pm.z - lage.z);
+            lage.copy(pm);
             if (!messen) {
                 if (gerendert) tRenderVor = t;
                 return;
@@ -637,7 +658,8 @@ function lauf(k) {
                     buch: window.__wetterBuch(wetterVor.seq).buch,
                 },
                 saison: st.season,
-                bahnM: bahn && Math.round(bahn.weg),
+                bahnM: Math.round(weg),
+                buehnenTiere: st.creatures.filter((c) => c.userData.buehne).length,
                 haenger,
             };
         } finally {
@@ -1038,6 +1060,31 @@ async function starte() {
                     for (const m of window.__ortTakt) r[m](pm);
                 };
                 if (window.__ortStell) window.__ortStell();
+                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Platz mit seinem Blick, wie im Spiel (Chat) — die
+                // Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt, die sie
+                // trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
+                const g = o && o.gruendung;
+                window.__ortBahn = (o && o.bahn) || null;
+                if (g) {
+                    const same = g.wort.split(" ")[1];
+                    const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
+                    const steht = () =>
+                        zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
+                    if (!steht()) {
+                        r.state.yaw = Math.atan2(g.blick[0] - g.platz[0], g.blick[1] - g.platz[1]);
+                        r.state.playerMesh.position.set(g.platz[0], r._voxelSurfaceY(g.platz[0], g.platz[1]) + 1.8, g.platz[1]);
+                        r._chatDispatchLegacyCommand(g.wort, [], () => {});
+                        for (const weiter = window.__deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
+                    }
+                    if (!steht())
+                        throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
+                    const k = o.bahn;
+                    for (let i = 1; i < k.length; i++)
+                        for (let s = 0, l = Math.hypot(k[i][0] - k[i - 1][0], k[i][1] - k[i - 1][1]); s <= l; s++) {
+                            const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
+                            if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
+                        }
+                }
                 if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
                 else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
                 if (o && Number.isFinite(o.gier)) {
@@ -1905,6 +1952,8 @@ async function starte() {
                             takt: ort.ortTakt,
                             stell: ort.stell || null,
                             kamera: haushalt.sichten[sicht].kamera,
+                            gruendung: ort.gruendung || null,
+                            bahn: ort.bahn || null,
                         });
                         // DIE WIESE (K55): ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
@@ -2906,7 +2955,7 @@ async function starte() {
                     let an = false, o;
                     spur.an = () => cdp.send("Tracing.start", { traceConfig: { includedCategories: kategorien } }).then(() => (an = true));
                     try {
-                        o = await page.evaluate(lauf, Object.assign({ regler: b.regler || "voll", tiere: b.tiere || "halten", spur: true }, k));
+                        o = await page.evaluate(lauf, Object.assign({ regler: b.regler || "voll", tiere: b.tiere || "halten", wetter: b.wetter, spur: true }, k));
                     } finally {
                         spur.an = null;
                         const komplett = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
@@ -3697,10 +3746,11 @@ async function starte() {
         process.exit(0);
     } else if (cmd === "lauf") {
         if (argv.includes("--selbsttest")) {
-            const f = [...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest()];
+            const f = [...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...require("./lib/ausgabe-aufnahme.cjs").buehneSelbsttest()];
             console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: die Pass-Teilung trennt zwei Gipfel " +
                 "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
-                "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN");
+                "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
+                "füllt nur auf und bricht ohne Platz laut");
             process.exit(f.length ? 1 : 0);
         }
         o = await rufe("/lauf", {
@@ -3708,6 +3758,7 @@ async function starte() {
             ein: opt("--ein"),
             regler: opt("--regler", "frei"),
             tiere: opt("--tiere", "halten"),
+            wetter: opt("--wetter"),
             ruhe: opt("--ruhe", 0),
             wandern: opt("--wandern"),
         });
@@ -3715,6 +3766,7 @@ async function starte() {
         const rot = [
             o.wetterHalt && o.wetterHalt.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
             o.belegung && o.belegung.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
+            o.buehnenTiere < Number(opt("--tiere")) && `BÜHNE ROT: ${o.buehnenTiere} von ${opt("--tiere")} Tieren stehen am Ende`,
         ].filter(Boolean);
         if (rot.length) {
             console.log(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
@@ -3746,6 +3798,7 @@ async function starte() {
             ein: opt("--ein", spitze ? 2 : undefined),
             regler: opt("--regler", "voll"),
             tiere: opt("--tiere", "frei"),
+            wetter: opt("--wetter"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
             probe: argv.includes("--probe"),
