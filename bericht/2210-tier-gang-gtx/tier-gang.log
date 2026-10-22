@@ -1,0 +1,137 @@
+
+> anazhrealm@18.546.59 gate:tier-gang
+> node scripts/diag-tier-gang.cjs --selftest && node scripts/diag-tier-gang.cjs
+
+  ❌ wolf  v̂ 0.3 0.7 m/s · Hüfte 0.629 m · Stand 0.36 · Schlupf 0.086
+  ❌ Gangart Welt wolf v̂ 0.3 · trab [0 0.5 0.5 0.98] — Soll schritt-lateral · Tastgrad 0.36 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ wolf  v̂ 0.74 1.8 m/s · Hüfte 0.629 m · Stand 0.17 · Schlupf 0.111
+  ❌ Gangart Welt wolf v̂ 0.74 · trab [0 0.42 0.41 0.99] — Soll schritt-lateral · Tastgrad 0.17 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ wolf  v̂ 1.2 3.0 m/s · Hüfte 0.629 m · Stand 0.09 · Schlupf 0.105
+  ❌ Gangart Welt wolf v̂ 1.2 · unbestimmt [0 0.61 0.53 1] — Soll trab · Tastgrad 0.09 (Soll 0.4–0.6 — Täter: tetrapoda gangSchritt)
+  ❌ wolf  v̂ 3.5 8.7 m/s · Hüfte 0.629 m · Stand 0.04 · Schlupf 0.205
+  ❌ Gangart Welt wolf v̂ 3.5 · trab [0 0.5 0.59 0.06] — Soll galopp · Tastgrad 0.04 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt)
+  ❌ wolf  v̂ 0.74 1.8 m/s (30 fps · Leiter 1/4) · Hüfte 0.629 m · Stand 0.15 · Schlupf 0.059
+  ✅ wolf  v̂ 1.2 3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.629 m · Stand 0.11 · Schlupf 0.008
+  ❌ fuchs v̂ 0.3 0.6 m/s · Hüfte 0.389 m · Stand 0.31 · Schlupf 0.087
+  ❌ Gangart Welt fuchs v̂ 0.3 · trab [0 0.43 0.42 0.98] — Soll schritt-lateral · Tastgrad 0.31 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ fuchs v̂ 0.74 1.4 m/s · Hüfte 0.389 m · Stand 0.13 · Schlupf 0.097
+  ❌ Gangart Welt fuchs v̂ 0.74 · unbestimmt [0 0.33 0.36 0.99] — Soll schritt-lateral · Tastgrad 0.13 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ fuchs v̂ 1.2 2.3 m/s · Hüfte 0.389 m · Stand 0.06 · Schlupf 0.162
+  ❌ Gangart Welt fuchs v̂ 1.2 · unbestimmt [0 1 0.26 1] — Soll trab · Tastgrad 0.06 (Soll 0.4–0.6 — Täter: tetrapoda gangSchritt)
+  ❌ fuchs v̂ 3.5 6.8 m/s · Hüfte 0.389 m · Stand 0.09 · Schlupf 0.671
+  ❌ Gangart Welt fuchs v̂ 3.5 · trab [0 0.5 0.59 0.06] — Soll galopp · Tastgrad 0.09 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt)
+  ✅ fuchs v̂ 0.74 1.4 m/s (30 fps · Leiter 1/4) · Hüfte 0.389 m · Stand 0.06 · Schlupf 0.001
+  ❌ fuchs v̂ 1.2 2.3 m/s (30 fps · Leiter 1/4) · Hüfte 0.389 m · Stand 0.06 · Schlupf 0.193
+  ❌ baer  v̂ 0.3 0.8 m/s · Hüfte 0.767 m · Stand 0.39 · Schlupf 0.074
+  ❌ Gangart Welt baer v̂ 0.3 · trab [0 0.54 0.51 0.98] — Soll schritt-lateral · Tastgrad 0.39 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ baer  v̂ 0.74 2.0 m/s · Hüfte 0.767 m · Stand 0.18 · Schlupf 0.096
+  ❌ Gangart Welt baer v̂ 0.74 · trab [0 0.45 0.45 0.99] — Soll schritt-lateral · Tastgrad 0.18 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ baer  v̂ 1.2 3.3 m/s · Hüfte 0.767 m · Stand 0.11 · Schlupf 0.125
+  ❌ Gangart Welt baer v̂ 1.2 · trab [0 0.59 0.54 1] · Tastgrad 0.11 (Soll 0.4–0.6 — Täter: tetrapoda gangSchritt)
+  ❌ baer  v̂ 3.5 9.6 m/s · Hüfte 0.767 m · Stand 0.01 · Schlupf 0.165
+  ❌ Gangart Welt baer v̂ 3.5 · unbestimmt [0 0.33 0.23 0.95] — Soll galopp · Tastgrad 0.01 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt)
+  ❌ baer  v̂ 0.74 2.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.767 m · Stand 0.2 · Schlupf 0.074
+  ✅ baer  v̂ 1.2 3.3 m/s (30 fps · Leiter 1/4) · Hüfte 0.767 m · Stand 0.12 · Schlupf 0.006
+  ❌ wesen v̂ 0.3 0.9 m/s · Hüfte 0.917 m · Stand 0.41 · Schlupf 0.052
+  ❌ Gangart Welt wesen v̂ 0.3 · trab [0 0.56 0.53 1] — Soll schritt-lateral · Tastgrad 0.41 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ wesen v̂ 0.74 2.2 m/s · Hüfte 0.917 m · Stand 0.19 · Schlupf 0.082
+  ❌ Gangart Welt wesen v̂ 0.74 · trab [0 0.56 0.52 0.99] — Soll schritt-lateral · Tastgrad 0.19 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt)
+  ❌ wesen v̂ 1.2 3.6 m/s · Hüfte 0.917 m · Stand 0.11 · Schlupf 0.111
+  ❌ Gangart Welt wesen v̂ 1.2 · trab [0 0.51 0.48 1] · Tastgrad 0.11 (Soll 0.4–0.6 — Täter: tetrapoda gangSchritt)
+  ❌ wesen v̂ 3.5 10.5 m/s · Hüfte 0.917 m · Stand 0.01 · Schlupf 0.173
+  ❌ Gangart Welt wesen v̂ 3.5 · unbestimmt [0 0.33 0.17 0.95] — Soll galopp · Tastgrad 0.01 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt)
+  ✅ wesen v̂ 0.74 2.2 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.1 · Schlupf 0.049
+  ✅ wesen v̂ 1.2 3.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.1 · Schlupf 0.003
+  ❌ mensch gehen (W) 1.15 m/s · Bein 0.835 m · Stand 0.11 · Schlupf 1.124 (> 0.05) · Kadenz 0.34 Schritte/s (3.4 m je Schritt) < 1.5 · Töne 1 / Soll 0.8 (± 15 % verfehlt) · Becken Hub 1.637 L / Tiefe 1.751 L (Soll ≤ 0.07 / 0.08) · Lock-Löser 3 (Phase@Takt -1.48@4 -0.15@79 0.55@119) in 178 Stand-Takten — Täter: _gaitGesetz (fx.bewegung.gang) · tetrapoda gangBecken (das Becken des Gesetzes) · _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ mensch laufen (Shift) 5.16 m/s · Bein 0.835 m · Stand 0.33 · Schlupf 0.002 · Kadenz 1.52 Schritte/s (3.4 m je Schritt) · Töne 4 / Soll 3.8 · Becken Hub 0.077 L / Tiefe 0.183 L · Lock-Löser 30 (Phase@Takt 2.09@5 2.41@9 2.73@13 2.97@16 3.92@28 4.56@36 5.03@42 5.43@47 5.75@51 6.07@55 0.82@68 1.45@76 1.93@82 2.33@87 2.64@91 2.88@94 3.12@97 3.92@107 4.55@115 5.03@121 5.43@126 5.74@130 6.06@134 0.81@147 1.45@155 1.92@161 2.32@166 2.64@170 2.88@173 3.12@176) in 180 Stand-Takten — Täter: _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.28 · Schlupf 0.001 · Kadenz 1.99 Schritte/s (3.4 m je Schritt) · Töne 5 / Soll 4.9 · Becken Hub 0.066 L / Tiefe 0.162 L · Lock-Löser 36 (Phase@Takt 3.98@5 4.6@11 5.12@16 5.54@20 5.85@23 6.16@26 0.81@35 1.44@41 1.96@46 2.37@50 2.68@53 3@56 3.93@65 4.56@71 5.08@76 5.49@80 5.8@83 6.11@86 0.77@95 1.39@101 1.91@106 2.33@110 2.64@113 2.95@116 3.89@125 4.51@131 5.03@136 5.44@140 5.76@143 6.07@146 0.82@156 1.45@162 1.97@167 2.38@171 2.7@174 3.01@177) in 180 Stand-Takten — Täter: _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ Schwere 1,62 m/s² · Takt Mensch 2.1888 × Gesetz · Becken-Zeile g null · Takt Wolf 1.0000 × Gesetz · Literal-Zwillinge 0 — Täter: _gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt) · _animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)
+[linse-gpu] nvidia/pascal
+  ❌ studio geduckt 4.58 E/s · Bein 2.74 E · Stand 0.55 · Schlupf 0.987 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.07) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ❌ studio gehen 10.45 E/s · Bein 2.74 E · Stand 0.55 · Schlupf 0.994 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ❌ studio sprint 17.91 E/s · Bein 2.74 E · Stand 0.54 · Schlupf 0.997 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ❌ Gangart Labor wolf v̂ 0.3 · unbestimmt [0 0.38 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.52 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.25 Zyklus (> 0,05)
+  ❌ Gangart Labor wolf v̂ 0.74 · unbestimmt [0 0.38 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.51 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.34 Zyklus (> 0,05)
+  ❌ Gangart Labor wolf v̂ 1.2 · unbestimmt [0 0.37 0.75 0.12] — Soll trab · Tastgrad 0.51 · Welt − Labor 0.24 Zyklus (> 0,05)
+  ❌ Gangart Labor wolf v̂ 3.5 · unbestimmt [0 0.37 0.75 0.12] — Soll galopp · Tastgrad 0.49 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.16 Zyklus (> 0,05)
+  ❌ Gangart Labor fox v̂ 0.3 · unbestimmt [0 0.38 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.52 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.33 Zyklus (> 0,05)
+  ❌ Gangart Labor fox v̂ 0.74 · unbestimmt [0 0.37 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.51 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.39 Zyklus (> 0,05)
+  ❌ Gangart Labor fox v̂ 1.2 · unbestimmt [0 0.37 0.75 0.12] — Soll trab · Tastgrad 0.5 · Welt − Labor 0.49 Zyklus (> 0,05)
+  ❌ Gangart Labor fox v̂ 3.5 · unbestimmt [0 0.37 0.75 0.12] — Soll galopp · Tastgrad 0.5 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.16 Zyklus (> 0,05)
+  ❌ Gangart Labor bear v̂ 0.3 · unbestimmt [0 0.37 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.46 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.24 Zyklus (> 0,05)
+  ❌ Gangart Labor bear v̂ 0.74 · unbestimmt [0 0.38 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.52 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.30 Zyklus (> 0,05)
+  ❌ Gangart Labor bear v̂ 1.2 · unbestimmt [0 0.37 0.75 0.12] — Soll trab · Tastgrad 0.52 · Welt − Labor 0.22 Zyklus (> 0,05)
+  ❌ Gangart Labor bear v̂ 3.5 · unbestimmt [0 0.38 0.75 0.13] — Soll galopp · Tastgrad 0.5 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.48 Zyklus (> 0,05)
+  ❌ Gangart Labor deer v̂ 0.3 · unbestimmt [0 0.38 0.75 0.13] — Soll schritt-lateral · Tastgrad 0.5 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.22 Zyklus (> 0,05)
+  ❌ Gangart Labor deer v̂ 0.74 · unbestimmt [0 0.37 0.75 0.12] — Soll schritt-lateral · Tastgrad 0.52 (Soll 0.6–0.7 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.23 Zyklus (> 0,05)
+  ❌ Gangart Labor deer v̂ 1.2 · unbestimmt [0 0.38 0.75 0.13] — Soll trab · Tastgrad 0.5 · Welt − Labor 0.27 Zyklus (> 0,05)
+  ❌ Gangart Labor deer v̂ 3.5 · unbestimmt [0 0.38 0.75 0.13] — Soll galopp · Tastgrad 0.51 (Soll 0.25–0.35 — Täter: tetrapoda gangSchritt) · Welt − Labor 0.42 Zyklus (> 0,05)
+
+✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (58 Läufe über 0.05).
+  ✅ wolf  v̂ 0.3 0.7 m/s · Hüfte 0.629 m · Stand 0.67 · Schlupf 0.008
+  ✅ Gangart Welt wolf v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.67
+  ✅ wolf  v̂ 0.74 1.8 m/s · Hüfte 0.629 m · Stand 0.64 · Schlupf 0.003
+  ✅ Gangart Welt wolf v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64
+  ✅ wolf  v̂ 1.2 3.0 m/s · Hüfte 0.629 m · Stand 0.5 · Schlupf 0.004
+  ✅ Gangart Welt wolf v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5
+  ✅ wolf  v̂ 3.5 8.7 m/s · Hüfte 0.629 m · Stand 0.28 · Schlupf 0.012
+  ✅ Gangart Welt wolf v̂ 3.5 · galopp [0 0.16 0.59 0.44] · Tastgrad 0.28
+  ✅ wolf  v̂ 0.74 1.8 m/s (30 fps · Leiter 1/3) · Hüfte 0.629 m · Stand 0.48 · Schlupf 0.002
+  ✅ wolf  v̂ 1.2 3.0 m/s (30 fps · Leiter 1/2) · Hüfte 0.629 m · Stand 0.37 · Schlupf 0.002
+  ✅ fuchs v̂ 0.3 0.6 m/s · Hüfte 0.389 m · Stand 0.67 · Schlupf 0.007
+  ✅ Gangart Welt fuchs v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.67
+  ✅ fuchs v̂ 0.74 1.4 m/s · Hüfte 0.389 m · Stand 0.64 · Schlupf 0.004
+  ✅ Gangart Welt fuchs v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64
+  ✅ fuchs v̂ 1.2 2.3 m/s · Hüfte 0.389 m · Stand 0.48 · Schlupf 0.005
+  ✅ Gangart Welt fuchs v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.48
+  ✅ fuchs v̂ 3.5 6.8 m/s · Hüfte 0.389 m · Stand 0.25 · Schlupf 0.018
+  ✅ Gangart Welt fuchs v̂ 3.5 · galopp [0 0.15 0.57 0.43] · Tastgrad 0.25
+  ✅ fuchs v̂ 0.74 1.4 m/s (30 fps · Leiter 1/2) · Hüfte 0.389 m · Stand 0.52 · Schlupf 0.004
+  ✅ fuchs v̂ 1.2 2.3 m/s (30 fps · Leiter 1/2) · Hüfte 0.389 m · Stand 0.33 · Schlupf 0.003
+  ✅ baer  v̂ 0.3 0.8 m/s · Hüfte 0.767 m · Stand 0.68 · Schlupf 0.009
+  ✅ Gangart Welt baer v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ baer  v̂ 0.74 2.0 m/s · Hüfte 0.767 m · Stand 0.65 · Schlupf 0.004
+  ✅ Gangart Welt baer v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65
+  ✅ baer  v̂ 1.2 3.3 m/s · Hüfte 0.767 m · Stand 0.52 · Schlupf 0.006
+  ✅ Gangart Welt baer v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ baer  v̂ 3.5 9.6 m/s · Hüfte 0.767 m · Stand 0.29 · Schlupf 0.013
+  ✅ Gangart Welt baer v̂ 3.5 · galopp [0 0.16 0.59 0.43] · Tastgrad 0.29
+  ✅ baer  v̂ 0.74 2.0 m/s (30 fps · Leiter 1/3) · Hüfte 0.767 m · Stand 0.5 · Schlupf 0.003
+  ✅ baer  v̂ 1.2 3.3 m/s (30 fps · Leiter 1/3) · Hüfte 0.767 m · Stand 0.32 · Schlupf 0.002
+  ✅ wesen v̂ 0.3 0.9 m/s · Hüfte 0.917 m · Stand 0.68 · Schlupf 0.011
+  ✅ Gangart Welt wesen v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ wesen v̂ 0.74 2.2 m/s · Hüfte 0.917 m · Stand 0.66 · Schlupf 0.005
+  ✅ Gangart Welt wesen v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66
+  ✅ wesen v̂ 1.2 3.6 m/s · Hüfte 0.917 m · Stand 0.52 · Schlupf 0.005
+  ✅ Gangart Welt wesen v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ wesen v̂ 3.5 10.5 m/s · Hüfte 0.917 m · Stand 0.3 · Schlupf 0.009
+  ✅ Gangart Welt wesen v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.3
+  ✅ wesen v̂ 0.74 2.2 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.46 · Schlupf 0.002
+  ✅ wesen v̂ 1.2 3.6 m/s (30 fps · Leiter 1/3) · Hüfte 0.917 m · Stand 0.34 · Schlupf 0.002
+  ✅ mensch gehen (W) 1.15 m/s · Bein 0.835 m · Stand 0.6 · Schlupf 0.016 · Kadenz 1.79 Schritte/s (0.64 m je Schritt) · Töne 4 / Soll 4.4 · Becken Hub 0.049 L / Tiefe 0.075 L · Lock-Löser 0 in 213 Stand-Takten
+  ✅ mensch laufen (Shift) 5.16 m/s · Bein 0.835 m · Stand 0.24 · Schlupf 0.008 · Kadenz 2.95 Schritte/s (1.75 m je Schritt) · Töne 8 / Soll 7.3 · Becken Hub 0.109 L / Tiefe 0.166 L · Lock-Löser 0 in 87 Stand-Takten
+  ✅ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.19 · Schlupf 0.008 · Kadenz 3.09 Schritte/s (2.19 m je Schritt) · Töne 8 / Soll 7.7 · Becken Hub 0.111 L / Tiefe 0.154 L · Lock-Löser 0 in 71 Stand-Takten
+  ✅ Schwere 1,62 m/s² · Takt Mensch 1.0000 × Gesetz · Becken-Zeile g 1.62 · Takt Wolf 1.0000 × Gesetz · Literal-Zwillinge 0
+[linse-gpu] nvidia/pascal
+  ✅ studio geduckt 4.58 E/s · Bein 2.74 E · Stand 0.63 · Schlupf 0.017 · Kadenz 3 Schritte/s · Becken Hub 0.041 L (Soll ≤ 0.07) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio gehen 10.45 E/s · Bein 2.74 E · Stand 0.38 · Schlupf 0.027 · Kadenz 2.96 Schritte/s · Becken Hub 0.107 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio sprint 17.91 E/s · Bein 2.74 E · Stand 0.25 · Schlupf 0.023 · Kadenz 3.39 Schritte/s · Becken Hub 0.116 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ Gangart Labor wolf v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor wolf v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor wolf v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor wolf v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.32 · Welt − Labor 0.01 Zyklus
+  ✅ Gangart Labor fox v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor fox v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor fox v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor fox v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.3 · Welt − Labor 0.03 Zyklus
+  ✅ Gangart Labor bear v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor bear v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor bear v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor bear v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.3 · Welt − Labor 0.02 Zyklus
+  ✅ Gangart Labor deer v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor deer v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor deer v̂ 1.2 · trab [0 0.5 0.5 0] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus
+  ✅ Gangart Labor deer v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.29 · Welt − Labor 0.00 Zyklus
+
+✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) in Schritt, Trab und Galopp; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ 1.5, Töne ± 15 %), in der Welt und im Körper-Studio.
+EXIT=0

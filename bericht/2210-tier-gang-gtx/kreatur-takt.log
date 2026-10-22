@@ -1,0 +1,293 @@
+
+> anazhrealm@18.546.59 gate:kreatur-takt
+> node scripts/diag-kreatur-takt.cjs --selftest && node scripts/diag-kreatur-takt.cjs
+
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:4478/index.html · der Puls steht seit 20.8 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.4 s
+[stall-akte] Puls 19×, zuletzt vor 20.8 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 19552 101 % · GPU 9468 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:22 gpu 3/r 154 · 57:24 gpu 3/r 440 · 57:26 gpu 1/r 617 · 57:28 gpu 2/r 269 · 57:30 gpu 1/r 114 · 57:32 gpu 2/r 125 · 57:34 gpu 1/r 135 · 57:36 gpu 1/r 133 · 57:38 gpu 1/r 117 · 57:40 gpu 1/r 123 · 57:42 gpu 1/r 120 · 57:44 gpu 1/r 109 · 57:46 gpu 1/r 118 · 57:48 gpu 1/r 101 · 57:50 gpu 1/r 103 · 57:52 gpu 1/r 101 · 57:54 gpu 1/r 104 · 57:57 gpu 1/r 103 · 57:59 gpu 1/r 108 · 58:01 gpu 0/r 100 · 58:03 gpu 1/r 106 · 58:05 gpu 1/r 101
+[stall-akte] Stapel _leibKontakte :964 < takt :256 < (anonym) :2058 < buehne :64 < kreaturProben :1961
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Tempo-Hauch (nexus): 4 Tiere ×5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Tempo-Hauch (nexus): 4 Tiere ×5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _leibKontakte :964
+[stall-akte] Seite #2: der Puls kehrt zurück nach 41.1 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:4478/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.1 s
+[stall-akte] Puls 20×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 19552 101 % · GPU 9468 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:46 gpu 1/r 118 · 57:48 gpu 1/r 101 · 57:50 gpu 1/r 103 · 57:52 gpu 1/r 101 · 57:54 gpu 1/r 104 · 57:57 gpu 1/r 103 · 57:59 gpu 1/r 108 · 58:01 gpu 0/r 100 · 58:03 gpu 1/r 106 · 58:05 gpu 1/r 101 · 58:07 gpu 1/r 101 · 58:09 gpu 0/r 101 · 58:11 gpu 1/r 100 · 58:13 gpu 1/r 113 · 58:15 gpu 1/r 103 · 58:17 gpu 1/r 101 · 58:19 gpu 1/r 101 · 58:21 gpu 0/r 101 · 58:23 gpu 1/r 101 · 58:25 gpu 1/r 108 · 58:27 gpu 1/r 104 · 58:29 gpu 1/r 100 · 58:31 gpu 1/r 103 · 58:33 gpu 1/r 103 · 58:35 gpu 1/r 100 · 58:37 gpu 1/r 106 · 58:39 gpu 1/r 104 · 58:41 gpu 1/r 101 · 58:43 gpu 1/r 101 · 58:45 gpu 1/r 101
+[stall-akte] Stapel _kreaturHuellenKontakt :1295 < updateCreatures :3274 < takt :257 < (anonym) :2058 < buehne :64 < kreaturProben :1961
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999991/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999983/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999974/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999965/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Stderr [2004:9480:1022/055823.649:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.682:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.690:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:21308:1022/055823.997:ERROR:components\system_cpu\cpu_probe_win.cc:134] PdhGetFormattedCounterValue failed: Error (0x13D) while retrieving error. (0x800007D6)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _kreaturHuellenKontakt :1295
+[stall-akte] Seite #2: der Puls kehrt zurück nach 30.3 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:4478/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.1 s
+[stall-akte] Puls 21×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 19552 116 % · GPU 9468 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 58:17 gpu 1/r 101 · 58:19 gpu 1/r 101 · 58:21 gpu 0/r 101 · 58:23 gpu 1/r 101 · 58:25 gpu 1/r 108 · 58:27 gpu 1/r 104 · 58:29 gpu 1/r 100 · 58:31 gpu 1/r 103 · 58:33 gpu 1/r 103 · 58:35 gpu 1/r 100 · 58:37 gpu 1/r 106 · 58:39 gpu 1/r 104 · 58:41 gpu 1/r 101 · 58:43 gpu 1/r 101 · 58:45 gpu 1/r 101 · 58:47 gpu 1/r 101 · 58:49 gpu 1/r 101 · 58:51 gpu 1/r 115 · 58:53 gpu 1/r 100 · 58:55 gpu 1/r 107 · 58:57 gpu 1/r 106 · 58:59 gpu 1/r 115 · 59:01 gpu 1/r 108 · 59:03 gpu 1/r 102 · 59:05 gpu 1/r 105 · 59:07 gpu 1/r 102 · 59:09 gpu 1/r 102 · 59:11 gpu 1/r 101 · 59:13 gpu 1/r 101 · 59:15 gpu 1/r 114
+[stall-akte] Stapel computePartTags :648 < computeCompoundTags :665 < computeCreatureCompoundTags :3000 < computeCreatureStats :588 < _tickCreatureHuntStrike :1425 < updateCreatures :3086 < takt :257 < (anonym) :2058
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999991/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999983/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999974/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999965/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Skara jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Stderr [2004:9480:1022/055823.649:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.682:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.690:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:21308:1022/055823.997:ERROR:components\system_cpu\cpu_probe_win.cc:134] PdhGetFormattedCounterValue failed: Error (0x13D) while retrieving error. (0x800007D6)
+[stall-akte] Stderr [2004:9480:1022/055846.517:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in computePartTags :648
+[stall-akte] Seite #2: der Puls kehrt zurück nach 40.9 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:4478/index.html · der Puls steht seit 20.6 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.6 s
+[stall-akte] Puls 22×, zuletzt vor 20.6 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 19552 101 % · GPU 9468 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 58:57 gpu 1/r 106 · 58:59 gpu 1/r 115 · 59:01 gpu 1/r 108 · 59:03 gpu 1/r 102 · 59:05 gpu 1/r 105 · 59:07 gpu 1/r 102 · 59:09 gpu 1/r 102 · 59:11 gpu 1/r 101 · 59:13 gpu 1/r 101 · 59:15 gpu 1/r 114 · 59:17 gpu 1/r 104 · 59:19 gpu 13/r 101 · 59:21 gpu 1/r 101 · 59:23 gpu 1/r 101 · 59:25 gpu 1/r 105 · 59:27 gpu 1/r 105 · 59:29 gpu 1/r 102 · 59:31 gpu 1/r 101 · 59:33 gpu 1/r 101 · 59:35 gpu 1/r 106 · 59:37 gpu 1/r 101 · 59:39 gpu 1/r 104 · 59:41 gpu 1/r 101 · 59:43 gpu 1/r 104 · 59:45 gpu 1/r 101 · 59:47 gpu 1/r 101 · 59:49 gpu 1/r 101 · 59:51 gpu 1/r 101 · 59:53 gpu 1/r 101 · 59:55 gpu 1/r 101
+[stall-akte] Stapel computePartTags :648 < computeCompoundTags :665 < computeCreatureCompoundTags :3000 < computeCreatureStats :588 < _tickCreatureHuntStrike :1425 < updateCreatures :3086 < takt :257 < (anonym) :2058
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999991/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Glim jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999983/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Glim jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999974/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Glim jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Schaden 8.7 (jagd) → HP 999999965/134
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [WARN] Glim jagt dich!
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Stderr [2004:9480:1022/055823.649:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.682:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:9480:1022/055823.690:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2004:21308:1022/055823.997:ERROR:components\system_cpu\cpu_probe_win.cc:134] PdhGetFormattedCounterValue failed: Error (0x13D) while retrieving error. (0x800007D6)
+[stall-akte] Stderr [2004:9480:1022/055846.517:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2004:9480:1022/055936.548:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in computePartTags :648
+[stall-akte] Seite #2: der Puls kehrt zurück nach 40.7 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer — SELBST-TEST (Täter eingespielt) =====
+
+  ❌ geister   [Täter geister] {"vorher":6,"geister":3}
+       ↳ 3 Geister nach clearCreatures (aus 6)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ geburt    [Täter geburt] {"gruppen":"deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1","rudel":0,"herden":0,"fensterMax":0,"imBlick":16,"journal":0,"geburten":16,"fensterRaum":2.5,"minM":15,"maxM":15,"fernMin":130}
+       ↳ Geburt 15 m vor dem Spieler (Soll ≥ 130 m) · 16 Geburten im Blick · keine Gruppe: 0 Rudel, 0 Herden (deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1) · 16 Würfe ohne growth-Eintrag ihrer Gruppe
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ geburt    [Täter geburt-einzeln] {"gruppen":"deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1","rudel":0,"herden":0,"fensterMax":0,"imBlick":0,"journal":0,"geburten":16,"fensterRaum":2.5,"minM":144.9,"maxM":207.7,"fernMin":130}
+       ↳ keine Gruppe: 0 Rudel, 0 Herden (deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1 · deer 1) · 16 Würfe ohne growth-Eintrag ihrer Gruppe
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ sattel    [Täter sattel] {"aufgestiegen":true,"nachTod":1308}
+       ↳ nach dem Tod im Sattel: mountedArch 1308
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ reload    [Täter reload] {"hpVor":92.19,"hpNach":167.61,"gierFehlerGrad":57.3}
+       ↳ hp vor dem Reload 92.19, danach 167.61 (geheilt) · die Gier kehrt 57.3° daneben zurück
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ huepfer   [Täter huepfer] {"luftAnteil":0.8163,"starts":204,"ausAktion":4,"rufe":204,"scheitelM":1.2,"gesetzFehler":0,"hopHochM":1.2,"hopBasisM":0.8,"flug30":{"t":1,"top":1.2},"flug144":{"t":0.993,"top":1.2},"flugVerhaeltnis":0.993,"frohFehler":0,"basisTop":0.8,"basisFehler":0}
+       ↳ Luft-Anteil 81.6 % (Soll < 3 %) · 200 von 204 Sprüngen ohne Aktion
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ huepfer   [Täter huepfer-zwilling] {"luftAnteil":0.0135,"starts":5,"ausAktion":5,"rufe":5,"scheitelM":0.522,"gesetzFehler":0.565,"hopHochM":1.2,"hopBasisM":0.8,"flug30":{"t":1,"top":1.2},"flug144":{"t":0.993,"top":1.2},"flugVerhaeltnis":0.993,"frohFehler":0,"basisTop":0.8,"basisFehler":0}
+       ↳ Scheitel 56.5 % neben dem Sprung-Gesetz (freude.hopHochM 1.2 / hopBasisM 0.8 m)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ wachsen   [Täter wachsen] {"skala":5.9958}
+       ↳ Skala nach 3600 Takten ×5.9958
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ gier      [Täter gier] {"wesen":{"laufFrames":4381,"kontaktFrames":41,"abwP50":88.9,"abwP90":174.1,"rueckwaerts":0.483,"seitwaerts":0.232,"tempoP50":1.14,"tempoP90":2.79,"beschlMax":7.8,"gasBremseJeMin":11.4,"schlupf":1.197,"schlupfQuer":0.542,"schlupfLaengs":0.971},"wolf":{"laufFrames":4015,"kontaktFrames":0,"abwP50":85.3,"abwP90":169,"rueckwaerts":0.478,"seitwaerts":0.246,"tempoP50":0.9,"tempoP90":3.11,"beschlMax":7.8,"gasBremseJeMin":19.1,"schlupf":1.21,"schlupfQuer":0.577,"schlupfLaengs":0.965},"fuchs":{"laufFrames":4063,"kontaktFrames":460,"abwP50":90.2,"abwP90":179.3,"rueckwaerts":0.531,"seitwaerts":0.297,"tempoP50":1.4,"tempoP90":1.96,"beschlMax":7.8,"gasBremseJeMin":14.8,"schlupf":1.315,"schlupfQuer":0.622,"schlupfLaengs":1.04}}
+       ↳ wesen: Lauf ↔ Blick p90 174.1° (Soll ≤ 20°) · wesen: 48.3 % rückwärts · wesen: Stand-Schlupf quer 0.542 (Soll ≤ 0,2; längs 0.971) · wolf: Lauf ↔ Blick p90 169° (Soll ≤ 20°) · wolf: 47.8 % rückwärts · wolf: Stand-Schlupf quer 0.577 (Soll ≤ 0,2; längs 0.965) · fuchs: Lauf ↔ Blick p90 179.3° (Soll ≤ 20°) · fuchs: 53.1 % rückwärts · fuchs: Stand-Schlupf quer 0.622 (Soll ≤ 0,2; längs 1.04)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ gier      [Täter gier-folgen] {"wesen":{"laufFrames":4604,"kontaktFrames":276,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":1.29,"tempoP90":2.53,"beschlMax":7.8,"gasBremseJeMin":284.9,"schlupf":0.032,"schlupfQuer":0.03,"schlupfLaengs":0.006},"wolf":{"laufFrames":4209,"kontaktFrames":275,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":1.29,"tempoP90":2.13,"beschlMax":7.8,"gasBremseJeMin":385.2,"schlupf":0.036,"schlupfQuer":0.032,"schlupfLaengs":0.008},"fuchs":{"laufFrames":4095,"kontaktFrames":526,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":1.43,"tempoP90":2.26,"beschlMax":10.2,"gasBremseJeMin":456.7,"schlupf":0.076,"schlupfQuer":0.027,"schlupfLaengs":0.055}}
+       ↳ wesen: Folgen als Gas ↔ Bremse 284.9 Wechsel je Minute (Soll ≤ 30, das Ankunfts-Gesetz) · wolf: Folgen als Gas ↔ Bremse 385.2 Wechsel je Minute (Soll ≤ 30, das Ankunfts-Gesetz) · fuchs: Folgen als Gas ↔ Bremse 456.7 Wechsel je Minute (Soll ≤ 30, das Ankunfts-Gesetz)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagd      [Täter jagd] {"jagdFrames":1744,"kontaktFrames":0,"wasserFrames":0,"achsAnteil":0.302,"achsZielAnteil":0,"achsAnteil5Grad":0.346,"achsImWasser":0,"achsOrt":{"gierAchse":527,"rein":527,"ansprung":0,"stoss":0,"beispiele":[{"k":21,"zs":"jagd","ziel":"c12","v":1.8,"gierGrad":90,"dx":0.03,"dz":0},{"k":22,"zs":"jagd","ziel":"c12","v":1.88,"gierGrad":90,"dx":0.0313,"dz":0},{"k":23,"zs":"jagd","ziel":"c12","v":1.96,"gierGrad":90,"dx":0.0327,"dz":0}]},"bedrohtFrames":1113,"fortAnteil":0.962,"bisse":1}
+       ↳ Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) 30.2 % (5°: 34.6 %; auf das Ziel 0.0 %; davon im Wasser 0 Takte; Ort {"gierAchse":527,"rein":527,"ansprung":0,"stoss":0,"beispiele":[{"k":21,"zs":"jagd","ziel":"c12","v":1.8,"gierGrad":90,"dx":0.03,"dz":0},{"k":22,"zs":"jagd","ziel":"c12","v":1.88,"gierGrad":90,"dx":0.0313,"dz":0},{"k":23,"zs":"jagd","ziel":"c12","v":1.96,"gierGrad":90,"dx":0.0327,"dz":0}]})
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagd      [Täter jagd-ziel] {"jagdFrames":1744,"kontaktFrames":0,"wasserFrames":0,"achsAnteil":0.29,"achsZielAnteil":0,"achsAnteil5Grad":0.325,"achsImWasser":0,"achsOrt":{"gierAchse":505,"rein":505,"ansprung":0,"stoss":0,"beispiele":[{"k":21,"zs":"jagd","ziel":"c12","v":1.8,"gierGrad":90,"dx":0.03,"dz":0},{"k":22,"zs":"jagd","ziel":"c12","v":1.88,"gierGrad":90,"dx":0.0313,"dz":0},{"k":23,"zs":"jagd","ziel":"c12","v":1.96,"gierGrad":90,"dx":0.0327,"dz":0}]},"bedrohtFrames":1149,"fortAnteil":0.966,"bisse":1}
+       ↳ Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) 29.0 % (5°: 32.5 %; auf das Ziel 0.0 %; davon im Wasser 0 Takte; Ort {"gierAchse":505,"rein":505,"ansprung":0,"stoss":0,"beispiele":[{"k":21,"zs":"jagd","ziel":"c12","v":1.8,"gierGrad":90,"dx":0.03,"dz":0},{"k":22,"zs":"jagd","ziel":"c12","v":1.88,"gierGrad":90,"dx":0.0313,"dz":0},{"k":23,"zs":"jagd","ziel":"c12","v":1.96,"gierGrad":90,"dx":0.0327,"dz":0}]})
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagd      [Täter jagd-flucht] {"jagdFrames":1036,"kontaktFrames":49,"wasserFrames":0,"achsAnteil":0.004,"achsZielAnteil":0.001,"achsAnteil5Grad":0.113,"achsImWasser":0,"achsOrt":{"gierAchse":4,"rein":0,"ansprung":1,"stoss":0,"beispiele":[{"k":311,"zs":"hetzen","ziel":"c12","v":0.31,"gierGrad":-89.88,"dx":-0.0052,"dz":0},{"k":532,"zs":"hetzen","ziel":"c12","v":0.49,"gierGrad":-0.04,"dx":0,"dz":0.0082},{"k":561,"zs":"hetzen","ziel":"c12","v":1.59,"gierGrad":89.78,"dx":0.0264,"dz":0.0001}]},"bedrohtFrames":0,"fortAnteil":null,"bisse":1}
+       ↳ nur 0 bedrohte Beute-Frames · Beute fort vom Jäger null (Soll > 0,8)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ herde     [Täter herde] {"fremdN":5,"artFremdZugM":0,"blickDiffM":0.5921,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.97,"fluchtAnteil":0.441,"fluchtMittel":0.969,"fluchtMin":0.6}}}
+       ↳ Bewegung hängt am Blick: 0.5921 m Unterschied
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ herde     [Täter herde-artfremd] {"fremdN":5,"artFremdZugM":9.2792,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.979,"fluchtAnteil":0.365,"fluchtMittel":0.984,"fluchtMin":0.6}}}
+       ↳ ein fremder Verband verschmilzt: die Herde liegt 9.2792 m anders
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ herde     [Täter herde-zerfall] {"fremdN":5,"artFremdZugM":10.6222,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":0.516,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.299,"fluchtAnteil":0.22,"fluchtMittel":0.228,"fluchtMin":0}}}
+       ↳ ein fremder Verband verschmilzt: die Herde liegt 10.6222 m anders · Verband zerfällt beim Wandern: im Mittel 0.516 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; Wurf 0.6) · Verband zerfällt auf der Flucht: im Mittel 0.228 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten 0, Wurf 0.6)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ hindernis [Täter hindernis] {"tiere":8,"strahlenJeTakt":8,"dichteJeTakt":128.1,"bodenJeTakt":0,"wandFrames":0,"wandAnteil":0,"angekommen":false,"leibRufe":900,"vornMinM":0.275}
+       ↳ 8 Feld-Strahlen je Takt (128.1 Dichte-Proben)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ hindernis [Täter hindernis-leib] {"tiere":8,"strahlenJeTakt":0,"dichteJeTakt":8.1,"bodenJeTakt":0,"wandFrames":0,"wandAnteil":0,"angekommen":false,"leibRufe":0,"vornMinM":0.275}
+       ↳ der Hüllen-Kontakt liest keinen benannten Leib (_kreaturLeib: 0 Rufe)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ gedreht   [Täter gedreht-kontakt] {"gierGrad":34.4,"kontaktFrames":778,"wandFrames":0,"querDurch":0,"spielerWand":778,"vornMinM":0.275}
+       ↳ 778 Takte des Tiers schrieben die Parkour-Wand des Spielers (state._wandKontakt*)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ gedreht   [Täter gedreht-rahmen] {"gierGrad":34.4,"kontaktFrames":0,"wandFrames":12,"querDurch":1,"spielerWand":0,"vornMinM":-0.399}
+       ↳ kein Kontakt am gedrehten Haus (Probe vakuös) · 12 Frames in der gedrehten Wand, 1× quer hindurch (der Folger läuft durch das Haus) · die vordere Leib-Achse 0.399 m in der gedrehten Wand
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ nacht     [Täter nacht] {"ruhFrames":5636,"ruhBewegt":5636,"bewegtAnteil":1}
+       ↳ 100.0 % bewegt während ruhen
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ peer      [Täter peer] {"gierFehlerGrad":0,"gangV":0}
+       ↳ Sicht-Kopie geht nicht (Gang-Tempo 0)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ zufall    [Täter zufall] {"methoden":193,"benannt":16,"fehlt":[],"treffer":["_pickCreatureName"]}
+       ↳ Math.random im Kreatur-Leben: _pickCreatureName
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ nexus     [Täter nexus-wuerfel] {"wuerfe":4000,"koerperWuerfe":396,"speedBand":[1.15,2],"speedNach":1.15,"sprintNach":5.175,"sprintSoll":5.175,"sprungBand":[2.6,4.1],"sprungNach":2.6,"groessen":4,"ohneAchse":0,"ausserBand":0,"tempoVor":0.921,"tempoNach":0.645,"tempoHoch":1.474,"tempoBand":[0.6,1.6],"geburten":4,"geburtImBlick":0,"geburtMinM":162.1,"fernMin":130}
+       ↳ der Würfel schreibt ein Körper-Gesetz: 396 von 4000 Würfen (Gang/Sprung/Größe)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ nexus     [Täter nexus-gesetz] {"wuerfe":4000,"koerperWuerfe":0,"speedBand":[1.15,2],"speedNach":10.01,"sprintNach":45.045,"sprintSoll":45.045,"sprungBand":[2.6,4.1],"sprungNach":18.56,"groessen":4,"ohneAchse":0,"ausserBand":0,"tempoVor":0.921,"tempoNach":0.645,"tempoHoch":1.474,"tempoBand":[0.6,1.6],"geburten":4,"geburtImBlick":0,"geburtMinM":132.2,"fernMin":130}
+       ↳ Lauf-Tempo 10.01 m/s jenseits des Gesetz-Bands 1.15–2 (Sprint 45.045) · Sprungkraft 18.56 jenseits des Gesetz-Bands 2.6–4.1
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ nexus     [Täter nexus-groesse] {"wuerfe":4000,"koerperWuerfe":0,"speedBand":[1.15,2],"speedNach":1.15,"sprintNach":5.175,"sprintSoll":5.175,"sprungBand":[2.6,4.1],"sprungNach":2.6,"groessen":4,"ohneAchse":4,"ausserBand":0,"tempoVor":1.181,"tempoNach":0.826,"tempoHoch":1.6,"tempoBand":[0.6,1.6],"geburten":4,"geburtImBlick":0,"geburtMinM":139.3,"fernMin":130}
+       ↳ 4 von 4 Tieren: Skala ohne bodySize-Achse
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ nexus     [Täter nexus-geburt] {"wuerfe":4000,"koerperWuerfe":0,"speedBand":[1.15,2],"speedNach":1.15,"sprintNach":5.175,"sprintSoll":5.175,"sprungBand":[2.6,4.1],"sprungNach":2.6,"groessen":4,"ohneAchse":0,"ausserBand":0,"tempoVor":0.921,"tempoNach":0.645,"tempoHoch":1.474,"tempoBand":[0.6,1.6],"geburten":4,"geburtImBlick":4,"geburtMinM":3.2,"fernMin":130}
+       ↳ 4 von 4 Nexus-Geburten im Blick · Nexus-Geburt 3.2 m vor dem Spieler (Soll ≥ 130 m)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ temperament [Täter temperament] {"art":{"wesen@1":"wehrhaft","wolf@1":"wild","baer@1":"wehrhaft","fuchs@1":"wehrhaft","wesen@2.5":"wehrhaft","wolf@0.6":"wild","baer@0.7":"wehrhaft"},"kg":{"wesen@1":94.2,"wolf@1":64,"baer@1":335.4,"fuchs@1":15,"wesen@2.5":1472.5,"wolf@0.6":13.8,"baer@0.7":115},"masseQuelle":false,"beute":{"hirsch":true,"kitz":true,"baer":false},"wHirsch":-0.831,"wBaer":-0.853,"hirschAbstandM":1.9,"baerAbstandM":1.6,"fleeThreshold":0.3,"curiousThreshold":-0.2,"kampfHirsch":{"dauer":2.5,"soll":2.5},"kampfBaer":{"dauer":2.5,"soll":2.5}}
+       ↳ Temperament nicht aus Gattung und Größe: wesen@1 wehrhaft (Soll scheu), fuchs@1 wehrhaft (Soll scheu), wolf@0.6 wild (Soll scheu), baer@0.7 wehrhaft (Soll sanft) · eine zweite Masse: Temperament oder Beute lesen nicht die EINE Masse des Leibs (_leibMasse) · Hirsch 6 m vor dem ruhigen Spieler: Wariness -0.831 (Soll ≥ 0.3, ein Fluchttier) · die Hirsche stehen nach 10 s 1.9 m am Spieler (Soll ≥ 10 m, Flucht)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ temperament [Täter temperament-masse] {"art":{"wesen@1":"scheu","wolf@1":"wild","baer@1":"wehrhaft","fuchs@1":"scheu","wesen@2.5":"wehrhaft","wolf@0.6":"scheu","baer@0.7":"sanft"},"kg":{"wesen@1":94.2,"wolf@1":64,"baer@1":335.4,"fuchs@1":15,"wesen@2.5":1472.5,"wolf@0.6":13.8,"baer@0.7":115},"masseQuelle":false,"beute":{"hirsch":true,"kitz":true,"baer":false},"wHirsch":0.478,"wBaer":-0.835,"hirschAbstandM":12.4,"baerAbstandM":1.6,"fleeThreshold":0.3,"curiousThreshold":-0.2,"kampfHirsch":{"dauer":8.5,"soll":8.5},"kampfBaer":{"dauer":2.5,"soll":2.5}}
+       ↳ eine zweite Masse: Temperament oder Beute lesen nicht die EINE Masse des Leibs (_leibMasse)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ abstand   [Täter abstand] {"tiere":8,"minLeibLueckeM":-0.184,"durchFrames":740,"minSpielerLueckeM":0.003,"spielerFrames":0,"erbeMaxM":0.184,"ueberFrames":742,"paarMinM":1.04,"nachbarRaumP10":0.867,"nachbarRaumP50":1.075}
+       ↳ Durchdringung: in 740 Takten durchdringen sich zwei Leiber über ihren Frame-Schritt hinaus (tiefste 0.184 m, geerbt 0.184 m)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ abstand   [Täter abstand-spieler] {"tiere":8,"minLeibLueckeM":0.385,"durchFrames":0,"minSpielerLueckeM":-0.038,"spielerFrames":7,"erbeMaxM":0,"ueberFrames":0,"paarMinM":1.27,"nachbarRaumP10":1.188,"nachbarRaumP50":1.249}
+       ↳ Leib im Spieler: in 7 Takten (tiefste 0.038 m)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagdkreis [Täter jagd-gradient] {"riss":{"fensterS":600,"zeiten":[null,null,null,null,null,null,null,null,null,null],"rissS":null,"fleisch0":null,"fleischEnde":null,"gaeste":[],"hp0":168},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+       ↳ kein Riss: das Rudel fällt den gesunden Hirsch (168 HP) an keinem der 10 Orte in 600 s
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagdkreis [Täter jagd-schritt] {"riss":{"fensterS":600,"zeiten":[null,null,null,null,null,null,null,null,null,null],"rissS":null,"fleisch0":null,"fleischEnde":null,"gaeste":[],"hp0":168},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":50.1,"abstandMin":6,"bisse":0,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+       ↳ der Sprinter entkommt: Abstand 6 → 50.1 m, 0 Bisse (Sprint 5.17 m/s, Wolf 7.45 m/s) · kein Riss: das Rudel fällt den gesunden Hirsch (168 HP) an keinem der 10 Orte in 600 s
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagdkreis [Täter jagd-aas] {"riss":{"fensterS":600,"zeiten":[403.1,null,null,null,null,null,465.6,404.8,null,569.8],"rissS":403.1,"fleisch0":null,"fleischEnde":null,"gaeste":[{"seele":"fuchs","d0":35,"dMin":32,"frissS":0},{"seele":"baer","d0":35,"dMin":34.9,"frissS":0}],"hp0":168},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+       ↳ kein Kadaver: der gerissene Leib trägt kein Fleisch (_kreaturFaellt) · Fressen verbraucht den Kadaver nicht: Fleisch null → null kg in 120 s nach dem Riss bei 403.1 s · kein Geruch: der fuchs folgt dem Kadaver nicht (35 → nächst 32 m, frisst 0 s) · kein Geruch: der baer folgt dem Kadaver nicht (35 → nächst 34.9 m, frisst 0 s)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagdkreis [Täter jagd-duft] {"riss":{"fensterS":600,"zeiten":[403.1,null,null,null,null,null,465.6,404.8,null,569.8],"rissS":403.1,"fleisch0":56.5,"fleischEnde":56.5,"gaeste":[{"seele":"fuchs","d0":35,"dMin":32,"frissS":0},{"seele":"baer","d0":35,"dMin":34.9,"frissS":0}],"hp0":168},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+       ↳ Fressen verbraucht den Kadaver nicht: Fleisch 56.5 → 56.5 kg in 120 s nach dem Riss bei 403.1 s · kein Geruch: der fuchs folgt dem Kadaver nicht (35 → nächst 32 m, frisst 0 s) · kein Geruch: der baer folgt dem Kadaver nicht (35 → nächst 34.9 m, frisst 0 s)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ jagdkreis [Täter jagd-hp] {"riss":{"fensterS":600,"zeiten":[9.9,6.5,8.3,7.9,8.5,7.9,7.7,8.8,23.1,49.8],"rissS":9.9,"fleisch0":56.5,"fleischEnde":0,"gaeste":[{"seele":"fuchs","d0":35,"dMin":1.4,"frissS":19.737},{"seele":"baer","d0":35,"dMin":1.5,"frissS":23.443}],"hp0":17},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+       ↳ Beute ohne Leben: der erste Riss nach 6.5 s (ein gesunder Hirsch trägt ~20 Bisse, Tiere K2)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ rudel     [Täter rudel] {"nahTakte":1500,"lueckeP50":144,"lueckeBeimBiss":312}
+       ↳ das Rudel umstellt nicht: beim ersten Biss 312° Lücke
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ sockel    [Täter sockel] {"ueberTakte":454,"imSockelTakte":440,"tiefMaxM":0.29,"oberkanteUeberBodenM":0.35}
+       ↳ das Tier steht im Sockel: 440 von 454 Takten über ihm, bis 0.29 m tief (Oberkante 0.35 m über dem Boden)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ querhang  [Täter querhang] {"ort":"welt","hangGrad":20.8,"stand":{"wolf":{"rollGrad":19.5,"lotMaxGrad":20.9,"sohleMinCm":-4.7,"sohleMaxCm":-2.8},"hirsch":{"rollGrad":20.7,"lotMaxGrad":22,"sohleMinCm":-7.6,"sohleMaxCm":-4.2}},"schlupf":{"wolf":0.367,"hirsch":0.657},"rampe":{"ort":"s2-hang30","hangGrad":29.9,"stand":{"wolf":{"rollGrad":29.9,"lotMaxGrad":30.7,"sohleMinCm":-10.4,"sohleMaxCm":-6.3},"hirsch":{"rollGrad":29.9,"lotMaxGrad":30.7,"sohleMinCm":-15.2,"sohleMaxCm":-9.2}},"schlupf":{"wolf":0.817,"hirsch":0.854}}}
+       ↳ Bein-Lot am Querhang (20.8°): Wolf 20.9° (Soll ≤ 10°; der Leib rollt 19.5°) · Bein-Lot am Querhang (20.8°): Hirsch 22° (Soll ≤ 10°; der Leib rollt 20.7°) · Bein-Lot an der Rampe s2-hang30 (29.9°): Wolf 30.7° (Soll ≤ 10°; der Leib rollt 29.9°) · Bein-Lot an der Rampe s2-hang30 (29.9°): Hirsch 30.7° (Soll ≤ 10°; der Leib rollt 29.9°) · Stand-Schlupf am Querhang (20.8°): Wolf 0.367 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf am Querhang (20.8°): Hirsch 0.657 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf an der Rampe s2-hang30 (29.9°): Wolf 0.817 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf an der Rampe s2-hang30 (29.9°): Hirsch 0.854 (Soll ≤ 0,05, Ratsche K07)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ querhang  [Täter querhang-gleiten] {"ort":"welt","hangGrad":20.8,"stand":{"wolf":{"rollGrad":19.5,"lotMaxGrad":7.9,"sohleMinCm":-1.1,"sohleMaxCm":0.3},"hirsch":{"rollGrad":20.7,"lotMaxGrad":8.5,"sohleMinCm":-1.6,"sohleMaxCm":0.4}},"schlupf":{"wolf":0.372,"hirsch":0.596},"rampe":{"ort":"s2-hang30","hangGrad":29.9,"stand":{"wolf":{"rollGrad":29.9,"lotMaxGrad":8.8,"sohleMinCm":-1.1,"sohleMaxCm":0.3},"hirsch":{"rollGrad":29.9,"lotMaxGrad":9,"sohleMinCm":-1.6,"sohleMaxCm":0.4}},"schlupf":{"wolf":0.389,"hirsch":0.539}}}
+       ↳ Stand-Schlupf am Querhang (20.8°): Wolf 0.372 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf am Querhang (20.8°): Hirsch 0.596 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf an der Rampe s2-hang30 (29.9°): Wolf 0.389 (Soll ≤ 0,05, Ratsche K07) · Stand-Schlupf an der Rampe s2-hang30 (29.9°): Hirsch 0.539 (Soll ≤ 0,05, Ratsche K07)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ ferngang  [Täter ferngang] {"grobstufe":{"laufTakte":1440,"gleitTakte":950,"gleitAnteil":0.66,"fernBild":1113},"kapsel":{"laufTakte":1440,"gleitTakte":1440,"gleitAnteil":1,"fernBild":1440},"abstandM":[19.1,24.3,29.2,34.2,44.1,51.2,58.1,64.2]}
+       ↳ ferner Gang gleitet: Grobstufen-Zone 45–60 m 950 von 1440 laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug 1113) · ferner Gang gleitet: Kapsel-Zone 70–90 m 1440 von 1440 laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug 1440)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ ferngang  [Täter ferngang-bindung] {"grobstufe":{"laufTakte":1440,"gleitTakte":1113,"gleitAnteil":0.773,"fernBild":1113},"kapsel":{"laufTakte":1440,"gleitTakte":1440,"gleitAnteil":1,"fernBild":1440},"abstandM":[19.1,24.3,29.2,34.2,44.1,51.2,58.1,64.2]}
+       ↳ ferner Gang gleitet: Grobstufen-Zone 45–60 m 1113 von 1440 laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug 1113) · ferner Gang gleitet: Kapsel-Zone 70–90 m 1440 von 1440 laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug 1440)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ gestalt   [Täter gestalt] {"glieder":12,"kapseln":12,"fehlt":[],"maxAbw":0.2778389379637467,"glied":"kapsel:wolf:hlT","gehalten":true}
+       ↳ die Treffer-Gestalt hängt am ersten Tier: die Kapsel kapsel:wolf:hlT weicht 0.2778389379637467 ab (gepasst in Lage, Pose und Größe des Tiers statt in der Ruhe seiner Gattung)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ bewohner  [Täter bewohner-haus] {"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":80,"quote":0.988,"leer":["kirche gotisch #613181: 0 von 1"],"leerN":1,"imBlick":{"ego":46,"third":45},"alsLeib":4,"nahLeiber":4,"stall":null,"sek":8.3}
+       ↳ 1 Haus ohne Bewohner: kirche gotisch #613181: 0 von 1
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+  ❌ bewohner  [Täter bewohner-menge] {"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":80,"quote":0.988,"leer":["kirche gotisch #613181: 0 von 1"],"leerN":1,"imBlick":{"ego":46,"third":45},"alsLeib":80,"nahLeiber":4,"stall":"DER BAU STEHT NICHT: bewohner: die Leiber nach 121 Takten — die Welt hat nichts mehr offen","sek":2.8}
+       ↳ 1 Haus ohne Bewohner: kirche gotisch #613181: 0 von 1 · 80 Leiber als Leib gezeichnet (Soll ≤ nahLeiber 4: die Menge steht im Satz)
+       ✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn
+
+  (203 s)
+
+✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (45 Täter).
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:4478/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.8 s
+[stall-akte] Puls 9×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 325 · welt 325 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 16532 106 % · GPU 2824 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 00:46 gpu 3/r 156 · 00:48 gpu 3/r 399 · 00:50 gpu 1/r 640 · 00:52 gpu 1/r 284 · 00:54 gpu 1/r 121 · 00:56 gpu 1/r 130 · 00:58 gpu 1/r 134 · 01:00 gpu 1/r 130 · 01:02 gpu 1/r 106 · 01:04 gpu 1/r 114 · 01:06 gpu 1/r 104 · 01:08 gpu 1/r 102 · 01:10 gpu 1/r 106 · 01:12 gpu 1/r 106 · 01:14 gpu 1/r 105
+[stall-akte] Stapel multiplyMatrices :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Größen-Hauch (nexus): 4 Tiere ×1.11 auf der bodySize-Achse
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Größen-Hauch (nexus): 4 Tiere ×3 auf der bodySize-Achse
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Tempo-Hauch (emotion:peace): 4 Tiere ×0.7 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Tempo-Hauch (nexus): 4 Tiere ×5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Tempo-Hauch (nexus): 4 Tiere ×5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.59] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in multiplyMatrices :6
+[stall-akte] Seite #2: der Puls kehrt zurück nach 68.7 s — complete · renderer bereit · weltbild da · frames 406 · welt 406 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ geister   {"vorher":6,"geister":0}
+  ✅ geburt    {"gruppen":"bear 1 · deer 6 · fox 1 · wolf 5 · fox 1 · deer 5 · bear 1 · fox 1 · bear 1 · wolf 5 · bear 1 · wolf 3 · deer 5 · deer 5 · fox 1 · bear 1","rudel":3,"herden":4,"fensterMax":2.41,"imBlick":0,"journal":16,"geburten":16,"fensterRaum":2.5,"minM":130.8,"maxM":192,"fernMin":130}
+  ✅ sattel    {"aufgestiegen":true,"nachTod":null}
+  ✅ reload    {"hpVor":92.19,"hpNach":92.19,"gierFehlerGrad":0}
+  ✅ huepfer   {"luftAnteil":0.0205,"starts":5,"ausAktion":5,"rufe":5,"scheitelM":1.2,"gesetzFehler":0,"hopHochM":1.2,"hopBasisM":0.8,"flug30":{"t":1,"top":1.2},"flug144":{"t":0.993,"top":1.2},"flugVerhaeltnis":0.993,"frohFehler":0,"basisTop":0.8,"basisFehler":0}
+  ✅ wachsen   {"skala":1}
+  ✅ gier      {"wesen":{"laufFrames":4381,"kontaktFrames":41,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":1.14,"tempoP90":2.79,"beschlMax":7.8,"gasBremseJeMin":11.4,"schlupf":0.007,"schlupfQuer":0.005,"schlupfLaengs":0.004},"wolf":{"laufFrames":4015,"kontaktFrames":0,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":0.9,"tempoP90":3.11,"beschlMax":7.8,"gasBremseJeMin":19.1,"schlupf":0.018,"schlupfQuer":0.007,"schlupfLaengs":0.014},"fuchs":{"laufFrames":4063,"kontaktFrames":460,"abwP50":0,"abwP90":0,"rueckwaerts":0,"seitwaerts":0,"tempoP50":1.4,"tempoP90":1.96,"beschlMax":7.8,"gasBremseJeMin":14.8,"schlupf":0.054,"schlupfQuer":0.003,"schlupfLaengs":0.052}}
+  ✅ jagd      {"jagdFrames":592,"kontaktFrames":0,"wasserFrames":0,"achsAnteil":0,"achsZielAnteil":0,"achsAnteil5Grad":0,"achsImWasser":0,"achsOrt":{"gierAchse":0,"rein":0,"ansprung":0,"stoss":0,"beispiele":[]},"bedrohtFrames":601,"fortAnteil":0.978,"bisse":0}
+  ✅ herde     {"fremdN":5,"artFremdZugM":0,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.979,"fluchtAnteil":0.365,"fluchtMittel":0.984,"fluchtMin":0.6}}}
+  ✅ hindernis {"tiere":8,"strahlenJeTakt":0,"dichteJeTakt":8.1,"bodenJeTakt":0,"wandFrames":0,"wandAnteil":0,"angekommen":false,"leibRufe":900,"vornMinM":0.275}
+  ✅ gedreht   {"gierGrad":34.4,"kontaktFrames":778,"wandFrames":0,"querDurch":0,"spielerWand":0,"vornMinM":0.275}
+  ✅ nacht     {"ruhFrames":6306,"ruhBewegt":0,"bewegtAnteil":0}
+  ✅ peer      {"gierFehlerGrad":0,"gangV":1.5}
+  ✅ zufall    {"methoden":193,"benannt":16,"fehlt":[],"treffer":[]}
+  ✅ nexus     {"wuerfe":4000,"koerperWuerfe":0,"speedBand":[1.15,2],"speedNach":1.15,"sprintNach":5.175,"sprintSoll":5.175,"sprungBand":[2.6,4.1],"sprungNach":2.6,"groessen":4,"ohneAchse":0,"ausserBand":0,"tempoVor":0.921,"tempoNach":0.645,"tempoHoch":1.474,"tempoBand":[0.6,1.6],"geburten":4,"geburtImBlick":0,"geburtMinM":162.1,"fernMin":130}
+  ✅ temperament {"art":{"wesen@1":"scheu","wolf@1":"wild","baer@1":"wehrhaft","fuchs@1":"scheu","wesen@2.5":"wehrhaft","wolf@0.6":"scheu","baer@0.7":"sanft"},"kg":{"wesen@1":94.2,"wolf@1":64,"baer@1":335.4,"fuchs@1":15,"wesen@2.5":1472.5,"wolf@0.6":13.8,"baer@0.7":115},"masseQuelle":true,"beute":{"hirsch":true,"kitz":true,"baer":false},"wHirsch":0.478,"wBaer":-0.835,"hirschAbstandM":12.4,"baerAbstandM":1.6,"fleeThreshold":0.3,"curiousThreshold":-0.2,"kampfHirsch":{"dauer":8.5,"soll":8.5},"kampfBaer":{"dauer":2.5,"soll":2.5}}
+  ✅ abstand   {"tiere":8,"minLeibLueckeM":0.403,"durchFrames":0,"minSpielerLueckeM":0.205,"spielerFrames":0,"erbeMaxM":0,"ueberFrames":0,"paarMinM":1.31,"nachbarRaumP10":1.234,"nachbarRaumP50":1.278}
+  ✅ jagdkreis {"riss":{"fensterS":600,"zeiten":[403.1,null,null,null,null,null,465.6,404.8,null,569.8],"rissS":403.1,"fleisch0":56.5,"fleischEnde":0,"gaeste":[{"seele":"fuchs","d0":35,"dMin":0.6,"frissS":34.765},{"seele":"baer","d0":35,"dMin":1.3,"frissS":21.505}],"hp0":168},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+  ✅ rudel     {"nahTakte":1500,"lueckeP50":139,"lueckeBeimBiss":129}
+  ✅ sockel    {"ueberTakte":454,"imSockelTakte":0,"tiefMaxM":0,"oberkanteUeberBodenM":0.35}
+  ✅ querhang  {"ort":"welt","hangGrad":20.8,"stand":{"wolf":{"rollGrad":19.5,"lotMaxGrad":7.5,"sohleMinCm":-1.1,"sohleMaxCm":0.3},"hirsch":{"rollGrad":20.7,"lotMaxGrad":7.7,"sohleMinCm":-1.6,"sohleMaxCm":0.4}},"schlupf":{"wolf":0.024,"hirsch":0.024},"rampe":{"ort":"s2-hang30","hangGrad":29.9,"stand":{"wolf":{"rollGrad":29.9,"lotMaxGrad":7.5,"sohleMinCm":-1.1,"sohleMaxCm":0.3},"hirsch":{"rollGrad":29.9,"lotMaxGrad":7.7,"sohleMinCm":-1.6,"sohleMaxCm":0.4}},"schlupf":{"wolf":0.026,"hirsch":0.021}}}
+  ✅ ferngang  {"grobstufe":{"laufTakte":1440,"gleitTakte":0,"gleitAnteil":0,"fernBild":1113},"kapsel":{"laufTakte":1440,"gleitTakte":0,"gleitAnteil":0,"fernBild":1440},"abstandM":[19.1,24.3,29.2,34.2,44.1,51.2,58.1,64.2]}
+  ✅ gestalt   {"glieder":12,"kapseln":12,"fehlt":[],"maxAbw":0,"glied":null,"gehalten":true}
+  ✅ bewohner  {"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":46,"third":45},"alsLeib":4,"nahLeiber":4,"stall":null,"sek":8.4}
+
+  (101 s)
+
+✅ GRÜN — geister · geburt · sattel · reload · huepfer · wachsen · gier · jagd · herde · hindernis · gedreht · nacht · peer · zufall · nexus · temperament · abstand · jagdkreis · rudel · sockel · querhang · ferngang · gestalt · bewohner
+EXIT=0

@@ -1,0 +1,4 @@
+{
+ "ergebnis": "wolf x -3.0 z 24.0 y 89.12 v 1.24 art schritt | fuchs x 0.3 z 24.0 y 89.09 v 0.98 art schritt | baer x 3.7 z 24.0 y 89.07 v 1.37 art schritt | wesen x 7.1 z 24.0 y 89.05 v 1.50 art schritt",
+ "ms": 63
+}
