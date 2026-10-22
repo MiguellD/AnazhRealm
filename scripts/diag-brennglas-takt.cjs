@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-brennglas-takt.cjs — DER TAKT KOSTET, WAS IHN BETRIFFT (0710-10). Befund (OMEN 0710-9, V18.536 gegen V18.535, Profil an der
-// Mess-Wiese): `_tickFocusingAffordances` wurde ×2,7 teurer (138 → 376 ms je 14,5 s). Gemessen (Werkbank, main 76c9624d, Wiese,
-// Sonne, 600 Takte): je Takt 1 578 Einträge des Bestands durchlaufen — für EIN Brennglas mit EINEM Brennpunkt, 0 Tag-Rechnungen,
-// 0 Brennpunkt-Proben: die ganze Zeit (0,34 ms je Takt) war die Schleife. Dieselbe Klasse trugen die Affordanz-Takte (Strahlen,
-// Balancieren, Heben, das Portal über `_findNearestAffordanceEntry`: je Frame ein Filter über den ganzen Bestand), der Dorf-Rauch
-// (je Frame jeder Eintrag auf einen Kamin geprüft), die Resonanz der Boosts (je Sekunde jeder Eintrag gegen den Spieler) und
-// das Lofi-Pad (`_lofiNearResonantArchitecture`, je Akkord jeder Eintrag gegen den Spieler).
-// Der Schnitt: die Nachbarschaft (`_blockerNetz`) trägt ein VERZEICHNIS je Name (Affordanz-Schlüssel, „rauch"), die Takte
+// diag-brennglas-takt.cjs — DER TAKT KOSTET, WAS IHN BETRIFFT: der Brennglas-Takt, die Affordanz-Takte (Strahlen,
+// Balancieren, Heben, das Portal), der Dorf-Rauch, die Resonanz der Boosts und das Lofi-Pad laufen nie über den ganzen Bestand.
+// Die Nachbarschaft (`_blockerNetz`) trägt ein VERZEICHNIS je Name (Affordanz-Schlüssel, „rauch"), die Takte
 // fragen es (`_blockerMit`) oder die Plätze um ihre Wirker (`_blockerUmPlatz`); der Brennglas-Takt führt seine warmen Einträge.
 // Die Wand (Null-Renderer, eine echte Welt mit Dörfern, Brenngläsern und Brennbarem in ihren Brennpunkten):
 //   (T) DER TAG: Morgen, Mittag, Wolken (Regen, Sturm), Mittag, Nachmittag, Abend, Nacht — je Schritt laufen der alte Takt (das
@@ -20,21 +15,19 @@
 //   (R) DIE RESONANZ: die Plätze um den Spieler tragen jeden Eintrag in Reichweite (Boosts, Lofi-Pad 24 m), in der Ordnung
 //       des Bestands;
 //   (D) DER DORF-RAUCH: dieselben Quellen wie die Schleife über den Bestand;
-//   (H) DIE HAUS-TÜR (0710-11): ein Haus mit Tür, das nach dem letzten Scan in die Nähe kommt, steht 2 s später in der Nähe-Liste
+//   (H) DIE HAUS-TÜR: ein Haus mit Tür, das nach dem letzten Scan in die Nähe kommt, steht 2 s später in der Nähe-Liste
 //       des Tür-Takts (`_tickHausTueren`) und trägt sein Tür-Gedächtnis; die Liste ist der Filter über den Bestand, in seiner
-//       Ordnung (bis 0710-11 baute sie sich nur alle 1 000 s neu: Sekunden gegen `> 1000`);
+//       Ordnung;
 //   (A) ARBEIT: der Brennglas-Takt fasst je Takt höchstens die Betroffenen an — die warmen Einträge und, wenn die Sonne durch ein
-//       Glas scheint, die Plätze in Reichweite der Gläser (vorher: jeden Eintrag des Bestands);
-//   (N) DIE NÄHE (K54, OMEN 1410-2: der CPU-Takt p95 +1,0–1,6 ms an allen vier Orten, je Takt jeder Strahler gegen jeden
-//       Mast des Bestands): Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
+//       Glas scheint, die Plätze in Reichweite der Gläser;
+//   (N) DIE NÄHE: Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
 //       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
 //       ferne Menge derselben Namen (300–3 000 je Name) greift kein Takt an (WELTGRÖSSE rot ab dem ersten Griff je Ruf, gezählt
 //       an ihrem Platz und ihrer Zellen-Marke, nie an der Uhr), die Gegenprobe (das Orakel) greift jeden ihres Namens (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
 //       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
 //       `_spiegel…`) gehört der Klasse;
-//   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab (D10-n1: die Kronen des Spiegels leiteten je
-//       Gestalt 4–39 ms ab, `_spiegelStreuGestaltNeu` → `_gestaltTeile`) — die Krone reist als Beipack aus dem Worker;
+//   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab — die Krone reist als Beipack aus dem Worker;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
 // Schleife, einem Schreiber ohne Stempel und einem fremden Hitze-Schreiber rot.
@@ -936,8 +929,6 @@ async function probe() {
             ? st.architectures.filter((e) => e && ((e.userData && e.userData.rauchQuelle) || e.chimney))
             : st.architectures.filter((e) => e && e.affordances && e.affordances[k]);
     const vergleiche = (name) => {
-        if (typeof r._blockerMit !== "function")
-            return { name, schluessel: 0, mitglieder: 0, fehler: ["das Spiel kennt kein Verzeichnis (`_blockerMit`)"] };
         const f = [];
         let mitglieder = 0;
         for (const k of schluessel()) {

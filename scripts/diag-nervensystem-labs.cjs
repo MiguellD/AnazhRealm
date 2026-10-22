@@ -67,7 +67,7 @@ function staticLaws(manifestSrc) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {}, w: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);

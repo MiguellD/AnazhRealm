@@ -200,7 +200,7 @@ const SCHUSS_FN = async (kam) => {
         : null;
     zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
     try {
-        if (typeof r._analogEMetrologieZeile === "function") zahlen.zeile = String(r._analogEMetrologieZeile());
+        zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch (_e) {}
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };

@@ -489,7 +489,7 @@ async function checkBandRing5Soul(ctx) {
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
-        if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        r._gameLoopTick(performance.now());
         return {
             playerYaw: r.state.yaw,
             playerRotationY: r.state.playerMesh.rotation.y,
@@ -519,7 +519,7 @@ async function checkBandRing5Soul(ctx) {
                 r.state.playerVel.setValue(0, 0, 0);
                 r.state._fieldVy = 0;
             }
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
             const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
@@ -961,9 +961,8 @@ async function checkBandV18195AvatarSizeHp(ctx) {
     );
 }
 
-// V18.196 — MANA-SYMMETRIE (aktiv-plan §4.E): die zweite Ausdauer-Achse als
-// Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
-// Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
+// MANA-SYMMETRIE: die zweite Ausdauer-Achse — STAT_FROM_TAGS.manaMax, state.player.mana/manaMax, der Regen im Spiel-Takt
+// (MANA_REGEN_PER_SEC, M7 fährt ihn).
 async function checkBandV18196ManaSymmetry(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -982,9 +981,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
                 Math.abs(out.manaFullMag - 150) < 0.001 &&
                 Math.abs(out.manaFullBoth - 180) < 0.001;
         }
-
-        // (M3) MANA_REGEN_PER_SEC frozen Konstante
-        out.regenConstExists = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
 
         // (M4) computePlayerStats gibt stats.manaMax
         const savedSoul = r.state.player && r.state.player.soul;
@@ -1046,7 +1042,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
         `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
         res.manaFormulaOk === true
     );
-    check("V18.196 (M3) MANA_REGEN_PER_SEC frozen Konstante existiert", res.regenConstExists === true);
     check("V18.196 (M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
     check(
         `V18.196 (M5/NULL) Wolf-Körper hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
@@ -1450,7 +1445,6 @@ async function checkBandTierFern(ctx) {
         const abKern = BK && BK[1] ? BK[1].ab : null;
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
-        if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
     
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
         for (const c of s.creatures.slice()) r.removeCreature(c);

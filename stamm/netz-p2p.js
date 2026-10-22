@@ -2376,11 +2376,10 @@ class AnazhRealm_netz_p2p {
         if (entry.nameLabel) entry.nameLabel.visible = ortBekannt;
         if (!ortBekannt) return;
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
-        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
-        // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
-        // Meeresspiegel — in jedem See und Fluss ging er, W-kD3b).
+        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (das EINE
+        // Urteil `_nassAt`) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem Meeresspiegel).
         const fussP = entry.y - AnazhRealm.PLAYER_FOOT_OFFSET;
-        const underwater = this._koerperWasser(entry.x, entry.z, fussP) - fussP > AnazhRealm._schwimmBrustM() * 0.9;
+        const underwater = this._nassAt(entry.x, entry.z, -AnazhRealm._schwimmBrustM() * 0.9, fussP);
         // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;

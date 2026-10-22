@@ -310,7 +310,7 @@ async function s0Probe(page, station, schein) {
             }
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
-            out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
+            out.verzeichnis = r._blockerMit("licht").includes(feuer);
             // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`) — an
             // der ersten Stelle des Rings, die die Wände des Hebe-Chokepoints selbst frei nennen (Wasser `_landAt`, Bau
             // `_bauFreiRund`): das Feuer landet je Maschine anders (CI 1,46|0,86, lokal −0,6|2,26), fest +6 m in z fiel still.
@@ -366,9 +366,7 @@ async function s0Probe(page, station, schein) {
                 if (amFeuer.length < 1) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
-                        : typeof r._leuchtTakt !== "function"
-                          ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
-                          : "der Licht-Takt setzt keinen Platz an die Glut";
+                        : "der Licht-Takt setzt keinen Platz an die Glut";
                     out.befunde.push(
                         `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
@@ -640,7 +638,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 };
             }
             out.basis = basis;
-            out.erbgut = typeof r._erbgut === "function" ? r._erbgut().terme.map((t) => t.art) : ["wildnis(alt)"];
+            out.erbgut = r._erbgut().terme.map((t) => t.art);
             return out;
         },
         welt,
@@ -1084,7 +1082,7 @@ async function lichtLauf() {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
-                async (json, rest) => {
+                async (json) => {
                     await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
@@ -1120,7 +1118,7 @@ async function lichtLauf() {
         ]) {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
-                    async (st, gestalt, rest) => {
+                    async (st, gestalt) => {
                         const r = window.anazhRealm;
                         const s = r.state;
                                                 s.renderer.setAnimationLoop(null);

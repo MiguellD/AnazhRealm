@@ -27,7 +27,7 @@ async function bootPage(browser, nullRenderer) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.evaluate(() => window.__weltDa((r) => r.state && typeof r._foundryEnsureImpostorRecord === "function"));
+    await page.evaluate(() => window.__weltDa((r) => r.state));
     return { page, pageErrors };
 }
 

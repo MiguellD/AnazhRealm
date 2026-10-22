@@ -629,9 +629,21 @@ function haengerTabelle(a) {
 // Die Takte des Gangs (`lauf`, Bahn) ab p95 und der Mitte (p40–p60)
 // zerfallen je Rahmen-Pfad (die Proben im Takt teilen seine CPU-Zeit). TÄTER: ein Rahmen, der ab p95 ≥ 1 ms mehr trägt als in
 // der Mitte, ohne dass ein Kind ≥ 1 ms es erklärt; ROT mit Täter oder blind. Die Zeilen ab 0,25 ms.
-// `posten` (`takt --posten a,b`): je Name seine Zeit ab p95 über jeden Pfad, ROT über 1 ms je Takt — ein Posten, der in JEDEM
-// Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
-function spitzenAuswerten(roh, spur, posten = []) {
+// `posten` (`takt --posten a,b`; IN FAHRT `wandern: "fahrt"`, profiband.K1, die FAHRT-POSTEN der OMEN-Zerlegung 22.10., GTX GT-Fahrt
+// F95 33,5 ms): je Name seine Zeit ab p95 über jeden Pfad (je Ast einmal gezählt), ROT über der Schwelle je Takt — ein Posten, der
+// in JEDEM Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
+// In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
+const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"];
+function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
+    k.k.forEach((c, nm) => {
+        const i = namen.indexOf(nm.split(" ")[0]);
+        if (i >= 0 && i !== oben) summe[i] += c.n;
+        postenSumme(c, namen, summe, i >= 0 ? i : oben);
+    });
+    return namen.map((name, i) => ({ name, spitzeMs: +summe[i].toFixed(2) }));
+}
+function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_POSTEN : []) {
+    const S = roh.wandern === "fahrt" ? 0.5 : 1;
     const T = roh.takte,
         P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null,
         versatz = versatzVon(spur, T, P);
@@ -654,29 +666,31 @@ function spitzenAuswerten(roh, spur, posten = []) {
         for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= 0.25).sort((x, y) => y[1].n - x[1].n)) {
             const cm = km && km.k.get(nm);
             a.zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
-            if (c.n >= 1) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
+            if (c.n >= S) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
             geh(c, cm, pfad.concat(nm));
         }
         const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
-        if (pfad.length && rest - restM >= 1) a.taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
+        if (pfad.length && rest - restM >= S) a.taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
     };
-    const spitze = baum(sp);
-    geh(spitze, baum(ids.filter((i) => cpu(i) >= q(0.4) && cpu(i) <= q(0.6))), []);
-    const postenIn = (k, nm) => [...k.k].reduce((s, [n, c]) => s + (n === nm ? c.n : postenIn(c, nm)), 0);
-    a.posten = Object.fromEntries(posten.map((nm) => [nm, r2(postenIn(spitze, nm))]));
+    const wSp = baum(sp);
+    geh(wSp, baum(ids.filter((i) => cpu(i) >= q(0.4) && cpu(i) <= q(0.6))), []);
+    a.posten = postenSumme(wSp, posten);
     a.taeter.sort((x, y) => y.spitzeMs - y.mitteMs - (x.spitzeMs - x.mitteMs));
     a.befunde = haengerLinsenBefunde(a).concat(
         a.gedeckt < 0.9 * a.spitzeN ? [`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`] : [],
-        a.taeter.map((t) => `Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, Mitte ${t.mitteMs} ms`),
-        posten.filter((nm) => a.posten[nm] > 1).map((nm) => `Posten ${nm}: ${a.posten[nm]} ms je Takt ab p95 (≤ 1 ms)`)
+        S < 1 && !(a.bahnM >= 150) ? [`die Fahrt stand: ${a.bahnM} m < 150 m Weg des Wagens`] : [],
+        S < 1 ? [] : a.taeter.map((t) => `Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, Mitte ${t.mitteMs} ms`),
+        a.posten
+            .filter((p) => p.spitzeMs > S)
+            .map((p) => `${S < 1 ? "Fahrt-" : ""}Posten ${p.name}: ${p.spitzeMs} ms je Takt ab p95 (> ${S} ms)`)
     );
     a.tabelle = [
         `TAKT-SPITZE: CPU-Takt ${JSON.stringify(a.cpuMs)} ms (K2 8 ms), ${a.spitzeN} Takte ab p95 (${a.gedeckt} mit Proben), ` +
             `Weg ${a.bahnM} m`,
         "  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms",
         ...a.zeilen.map((e) => `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`),
-        `TÄTER (Spitze − Mitte ≥ 1 ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,
-        ...posten.map((nm) => `POSTEN ${nm} ${a.posten[nm]} ms je Takt ab p95 (≤ 1 ms)`),
+        `${S < 1 ? "BENANNT" : "TÄTER"} (Spitze − Mitte ≥ ${S} ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,
+        ...(posten.length ? [`POSTEN (≤ ${S} ms je Takt ab p95): ${a.posten.map((p) => `${p.name} ${p.spitzeMs}`).join(" | ")}`] : []),
     ].join("\n");
     return a;
 }
@@ -849,8 +863,18 @@ function selbsttest() {
         // die Posten: _teilA trägt 2/8 jedes Takts (≥ 1,25 ms ohne Spitze über der Mitte: ROT), _teilB 1/8 (GRÜN)
         const p = spitzenAuswerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) }, ["_teilA", "_teilB"]);
         if (p.befunde.length !== s.befunde.length + 1 || !/^Posten _teilA: /.test(p.befunde.at(-1)))
-            f.push(`Posten _teilA ${p.posten._teilA} ms und _teilB ${p.posten._teilB} ms falsch geurteilt`);
+            f.push(`Posten ${p.posten.map((x) => `${x.name} ${x.spitzeMs}`).join(" · ")} ms falsch geurteilt`);
     });
+    // DIE FAHRT: der ruhige Lauf GRÜN; heißt _teilC (2 ms je Takt) computeVertexNormals, ROT beim Namen; ein stehender Wagen ROT
+    const [v0, b0] = spitzen[0];
+    const fahrt = (nm, bahnM) => {
+        const nodes = sp.profil.nodes.map((n) => (n.id === 17 ? { ...n, callFrame: { ...n.callFrame, functionName: nm } } : n));
+        const takte = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
+        return spitzenAuswerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }).befunde.join();
+    };
+    const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
+    if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))
+        f.push("die Fahrt falsch geurteilt: " + urteil.join(" | "));
     return f;
 }
 

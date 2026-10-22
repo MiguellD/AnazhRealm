@@ -258,7 +258,7 @@ class AnazhRealm_siedlung_satz {
             this._chunkSatzZellen(b, I.index.array, b.vStart, I.zellen, null);
             s.iSumme += b.iAnzahl - iAlt;
             this._chunkSatzHuelle(s, b);
-        } else if (erst >= 0) this._chunkSatzHuelle(s, b, erst, letzt);
+        } else if (erst >= 0) this._chunkSatzHuelle(s, b, null, erst, letzt);
         return true;
     }
 

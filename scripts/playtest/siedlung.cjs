@@ -534,7 +534,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.keys = { w: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
         }
         const playerZ = r.state.playerMesh.position.z;
         const playerY = r.state.playerMesh.position.y;

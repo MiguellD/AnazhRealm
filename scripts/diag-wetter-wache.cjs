@@ -1,14 +1,8 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt (Welle K), und frei gehören Uhr und Wetter dem
-// Spieler (Leben-Schau 2).
-// Befund 1 (OMEN, V18.534, ein B-Boot von vier): die Wetter-Wache der Bühne hielt die Uhr des Auto-Zugs eingefroren, und das
-// Wetter drehte trotzdem sunny → rainy (zweimal der Emotions-Effekt „sorrow → rainy", einmal ein Nexus-Programm). Schnitt: der
-// EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug, solange die Uhr unter 0 steht (der Halt der Bühne).
-// Befund 2 (Leben-Schau 2, drei Fenster auf der echten Radeon, `artifacts/profiband/leben-schau-2/befund.md` §6 #1): 3 von 3
-// Spuren nach 3–6 min Nacht — der Tag dauerte 8 min, zwei Nexus-Gesetze („wenn lebendig > 0,44, dann Tageszeit 0,17 / 0,144")
-// warfen die Uhr 30-mal in 160 s, „setze uhrzeit mittag" hielt 1–5 s, „setze wetter sonnig" bis zum nächsten Zug (Regen alle
-// 4,7 s), der Tageszeit-Regler zeigte 12:00 bei Welt 01:41. Schnitt: das GESETZ DER SCHREIBER (`_himmelSchreiber`) — die Uhr
+// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt, und frei gehören Uhr und Wetter dem Spieler. Der
+// EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug, solange die Uhr unter 0 steht (der Halt der Bühne); das GESETZ DER
+// SCHREIBER (`_himmelSchreiber`) — die Uhr
 // schreibt nur ihr eigener Gang, der Spieler und das Laden (der EINE Uhr-Schreiber `_uhrSetzen`); das Wort des Spielers über
 // das Wetter steht, bis er es freigibt; die Welt (Nexus, seine Gesetze, die Emotion, die Wesen) schreibt die Uhr nie und das
 // Wetter nie direkt — sie wünscht das nächste Wort des Wetter-Zugs, der im Takt `WETTER_ZUG_SEK` zieht.
@@ -24,8 +18,7 @@
 //       sagt „setze uhrzeit mittag" und „setze wetter sonnig" (der echte Chat-Pfad); die Täter der Schau schreiben dagegen —
 //       die Nexus-Gesetze auf die Uhr (der Zwilling `time_of_day` und `set_time_of_day`) und auf den Regen, die Würfel des
 //       Nexus auf Uhr und Sturm, die Emotion sorrow, und im Schöpfer-Modus ein Wesen, dessen Vorschlag von selbst läuft
-//       (`_handleCreatureProposedProgram` alle `WESEN_SEK`, Gegenprüfung 10.10.: es las sich als Zusage des Spielers und drehte
-//       sunny/sunny → rainy/rainy) — und JEDER Schreiber steht beim Namen (`himmelUrteil`): die Uhr geht nur ihren Gang im
+//       (`_handleCreatureProposedProgram` alle `WESEN_SEK`) — und JEDER Schreiber steht beim Namen (`himmelUrteil`): die Uhr geht nur ihren Gang im
 //       Gesetz der Tag-Länge, das Wetter bleibt sonnig, jeder Täter steht im Buch;
 //   (B) BAND: nach „setze wetter frei" schreibt nur der Wetter-Zug, nie schneller als sein Takt, und er zieht das Wort, das
 //       die Welt sich wünscht (auch das Wesen wünscht nur);
@@ -270,7 +263,7 @@ function uhrRot(U) {
 }
 
 // Die Himmels-Probe im Seiten-Kontext (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick`, Spiel-Zeit in Schritten
-// von `o.schrittSek`), der Nexus und seine Gesetze, die Emotion und der Wetter-Zug laufen mit. Vorher spricht der Spieler.
+// von `o.schrittSek`), der Nexus und seine Gesetze, die Emotion und der Wetter-Zug laufen mit.
 function himmelProbe(o) {
     const r = window.anazhRealm;
     const st = r.state;

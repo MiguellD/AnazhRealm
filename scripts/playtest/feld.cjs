@@ -116,9 +116,7 @@ async function checkRing2Dsl(ctx) {
 
     const phase2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (typeof r._gameLoopTick === "function") {
-            for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
-        }
+        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
             queueLen: r.state.nexusEvolutionQueue.length,
@@ -243,9 +241,8 @@ async function checkBandV1726FieldDirection(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
-        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm && out.hasResolver) {
+        const pm = r.state.playerMesh.position;
+        {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
             const need = r.dslPositions.at_field_need([50], ctx2);
             const needLeb = r.auraAt(need.x, need.z).lebendig;
@@ -262,7 +259,6 @@ async function checkBandV1726FieldDirection(ctx) {
         }
         return out;
     });
-    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
     check(
         "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
         res.needIsMin,

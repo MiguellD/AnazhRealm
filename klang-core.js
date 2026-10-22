@@ -867,6 +867,18 @@
     }
 
     // ── DIE SCHALTUNG: der EINE Graph-Bauer (Lab · Welt · Linse) ──
+    // DAS ZIEL EINES PARAMETERS (klang.K5): eine Rampe wird nur geschrieben, wenn ihr Ziel sich um mehr als
+    // ZIEL_SCHWELLE (relativ: 0,3 % ≈ 5 Cent, 0,03 dB — unter der Hoerschwelle) vom zuletzt geschriebenen
+    // unterscheidet. Jede Schreibung kostet den Haupt-Faden und die Zeitleiste des Audio-Fadens; die Mischung im
+    // Takt schrieb jedes Ziel neu, die Fahrt je Bild sechs (diag-klang-zensus --takt).
+    var ZIEL_SCHWELLE = 0.003, zielAlt = new WeakMap();
+    function ziel(param, wert, t, tau) {
+        var alt = zielAlt.get(param);
+        if (alt !== undefined && Math.abs(wert - alt) <= ZIEL_SCHWELLE * Math.abs(alt)) return false;
+        zielAlt.set(param, wert);
+        param.setTargetAtTime(wert, t, tau);
+        return true;
+    }
     // umweltGraph(ctx, ausgang, liefern?) → { anwenden(mix, t), aufnehmen(paket), zensus(), stopAlle(), knoten }.
     // Je hoerbarer Stimme: Quelle(n) (Schleife, versetzt) → Panner → Filter → Gain → ausgang; schweigende Stimmen
     // tragen KEINE Knoten. `knoten` (WeakSet) traegt jeden Quell-Knoten, den das Gesetz baute.
@@ -931,7 +943,7 @@
                 st.quellen.push(src);
                 st.panner.push(pan);
             }
-            st.gain.gain.setTargetAtTime(m.gain * st.ausgleich, t, U.rampeSek);
+            ziel(st.gain.gain, m.gain * st.ausgleich, t, U.rampeSek);
             return (stimmen[name] = st);
         }
         function stoppe(st, t) {
@@ -974,10 +986,10 @@
                         if (bereit(name)) starte(name, mm, zeit);
                         continue;
                     }
-                    st.gain.gain.setTargetAtTime(mm.gain * st.ausgleich, zeit, U.rampeSek);
-                    st.filter.frequency.setTargetAtTime(mm.hz, zeit, U.rampeSek);
-                    if (W[name].gerichtet) st.panner[0].pan.setTargetAtTime(mm.pan, zeit, U.rampeSek);
-                    for (var q = 0; q < st.quellen.length; q++) st.quellen[q].playbackRate.setTargetAtTime(mm.rate || 1, zeit, U.rampeSek);
+                    ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.rampeSek);
+                    ziel(st.filter.frequency, mm.hz, zeit, U.rampeSek);
+                    if (W[name].gerichtet) ziel(st.panner[0].pan, mm.pan, zeit, U.rampeSek);
+                    for (var q = 0; q < st.quellen.length; q++) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.rampeSek);
                 }
             },
             zensus: function () {
@@ -1245,6 +1257,26 @@
     // fahrtStimme(ctx, ausgang) → { anwenden(lage, t), stop(t), zensus(), knoten } — die Stimme EINES Wagens: zwei
     // Motor-Oszillatoren (Saegezahn f, Sinus f/2) → Tiefpass → Gain, das Abrollen (Perioden-Welle) → Bandpass → Gain.
     // Pegel: dB am Bus fuer die Quelle mit RMS 1 (der Saegezahn traegt 1/√3, der Sinus 1/√2 — ausgeglichen).
+    // DIE WELLE DES ABROLLENS — EINMAL je Kontext (fahrtWelle(ctx)): die Teilton-Tafel (Saat-Phasen, ∝ 1/√k, auf RMS 1
+    // geeicht), die Welle laeuft ohne Normalisierung. Ihr Bau (1024 Teiltoene → die band-begrenzten Tafeln des Browsers)
+    // trug beim Aufsitzen 6,3 ms in EINEM Bild (Radeon, diag-klang-zensus --takt); der Wirt backt sie im Leerlauf vor.
+    var wellen = new WeakMap();
+    function fahrtWelle(ctx) {
+        var w = wellen.get(ctx);
+        if (w) return w;
+        var R = FAHRT.abrollen, n = R.teiltoene, re = new Float32Array(n + 1), im = new Float32Array(n + 1), rnd = umweltRng(R.saat), summe = 0;
+        for (var k = 1; k <= n; k++) {
+            var amp = 1 / Math.sqrt(k), ph = rnd() * 2 * Math.PI;
+            re[k] = amp * Math.cos(ph);
+            im[k] = amp * Math.sin(ph);
+            summe += amp * amp;
+        }
+        var eich = 1 / Math.sqrt(summe / 2);
+        for (var j = 1; j <= n; j++) { re[j] *= eich; im[j] *= eich; }
+        w = ctx.createPeriodicWave(re, im, { disableNormalization: true });
+        wellen.set(ctx, w);
+        return w;
+    }
     function fahrtStimme(ctx, ausgang) {
         var F = FAHRT, M = F.motor, R = F.abrollen, knoten = new WeakSet(), letzte = null, an = true;
         var dbZuGain = function (db, rms) { return db === -Infinity ? 0 : Math.pow(10, db / 20) / rms; };
@@ -1262,17 +1294,7 @@
         halbG.connect(tief);
         tief.connect(motorG);
         motorG.connect(ausgang);
-        // das Abrollen: die Teilton-Tafel (Saat-Phasen, ∝ 1/√k, auf RMS 1 geeicht), die Welle laeuft ohne Normalisierung
-        var n = R.teiltoene, re = new Float32Array(n + 1), im = new Float32Array(n + 1), rnd = umweltRng(R.saat), summe = 0;
-        for (var k = 1; k <= n; k++) {
-            var amp = 1 / Math.sqrt(k), ph = rnd() * 2 * Math.PI;
-            re[k] = amp * Math.cos(ph);
-            im[k] = amp * Math.sin(ph);
-            summe += amp * amp;
-        }
-        var eich = 1 / Math.sqrt(summe / 2);
-        for (var j = 1; j <= n; j++) { re[j] *= eich; im[j] *= eich; }
-        var welle = ctx.createPeriodicWave(re, im, { disableNormalization: true });
+        var welle = fahrtWelle(ctx);
         var roll = ctx.createOscillator(), band = ctx.createBiquadFilter(), rollG = ctx.createGain();
         roll.setPeriodicWave(welle);
         roll.frequency.value = R.grundHz;
@@ -1289,12 +1311,12 @@
             anwenden: function (lage, t) {
                 if (!an) return;
                 var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtMischung(lage));
-                saege.frequency.setTargetAtTime(m.motorHz, zeit, F.rampeSek);
-                halb.frequency.setTargetAtTime(m.motorHz / 2, zeit, F.rampeSek);
-                tief.frequency.setTargetAtTime(m.motorFilterHz, zeit, F.rampeSek);
-                motorG.gain.setTargetAtTime(dbZuGain(m.motorDb, Math.sqrt(1 / 3)), zeit, F.rampeSek);
-                band.frequency.setTargetAtTime(m.rollHz, zeit, F.rampeSek);
-                rollG.gain.setTargetAtTime(dbZuGain(m.rollDb, 1), zeit, F.rampeSek);
+                ziel(saege.frequency, m.motorHz, zeit, F.rampeSek);
+                ziel(halb.frequency, m.motorHz / 2, zeit, F.rampeSek);
+                ziel(tief.frequency, m.motorFilterHz, zeit, F.rampeSek);
+                ziel(motorG.gain, dbZuGain(m.motorDb, Math.sqrt(1 / 3)), zeit, F.rampeSek);
+                ziel(band.frequency, m.rollHz, zeit, F.rampeSek);
+                ziel(rollG.gain, dbZuGain(m.rollDb, 1), zeit, F.rampeSek);
             },
             stop: function (t) {
                 if (!an) return;
@@ -1341,6 +1363,7 @@
         fahrtUpm: fahrtUpm,
         fahrtMischung: fahrtMischung,
         fahrtStimme: fahrtStimme,
+        fahrtWelle: fahrtWelle,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,
