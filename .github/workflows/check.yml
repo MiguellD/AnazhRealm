@@ -1596,10 +1596,11 @@ jobs:
               # 0,002 (SPRUNG gegen den steilsten Feinschritt des Lichts) — lokal 2,5 min samt Boot (Radeon)
               run: npm run gate:tag-achse:echt
 
-            - name: Lichtweg auf der Karte (Feld, Panorama und Wasser zeigen dieselbe Fläche wie die Stoffe, je Uhr 0,9–1,1)
+            - name: Lichtweg auf der Karte (Feld, Panorama, Wasser und Fern-Ring zeigen dieselbe Fläche wie die Stoffe, je Uhr 0,9–1,1)
               if: ${{ !cancelled() }}
               # werkbank licht --laub feld…wasser: die graue Fläche im Licht der Welt gegen eine MeshStandard-Karte, waagrecht und
-              # senkrecht zur Sonne, neben und von ihr weg — lokal 1 min samt Boot (Radeon). Die Spiegel-Zeilen hängen am Weltzustand
+              # senkrecht zur Sonne, neben und von ihr weg; `ring --karte`: der Fern-Ring gegen den Boden-Satz am Messort dorf je Uhr
+              # gegen Mittag (Licht K3 Staffel 1; ROT an f2904a72: Uhr 0,27 1,50) — lokal 4 min samt Boot (Radeon). Die Spiegel-Zeilen hängen am Weltzustand
               # (spiegel0 bei Uhr 0,27: frische Welt 0,778, eingeschwungene 0,951) und fahren bis zu ihrer Heilung nur in der Werkbank.
               run: npm run gate:licht-weg:echt
 
