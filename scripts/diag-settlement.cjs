@@ -1822,8 +1822,12 @@ const FIXTURES = [
                 res.c.blickErr = (e7 && e7.message) || String(e7);
             }
             // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht aus dem Vorlauf-Ring;
-            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot
+            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot; ohne Vorlauf (der Teleport ins Erwachen,
+            // derselbe Weg wie das Start-Dorf) zählt `haupt` die Haus-Pläne, die der HAUPT-THREAD bis zum ersten Haus rechnet
+            // (fachwerk `ortPlan` je Kandidat der Ort-Wahl × Slots)
             res.c.k5 = {};
+            const FC = globalThis.__fachwerkCore;
+            const ortPlan0 = FC.ortPlan;
             const alt = ["_autoSettlementRejected", "_stlWegePending", "_autoSettlementQueue"].map((f) => r[f]);
             const zelle = wm.settlementCells[key];
             const vorher = [new Set(r.state.architectures), new Set(Object.keys(wm.erdbau || {}))];
@@ -1840,7 +1844,11 @@ const FIXTURES = [
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, bau, erst, t0] = [false, 1, null, 0];
+                let [wach, bau, erst, t0, haupt] = [false, 1, null, 0, 1];
+                FC.ortPlan = function (p, ...a) {
+                    haupt += wach && p && p.slots ? p.slots.length : 0;
+                    return ortPlan0.call(this, p, ...a);
+                };
                 const req = r.constructor.prototype._foundryRequestSettlement;
                 r._foundryRequestSettlement = function (dp, ...a) {
                     const n = wach && dp.seed === seed;
@@ -1881,6 +1889,7 @@ const FIXTURES = [
                     erst && {
                         nH,
                         bau,
+                        haupt,
                         ms: Math.round(erst.ms),
                         ersterM: +erst.d.toFixed(1),
                         naechstM: +naechst.toFixed(1),
@@ -1892,11 +1901,13 @@ const FIXTURES = [
                     ["vorlauf12", 12, 1],
                     ["vorlauf300", 300, 1],
                     ["teleport12", 12, 0],
+                    ["teleport300", 300, 0],
                 ])
                     res.c.k5[k] = await lauf(nH, v);
             } catch (e5) {
                 res.c.k5.err = String(e5);
             } finally {
+                FC.ortPlan = ortPlan0;
                 for (const f of ["_autoSettlementCellInfo", "_foundryRequestSettlement", "_spawnSettlementSlot"])
                     delete r[f];
                 [r._autoSettlementRejected, r._stlWegePending, r._autoSettlementQueue] = alt;
@@ -2842,6 +2853,11 @@ const FIXTURES = [
     check(
         "C-K5 Selbsttest: der Teleport ins Erwachen exportiert danach (> 1,2 je Vorlauf)",
         q5("vorlauf12", "teleport12") > 1.2,
+        z5
+    );
+    check(
+        "C-K5 OHNE VORLAUF: der Haupt-Thread plant bis zum ersten Haus nH 300 / nH 12 ≤ 1,2 (Teleport ins Erwachen, Start-Dorf)",
+        k5.teleport12 && k5.teleport300 && k5.teleport300.haupt / k5.teleport12.haupt <= 1.2,
         z5
     );
     const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
