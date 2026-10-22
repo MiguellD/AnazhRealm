@@ -1,0 +1,36 @@
+07:12:53 SERIE START A=e5003509[0] B=c0151abb[0] Instrument=c0151abb ZELLEN=g-third w-ego w-regen
+07:38:17 g-third-A1 start FP=1ddd298dee97127b 65 51 gpu[61, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:41:14 g-third-A1 ende gpu[74, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 80.9 F95 16.8 C95 5.7 k0 0.19 | LEER |  {"ergebnis":{"s":-7.9,"wege":2,"wegM":127.9,"abwMaxM":0,"takte":2918,"lage":[0,-7.9]},"ms"
+07:41:46 g-third-B1 start FP=9283bc1b1c4ca397 65 51 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:44:44 g-third-B1 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 80.2 F95 16.8 C95 5.8 k0 0.2 | LEER |  {"ergebnis":{"s":-7.6,"wege":2,"wegM":127.6,"abwMaxM":0,"takte":2754,"lage":[0,-7.6]},"ms"
+07:45:15 g-third-A2 start FP=1ddd298dee97127b 65 51 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:48:15 g-third-A2 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 80.2 F95 16.8 C95 6 k0 0.2 | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":2745,"lage":[0,-8.3]},"ms"
+07:48:46 g-third-B2 start FP=9283bc1b1c4ca397 65 51 gpu[70, 151 MHz, 405 MHz, P8, 0x0000000000000001]
+07:51:45 g-third-B2 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 80.1 F95 16.8 C95 5.9 k0 0.2 | LEER |  {"ergebnis":{"s":-8.2,"wege":2,"wegM":128.2,"abwMaxM":0,"takte":2690,"lage":[0,-8.2]},"ms"
+07:52:17 w-ego-A1 start FP=1ddd298dee97127b 65 51 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:55:09 w-ego-A1 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 78 F95 16.8 C95 4.3 k0 0.62 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":3027,"lage":[-280.4,-1054]
+07:55:40 w-ego-B1 start FP=9283bc1b1c4ca397 65 51 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:58:33 w-ego-B1 ende gpu[76, 215 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 78.1 F95 16.8 C95 4.3 k0 0.26 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":3020,"lage":[-280.4,-1054]
+07:59:04 w-ego-A2 start FP=1ddd298dee97127b 65 51 gpu[70, 151 MHz, 405 MHz, P8, 0x0000000000000001]
+08:01:56 w-ego-A2 ende gpu[76, 253 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 78.2 F95 16.8 C95 4.5 k0 0.62 | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":3048,"lage":[-280.4,-1053.
+08:02:27 w-ego-B2 start FP=9283bc1b1c4ca397 65 51 gpu[70, 253 MHz, 405 MHz, P8, 0x0000000000000001]
+08:05:20 w-ego-B2 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 77.5 F95 16.8 C95 4.4 k0 0.61 | LEER |  {"ergebnis":{"s":-8.3,"wege":2,"wegM":128.3,"abwMaxM":0,"takte":3009,"lage":[-280.4,-1053.
+08:05:51 w-regen-A1 start FP=1ddd298dee97127b 65 51 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+08:07:55 w-regen-A1 ende gpu[78, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 74.8 F95 16.8 C95 4.5 k0 0.26 |  regen[{"ergebnis":{"wetter":"rainy","naesse":true},"ms":9}] ende[{"ergebnis":{"wetter":"rainy"},"ms":2}]
+08:08:26 w-regen-B1 start FP=9283bc1b1c4ca397 65 51 gpu[75, 1809 MHz, 4006 MHz, P0, 0x0000000000000001]
+08:10:29 w-regen-B1 ende gpu[77, 1721 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 77.9 F95 16.8 C95 4.1 k0 0.26 |  regen[{"ergebnis":{"wetter":"rainy","naesse":true},"ms":8}] ende[{"ergebnis":{"wetter":"rainy"},"ms":1}]
+08:11:00 w-regen-A2 start FP=1ddd298dee97127b 65 51 gpu[74, 1721 MHz, 4006 MHz, P0, 0x0000000000000001]
+08:13:03 w-regen-A2 ende gpu[77, 1721 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 76 F95 16.8 C95 4.2 k0 0.26 |  regen[{"ergebnis":{"wetter":"rainy","naesse":true},"ms":8}] ende[{"ergebnis":{"wetter":"rainy"},"ms":1}]
+08:13:35 w-regen-B2 start FP=9283bc1b1c4ca397 65 51 gpu[75, 1721 MHz, 4006 MHz, P0, 0x0000000000000001]
+08:15:38 w-regen-B2 ende gpu[78, 1771 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 78.2 F95 16.8 C95 4.8 k0 0.61 |  regen[{"ergebnis":{"wetter":"rainy","naesse":true},"ms":8}] ende[{"ergebnis":{"wetter":"rainy"},"ms":1}]
+08:16:03 SERIE ENDE A-status[0] B-status[0]
+08:16:20 SERIE START A=e5003509[0] B=c0151abb[0] Instrument=c0151abb ZELLEN=w-ego
+08:16:26 w-ego-A3 start FP=1ddd298dee97127b 65 51 gpu[72, 822 MHz, 810 MHz, P5, 0x0000000000000001]
+08:19:11 w-ego-A3 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 77 F95 16.8 C95 4.5 k0 0.62 | LEER |  {"ergebnis":{"s":-7.6,"wege":2,"wegM":127.6,"abwMaxM":0,"takte":2953,"lage":[-280.4,-1053.
+08:19:42 w-ego-B3 start FP=9283bc1b1c4ca397 65 51 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+08:22:36 w-ego-B3 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 77.7 F95 16.8 C95 4.6 k0 0.63 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":2973,"lage":[-280.4,-1054]
+08:23:07 w-ego-A4 start FP=1ddd298dee97127b 65 51 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+08:26:00 w-ego-A4 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 78.1 F95 16.8 C95 4.7 k0 0.26 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":2984,"lage":[-280.4,-1054]
+08:26:31 w-ego-B4 start FP=9283bc1b1c4ca397 65 51 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+08:29:24 w-ego-B4 ende gpu[76, 253 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 77.8 F95 16.8 C95 4.3 k0 0.62 | LEER |  {"ergebnis":{"s":-8.4,"wege":2,"wegM":128.4,"abwMaxM":0,"takte":2942,"lage":[-280.4,-1054]
+08:29:49 SERIE ENDE A-status[0] B-status[0]
