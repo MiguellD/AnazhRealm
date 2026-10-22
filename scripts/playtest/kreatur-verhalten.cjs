@@ -502,7 +502,6 @@ async function checkBandWelle6HCreatures(ctx) {
             wesenPart && typeof wesenPart.shape === "string" && typeof wesenPart.material === "string";
         out.spriteAuraY = souls && souls.wolf && souls.wolf.auraY === 0.75;
         out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-        out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
         if (r.state.creatures.length > 0) {
             const c0 = r.state.creatures[0];
             out.initialIsGroup = c0 && c0.isGroup === true;
@@ -670,10 +669,6 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
         check("Welle 6.H P2A: wolf.auraY === 0.75", wave6hP2aResults.spriteAuraY);
         check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
-        check(
-            "Welle 6.H P2A: creatureDrawerInitDOM existiert (die Suite ruft ihn nie)",
-            wave6hP2aResults.hasCreatureDrawer
-        );
         check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
         check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
         check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);

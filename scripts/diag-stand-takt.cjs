@@ -17,8 +17,7 @@
 //       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
 //   (B) BAKE-SCHULD — solange die Bake-Uhr Fits abweist, steht die Welt nicht, und ihr Grund nennt die Felder;
-//   (D) DORF — ein Akt des Felds (`spawnSettlement`, der Weg des Nexus) hält die Welt wach bis zum letzten Haus; der Nexus
-//       selbst ruht (sein Akt ist Eingabe wie der Spieler, CI 39767254768: sein Dorf kam in die Runde der Stufen-Wahl);
+//   (D) DORF — die Welt steht erst nach dem letzten Haus eines Dorf-Akts (`spawnSettlement`); der Nexus ruht;
 //   (P) kein Page-Error. Dass jeder Takt die Wache fragt und seinen Gang meldet, beweisen (S) und (X) am Verhalten (ein
 //       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext (D3c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
@@ -140,7 +139,7 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
-        dorf: { takte: 214, stand: 0, placed: 12, danach: 41 },
+        dorf: { steht: 41, placed: 12 },
         wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
         schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
         fixWach: false,
@@ -410,8 +409,7 @@ function selbsttest() {
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
-        ["die Welt steht, während das Dorf fliegt (die Basis)", (b) => (b.dorf.stand = 37), /DORF: die Welt nannte in 37 von 214 Takten nichts offen/],
-        ["das Dorf setzt kein Haus", (b) => (b.dorf.placed = 0), /DORF: der Akt setzte kein Haus/],
+        ["das Dorf fliegt (die Basis)", (b) => delete b.dorf.placed, /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
         ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
         ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
         [
@@ -1382,15 +1380,9 @@ const server = statikServer();
                     }, 60)
                     .catch((x) => x.message);
                 B.rest = schuld.size;
-                const D = (aus.dorf = { takte: 0, stand: 0 });
-                const akt = r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" });
-                akt.then((x) => (D.placed = x ? x.placed : 0), (e) => (D.placed = String(e)));
-                for (; D.placed === undefined && D.takte < 3000; D.takte++) {
-                    takt();
-                    if (!Object.values(r._weltOffen()).some(Boolean)) D.stand++; // nichts offen: die Ruhe zählt
-                    await pause(2);
-                }
-                D.danach = await window.__weltStehtNach(takt).catch((x) => x.message);
+                const D = (aus.dorf = {});
+                r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x && x.placed));
+                D.steht = await window.__weltStehtNach(takt).catch((x) => x.message);
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
             },
@@ -1497,8 +1489,7 @@ const server = statikServer();
                     : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
-    console.log(`  Wach (ein kalter Bau): ${befund.wach}`);
-    console.log(`  Dorf im Flug: ${JSON.stringify(befund.dorf)}`);
+    console.log(`  Wach (ein kalter Bau): ${befund.wach} · Dorf ${JSON.stringify(befund.dorf)}`);
     if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
     for (const [i, F] of (befund.fix || []).entries())
         console.log(

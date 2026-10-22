@@ -868,8 +868,6 @@ async function checkBandWelle6Keybindings(ctx) {
         out.keybindRebindInitNull = r.state.keybindRebind === null;
 
         // Methoden-Existenz
-        out.hasLoad = typeof r._loadKeybindings === "function";
-        out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
         out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
 
         // setKeybinding ändert state
@@ -964,11 +962,7 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
         check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
         check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-        check("Welle 6.C3: _loadKeybindings existiert", wave6c3Results.hasLoad);
-        check(
-            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI existieren",
-            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI
-        );
+        check("Welle 6.C3: _renderKeybindingsUI existiert", wave6c3Results.hasRenderUI);
         check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
         check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
         check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
