@@ -1473,8 +1473,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
             const r = window.anazhRealm;
-            const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
-            if (out.hasIslandDensity) {
+            const out = {};
+            {
                 // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
                 // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
                 const dummyNoise = { noise2D: () => 0 };
@@ -1560,7 +1560,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // grün-oben/erdig-unten per Vertex-Normale.
         const r42c = await page.evaluate(() => {
             const r = window.anazhRealm;
-            const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
+            const out = {};
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;

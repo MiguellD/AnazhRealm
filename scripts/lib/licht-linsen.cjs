@@ -2395,7 +2395,169 @@ function kartenEichung(kurve) {
     return 2 * lo;
 }
 
+// DIE NÄSSE IM BILD (wetter.K2): eine Pose unter der Bühne klar · Regen frisch · Regen 10 min (`naesse: 600`); je Rasterpunkt
+// nass/frisch trennt die Nässe vom Licht, nass gegen nass ohne Regen-Sprite zählt die Schlieren je Klasse. Im Dorf trifft der
+// Strahl Hülle, Tür-Flügel oder Boden: unter der Decke „innen"; die Dach-Bauten ohne Hülle (`NAESSE.dachArten`) im Umkreis
+// 24 m prüfen den Dach-Pool an ihrer Mitte. `haus`: nur die Schwelle, an die der Spieler tritt (die Tür öffnet).
+function naesseSicht(o) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const st = r.state;
+        const cam = st.camera;
+        const p = st.playerMesh.position;
+        // DIE DACH-BAUTEN OHNE HÜLLE (`NAESSE.dachArten`): `dach: "ziel"` nennt den nächsten, `dach: "pruefen"` prüft jeden im
+        // Umkreis 24 m am Dach-Pool an seiner Mitte (am Boden)
+        if (o.dach) {
+            const U = r._ensureAtmoUniforms();
+            const arten = (r.constructor.NAESSE || {}).dachArten || [];
+            const ab = (a) => Math.hypot(a.position.x - p.x, a.position.z - p.z);
+            const bauten = st.architectures.filter((a) => {
+                const pr = !a._hausHuelle && a.position && r._foundryPresetForEntry(a);
+                const rec = pr && r._foundry.recipes[pr];
+                return rec && (arten.includes(pr) || arten.includes(rec.kind));
+            }).sort((a, b) => ab(a) - ab(b));
+            if (o.dach === "ziel") return { ziel: bauten.length ? [bauten[0].position.x, bauten[0].position.z] : null };
+            const nah = bauten.filter((a) => ab(a) < 24);
+            const unterDach = (x, y, z) => (U.dachLage || []).some((L, i) => {
+                const [l, m] = [L.value, U.dachMass[i].value];
+                return Math.abs((x - l.x) * l.z - (z - l.y) * l.w) < m.x && Math.abs((x - l.x) * l.w + (z - l.y) * l.z) < m.y && y < m.z;
+            });
+            const trocken = nah.filter((a) => unterDach(a.position.x, r._terrainMacroSurfaceY(a.position.x, a.position.z, false) + 0.2, a.position.z));
+            return { n: nah.length, trocken: trocken.length, arten: [...new Set(nah.map((a) => a.type))] };
+        }
+        const e = o.ort === "dorf" ? st.architectures.filter((a) => a._hausHuelle && a.tuer).sort((a, b) => Math.hypot(a.position.x - p.x, a.position.z - p.z) - Math.hypot(b.position.x - p.x, b.position.z - p.z))[0] : null;
+        if (o.ort === "dorf" && !e) throw new Error("NÄSSE: kein Haus mit Hülle und Tür am Ort");
+        const k = e ? e._hausHuelleSkala || 1 : 1;
+        const [co, si] = e ? [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0)] : [1, 0];
+        const welt = (x, y, z) => new T.Vector3(e.position.x + (x * co + z * si) * k, e.position.y + y * k, e.position.z + (z * co - x * si) * k);
+        const lokal = (v) => [((v.x - e.position.x) * co - (v.z - e.position.z) * si) / k, (v.y - e.position.y) / k, ((v.x - e.position.x) * si + (v.z - e.position.z) * co) / k];
+        const boxen = e ? e._hausHuelle.teile.filter((t) => t.art === "box" && t.rolle === "fest") : [];
+        const fl = (t) => t.h[0] * t.h[2];
+        const decke = boxen.filter((t) => fl(t) >= 0.5 * Math.max(...boxen.map(fl))).sort((a, b) => b.c[1] + b.h[1] - a.c[1] - a.h[1])[0];
+        const t = e && e.tuer;
+        if (o.haus) return { schwelle: welt(t.x + 1.3, 0, t.z - 0.8).toArray() };
+        for (const f of ((e && e.instSlots) || []).map((s) => s.tuer || (st.archInstanceGroups.get(s.key) || {}).tuer).filter((f) => f && Math.abs(f.zf - t.z) < 0.5)) {
+            const L = Math.abs(t.x - f.hx);
+            const [bx, bz] = [L * Math.cos(f.offen) * Math.sign(t.x - f.hx), Math.abs(L * Math.sin(f.offen))];
+            for (const sz of [1, -1]) boxen.push({ tuer: true, c: [f.hx + bx / 2, t.y + t.h / 2, f.zf + (sz * bz) / 2], h: [Math.abs(bx) / 2 + 0.04, t.h / 2, bz / 2 + 0.04] });
+        }
+        st.renderer.setAnimationLoop(null);
+        if (e) {
+            cam.position.copy(welt(t.x, t.y + 1.5, t.z + 1));
+            cam.lookAt(welt(t.x, t.y - 0.8, t.z - 2.5));
+            cam.updateMatrixWorld(true);
+        }
+        const W = 320;
+        const H = 180;
+        const schuss = async (wetter, naesse) => {
+            window.__buehne({ wetter, naesse });
+            return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        };
+        const klar = await schuss("sunny", 1e6);
+        await schuss("rainy", 0); // der Regen-Himmel schwingt ein (sein erster Schuss 19–33 % dunkler)
+        const frisch = await schuss("rainy", 0);
+        const nass = await schuss("rainy", 600);
+        const sprite = r._rainSystem && r._rainSystem.mesh;
+        if (sprite) sprite.layers.disable(0);
+        const ohne = await schuss("rainy", 600);
+        if (sprite) sprite.layers.enable(0);
+        const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+        const strahl = new T.Vector3();
+        const klasse = (x, y) => {
+            if (!e) return y > H * 0.55 ? "aussen" : null;
+            strahl.set(((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 1).unproject(cam).sub(cam.position).normalize();
+            const a = lokal(cam.position);
+            const d = lokal(cam.position.clone().add(strahl)).map((v, i) => v - a[i]);
+            let best = 40;
+            let flue = false;
+            for (const b of boxen) {
+                let t0 = 0;
+                let t1 = best;
+                for (let i = 0; i < 3 && t0 <= t1; i++) {
+                    const u = (b.c[i] - b.h[i] - a[i]) / d[i];
+                    const v = (b.c[i] + b.h[i] - a[i]) / d[i];
+                    t0 = Math.max(t0, Math.min(u, v));
+                    t1 = Math.min(t1, Math.max(u, v));
+                }
+                if (t0 <= t1 && t0 > 0.05) [best, flue] = [t0, !!b.tuer];
+            }
+            for (let s = 0.3; s < best; s += 0.1 + s * 0.02) {
+                const q = cam.position.clone().addScaledVector(strahl, s);
+                if (q.y < r._terrainMacroSurfaceY(q.x, q.z, false)) [best, flue] = [s, false];
+            }
+            if (best >= 40 || flue) return null;
+            const h = lokal(cam.position.clone().addScaledVector(strahl, best));
+            const unter = Math.abs(h[0] - decke.c[0]) < decke.h[0] - 0.05 && Math.abs(h[2] - decke.c[2]) < decke.h[2] - 0.05 && h[1] < decke.c[1];
+            return unter ? "innen" : "aussen";
+        };
+        const je = { innen: [], aussen: [] };
+        const regen = { innen: 0, aussen: 0 };
+        for (let y = 2; y < H; y += 4)
+            for (let x = 2; x < W; x += 4) {
+                const i = (y * W + x) * 4;
+                const c = klasse(x, y);
+                if (c && Y(frisch, i) > 8) je[c].push(Y(nass, i) / Y(frisch, i));
+                if (c && Math.abs(Y(nass, i) - Y(ohne, i)) > 3) regen[c]++;
+            }
+        const mittel = (u8) => {
+            let s = 0;
+            for (let i = 0; i < W * H * 4; i += 4) s += Y(u8, i);
+            return s / W / H;
+        };
+        const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
+        const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
+        const dicht = typeof r.constructor._naesseGesetz === "function" ? r.constructor._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
+        // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
+        const poroes = typeof r.constructor._naesseGesetz === "function" ? r.constructor._naesseGesetz(A, 0.4, 0.8, 0, 1) : null;
+        return {
+            ort: o.ort,
+            haus: e && e.type,
+            naesse: Number.isFinite(st.naesse) ? +st.naesse.toFixed(3) : null,
+            innen: { n: je.innen.length, verhaeltnis: med(je.innen) },
+            aussen: { n: je.aussen.length, verhaeltnis: med(je.aussen) },
+            dicht: dicht ? +dicht.faktor.toFixed(3) : null,
+            glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
+            regen,
+            regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
+            png: o.png ? [klar, frisch, nass].map((u8) => {
+                const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+                cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
+                return cv.toDataURL("image/png");
+            }) : undefined,
+        };
+    })();
+}
+
+// DAS URTEIL: draußen 0,5–0,8, innen ±5 % und 0 Schlieren (draußen ≥ 1: die Zählung sieht den Regen), Metall (`_naesseGesetz`)
+// ±5 %, Glanz ≥ 2×, Regenbild ≤ Sonne, je Klasse ≥ 100 Punkte; im Dorf jeder Dach-Bau im Umkreis trocken (≥ 1).
+function naesseUrteil(welt) {
+    const befunde = [];
+    const band = (n, wert, lo, hi) => (wert == null || wert < lo || wert > hi) && befunde.push(`${n} ${wert} außerhalb [${lo}, ${hi}]`);
+    if (!Object.keys(welt).length) befunde.push("keine Messung");
+    for (const [ort, m] of Object.entries(welt)) {
+        if (m.fehler) {
+            befunde.push(`${ort}: ${m.fehler}`);
+            continue;
+        }
+        for (const c of ort === "dorf" ? ["aussen", "innen"] : ["aussen"])
+            if (!(m[c].n >= 100)) befunde.push(`${ort} ${c}: ${m[c].n} Rasterpunkte < 100`);
+        band(`${ort} Nässe porös draußen`, m.aussen.verhaeltnis, 0.5, 0.8);
+        if (ort === "dorf") band(`${ort} innen unter dem Dach`, m.innen.verhaeltnis, 0.95, 1.05);
+        band(`${ort} dicht (Metall)`, m.dicht, 0.95, 1.05);
+        band(`${ort} Glanz nass/trocken`, m.glanz, 2, Infinity);
+        if (!(m.regen && m.regen.aussen >= 1)) befunde.push(`${ort}: keine Schliere draußen — die Regen-Zählung ist blind`);
+        if (ort === "dorf" && !(m.regen && m.regen.innen === 0)) befunde.push(`${ort}: ${m.regen && m.regen.innen} Regen-Punkte innen`);
+        const d = m.dachBauten;
+        if (ort === "dorf" && !(d && d.n >= 1 && d.trocken === d.n)) befunde.push(`${ort}: Dach-Bauten trocken ${d && d.trocken}/${d && d.n}`);
+        if (!(m.regenbild <= 1)) befunde.push(`${ort} Regenbild ${m.regenbild} × so hell wie die Sonne`);
+    }
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
+}
+
 module.exports = {
+    naesseSicht,
+    naesseUrteil,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

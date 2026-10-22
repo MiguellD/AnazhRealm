@@ -847,7 +847,7 @@
       "lauf": "npm run gate:mp-sync",
       "laeufe": ["39627539048", "39614141577", "39610714347", "39584063009", "39567386389", "39562739076", "39547307165"]
     },
-    "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)": {
+    "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)": {
       "s": 186,
       "n": 7,
       "gruppe": "voll 13",
@@ -1136,7 +1136,7 @@
           ["Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)", 17, 6],
           ["Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)", 11, 27],
           ["Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)", 12, 75],
-          ["Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)", 16, 51],
+          ["Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)", 16, 51],
           ["Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)", 15, 21],
           ["Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)", 14, 61],
           ["Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)", 15, 37],

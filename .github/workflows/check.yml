@@ -1291,7 +1291,7 @@ jobs:
               # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
               run: npm run gate:mp-sync
 
-            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
+            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)
               if: matrix.gruppe == 14
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
@@ -1301,9 +1301,9 @@ jobs:
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
               if: matrix.gruppe == 9
-              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
-              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
-              # und Wand je einzeln.
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen,
+              # im echten Boot (headless, foundry-ON); L-WERKSTATT faehrt echte Eingaben (Tasten, Klicks, Rad) und zaehlt sie
+              # am Ereignis-Strom (<= 3 bis zum stehenden Werk); der Selbsttest bricht Verdikte und Wand je einzeln.
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
@@ -1589,6 +1589,12 @@ jobs:
               # senkrecht zur Sonne, neben und von ihr weg — lokal 1 min samt Boot (Radeon). Die Spiegel-Zeilen hängen am Weltzustand
               # (spiegel0 bei Uhr 0,27: frische Welt 0,778, eingeschwungene 0,951) und fahren bis zu ihrer Heilung nur in der Werkbank.
               run: npm run gate:licht-weg:echt
+
+            - name: Naesse auf der Karte (Regen benetzt poroesen Boden 0,5-0,8, innen unter dem Dach +-5 %, dichte Stoffe unveraendert)
+              if: ${{ !cancelled() }}
+              # werkbank licht --naesse: Mess-Wiese und das naechste Haus im Dorf von innen durch die offene Tuer, klar / Regen frisch /
+              # Regen 10 min aus dem Ausgabe-Pfad; der Selbsttest macht die Basis (Naesse 1,0) und eine Naesse ohne Dach rot
+              run: npm run gate:naesse:echt
 
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}

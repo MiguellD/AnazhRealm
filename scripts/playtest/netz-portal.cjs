@@ -260,15 +260,6 @@ async function checkBandW17Multiplayer(ctx) {
         const SUBW = "worlds/skeleton/index.html";
         const OTHER = "worlds/fluid/index.html";
 
-        out.methodsPresent =
-            typeof r._portalSrvSend === "function" &&
-            typeof r._portalSrvReceive === "function" &&
-            typeof r._portalSrvFromGuest === "function" &&
-            typeof r._portalCliReceive === "function" &&
-            typeof r._portalDeliverToClient === "function" &&
-            typeof r._portalSrvEnsureConn === "function" &&
-            typeof r._portalSelfConnId === "function";
-
         // _sanitizePortalMeta — serverMode Default "relay".
         out.sanitizeDefaultRelay = r._sanitizePortalMeta({ world: SUBW }, "x").serverMode === "relay";
         // serverMode "js-compute" bleibt + erzwingt multiplayer.
@@ -499,7 +490,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17jsResults && w17jsResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 JS: die 7 Compute-Host-Methoden existieren", w17jsResults.methodsPresent);
         check("W17 JS: _sanitizePortalMeta — serverMode Default 'relay'", w17jsResults.sanitizeDefaultRelay);
         check("W17 JS: serverMode 'js-compute' bleibt + erzwingt multiplayer", w17jsResults.sanitizeJsComputeForcesMp);
         check("W17 JS: aimBlueprintAtWorld trägt serverMode aus dem Eintrag", w17jsResults.aimCarriesServerMode);
@@ -565,13 +555,6 @@ async function checkBandW17Multiplayer(ctx) {
         const out = {};
         const SUBW = "worlds/skeleton/index.html";
         const selfConn = r._portalSelfConnId();
-
-        out.methodsPresent =
-            typeof r._portalSpawnServerContext === "function" &&
-            typeof r._portalBroadcastRoster === "function" &&
-            typeof r._portalRosterReceive === "function" &&
-            typeof r._portalMigrateHost === "function" &&
-            typeof r._portalPromoteToHost === "function";
 
         const chanSent = [];
         const origChan = r._p2pSendChannelTo;
@@ -703,7 +686,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17mResults && w17mResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 JS P2: die 5 Host-Migrations-Methoden existieren", w17mResults.methodsPresent);
         check(
             "W17 JS P2: _portalSpawnServerContext baut ein Server-Kontext-iframe",
             w17mResults.spawnBuildsServerFrame

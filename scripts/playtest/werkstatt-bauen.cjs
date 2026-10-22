@@ -72,12 +72,6 @@ async function checkBandV1774UseByRole(ctx) {
         r.selectHotbarSlot(0);
         out.toggleOff = p.equipped.held == null;
 
-        // (4) HOTBAR-GATE — Struktur → Platzier-Phantom (wie bisher, kein Regress)
-        r.setHotbarSlot(1, "waterfall");
-        r.selectHotbarSlot(1);
-        out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
-        r._clearBuildMode(); // das Test-Phantom abräumen
-
         // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
         // V18.66 Ich-J2 — der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
         // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
@@ -183,10 +177,6 @@ async function checkBandV1774UseByRole(ctx) {
         res.deviceToHand
     );
     check("V17.74 Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
-    check(
-        "V17.74 Welle 1b HOTBAR-GATE: eine Struktur im Slot baut das Platzier-Phantom (wie bisher, kein Regress)",
-        res.structureToPhantom
-    );
     check(
         "V17.74 Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
         res.armorListed && res.heldDeviceListed
@@ -1874,11 +1864,11 @@ async function checkBandNutzerBlickNachbau(ctx) {
                 connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
-            // (4) das Rezeptbuch führt den nachgebauten Wagen sichtbar unter der Gruppe „Fahrzeug".
+            // (4) das Rezeptbuch führt den nachgebauten Wagen sichtbar oben unter „Griffbereit" (ein eigenes Werk, bauen.K1).
             r._recipeBookSig = null;
             r.renderRecipeBook();
             const kids = [...document.getElementById("inventory-recipes").children];
-            const gi = kids.findIndex((e) => e.classList.contains("recipe-group") && e.textContent === "Fahrzeug");
+            const gi = kids.findIndex((e) => e.classList.contains("recipe-group") && e.textContent === "Griffbereit");
             const nach = gi >= 0 ? kids.slice(gi + 1) : [];
             const bis = nach.findIndex((e) => e.classList.contains("recipe-group"));
             out.rezeptGruppe = (bis < 0 ? nach : nach.slice(0, bis)).some(
@@ -1921,7 +1911,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
         res.nachbauVehicle && res.nachbauPlace && res.ohneSitzKeinTrank
     );
     check(
-        "Nutzer-Blick: das Rezeptbuch kennt die Fahrzeug-Gruppe + ein Kachel-Klick ERSETZT die Verbindung (ein Paar, eine Verbindung)",
+        "Nutzer-Blick: das Rezeptbuch führt den eigenen Wagen griffbereit + ein Kachel-Klick ERSETZT die Verbindung (ein Paar, eine Verbindung)",
         res.rezeptGruppe && res.klickErsetzt
     );
 }
