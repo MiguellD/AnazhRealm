@@ -3443,12 +3443,24 @@ async function kreaturProben(r, T, opts) {
             fell: zahlVon("fell"),
             wurf: zahlVon("wurf"),
         };
-        // DER PUFFER GEHÖRT DEM SKELETT (Lehre 19): je Gestalt der Gang-Puffer gegen die Ecken ihrer Senken
+        // DER PUFFER GEHÖRT DEM SKELETT (Lehre 19): je Gestalt der Gang-Puffer gegen die Ecken ihrer Senken; je Senke die
+        // Vertex-Puffer ihrer Pipeline (WebGPU sagt über 8 die Pipeline ab — der Satz zeichnete nie)
+        const vertexPuffer = Math.max(
+            ...saetze().map(
+                (m) => new Set(Object.values(m.geometry.attributes).map((a) => (a.isInterleavedBufferAttribute ? a.data : a))).size
+            )
+        );
         const puffer = saetze()
             .filter((m) => m.userData.teil === "fell")
             .map((m) => ({
                 puffer: m.userData.gang.puffer.byteLength,
-                ecken: Object.values(m.geometry.attributes).reduce((n, a) => n + (a.isInstancedBufferAttribute ? 0 : a.array.byteLength), 0),
+                ecken: [
+                    ...new Set(
+                        Object.values(m.geometry.attributes)
+                            .filter((a) => !a.isInstancedBufferAttribute)
+                            .map((a) => (a.isInterleavedBufferAttribute ? a.data.array : a.array))
+                    ),
+                ].reduce((n, a) => n + a.byteLength, 0),
             }));
         // DER GANG IM SATZ (`satzGang`): je Senke `fell` die tiefste Ecke je Bein (Seite × vorn/hinten der stehenden Vorlage)
         const fuesse = (geo) => {
@@ -3514,6 +3526,7 @@ async function kreaturProben(r, T, opts) {
             ruhe,
             blick,
             puffer,
+            vertexPuffer,
         };
     });
 
@@ -3586,8 +3599,8 @@ function urteil(name, z) {
         );
         const P = z.puffer || [];
         soll(
-            P.length > 0 && P.every((p) => p.puffer <= p.ecken),
-            `der Gang-Puffer gehört den Ecken: ${P.map((p) => Math.round(p.puffer / 1024) + " KB gegen " + Math.round(p.ecken / 1024) + " KB Ecken").join(" · ")} (Soll je Gestalt ≤ die Ecken ihrer Senke)`
+            P.length > 0 && P.every((p) => p.puffer <= p.ecken) && z.vertexPuffer <= 8,
+            `der Gang-Puffer gehört den Ecken: ${P.map((p) => Math.round(p.puffer / 1024) + " KB gegen " + Math.round(p.ecken / 1024) + " KB Ecken").join(" · ")} ; Vertex-Puffer je Senke höchstens ${z.vertexPuffer} (Soll je Gestalt ≤ die Ecken ihrer Senke, ≤ 8 Vertex-Puffer)`
         );
         return { ok: !f.length, grund: f.join(" · ") };
     }

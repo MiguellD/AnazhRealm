@@ -3165,10 +3165,19 @@ class AnazhRealm_stoff_instanz {
             geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
             geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(Nn), 3));
             geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
-            geo.setAttribute("aRoh", new T.BufferAttribute(new Float32Array(R), 3));
-            geo.setAttribute("aRohN", new T.BufferAttribute(new Float32Array(RN), 3));
-            geo.setAttribute("aKnochen", new T.BufferAttribute(new Float32Array(KI), 4));
-            geo.setAttribute("aGewicht", new T.BufferAttribute(new Float32Array(KW), 4));
+            // die Vorlage und die Knochen in EINEM Puffer (WebGPU trägt höchstens 8 Vertex-Puffer je Pipeline)
+            const V = new Float32Array(n * 14);
+            for (let i = 0; i < n; i++) {
+                V.set(R.slice(i * 3, i * 3 + 3), i * 14);
+                V.set(RN.slice(i * 3, i * 3 + 3), i * 14 + 3);
+                V.set(KI.slice(i * 4, i * 4 + 4), i * 14 + 6);
+                V.set(KW.slice(i * 4, i * 4 + 4), i * 14 + 10);
+            }
+            const vb = new T.InterleavedBuffer(V, 14);
+            geo.setAttribute("aRoh", new T.InterleavedBufferAttribute(vb, 3, 0));
+            geo.setAttribute("aRohN", new T.InterleavedBufferAttribute(vb, 3, 3));
+            geo.setAttribute("aKnochen", new T.InterleavedBufferAttribute(vb, 4, 6));
+            geo.setAttribute("aGewicht", new T.InterleavedBufferAttribute(vb, 4, 10));
             for (const nm of ["aLodLevel", "aH0", "aH0L"])
                 geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
             geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(spec.cap * 2), 2));
