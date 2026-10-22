@@ -3387,8 +3387,13 @@ async function kreaturProben(r, T, opts) {
                 k++;
             }
         };
+        // der Takt samt dem Blick des Bilds (`_ruheImBild`, im Render-Pfad): dort schreibt das Auge des Satzes
+        const bildTakt = (dt) => {
+            takt(dt);
+            r._ruheImBild();
+        };
         const laufen = (n) => {
-            for (let i = 0; i < n; i++) takt(1 / 60);
+            for (let i = 0; i < n; i++) bildTakt(1 / 60);
         };
         ring(10, 15, 30, 1);
         laufen(240);
@@ -3410,7 +3415,7 @@ async function kreaturProben(r, T, opts) {
         let ruehrte = 0;
         for (let i = 0; i < 4; i++) {
             const vor = new Map(s.creatures.filter((c) => c.userData._satz).map((c) => [c, lage(c)]));
-            takt(0);
+            bildTakt(0);
             for (const [c, a] of vor) if (lage(c).some((x, k) => x !== a[k])) ruehrte++;
         }
         A._gangSatzInstanz = schreibe;
@@ -3470,7 +3475,7 @@ async function kreaturProben(r, T, opts) {
                 : null;
         });
         for (let i = 0; i < 360; i++) {
-            takt(1 / 60);
+            bildTakt(1 / 60);
             gang.messen(saetze().filter((m) => m.userData.teil === "wurf"));
         }
         const G = gang.schlupf();
@@ -3488,7 +3493,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 120; k++) {
             r._p2pHandleCreaturePos("linse-satz", { list: kopien });
             r._p2pTickRemoteCreatures(200 + k / 60, 1 / 60);
-            takt(1 / 60);
+            bildTakt(1 / 60);
         }
         const kopieLeib = [...remote.values()].filter((rc) => {
             let n = 0;

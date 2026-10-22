@@ -1850,65 +1850,63 @@ class AnazhRealm_kreatur_leben {
                 if (u._satz) this._tierSatzAus(cr);
             }
         }
-        const m4 = this._tierSatzM4 || (this._tierSatzM4 = new THREE.Matrix4());
         const aus = st.creaturesHidden === true;
-        const fr = this._frustumCache;
-        const rand = fr && Number.isFinite(this._blickRand) ? this._blickRand : -1;
         for (const [key, Z] of M) {
             if (!Z) continue;
             if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
             if (Z.satz.senken[0].parent !== st.scene) for (const m of Z.satz.senken) st.scene.add(m);
-            // die Reihe hält (wer bleibt, behält seinen Platz; wer ging, fällt heraus): ein Platz schreibt nur, wenn ein
-            // anderes Tier ihn nimmt oder sein Tier sich rührt (Lage, Drehung, Größe, Band + Phase, Gewicht — `_tierSatzStempel`)
+            // die Reihe hält (wer bleibt, behält seinen Platz; wer ging, fällt heraus); wer sich rührte, zählt seine Fassung
+            // hoch (`_tierSatzStempel`). Der Wurf trägt jedes Tier des Satzes (die Kaskade sieht weiter als das Auge), das
+            // Auge schreibt der Blick des Bilds (`_tierSatzImBild`).
             let w = 0;
             for (const cr of Z.glieder)
                 if (cr.userData._satz === Z && cr.userData._satzTakt === takt) Z.glieder[w++] = cr;
             Z.glieder.length = w;
-            let nB = 0;
-            let nW = 0;
-            let neuB = false;
-            let neuW = false;
-            for (const cr of aus ? [] : Z.glieder) {
-                const u = cr.userData;
-                const regt = this._tierSatzStempel(cr);
-                let lage = false;
-                const setze = (senken, i) => {
-                    if (!lage) m4.compose(cr.position, cr.quaternion, cr.scale);
-                    lage = true;
-                    for (const m of senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
-                };
-                // der Wurf trägt jedes Tier des Satzes (die Kaskade sieht weiter als das Auge), das Auge nur, wen der Blick
-                // trifft (`_kreaturAusserBlick`, dieselbe Frage wie die Ruhe; dreht die Kamera zu schnell, trifft er jeden)
-                if (regt || Z.ortW[nW] !== cr) {
-                    setze(Z.wurf, nW);
-                    Z.ortW[nW] = cr;
-                    neuW = true;
-                }
-                nW++;
-                if (rand >= 0 && this._kreaturAusserBlick(cr, fr, rand)) continue;
-                if (regt || Z.ortB[nB] !== cr) {
-                    setze(Z.bild, nB);
-                    Z.ortB[nB] = cr;
-                    neuB = true;
-                }
-                nB++;
-            }
-            Z.ortW.length = nW;
-            Z.ortB.length = nB;
-            for (const m of Z.wurf) {
-                AnazhRealm._instanzZahl(m, nW);
-                if (neuW) AnazhRealm._gangSatzNeu(m);
-            }
-            for (const m of Z.bild) {
-                AnazhRealm._instanzZahl(m, nB);
-                if (neuB) AnazhRealm._gangSatzNeu(m);
-            }
+            for (const cr of Z.glieder) if (this._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
+            this._tierSatzPlaetze(Z.platzW, aus ? [] : Z.glieder);
             // ein Satz ohne Tier geht nach `leerTakte` Takten (seine Gestalt kommt wieder: er backt neu)
             Z.leer = w > 0 ? 0 : Z.leer + 1;
             if (Z.leer > K.leerTakte) {
                 this._tierSatzFort(Z);
                 M.delete(key);
             }
+        }
+    }
+
+    // DER BLICK DES BILDS AUF DEN SATZ (im Render-Pfad, `_ruheImBild`: der Frustum DIESES Bilds): das Auge zeichnet jedes
+    // Satz-Tier, das nicht außer Blick ist (`_kreaturAusserBlick`, die Körper-Kugel samt Saum — dieselbe Frage wie die Ruhe),
+    // kein anderes (Gebot 7: die Kosten am Schirm)
+    _tierSatzImBild(fr) {
+        const M = this._tierSaetze;
+        if (!M) return;
+        const aus = this.state.creaturesHidden === true;
+        const sicht = this._tierSatzSicht || (this._tierSatzSicht = []);
+        for (const Z of M.values()) {
+            if (!Z) continue;
+            sicht.length = 0;
+            if (!aus) for (const cr of Z.glieder) if (!this._kreaturAusserBlick(cr, fr, 0)) sicht.push(cr);
+            this._tierSatzPlaetze(Z.platzB, sicht);
+        }
+    }
+    // DIE PLÄTZE EINER SENKEN-ART des Satzes (Auge oder Wurf: `platz.senken`): dicht je Tier der Liste; ein Platz schreibt
+    // nur, wenn ein anderes Tier ihn nimmt oder sein Tier sich seit dem letzten Schreiben rührte (`_satzVer`), und nur, was
+    // sich schrieb, lädt neu (Gebot 7: die Kosten an der Änderung)
+    _tierSatzPlaetze(platz, liste) {
+        const m4 = this._tierSatzM4 || (this._tierSatzM4 = new THREE.Matrix4());
+        let neu = false;
+        liste.forEach((cr, i) => {
+            const u = cr.userData;
+            if (platz.tier[i] === cr && platz.ver[i] === u._satzVer) return;
+            m4.compose(cr.position, cr.quaternion, cr.scale);
+            for (const m of platz.senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
+            platz.tier[i] = cr;
+            platz.ver[i] = u._satzVer;
+            neu = true;
+        });
+        platz.tier.length = platz.ver.length = liste.length;
+        for (const m of platz.senken) {
+            AnazhRealm._instanzZahl(m, liste.length);
+            if (neu) AnazhRealm._gangSatzNeu(m);
         }
     }
 
@@ -2009,11 +2007,9 @@ class AnazhRealm_kreatur_leben {
             fertig: false,
             glieder: [],
             dabei: 0,
-            // die Senken des Auges und des Wurfs, je Platz das Tier, das ihn zuletzt schrieb
-            bild: satz.senken.filter((m) => !m.castShadow),
-            wurf: satz.senken.filter((m) => m.castShadow),
-            ortB: [],
-            ortW: [],
+            // die Plätze des Auges und des Wurfs: ihre Senken, je Platz das Tier, das ihn zuletzt schrieb, und seine Fassung
+            platzB: { senken: satz.senken.filter((m) => !m.castShadow), tier: [], ver: [] },
+            platzW: { senken: satz.senken.filter((m) => m.castShadow), tier: [], ver: [] },
             leer: 0,
             // je Band das Tempo des Backens (die Froude-Zahl der Gangart an der Hüft-Höhe), der Schritt (m je Zyklus bei
             // Größe 1) und die Phase des ersten Beins in Zeile 0

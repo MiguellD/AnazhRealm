@@ -2813,8 +2813,6 @@ class AnazhRealm_kreatur_verhalten {
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
             if (winkel < 1.2) rand = Math.tan(winkel);
         }
-        // der Rand dieses Frames gilt jedem Leser des Blicks im Takt (`_kreaturAusserBlick`; < 0: keiner ist außer Blick)
-        this._blickRand = rand;
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
             if (!c || !c.userData) continue;
@@ -2864,9 +2862,9 @@ class AnazhRealm_kreatur_verhalten {
         return this._kreaturAusserBlick(c, frustum, rand);
     }
 
-    // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, der Satz `_tickTierSatz`): die
-    // Körper-Kugel samt Saum (`KREATUR_RUHE.saumM`) und Rand (`rand` je Meter Abstand zur Kamera: der Vor-Frame-Frustum und
-    // die Drehung bis zum Render, `_tickKreaturRuhe`) gegen den Frustum
+    // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, das Auge des Satzes
+    // `_tierSatzImBild`): die Körper-Kugel samt Saum (`KREATUR_RUHE.saumM`) und Rand (`rand` je Meter Abstand zur Kamera: im
+    // Takt der Vor-Frame-Frustum und die Drehung bis zum Render, `_tickKreaturRuhe`; im Bild 0) gegen den Frustum
     _kreaturAusserBlick(c, frustum, rand) {
         const R = AnazhRealm.KREATUR_RUHE;
         const u = c.userData;
@@ -2928,9 +2926,7 @@ class AnazhRealm_kreatur_verhalten {
         const pm = st.playerMesh && st.playerMesh.position;
         if (!cam || !pm) return 0;
         let fr = null;
-        let n = 0;
-        for (const c of st.creatures) {
-            if (!c || !c.userData || c.userData._ruht !== true) continue;
+        const blick = () => {
             if (!fr) {
                 cam.updateWorldMatrix(true, false);
                 const m = (this._ruheBildM || (this._ruheBildM = new THREE.Matrix4())).multiplyMatrices(
@@ -2939,7 +2935,14 @@ class AnazhRealm_kreatur_verhalten {
                 );
                 fr = (this._ruheBildF || (this._ruheBildF = new THREE.Frustum())).setFromProjectionMatrix(m);
             }
-            if (this._kreaturRuht(c, pm, fr, 0, 0)) continue;
+            return fr;
+        };
+        // das Auge des Tier-Satzes sieht mit demselben Blick (`_tierSatzImBild`)
+        if (this._tierSaetze && this._tierSaetze.size) this._tierSatzImBild(blick());
+        let n = 0;
+        for (const c of st.creatures) {
+            if (!c || !c.userData || c.userData._ruht !== true) continue;
+            if (this._kreaturRuht(c, pm, blick(), 0, 0)) continue;
             this._kreaturErwacht(c);
             n++;
             if (st.renderer && st.renderer._isHeadlessNull) continue;
