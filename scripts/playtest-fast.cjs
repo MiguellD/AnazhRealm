@@ -27,7 +27,7 @@ function check(name, ok) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
+    const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-

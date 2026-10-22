@@ -272,7 +272,7 @@ function pageHtml() {
 async function runWithWorker(port, cb) {
     const server = statikServer({ seiten: { "/": pageHtml, "/__aw.html": pageHtml } });
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     try {
         const page = await browser.newPage();
         const pageErrors = [];

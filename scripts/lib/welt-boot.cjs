@@ -8,12 +8,7 @@
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
-//   DIE STALL-AKTE   (K67) jede Seite trägt einen Puls (1 s) und Stempel (Programm-/Pipeline-Bau, synchrone GL-Rückfragen);
-//                    steht der Puls ≥ 20 s oder läuft ein Seiten-Aufruf in seine Frist, schreibt die Lib die Akte ins Log:
-//                    offene Aufrufe, letzter Puls mit Phase, Stempel, CPU je Prozess (unter Linux die Fäden des GPU-
-//                    Prozesses: swiftshader-Raster `Thread<NN>`, CrGpuMain, ANGLE-Link), der JS-Stapel (Debugger.pause),
-//                    Konsole, Chrome-Stderr und das URTEIL (JS-SCHLEIFE · NATIV · GPU-PROZESS · VERKLEMMUNG · AWAIT)
-//                    — `node scripts/lib/welt-boot.cjs --selbsttest` (gate:welt-boot) beweist, dass sie den Täter nennt
+//   DIE STALL-AKTE   (K67) ein Hänger der Seite steht mit Täter im Log (unten); `--selbsttest` (gate:welt-boot) beweist es
 // Die Wand: gate:altlasten DIE BOOT-WAND — ein Start außerhalb dieser Datei ist ROT, die Liste der noch eigenen Starts
 // darf nur schrumpfen.
 "use strict";
@@ -24,27 +19,20 @@ const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 
-// DAS EINE __codeOf (PFLICHT-OFFEN D3): jede Seite jedes Welt-Boots trägt vor ihrem ersten Skript `window.__codeOf` (der
-// Code einer Funktion oder eines Quelltexts ohne Kommentare: der EINE Stripper aus stamm.cjs, als Text übertragen) und
-// `window.__dokuOf` (ungestrippt, für Marker, die per Definition im Kommentar wohnen — nie rohes .toString(), gate:apparat).
-// Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
-// `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
-// Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
-// DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: eine Wand urteilt in Bau-Ereignissen, nie in Wanduhr-Sekunden) — drei
-// Seiten-Funktionen, als Text in jede Seite (`WARTEN_SEITE`, in CODE_OF_SEITE und der Ausgabe-Aufnahme):
-// `window.__seitenTakt()` ist der Takt der Seite: ein Bild ihres Loops, ruht er, ein Takt von Hand.
+// DAS EINE __codeOf (D3): jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
+// aus stamm.cjs), `window.__dokuOf` (ungestrippt, für Marker im Kommentar) und `window.__fehlt(fn, re)` (true = das Muster
+// fehlt im Code; was keine Funktion ist, wirft). Die Wand: gate:betriebsgesetz STRIPPER-WAND.
+// DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: in Bau-Ereignissen, nie in Wanduhr-Sekunden) — Seiten-Funktionen als Text
+// in jede Seite (`WARTEN_SEITE`): `window.__seitenTakt()` ist ein Bild des Loops, ruht er, ein Takt von Hand.
 async function seitenTakt() {
     const r = window.anazhRealm;
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
 }
-// DAS EINE EINSCHWINGEN jeder Linse (`await window.__weltStehtNach(takt, max)`): Takt um Takt, bis die Welt steht (A9
-// `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (die Ring-Zahl
-// steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
-// ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Der Regler hält, solange sie schwingt — in JEDEM
-// Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging. Der Deckel `max`
-// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
+// DAS EINE EINSCHWINGEN (`await window.__weltStehtNach(takt, max)`): Takt um Takt (`takt(n)` oder der Takt der Seite, mindestens
+// einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
+// nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
 async function weltStehtNach(takt, max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -73,12 +61,9 @@ async function weltStehtNach(takt, max) {
     }
     return n;
 }
-// DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis der Bau steht
-// (`fertig()`, sonst `_archIsRendered(e)`) — vor jedem Takt ruft `bau(n)` ihn (ein Eintrag ohne `bau`: `_rebuildArchitectureMesh(e)`,
-// der Rewarm-Weg von Hand); `takt(n)` wie oben. `e` ist ein Eintrag oder der NAME dessen, was die Welt bauen soll (ein Asset,
-// eine Stufe, ein Chunk — `fertig` sagt, wann es steht). Der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat
-// (`_weltOffen`: jedes Feld — Foundry, Chunks, Wald, Karten): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
-// nicht, wirft sie beim Namen.
+// DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis `fertig()` (sonst
+// `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
+// der NAME dessen, was die Welt bauen soll. Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`); dann wirft sie beim Namen.
 async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
@@ -104,11 +89,9 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     }
     return n;
 }
-// DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): je Gang
-// zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
-// Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr. `offen === false`: jeder Gang zählt (die
-// Linse treibt ihren Takt selbst, ein ewig Offenes der Welt hält sie nicht).
-// Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen (CI 39780312347: Dorf offen 18, 79 min).
+// DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): er zählt einen
+// Gang nur, wenn weder die Welt (`_weltOffen`) noch die Linse (`offen()`) offen hat, und wirft nach `max` (120) beim Namen;
+// `offen === false`: jeder Gang zählt. Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen.
 function deckel(name, max, offen) {
     let n = 0,
         k = 0,
@@ -158,12 +141,9 @@ const MIME = {
     ".woff2": "font/woff2",
 };
 
-// Der Statik-Server: liefert die Datei unter der Wurzel (Query fällt), `/` heißt `start`; außerhalb der Wurzel 403, fehlt
-// die Datei 404. `seiten` liefert eigene Seiten nach Pfad (Text, Puffer oder Funktion des Requests, auch als Promise; der
-// Typ nach der Endung des Pfads, ohne Endung text/html), `keinCache` setzt no-store. `wandle(pfad, daten)` ist der EINE
-// Haken der Selbsttests (Patch auf die Basis-Zeile, Überlagerung einer anderen Wurzel, Verzögerung): er bekommt die Bytes
-// der Datei (null, wenn sie fehlt) und gibt die ausgelieferten zurück (auch als Promise; null heißt 404). Ein Wurf im Haken
-// oder in einer Seite ist 500 und ein Fehler der Linse beim Namen (der Fehler-Sammler).
+// Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
+// nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
+// Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
 function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false, wandle = null } = {}) {
     const bruch = (res, p, e) => {
         melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
@@ -208,10 +188,8 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
     });
 }
 
-// Die Browser-Rezepte. null: kein GPU-Prozess (die Seite setzt __anazhHeadlessNullRenderer) · webgl: WebGL2 an der
-// Weiche (lokal ANGLE auf der Karte, die CI und jede Zeit-Linse swiftshader) · standard: Chromes eigene Wahl headless ·
-// linse: WebGPU an der Weiche (lokal die Karte, die CI und jede Zeit-Linse swiftshader) · echt: der Hardware-Adapter.
-// `zeit: true` sagt der Weiche: diese Linse urteilt über eine Zeit (K39-2, software-gpu.cjs DIE ZEIT-ACHSE).
+// Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
+// linse (WebGPU an der Weiche: lokal die Karte, die CI swiftshader) · echt (der Hardware-Adapter); `zeit: true` → swiftshader.
 const REZEPTE = {
     null: () => ["--no-sandbox", "--disable-gpu"],
     webgl: (o) => linsenWebglArgs(process.env, process.platform, o),
@@ -219,15 +197,11 @@ const REZEPTE = {
     linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
-// DIE KLASSE DER CI (K61): diese Rezepte zeichnen mit einem Echt-Renderer (swiftshader am Läufer, die echte GPU am Messplatz)
-// — null und standard nicht (der Null-Renderer bzw. Chromes eigene Wahl ohne Adapter-Schalter). Eine Gruppe der vollen
-// Batterie trägt CI_KLASSE (check.yml, matrix.klasse): in einer CPU-Gruppe ist ein Echt-Rezept ROT beim Namen — die
-// CPU-Gruppen laufen damit nachweislich ohne Echt-Renderer, die GPU-Gruppen sind die Arbeit eines GPU-Läufers.
+// DIE KLASSE DER CI (K61): diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
+// eines, das nie zeichnet, in jeder Gruppe (browser.close).
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
-// Die Start-Optionen aus dem Rezept: `frist` = protocolTimeout (ms), `zusatz` = weitere Schalter hinter dem Rezept,
-// `viewport` = defaultViewport, `profil` = userDataDir; `headless` steht, wenn nichts gesagt ist (echt: mit Fenster nur,
-// wenn gesagt).
+// Die Start-Optionen: `frist` = protocolTimeout (ms), `zusatz` hinter dem Rezept, `viewport`, `profil` = userDataDir; headless.
 function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
@@ -240,8 +214,8 @@ function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, p
     return o;
 }
 
-// DER FEHLER-SAMMLER: eine Liste je Prozess, die Wache am Prozess-Ende. Harmlos ist nur, was der Page-Error-Wächter seit
-// V18.359 als harmlos kennt (Netz/Favicon/save-server im headless-Kontext) und was die Linse als `erwartet` nennt.
+// DER FEHLER-SAMMLER: eine Liste je Prozess, die Wache am Prozess-Ende. Harmlos ist nur Netz/Favicon/save-server im
+// headless-Kontext und was die Linse als `erwartet` nennt.
 const HARMLOS = /favicon|net::ERR|Failed to load resource|save-server|localhost:|127\.0\.0\.1:\d+\/api/i;
 const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
 const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
@@ -253,7 +227,7 @@ function melde(art, text) {
         .join(" | ")
         .slice(0, 400);
     if (sammlung.erwartet && sammlung.erwartet.test(t)) return;
-    // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite dann meldet, steht laut als SELBSTTEST, kein Fehler der Welt
+    // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite meldet, steht als SELBSTTEST
     if (sammlung.selbsttest && (art === "console.error" || art === "pageerror"))
         return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
     sammlung.fehler.push(`${art}: ${t}`);
@@ -280,19 +254,16 @@ function fehlerSammler(page) {
         if (m.type() !== "error") return;
         const t = m.text();
         if (HARMLOS.test(t)) return;
-        // Ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract je Fall, regler-wirkt je Regler),
-        // kein Absturz der Welt: er steht laut im Lauf, beim Namen und mit seinem Richter, und färbt nur seinen Richter.
+        // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
         if (KOSTEN.test(t)) return console.log(`[welt-boot] KOSTEN (Richter gate:asset-contract): ${t.slice(0, 300)}`);
         melde("console.error", t);
     });
     return page;
 }
 
-// ── DIE STALL-AKTE (K67) ────────────────────────────────────────────────────────────────────────────────────────────
-// Ein Hänger der Seite („Runtime.callFunctionOn timed out", Navigations-Timeout) hat einen Namen. Die Akte nennt den Täter: der PULS der Seite (ein Binding, das die
-// Seite jede Sekunde ruft, mit ihrer Phase) zeigt, ob der Haupt-Thread lebt; die STEMPEL gehen EAGER hinaus, bevor ein
-// Aufruf blockieren kann (das Binding wartet nicht auf das Ende der Aufgabe); Debugger.pause unterbricht eine JS-Schleife
-// und liefert ihren Stapel (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
+// ── DIE STALL-AKTE (K67): ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
+// Haupt-Thread lebt; die STEMPEL gehen hinaus, bevor ein Aufruf blockiert; Debugger.pause liefert den Stapel einer JS-Schleife
+// (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
 const AKTE_SEITEN = new Set();
 const akten = [];
 let akteN = 0;
@@ -408,10 +379,32 @@ function pulsSeite() {
     setInterval(() => sende("puls", phase()), 1000);
 }
 
+// die Seite merkt, ob sie die GPU nimmt (Gerät, Renderer, Pipeline, Draw — nie die Adapter-Frage)
+function zeichnetHaken() {
+    const merke = (f) =>
+        function (...a) {
+            try {
+                window.top.__gpuGenutzt = true;
+            } catch (_e) {
+                window.__gpuGenutzt = true;
+            }
+            return f.apply(this, a);
+        };
+    for (const K of [window.GPUAdapter, window.GPUQueue, window.GPUDevice, window.WebGL2RenderingContext, window.WebGLRenderingContext])
+        for (const m of ["requestDevice", "submit", "createRenderPipeline", "createComputePipeline", "getSupportedExtensions", "drawArrays", "linkProgram"])
+            if (K && K.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
+}
+// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
+async function weicheUrteil(browser, art) {
+    const welt = (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()));
+    const genutzt = async (p) => p.evaluate(() => !!window.__gpuGenutzt).catch(() => true);
+    if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
+    return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
+}
 // Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
-        page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), akteAnlegen(page, b)]);
+        page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), page.evaluateOnNewDocument(zeichnetHaken), akteAnlegen(page, b)]);
     return page.__akteBereit;
 }
 async function akteAnlegen(page, b) {
@@ -520,9 +513,8 @@ const stapelText = (e) =>
         )
         .join(" < ");
 
-// DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, gruppiert nach Faden-Namen — die Raster-Arbeiter
-// von swiftshader (`Thread<NN>`), seine Schlange (`Queue<…>`), der Befehls-Faden (`CrGpuMain`), die Link-Arbeiter von ANGLE
-// (`ThreadPoolForeg…`), der Compositor (`VizCompositorTh…`). Ticks = utime + stime (Felder 14 und 15, 100 je Sekunde).
+// DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, nach Faden-Namen (swiftshader `Thread<NN>`,
+// `CrGpuMain`, ANGLE, Compositor); Ticks = utime + stime (Felder 14 und 15).
 function faedenProbe(pid) {
     if (process.platform !== "linux" || !pid) return null;
     const m = new Map();
@@ -706,7 +698,12 @@ async function starteBrowser(opts = {}) {
     }
     let abbau = false;
     const zu = browser.close.bind(browser);
-    browser.close = (...a) => ((abbau = true), (b.offen = false), zu(...a));
+    browser.close = async (...a) => {
+        const rot = await weicheUrteil(browser, opts.art);
+        if (rot) melde("klasse", rot);
+        [abbau, b.offen] = [true, false];
+        return zu(...a);
+    };
     browser.on("disconnected", () => {
         b.offen = false;
         if (!abbau) melde("absturz", "Browser getrennt ohne Abbau");
@@ -773,10 +770,8 @@ async function oeffneWelt(
     return page;
 }
 
-// Eine Taste HALTEN, bis ihr Ereignis eintritt (`ziel` wird wahr auf `seite`, Page oder Frame) — nie nach der Wanduhr:
-// auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs. `taste` drückt über die Tastatur der Seite; ein Rahmen ohne Tastatur reicht `druck` und
-// `los`. Losgelassen wird immer, auch nach der Frist. Die Wand: gate:apparat Klinge 5. → { erreicht, ms, wert } (`wert`:
-// was `ziel` im Moment des Ereignisses zurückgab)
+// Eine Taste HALTEN, bis `ziel` auf `seite` (Page oder Frame) wahr wird — nie nach der Wanduhr (gate:apparat Klinge 5); `taste`
+// über die Tastatur, sonst `druck`/`los`; losgelassen wird immer. → { erreicht, ms, wert }
 async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 30000 }) {
     const t0 = Date.now();
     await (druck ? druck() : seite.keyboard.down(taste));
@@ -793,9 +788,8 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
     return { erreicht, ms: Date.now() - t0, wert };
 }
 
-// DER LESER IM BLICK (Seite): der Spieler am Ufer des Bachs der Mess-Wiese, Blick übers Wasser (ein Leser der Szenen-Tiefe);
-// zurück, sobald das Wasser ZEICHNET (die Erst-Zeichnung trug es ein, sichtbar allein ist Existenz), das Tiefen-Abbild gezogen
-// ist und das Weltbild steht (`welt`: nur diese Terme). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
+// DER LESER IM BLICK (Seite): der Spieler am Bach der Mess-Wiese, zurück, sobald das Wasser ZEICHNET, das Tiefen-Abbild gezogen
+// ist und das Weltbild steht (`welt`: nur diese Terme); `kappe`: die Pixel-Kappe des Holzes.
 async function uferStellen(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     const r = await window.__weltDa(
@@ -940,11 +934,9 @@ async function waitFor(page, fn, label, ...args) {
     return Date.now() - t0;
 }
 
-// DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR, Lehre 26: eine Wand urteilt in Bau-Ereignissen, nie in Wanduhr-Sekunden).
-// ROT: eine Schleife wartet selbst auf einen Bau (`!e.mesh` …); eine FRIST — die Wanduhr (`performance.now()` / `Date.now()`)
-// endet die Schleife, im Kopf oder als `if (…) break|return|throw` im Rumpf; ein `__gebautNach(…).catch(() => {})` schluckt
-// den Deckel. Das EINE Warten ist welt-boot `__gebautNach` / `__deckel` (zählt nur Gänge ohne Offenes) und `__weltDa`.
-// Der REST (spec/ci/frist-rest.json, je Grund Datei → Zahl) schrumpft nur: Messfenster, deren Maß die Zeit ist.
+// DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
+// (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
+// (spec/ci/frist-rest.json) schrumpft nur.
 const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
 const hat = (x, f) => {
     let j = false;
@@ -1048,9 +1040,8 @@ module.exports = {
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
 
-// DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept, ~20 s): eine Seite in einer JS-Schleife MUSS als JS-SCHLEIFE
-// mit dem Namen der Schleife in der Akte stehen, ein nie erfülltes Versprechen als AWAIT am Fristriss, und eine Seite mit
-// einem kurzen Block (0,8 s, unter der Schwelle) darf KEINE Akte tragen.
+// DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
+// nie erfülltes Versprechen als AWAIT, ein kurzer Block (0,8 s) trägt KEINE Akte.
 async function selbsttest() {
     const seiten = {
         "/ruhig.html":
@@ -1072,11 +1063,8 @@ async function selbsttest() {
         return akten.filter((a) => a.seite === id);
     };
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, eine Karte wartet solange auf ihren Bake —
-    // das Warten hält; TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
-    // REGLER: ein echter Renderer, der Regler atmet je Takt, solange er regelt — das Einschwingen hält ihn in jedem Pfad (die
-    // Welt steht nach 30 stillen Takten) und gibt ihn danach frei.
-    // Sie läuft in der ruhigen Seite während ihrer 4,5 s (sie blockt nie: ihr Takt ist ein Versprechen).
+    // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; REGLER: das Einschwingen hält den
+    // atmenden Regler und gibt ihn frei (die ruhige Seite, 4,5 s).
     let bau = null;
     const bauProbe = async () => {
         const r = (window.anazhRealm = {
@@ -1117,10 +1105,14 @@ async function selbsttest() {
         aus.frei = r.state.perfRegulator === true;
         return aus;
     };
-    const ruhig = await fall(
-        "/ruhig.html",
-        async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]))
-    );
+    // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
+    const weiche = [];
+    const ruhig = await fall("/ruhig.html", async (p) => {
+        [bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]);
+        weiche.push(await weicheUrteil(browser, "echt"));
+        await p.evaluate(() => WebGL2RenderingContext.prototype.drawArrays.call(null)).catch(() => {});
+        weiche.push(await weicheUrteil(browser, "echt"));
+    });
     const schleife = await fall("/schleife.html", async () => {
         for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await warte(500);
         await warte(500);
@@ -1167,6 +1159,10 @@ async function selbsttest() {
         [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
             `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
+        ],
+        [
+            /^welt-boot.cjs startet „echt" und zeichnet nie/.test(weiche[0]) && weiche[1] === null,
+            `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],

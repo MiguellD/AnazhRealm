@@ -53,7 +53,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)

@@ -366,7 +366,7 @@ function urteil(S, pageErrors) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const pageErrors = [];
