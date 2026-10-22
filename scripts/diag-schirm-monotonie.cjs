@@ -144,7 +144,7 @@ function driftBefunde(reihe) {
 async function welt() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await nullRenderer(page);

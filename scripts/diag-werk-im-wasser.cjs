@@ -2528,7 +2528,7 @@ async function lauf() {
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const seitenFehler = [];
     let exit = 2;
     try {

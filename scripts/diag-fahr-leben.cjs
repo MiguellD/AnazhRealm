@@ -2181,7 +2181,7 @@ function quellenAbgriff() {
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
-        art: "linse",
+        art: "null",
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });

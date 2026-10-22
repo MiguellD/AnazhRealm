@@ -25,13 +25,14 @@
 // Sign-off (§4 T0): der Schöpfer entscheidet aus A/B/C, welche Naht schwerer wiegt → priorisiert
 // T1 (zeitlich) vs T2 (räumlich). Dies ist eine MESSUNG (informativ), kein Pass/Fail-Gate:
 // Exit 0 bei erfolgreicher Messung, Exit 1 nur bei Harness-Versagen (keine Chunks gestreamt).
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
+    await nullRenderer(page);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     // der Stoff-Zeuge (K22): ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
     const stoffBrueche = [];

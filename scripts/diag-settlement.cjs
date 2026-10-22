@@ -661,7 +661,7 @@ const FIXTURES = [
         const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
         const server = statikServer();
         await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-        const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+        const browser = await starteBrowser({ art: "null", frist: 240000 });
         for (const datei of dateien) {
             const save = JSON.parse(fs.readFileSync(datei, "utf8"));
             const page = await browser.newPage();
@@ -1337,7 +1337,7 @@ const FIXTURES = [
     const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

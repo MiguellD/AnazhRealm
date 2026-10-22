@@ -513,7 +513,7 @@ function urteil(S, Q, pageErrors) {
 (async () => {
     const Q = quellWand(stammLib.text(root));
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const pageErrors = [];

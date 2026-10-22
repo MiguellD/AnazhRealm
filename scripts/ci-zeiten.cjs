@@ -1,43 +1,27 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CW, Richter 22.10.): aus der GitHub-API je Schritt von check.yml der Median seiner
-// Laufzeit über die letzten 7 grünen Messungen auf integ-probe, wo er DENSELBEN Befehl fuhr (sein run-Text an check.yml des
-// Laufs, je Job-Art: die Echt-Gruppe fährt dieselben Befehle auf der Karte, eine andere Zeit), je Gruppe der Median ihrer
-// Job-Dauer bei gleichem Schritt-Satz, die Vorbereitung als Job-Dauer über die Gate-Schritte hinaus → spec/ci/ci-zeiten.json,
-// die Waage von gate:ci-deckung (die CI fragt die API nie); ohne Lauf `geschaetzt`. Liefert die API keine Messung, endet er
-// ROT beim Namen und schreibt nichts (22.10.: eine leere Tafel, 0 Schritte, 969 Zeilen still weg).
-//
-// DERSELBE Befehl verteilt (CW2): die Voll-Gruppen JE KLASSE (K61: cpu · gpu, scripts/lib/ci-klasse.cjs), so viele, wie neben
-// dem Puls Läufer-Plätze frei sind — der volle Playtest in Gruppe 1, der Rest größte zuerst in die leichteste, die Teile eines
-// Skripts nie beisammen, die Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe —, und je echt-Schritt seine FRIST
-// timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter grüner Lauf⌉) in check.yml.
-//   node scripts/ci-zeiten.cjs [--zuerst <lauf-id,…>]   (--zuerst: diese Läufe zuerst, die eigenen Messläufe nach einem Umbau)
+// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CW, Richter 22.10.): je Schritt von check.yml der Median seiner letzten 7 grünen
+// Messungen auf integ-probe (derselbe run-Text, je Job-Art), je Gruppe der Median ihrer Job-Dauer → spec/ci/ci-zeiten.json (die
+// Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die Voll-Gruppen je Klasse und je echt-Schritt die Frist
+// timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter grüner Lauf⌉).
+//   node scripts/ci-zeiten.cjs                          misst und verteilt
 //   node scripts/ci-zeiten.cjs --tafel                  die Kennzahlen des Richters über 7 Tage (druckt, schreibt nichts)
-// Der Schlüssel: GITHUB_TOKEN oder git credential fill.
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
+const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
 
 const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
 const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
-const [JE_SCHRITT, HOECHSTENS] = [7, 40]; // Messungen je Schritt; Läufe höchstens (ein neuer Schritt läse sonst die ganze Liste)
+const [JE_SCHRITT, HOECHSTENS] = [7, 40]; // Messungen je Schritt; Läufe höchstens
 const VORBEREITUNG =
     /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
-// die Jobs und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", wie die Waage ihn nennt; „echt (GPU-Wände …)" → „echt")
+// die Jobs und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", „echt (…)" → „echt")
 const GRUPPE = /^(puls|voll|kopf|echt)(?: (\d+)\/\d+)?/;
 
-function apiMit(token) {
-    return async (p) => {
-        const r = await fetch(p.startsWith("http") ? p : API + p, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-        });
-        if (!r.ok) throw new Error(`${p}: ${r.status}`);
-        return r.json();
-    };
-}
 const sek = (a, b) => (a && b ? (new Date(b) - new Date(a)) / 1000 : null);
 const sortiert = (a) => [...a].sort((x, y) => x - y);
 const median = (a) =>
@@ -58,36 +42,24 @@ function schritteAus(doc) {
     return m;
 }
 
-// die Messung: je Schritt die ersten JE_SCHRITT grünen Messungen, je Gruppe die Job-Dauer der grünen Läufe mit dem Satz des
-// neuesten; eine Messung = ein Versuch eines Laufs (die genannten mit JEDEM Versuch, die übrigen mit ihrem letzten)
-async function messe(api, jetzt, zuerst = [], alt = {}) {
+// die Messung: je Schritt die ersten JE_SCHRITT grünen Messungen (der letzte Versuch je Lauf), je Gruppe die Job-Dauer der
+// grünen Läufe mit dem Satz des neuesten
+async function messe(api, jetzt, alt = {}, pause = 2000) {
     const soll = schritteAus(jetzt);
-    const neueste = [];
-    for (let seite = 1; seite <= 3; seite++) {
-        const r = await api(
-            `/actions/workflows/check.yml/runs?branch=integ-probe&status=completed&per_page=50&page=${seite}`
-        );
-        neueste.push(...r.workflow_runs);
-        if (r.workflow_runs.length < 50) break;
-    }
-    const laeufe = [];
-    for (const id of zuerst) {
-        const r = neueste.find((x) => x.id === id) || (await api(`/actions/runs/${id}`));
-        for (let a = 1; a <= r.run_attempt; a++) laeufe.push({ r, a, lauf: `${r.id}/${a}` });
-    }
-    for (const r of neueste) if (!zuerst.includes(r.id)) laeufe.push({ r, a: r.run_attempt, lauf: String(r.id) });
+    const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed";
+    const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const [vorb, ymlAm, gruppen, ort] = [{ echt: [], sonst: [] }, new Map(), new Map(), new Map()];
     let [kopf, gelesen, gemessen] = [null, 0, 0];
-    for (const { r, a, lauf: messung } of laeufe) {
+    for (const r of neueste) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.sonst.length >= 25) break;
-        if (++gelesen > HOECHSTENS) break;
+        gelesen++;
         if (!ymlAm.has(r.head_sha)) {
             const c = await api(`/contents/${WORKFLOW}?ref=${r.head_sha}`);
             ymlAm.set(r.head_sha, schritteAus(yaml.load(Buffer.from(c.content, "base64").toString("utf8"))));
         }
         const damals = ymlAm.get(r.head_sha);
-        for (const job of (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs) {
+        for (const job of (await api(`/actions/runs/${r.id}/attempts/${r.run_attempt}/jobs?per_page=100`)).jobs) {
             const g = GRUPPE.exec(job.name);
             if (!g) continue;
             const [key, gruen, echt] = [g[2] ? `${g[1]} ${g[2]}` : g[1], job.conclusion === "success", g[1] === "echt"];
@@ -101,14 +73,8 @@ async function messe(api, jetzt, zuerst = [], alt = {}) {
                 const d = damals.get(s.name);
                 const n = d && [...soll].find(([, x]) => x.run === d.run && x.echt === echt);
                 eigen.push(n ? n[0] : "? " + s.name);
-                if (
-                    !n ||
-                    s.conclusion !== "success" ||
-                    proben.get(n[0]).length >= JE_SCHRITT ||
-                    proben.get(n[0]).some((p) => p.lauf === messung)
-                )
-                    continue;
-                proben.get(n[0]).push({ lauf: messung, s: t });
+                if (!n || s.conclusion !== "success" || proben.get(n[0]).length >= JE_SCHRITT) continue;
+                proben.get(n[0]).push(t);
                 [kopf, gemessen] = [kopf || r.head_sha, gemessen + 1];
                 if (!ort.has(n[0])) ort.set(n[0], key);
             }
@@ -122,7 +88,7 @@ async function messe(api, jetzt, zuerst = [], alt = {}) {
     }
     const [schritte, ohne] = [{}, []];
     for (const [n, x] of soll) {
-        const p = proben.get(n).map((q) => q.s);
+        const p = proben.get(n);
         if (p.length)
             schritte[n] = {
                 s: Math.round(median(p)),
@@ -138,7 +104,7 @@ async function messe(api, jetzt, zuerst = [], alt = {}) {
             `ROT: die API lieferte ${neueste.length} Läufe, ${gemessen} Messungen, ${Object.keys(schritte).length} Schritte — ${AUS} bleibt, wie sie ist`
         );
     const out = {
-        quelle: "GitHub-API (s): je Schritt der Median der letzten je_schritt grünen Messungen auf integ-probe (echt-Schritte mit p90 und max), je Gruppe der Job-Dauer, die Vorbereitung je Job; kopf der neueste gemessene Lauf — erzeugt von scripts/ci-zeiten.cjs, gelesen von der Waage in gate:ci-deckung",
+        quelle: "GitHub-API (s): je Schritt der Median der letzten je_schritt grünen Messungen auf integ-probe (echt mit p90 und max), je Gruppe der Job-Dauer — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
         erzeugt: new Date().toISOString().slice(0, 10),
         kopf,
         je_schritt: JE_SCHRITT,
@@ -147,7 +113,6 @@ async function messe(api, jetzt, zuerst = [], alt = {}) {
         gruppen: Object.fromEntries([...gruppen].map(([k, G]) => [k, { s: Math.round(median(G.s)), n: G.s.length }])),
         schritte,
     };
-    if (alt.vorher) out.vorher = alt.vorher;
     return { out, gelesen, ohne };
 }
 
@@ -161,7 +126,7 @@ function verteile(jetzt, out) {
     const packe = (gs, k) => {
         const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
         const lege = (g, s, vz = 1) => ((g.s += vz * z(s)), vz > 0 ? g.n.push(s) : g.n.splice(g.n.indexOf(s), 1));
-        // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe (CW-Lauf 38914686744: Erst-Zeichnung 1+2 zusammen 396 s statt 198)
+        // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe
         const darf = (g, s, ohne) =>
             !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/, "") === s.run.replace(/--teil=\d+/, ""));
         for (const s of [...gs].sort((x, y) => pt(y) - pt(x) || z(y) - z(x)))
@@ -244,7 +209,7 @@ function verteile(jetzt, out) {
     if (von < 0 || zeile !== neu.length)
         throw new Error(`${WORKFLOW}: ${zeile} Gruppen-Zeilen im Job voll, ${neu.length} Schritte mit Gruppe`);
     yml = yml.slice(0, von) + voll + yml.slice(bis);
-    // die Frist je gemessenem echt-Schritt (ein ungemessener behält seine, ohne eine ist er ROT in gate:ci-deckung (E))
+    // die Frist je gemessenem echt-Schritt (ein ungemessener behält seine)
     [von, bis] = block("echt");
     let fristen = 0;
     const echt = yml.slice(von, bis).replace(/^( +)- name: (.+)\n(?:\1  timeout-minutes: \d+\n)?/gm, (m, x, n) => {
@@ -258,93 +223,40 @@ function verteile(jetzt, out) {
     );
 }
 
-// DIE RICHTER-TAFEL (7 Tage): echt-Median der grünen Läufe · integ-probe-Push bis main-Push · integ-probe-Köpfe je main-FF ·
-// volle Batterien je Kopf · Wackler je Schritt (ein Versuch ≥ 2 grün, wo ein früherer rot war; ≥ 2 Läufe = eine Karte) ·
-// Nacht-Batterien auf grünem main (der Kopf trug schon einen grünen vollen Lauf)
+// DIE RICHTER-TAFEL (7 Tage); ein Wackler: ein späterer Versuch grün, wo ein früherer rot war (≥ 2 Läufe = eine Karte)
 async function tafel(api) {
-    const seit = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-    const runs = [];
-    for (let seite = 1; seite <= 30; seite++) {
-        const r = await api(`/actions/workflows/check.yml/runs?created=%3E%3D${seit}&per_page=100&page=${seite}`);
-        runs.push(...r.workflow_runs);
-        if (r.workflow_runs.length < 100) break;
-    }
-    if (!runs.length) throw new Error(`ROT: die API lieferte seit ${seit} keinen Lauf`);
-    const vollArt = (r) =>
-        ["schedule", "workflow_dispatch", "pull_request"].includes(r.event) ||
-        ["integ-probe", "main"].includes(r.head_branch) ||
-        /\[ci voll\]/.test((r.head_commit || {}).message || "");
-    const [J, frueher] = [new Map(), new Map()];
-    const auftrag = runs.filter((r) => r.status === "completed" && (vollArt(r) || r.run_attempt > 1));
+    const seit = new Date(Date.now() - 7 * 864e5);
+    const runs = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { seit });
+    const [J, wackler, min] = [new Map(), new Map(), (s) => (s / 60).toFixed(1).replace(".", ",")];
+    const jobsVon = async (r, a) => (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
+    const schritte = (js, wie) => new Set(js.flatMap((j) => (j.steps || []).filter((s) => s.conclusion === wie).map((s) => s.name)));
+    const auftrag = runs.filter((r) => r.status === "completed");
     const holen = async () => {
-        for (let r; (r = auftrag.pop());) {
-            J.set(r.id, (await api(`/actions/runs/${r.id}/attempts/${r.run_attempt}/jobs?per_page=100`)).jobs);
+        for (let r; (r = auftrag.pop()); ) {
+            J.set(r, await jobsVon(r, r.run_attempt));
+            const gruen = schritte(J.get(r), "success");
             for (let a = 1; a < r.run_attempt; a++)
-                frueher.set(`${r.id}/${a}`, (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs);
+                for (const s of schritte(await jobsVon(r, a), "failure")) if (gruen.has(s)) wackler.set(s, (wackler.get(s) || new Set()).add(r.id));
         }
     };
     await Promise.all(Array.from({ length: 8 }, holen));
-    const jobs = (r, re) => (J.get(r.id) || []).filter((j) => re.test(j.name) && j.conclusion !== "skipped");
-    const gruenVoll = (r) =>
-        r.conclusion === "success" &&
-        jobs(r, /^voll\b/).length &&
-        jobs(r, /^voll\b/).every((j) => j.conclusion === "success");
-    const min = (s) => (s / 60).toFixed(1).replace(".", ",");
-    const echt = runs
-        .flatMap((r) => jobs(r, /^echt\b/))
-        .filter((j) => j.conclusion === "success")
-        .map((j) => sek(j.started_at, j.completed_at));
-    const push = (b) => runs.filter((r) => r.event === "push" && r.head_branch === b);
-    const erst = new Map();
-    for (const r of push("integ-probe"))
-        if (!erst.has(r.head_sha) || r.created_at < erst.get(r.head_sha)) erst.set(r.head_sha, r.created_at);
-    const mainKoepfe = new Set(push("main").map((r) => r.head_sha));
-    const weg = [...mainKoepfe]
-        .filter((s) => erst.has(s))
-        .map((s) => sek(erst.get(s), push("main").find((r) => r.head_sha === s).created_at));
-    const batterien = new Map();
-    for (const r of runs)
-        if (jobs(r, /^voll\b/).length) batterien.set(r.head_sha, (batterien.get(r.head_sha) || 0) + 1);
-    const wackler = new Map();
-    for (const [k, js] of frueher) {
-        const r = runs.find((x) => String(x.id) === k.split("/")[0]);
-        const spaeter = new Set(
-            (J.get(r.id) || []).flatMap((j) =>
-                (j.steps || []).filter((s) => s.conclusion === "success").map((s) => s.name)
-            )
-        );
-        for (const s of new Set(
-            js.flatMap((j) => (j.steps || []).filter((s) => s.conclusion === "failure").map((s) => s.name))
-        ))
-            if (spaeter.has(s)) wackler.set(s, new Set([...(wackler.get(s) || []), r.id]));
-    }
-    const nacht = runs.filter(
-        (r) =>
-            r.event === "schedule" &&
-            jobs(r, /^voll\b/).length &&
-            runs.some((o) => o !== r && o.head_sha === r.head_sha && o.created_at < r.created_at && gruenVoll(o))
-    );
-    const bat = [...batterien.values()];
-    console.log(`DIE RICHTER-TAFEL (seit ${seit}, ${runs.length} Läufe von check.yml, ${J.size} mit Jobs gelesen)`);
-    console.log(
-        `  echt-Median der grünen Läufe: ${echt.length ? min(median(echt)) : "—"} min (${echt.length} Läufe, p90 ${echt.length ? min(p90(echt)) : "—"})`
-    );
-    console.log(
-        `  integ-probe-Push bis main-Push: Median ${weg.length ? min(median(weg)) : "—"} min (${weg.length} main-Köpfe)`
-    );
-    console.log(
-        `  integ-probe-Köpfe je main-FF: ${erst.size} / ${mainKoepfe.size} = ${(erst.size / Math.max(1, mainKoepfe.size)).toFixed(1).replace(".", ",")}`
-    );
-    console.log(
-        `  volle Batterien je Kopf: ${(bat.reduce((a, x) => a + x, 0) / Math.max(1, bat.length)).toFixed(2).replace(".", ",")} (${bat.length} Köpfe, ${bat.filter((x) => x > 1).length} mit ≥ 2, höchstens ${Math.max(0, ...bat)})`
-    );
+    const jobs = (r, re) => (J.get(r) || []).filter((j) => re.test(j.name) && j.conclusion !== "skipped");
+    const voll = (r) => jobs(r, /^voll\b/);
+    const gruenVoll = (r) => r.conclusion === "success" && voll(r).length && voll(r).every((j) => j.conclusion === "success");
+    const echt = runs.flatMap((r) => jobs(r, /^echt\b/)).filter((j) => j.conclusion === "success").map((j) => sek(j.started_at, j.completed_at));
+    const erst = (b) => new Map(runs.filter((r) => r.event === "push" && r.head_branch === b).map((r) => [r.head_sha, r.created_at]));
+    const [integ, main] = [erst("integ-probe"), erst("main")];
+    const weg = [...main].filter(([k]) => integ.has(k)).map(([k, t]) => sek(integ.get(k), t));
+    const bat = Object.values(runs.filter((r) => voll(r).length).reduce((m, r) => ((m[r.head_sha] = (m[r.head_sha] || 0) + 1), m), {}));
+    const nacht = runs.filter((r) => r.event === "schedule" && voll(r).length && runs.some((o) => o.head_sha === r.head_sha && o.created_at < r.created_at && gruenVoll(o)));
     const karten = [...wackler].filter(([, l]) => l.size >= 2).sort((a, b) => b[1].size - a[1].size);
-    console.log(
-        `  Wackler je Schritt (≥ 2 Läufe = Karte): ${karten.map(([n, l]) => `„${n}" ×${l.size}`).join(" · ") || "keiner"} (${wackler.size} Schritte je ≥ 1)`
-    );
-    console.log(
-        `  Nacht-Batterien auf grünem main: ${nacht.length} (${nacht.map((r) => `${r.head_sha.slice(0, 8)} ${min(sek(r.run_started_at, r.updated_at))} min`).join(" · ") || "keine"})`
-    );
+    console.log(`DIE RICHTER-TAFEL seit ${seit.toISOString().slice(0, 10)}: ${runs.length} Läufe von check.yml
+  echt-Median der grünen Läufe: ${min(median(echt))} min (${echt.length} Läufe, p90 ${min(p90(echt) || 0)})
+  integ-probe-Push bis main-Push: Median ${min(median(weg))} min (${weg.length} main-Köpfe)
+  integ-probe-Köpfe je main-FF: ${integ.size} / ${main.size}
+  volle Batterien je Kopf: ${(bat.reduce((a, x) => a + x, 0) / bat.length).toFixed(2)} (${bat.length} Köpfe, ${bat.filter((x) => x > 1).length} mit ≥ 2)
+  Wackler je Schritt (≥ 2 Läufe = Karte): ${karten.map(([n, l]) => `„${n}" ×${l.size}`).join(" · ") || "keiner"}
+  Nacht-Batterien auf grünem Kopf: ${nacht.length} (${nacht.map((r) => `${r.head_sha.slice(0, 8)} ${min(sek(r.run_started_at, r.updated_at))} min`).join(" · ")})`);
 }
 
 module.exports = { messe };
@@ -357,19 +269,12 @@ if (require.main === module) {
             .toString()
             .match(/^password=(.*)$/m)[1];
     (async () => {
-        if (args.includes("--tafel")) return tafel(apiMit(token));
-        const zi = args.indexOf("--zuerst");
+        if (args.includes("--tafel")) return tafel(apiMit(API, token));
         const jetzt = yaml.load(fs.readFileSync(path.join(root, WORKFLOW), "utf8"));
         const alt = fs.existsSync(path.join(root, AUS))
             ? JSON.parse(fs.readFileSync(path.join(root, AUS), "utf8"))
             : {};
-        const { out, gelesen, ohne } = await messe(
-            apiMit(token),
-            jetzt,
-            zi >= 0 ? args[zi + 1].split(",").map(Number) : [],
-            alt
-        );
-        // eine Liste oder ein Eintrag ohne Klammern in sich (eine Gruppe, ein Schritt des `vorher`) steht in einer Zeile
+        const { out, gelesen, ohne } = await messe(apiMit(API, token), jetzt, alt);
         const text = JSON.stringify(out, null, 2).replace(
             /([[{])\n\s+([^[\]{}]*?)\n\s+([\]}])/g,
             (m, a, x, b) => a + x.replace(/\n\s+/g, " ") + b

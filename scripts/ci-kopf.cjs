@@ -1,12 +1,8 @@
-// ci-kopf.cjs — EIN URTEIL JE KOPF (K61 CI-Diät, Richter 22.10.): die volle Batterie und die Echt-Gruppe richten jeden Kopf
-// (SHA) einmal. Vor der Batterie fragt der Job `kopf` (check.yml) die API nach den anderen Läufen dieses Workflows auf
-// demselben Kopf, die ihn selbst prüften (push · schedule · workflow_dispatch; ein pull_request prüft den Merge mit main):
-// trug einer die volle Batterie grün, steht ihr Urteil (`voll=nein`), trug einer die Echt-Gruppe grün, steht ihres (`echt=nein`).
-// Läuft ein ÄLTERER solcher Lauf noch, wartet der Richter auf ihn (je 30 s, höchstens 30 min): grün → sein Urteil steht, rot
-// → ROT, abgebrochen → die Batterie fährt selbst. Ein jüngerer Lauf wartet nie auf einen älteren und umgekehrt (kein Kreis).
-// Nachts urteilt derselbe Richter (main trägt den Kopf von integ-probe), auf Abruf und auf einem PR läuft alles. Ein Fehler der
-// API ist ROT: der Lauf steht rot, nie still ohne Batterie. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
-//
+// ci-kopf.cjs — EIN URTEIL JE KOPF (K61, Richter 22.10.): die volle Batterie und die Echt-Gruppe richten jeden Kopf (SHA) einmal.
+// Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`,
+// die Echt-Gruppe grün: `echt=nein`. Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
+// ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
+// der API ist ROT. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
 //   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` und `echt=` nach $GITHUB_OUTPUT
 "use strict";
 const fs = require("fs");
@@ -16,9 +12,7 @@ const BEWEIS = ["push", "schedule", "workflow_dispatch"];
 const [VOLL_JOB, ECHT_JOB] = [/^voll\b/, /^echt\b/];
 const [TAKT_S, WARTE_S] = [30, 30 * 60];
 
-// ereignis: github.event_name · eigenerLauf: github.run_id · laeufe: die Läufe dieses Workflows auf dem Kopf (API) · jobsJe:
-// Lauf-Id → seine Jobs (letzter Versuch) · gewartet: die Läufe, auf die der Richter wartete
-// → { voll, echt: "ja"|"nein", grund } · { warte: lauf } · { rot: grund }
+// → { voll, echt, grund } · { warte: lauf } · { rot: grund }
 function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
     const u = { voll: "ja", echt: "ja", grund: "kein anderer Lauf trägt die volle Batterie auf diesem Kopf grün" };
     if (IMMER.includes(ereignis)) return { ...u, grund: `Ereignis ${ereignis}: die Batterie läuft immer` };
@@ -45,36 +39,62 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
     return u;
 }
 
-module.exports = { kopfUrteil };
+// die Läufe, neueste zuerst, OHNE Filter der API (22.10.: gefiltert total_count 0): `nimm` wählt, `seit` endet; eine kurze Seite
+// wird bis 3× neu gefragt — sonst ROT, nie leer.
+async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
+    const [out, je, neu] = [[], 100, (x) => new Date(x.created_at) >= seit];
+    let [gesamt, gelesen] = [0, 0];
+    for (let seite = 1; ; seite++) {
+        let r;
+        for (let v = 1; ; v++) {
+            r = await api(`${pfad}?per_page=${je}&page=${seite}`);
+            gesamt = Math.max(gesamt, r.total_count);
+            if (r.workflow_runs.length >= Math.min(je, gesamt - gelesen) && (seite > 1 || traegt(r.workflow_runs))) break;
+            if (v === 3) throw new Error(`ROT: ${pfad} Seite ${seite} trägt ${r.workflow_runs.length} Läufe von ${gesamt} nach 3 Versuchen`);
+            await new Promise((ok) => setTimeout(ok, pause * v));
+        }
+        gelesen += r.workflow_runs.length;
+        out.push(...r.workflow_runs.filter((x) => nimm(x) && neu(x)));
+        if (!r.workflow_runs.every(neu) || out.length >= hoechstens || r.workflow_runs.length < je) return out.slice(0, hoechstens);
+    }
+}
 
-if (require.main === module) {
-    const env = process.env;
-    const API = `${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`;
-    const api = async (p) => {
-        const r = await fetch(API + p, {
-            headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github+json" },
-        });
+// die EINE Anfrage an die API (Kopf-Richter und ci-zeiten): ein 5xx oder ein Abriss ist ein Wackler, bis 3 Versuche; sonst ROT
+function apiMit(basis, token) {
+    const api = async (p, v = 1) => {
+        const kopf = { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } };
+        const r = await fetch(basis + p, kopf).catch((e) => (v < 3 ? null : Promise.reject(e)));
+        if ((!r || r.status >= 500) && v < 3) return new Promise((ok) => setTimeout(ok, 2000 * v)).then(() => api(p, v + 1));
         if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
         return r.json();
     };
+    return api;
+}
+
+module.exports = { kopfUrteil, alleLaeufe, apiMit };
+
+if (require.main === module) {
+    const env = process.env;
+    const api = apiMit(`${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`, env.GH_TOKEN);
     const wf =
         String(env.GITHUB_WORKFLOW_REF || "")
             .replace(/^[^/]+\/[^/]+\/\.github\/workflows\//, "")
             .replace(/@.*$/, "") || "check.yml";
     (async () => {
-        const [ereignis, gewartet, bis] = [env.GITHUB_EVENT_NAME, [], Date.now() + WARTE_S * 1000];
+        const [ereignis, gewartet] = [env.GITHUB_EVENT_NAME, []];
         let u;
-        for (;;) {
-            const laeufe = IMMER.includes(ereignis)
-                ? []
-                : (await api(`/actions/workflows/${wf}/runs?head_sha=${env.GITHUB_SHA}&per_page=100`)).workflow_runs;
+        for (let gang = 0; ; gang++) {
+            // der eigene Lauf steht immer in der Liste — fehlt er, war die Seite leer
+            const traegt = (rs) => rs.some((r) => String(r.id) === String(env.GITHUB_RUN_ID));
+            const [nimm, seit] = [(r) => r.head_sha === env.GITHUB_SHA, Date.now() - 3 * 864e5];
+            const laeufe = IMMER.includes(ereignis) ? [] : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
             const jobsJe = {};
             for (const r of laeufe)
                 if (String(r.id) !== String(env.GITHUB_RUN_ID) && r.conclusion === "success")
                     jobsJe[r.id] = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs;
             u = kopfUrteil({ ereignis, eigenerLauf: env.GITHUB_RUN_ID, laeufe, jobsJe, gewartet });
             if (!u.warte) break;
-            if (Date.now() > bis) {
+            if (gang >= WARTE_S / TAKT_S) {
                 u = {
                     voll: "ja",
                     echt: "ja",

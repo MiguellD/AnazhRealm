@@ -14,7 +14,7 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
-    const browser = await starteBrowser({ art: "webgl", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
+    const browser = await starteBrowser({ art: "null", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
