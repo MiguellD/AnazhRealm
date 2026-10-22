@@ -630,31 +630,35 @@ async function gangLauf(page, pufferStand, b) {
             text: type === "keyDown" && T[n][1] ? T[n][1] : undefined,
         });
     const tippe = async (n) => (await taste(n, "keyDown"), await taste(n, "keyUp"));
-    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    // die Fristen zählen präsentierte Bilder (je 300 dreht ein Steckender ab), nie die Wanduhr
+    const bilder = (n, dreh) =>
+        page.evaluate(
+            async (n, dreh) => {
+                const st = window.anazhRealm.state;
+                for (let i = 0, vor = null; i < n; i++) {
+                    await new Promise((f) => requestAnimationFrame(f));
+                    if (!dreh || i % 300 < 299) continue;
+                    const p = st.playerMesh.position;
+                    if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
+                    vor = [p.x, p.z];
+                }
+            },
+            n,
+            dreh
+        );
     const ruhig = () =>
         page.evaluate(async () => {
-            for (const dl = performance.now() + 90000; performance.now() < dl && !window.anazhRealm._weltSteht();)
-                await new Promise((f) => setTimeout(f, 250));
+            const raf = () => new Promise((f) => requestAnimationFrame(f));
+            for (const weiter = window.__deckel("Gang: die Welt steht"); !window.anazhRealm._weltSteht() && weiter();)
+                await raf();
         });
-    const gehe = async (ms) => {
-        await taste("w", "keyDown");
-        for (let vor = null, ende = Date.now() + ms; Date.now() < ende;) {
-            await warte(5000);
-            vor = await page.evaluate((vor) => {
-                const st = window.anazhRealm.state,
-                    p = st.playerMesh.position;
-                if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
-                return [p.x, p.z];
-            }, vor);
-        }
-        await taste("w", "keyUp");
-    };
-    const drittel = ((Number(b.min) || 6) * 60000) / 3;
+    const gehe = async (n) => (await taste("w", "keyDown"), await bilder(n, true), await taste("w", "keyUp"));
+    const drittel = Math.round((Number(b.min) || 6) * 1200);
     await page.evaluate(() =>
         window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
     );
     await ruhig();
-    await warte(20000);
+    await bilder(1200);
     const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
     const vor = Object.assign(await pufferStand(true, 60), { min: 0 });
     const t0G = Date.now();
@@ -667,23 +671,23 @@ async function gangLauf(page, pufferStand, b) {
             { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
             { silent: true, precise: true }
         );
-        for (let n = 0; n < 600 && !e.instanced && !e.mesh; n++) await new Promise((f) => requestAnimationFrame(f));
+        await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
     });
     await tippe("e");
-    await warte(1000);
+    await bilder(60);
     const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
     await gehe(drittel);
     if (fahrt) await tippe("e");
     await tippe("enter");
     await cdp.send("Input.insertText", { text: "setze uhrzeit mitternacht" });
     await tippe("enter");
-    await warte(500);
+    await bilder(30);
     const uhr = await page.evaluate(() => window.anazhRealm.state.timeOfDay);
     await gehe(drittel);
     const min = (Date.now() - t0G) / 60000;
     await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
     await ruhig();
-    await warte(20000);
+    await bilder(1200);
     const nach = Object.assign(await pufferStand(true, 60), { min });
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
     await cdp.detach();
