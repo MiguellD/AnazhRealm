@@ -265,7 +265,8 @@ self.onmessage = function (e) {
 // nimmt (fachwerk `ortImWasser`), trägt den Plan nie ganz: er fällt, bevor sein Plan entsteht. Rückgabe { index (−1: kein Ort,
 // der Wunsch), v2, wand, abstandM, kandidaten (die Pläne der Ringe), ms }. Billige Urteile zuerst (Lehre 25): der Faden gibt den
 // Ort nach dem groben Raster, der Wirt urteilt die Bauten, und erst sein Sieger (`msg.wand`: sein Index) zahlt das Raster der
-// Wand (nH 300: 155 000 Punkte, ~1 s) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
+// Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
+// Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
 function ortWahl(msg) {
     if (!self.__fachwerkCore)
         importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
@@ -275,8 +276,6 @@ function ortWahl(msg) {
     const ctx = G.ortCtx(state, (x, z) => ortNass(msg, null, x, z));
     let i = 0;
     let kandidaten = 0;
-    const letzt = ortWahl.letzt;
-    ortWahl.letzt = null;
     for (let ring = 0; ring <= W.ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
@@ -291,18 +290,13 @@ function ortWahl(msg) {
                 kandidaten,
                 ms: self.performance.now() - t0,
             });
-            if (i === msg.wand && letzt && letzt.i === i) {
-                if (ortTraegt(msg, letzt.k, false)) return aus(letzt.k, true);
-                continue;
-            }
-            if (FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
             const k = FC.ortPlan(plan, o, ctx);
             kandidaten++;
-            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort)
-            if (ortTraegt(msg, k, true)) {
-                ortWahl.letzt = { i, k };
-                return aus(k, false);
-            }
+            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
+            if (i === msg.wand) {
+                if (ortTraegt(msg, k, false)) return aus(k, true);
+            } else if (ortTraegt(msg, k, true)) return aus(k, false);
         }
     }
     return {
