@@ -198,9 +198,9 @@ async function WELLE_L() {
             if (name && !(res && res.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
         };
         const traf = (sw, c) => sw.treff.find((t) => t.c === c && t.src === "player") || null;
-        if (fn("setCameraMode")) r.setCameraMode("first");
-        if (fn("closeAllDrawers")) r.closeAllDrawers();
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        r.setCameraMode("first");
+        r.closeAllDrawers();
+        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
         const hirsch = setze("wesen");
@@ -295,12 +295,7 @@ async function WELLE_L() {
             const sprung = Math.hypot(c.position.x - x0, c.position.z - z0);
             const sv = c.userData._stossV;
             const dv = sv ? Math.hypot(sv.x, sv.z) : 0;
-            const masse =
-                typeof r._leibMasse === "function"
-                    ? r._leibMasse(c)
-                    : typeof r._kreaturMasse === "function"
-                      ? r._kreaturMasse(c)
-                      : null;
+            const masse = r._leibMasse(c);
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));
             steht.steuerSchritt = (st) => {
@@ -310,10 +305,8 @@ async function WELLE_L() {
             try {
                 // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
-                    if (typeof r._kreaturStossSchritt === "function") {
-                        r._kreaturStossSchritt(1 / 60);
-                        r._leibKontakte();
-                    }
+                    r._kreaturStossSchritt(1 / 60);
+                    r._leibKontakte();
                     r.updateCreatures(1 / 60);
                 }
             } finally {
@@ -395,8 +388,7 @@ async function WELLE_L() {
                 });
                 return vol;
             };
-            const wirtLeib = (k) =>
-                typeof r._leibMasse === "function" ? r._leibMasse(k) : r._kreaturMasse ? r._kreaturMasse(k) : 0;
+            const wirtLeib = (k) => r._leibMasse(k);
             const leiber = {};
             const ort = pm.position;
             for (const [name, seele] of [
@@ -437,12 +429,7 @@ async function WELLE_L() {
                 const G = prof ? r._fahrSatz(e, prof) : null;
                 if (G)
                     leiber.gt = {
-                        wirtKg:
-                            typeof r._fahrMasse === "function"
-                                ? r._fahrMasse(G)
-                                : A.STOSS && A.STOSS.dichteWagen
-                                  ? G.m * A.STOSS.dichteWagen
-                                  : 0,
+                        wirtKg: r._fahrMasse(G),
                         gestaltKg: dichteWagen > 0 ? G.m * dichteWagen : null,
                         vM3: G.m,
                     };
@@ -683,7 +670,7 @@ async function WELLE_L() {
         w.c.verschleiss = n7 >= 12 && w.z.wear16 < 0.99 && w.z.trefferVerbraucht === 0;
         // (T8) der Pfeil: Impuls im Schaden, die Wand hält ihn
         ausruesten("klinge_langbogen");
-        const rec = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+        const rec = r._heldBogenRecipe();
         const schuss = (frac, ziel) => {
             const n0 = treff.length;
             const list = s._pfeile || [];
@@ -1124,48 +1111,8 @@ async function WELLE_L() {
         // ═══ Q9 — MAUS-ABSICHT ═══
         ausruesten("klinge_langschwert");
         s.isPointerLocked = true;
-        // (M1) 3rd-Person: 10 Klicks auf den Hirsch 2 m vor dir. Liegt ein Bau näher auf dem Kamera-Strahl (die
-        // Start-Plattform), gilt das Nächste — der Klick zählt dann als verdeckt, nie als Treffer-Probe.
-        if (fn("setCameraMode")) r.setCameraMode("third");
-        const z1 = { c: zaehl.carve, t: treff.length };
-        let fk = 0,
-            frei = 0,
-            freiSchwung = 0;
-        for (let i = 0; i < 10; i++) {
-            stelle(hirsch, 2);
-            zielen(punkt(hirsch, null));
-            const pick = r._pickCreatureAtCrosshair();
-            const imKreuz = !!(pick && pick.creature === hirsch);
-            if (imKreuz) fk++;
-            const ap = r._pickArchitectureAtCrosshair();
-            const istFrei =
-                imKreuz &&
-                !(ap && ap.point && s.camera.position.distanceTo(ap.point) < s.camera.position.distanceTo(pick.point));
-            if (istFrei) frei++;
-            p._swing = null;
-            p.breakHeld = false;
-            p.stamina = (p.stats && p.stats.staminaMax) || 100; // zwischen zwei Klicks atmet der Spieler
-            const s0 = zaehl.schwung;
-            r.tryMouseBreak();
-            if (istFrei && zaehl.schwung > s0) freiSchwung++;
-            if (p._swing) {
-                p._swing.lastT = T;
-                for (let k = 0; k < 1200 && p._swing; k++) {
-                    T += 0.005;
-                    r._tickKampfSchwung(T);
-                }
-            }
-        }
-        w.z.dritte = {
-            fadenkreuz: fk,
-            frei,
-            schwuenge: freiSchwung,
-            krater: zaehl.carve - z1.c,
-            treffer: treff.slice(z1.t).filter((t) => t.c === hirsch).length,
-        };
-        w.c.dritteSchwingt = fk === 10 && frei >= 8 && freiSchwung === frei && w.z.dritte.krater === 0;
         // (M2) 1st-Person: Drücken auf den Hirsch, der Stoß schiebt ihn fort, das Halten setzt nach
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        r.setCameraMode("first");
         stelle(hirsch, 1.6);
         zielen(punkt(hirsch, null));
         const z2 = zaehl.carve;
@@ -1260,7 +1207,7 @@ async function WELLE_L() {
         s.isPointerLocked = saved.lock;
 
         // ═══ Q10 — BLICK-WAHRHEIT ═══
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        r.setCameraMode("first");
         const blickBei = (pitch) => {
             s.pitch = pitch;
             kamera();
@@ -1353,7 +1300,7 @@ async function WELLE_L() {
         }
 
         // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        r.setCameraMode("first");
         // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
         // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
@@ -1842,7 +1789,7 @@ async function WELLE_L() {
             }
             // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (Welle LF: _kampfKlingenKontakt —
             // Klinge B → T und das Tier), auf älteren Ständen der Glied-Test der Gestalt (Strecke a → b)
-            const naht = fn("_kampfKlingenKontakt") ? "_kampfKlingenKontakt" : "_kreaturGliedTreffer";
+            const naht = "_kampfKlingenKontakt";
             const gtRoh = r[naht];
             let strecke = null;
             r[naht] = function (...arg) {
@@ -2232,7 +2179,7 @@ async function WELLE_L() {
         // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
         await teil("T21", async () => {
             ausruesten("klinge_langbogen");
-            const recP = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+            const recP = r._heldBogenRecipe();
             const pfeilAus = { teile: 0, unbeleuchtet: 0, wirft: 0, laenge: null, farben: 0 };
             if (recP) {
                 const n0 = (s._pfeile || []).length;
@@ -3034,10 +2981,10 @@ async function WELLE_L() {
         try {
             r.equipHeld(saved.held || null);
         } catch (_e) {}
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
         if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
         if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);
-        if (fn("setCameraMode")) r.setCameraMode(saved.cam);
+        r.setCameraMode(saved.cam);
         s.yaw = saved.yaw;
         s.pitch = saved.pitch;
         s.isPointerLocked = saved.lock;

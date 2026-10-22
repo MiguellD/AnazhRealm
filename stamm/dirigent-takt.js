@@ -362,7 +362,9 @@ class AnazhRealm_dirigent_takt {
                             ? `Wald offen ${o.wald}`
                             : o.karten
                               ? `Karten offen ${o.karten}`
-                              : null;
+                              : o.felder
+                                ? `Felder offen ${o.felder}`
+                                : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -384,11 +386,13 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas) — jede Linse liest SIE, nie die Marken; wer „nichts offen" fragt, liest JEDES Feld.
+    // zur Lieferung in den Atlas) und die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`) — jede Linse liest SIE, nie
+    // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
-        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0 }); // je Takt, ohne Müll
+        const o =
+            this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -403,6 +407,7 @@ class AnazhRealm_dirigent_takt {
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        o.felder = this._weltBakeSchuld();
         return o;
     }
     _weltSteht() {

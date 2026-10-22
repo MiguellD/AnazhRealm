@@ -1215,6 +1215,7 @@ class AnazhRealm_vegetation_streu {
         if (this._standRuht("streuLod", zellen, { pos: playerPos, rand: AnazhRealm.STAND_RAND_M })) return 0;
         let regung = 0;
         let offen = 0;
+        let partner = 0;
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -1278,7 +1279,7 @@ class AnazhRealm_vegetation_streu {
             // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
             const bandWechsel =
                 !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf);
-            if (!bandWechsel && cell.halt === "wartet") offen++; // der Partner lädt: die Wahl bleibt wach
+            if (!bandWechsel && cell.halt === "wartet") offen += partner = 1; // der Partner lädt: die Wahl bleibt wach
             if (newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel) continue;
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
@@ -1344,7 +1345,10 @@ class AnazhRealm_vegetation_streu {
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
-        this._standMeldet("streuLod", scanned, regung > 0, offen > 0);
+        // wartet sie nur auf Sätze, Assets und Höhen (nie auf einen Partner, nie an der vollen Kapsel-Liste), wecken sie die
+        // Bake-Uhr und der Stempel (`_standRuht`), kein Bild
+        const wm = this.state.weltMarch;
+        this._standMeldet("streuLod", scanned, regung > 0, offen > 0 && (partner || !wm || wm.kapselVoll || "felder"));
         return realloc;
     }
 
