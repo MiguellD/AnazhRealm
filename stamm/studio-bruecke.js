@@ -13,7 +13,7 @@ class AnazhRealm_studio_bruecke {
         if (typeof Worker === "undefined") return false;
         // TEST-HOOK: Gate-Bänder, die die Grammatik-MECHANIK isoliert prüfen (Richter, LOD-Bauplan, Scatter-
         // Promotion, Understory), schalten die Foundry aus; die Foundry als Quelle beweisen
-        // foundry-warm/deadlock/parity/contract.
+        // fluss/deadlock/parity/contract.
         if (typeof window !== "undefined" && window.__anazhGateNoFoundry) return false;
         return true;
     }

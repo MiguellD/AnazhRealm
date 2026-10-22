@@ -422,7 +422,7 @@ const triasStaticLaws = () => [
         f2.cacheBytes = 0;
         for (let i = 0; i < 80; i++) r._foundryCacheSet("ruhe8|" + i, mkFake(8));
         res.ruheSize = f2.cache.size;
-        res.ruheSoll = Math.floor(r.constructor.FOUNDRY_RUHE_BYTES / (8 * 1048576));
+        res.ruheSoll = r.constructor.FOUNDRY_RUHE_BYTES / (8 << 20);
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
@@ -512,14 +512,9 @@ const triasStaticLaws = () => [
             `ring=${out.l1RingDist}m level=${out.l1Level} served=${out.l1Served} slot=${out.l1Slot}`
         );
         check(
-            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap})`,
-            out.heavySize === 64 && out.heavyBytesOk === true,
-            `size=${out.heavySize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
-        );
-        check(
-            `B12b (K5/Ruhe): 80x8-MB-Eintraege ohne lebende Senke deckeln am RUHE-Deckel (${out.ruheSoll})`,
-            out.ruheSoll >= 1 && out.ruheSize === out.ruheSoll,
-            `size=${out.ruheSize}`
+            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap}), untaetige am RUHE-Deckel (${out.ruheSoll})`,
+            out.heavySize === 64 && out.heavyBytesOk === true && out.ruheSoll >= 1 && out.ruheSize === out.ruheSoll,
+            `size=${out.heavySize} ruhe=${out.ruheSize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
         );
         check(
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
