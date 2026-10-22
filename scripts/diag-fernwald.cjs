@@ -1,11 +1,7 @@
 // diag-fernwald.cjs — DER FERNWALD IST KARTE (npm run gate:fernwald).
 //
 // Studio-Vertrag B2c: Baum und Strauch tragen `lod.budget[kind].fernform: "karte"` — jenseits der Nah-Grenze des Wirts
-// IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz). Die Streu
-// las das seit 04.10.; der GESETZTE Wald (Architektur-Einträge aus `_forestPlantChunk`) trug jenseits der Mesh-Zone (des
-// geregelten Cull-Radius, 100–150 m) bis 05.10. einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m glatte, gestreifte,
-// einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m; an der Mess-Wiese 895 Sätze), am Radius
-// sprang die Karte in den Satz. Der EINE Chokepoint `tickArchitectureCulling` liest jetzt `_archKartenPreset`: ein
+// IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz). Der EINE Chokepoint `tickArchitectureCulling` liest jetzt `_archKartenPreset`: ein
 // Karten-Ding trägt seine Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits
 // seines L1↔Karte-Bands auf die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu
 // SEINEM Rand im Saum vor `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst
@@ -28,7 +24,7 @@
 //   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme) — D2 rot; (4) ein Gedächtnis mit
 //               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
@@ -494,7 +490,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return { sichtH: sichtH && +sichtH.toFixed(1), imBand, jenseitsBand, zurueck, luecke, takte };
         };
         res.D2 = await riese();
-        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
+        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme: jenseits des Radius trug ein
         // Karten-Ding keinen Band-Partner) — D2 muss rot werden ──
         if (riesenEintrag) {
             const e = riesenEintrag;

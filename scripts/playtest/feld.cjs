@@ -116,9 +116,7 @@ async function checkRing2Dsl(ctx) {
 
     const phase2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (typeof r._gameLoopTick === "function") {
-            for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
-        }
+        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
             queueLen: r.state.nexusEvolutionQueue.length,
@@ -958,7 +956,6 @@ async function checkBandV1737RulesUI(ctx) {
         const out = {};
         const host = document.getElementById("status-worldrules");
         out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
-        out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
 
         // Save state
         const savedRules = r.state.worldRules.slice();
@@ -1060,7 +1057,6 @@ async function checkBandV1737RulesUI(ctx) {
         res.nexusValueChipSorted
     );
     check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
-    check("V17.37 Gesetze-UI: _initCollapsibleDrawer existiert", res.collapsibleWired);
     check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     check(
         "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",

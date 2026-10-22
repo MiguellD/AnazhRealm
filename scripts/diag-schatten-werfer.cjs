@@ -876,7 +876,7 @@ function probe(selbsttest) {
     };
     if (boden) {
         const passeVoll = (kamera, nach) => {
-            // DIE ALTE REGEL (bis 05.10.): der Satz zeichnet den ganzen Ring in jedem Pass
+            // DIE ALTE REGEL: der Satz zeichnet den ganzen Ring in jedem Pass
             void kamera;
             void nach;
             boden.mesh.geometry.setDrawRange(0, boden.iSumme);

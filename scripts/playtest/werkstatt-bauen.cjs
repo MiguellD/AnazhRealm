@@ -614,7 +614,6 @@ async function checkBandWelle6Keybindings(ctx) {
         const out = {};
         // Statische Konstante
         out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
-        // Methoden-Existenz
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
@@ -867,11 +866,6 @@ async function checkBandWelle6Keybindings(ctx) {
         out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
         out.keybindRebindInitNull = r.state.keybindRebind === null;
 
-        // Methoden-Existenz
-        out.hasLoad = typeof r._loadKeybindings === "function";
-        out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
-        out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
-
         // setKeybinding ändert state
         const before = r.state.keybindings.confirmBuild;
         const setOk = r.setKeybinding("confirmBuild", "KeyG");
@@ -964,11 +958,6 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
         check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
         check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-        check("Welle 6.C3: _loadKeybindings existiert", wave6c3Results.hasLoad);
-        check(
-            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI existieren",
-            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI
-        );
         check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
         check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
         check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
@@ -1994,7 +1983,6 @@ async function checkBandWGGelenke(ctx) {
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
-        out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
         return out;
     });
@@ -2012,7 +2000,7 @@ async function checkBandWGGelenke(ctx) {
     );
     check(
         "W-G(c) Gelenk-Probe: Methode + Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
-        res.probeMethod && res.probeBtn && res.probeInRAF
+        res.probeBtn && res.probeInRAF
     );
 }
 

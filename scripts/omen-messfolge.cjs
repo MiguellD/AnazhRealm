@@ -13,8 +13,7 @@
 //   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
 //   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
 //   zählt nie; JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt · stufe · leck · weit · ungemessen) ebenso —
-//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26: bis 13.10. sah der Exit die Linse nie, 1110-12 meldete
-//   „12 von 12 GRÜN" bei 8 von 8 Band-Boots „linse ROT"). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
+//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -397,8 +396,7 @@ function tierUrteil(name, t) {
 // DIE BAND-MESSUNG SELBST (rein, 0910-1; der LESER K26): was die Band beim Zählen aufzeichnete — der gestellte Ort
 // (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf zählt nie),
 // das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt ·
-// stufe · leck · weit · ungemessen) als Befund. Bis 13.10. las die Folge nur Ort und Rahmen-Ziel, der Exit sah die Linse nie:
-// 1110-12 urteilte in 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0".
+// stufe · leck · weit · ungemessen) als Befund.
 // `basis` = die Band-Messung der Basis-Seite A des ABAB (`--basis`): eine Zeile, die A am selben Ort, Gerät und in derselben
 // Sicht trägt (derselbe Schlüssel, B nicht über A hinaus), ist kein Befund dieser Seite — sie bleibt der Befund von A.
 function bandBefunde(messung, basis) {

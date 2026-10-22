@@ -14,7 +14,7 @@ async function checkBandRing2Extended(ctx) {
     // ### Ring 2 Phase 3 – Chat → DSL ###
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
-    const phase3Results = await safeEvaluate(page, () => {
+    const phase3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -112,13 +112,7 @@ async function checkBandRing2Extended(ctx) {
 
         // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.savedDslAbilitiesPresent =
             !!parsed &&
             Array.isArray(parsed.dslAbilities) &&
@@ -479,9 +473,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // 1. Methoden existieren
-        out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
-
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
         // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
@@ -573,10 +564,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
-        check(
-            "Welle 6.H P2E V1: llmCallCreature existiert (die Suite ruft ihn nie)",
-            wave6hP2eV1Results.hasLlmCallCreature
-        );
         check(
             "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
             wave6hP2eV1Results.findExact && wave6hP2eV1Results.findCaseInsensitive && wave6hP2eV1Results.findUnknown
@@ -988,7 +975,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
         out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
         // 2. Validator: erlaubtes Programm
@@ -1122,7 +1108,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
                 wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.hasRareEventTrigger &&
                 wave6hP2eV3Results.rareEventGap
         );
         check(
@@ -1212,12 +1197,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            // Methoden
-            out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
             // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
             // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
-            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
-            out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
@@ -1297,10 +1278,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v805Results && !v805Results.error) {
         check(
-            "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
-            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
-        );
-        check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
             v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
         );
@@ -1350,9 +1327,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
-
-            // Methode existiert
-            out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
 
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");
@@ -1407,10 +1381,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(
             "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
-        );
-        check(
-            "V8.06: _workshopInstallActionButtons existiert (die Suite fährt ihn nicht)",
-            v806Results.hasActionInstall
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,

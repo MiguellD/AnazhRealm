@@ -125,8 +125,7 @@ function zugVerdict(m) {
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
     // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
-    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
-    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag.
     const vr = m.vorrat;
     if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
     else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
@@ -1278,7 +1277,7 @@ async function probe(arg) {
         const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
         const scan = r._voxelSurfaceY;
         const urteil = r._landAt;
-        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
+        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz): 3 Margen, je 400 Punkte
         //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
         const ref = (x, z, mg) => {
             const s = scan.call(r, x, z);

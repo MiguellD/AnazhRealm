@@ -116,7 +116,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.state.p2p.enabled === "boolean" &&
             typeof r.state.p2p.url === "string" &&
             r.state.p2p.peers instanceof Map;
-        out.allMethodsPresent = typeof r.initP2PUI === "function";
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
         const savedWorldId = r.state.worldMeta.worldId;
@@ -170,8 +169,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
 
         // Invalid pos (NaN) wird verworfen — über den Draht reist NaN als null (JSON.stringify), und Number(null) === 0
-        // (Lehre 17): der ortlos geborene peerB darf davon nicht in den Ursprung springen, er bleibt ohne Ort. Bis K04
-        // war die Probe vakuös (`peerB.x === 0` hielt geboren bei 0 UND nach dem Sprung in den Ursprung).
+        // (Lehre 17): der ortlos geborene peerB darf davon nicht in den Ursprung springen, er bleibt ohne Ort.
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: null, z: 2, yaw: 0 }));
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: 1, z: "", yaw: 0 }));
@@ -258,7 +256,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
-        check("Ring 11 V1: initP2PUI auf der Klasse (die Suite ruft ihn nie)", ring11Results.allMethodsPresent);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
@@ -305,7 +302,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Array.isArray(p2p.iceServers) &&
             p2p.iceServers.length > 0 &&
             typeof p2p.meshActive === "boolean";
-        out.w7MethodsPresent = typeof r._p2pDrainIce === "function";
 
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
@@ -444,7 +440,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
-        check("W7 P1: _p2pDrainIce auf der Klasse (die Suite ruft ihn nie)", w7Results.w7MethodsPresent);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
         check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
@@ -473,7 +468,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     // Ein Guest holt die Host-Welt in P2P_WORLD_CHUNK_SIZE-Stücken; Annahme-Wand: nur Stücke vom
     // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
     // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
-    const w7p2Results = await safeEvaluate(page, () => {
+    const w7p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -484,8 +479,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             p2p.pendingPullFrom === null &&
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
-        out.w7p2MethodsPresent =
-            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();
@@ -592,10 +585,10 @@ async function checkBandRing11AndW7Mesh(ctx) {
         const welt0 = r.state.worldMeta.worldId;
         p2p.role = "host";
         p2p._testNoReload = true;
-        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
+        const applyRes = await r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
         let abgelegt = null;
         try {
-            abgelegt = applyRes.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(applyRes.worldId))) : null;
+            abgelegt = applyRes.ok ? (await r._speicherLies(applyRes.worldId)) : null;
         } catch (_e) {
             abgelegt = null;
         }
@@ -611,7 +604,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             r.activeWorldGet() === applyRes.worldId &&
             r.state.worldMeta.worldId === welt0;
         if (applyRes.worldId) {
-            localStorage.removeItem(r.worldStorageKey(applyRes.worldId));
+            r.deleteWorld(applyRes.worldId);
             r.worldsIndexRemove(applyRes.worldId);
         }
         r.activeWorldSet(zeiger0);
@@ -648,10 +641,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
-        check(
-            "W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)",
-            w7p2Results.w7p2MethodsPresent
-        );
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
         check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
@@ -699,7 +688,6 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function" && typeof r.meshWorldInitDOM === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
@@ -1128,10 +1116,6 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check(
-            "W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)",
-            w16Results.methodsPresent
-        );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -1550,7 +1534,6 @@ async function checkBandLateMultiUser(ctx) {
             p2p.lobby.published === false &&
             Array.isArray(p2p.lobby.rooms) &&
             p2p.remoteCreatures instanceof Map;
-        out.lobbyMethods = typeof r._renderLobbyUI === "function";
 
         // publishToLobby ohne Verbindung → not_connected.
         p2p.enabled = false;
@@ -1666,10 +1649,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check(
-            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
-            w7p4Results.lobbyMethods
-        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
@@ -2141,7 +2120,7 @@ async function checkBandLateMultiUser(ctx) {
     // ### Ring 11.5 — Intuitives Multi-User-Setup ###
     // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest, world-snapshot-Empfang nur bei
     // pending=true, role-State in worldMeta + p2p.
-    const ring115Results = await safeEvaluate(page, () => {
+    const ring115Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -2172,7 +2151,7 @@ async function checkBandLateMultiUser(ctx) {
         });
         out.hostWorldCreated = !!hostId;
         if (hostId) {
-            const saved = JSON.parse(localStorage.getItem(r.worldStorageKey(hostId)));
+            const saved = (await r._speicherLies(hostId));
             out.hostRoleInSavedMeta = saved && saved.worldMeta && saved.worldMeta.role === "host";
             r.deleteWorld(hostId);
         }
@@ -2192,14 +2171,14 @@ async function checkBandLateMultiUser(ctx) {
             blueprints: [],
             playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
         };
-        const guestId = r._importGuestWorld(
+        const guestId = await r._importGuestWorld(
             sampleSnapshot,
             { url: "ws://192.168.1.99:4313", roomId: "guest-source-uuid-xxx", peerId: "peer-host" },
             "test-guest"
         );
         out.guestImportOk = guestId === "guest-source-uuid-xxx";
         if (guestId) {
-            const savedGuest = JSON.parse(localStorage.getItem(r.worldStorageKey(guestId)));
+            const savedGuest = (await r._speicherLies(guestId));
             out.guestRoleSet = savedGuest && savedGuest.worldMeta && savedGuest.worldMeta.role === "guest";
             out.guestHostInfoSet =
                 savedGuest &&

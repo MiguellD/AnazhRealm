@@ -106,19 +106,27 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   ohne `worldId` oder ohne `worldMeta` ist die Welt DIESES Platzes), in eine neue Welt die Wahl
   des Schöpfers (`visibility`, `creator`); die Gedächtnisse der Seite, die welt-eigene Felder
   spiegeln, fallen mit dem `worldMeta`.
-- **Die Rettungs-Kette:** der Speicher liest eine Welt durch EINE Kette (`_weltRettungsKette`):
-  der Platz (IndexedDB gewinnt nur, wenn er nachweislich frischer ist), fehlt er oder ist er
-  korrupt der `.bak`, sonst IndexedDB. Der Boot fragt sie, BEVOR er eine neue Id vergibt; eine
-  neue Welt erwacht nur, wenn alle drei leer sind — und dann laut (Log + Chat: was gefunden,
-  warum frisch; `gate:boot-rettung`).
+- **Die Platte:** die Welten liegen im Speicher-Faden (`speicher-worker.js`, IndexedDB im Worker):
+  das Abbild (die Bytes des vollen Snapshots), der Kopf und das Journal je Save, der `.bak` (der
+  Stand vor dem letzten Abbild); jedes Schreiben ist EINE Transaktion. Ein Save meldet nur die
+  Änderung (der Kopf, die Edits, die Bauten je Schlüssel, Leib und Inventar als Register), der
+  Faden verdichtet; das ganze Abbild reist nur an der Weltgrenze (`gate:persistence` J). Im
+  localStorage stehen nur der Index der Welten und der Aktiv-Zeiger.
+- **Die Rettungs-Kette:** der Speicher liest eine Welt durch EINE Kette (der Faden,
+  `_weltRettungsKette` liest ihren Fund): das Abbild mit Kopf und Journal, ist es korrupt der
+  `.bak`. Der Boot fragt sie, BEVOR er eine neue Id vergibt (zuvor zieht der Vorlauf den alten
+  localStorage-Spiegel EINMAL auf die Platte, der jüngere Stand gewinnt); eine neue Welt erwacht
+  nur, wenn alles leer ist — und dann laut (Log + Chat: was gefunden, warum frisch;
+  `gate:boot-rettung`).
 - **Die Tür:** eine fremde Welt betritt Seite und Speicher nur durch `_weltBetreten` (Welt-Tor
   ersetzen und daneben legen, Snapshot eines Mitspielers, world-pull, Beitritt per Einladung und
   Adress-Portal über `_importGuestWorld`, dessen Gast-Felder Parameter der Tür sind) — nie lädt
   die Seite sie in sich, und `loadState` legt nichts im Speicher ab. Zuerst sichert sich die Welt
   der Seite (sie ist noch ganz sie selbst); ohne `worldId` bekommt die neue ihre eigene
   (`_neueWeltId`), nie den Platz der Welt davor (die bleibt unter ihrer Id); sie liegt, wie sie
-  kam, unter ihrer Id (`_weltAblegen`, mit Probe — die EINE Ablage, neben saveState der einzige
-  Schreiber einer ganzen Welt; auch Geburt, Fusion und Legacy-Migration legen durch sie ab).
+  kam, unter ihrer Id auf der Platte (`_weltAblegen`, mit Probe — die EINE Ablage, neben saveState
+  der einzige Schreiber einer ganzen Welt; auch Geburt, Fusion und Legacy-Migration legen durch sie
+  ab); der Reload folgt erst, wenn sie fest ist.
   Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und sagt es laut — kein Reload in
   einen alten Stand. Jeder Welt-Wechsel lädt über `_weltWechselNeuLaden` neu: ab dort verweigert
   `saveState` laut (WARN; „speichere zustand" sagt es dem Spieler), bis die Seite stirbt; der

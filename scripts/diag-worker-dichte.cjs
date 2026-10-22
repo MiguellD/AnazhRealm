@@ -70,7 +70,7 @@ async function boote(page) {
         const start = performance.now();
         for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
             const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
+            if (r) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
@@ -195,7 +195,7 @@ async function probe(page, welt, mitAbdruck) {
             // seinem höchsten Grund (jede Spalte ist Grundwasser-Quelle, `_aquiferTrocken`), dieselbe Saat (jede Rand-Spalte
             // nass) im Sync-Bau des Mains (`_buildVoxelChunkWaterCells`) und im Worker (`chunk-mesh`, samt dem Stempel der Werke,
             // den der Main danach setzt): die Wasser-Zellen Wort für Wort gleich, und die Saat ändert sie in beiden (ohne Wirkung
-            // wäre die Probe stumpf). Bis K69-2 kannte der Worker keine Saat: der Carve-Neubau lief im Haupt-Faden.
+            // wäre die Probe stumpf).
             // der erste Ort, dessen Grund im Wasser-Band liegt (zuerst der Fluss-Chunk; am Hang liegt das Band unter dem Fels)
             for (const o of orte.slice().reverse()) {
                 const cfg = r._voxelChunkConfig(0);
@@ -454,11 +454,9 @@ async function probe(page, welt, mitAbdruck) {
             }
             out.warteAck = typeof warteAck === "function";
             // Das lebende Erbgut (die Bühne MUSS ihre Terme tragen, sonst verglich die Linse eine Wildnis-Welt).
-            if (typeof r._erbgut === "function") {
-                const E = r._erbgut();
-                out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
-                out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
-            }
+            const E = r._erbgut();
+            out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
+            out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
             // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
             // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
             // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).
@@ -677,8 +675,7 @@ function realismusLage(K, Z, saat) {
 // 2,4–3,5 µs (26 noise2D)"). Gemessen wird, was der Chunk-Bau zahlt: die WARME Spalte (das Netz-Gedächtnis je Zelle steht —
 // der Bau tastet in 1,8 m, derselbe Raster um 7,3 m versetzt) plus das kalte Gedächtnis, umgelegt auf die 1,8-m-Spalten
 // seiner Fläche; als noise2D-Äquivalent derselben vm, so fällt die Uhr des Holzes heraus (die Eichung der Karte: 2,95 µs =
-// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser. Bis 12.10. maß die Linse kalte µs auf dem
-// 30-m-Raster (25–47 µs unter Last: das Gedächtnis je Zelle auf 1/278 der Spalten des Spiels verteilt) und urteilte nicht.
+// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser.
 const SPALTEN_BUDGET = Object.freeze({ alle: 52.9, ebenen: 26.4, eichungUsJeNoise: 2.95 / 26 });
 function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
     const off = 7.3;
@@ -1686,9 +1683,9 @@ async function gebaut(page, fehler) {
                 fs.readFileSync(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"), "utf8")
             ).stationen;
             // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
-            const id = await page.evaluate((json) => {
+            const id = await page.evaluate(async (json) => {
                 const r = window.anazhRealm;
-                const res = r.importWorldBeside(json);
+                const res = await r.importWorldBeside(json);
                 if (!res.ok) return null;
                 r.activeWorldSet(res.worldId);
                 return res.worldId;

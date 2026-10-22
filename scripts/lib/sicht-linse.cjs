@@ -49,8 +49,7 @@ const SICHT_SCHREIB = "_chunkSatzSchreib";
 // Abschnitt, der sich ohne Schuld dicht neu legt, kein Byte mehr — wohl aber den Gang über jede seiner Zellen. Die Linse
 // bucht darum den Gang selbst (die Indizes, die `_chunkSatzDicht` ab der ersten Abweichung prüft) beim Grund wie die Bytes.
 const SICHT_LEGE = "_chunkSatzDicht";
-// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN — jeder Leser der Pass-Wahl. Bis K72 nahm die Linse die Werfer der Region-
-// Bündel aus („eine Handvoll Bündel-Hüllen je Schatten-Pass"); gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe) prüfte
+// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN — jeder Leser der Pass-Wahl. Auch die Werfer der Region-Bündel: gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe) prüfte
 // `_werferWahlPass` je Kaskaden-Render 18–37 Körper in 22 Gängen über die Kinder der Bündel — in jedem Render dieselbe Wahl.
 // Der echte Loop: höchstens so viele Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
 const RUHE_EREIGNIS = 0.05;
@@ -1053,9 +1052,8 @@ function sichtUrteil(b) {
             );
     }
     // der Lege-Bruch (`b.legeBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es schuldet —
-    // die Linse muss das Neulegen OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen. Bis K71 hieß er
-    // Byte-Bruch und zählte Bytes; seit der vergleichende Schreiber (`_satzSetze`) nur Geändertes lädt, legt derselbe Bruch
-    // 0 Bytes (die Linse stand STUMPF, CI 38714975114) — sein Preis ist der Gang über die Zellen, und den zählt sie.
+    // die Linse muss das Neulegen OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen. Der vergleichende Schreiber
+    // (`_satzSetze`) lädt nur Geändertes, der Bruch legt 0 Bytes — sein Preis ist der Gang über die Zellen, und den zählt sie.
     if (b.legeBruch !== undefined) {
         const x = b.legeBruch;
         if (!x || !(x.legeOhneFrames > 0) || !Object.keys(x.legeOhneJe || {}).some((k) => / dicht:ohne /.test(k)))

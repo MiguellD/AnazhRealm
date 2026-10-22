@@ -50,7 +50,7 @@ function ortOf(haushalt, id) {
 }
 
 // DIE RATSCHE JE ORT × GERÄT × SICHT (K26): die Kosten eines Orts sind auf der Radeon (iGPU) andere als auf der GTX (alte
-// dGPU) und in der Ego-Sicht andere als in Third-Person — gemessen wurde bis 13.10. auf der Radeon, gerichtet auf der GTX.
+// dGPU) und in der Ego-Sicht andere als in Third-Person.
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
@@ -126,10 +126,7 @@ function ortGier(ort) {
 }
 
 // DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
-// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Bis 07.10. nahm die
-// Linse den Ort aus dem Aufruf (`band --ort`) und prüfte nur den Abstand des Spielers: eine Serie mit laufendem Dorf-Zug
-// oder anderem Blick zog die Ratsche eines Orts, dessen Zustand sie nie hatte. Ein Lauf ohne Aufzeichnung (vor dem
-// 07.10.) ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
+// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne Aufzeichnung ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
 // gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
 function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
@@ -211,7 +208,7 @@ function messortePruefen(h) {
             }
         } else if (o.ratsche !== undefined)
             // Die Datei folgt aus Ort × Gerät × Sicht (`ratsche-<ort>-<gerät>-<sicht>.json`, K26) — ein genannter Name wäre EINE
-            // Ratsche für alle Geräte und Sichten (bis 13.10.: auf der Radeon gemessen, auf der GTX gerichtet).
+            // Ratsche für alle Geräte und Sichten.
             f.push(`${o.id}: ratsche ${o.ratsche} — die Ratsche folgt aus Ort × Gerät × Sicht, kein Ort nennt eine Datei`);
         // Eine Soll-Zeile: die Hülle EINES Exemplars der Art `art` im Pass `pass` — auf EINER Stufe (`stufe`, die Tor-Hülle
         // L0) oder über mehrere (`stufen`, der Wurf: was in der Kaskade für die Art wirft, gleich welche Stufe es ist).
@@ -1047,8 +1044,7 @@ function versionAbstand(kopf, gemessen) {
 // H2b DIE FRISCHE (K26, rein): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht), steht gemessen, an
 // höchstens einer Version vor dem Kopf, an ihrem Ort, Gerät und in ihrer Sicht; ihre Gesamt-Zeile ist höchstens die Summe der
 // Klassen (darüber feuert sie nie — die Mess-Wiese trug 4 095 487 Dreiecke über 1 295 324); und gegen jede gegebene Messung
-// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen
-// 05.–11.10. auf der Radeon, gerichtet auf der GTX, nie nachgezogen.
+// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit.
 function ratscheFrische({ haushalt, version, ratschen, messungen }) {
     const rot = [];
     const paesse = haushalt.paesse;

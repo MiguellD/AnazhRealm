@@ -131,7 +131,7 @@ async function checkBandRing8(ctx) {
     // ### Ring 8 — Multi-Welt-Verwaltung ###
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
-    const ring8Results = await safeEvaluate(page, () => {
+    const ring8Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -215,8 +215,7 @@ async function checkBandRing8(ctx) {
         }
         // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
         // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
-        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
-        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben.
         {
             const fremd = () => ({
                 worldMeta: {
@@ -229,10 +228,14 @@ async function checkBandRing8(ctx) {
             const zeiger0 = r.activeWorldGet();
             const welt0 = r.state.worldMeta;
             const p2pRolle0 = r.state.p2p.role;
-            const daneben = r.importWorldBeside(fremd());
-            const gast = r._importGuestWorld(fremd(), { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" }, null);
+            const daneben = await r.importWorldBeside(fremd());
+            const gast = await r._importGuestWorld(
+                fremd(),
+                { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" },
+                null
+            );
             r.state.p2p.pendingWorldSnapshot = true;
-            const mitspieler = r._p2pApplyWorldSnapshot("tuer-peer", fremd());
+            const mitspieler = await r._p2pApplyWorldSnapshot("tuer-peer", fremd());
             out.erbgutTueren = {
                 daneben: daneben && daneben.ok === false && /unbekannte Term-Art/.test(daneben.reason),
                 gast: gast === null,
@@ -240,7 +243,7 @@ async function checkBandRing8(ctx) {
                 index: r.worldsIndexLoad().length === index0,
                 zeiger: r.activeWorldGet() === zeiger0,
                 welt: r.state.worldMeta === welt0 && r.state.p2p.role === p2pRolle0,
-                gespeichert: localStorage.getItem(r.worldStorageKey("w-tuer-korridor")) === null,
+                gespeichert: (await r._speicherLies("w-tuer-korridor")) === null,
             };
             r.state.p2p.pendingWorldSnapshot = false;
         }
@@ -280,7 +283,7 @@ async function checkBandRing8(ctx) {
             r.state.player.tools.push("übernahme-marker");
         }
         const inheritId = r.createNewWorld({ slug: "test-mit-person", inheritPlayer: true, reload: false });
-        const inheritSave = JSON.parse(localStorage.getItem(r.worldStorageKey(inheritId)) || "{}");
+        const inheritSave = (await r._speicherLies(inheritId)) || {};
         out.inheritCarriesPlayerSoul = inheritSave.playerSoul === "bp_koerper_wolf";
         out.inheritCarriesPlayerTools =
             Array.isArray(inheritSave.playerTools) && inheritSave.playerTools.includes("übernahme-marker");
@@ -288,21 +291,21 @@ async function checkBandRing8(ctx) {
             Array.isArray(inheritSave.tools) && inheritSave.tools.some((t) => t && t.name === "übernahme-marker");
         // Frische Welt: keine Übernahme = leere Spieler-Tools (nur Starter beim Init aufgesetzt)
         const freshId = r.createNewWorld({ slug: "test-fresh", inheritPlayer: false, reload: false });
-        const freshSave = JSON.parse(localStorage.getItem(r.worldStorageKey(freshId)) || "{}");
+        const freshSave = (await r._speicherLies(freshId)) || {};
         out.freshNoInheritedSoul = freshSave.playerSoul === "human";
         out.freshNoInheritedTools = Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
         // Voxel ist permanent + irreversibel: createNewWorld setzt worldMeta.voxelTerrain=true, auch ein
         // explizites voxelTerrain:false wird ignoriert (Parameter entfernt + Sanitizer-Zwang).
         const voxelId = r.createNewWorld({ slug: "test-voxel-welt", reload: false });
-        const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
+        const voxelSave = (await r._speicherLies(voxelId)) || {};
         out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
         const classicId = r.createNewWorld({
             slug: "test-heightfield-welt",
             reload: false,
             voxelTerrain: false,
         });
-        const classicSave = JSON.parse(localStorage.getItem(r.worldStorageKey(classicId)) || "{}");
+        const classicSave = (await r._speicherLies(classicId)) || {};
         out.optOutForcedToVoxel = !!(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
 
         // switchToWorld auf eine existierende Welt (der Wechsel samt Reload: gate:boot-rettung „mehrere")
@@ -321,7 +324,7 @@ async function checkBandRing8(ctx) {
         out.deleteReturnedTrue = delOk === true;
         const afterDelete = r.worldsIndexLoad();
         out.indexShrunkByOne = afterDelete.length === beforeDelete - 1;
-        out.deletedSaveGone = localStorage.getItem(r.worldStorageKey(freshId)) === null;
+        out.deletedSaveGone = (await r._speicherLies(freshId)) === null;
 
         // Aufräumen: alle Test-Welten weg, active zurück auf Original
         r.activeWorldSet(activeId);
@@ -433,7 +436,7 @@ async function checkBandRing8(ctx) {
     // ### Ring 8.1 — Per-Welt-Seed ###
     // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
     // liefern verschiedene Geometrie.
-    const ring81Results = await safeEvaluate(page, () => {
+    const ring81Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -445,8 +448,8 @@ async function checkBandRing8(ctx) {
         // gespeicherten Seeds aus dem Per-Welt-Save lesen.
         const aId = r.createNewWorld({ slug: "seed-a", inheritPlayer: false, reload: false });
         const bId = r.createNewWorld({ slug: "seed-b", inheritPlayer: false, reload: false });
-        const aSave = JSON.parse(localStorage.getItem(r.worldStorageKey(aId)) || "{}");
-        const bSave = JSON.parse(localStorage.getItem(r.worldStorageKey(bId)) || "{}");
+        const aSave = (await r._speicherLies(aId)) || {};
+        const bSave = (await r._speicherLies(bId)) || {};
         const seedA = aSave.worldMeta && aSave.worldMeta.seed;
         const seedB = bSave.worldMeta && bSave.worldMeta.seed;
         out.newWorldAHasSeed = typeof seedA === "string" && seedA.length > 0;
@@ -593,7 +596,7 @@ async function checkBandRing9to10(ctx) {
     // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
-    const ring9Results = await safeEvaluate(page, () => {
+    const ring9Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -632,13 +635,13 @@ async function checkBandRing9to10(ctx) {
             playerSoul: "human",
         };
         const beforeCount = r.worldsIndexLoad().length;
-        const result = r.importWorldBeside(importedSnapshot, { reload: false });
+        const result = await r.importWorldBeside(importedSnapshot, { reload: false });
         out.besideReturnedOk = !!(result && result.ok);
         out.besideReturnedNewWorldId = result.worldId && result.worldId !== originalSrcId;
         out.besideReturnedSlug = result.slug === "test-fremd";
         out.indexGrewByOne = r.worldsIndexLoad().length === beforeCount + 1;
         // Per-Welt-Save geschrieben
-        const newSave = JSON.parse(localStorage.getItem(r.worldStorageKey(result.worldId)) || "{}");
+        const newSave = (await r._speicherLies(result.worldId)) || {};
         out.newSaveHasOwnWorldId = newSave.worldMeta && newSave.worldMeta.worldId === result.worldId;
         out.newSaveKeepsSeed = newSave.worldMeta && newSave.worldMeta.seed === "fremd-seed-xyz";
         out.newSaveTracksParent =
@@ -657,7 +660,7 @@ async function checkBandRing9to10(ctx) {
         out.activeNotImport = r.activeWorldGet() !== result.worldId;
 
         // Slug-Kollision: nochmal mit gleichem Slug importieren
-        const result2 = r.importWorldBeside(importedSnapshot, { reload: false });
+        const result2 = await r.importWorldBeside(importedSnapshot, { reload: false });
         out.collisionResolved = result2.ok && /^test-fremd(-\d+)?$/.test(result2.slug) && result2.slug !== "test-fremd";
 
         // _openWeltTorDialog setzt pendingImport
@@ -677,9 +680,9 @@ async function checkBandRing9to10(ctx) {
         const journalless = {
             worldMeta: { worldId: "no-journal-src", slug: "test-stumm", bornAt: Date.now() },
         };
-        const journallessResult = r.importWorldBeside(journalless, { reload: false });
+        const journallessResult = await r.importWorldBeside(journalless, { reload: false });
         if (journallessResult.ok) {
-            const noJsSave = JSON.parse(localStorage.getItem(r.worldStorageKey(journallessResult.worldId)) || "{}");
+            const noJsSave = (await r._speicherLies(journallessResult.worldId)) || {};
             out.journallessGetsWitness =
                 noJsSave.worldJournal &&
                 Array.isArray(noJsSave.worldJournal.entries) &&
@@ -734,7 +737,7 @@ async function checkBandRing9to10(ctx) {
     // ### Ring 10 — Welt-Fusion ###
     // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
     // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
-    const ring10Results = await safeEvaluate(page, () => {
+    const ring10Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -765,12 +768,12 @@ async function checkBandRing9to10(ctx) {
         });
         // Direkt in die Per-Welt-Saves schreiben (ohne reload),
         // damit Parent-Saves spezifische Inhalte tragen.
-        const saveA = JSON.parse(localStorage.getItem(r.worldStorageKey(parentAId)));
+        const saveA = await r._speicherLies(parentAId);
         saveA.materials = [{ name: "quarz-fein", label: "Quarz fein", color: "#fff", tags: { resoniert: 0.9 } }];
         saveA.playerEmotions = { joy: 0.9, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
         saveA.dslHistory = [{ id: 1, fitness: 0.8, program: ["weather", "sunny"] }];
-        localStorage.setItem(r.worldStorageKey(parentAId), JSON.stringify(saveA));
-        const saveB = JSON.parse(localStorage.getItem(r.worldStorageKey(parentBId)));
+        await r._weltAblegen(saveA, { aktiv: false });
+        const saveB = await r._speicherLies(parentBId);
         saveB.blueprints = [
             {
                 name: "tempel-besonderer",
@@ -788,15 +791,15 @@ async function checkBandRing9to10(ctx) {
         ];
         saveB.playerEmotions = { joy: 0, awe: 0.9, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
         saveB.dslHistory = [{ id: 1, fitness: 0.7, program: ["weather", "rainy"] }];
-        localStorage.setItem(r.worldStorageKey(parentBId), JSON.stringify(saveB));
+        await r._weltAblegen(saveB, { aktiv: false });
 
         // Strategie SEQUENZ
-        const seqResult = r.fuseWorlds(parentAId, parentBId, "sequence", {
+        const seqResult = await r.fuseWorlds(parentAId, parentBId, "sequence", {
             slug: "test-seq",
             reload: false,
         });
         out.seqOk = seqResult.ok;
-        const seqSave = seqResult.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(seqResult.worldId))) : null;
+        const seqSave = seqResult.ok ? await r._speicherLies(seqResult.worldId) : null;
         out.seqHasBothInventories =
             !!seqSave &&
             seqSave.materials.some((m) => m.name === "quarz-fein") &&
@@ -819,12 +822,12 @@ async function checkBandRing9to10(ctx) {
         out.seqFusionStrategyInMeta = !!seqSave && seqSave.worldMeta.fusionStrategy === "sequence";
 
         // Strategie TAG-MERGE
-        const tagResult = r.fuseWorlds(parentAId, parentBId, "tag-merge", {
+        const tagResult = await r.fuseWorlds(parentAId, parentBId, "tag-merge", {
             slug: "test-tag",
             reload: false,
         });
         out.tagOk = tagResult.ok;
-        const tagSave = tagResult.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(tagResult.worldId))) : null;
+        const tagSave = tagResult.ok ? await r._speicherLies(tagResult.worldId) : null;
         out.tagEmotionUnion =
             !!tagSave &&
             Math.abs(tagSave.playerEmotions.joy - 0.9) < 0.01 &&
@@ -835,12 +838,12 @@ async function checkBandRing9to10(ctx) {
             tagSave.blueprints.some((b) => b.name === "tempel-besonderer");
 
         // Strategie RANDOM-MIX
-        const mixResult = r.fuseWorlds(parentAId, parentBId, "random-mix", {
+        const mixResult = await r.fuseWorlds(parentAId, parentBId, "random-mix", {
             slug: "test-mix",
             reload: false,
         });
         out.mixOk = mixResult.ok;
-        const mixSave = mixResult.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(mixResult.worldId))) : null;
+        const mixSave = mixResult.ok ? await r._speicherLies(mixResult.worldId) : null;
         out.mixEmotionAverage =
             !!mixSave &&
             Math.abs(mixSave.playerEmotions.joy - 0.45) < 0.01 &&
@@ -853,11 +856,11 @@ async function checkBandRing9to10(ctx) {
             Math.abs(tagSave.playerEmotions.awe - mixSave.playerEmotions.awe) > 0.1;
 
         // Fehlerpfade
-        const sameId = r.fuseWorlds(parentAId, parentAId, "sequence", { reload: false });
+        const sameId = await r.fuseWorlds(parentAId, parentAId, "sequence", { reload: false });
         out.rejectsSameId = sameId.ok === false;
-        const badStrategy = r.fuseWorlds(parentAId, parentBId, "nonsense", { reload: false });
+        const badStrategy = await r.fuseWorlds(parentAId, parentBId, "nonsense", { reload: false });
         out.rejectsBadStrategy = badStrategy.ok === false;
-        const missingId = r.fuseWorlds("does-not-exist", parentBId, "sequence", { reload: false });
+        const missingId = await r.fuseWorlds("does-not-exist", parentBId, "sequence", { reload: false });
         out.rejectsMissingParent = missingId.ok === false;
 
         // Stammbaum-Render-Pfad: aktive Welt hat keine parentWorlds,
@@ -880,7 +883,7 @@ async function checkBandRing9to10(ctx) {
         // und fractal.part.refName MÜSSEN mitumbenannt werden, sonst dangling.
         const cascadeAId = r.createNewWorld({ slug: "cascade-a", inheritPlayer: false, reload: false });
         const cascadeBId = r.createNewWorld({ slug: "cascade-b", inheritPlayer: false, reload: false });
-        const cA = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeAId)));
+        const cA = await r._speicherLies(cascadeAId);
         cA.blueprints = [
             {
                 name: "kollidierer",
@@ -896,8 +899,8 @@ async function checkBandRing9to10(ctx) {
                 connections: [],
             },
         ];
-        localStorage.setItem(r.worldStorageKey(cascadeAId), JSON.stringify(cA));
-        const cB = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeBId)));
+        await r._weltAblegen(cA, { aktiv: false });
+        const cB = await r._speicherLies(cascadeBId);
         cB.blueprints = [
             {
                 name: "kollidierer",
@@ -931,11 +934,9 @@ async function checkBandRing9to10(ctx) {
                 sourceBlueprint: "kollidierer",
             },
         ];
-        localStorage.setItem(r.worldStorageKey(cascadeBId), JSON.stringify(cB));
-        const cascadeResult = r.fuseWorlds(cascadeAId, cascadeBId, "sequence", { reload: false });
-        const cascadeSave = cascadeResult.ok
-            ? JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeResult.worldId)))
-            : null;
+        await r._weltAblegen(cB, { aktiv: false });
+        const cascadeResult = await r.fuseWorlds(cascadeAId, cascadeBId, "sequence", { reload: false });
+        const cascadeSave = cascadeResult.ok ? await r._speicherLies(cascadeResult.worldId) : null;
         out.cascadeFusionOk = !!cascadeResult.ok;
         out.cascadeKeepsAOriginal =
             !!cascadeSave && cascadeSave.blueprints.some((bp) => bp.name === "kollidierer" && bp.label === "A-Version");
@@ -1012,13 +1013,13 @@ async function checkBandRing9to10(ctx) {
     // ### Ring 10.1 — Rezepte aus anderer Welt holen (ohne Fusion) ###
     // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
     // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
-    const recipeResults = await safeEvaluate(page, () => {
+    const recipeResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
         const srcId = r.createNewWorld({ slug: "recipe-source", inheritPlayer: false, reload: false });
-        const srcSave = JSON.parse(localStorage.getItem(r.worldStorageKey(srcId)));
+        const srcSave = await r._speicherLies(srcId);
         srcSave.blueprints = [
             {
                 name: "fremder-altar",
@@ -1069,13 +1070,13 @@ async function checkBandRing9to10(ctx) {
                 sourceBlueprint: "fremder-hammer-bp",
             },
         ];
-        localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
+        await r._weltAblegen(srcSave, { aktiv: false });
 
         const beforeBPCount = Object.keys(r.state.blueprints).length;
         const beforeMatCount = Object.keys(r.state.materials).length;
         const beforeToolCount = Object.keys(r.state.tools).length;
 
-        const result = r.importRecipesFromWorld(srcId);
+        const result = await r.importRecipesFromWorld(srcId);
         out.importOk = result.ok === true;
         out.importCounts =
             result.ok && result.counts.blueprints === 3 && result.counts.materials === 1 && result.counts.tools === 1;
@@ -1093,7 +1094,7 @@ async function checkBandRing9to10(ctx) {
         out.matStateGrew = Object.keys(r.state.materials).length - beforeMatCount === 1;
         out.toolStateGrew = Object.keys(r.state.tools).length - beforeToolCount === 1;
 
-        const result2 = r.importRecipesFromWorld(srcId);
+        const result2 = await r.importRecipesFromWorld(srcId);
         out.secondImportOk = result2.ok === true;
         out.collisionAddsImportSuffix = !!r.state.blueprints["fremder-altar-import"];
         const fraktalImport = r.state.blueprints["fremder-fraktal-import"];
@@ -1104,12 +1105,12 @@ async function checkBandRing9to10(ctx) {
         const hammerImport = r.state.tools["fremder-hammer-import"];
         out.toolRefRewired = !!hammerImport && hammerImport.sourceBlueprint === "fremder-hammer-bp-import";
 
-        const noId = r.importRecipesFromWorld("");
+        const noId = await r.importRecipesFromWorld("");
         out.rejectsEmptyId = !noId.ok;
         const activeId = r.state.worldMeta.worldId;
-        const selfImport = r.importRecipesFromWorld(activeId);
+        const selfImport = await r.importRecipesFromWorld(activeId);
         out.rejectsSelfImport = !selfImport.ok;
-        const ghostImport = r.importRecipesFromWorld("does-not-exist-xxx");
+        const ghostImport = await r.importRecipesFromWorld("does-not-exist-xxx");
         out.rejectsGhostId = !ghostImport.ok;
 
         r._renderWorldPicker();
@@ -1182,7 +1183,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const translatorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r.translatorInitDOM === "function";
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
         const prompt = r._buildTranslatorPrompt();
@@ -1291,7 +1291,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (translatorResults && !translatorResults.error) {
-        check("KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)", translatorResults.methods);
         check(
             "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
             translatorResults.promptNamesSchema
@@ -1363,7 +1362,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const transl2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r._runWorldBuild === "function";
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
         // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
@@ -1527,7 +1525,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (transl2Results && !transl2Results.error) {
-        check("KI-Übersetzer P2: _runWorldBuild existiert (die Suite ruft ihn nie)", transl2Results.methods);
         check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
         check(
             "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
@@ -1750,10 +1747,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostBundle === "function" &&
-            typeof r._runVendorDock === "function" &&
-            typeof r.vendorInitDOM === "function";
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
@@ -1861,10 +1854,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendorResults && !vendorResults.error) {
-        check(
-            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock/vendorInitDOM existieren (die Suite ruft sie nie)",
-            vendorResults.methods
-        );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
         check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
         check(
@@ -1930,10 +1919,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostRepo === "function" &&
-            typeof r._vendorPostJson === "function" &&
-            typeof r._runVendorRepoDock === "function";
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
         const origBundle = r._vendorPostBundle;
@@ -2031,10 +2016,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendor2Results && !vendor2Results.error) {
-        check(
-            "W15 GitHub-Fetch: _vendorPostRepo/_vendorPostJson/_runVendorRepoDock existieren (die Suite ruft sie nie)",
-            vendor2Results.methods
-        );
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
         check(
@@ -2210,22 +2191,13 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND (V18.151): wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
-// in IndexedDB (der Rundlauf, der Spiegel und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
+// DIE QUOTA-WAND (V18.151, Karte speicher-journal): wirft localStorage, bricht die Sicherung nicht — die Welt liegt auf der
+// Platte des Speicher-Fadens (der localStorage trägt nur Index und Zeiger; den Rundlauf fährt gate:persistence J und T).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const worldId = r.state.worldMeta && r.state.worldMeta.worldId;
         const origSet = Storage.prototype.setItem;
-        let threw = false;
-        const warn = [];
-        const eigenLog = Object.prototype.hasOwnProperty.call(r, "log");
-        const altLog = r.log;
-        r.log = function (m, lv) {
-            if (lv === "WARN") warn.push(String(m));
-            return altLog.apply(this, arguments);
-        };
         Storage.prototype.setItem = function () {
             throw new Error("QuotaExceededError (Band-Probe)");
         };
@@ -2233,30 +2205,15 @@ async function checkBandV18151Idb(ctx) {
         let ret;
         try {
             ret = r.saveState();
-        } catch {
-            threw = true;
         } finally {
             Storage.prototype.setItem = origSet;
-            if (eigenLog) r.log = altLog;
-            else delete r.log;
         }
-        let idb = null;
-        for (let i = 0; i < 20 && !(idb && idb.at >= tVor); i++) {
-            await new Promise((res2) => setTimeout(res2, 100));
-            idb = await r._idbGetWorld(worldId);
-        }
-        r.saveState(); // das Abbild wiederherstellen
-        return {
-            quotaSoft:
-                !threw &&
-                ret === true &&
-                warn.some((m) => /lebt in IndexedDB weiter/.test(m)) &&
-                !!idb &&
-                idb.at >= tVor,
-        };
+        await r._speicherRuf("still");
+        const q = await r._speicherRuf("lesen", { id: r.state.worldMeta.worldId });
+        return { quotaSoft: ret === true && q.at >= tVor };
     });
     check(
-        "V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
+        "V18.151 Platte: ein voller localStorage bricht die Sicherung nicht (der Akt liegt auf der Platte)",
         res.quotaSoft
     );
 }

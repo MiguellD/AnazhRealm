@@ -1207,8 +1207,9 @@ class AnazhRealm_dienst {
         }
     }
 
-    // → true, wenn der Stand geschrieben wurde (localStorage oder, bei voller Quota, IndexedDB); false, wenn die Sperre
-    // des Welt-Wechsels verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler).
+    // → true, wenn die Sicherung an den Speicher-Faden ging (die Änderung: Kopf + Journal, `_speicherSichern`; der Faden
+    // schreibt atomar, seine Antwort quittiert laut); false, wenn die Sperre des Welt-Wechsels verweigert oder kein Faden
+    // läuft — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler).
     saveState() {
         // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
         if (this._weltWechselSperre) {
@@ -1225,60 +1226,37 @@ class AnazhRealm_dienst {
             this._ladeSperre.verlangt = true;
             return false;
         }
-        const stateToSave = this.buildStateSnapshot();
-        // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
-        // Legacy-Key zurück, damit nichts still verloren geht.
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
-        // EIN Stand, EIN Stempel: IndexedDB trägt ihn atomar (EINE Transaktion tauscht den vorigen nach `.bak`), der Platz im
-        // localStorage ist sein Abbild mit demselben Stempel (lastPlayed) — die Rettungs-Kette wählt am Stempel, nie am Ort.
-        const json = JSON.stringify(stateToSave);
-        const at = Date.now();
-        if (worldId) {
-            this._idbPutWorld(worldId, json, at).then((ok) => {
-                if (!ok && !this._idbWarned) {
-                    this._idbWarned = true;
-                    this.log("IndexedDB nicht verfügbar — Welten leben allein im localStorage (5-MB-Wand).", "WARN");
-                }
-            });
+        if (!worldId) {
+            this._bruchMelden("SPEICHER: die Welt trägt keine worldId (ensureWorldMeta lief nicht) — nichts gesichert");
+            return false;
         }
-        try {
-            if (worldId) {
-                localStorage.removeItem(this.worldStorageKey(worldId) + ".bak"); // der .bak lebt in der Transaktion
-                localStorage.setItem(this.worldStorageKey(worldId), json);
-                this.worldsIndexUpsert({
-                    worldId,
-                    slug: this.state.worldMeta.slug || "",
-                    bornAt: this.state.worldMeta.bornAt || at,
-                    lastPlayed: at,
-                });
-                this.activeWorldSet(worldId);
-            } else {
-                localStorage.setItem("anazhRealmState", json);
-            }
-            const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
-            if (lastVersion !== this.state.currentVersion) {
-                this.state.versionHistory.push(this.state.currentVersion);
-            }
-            if (this.state.versionHistory.length > this.state.maxVersionHistoryEntries) {
-                this.state.versionHistory = this.state.versionHistory.slice(-this.state.maxVersionHistoryEntries);
-            }
-            localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
-            this.log("Zustand in localStorage gespeichert", "DEBUG");
-        } catch (error) {
-            // V18.151 — die QUOTA-Wand fällt weich: IndexedDB trägt die Welt
-            // (der Schreiber oben lief schon); ehrlich loggen statt ERROR-Panik.
-            this.log(
-                `localStorage-Spiegel voll/fehlgeschlagen (${error.message}) — die Welt lebt in IndexedDB weiter.`,
-                "WARN"
+        if (!this._speicherFaden()) {
+            this._bruchMelden(
+                "SPEICHER: dieser Browser kennt keinen Worker — kein Speicher-Faden, die Welt bleibt ungesichert"
             );
+            return false;
+        }
+        // Der Aktiv-Zeiger folgt der lebenden Welt, wenn sie sichert (ein Wechsel ohne Reload setzt ihn danach).
+        if (this.activeWorldGet() !== worldId) this.activeWorldSet(worldId);
+        this._speicherSichern(worldId, Date.now());
+        const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
+        if (lastVersion !== this.state.currentVersion) {
+            this.state.versionHistory.push(this.state.currentVersion);
+            if (this.state.versionHistory.length > this.state.maxVersionHistoryEntries)
+                this.state.versionHistory = this.state.versionHistory.slice(-this.state.maxVersionHistoryEntries);
+            try {
+                localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
+            } catch (e) {
+                this.log(`Die Versions-Chronik ließ sich nicht merken (${e.message}).`, "WARN");
+            }
         }
         return true;
     }
 
-    // Debounced Edit-Save: bündelt die schwere Persistenz (buildStateSnapshot + JSON.stringify +
-    // localStorage.setItem) eines Carve-/Place-Bursts in EINEN Save ~1.2 s nach dem letzten Hit.
-    // Der Edit liegt sofort in `worldMeta.voxelEdits` (kein Datenverlust); ein anderer saveState schreibt
-    // die aktuelle Welt sofort und macht den Timer redundant. Headless feuert der Timer erst im Idle.
+    // Debounced Edit-Save: bündelt die Sicherungen eines Carve-/Place-Bursts in EINE ~1.2 s nach dem letzten Hit (das
+    // Journal trägt dann alle Edits des Bursts). Der Edit liegt sofort in `worldMeta.voxelEdits` (kein Datenverlust); ein
+    // anderer saveState sichert die Welt sofort und macht den Timer redundant. Headless feuert der Timer erst im Idle.
     _scheduleEditSave() {
         if (typeof this.saveState !== "function") return;
         if (this._editSaveTimer) clearTimeout(this._editSaveTimer);

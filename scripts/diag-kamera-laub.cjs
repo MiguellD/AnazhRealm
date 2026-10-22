@@ -1276,9 +1276,9 @@ async function probe(arg) {
         // die Prüfbühne, geboren wie im Spiel: Welt-Tor importWorldBeside + aktiv + Reload
         const tH = Date.now();
         const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
-        const id = await page.evaluate((j) => {
+        const id = await page.evaluate(async (j) => {
             const r = window.anazhRealm;
-            const res = r.importWorldBeside(j);
+            const res = await r.importWorldBeside(j);
             if (!res || !res.ok) return null;
             r.activeWorldSet(res.worldId);
             return res.worldId;

@@ -373,7 +373,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             pageB,
             (wid) =>
                 window.anazhRealm.activeWorldGet() === wid &&
-                !!localStorage.getItem(window.anazhRealm.worldStorageKey(wid)),
+                window.anazhRealm._speicherBestand.has(wid),
             "B übernimmt A's Welt über den chunked Mesh-Transfer",
             worldIdA
         );

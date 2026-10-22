@@ -23,7 +23,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Heute fährt die Engine der Welt nur `gelaende` (Modus
   `index.html?studio=gelaende`), die übrigen zeichnen mit eigenem `WebGLRenderer` (r128 bis r183) — Labor = Welt ist dort Gesetz, nicht Stand.
 - **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf three r128 (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
-  `export-settlement`; die IDB-Platte trägt nur `build-asset`, SHA-Stempel der Quellen) · `voxel-worker.js`. **Server:** save-server
+  `export-settlement`; die IDB-Platte trägt nur `build-asset`, SHA-Stempel der Quellen) · `voxel-worker.js` · `speicher-worker.js`
+  (die Platte der Welten). **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
 
 ## Die Quelle je Domäne
@@ -52,7 +53,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   ersten Weltbilds (`_weltbildSteht`).
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz (`gangSchritt`; heute geht das Labor `worlds/tetrapoda` noch eigenen PD-Sinus) · Kamera
   `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Tod `_kreaturFaellt` · Lebenswerte = Zustand
-  (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
+  (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER = der Speicher-Faden (`speicher-worker.js`: ein Save meldet Kopf + Journal der
+  Domänen — Edits, Bauten, Leib, Inventar —, EINE Transaktion, Laden = Abbild + Journal; heute trägt der Kopf die Baupläne) ·
+  save-server atomar (tmp + Rename + .bak).
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort −900/−850
   ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen Ort × Gerät × Sicht ·
   Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst

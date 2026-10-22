@@ -1094,11 +1094,11 @@ class AnazhRealm_feld_leben {
                     }
                     this.saveToProjectFolder().then((result) => {
                         if (result === "server") {
-                            append("Zustand gespeichert (direkt im Spielordner + localStorage)");
+                            append("Zustand gespeichert (direkt im Spielordner + Platte)");
                         } else if (result === "download") {
-                            append("Zustand gespeichert (Browser-Download + localStorage)");
+                            append("Zustand gespeichert (Browser-Download + Platte)");
                         } else {
-                            append("Zustand gespeichert (nur localStorage)");
+                            append("Zustand gespeichert (nur Platte)");
                         }
                     });
                 },
@@ -1107,8 +1107,12 @@ class AnazhRealm_feld_leben {
                 example: "lade zustand",
                 re: /^lade\s+zustand(?:\s.*)?$/i,
                 run: (m, append) => {
-                    this.loadState();
-                    append("Zustand aus localStorage geladen");
+                    // die Platte liest der Speicher-Faden: der Vorlauf holt die aktive Welt, dann lädt sie
+                    this._speicherRuf("still")
+                        .then(() => this._speicherVorlauf())
+                        .then(() =>
+                            append(this.loadState() ? "Zustand von der Platte geladen" : "Kein Zustand auf der Platte")
+                        );
                 },
             },
             {

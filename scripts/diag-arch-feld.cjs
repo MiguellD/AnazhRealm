@@ -20,8 +20,8 @@
 //      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
-//      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
-// Das Licht des Felds (bis Licht K3 hier D: eine Feld-Box gegen eine Mesh-Box zu Mittag, Band 0,8–1,25) misst der Lichtweg
+//      gate:fernwald)
+// Das Licht des Felds misst der Lichtweg
 // (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
@@ -284,8 +284,7 @@ function kartenGesetz(buch, zelleF) {
             zB: zustand(eb),
             zH: zustand(eh),
             taktFehler: { n: taktFehlerN, erster: taktFehler1 },
-            // Die Fäden: was im Werk offen ist (ein Karten-Bake im Werk hielt bis 05.10. jede nahe Geometrie hinter sich —
-            // seit S2 backt die Karte im Welt-Renderer).
+            // Die Fäden: was im Werk offen ist.
             werk: {
                 offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
                 angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,

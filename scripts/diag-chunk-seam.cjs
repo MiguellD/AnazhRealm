@@ -58,7 +58,7 @@ const server = statikServer();
                 r.state._activeRingRadius = 4;
                 stubbed = true;
             }
-            if (r && typeof r._gameLoopTick === "function") {
+            if (r) {
                 if (r.state) r.state._activeRingRadius = 4; // gegen den Ramp halten
                 try {
                     r._gameLoopTick(performance.now());
@@ -73,7 +73,7 @@ const server = statikServer();
         // mit einem RUHIGEN Dirty-Set startet (sonst zählt es Streaming-Rebuilds mit).
         for (let i = 0; i < 200; i++) {
             const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
+            if (r) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}

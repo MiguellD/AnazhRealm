@@ -120,7 +120,7 @@ async function checkBandRing5Soul(ctx) {
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
-    const ring5Results = await safeEvaluate(page, () => {
+    const ring5Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
         const out = {};
@@ -278,13 +278,7 @@ async function checkBandRing5Soul(ctx) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.savedPlayerSoul = !!parsed && parsed.playerSoul === "bp_koerper_wolf";
 
         // loadState wendet die gespeicherte Seele an (zurück auf den Menschen)
@@ -489,7 +483,7 @@ async function checkBandRing5Soul(ctx) {
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
-        if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        r._gameLoopTick(performance.now());
         return {
             playerYaw: r.state.yaw,
             playerRotationY: r.state.playerMesh.rotation.y,
@@ -519,7 +513,7 @@ async function checkBandRing5Soul(ctx) {
                 r.state.playerVel.setValue(0, 0, 0);
                 r.state._fieldVy = 0;
             }
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
             const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
@@ -753,7 +747,7 @@ async function checkBandWFFluss(ctx) {
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
         // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
         // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot (Integration 08.10.).
-        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
+        out.runExists = typeof r._waterRunSurfaceAt === "undefined";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
         if (hW && hW.ready && hW.water && hW.water.waterKind) {
@@ -1320,10 +1314,8 @@ async function checkBandKonvergenzTierBaum(ctx) {
         // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
         // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
         // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
-        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
-        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
-        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
-        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
+        // schwingt nicht.
+        // Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;
@@ -1794,7 +1786,7 @@ async function checkBandKoerperBewegung(ctx) {
         const mesh = s.playerMesh;
         if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
         const savedSoul = p.soul;
-        if (!mesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        if (!mesh.userData.rig) r.applyPlayerSoul("human");
         const pmesh = s.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         const savedVel = s.playerVel;
@@ -1948,7 +1940,7 @@ async function checkBandKoerperBewegung(ctx) {
         p.walkPhase = savedPhase;
         p._gaitW = savedW;
         p.animationLastTick = savedTick;
-        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+        if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
     
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {

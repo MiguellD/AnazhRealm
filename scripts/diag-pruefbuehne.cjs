@@ -83,7 +83,7 @@ async function boote(page) {
         const start = performance.now();
         for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
             const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
+            if (r) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
@@ -310,7 +310,7 @@ async function s0Probe(page, station, schein) {
             }
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
-            out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
+            out.verzeichnis = r._blockerMit("licht").includes(feuer);
             // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`) — an
             // der ersten Stelle des Rings, die die Wände des Hebe-Chokepoints selbst frei nennen (Wasser `_landAt`, Bau
             // `_bauFreiRund`): das Feuer landet je Maschine anders (CI 1,46|0,86, lokal −0,6|2,26), fest +6 m in z fiel still.
@@ -670,12 +670,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Welt-Szene GENAU das: den Boden-Satz und die Feuerstelle (ihren Bau-Satz, ihre Gruppe), dazu die fremden Szenen (Post,
 // PMREM) und die Lichter; die Zellen beider Sätze und jede gewählte Instanz urteilt das EINE Gesetz der Pass-Wahl
 // (`_passTrifft`) mit der Kugel um das Feuer. Gemessen 12.10.: die ganze Welt übersetzte im ersten Schuss 54 Programme
-// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s). Bis K60-N2 urteilte die Hülle (Kugel in Welt-
-// Lage gegen die Kugel um das Feuer, Sätze mit der Überall-Hülle 1e9 immer nah) und je Befund ein Stempel (der Fern-Ring K16,
-// der Portal-Nebel 14.10.) — jedes Mal riss die Frist, ehe der nächste Gast seinen Stempel bekam. K60-N2: die Tore des
-// Genesis-Platzes (Bau-Satz, Hülle 2–4 m vom Feuer) standen im Schuss, wenn die Welt sie vor ihm gebaut hatte — Kopf
-// 91dff111 lokal 11 Befehle, Programme/Pipelines [10,11,11] neben 6 und [8,8,8] (je nach Rennen), auf dem Runner riss die
-// Frist zweimal in Folge (CI 38628426005, 38662750291); der Himmel und seine Sterne zeichneten in jedem Schuss.
+// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s).
 // DIE WAND: was der Renderer im Schuss zeichnet (`_objects.get`) und der Feuerkreis nicht liest, ist ROT beim Namen (Bau-
 // Sätze mit den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt
 // (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
@@ -925,9 +920,7 @@ const S0_STOFF = (() => {
 // DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
 // „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung (die IBL jedes Stoffs, ihre
 // Lesung `_himmelsIrradianz`) die Bestrahlung des Himmels, der jetzt gilt: den Himmel des Orts, den die Belichtung und das Wasser
-// synchron lesen (`_himmelsBestrahlung`, S7). Bis K10 malte `_dayNightApplySkybox` die Umgebung VOR der Luft-Farbe
-// (`_dayNightApplyHemiUndLuft`), und die Raten-Drossel hielt den Sprung 6 s: die Nacht der Gasse trug die Bestrahlung 2,07 des
-// Tag-Himmels (Radeon, Bild 0,179 gegen 0,204 am Tag). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
+// synchron lesen (`_himmelsBestrahlung`, S7). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
 // auf die CPU (`state._skyEnvLesung`) — die Probe misst darum im Bild-Lauf (der Null-Renderer malt keinen Himmel, Lehre 16): sie
 // wartet auf die Lesung, die der Sprung angestoßen hat; malt der Maler nicht, bleibt die Lesung der vorigen Stunde stehen.
 // Morgen als Ausgang (frisch gemalt), dann Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel).
@@ -1088,7 +1081,7 @@ async function lichtLauf() {
                     await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
-                    const res = r.importWorldBeside(json);
+                    const res = await r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);
                     return res.worldId;
@@ -1172,9 +1165,8 @@ async function lichtLauf() {
                         }
                         // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
                         // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
-                        // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
-                        // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
-                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle.
+                        // der Ring bis `RING_EXIST_FLOOR`). Nie das ganze Urteil: dessen Streu-Regionen
+                        // warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden im Feuerkreis).
                         // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
@@ -1744,9 +1736,9 @@ function zeige(rep) {
         if (welt === "buehne" && !importiert) {
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
             // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
-            const id = await page.evaluate((json) => {
+            const id = await page.evaluate(async (json) => {
                 const r = window.anazhRealm;
-                const res = r.importWorldBeside(json);
+                const res = await r.importWorldBeside(json);
                 if (!res.ok) return null;
                 r.activeWorldSet(res.worldId);
                 return res.worldId;

@@ -2,7 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-persistence.cjs — DIE PERSISTENZ-HÄRTUNG (npm run gate:persistence)
 //
-// (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr (ein Werk auf der Lichtung).
+// (J) DAS JOURNAL und (T) DER TAB-TOD urteilen den Browser-Pfad (den Speicher-Faden), (K) (U) den Lade-Pfad, (S) (C) den
+// save-server, (W) die Wiederkehr (ein Werk auf der Lichtung).
 //
 // (K) DER RELOAD MIT KALTEM BUCH (06.10., V18.531): ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
@@ -218,11 +219,224 @@ async function serverProbe(quelle) {
     };
 }
 
+// DER HAKEN IM SPEICHER-FADEN (J, T): der Statik-Server legt ihn vor die Quelle des Fadens (`wandle`). Er meldet jedes
+// Schreiben eines Stands an die Seite ({__tt}: „idb" im Put, „fest" nach dem Commit, mit dem komponierten Stand) und hält,
+// scharf gemacht von der Seite ({__haken}), den Faden an seinem Punkt an: „idb"/„mitten" im Put vor dem Commit, „fest" nach
+// dem Commit, „selbst" (T-Selbsttest) schreibt den Kopf halb und stirbt nach dem Commit.
+const FADEN_HAKEN = `(() => {
+let scharf = null;
+self.addEventListener("message", (e) => { if (e.data && e.data.__haken) { scharf = e.data.__haken; e.stopImmediatePropagation(); } });
+const stehe = () => { for (;;); };
+const put = IDBObjectStore.prototype.put;
+IDBObjectStore.prototype.put = function (v, k) {
+    const kopf = typeof k === "string" && k.endsWith(".k");
+    if (!kopf && !(v && typeof v.json === "string" && !String(k).endsWith(".bak"))) return put.apply(this, arguments);
+    const W = kopf && welten.get(k.slice(0, -2));
+    const tt = { art: "idb", at: v.at, json: kopf ? W && komponiere(W) : v.json };
+    const art = scharf;
+    if (art === "selbst" && kopf) v = Object.assign({}, v, { kopf: v.kopf.slice(0, v.kopf.length >> 1) });
+    const req = put.call(this, v, k);
+    self.postMessage({ __tt: tt });
+    if (art === "idb" || art === "mitten") stehe();
+    this.transaction.addEventListener("complete", () => {
+        self.postMessage({ __tt: Object.assign({}, tt, { art: "fest" }) });
+        if (art === "fest" || (art === "selbst" && kopf)) stehe();
+    });
+    return req;
+};
+})();
+`;
+const server = statikServer({ wandle: (p, d) => (p === "/speicher-worker.js" && d ? FADEN_HAKEN + d : d) });
+
+// (J) DAS JOURNAL (Karte speicher-journal): eine frische Welt (Null-Renderer), je Runde eine Änderung einer Domäne und EIN
+// Save. (a) Die Arbeit des Haupt-Fadens je Save in Ereignissen: Abbild-Bauten (`buildStateSnapshot` ohne Journal), JSON-,
+// localStorage- und IndexedDB-Bytes im Haupt-Faden, Bytes an den Faden — Soll nach der Weltgrenze 0 Abbild, 0 localStorage,
+// 0 IndexedDB. (b) Rundreise: die Bytes, die die Platte dem nächsten Laden gibt (`lesen`, die Rettungs-Kette des Fadens),
+// sind die des vollen Snapshots beim Save — ALLE Felder, je Runde, über eine Verdichtung; nach dem Neuladen stehen Edits,
+// Bauten, Leib, Inventar. (c) Der Faden stirbt mitten im Schreiben (im Kopf-Put vor dem Commit; `_speicherBruch` beendet
+// ihn): die Platte trägt den letzten guten Stand ganz, die nächste Sicherung (neuer Faden, das Abbild) alles. SELBSTTEST:
+// ein Abbild im Haupt-Faden (a) und ein verlorenes Bauten-Stück (b) fallen ROT beim Namen.
+async function jSeite(schein) {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+    const id = r.state.worldMeta.worldId;
+    const S = JSON.stringify;
+    const z = { cur: null, saves: [] };
+    const zaehle = (v) =>
+        typeof v === "string"
+            ? v.length
+            : v && typeof v === "object"
+              ? Object.values(v).reduce((s, x) => s + zaehle(x), 0)
+              : 0;
+    JSON.stringify = function (...a) {
+        const t = S.apply(this, a);
+        if (z.cur && typeof t === "string") z.cur.json += t.length;
+        return t;
+    };
+    const voll = r.buildStateSnapshot.bind(r);
+    r.buildStateSnapshot = (o) => (z.cur && !(o && o.journal) && z.cur.abbild++, voll(o));
+    for (const [P, f, n] of [
+        [Storage.prototype, "setItem", "ls"],
+        [IDBObjectStore.prototype, "put", "idb"],
+        [Worker.prototype, "postMessage", "post"],
+    ]) {
+        const roh = P[f];
+        P[f] = function (...a) {
+            if (z.cur) z.cur[n] += zaehle(f === "setItem" ? a[1] : a[0]);
+            return roh.apply(this, a);
+        };
+    }
+    const save = r.saveState.bind(r);
+    r.saveState = () => {
+        const soll = S(voll());
+        z.cur = { abbild: 0, json: 0, ls: 0, idb: 0, post: 0, soll };
+        try {
+            return save();
+        } finally {
+            z.saves.push(z.cur);
+            z.cur = null;
+        }
+    };
+    if (schein === "abbild") {
+        const sich = r._speicherSichern.bind(r);
+        r._speicherSichern = (...a) => (JSON.stringify(r.buildStateSnapshot()), sich(...a));
+    }
+    const lies = async () => {
+        const q = await r._speicherRuf("lesen", { id });
+        return q.daten ? new TextDecoder().decode(q.daten) : null;
+    };
+    // der erste Pfad, an dem der Stand der Platte vom vollen Snapshot abweicht
+    const pfad = (a, b, p = "$") => {
+        if (S(a) === S(b)) return null;
+        if (!a || !b || typeof a !== "object" || typeof b !== "object") return p;
+        for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+            const q = pfad(a[k], b[k], `${p}.${k}`);
+            if (q) return q;
+        }
+        return p;
+    };
+    const runden = [];
+    const runde = async (name, f) => {
+        await f();
+        r.saveState();
+        await r._speicherRuf("still");
+        const s = z.saves[z.saves.length - 1];
+        const ist = await lies();
+        runden.push(Object.assign({ name, gleich: ist === s.soll, voll: s.soll.length }, s, { soll: undefined }));
+        if (ist !== s.soll) runden[runden.length - 1].pfad = pfad(JSON.parse(s.soll), ist && JSON.parse(ist));
+    };
+    const journal = () =>
+        new Promise((ok) => {
+            const q = indexedDB.open("anazhRealm", 1);
+            q.onsuccess = () => {
+                const g = q.result
+                    .transaction("worlds")
+                    .objectStore("worlds")
+                    .count(IDBKeyRange.bound(id + ".j", id + ".j￿"));
+                g.onsuccess = () => (q.result.close(), ok(g.result));
+            };
+        });
+    const p = r.state.playerMesh.position;
+    const boden = (x, zz) => r._terrainMacroSurfaceY(x, zz);
+    const block = (i) =>
+        r.spawnArchitecture(
+            "stein_block",
+            { x: p.x - 40 - (i % 20) * 3, y: boden(p.x - 40, p.z), z: p.z + Math.floor(i / 20) * 3 },
+            { silent: true }
+        );
+    const bloecke = [];
+    await runde("Weltgrenze", () => {});
+    await runde("Edits", () => {
+        for (let i = 0; i < 6; i++) r.carveVoxelSphere(p.x + 30 + i * 4, boden(p.x + 30 + i * 4, p.z) - 2, p.z, 3);
+        r.fillVoxelSphere(p.x + 30, boden(p.x + 30, p.z + 8) + 1, p.z + 8, 2);
+    });
+    await runde("Bauten", () => {
+        for (let i = 0; i < 4; i++) bloecke.push(block(i));
+    });
+    await runde("Bauten bewegt", () => {
+        const e = bloecke[0];
+        e.position.x += 2;
+        e.rotationY = 0.7;
+        const m = r._speicherMelden;
+        if (schein === "stueck") r._speicherMelden = (d, x, art) => (x === e ? undefined : m.call(r, d, x, art));
+        r._blockerBewegt(e);
+        r._speicherMelden = m;
+    });
+    await runde("Bauten weg", () => r.removeArchitecture(bloecke.pop()));
+    await runde("Leib", () => {
+        p.x += 3;
+        p.z -= 2;
+    });
+    await runde("Inventar", () => r.addToInventory("stein_block", 3));
+    // DIE VERDICHTUNG: Bauten, bis das Journal das Abbild überwiegt und der Faden es verdichtet (kein Journal-Stück mehr)
+    let verdichtet = false;
+    for (let k = 0; k < 20 && !verdichtet; k++) {
+        await runde(`Verdichtung ${k}`, () => {
+            for (let i = 0; i < 100; i++) bloecke.push(block(bloecke.length));
+        });
+        verdichtet = (await journal()) === 0;
+    }
+    await runde("nach der Verdichtung", () => {
+        for (let i = 0; i < 40; i++) r.removeArchitecture(bloecke.pop());
+    });
+    // (c) DER TOD MITTEN IM SCHREIBEN
+    const gut = z.saves[z.saves.length - 1].soll;
+    const S0 = r._speicher;
+    const mitten = new Promise((ok) => S0.w.addEventListener("message", (e) => e.data && e.data.__tt && ok()));
+    S0.w.postMessage({ __haken: "mitten" });
+    r.carveVoxelSphere(p.x + 60, boden(p.x + 60, p.z) - 2, p.z, 3);
+    bloecke.push(block(bloecke.length));
+    r.saveState();
+    await mitten;
+    r._speicherBruch(S0, "Linse (c): der Faden stirbt mitten im Schreiben");
+    const c = { ganz: (await lies()) === gut, nTod: z.saves.length };
+    await runde("nach dem Tod", () => {});
+    c.alles = runden[runden.length - 1].gleich;
+    c.abbild = z.saves.slice(c.nTod).reduce((s, x) => s + x.abbild, 0);
+    return { runden, verdichtet, c, bauplaene: S(voll({ journal: true }).blueprints).length };
+}
+// die Domänen der Welt als EIN Wort: Edits, Bauten (Steinblöcke), Inventar, Lage — vor und nach dem Neuladen
+async function jFakten() {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+    const p = r.state.playerMesh.position;
+    const b = r.state.architectures.filter((a) => a.type === "stein_block").length;
+    return JSON.stringify([r.state.worldMeta.voxelEdits.length, b, r._inventarAbbild(), p.x, p.z]);
+}
+async function journalProbe(schein = null) {
+    const browser = await starteBrowser({ art: "null", erwartet: /Linse \(c\)/ });
+    const page = await browser.newPage();
+    await nullRenderer(page);
+    let out;
+    try {
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await warteAufWelt(page);
+        out = await page.evaluate(jSeite, schein);
+        out.letzt = await page.evaluate(jFakten);
+        await page.reload({ waitUntil: "networkidle0", timeout: 120000 });
+        out.geladen = await page.evaluate(jFakten);
+    } catch (e) {
+        out = { fehler: (e && e.message) || String(e) };
+    }
+    await browser.close();
+    return out;
+}
+const jZeile = (j) => {
+    const R = j.runden.slice(1);
+    const med = (k) => R.map((x) => x[k]).sort((a, b) => a - b)[R.length >> 1];
+    return `nach der Weltgrenze ${R.length} Saves: Abbild ${R.reduce((s, x) => s + x.abbild, 0)}, localStorage ${R.reduce((s, x) => s + x.ls, 0)} B, IndexedDB ${R.reduce((s, x) => s + x.idb, 0)} B; je Save JSON ${(med("json") / 1024).toFixed(1)} KB, an den Faden ${(med("post") / 1024).toFixed(1)} KB statt des Abbilds ${(med("voll") / 1024).toFixed(1)} KB (davon trägt der Kopf die Baupläne: ${(j.bauplaene / 1024).toFixed(1)} KB, offen)`;
+};
+const jA = (j) => j.runden.slice(1).every((x) => !x.abbild && !x.ls && !x.idb);
+const jB = (j) => j.runden.every((x) => x.gleich) && j.verdichtet && j.geladen === j.letzt;
+const jFalsch = (j) =>
+    j.runden
+        .filter((x) => !x.gleich)
+        .map((x) => `${x.name}: ${x.pfad}`)
+        .slice(0, 2);
+
 // (T) DER TAB-TOD (speicher.K1): kein save-server, EIN Profil; je Zyklus geht, schnitzt und baut der Spieler, dann stirbt der
-// GANZE Browser hart — im Schreiber (Haken) oder zufällig. Der nächste Boot: dieselbe Welt, kein Korrupt-/Rettungs-Befund,
-// der Stand ist EIN Schreiben, ≤ 10 s alt, kein halbes. PERSISTENCE_TABTOD=a-b (Standard 0-7). SELBSTTEST: der Platz in
-// zwei Zügen, der Tod dazwischen.
-const TT_HAKEN = ["idb", "fest", "platz", "zeiger"];
+// GANZE Browser hart — im Speicher-Faden (Haken: im Put, nach dem Commit), am Zeiger (Index) oder zufällig. Der nächste Boot:
+// dieselbe Welt, kein Korrupt-/Rettungs-Befund, der Stand ist EIN Save, ≤ 10 s alt, kein halber. PERSISTENCE_TABTOD=a-b
+// (Standard 0-7). SELBSTTEST: der Kopf halb geschrieben, der Tod danach.
+const TT_HAKEN = ["idb", "fest", "zeiger"];
 function ttHaken() {
     const rec = (window.__ttRec = (s) => ({
         w: (s.worldMeta || {}).worldId,
@@ -232,32 +446,44 @@ function ttHaken() {
         b: (s.architectures || []).filter((a) => a.type === "stein_block").length,
     }));
     const n = (window.__ttN = [0, 0]); // Löcher, Blöcke des Treibers
-    const melde = (art, json, nJetzt = n.slice()) => {
-        let r = null;
-        try {
-            r = json && rec(JSON.parse(json));
-        } catch (_e) {
-            r = { kaputt: 1 };
+    const melde = (e) => {
+        if (e.json) e.rec = rec(JSON.parse(e.json));
+        console.log("__TT__ " + JSON.stringify(Object.assign(e, { json: undefined, t: Date.now(), n: n.slice() })));
+        if (window.__ttScharf === e.art) console.log("__TOD__");
+    };
+    const W = window.Worker;
+    window.Worker = function (url, o) {
+        const w = new W(url, o);
+        if (/speicher-worker/.test(String(url))) {
+            window.__ttFaden = w;
+            w.addEventListener("message", (ev) => ev.data && ev.data.__tt && melde(ev.data.__tt));
         }
-        const e = { t: Date.now(), art, rec: r, n: nJetzt };
-        console.log("__TT__ " + JSON.stringify(e));
-        if (window.__ttTod && window.__ttTod(e)) for (console.log("__TOD__"); ;); // der Faden steht IN diesem Schreiber, bis der Prozess stirbt
+        return w;
+    };
+    window.Worker.prototype = W.prototype;
+    // die Wahrheit jedes Saves: der Stand der Seite, wenn die Sicherung an den Faden geht
+    const post = W.prototype.postMessage;
+    W.prototype.postMessage = function (m, ...a) {
+        if (m && (m.op === "sichern" || m.op === "abbild")) {
+            const r = window.anazhRealm;
+            console.log(
+                "__TT__ " +
+                    JSON.stringify({
+                        art: "save",
+                        at: m.at,
+                        rec: rec({ ...r.state, playerPosition: r.state.playerMesh.position }),
+                    })
+            );
+        }
+        return post.call(this, m, ...a);
     };
     const set = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, v) {
         set.call(this, k, v);
-        if (/^anazhRealmState_[^.]*$/.test(k)) melde("platz", v);
-        else if (k === "anazhRealmWorlds" || k === "anazhRealmVersions") melde("zeiger");
-    };
-    const put = IDBObjectStore.prototype.put;
-    IDBObjectStore.prototype.put = function (v, k) {
-        const req = put.apply(this, arguments);
-        if (!String(k).endsWith(".bak") && v && typeof v.json === "string") {
-            const nPut = n.slice();
-            this.transaction.addEventListener("complete", () => melde("fest", v.json, nPut));
-            melde("idb", v.json);
+        if (k === "anazhRealmWorlds" || k === "anazhRealmVersions") {
+            melde({ art: "zeiger" });
+            if (window.__ttScharf === "zeiger") for (;;); // der Faden steht IN diesem Schreiber, bis der Prozess stirbt
         }
-        return req;
     };
 }
 // Der Treiber: W gehalten, je 16 ms ein Takt, je zweiter ein Loch auf dem Raster (die Linie wächst über den FIFO-Deckel 256
@@ -275,16 +501,6 @@ function ttTreiber(e0) {
         if (t % 50 === 0 && r.spawnArchitecture("stein_block", ort, { silent: true })) n[1]++;
         r._gameLoopTick(performance.now());
     }, 16);
-}
-function ttNichtAtomar() {
-    const r = window.anazhRealm;
-    const ganz = r._idbPutWorld.bind(r);
-    r._idbPutWorld = async (id, json, at) => {
-        const tx = (await r._idb()).transaction("worlds", "readwrite");
-        tx.objectStore("worlds").put({ at, json: json.slice(0, json.length >> 1) }, id);
-        await new Promise((ok) => (tx.oncomplete = ok));
-        return ganz(id, json, at);
-    };
 }
 function ttToeten(b) {
     try {
@@ -329,17 +545,21 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         const tDa = Date.now();
         if (vorher) {
             const ganz = alle.filter(
-                (e) => e.t <= vorher.tot && e.rec && "wxzeb".split("").every((k) => e.rec[k] === g[k])
+                (e) => e.art === "fest" && e.t <= vorher.tot && "wxzeb".split("").every((k) => e.rec[k] === g[k])
             );
             zeile.alterS = ganz.length ? (vorher.tot - Math.max(...ganz.map((e) => e.t))) / 1000 : null;
             Object.assign(zeile, { tod: vorher.art, halb: !ganz.length || g.w !== vorher.w });
         }
-        // HALB: jeder Platz (synchron mit seinem Stand) trägt GENAU den Boot plus den Treiber
+        // HALB: jeder feste Stand trägt GENAU den Stand der Seite, als die Sicherung an den Faden ging (am Stempel)
         const halbe = () => {
-            const h = alle.find(
-                (e) => e.art === "platz" && e.t >= tGoto && (e.rec.e !== g.e + e.n[0] || e.rec.b !== g.b + e.n[1])
-            );
-            if (h) zeile.befund.push(`halbes Schreiben: ${h.rec.e}/${h.rec.b} Edits/Bauten, geladen ${g.e}/${g.b}`);
+            const h = alle.find((e) => {
+                const s = e.art === "fest" && e.t >= tGoto && alle.find((x) => x.art === "save" && x.at === e.at);
+                return s && (s.rec.e !== e.rec.e || s.rec.b !== e.rec.b);
+            });
+            if (h)
+                zeile.befund.push(
+                    `halbes Schreiben: ${h.rec.e}/${h.rec.b} Edits/Bauten fest, die Seite sicherte andere`
+                );
         };
         zyklen.push(zeile);
         if (z > bis) {
@@ -349,24 +569,21 @@ async function tabTodProbe({ von, bis, selbst = false }) {
             break;
         }
         const art = selbst ? "selbst" : z % 2 ? "zufall" : TT_HAKEN[(z >> 1) % TT_HAKEN.length];
-        if (selbst) await page.evaluate(ttNichtAtomar);
         await page.evaluate(ttTreiber, g.e);
-        // ein Haken wartet auf den ersten Takt-Platz; der Zufall fällt jederzeit
-        const takt = () => alle.some((e) => e.art === "platz" && e.t > tDa);
+        // ein Haken wartet auf den ersten festen Stand des Takts; der Zufall fällt jederzeit
+        const takt = () => alle.some((e) => e.art === "fest" && e.t > tDa);
         for (let i = 0; (art !== "zufall" || z === von) && i < 400 && !takt(); i++) await sleep(50);
         // die Linie wächst je Zyklus in Löchern, nie in Wanduhr (Lehre 26)
         const soll = Math.ceil((300 * (z - von + 1)) / (bis - von + 1));
         for (let i = 0; i < 1200 && g.e + (await page.evaluate(() => window.__ttN[0])) < soll; i++) await sleep(50);
         await sleep(1000 + Math.random() * 5000);
         if (art === "zufall") toeten();
-        // scharf: der nächste Schreiber dieser Art hält den Faden an
+        // scharf: der nächste Schreiber dieser Art hält seinen Faden an (der Speicher-Faden sich selbst, der Zeiger die Seite)
         else
-            await page.evaluate(
-                (a) =>
-                    (window.__ttTod = (e) =>
-                        e.art === (a === "selbst" ? "fest" : a) && (a !== "selbst" || !!e.rec.kaputt)),
-                art
-            );
+            await page.evaluate((a) => {
+                window.__ttScharf = a === "selbst" ? "fest" : a;
+                if (a !== "zeiger") window.__ttFaden.postMessage({ __haken: a });
+            }, art);
         for (let i = 0; i < 300 && !tot; i++) await sleep(50);
         if (!tot) ((zeile.hakenVerfehlt = true), toeten());
         const p = browser.process();
@@ -394,7 +611,6 @@ const ttZeile = (t) =>
     `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · Linie ${t.linie} Löcher`;
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
-const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
@@ -415,6 +631,7 @@ const server = statikServer();
                     r.dslRun(["spawn_blueprint", "stein_block", ["at", G.x + 15, r._voxelSurfaceY(G.x + 15, G.z), G.z]], { source: "human" });
                     r.spawnArchitecture("stein_block", { x: G.x, y: r._voxelSurfaceY(G.x, G.z + 15), z: G.z + 15 }, { id: r._newArchId() });
                     r.saveState();
+                    await r._speicherRuf("still"); // der Faden schrieb fest, dann der Reload
                 }
                 if (art === "stoff") {
                     r._weichtDemBau = (e) => r._istNatur(e);
@@ -424,7 +641,6 @@ const server = statikServer();
                 return r.state.architectures.filter((a) => a.type === "stein_block" && Math.hypot(a.position.x - G.x, a.position.z - G.z) < 16).length;
             }, art);
         out.w = { gesetzt: await w("setzen") };
-        await sleep(1500); // der IDB-Put des Saves landet (ein Reload schneidet sonst den Schreiber ab)
         await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
         out.w.stehen = await w("laden");
         if (SELBSTTEST) out.w.selbst = await w("stoff");
@@ -504,6 +720,11 @@ const server = statikServer();
         out = { __err: (e && e.message) || String(e) };
     }
     await browser.close();
+    const [j, jAbbild, jStueck] = [
+        await journalProbe(),
+        SELBSTTEST && (await journalProbe("abbild")),
+        SELBSTTEST && (await journalProbe("stueck")),
+    ];
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
     server.close();
@@ -556,7 +777,26 @@ const server = statikServer();
     const cZeile = (p) =>
         `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
+    const jFehl = (x) => (x.fehler ? ` — die Linse brach: ${x.fehler}` : "");
     const checks = [
+        {
+            name: `(J a) je Save im Haupt-Faden: ${j.fehler ? "?" : jZeile(j)}${!j.fehler && jA(j) ? "" : " — Täter: saveState (stamm/dienst.js) serialisiert das Abbild"}${jFehl(j)}`,
+            pass: !j.fehler && jA(j),
+        },
+        {
+            name: `(J b) Rundreise speichern → laden byte-gleich über alle Felder (${
+                j.fehler
+                    ? "?"
+                    : `${j.runden.length} Saves, Verdichtung ${j.verdichtet ? "ja" : "nein"}${jFalsch(j)
+                          .map((f) => ", ROT " + f)
+                          .join("")}; geladen ${j.geladen}`
+            })${jFehl(j)}`,
+            pass: !j.fehler && jB(j),
+        },
+        {
+            name: `(J c) der Faden stirbt mitten im Schreiben: der letzte gute Stand ${j.c && j.c.ganz ? "liegt ganz" : "FEHLT"}, die nächste Sicherung (Abbild ${j.c && j.c.abbild}) trägt alles: ${j.c && j.c.alles ? "ja" : "nein"}${jFehl(j)}`,
+            pass: !j.fehler && j.c.ganz && j.c.alles,
+        },
         {
             name: "(K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)",
             pass: out.kGesetzt === true && out.kFrischBlockiert === true,
@@ -604,6 +844,14 @@ const server = statikServer();
     if (SELBSTTEST)
         checks.push(
             {
+                name: `(J a) SELBSTTEST: ein Abbild im Haupt-Faden je Save wird ROT (${jAbbild.fehler ? jAbbild.fehler : jZeile(jAbbild)})`,
+                pass: !jAbbild.fehler && !jA(jAbbild),
+            },
+            {
+                name: `(J b) SELBSTTEST: ein verlorenes Bauten-Stück wird ROT beim Namen (${jStueck.fehler ? jStueck.fehler : jFalsch(jStueck).join(", ") || "blind"})`,
+                pass: !jStueck.fehler && jFalsch(jStueck).some((f) => /^Bauten bewegt: \$\.architectures/.test(f)),
+            },
+            {
                 name: `(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${out.w.selbst}/${out.w.gesetzt})`,
                 pass: out.w.selbst === 0,
             },
@@ -616,7 +864,7 @@ const server = statikServer();
                 pass: !cacheSelbst.ok,
             },
             {
-                name: `(T) SELBSTTEST: der Platz in zwei Zügen (Tod nach der halben Last) wird ROT (${ttZeile(tSelbst)})`,
+                name: `(T) SELBSTTEST: der Kopf halb geschrieben (Tod nach der halben Last) wird ROT (${ttZeile(tSelbst)})`,
                 pass: tSelbst.korrupt > 0,
             }
         );

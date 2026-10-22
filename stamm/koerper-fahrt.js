@@ -1305,6 +1305,7 @@ class AnazhRealm_koerper_fahrt {
             vc.fahrStand(fz, entry._fahrSatz, this._fahrBoden(entry), dt);
             const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
             entry.position.y = fz.y + 0.5 + clear;
+            this._speicherMelden("bauten", entry); // er setzt sich: seine Höhe reist durch den Save
             entry._rideY = entry.position.y;
             entry._rideVy = fz.vy;
             if (!fz.luft && !(Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs)) {

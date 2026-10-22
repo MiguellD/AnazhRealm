@@ -16,8 +16,7 @@
 //       Third-Person), steht gemessen, an höchstens einer Version vor dem Kopf (package.json), an ihrem Ort, Gerät und in ihrer
 //       Sicht; ihre Gesamt-Zeile ist höchstens die Summe der Klassen (darüber feuert sie nie); `--messung <boot.json …>`
 //       (Boots der Messfolge oder Band-Dateien) richtet jede Ratsche gegen die Messung ihres Orts × Geräts × Sicht: eine
-//       Zeile über Messung × (1 + Toleranz) ist zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen 05.–11.10. auf der
-//       Radeon, gerichtet auf der GTX, nie nachgezogen — der Re-Mint (`werkbank ratsche --neu`) heilt H2b
+//       Zeile über Messung × (1 + Toleranz) ist zu weit. Der Re-Mint (`werkbank ratsche --neu`) heilt H2b
 //   H4  die Täter-Klasse des Stamms (die echte Klasse im vm, `stammLib.ladeKlasse`) klassifiziert die Schlüssel-Formen,
 //       die der Stamm heute baut (Studio-Leaf als Schlüssel, Schatten-Zwilling `#S`, ov-Hash, Karte, Streu, Bauplan)
 //   H7  DIE ZEICHEN-REIHE (1310-1, T3) an der echten Klasse: EIN Gesetz `_zeichenRang` für alles Opake — die Bündel
@@ -161,7 +160,7 @@ function buendelReiheWand(A) {
 // H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
 // vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
 // (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
-// Welt. Bis K55 stand die Mess-Wiese als Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
+// Welt.
 let _wirt = null;
 function wieseAmGesetz(haushalt) {
     const WO = require("./lib/welt-orte.cjs");

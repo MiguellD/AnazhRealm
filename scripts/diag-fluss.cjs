@@ -491,7 +491,7 @@ const WELT_MESSEN = async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
         const r = window.anazhRealm;
-        if (r && typeof r._gameLoopTick === "function") {
+        if (r) {
             try {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}

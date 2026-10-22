@@ -455,7 +455,7 @@ function pruefRaum(echt) {
                 devices: H ? H.devices : -1,
                 indexWache: r._indexWache ? { n: r._indexWache.n, brueche: r._indexWache.brueche.slice(0, 8) } : null,
                 gpuWache: r._gpuWache ? { n: r._gpuWache.n } : null,
-                wachenDa: typeof r._indexWacheDraw === "function" && typeof r._gpuWacheAn === "function",
+                wachenDa: typeof r._gpuWacheAn === "function",
             };
         });
     // Ein Schritt: tun, die Welt-GPU zeichnen lassen (die geteilten Gestalten im Bild), dann I · G · W — und B, wo das

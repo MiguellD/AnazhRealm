@@ -334,6 +334,7 @@ class AnazhRealm_siedlung_bauten {
         // entry.type updaten — die Architektur ist jetzt eine andere LOD-Variante
         entry.type = newType;
         entry._lodLevel = newLOD;
+        this._speicherMelden("bauten", entry); // der Typ der Stufe reist durch den Save
         // Neue Slots allozieren via Standard-Pfad
         this._archInstanceAdd(entry, newFlat);
         return true;

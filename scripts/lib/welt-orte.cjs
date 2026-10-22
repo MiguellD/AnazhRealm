@@ -21,8 +21,7 @@ function messort(id) {
 // DIE WIESE (K55): ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER
 // Funktion mit zwei Wirten: in der Seite die Welt selbst (`werkbank umstellen --ort`, die Suche `__weltOrt("wiese")`), ohne
 // Browser der Wirt am Gesetz (`wirtAmGesetz`: gelaende-core, phyto-core und die Wald-Methoden aus dem Stamm-Text —
-// gate:profiband H1). Bis K55 stand die Mess-Wiese als Zahlen-Paar −900/−850 im Haushalt; K16 hob dort den Boden um 83 m, am
-// Hang stand Nadelwald (fichte/tanne +16 Befehle, busch 0), und die ABAB 1410-2 verglich zwei Szenen.
+// gate:profiband H1).
 // Gemessen am Ort (x, z) mit Blick-Punkt `blick` ([x, z]; null = die beste von 16 Richtungen) über den Ring `ring` m:
 //   hang     — die Neigung der Ausgleichs-Ebene des Gesetzes (`_terrainMacroSurfaceY`, Mitte + 5 Kreise × 12 Speichen), Grad
 //   nass     — der Anteil der Ring-Punkte, die das Land nicht trägt (`_landAt` mit `trockenMarge`)
@@ -147,20 +146,18 @@ function wieseMessen(r, x, z, blick, S, nurBoden) {
     m.blick = blick || [Math.round((x + w.ux * 10) * 10) / 10, Math.round((z + w.uz * 10) * 10) / 10];
     // das Gras der gebauten Boden-Karte (nur in der Welt)
     m.gras = null;
-    if (typeof r._bodenSichtAt === "function") {
-        const g = {};
-        let s = 0,
-            n = 0;
-        for (const [dx, dz] of pkt) {
-            if (r._bodenSichtAt(x + dx, z + dz, g) === null) {
-                n = -1;
-                break;
-            }
-            s += g.gruen;
-            n++;
+    const g = {};
+    let s = 0,
+        n = 0;
+    for (const [dx, dz] of pkt) {
+        if (r._bodenSichtAt(x + dx, z + dz, g) === null) {
+            n = -1;
+            break;
         }
-        m.gras = n > 0 ? r3(s / n) : null;
+        s += g.gruen;
+        n++;
     }
+    m.gras = n > 0 ? r3(s / n) : null;
     return m;
 }
 
@@ -209,9 +206,7 @@ function wieseUrteil(m, S, mitGras) {
 
 // In der Seite: die Stellen der gewünschten Art, gesucht in Ringen um die MITTE DER WELT (K55-2): den Ursprung des
 // Gesetzes — dort kommt jede Welt an (die Start-Plattform steht an der nächsten freien Stelle um ihn, `_genesisMitte`; ihr
-// Ort hängt am Takt des Boots und taugt nicht als Mitte einer Suche, die je Lauf dieselbe Stelle finden muss), nie ein Messort. Bis K55-2 suchten die
-// Proben von der Mess-Wiese aus; seit sie in der flachen Aue liegt (−278/−1038), fanden fünf Gates dort weder Höhle noch
-// Hang, Kliff oder Querhang (CI 38546830515, 8/13). Jede Art ist EIN Gesetz am Gelände der Welt (Gesetz-Höhe, Dichtefeld,
+// Ort hängt am Takt des Boots und taugt nicht als Mitte einer Suche, die je Lauf dieselbe Stelle finden muss), nie ein Messort. Jede Art ist EIN Gesetz am Gelände der Welt (Gesetz-Höhe, Dichtefeld,
 // Land, Bauten):
 //   eben      — Land ohne Nässe, die Spanne des Bodens im Umkreis `r` (8 Speichen) ≤ `spanne` m, kein Fels darüber
 //   hang      — die Neigung des Gesetzes (zentrale Differenz über ±`basis` m, Vorgabe 1) zwischen `min` und `max` Grad, Land

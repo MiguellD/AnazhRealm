@@ -467,7 +467,7 @@ function lauf(k) {
             // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
             // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
             const ruheZustand = () => {
-                const z = typeof r._impostorCensus === "function" ? r._impostorCensus() || {} : {};
+                const z = r._impostorCensus() || {};
                 const pm = st.playerMesh.position;
                 const R2 = (st.architectureCullingRadius || 0) ** 2;
                 let offen = 0;
@@ -607,7 +607,7 @@ function lauf(k) {
                 },
                 stellgroessen: {
                     loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
-                    szeneSkala: typeof r._szeneSkalaWirk === "function" ? r._szeneSkalaWirk() : null,
+                    szeneSkala: r._szeneSkalaWirk(),
                     pixelRatio: rend.getPixelRatio ? rend.getPixelRatio() : null,
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
@@ -970,9 +970,9 @@ async function starte() {
                 return !!(m && m.slug === s);
             }, slug);
         if (await steht()) return { slug, neu: false };
-        const res = await page.evaluate((j) => {
+        const res = await page.evaluate(async (j) => {
             const r = window.anazhRealm;
-            const x = r.importWorldBeside(j);
+            const x = await r.importWorldBeside(j);
             if (!x || !x.ok) return { fehler: JSON.stringify(x).slice(0, 200) };
             r.activeWorldSet(x.worldId);
             return { id: x.worldId };
@@ -1143,7 +1143,7 @@ async function starte() {
                 if (st.world) st.world.timeOfDay = k.uhr;
                 // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
                 r.setTimeOfDay(k.uhr, "human");
-                for (let i = 0; i < 20 && typeof r._leuchtTakt === "function"; i++) {
+                for (let i = 0; i < 20; i++) {
                     r._leuchtTakt();
                     await new Promise((ok) => setTimeout(ok, 50));
                 }

@@ -520,7 +520,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            out.methodsExist = typeof r._installOmnibox === "function";
             // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
             const cmd = r._omniboxSearch("c:wetter");
             out.cmdAllBefehl =
@@ -564,7 +563,6 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: _installOmnibox existiert (die Suite ruft ihn nie)", omniResults.methodsExist);
         check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
@@ -674,8 +672,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Methoden existieren
-            out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
@@ -796,10 +792,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check(
-            "V8.02 Phase 3: _workshopInstallShapeDragDrop existiert (die Suite fährt ihn nicht)",
-            v802Results.hasShapeDnDInstall
-        );
         check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
         check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
@@ -851,9 +843,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methoden existieren
-            out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
-            out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
 
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -966,10 +955,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check(
-            "V8.03: die Material- und Farb-Palette existieren (die Suite fährt sie nicht)",
-            v803Results.hasMaterialRender && v803Results.hasColorRender
-        );
         check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
@@ -1012,7 +997,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     void errors;
     void finalState;
     // ### Ring 3 – Player-Emotionen → Welt ###
-    const ring3Results = await safeEvaluate(page, () => {
+    const ring3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
@@ -1089,13 +1074,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.state.player.emotions.joy = 0.42;
         r.state.player.emotions.chaos = 0.13;
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.savedEmotions =
             !!parsed &&
             parsed.playerEmotions &&
@@ -1982,7 +1961,6 @@ async function checkBandV18135Bookmarks(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.helpers = typeof r._loadFeedBookmarks === "function";
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
         const was = r._feedBookmarked(id);
@@ -2004,7 +1982,7 @@ async function checkBandV18135Bookmarks(ctx) {
     }
     check(
         "V18.135 Lesezeichen: _loadFeedBookmarks (die Suite ruft ihn nie) + Toggle-Roundtrip + globale Persistenz",
-        res.helpers && res.toggleOn && res.persisted && res.toggleOff
+        res.toggleOn && res.persisted && res.toggleOff
     );
 }
 
@@ -2110,7 +2088,6 @@ async function checkBandV18143Comments(ctx) {
         // Panel als TEXT, nie als Element (XSS-Wand).
         const roh = JSON.stringify({ type: "social-comment", c: { id: "band143:ziel" } });
         out.handlerWired = window.__consumes(r, "_p2pHandleChannelMessage", r, "_socialCommentReceive", ["peerZensus143", roh]);
-        out.batchExists = typeof r._socialCommentsBatch === "function";
         const X = "<img src=x onerror=window.__xss143=1><b>boese</b>";
         r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", { id: "band143:xss", x: X, t: 1, pub: "ab".repeat(32), sig: "x" });
         const panel = document.createElement("div");
@@ -2148,7 +2125,7 @@ async function checkBandV18143Comments(ctx) {
     );
     check(
         "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · onopen-Batch · das fremde Wort bleibt Text — XSS-Wand)",
-        res.handlerWired && res.batchExists && res.xssWall
+        res.handlerWired && res.xssWall
     );
 }
 

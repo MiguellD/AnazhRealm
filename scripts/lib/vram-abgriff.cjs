@@ -1,5 +1,5 @@
-// vram-abgriff.cjs — DER VRAM-ABGRIFF der Werkbank und jeder Linse, die die GPU beim Namen zählt (bis 07.10. ein Teil
-// von scripts/werkbank.cjs; gate:ziel-zensus fährt ihn headless, darum lebt er hier als EINE Quelle). Er läuft vor jedem
+// vram-abgriff.cjs — DER VRAM-ABGRIFF der Werkbank und jeder Linse, die die GPU beim Namen zählt
+// (gate:ziel-zensus fährt ihn headless, darum lebt er hier als EINE Quelle). Er läuft vor jedem
 // Seiten-Skript: page.evaluateOnNewDocument(vramAbgriff).
 "use strict";
 

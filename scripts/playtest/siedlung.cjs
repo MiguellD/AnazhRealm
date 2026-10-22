@@ -171,7 +171,7 @@ async function checkBandRing6Workshop(ctx) {
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
-    const ring6Results = await safeEvaluate(page, () => {
+    const ring6Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -299,13 +299,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // (i) Save-Roundtrip
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.saveContainsArchitectures =
             !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
         // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
@@ -534,7 +528,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.keys = { w: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
         }
         const playerZ = r.state.playerMesh.position.z;
         const playerY = r.state.playerMesh.position.y;
@@ -566,7 +560,7 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
     // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
-    const ring64Results = await safeEvaluate(page, () => {
+    const ring64Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
@@ -632,13 +626,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // Save-Roundtrip: User-Bauplan überlebt
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.saveContainsUserBlueprint =
             !!parsed && Array.isArray(parsed.blueprints) && parsed.blueprints.some((bp) => bp.name === "test_hut");
         out.saveOmitsBuiltIn =
@@ -697,7 +685,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.5 — Hotbar mit 9 Slots ###
-    const ring65Results = await safeEvaluate(page, () => {
+    const ring65Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // DOM-Hotbar
@@ -785,13 +773,7 @@ async function checkBandRing6Workshop(ctx) {
         // Save-Roundtrip
         r.setHotbarSlot(7, "damm");
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         out.saveContainsHotbar =
             !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "damm";
 
@@ -848,7 +830,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
-    const ring66Results = await safeEvaluate(page, () => {
+    const ring66Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
@@ -957,8 +939,7 @@ async function checkBandRing6Workshop(ctx) {
             size: { x: 3, y: 3, z: 3 },
         });
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-        const parsed = JSON.parse(raw);
+        const parsed = await r._speicherLies(r.state.worldMeta.worldId);
         const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
         out.saveContainsCustom = !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
 

@@ -18,7 +18,9 @@ const ZONEN_GLOBALE = Object.fromEntries(
     [
         "AnazhRealm",
         "_stammZonen",
-        ...ZONEN.flatMap((p) => [...readFileSync(`${WURZEL}/${p}`, "utf8").matchAll(/^class (AnazhRealm_\w+) \{$/gm)].map((m) => m[1])),
+        ...ZONEN.flatMap((p) =>
+            [...readFileSync(`${WURZEL}/${p}`, "utf8").matchAll(/^class (AnazhRealm_\w+) \{$/gm)].map((m) => m[1])
+        ),
     ].map((n) => [n, "readonly"])
 );
 
@@ -59,6 +61,7 @@ export default [
                 navigator: "readonly",
                 atob: "readonly",
                 btoa: "readonly",
+                TextDecoder: "readonly", // der Speicher-Faden liefert die Bytes einer Welt per Transfer
                 TextEncoder: "readonly",
                 indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
                 AnazhHuelle: "readonly", // die Studio-Hülle (worlds/huelle/huelle.js, K41): die Werkstatt ruft DENSELBEN Regler-Generator
@@ -129,6 +132,21 @@ export default [
         },
         rules: {
             "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+        },
+    },
+    {
+        // DER SPEICHER-FADEN (Karte speicher-journal): die Platte im Worker
+        files: ["speicher-worker.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                self: "readonly",
+                indexedDB: "readonly",
+                IDBKeyRange: "readonly",
+                TextEncoder: "readonly",
+                fetch: "readonly",
+            },
         },
     },
     {

@@ -198,8 +198,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         ],
                         tools: [],
                     };
-                    localStorage.setItem(r.worldStorageKey("taille-rt1-src"), JSON.stringify(srcSave));
-                    const res = r.importRecipesFromWorld("taille-rt1-src");
+                    await r._weltAblegen(srcSave, { aktiv: false });
+                    const res = await r.importRecipesFromWorld("taille-rt1-src");
                     const bp = r.state.blueprints["rt1_bp"];
                     const mat = r.state.materials["rt1_mat"];
                     M.rt1_import = {
@@ -208,7 +208,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         matUnknownSurvives: !!(mat && mat.xZukunft && mat.xZukunft.b === 2),
                         matForeignTagSurvives: !!(mat && mat.tags && mat.tags["x:fremd"] === 0.7),
                     };
-                    localStorage.removeItem(r.worldStorageKey("taille-rt1-src"));
+                    r.deleteWorld("taille-rt1-src");
                     delete r.state.blueprints["rt1_bp"];
                     delete r.state.materials["rt1_mat"];
                 }

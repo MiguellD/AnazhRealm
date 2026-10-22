@@ -364,9 +364,9 @@ class AnazhRealm_werkstatt_sozial {
                     confirmed = true;
                 }
                 if (!confirmed) return;
-                const result = this.importRecipesFromWorld(entry.worldId);
-                const chatOutput = document.getElementById("chat-output");
-                if (chatOutput) {
+                this.importRecipesFromWorld(entry.worldId).then((result) => {
+                    const chatOutput = document.getElementById("chat-output");
+                    if (!chatOutput) return;
                     const line = document.createElement("div");
                     if (result.ok) {
                         const c = result.counts;
@@ -376,7 +376,7 @@ class AnazhRealm_werkstatt_sozial {
                     }
                     chatOutput.appendChild(line);
                     chatOutput.scrollTop = chatOutput.scrollHeight;
-                }
+                });
             });
             const delBtn = document.createElement("button");
             delBtn.type = "button";
@@ -473,15 +473,15 @@ class AnazhRealm_werkstatt_sozial {
 
     async saveToProjectFolder(options = {}) {
         // Drei Pfade:
-        //   - lokaler save-server → POST /api/save-state
-        //   - anderswo + fallbackToDownload=true → Browser-Download
+        //   - lokaler save-server → POST /api/save-state: der Speicher-Faden komponiert die Bytes (die lebende Welt sichert
+        //     zuerst ihr Journal), der Haupt-Faden serialisiert kein Abbild
+        //   - anderswo + fallbackToDownload=true → Browser-Download (der Schöpfer verlangt die Datei)
         //   - anderswo + fallbackToDownload=false (Auto-Save) → still aussteigen
         const { fallbackToDownload = true } = options;
-        const stateToSave = this.buildStateSnapshot();
 
         if (!this.isSaveServerHost()) {
             if (fallbackToDownload) {
-                this.triggerStateDownload(stateToSave);
+                this.triggerStateDownload(this.buildStateSnapshot());
                 this.log("Zustand als Datei heruntergeladen (kein lokaler save-server erreichbar)");
                 return "download";
             }
@@ -490,26 +490,20 @@ class AnazhRealm_werkstatt_sozial {
         }
 
         try {
-            const response = await fetch("http://localhost:4312/api/save-state", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fileName: "anazhRealmState.json",
-                    state: stateToSave,
-                }),
+            if (this.saveState() === false) return false;
+            const r = await this._speicherRuf("server", {
+                id: this.state.worldMeta.worldId,
+                url: "http://localhost:4312/api/save-state",
             });
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            const result = await response.json();
-            this.log(`Zustand direkt im Spielordner gespeichert: ${result.path || "anazhRealmState.json"}`);
+            if (!r.ok) throw new Error(r.grund);
+            this.log(`Zustand direkt im Spielordner gespeichert: ${r.pfad || "anazhRealmState.json"}`);
             return "server";
         } catch (error) {
             if (!fallbackToDownload) {
                 this.log(`Direktes Speichern im Spielordner fehlgeschlagen (${error.message})`, "ERROR");
                 return false;
             }
-            this.triggerStateDownload(stateToSave);
+            this.triggerStateDownload(this.buildStateSnapshot());
             this.log(
                 `Direktes Speichern im Spielordner fehlgeschlagen (${error.message}). Download-Fallback gestartet`,
                 "ERROR"

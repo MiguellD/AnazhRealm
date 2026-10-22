@@ -4,9 +4,11 @@
 // Die Gegenprüfung Runde 4 (10.10.) fand zwei Formen, in denen der Boot eine rettbare Welt durch eine frische ersetzte: ein
 // korrupter Platz mit gültigem `.bak` (die Vorlade fing den Parse-Fehler, ensureWorldMeta vergab eine neue Id samt
 // Aktiv-Zeiger, die `.bak`-Rettung in loadState kam nie dran) und eine Welt, die nur in IndexedDB lag (der IDB-Vorlauf lief
-// erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE und läuft, BEVOR eine neue Id
-// vergeben wird; eine neue Welt erwacht nur, wenn alle drei leer sind — und dann laut. Diese Linse fährt die acht Formen
-// der Boot-Sonde des Prüfers (C:\Users\micha\AppData\Local\Temp\claude\pruef4-pruefbuehne\boot-sonde.cjs) und eine neunte:
+// erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE (der Speicher-Faden: Platte → .bak; der Platz im localStorage ist
+// seit der Karte speicher-journal der alte Spiegel, den der Vorlauf EINMAL auf die Platte zieht, der jüngere Stand gewinnt)
+// und läuft, BEVOR eine neue Id vergeben wird; eine neue Welt erwacht nur, wenn alles leer ist — und dann laut. Diese Linse
+// fährt die acht Formen der Boot-Sonde des Prüfers (C:\Users\micha\AppData\Local\Temp\claude\pruef4-pruefbuehne\boot-sonde.cjs)
+// und eine neunte:
 //
 //   platz-ohne-id     der Platz der aktiven Welt trägt einen Save ohne worldId      → die Welt DIESES Platzes
 //   platz-ohne-meta   … ohne worldMeta                                             → dito
@@ -22,8 +24,8 @@
 // Boot 2 nach einem Save (die Form bleibt stabil). Ein Befund nennt die Form und was der Boot tat.
 //
 //   node scripts/diag-boot-rettung.cjs [--json datei] [--wurzel dir] [--formen a,b]
-//   node scripts/diag-boot-rettung.cjs --selftest   zusätzlich: die Kette liest zum Schein nur den Platz — korrupt-bak,
-//                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
+//   node scripts/diag-boot-rettung.cjs --selftest   zusätzlich: der Vorlauf liest zum Schein nur den alten Spiegel (den
+//                                                    Platz) — korrupt-bak, nur-idb und idb-frischer MÜSSEN rot werden
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -61,7 +63,7 @@ const server = statikServer({
     seiten: { "/__leer": '<!doctype html><meta charset="utf-8"><title>leer</title>' },
 });
 
-// Der Schein des Selbsttests: die Rettungs-Kette liest nur den Platz (das Verhalten vor dem Schnitt, an Korrupt und IDB).
+// Der Schein des Selbsttests: der Vorlauf liest nur den Platz im localStorage (das Verhalten vor der Platte).
 function scheinNurPlatz() {
     let inst = null;
     Object.defineProperty(window, "anazhRealm", {
@@ -71,11 +73,16 @@ function scheinNurPlatz() {
         },
         set(v) {
             inst = v;
-            if (typeof v._weltRettungsKette !== "function") return;
-            const roh = v._weltRettungsKette.bind(v);
-            v._weltRettungsKette = (id) => {
-                const f = roh(id, null);
-                return f.quelle === "Platz" ? f : { state: null, quelle: null, befund: ["Schein: nur der Platz"] };
+            v._speicherVorlauf = async () => {
+                const id = v.activeWorldGet();
+                let state = null;
+                try {
+                    state = JSON.parse(localStorage.getItem("anazhRealmState_" + id));
+                } catch (_e) {
+                    state = null;
+                }
+                v._speicherBestand = new Set([id]);
+                v._speicherVorlage = { worldId: id, state, quelle: "Platz", befund: ["Schein: nur der Platz"] };
             };
         },
     });
@@ -255,14 +262,13 @@ async function fahreForm(browser, form, schein) {
             rep.boots.push(b2);
             if (b2.welt !== "welt-w1" || !b2.marken.includes("MARK-W1"))
                 befund(`der Wechsel erwachte in ${b2.welt} [${b2.marken.join(",")}] statt in welt-w1 [MARK-W1]`);
-            const w2 = await page.evaluate(() =>
-                (localStorage.getItem("anazhRealmState_welt-w2") || "").includes("MARK-W2")
+            const w2 = await page.evaluate(async () =>
+                JSON.stringify(await window.anazhRealm._speicherLies("welt-w2")).includes("MARK-W2")
             );
             if (!w2) befund("nach dem Wechsel trägt der Platz von welt-w2 seine Marke nicht mehr");
         } else if (!v.leer) {
             // Boot 2: die Seite speichert (wie das Spiel) und lädt neu — die Form bleibt stabil
-            await page.evaluate(() => window.anazhRealm.saveState());
-            await new Promise((r) => setTimeout(r, 800));
+            await page.evaluate(() => (window.anazhRealm.saveState(), window.anazhRealm._speicherRuf("still")));
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
             const b2 = await bereit(page);
             rep.boots.push(b2);

@@ -2603,7 +2603,7 @@ async function lauf() {
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
                     const r = await window.__weltDa((w) => typeof w.importWorldBeside === "function");
-                    const res = r.importWorldBeside(json);
+                    const res = await r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);
                     return res.worldId;

@@ -135,14 +135,9 @@ class AnazhRealm_speicher_welten {
     }
 
     // ### Ring 8 — Multi-Welt-Verwaltung ###
-    // localStorage: `anazhRealmWorlds` (Index) · `anazhRealmState_<worldId>` (Snapshot je Welt) ·
-    // `anazhRealmActiveWorld` (aktive worldId); Legacy-Key `anazhRealmState` migriert einmalig.
-    // Welt-Wechsel ist reload-basiert (saveState → activeWorldSet → reload): ein in-place-Tausch
-    // bräuchte tiefen Dispose (Chunks, Physik, Audio, Caches) und leckt State.
-
-    worldStorageKey(worldId) {
-        return `anazhRealmState_${worldId}`;
-    }
+    // Die Welten liegen auf der Platte des Speicher-Fadens (je worldId); im localStorage nur `anazhRealmWorlds` (Index) und
+    // `anazhRealmActiveWorld` (aktive worldId). Welt-Wechsel ist reload-basiert (saveState → activeWorldSet → reload): ein
+    // in-place-Tausch bräuchte tiefen Dispose (Chunks, Physik, Audio, Caches) und leckt State.
 
     activeWorldGet() {
         try {
@@ -214,18 +209,17 @@ class AnazhRealm_speicher_welten {
     // ensureWorldMeta laufen, sonst feuert der Frisch-Welt-Pfad (UUID + Genesis-Eintrag) für eine
     // existierende Welt. Rein lesend. DER PLATZ IST DIE IDENTITÄT: liegt auf dem Platz der aktiven Welt ein Save ohne
     // worldId oder ohne worldMeta (ein Legacy-Save, ein Bruchstück, abgelegt vor der Tür `_weltBetreten`), ist er die Welt
-    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`: IndexedDB ⇄ Abbild → .bak) —
-    // bis 10.10. las sie nur den Platz, und ensureWorldMeta vergab einer Welt, die korrupt mit gültigem .bak oder nur in
-    // IndexedDB lag, eine neue Id samt Aktiv-Zeiger, bevor loadState retten konnte. Findet die Kette nichts, merkt sie den
-    // Befund (`_bootLeer`): die frische Welt erwacht LAUT (init).
+    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`) — bis 10.10. las sie nur den
+    // Platz, und ensureWorldMeta vergab einer Welt, die korrupt mit gültigem .bak lag, eine neue Id samt Aktiv-Zeiger, bevor
+    // loadState retten konnte. Findet die Kette nichts, merkt sie den Befund (`_bootLeer`): die frische Welt erwacht LAUT.
     _preloadActiveWorldMeta() {
         this._bootLeer = null;
-        if (!this.activeWorldGet() && !this._migrateLegacySingleWorld()) {
+        const id = this.activeWorldGet();
+        if (!id) {
             this._bootLeer = { id: null, befund: ["kein Aktiv-Zeiger", "kein Legacy-Save"] };
             return false;
         }
-        const id = this.activeWorldGet();
-        const fund = this._weltRettungsKette(id, this._idbVorlage(id));
+        const fund = this._weltRettungsKette(id);
         if (!fund.state) {
             this._bootLeer = { id, befund: fund.befund };
             return false;
@@ -235,56 +229,19 @@ class AnazhRealm_speicher_welten {
         return true;
     }
 
-    // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge), Leser: die Vorlade des Boots und loadState. Für die Welt
-    // `id`: (1) IndexedDB, wenn ihr Stempel nicht älter ist als der des Abbilds (saveState und die Tür stempeln beide gleich,
-    // der Index trägt lastPlayed); (2) sonst das Abbild im localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt);
-    // (3) sonst der .bak der Transaktion (ein Stand zurück). Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem
-    // harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
-    // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied.
-    _weltRettungsKette(id, idb) {
-        const befund = [];
-        const lies = (roh, name) => {
-            if (roh == null) {
-                befund.push(`${name} leer`);
-                return null;
-            }
-            try {
-                const s = JSON.parse(roh);
-                if (s && typeof s === "object") return s;
-                befund.push(`${name} unlesbar`);
-            } catch (e) {
-                befund.push(`${name} korrupt (${e.message})`);
-            }
-            return null;
-        };
-        let ls = null;
-        try {
-            ls = localStorage.getItem(this.worldStorageKey(id));
-        } catch (e) {
-            befund.push(`localStorage nicht lesbar (${e.message})`);
-        }
-        const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
-        const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
-        if (idb && idb.state && (ls == null || idb.at >= lsAt))
-            return { state: idb.state, quelle: "IndexedDB", befund };
-        if (idb && !idb.state && idb.kaputt !== "leer") befund.push(`IndexedDB korrupt (${idb.kaputt})`);
-        const platz = lies(ls, "Platz");
-        if (platz) return { state: platz, quelle: "Platz", befund };
-        if (idb && idb.state) return { state: idb.state, quelle: "IndexedDB", befund };
-        if (idb && idb.bak && idb.bak.state) return { state: idb.bak.state, quelle: ".bak (ein Stand zurück)", befund };
-        befund.push(idb ? `.bak ${idb.bak ? idb.bak.kaputt : "leer"}` : "IndexedDB leer");
-        return { state: null, quelle: null, befund };
+    // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge) lebt im Speicher-Faden (`ladeVonPlatte`): (1) das Abbild mit
+    // Kopf und Journal, (2) sonst der .bak (ein Stand zurück). Die Seite liest ihren Fund aus dem Vorlauf des Boots
+    // (`_speicherVorlauf`); Leser: die Vorlade und loadState. → {state, quelle, befund} — state null nur, wenn alle leer oder
+    // unlesbar sind, der Befund nennt jedes Glied.
+    _weltRettungsKette(id) {
+        const v = this._speicherVorlage;
+        if (v && v.worldId === id) return { state: v.state, quelle: v.state ? v.quelle : null, befund: v.befund };
+        return { state: null, quelle: null, befund: ["die Platte wurde für diese Welt nicht gelesen"] };
     }
 
-    // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
-    _idbVorlage(id) {
-        const pre = this._idbPreloadedState;
-        return pre && pre.worldId === id ? pre : null;
-    }
-
-    // Einmalige Migration des Single-Keys `anazhRealmState` → worldId, Multi-Key, Index, aktiv;
-    // der alte Key wird gelöscht (kein doppelter Pfad). true = migriert.
-    _migrateLegacySingleWorld() {
+    // Einmalige Migration des Single-Keys `anazhRealmState` (vor Ring 8) → worldId, Platte, Index, aktiv (im Vorlauf des
+    // Boots); der alte Key fällt erst, wenn die Welt sicher auf der Platte liegt. true = migriert.
+    async _migrateLegacySingleWorld() {
         try {
             const legacy = localStorage.getItem("anazhRealmState");
             if (!legacy) return false;
@@ -296,8 +253,7 @@ class AnazhRealm_speicher_welten {
                 worldId = AnazhRealm._neueWeltId();
                 parsed.worldMeta = { ...(parsed.worldMeta || {}), worldId };
             }
-            // die EINE Ablage (mit Probe); der alte Key fällt erst, wenn die Welt sicher auf ihrem Platz liegt
-            const ab = this._weltAblegen(parsed);
+            const ab = await this._weltAblegen(parsed);
             if (!ab.ok) {
                 this.log(`Welt-Migration: Ablage fehlgeschlagen (${ab.reason}) — der alte Save bleibt.`, "ERROR");
                 return false;
@@ -461,30 +417,28 @@ class AnazhRealm_speicher_welten {
         // Voxel ist permanent: das Flag IMMER explizit setzen — nie auf den
         // `_buildEmptyWorldSnapshot`-Spread verlassen (bräche leise bei einer Init-Änderung).
         snap.worldMeta.voxelTerrain = true;
-        const ab = this._weltAblegen(snap);
-        if (!ab.ok) {
-            this.log(`Neue Welt konnte nicht geschrieben werden: ${ab.reason}`, "ERROR");
-            return null;
-        }
+        const ab = this._weltAblegen(snap).then((r) => {
+            if (!r.ok) this.log(`Neue Welt konnte nicht geschrieben werden: ${r.reason}`, "ERROR");
+            return r;
+        });
         this.log(
             `Neue Welt erschaffen: ${meta.slug} (${meta.worldId.slice(0, 8)}…, inheritPlayer=${inheritPlayer})`,
             "INFO"
         );
-        if (reload) this._weltWechselNeuLaden(meta.worldId);
+        if (reload) this._weltWechselNeuLaden(meta.worldId, ab);
         return meta.worldId;
     }
 
     // Wechsel zu einer existierenden Welt. Sichert aktuelle, setzt aktiv,
-    // optional Reload. Gibt false zurück, wenn die Ziel-Welt nicht im
-    // Speicher existiert (Index-Eintrag ohne Save-Datei wäre ein Bug).
+    // optional Reload. Gibt false zurück, wenn die Ziel-Welt nicht auf der
+    // Platte liegt (der Bestand des Speicher-Fadens; ein Index-Eintrag ohne Stand wäre ein Bug).
     switchToWorld(worldId, { reload = false } = {}) {
         if (!worldId || typeof worldId !== "string") return false;
         if (worldId === (this.state.worldMeta && this.state.worldMeta.worldId)) {
             // Bereits aktiv, kein Wechsel nötig.
             return true;
         }
-        const targetRaw = localStorage.getItem(this.worldStorageKey(worldId));
-        if (!targetRaw) {
+        if (!this._speicherBestand || !this._speicherBestand.has(worldId)) {
             this.log(`Welt-Wechsel verweigert: kein Save für ${worldId.slice(0, 8)}…`, "ERROR");
             return false;
         }
@@ -511,13 +465,8 @@ class AnazhRealm_speicher_welten {
             this.log("Welt-Löschung verweigert: aktive Welt kann nicht gelöscht werden.", "WARN");
             return false;
         }
-        try {
-            localStorage.removeItem(this.worldStorageKey(worldId));
-        } catch {
-            // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
-        }
-        // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen.
-        this._idbDeleteWorld(worldId);
+        this._speicherRuf("loeschen", { id: worldId });
+        if (this._speicherBestand) this._speicherBestand.delete(worldId);
         this.worldsIndexRemove(worldId);
         this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
         return true;
@@ -577,12 +526,14 @@ class AnazhRealm_speicher_welten {
     // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
-    _serializeBlueprint(bp) {
+    // `klon: false` (der Kopf des Speicher-Fadens, sofort JSON): Teile und Verbindungen ohne Tiefen-Klon — dieselben Bytes.
+    _serializeBlueprint(bp, { klon = true } = {}) {
+        const tief = (v) => (klon ? JSON.parse(JSON.stringify(v)) : v);
         const out = {
             name: bp.name,
             label: bp.label || bp.name,
-            parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-            connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+            parts: Array.isArray(bp.parts) ? tief(bp.parts) : [],
+            connections: Array.isArray(bp.connections) ? tief(bp.connections) : [],
         };
         if (bp.role === "tool" && bp.toolMeta) {
             out.role = "tool";
@@ -777,19 +728,116 @@ class AnazhRealm_speicher_welten {
         return restored;
     }
 
-    buildStateSnapshot() {
-        const knowledgeBase = this.state.knowledgeBase.slice(-200);
+    // DER LEIB (ein Register des Journals, Karte speicher-journal): Lage, Höhe über Grund, Seele, Ausrüstung — die Felder,
+    // die der Snapshot an ihren Stellen trägt; der Speicher-Faden liest ihre Namen aus dem Abbild.
+    _leibAbbild() {
+        const pm = this.state.playerMesh;
         return {
-            playerPosition: this.state.playerMesh
+            playerPosition: pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 5, z: 0 },
+            spielerUeberGrund: pm ? this._ueberGrund(pm.position) : undefined,
+            // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
+            // dem playerMesh-Bau angewandt — kein Body-Recreate.
+            playerSoul: this.state.player.soul || "human",
+            // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
+            playerEquipped: (this.state.player && this.state.player.equipped) || {
+                held: null,
+                armor: null,
+            },
+        };
+    }
+
+    // DAS INVENTAR (ein Register des Journals): Werkzeug-Besitz, Hotbar, die 27 Slots.
+    _inventarAbbild() {
+        return {
+            // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
+            // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
+            // eigen-geschmiedete (Welle 6) zu überleben.
+            playerTools: Array.isArray(this.state.player.tools) ? [...this.state.player.tools] : [],
+            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
+            // oder null. Default wird beim Init überschrieben.
+            hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
+            // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
+            // count} oder null. Bei Reload defensive Validierung (unbekannte
+            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
+                ? this.state.player.inventory
+                      .slice(0, 27)
+                      .map((sl) => (sl ? { blueprintName: sl.blueprintName, count: sl.count || 1 } : null))
+                : [],
+        };
+    }
+
+    // Ring 6: ein Bau-Werk im Snapshot. Nur {type, position, seed, scale} — der Mesh wird beim Laden aus dem Seed
+    // rekonstruiert (kein Mesh-Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen. Leser: der Snapshot und das
+    // Bauten-Journal des Speicher-Fadens (`_speicherSichern`) — EIN Feld-Satz.
+    _bauAbbild(a) {
+        return {
+            // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
+            // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
+            // Numerische ids (Worldgen) sind lokal.
+            id: a.id,
+            type: a.type,
+            position: { x: a.position.x, y: a.position.y, z: a.position.z },
+            // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
+            ueberGrund: this._ueberGrund(a.position),
+            seed: a.seed,
+            scale: Number.isFinite(a.scale) ? a.scale : 1,
+            // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
+            // Reload (sonst rasten geladene Bäume auf Identity zurück → der
+            // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
+            ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
+            // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
+            // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
+            ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
+            ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
+            ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
+            // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
+            // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
+            ...(a.freeBorn === true ? { freeBorn: true } : {}),
+            // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
+            ...(a.feldWurf === true ? { feldWurf: true } : {}),
+            // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
+            ...(a.werk === true ? { werk: true } : {}),
+            // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
+            // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
+            ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
+            // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
+            // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
+            ...(a.fundament && Number.isFinite(a.fundament.ex)
                 ? {
-                      x: this.state.playerMesh.position.x,
-                      y: this.state.playerMesh.position.y,
-                      z: this.state.playerMesh.position.z,
+                      fundament: Object.assign(
+                          { ex: a.fundament.ex, ez: a.fundament.ez },
+                          a.fundament.ox || a.fundament.oz ? { ox: a.fundament.ox, oz: a.fundament.oz } : {}
+                      ),
                   }
-                : { x: 0, y: 5, z: 0 },
+                : {}),
+            // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
+            // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
+            ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
+            // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
+            // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
+            ...(a.chimney && Number.isFinite(a.chimney.x)
+                ? { chimney: a.chimney }
+                : a.chimney === null
+                  ? { chimney: null }
+                  : {}),
+            // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
+            // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
+            ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),
+        };
+    }
+
+    // DER SNAPSHOT der Welt. `journal` (die Sicherung des Speicher-Fadens): der KOPF — Bauten, Edits und die Felder der
+    // Register tragen die Marke 0, der Faden setzt sie aus dem Journal an ihre Stellen (`komponiere`).
+    buildStateSnapshot({ journal = false } = {}) {
+        const knowledgeBase = this.state.knowledgeBase.slice(-200);
+        const leib = this._leibAbbild();
+        const inventar = this._inventarAbbild();
+        const snap = {
+            playerPosition: leib.playerPosition,
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
-            spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
+            spielerUeberGrund: leib.spielerUeberGrund,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -812,6 +860,7 @@ class AnazhRealm_speicher_welten {
                     if (arr.length > 16000) arr.splice(0, arr.length - 16000);
                     wm.scatterPromoted = arr;
                 }
+                if (journal && Array.isArray(wm.voxelEdits)) wm.voxelEdits = 0;
                 return wm;
             })(),
             dslAbilities: this.state.dsl.abilities.slice(-200),
@@ -936,9 +985,7 @@ class AnazhRealm_speicher_welten {
                         ? this.state.atmosphere.r5StructureBoost
                         : AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost,
             },
-            // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
-            // dem playerMesh-Bau angewandt — kein Body-Recreate.
-            playerSoul: this.state.player.soul || "human",
+            playerSoul: leib.playerSoul,
             // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene
             // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
             // verdrahtet und werden NICHT persistiert.
@@ -967,72 +1014,9 @@ class AnazhRealm_speicher_welten {
             })(),
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             consumables: this.state.consumables || {},
-            // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
-            playerEquipped: (this.state.player && this.state.player.equipped) || {
-                held: null,
-                armor: null,
-            },
-            // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
-            // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
-            // eigen-geschmiedete (Welle 6) zu überleben.
-            playerTools: Array.isArray(this.state.player.tools) ? [...this.state.player.tools] : [],
-            // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
-            // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
-            // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
-            architectures: (this.state.architectures || []).map((a) => ({
-                // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
-                // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
-                // Numerische ids (Worldgen) sind lokal.
-                id: a.id,
-                type: a.type,
-                position: { x: a.position.x, y: a.position.y, z: a.position.z },
-                // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
-                ueberGrund: this._ueberGrund(a.position),
-                seed: a.seed,
-                scale: Number.isFinite(a.scale) ? a.scale : 1,
-                // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
-                // Reload (sonst rasten geladene Bäume auf Identity zurück → der
-                // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
-                ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
-                // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
-                // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
-                ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
-                ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
-                ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
-                // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
-                // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
-                ...(a.freeBorn === true ? { freeBorn: true } : {}),
-                // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
-                ...(a.feldWurf === true ? { feldWurf: true } : {}),
-                // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
-                ...(a.werk === true ? { werk: true } : {}),
-                // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
-                // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
-                ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
-                // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
-                // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
-                ...(a.fundament && Number.isFinite(a.fundament.ex)
-                    ? {
-                          fundament: Object.assign(
-                              { ex: a.fundament.ex, ez: a.fundament.ez },
-                              a.fundament.ox || a.fundament.oz ? { ox: a.fundament.ox, oz: a.fundament.oz } : {}
-                          ),
-                      }
-                    : {}),
-                // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
-                // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
-                ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
-                // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
-                // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
-                ...(a.chimney && Number.isFinite(a.chimney.x)
-                    ? { chimney: a.chimney }
-                    : a.chimney === null
-                      ? { chimney: null }
-                      : {}),
-                // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
-                // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
-                ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),
-            })),
+            playerEquipped: leib.playerEquipped,
+            playerTools: inventar.playerTools,
+            architectures: journal ? 0 : (this.state.architectures || []).map((a) => this._bauAbbild(a)),
             // Φ7 (V18.190) — die KURATIONS-MANIFESTE der Welt: signierte
             // Hallen (Welt-Verzeichnisse) reisen im Snapshot mit. JSON-flach
             // (Map → Array), Restore baut die Map zurück.
@@ -1062,7 +1046,7 @@ class AnazhRealm_speicher_welten {
             // Der Feld-Satz lebt in _serializeBlueprint — EINE Quelle für alle drei Snapshot-Pfade.
             blueprints: Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => this._serializeBlueprint(bp)),
+                .map((bp) => this._serializeBlueprint(bp, { klon: !journal })),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
             // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
             // bei jedem Init, deshalb nur eigene speichern. Ω2: EIN Serialize.
@@ -1075,127 +1059,261 @@ class AnazhRealm_speicher_welten {
             materials: Object.values(this.state.materials || {})
                 .filter((m) => m && !m.builtIn)
                 .map((m) => this._serializeMaterial(m)),
-            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
-            // oder null. Default wird beim Init überschrieben.
-            hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
-            // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
-            // count} oder null. Bei Reload defensive Validierung (unbekannte
-            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
-            playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
-                ? this.state.player.inventory
-                      .slice(0, 27)
-                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
-                : [],
+            hotbar: inventar.hotbar,
+            playerInventory: inventar.playerInventory,
         };
+        if (journal) for (const k of [...Object.keys(leib), ...Object.keys(inventar)]) snap[k] = 0;
+        return snap;
     }
 
-    // ===== IndexedDB-Persistenz =====
-    // Große Welt-Snapshots leben in IndexedDB (localStorage-Wand ~5 MB je Origin, atomar je Transaktion); der winzige Index
-    // (anazhRealmWorlds/Active) bleibt synchron in localStorage, dazu das Abbild des Stands mit demselben Stempel.
-    // Beim LESEN gewinnt IndexedDB, wenn ihr Stempel nicht älter ist (`_weltRettungsKette`). Ohne IndexedDB trägt
-    // localStorage allein; wirft localStorage QUOTA, trägt IndexedDB allein.
-
-    // Lazy-Open der EINEN DB (Promise gecacht; null = nicht verfügbar).
-    _idb() {
-        if (this._idbPromise !== undefined) return this._idbPromise;
-        if (typeof indexedDB === "undefined") {
-            this._idbPromise = Promise.resolve(null);
-            return this._idbPromise;
+    // ===== DER SPEICHER-FADEN (Karte speicher-journal) =====
+    // Die Platte lebt im Faden `speicher-worker.js` (Lehre 24). Ein Save serialisiert im Haupt-Faden nur die ÄNDERUNG: den
+    // Kopf (`buildStateSnapshot({ journal: true })` — der Snapshot, die Domänen als Marke 0) und das Journal der vier
+    // Domänen. Edits und Bauten meldet ihre Schreib-Stelle (`_speicherMelden`: `_addVoxelEdit`; der Bestand — Eintritt,
+    // Austritt, Bewegung — und wer einen Bau danach umschreibt), Leib und Inventar sind Register (0,1–0,3 KB): ihr Wert
+    // reist, wenn er sich änderte. Das ganze Abbild reist nur an der Weltgrenze (der erste Save nach dem Laden, ein neuer
+    // Faden, ein gebrochenes Journal — dann laut). Der localStorage-Spiegel fiel mit dieser Karte; der Index der Welten und
+    // der Aktiv-Zeiger bleiben dort (klein, synchron). Ohne Faden bricht der Save laut (`_bruchMelden`), nie still.
+    _speicherFaden() {
+        if (this._speicher) return this._speicher;
+        if (typeof Worker === "undefined") return null;
+        const S = (this._speicher = { w: null, n: 0, warte: new Map(), schlange: [] });
+        const an = (w) => {
+            S.w = w;
+            w.onmessage = (e) => {
+                const r = e.data || {};
+                const w8 = S.warte.get(r.n);
+                S.warte.delete(r.n);
+                if (w8) w8.ok(r);
+            };
+            w.onerror = (e) => {
+                if (e && e.preventDefault) e.preventDefault();
+                this._speicherBruch(S, `der Speicher-Faden brach (${(e && e.message) || e})`);
+            };
+            for (const m of S.schlange.splice(0)) w.postMessage(m);
+        };
+        const url = `speicher-worker.js?v=${AnazhRealm.VERSION}`;
+        try {
+            an(new Worker(url));
+        } catch (_e) {
+            // Im null-origin-Sandbox-iframe (AnazhRealm IN AnazhRealm) wirft `new Worker(url)`: die Quelle per fetch → Blob-URL.
+            fetch(url)
+                .then((r) => r.text())
+                .then(
+                    (q) => an(new Worker(URL.createObjectURL(new Blob([q], { type: "text/javascript" })))),
+                    (e) => this._speicherBruch(S, `der Speicher-Faden startet nicht (${(e && e.message) || e})`)
+                );
         }
-        this._idbPromise = new Promise((resolve) => {
-            try {
-                const req = indexedDB.open("anazhRealm", 1);
-                req.onupgradeneeded = () => {
-                    const db = req.result;
-                    if (!db.objectStoreNames.contains("worlds")) db.createObjectStore("worlds");
-                };
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-                req.onblocked = () => resolve(null);
-            } catch {
-                resolve(null);
-            }
-        });
-        return this._idbPromise;
+        return S;
     }
 
-    // Einen Welt-Snapshot (JSON-String) ablegen, ATOMAR wie der save-server (tmp + Tausch + .bak): EINE Transaktion liest den
-    // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — ein Tod mitten darin lässt beide, wie
-    // sie waren (nie ein halber Platz, nie ein leerer .bak). {at} stempelt die Frische (= lastPlayed des Abbilds).
-    async _idbPutWorld(worldId, json, at = Date.now()) {
-        const db = await this._idb();
-        if (!db || !worldId) return false;
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction("worlds", "readwrite");
-                const store = tx.objectStore("worlds");
-                store.get(worldId).onsuccess = (e) => {
-                    const vor = e.target.result;
-                    if (vor && typeof vor.json === "string") store.put(vor, worldId + ".bak");
-                    store.put({ at, json }, worldId);
-                };
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = () => resolve(false);
-                tx.onabort = () => resolve(false);
-            } catch {
-                resolve(false);
-            }
-        });
+    // Der Faden brach: laut, die Wartenden erfahren es, die nächste Sicherung trägt das ganze Abbild in einen neuen Faden.
+    _speicherBruch(S, text) {
+        this._bruchMelden(`SPEICHER: ${text} — die nächste Sicherung trägt das ganze Abbild in einen neuen Faden`);
+        if (this._speicher === S) this._speicher = null;
+        this._speicherGrund = null;
+        if (S.w) S.w.terminate();
+        for (const w8 of S.warte.values()) w8.ok({ ok: false, grund: text });
+        S.warte.clear();
     }
 
-    async _idbGetWorld(worldId) {
-        const db = await this._idb();
-        if (!db || !worldId) return null;
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction("worlds", "readonly");
-                const req = tx.objectStore("worlds").get(worldId);
-                req.onsuccess = () => {
-                    const r = req.result;
-                    resolve(r && typeof r.json === "string" ? r : null);
-                };
-                req.onerror = () => resolve(null);
-            } catch {
-                resolve(null);
-            }
+    // EIN Ruf an den Faden (die Ops laufen dort in EINER Reihe) → Promise der Antwort. DIE WACHE: wartet der älteste Ruf
+    // länger als `AnazhRealm.SPEICHER_FRIST_MS`, ist der Faden stumm (eine Platte, die nie fest wird) — laut, ein neuer
+    // Faden, die nächste Sicherung trägt das ganze Abbild; nie schreibt die Seite still in einen toten Faden.
+    _speicherRuf(op, daten = {}) {
+        let S = this._speicherFaden();
+        const alt = S && S.warte.size ? S.warte.values().next().value : null;
+        if (alt && performance.now() - alt.t > AnazhRealm.SPEICHER_FRIST_MS) {
+            this._speicherBruch(
+                S,
+                `der Speicher-Faden antwortet seit ${Math.round((performance.now() - alt.t) / 1000)} s nicht`
+            );
+            S = this._speicherFaden();
+        }
+        if (!S) {
+            this._bruchMelden(
+                "SPEICHER: dieser Browser kennt keinen Worker — kein Speicher-Faden, die Welt bleibt ungesichert"
+            );
+            return Promise.resolve({ ok: false, grund: "kein Speicher-Faden" });
+        }
+        const m = Object.assign({ op, n: ++S.n }, daten);
+        return new Promise((ok) => {
+            S.warte.set(m.n, { ok, t: performance.now() });
+            if (S.w) S.w.postMessage(m);
+            else S.schlange.push(m);
         });
     }
 
-    async _idbDeleteWorld(worldId) {
-        const db = await this._idb();
-        if (!db || !worldId) return false;
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction("worlds", "readwrite");
-                tx.objectStore("worlds").delete(worldId);
-                tx.objectStore("worlds").delete(worldId + ".bak");
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = () => resolve(false);
-            } catch {
-                resolve(false);
-            }
-        });
+    // DER EINE MELDER des Journals: Edits (`ding` = der Edit, angehängt) und Bauten (`ding` = der Eintrag; `art` „neu" beim
+    // Eintritt, „weg" beim Austritt, sonst geändert — gelesen wird er erst beim Save). Ohne Abbild im Faden schweigt er: die
+    // nächste Sicherung trägt alles.
+    _speicherMelden(domaene, ding, art = "da") {
+        if (!this._speicherGrund) return;
+        const J = this._speicherJ;
+        if (domaene === "edits") J.edits.push(ding);
+        else if (art === "neu") {
+            J.bauten.delete(ding);
+            J.bauten.set(ding, "neu");
+        } else if (art === "weg" || !J.bauten.has(ding)) J.bauten.set(ding, art);
     }
 
-    // Boot-Vorlauf (init awaitet ihn VOR der Vorlade und vor loadState): den IDB-Stand der aktiven Welt lesen und halten —
-    // ob er gewinnt (frischer als der Platz) oder rettet (Platz und .bak leer oder korrupt), entscheidet die EINE
-    // Rettungs-Kette `_weltRettungsKette`. Bis 10.10. lief er erst nach ensureWorldMeta: eine Welt, die nur in IndexedDB
-    // lag, war da schon durch eine frische ersetzt.
-    async _idbPreload() {
-        this._idbPreloadedState = null;
-        const activeId = this.activeWorldGet();
-        if (!activeId) return;
-        const [rec, bak] = await Promise.all([this._idbGetWorld(activeId), this._idbGetWorld(activeId + ".bak")]);
-        if (!rec && !bak) return;
-        const lies = (r) => {
-            if (!r) return { state: null, at: 0, kaputt: "leer" };
-            try {
-                return { state: JSON.parse(r.json), at: r.at };
-            } catch (e) {
-                return { state: null, at: r.at, kaputt: e.message };
+    // DIE SICHERUNG (saveState): Kopf + Register + Journal an den Faden. Die Zählung ist die Wand des Journals: tragen Edits
+    // oder Bauten des Fadens nicht die der Welt, brach eine Schreib-Stelle am Melder vorbei — laut, und das Abbild reist.
+    _speicherSichern(id, at) {
+        const G = this._speicherGrund;
+        if (!G || G.id !== id) return this._speicherAbbild(id, at);
+        const J = this._speicherJ;
+        const K = this._speicherSchluessel;
+        const ed = this.state.worldMeta.voxelEdits;
+        const nEdits = Array.isArray(ed) ? ed.length : 0;
+        if (G.edits + J.edits.length !== nEdits)
+            return this._speicherAbbild(
+                id,
+                at,
+                `das Edit-Journal trägt ${G.edits + J.edits.length} von ${nEdits} Edits`
+            );
+        const bauten = [];
+        for (const [e, art] of J.bauten) {
+            const k = K.get(e);
+            if (art !== "da" && k !== undefined) {
+                bauten.push([k, null]);
+                K.delete(e);
+                G.bauten--;
             }
+            if (art === "neu") {
+                const neu = (this._speicherBauN = (this._speicherBauN || 0) + 1);
+                K.set(e, neu);
+                G.bauten++;
+                bauten.push([neu, this._bauAbbild(e)]);
+            } else if (art === "da" && k !== undefined) bauten.push([k, this._bauAbbild(e)]);
+        }
+        const nBauten = (this.state.architectures || []).length;
+        if (G.bauten !== nBauten)
+            return this._speicherAbbild(id, at, `das Bauten-Journal trägt ${G.bauten} von ${nBauten} Bauten`);
+        const register = {};
+        for (const [d, wert] of [
+            ["leib", this._leibAbbild()],
+            ["inventar", this._inventarAbbild()],
+        ]) {
+            const j = JSON.stringify(wert);
+            if (j !== G.register[d]) register[d] = G.register[d] = j;
+        }
+        const m = {
+            id,
+            at,
+            grund: G.n,
+            kopf: JSON.stringify(this.buildStateSnapshot({ journal: true })),
+            register,
+            edits: J.edits.length ? JSON.stringify(J.edits) : null,
+            bauten: bauten.length ? JSON.stringify(bauten) : null,
         };
-        this._idbPreloadedState = { worldId: activeId, ...lies(rec), bak: lies(bak) };
+        G.edits = nEdits;
+        this._speicherJ = { edits: [], bauten: new Map() };
+        this._speicherRuf("sichern", m).then((r) => this._speicherQuittung(r, id, at, G));
+        return true;
+    }
+
+    // DAS ABBILD (die Weltgrenze): der volle Snapshot EINMAL, die Bau-Schlüssel in der Ordnung des Bestands, die Register.
+    _speicherAbbild(id, at, warum = null) {
+        if (warum) this._bruchMelden(`SPEICHER: ${warum} — das Journal brach, die Sicherung trägt das ganze Abbild`);
+        const json = JSON.stringify(this.buildStateSnapshot());
+        const K = (this._speicherSchluessel = new WeakMap());
+        const schluessel = (this.state.architectures || []).map((a) => {
+            const k = (this._speicherBauN = (this._speicherBauN || 0) + 1);
+            K.set(a, k);
+            return k;
+        });
+        const ed = this.state.worldMeta.voxelEdits;
+        const leib = this._leibAbbild();
+        const inventar = this._inventarAbbild();
+        const G = (this._speicherGrund = {
+            id,
+            n: (this._speicherGrundN = (this._speicherGrundN || 0) + 1),
+            edits: Array.isArray(ed) ? ed.length : 0,
+            bauten: schluessel.length,
+            register: { leib: JSON.stringify(leib), inventar: JSON.stringify(inventar) },
+        });
+        this._speicherJ = { edits: [], bauten: new Map() };
+        const felder = { leib: Object.keys(leib), inventar: Object.keys(inventar) };
+        const verdichtenAb = AnazhRealm.SPEICHER_VERDICHTEN_AB;
+        this._speicherRuf("abbild", { id, at, grund: G.n, json, schluessel, felder, verdichtenAb }).then((r) =>
+            this._speicherQuittung(r, id, at, G)
+        );
+        return true;
+    }
+
+    // Die Antwort des Fadens auf eine Sicherung: fest → Bestand, Index (lastPlayed), Aktiv-Zeiger (nie in der Sperre des
+    // Welt-Wechsels); gescheitert → laut, und die nächste trägt das ganze Abbild.
+    _speicherQuittung(r, id, at, G) {
+        if (!r.ok) {
+            if (this._speicherGrund === G) this._speicherGrund = null;
+            this._bruchMelden(
+                `SPEICHER: die Sicherung der Welt ${id} schlug fehl (${r.grund}) — die nächste trägt das ganze Abbild`
+            );
+            return;
+        }
+        (this._speicherBestand || (this._speicherBestand = new Set())).add(id);
+        if (this._weltWechselSperre) return;
+        const wm = this.state.worldMeta || {};
+        this.worldsIndexUpsert({ worldId: id, slug: wm.slug || "", bornAt: wm.bornAt || at, lastPlayed: at });
+        if (this.activeWorldGet() !== id) this.activeWorldSet(id);
+    }
+
+    // Eine Welt der Platte (die Rettungs-Kette des Fadens) → der Zustand oder null. Die Bytes kommen per Transfer.
+    async _speicherLies(id) {
+        const r = await this._speicherRuf("lesen", { id });
+        return r.daten ? JSON.parse(new TextDecoder().decode(r.daten)) : null;
+    }
+
+    // DER VORLAUF DES BOOTS (init awaitet ihn VOR der Vorlade und vor loadState): der Umzug des alten Spiegels, dann die
+    // aktive Welt durch die Rettungs-Kette des Fadens (Abbild + Journal → .bak) und der Bestand der Platte. Ohne Platte
+    // (IndexedDB fehlt) trägt das Gedächtnis des Fadens: in der inneren Welt (null-origin) ihr Wesen, sonst ein Bruch.
+    async _speicherVorlauf() {
+        this._speicherVorlage = null;
+        await this._speicherUmzug();
+        const id = this.activeWorldGet();
+        const r = await this._speicherRuf("lesen", { id, bestand: true });
+        this._speicherBestand = new Set(r.bestand || []);
+        if (r.platte === false) {
+            const satz = `SPEICHER: keine Platte (${r.grund}) — die Welt lebt nur in dieser Sitzung`;
+            if (typeof window !== "undefined" && window.origin === "null") this.log(satz, "WARN");
+            else this._bruchMelden(satz);
+        }
+        if (!id) return;
+        const v = { worldId: id, state: null, quelle: r.quelle, befund: r.befund || [] };
+        if (r.daten) v.state = JSON.parse(new TextDecoder().decode(r.daten));
+        this._speicherVorlage = v;
+    }
+
+    // DER ABSCHIED DES SPIEGELS (Karte speicher-journal): was noch im localStorage liegt — der Single-Key vor Ring 8 und der
+    // Spiegel je Welt — zieht EINMAL auf die Platte; der jüngere Stand gewinnt am Stempel (lastPlayed des Index gegen den der
+    // Platte), ein unlesbarer fällt. Danach fällt der Schlüssel.
+    async _speicherUmzug() {
+        if (!this.activeWorldGet()) await this._migrateLegacySingleWorld();
+        const index = this.worldsIndexLoad();
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("anazhRealmState_")) keys.push(k);
+        }
+        for (const k of keys) {
+            const id = k.slice("anazhRealmState_".length);
+            const roh = localStorage.getItem(k);
+            let lesbar = !id.endsWith(".bak");
+            try {
+                lesbar = lesbar && !!JSON.parse(roh);
+            } catch {
+                lesbar = false;
+            }
+            const e = index.find((w) => w.worldId === id);
+            const at = e && Number.isFinite(e.lastPlayed) ? e.lastPlayed : 0;
+            const r = lesbar ? await this._speicherRuf("ablegen", { id, json: roh, at, nurNeuer: true }) : { ok: true };
+            if (r.ok) localStorage.removeItem(k);
+            else
+                this._bruchMelden(
+                    `SPEICHER: der Umzug der Welt ${id} auf die Platte schlug fehl (${r.grund}) — sie bleibt im localStorage`
+                );
+        }
     }
 
     triggerStateDownload(stateToSave, suggestedName) {
@@ -1967,6 +2085,11 @@ class AnazhRealm_speicher_welten {
 _stammZonen(AnazhRealm, [AnazhRealm_speicher_welten]);
 
 // ===== ATLAS · Speicher/welten — Außen-Konstanten =====
+// DER SPEICHER-FADEN (Karte speicher-journal): ab wie vielen Bytes das Journal einer Welt zum Abbild verdichtet (mindestens
+// so viel wie das Abbild selbst — die Platte trägt höchstens das Doppelte) und nach wie vielen ms ohne Antwort der Faden als
+// stumm gilt (`_speicherRuf`: laut, ein neuer Faden, das ganze Abbild).
+AnazhRealm.SPEICHER_VERDICHTEN_AB = 256 * 1024;
+AnazhRealm.SPEICHER_FRIST_MS = 30000;
 // R5-Struktur-Textur: Boost auf das micro-Gewicht der WERK-Profile (Bauwerke, Deko, Kreaturen,
 // Avatare) — Strukturen tragen mehr Mikro-Tiefe als das Terrain. LIVE-Quelle ist
 // `state.atmoUniforms.r5StructureBoost` (setStructureBoost); `microBoost` ist Default + Fallback.

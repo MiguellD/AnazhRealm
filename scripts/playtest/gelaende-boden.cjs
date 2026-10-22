@@ -947,12 +947,10 @@ async function checkBandVoxelTerrainCore(ctx) {
             // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
             terrainMaterialNull: r.state.terrainMaterial === null,
             // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
-            loopHasNoPrune: typeof r._gameLoopTick === "function" && window.__fehlt(r._gameLoopTick, /pruneDistantChunks/),
+            loopHasNoPrune: window.__fehlt(r._gameLoopTick, /pruneDistantChunks/),
             // (9) `_buildWaterPlane` ist voxel-only: Regex auf das Aufruf-Pattern
             // `this._terrainHeightAtWorld(`, damit ein Kommentar mit dem Namen nicht falsch-rot wird.
-            waterPlaneVoxelOnly:
-                typeof r._buildWaterPlane === "function" &&
-                window.__fehlt(r._buildWaterPlane, /this\._terrainHeightAtWorld\s*\(/),
+            waterPlaneVoxelOnly: window.__fehlt(r._buildWaterPlane, /this\._terrainHeightAtWorld\s*\(/),
             // (10) Voxel-Pendants leben weiter (Vision-Anker)
             voxelGrassAlive: r.state.voxelChunkGrass instanceof Map,
         };

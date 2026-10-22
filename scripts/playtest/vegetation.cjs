@@ -46,7 +46,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
         // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
-        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
@@ -74,7 +73,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Region wird erst NACH dem Restore neu gebaut, im ambienten Regime.
         try {
             const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
+            if (SCcfg && Number.isFinite(SCcfg.regionM)) {
                 const frx = Math.floor(ppD.x / SCcfg.regionM),
                     frz = Math.floor(ppD.z / SCcfg.regionM);
                 const fk = `${frx},${frz}`;
@@ -144,7 +143,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         try {
             const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const SCt = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCt && Number.isFinite(SCt.regionM) && typeof r._scatterRegion === "function" && st.scatterRegions) {
+            if (SCt && Number.isFinite(SCt.regionM) && st.scatterRegions) {
                 // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
                 // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
                 const snap = st.scatterRegions;
@@ -697,30 +696,26 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
         }
 
-        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
-        out.helperExists = typeof r._eisenAderAt === "function";
-        if (out.helperExists) {
-            // Determinismus: zweimal gleicher (x,z) → gleicher Wert
-            const a1 = r._eisenAderAt(123.7, 456.3);
-            const a2 = r._eisenAderAt(123.7, 456.3);
-            out.deterministic = Math.abs(a1 - a2) < 1e-10;
-            // Wert in [0, 1]
-            out.boundedRange = a1 >= 0 && a1 <= 1;
-            // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
-            // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
-            let max = 0,
-                sum = 0;
-            for (let i = 0; i < 500; i++) {
-                const x = (i * 37 + 11) % 5000;
-                const z = (i * 73 - 29) % 5000;
-                const v = r._eisenAderAt(x, z);
-                if (v > max) max = v;
-                sum += v;
-            }
-            out.distMax = max;
-            out.distMean = sum / 500;
-            out.distHasPeaks = max > 0.5;
+        // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+        const a1 = r._eisenAderAt(123.7, 456.3);
+        const a2 = r._eisenAderAt(123.7, 456.3);
+        out.deterministic = Math.abs(a1 - a2) < 1e-10;
+        // Wert in [0, 1]
+        out.boundedRange = a1 >= 0 && a1 <= 1;
+        // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
+        // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
+        let max = 0,
+            sum = 0;
+        for (let i = 0; i < 500; i++) {
+            const x = (i * 37 + 11) % 5000;
+            const z = (i * 73 - 29) % 5000;
+            const v = r._eisenAderAt(x, z);
+            if (v > max) max = v;
+            sum += v;
         }
+        out.distMax = max;
+        out.distMean = sum / 500;
+        out.distHasPeaks = max > 0.5;
 
         // (I3) MIGRATION-TOLERANZ: _terrainMaterialAt ohne y bleibt
         // bit-identisch (keine Iron-Bands-Aktivierung ohne y-Probe).
@@ -791,7 +786,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
     );
-    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
@@ -827,94 +821,89 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (G1) Helper existiert
-        out.helperExists = typeof r._growTreeBlueprint === "function";
 
-        if (out.helperExists) {
-            // (G2) Determinismus: gleiche seed → gleiche parts
-            const p1 = r._growTreeBlueprint("eiche", "seed-a");
-            const p2 = r._growTreeBlueprint("eiche", "seed-a");
-            out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
+        // (G2) Determinismus: gleiche seed → gleiche parts
+        const p1 = r._growTreeBlueprint("eiche", "seed-a");
+        const p2 = r._growTreeBlueprint("eiche", "seed-a");
+        out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
 
-            // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
-            const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
-            const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
-            const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
-            out.sixDistinct = uniqueSigs.size === 6;
+        // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
+        const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
+        const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
+        const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
+        out.sixDistinct = uniqueSigs.size === 6;
 
-            // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
-            // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
-            const sample = variants[0];
-            out.partsCount = sample.length;
-            out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
-            out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
-            out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
+        // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
+        // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
+        const sample = variants[0];
+        out.partsCount = sample.length;
+        out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
+        out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
+        out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
 
-            // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
-            // alle laub-Parts haben |xz| > 0.4 ODER y > 2. Der Fuß-Saum (die flache Wurzelanlauf-Disk, Ω-K2) sitzt
-            // BEWUSST am Sockel und ist keine Krone (wie V18.211 S3c); seit K24 wächst auch die Bare-Art "eiche" aus dem Gesetz.
-            const laubAwayFromTrunk = sample
-                .filter((p) => p.material === "laub" && !(p.position.y < 1 && p.size.x > p.size.y * 1.5))
-                .every((p) => {
-                    const dist = Math.hypot(p.position.x, p.position.z);
-                    return dist > 0.4 || p.position.y > 2;
-                });
-            out.laubAtBranchEnds = laubAwayFromTrunk;
-
-            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben Affinitäts-MAX wie baum_eiche (holz+laub,
-            // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
-            // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
-            const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
-            // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
-            const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
-            const treeBp = __g6Key && r.state.blueprints[__g6Key];
-            if (treeBp) {
-                const fakeTags = r.computeCompoundTags(fakeBp);
-                const treeTags = r.computeCompoundTags(treeBp);
-                const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-                const diffs = {};
-                let neutral = true;
-                for (const axis of targetAxes) {
-                    const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
-                    diffs[axis] = Number(dt.toFixed(3));
-                    if (Math.abs(dt) > 0.05) neutral = false;
-                }
-                out.tagDiffs = diffs;
-                out.tagNeutral = neutral;
-            }
-
-            // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
-            // size{xyz}
-            out.wellFormed = sample.every(
-                (p) =>
-                    p.shape &&
-                    p.material &&
-                    p.position &&
-                    typeof p.position.x === "number" &&
-                    typeof p.position.y === "number" &&
-                    typeof p.position.z === "number" &&
-                    p.size &&
-                    typeof p.size.x === "number" &&
-                    typeof p.size.y === "number" &&
-                    typeof p.size.z === "number"
-            );
-
-            // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
-            const heights = variants.map((v) => {
-                let maxY = 0;
-                for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
-                return maxY;
+        // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
+        // alle laub-Parts haben |xz| > 0.4 ODER y > 2. Der Fuß-Saum (die flache Wurzelanlauf-Disk, Ω-K2) sitzt
+        // BEWUSST am Sockel und ist keine Krone (wie V18.211 S3c); seit K24 wächst auch die Bare-Art "eiche" aus dem Gesetz.
+        const laubAwayFromTrunk = sample
+            .filter((p) => p.material === "laub" && !(p.position.y < 1 && p.size.x > p.size.y * 1.5))
+            .every((p) => {
+                const dist = Math.hypot(p.position.x, p.position.z);
+                return dist > 0.4 || p.position.y > 2;
             });
-            const hMin = Math.min(...heights);
-            const hMax = Math.max(...heights);
-            out.heightSpread = Number((hMax - hMin).toFixed(2));
-            out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+        out.laubAtBranchEnds = laubAwayFromTrunk;
 
+        // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben Affinitäts-MAX wie baum_eiche (holz+laub,
+        // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
+        // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
+        const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
+        // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
+        const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
+        const treeBp = __g6Key && r.state.blueprints[__g6Key];
+        if (treeBp) {
+            const fakeTags = r.computeCompoundTags(fakeBp);
+            const treeTags = r.computeCompoundTags(treeBp);
+            const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            const diffs = {};
+            let neutral = true;
+            for (const axis of targetAxes) {
+                const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
+                diffs[axis] = Number(dt.toFixed(3));
+                if (Math.abs(dt) > 0.05) neutral = false;
+            }
+            out.tagDiffs = diffs;
+            out.tagNeutral = neutral;
         }
+
+        // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
+        // size{xyz}
+        out.wellFormed = sample.every(
+            (p) =>
+                p.shape &&
+                p.material &&
+                p.position &&
+                typeof p.position.x === "number" &&
+                typeof p.position.y === "number" &&
+                typeof p.position.z === "number" &&
+                p.size &&
+                typeof p.size.x === "number" &&
+                typeof p.size.y === "number" &&
+                typeof p.size.z === "number"
+        );
+
+        // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
+        const heights = variants.map((v) => {
+            let maxY = 0;
+            for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
+            return maxY;
+        });
+        const hMin = Math.min(...heights);
+        const hMax = Math.max(...heights);
+        out.heightSpread = Number((hMax - hMin).toFixed(2));
+        out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+
         return out;
     });
 
-    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
     check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
     check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
@@ -971,24 +960,22 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
-        if (typeof r._growTreeBlueprintForSpawn === "function") {
-            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
-            if (grownKey && r.state.blueprints[grownKey]) {
-                // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
-                // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
-                // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
-                r.state.architectures = r.state.architectures || [];
-                r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
-                // Snapshot bauen und das grownBlueprints-Feld prüfen.
-                const snap = r.buildStateSnapshot();
-                const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
-                out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
-                out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
-                // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
-                // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
-                out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
-                r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
-            }
+        const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
+        if (grownKey && r.state.blueprints[grownKey]) {
+            // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+            // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
+            // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
+            // Snapshot bauen und das grownBlueprints-Feld prüfen.
+            const snap = r.buildStateSnapshot();
+            const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
+            out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
+            out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
+            // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
+            // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
+            out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
         }
 
         return out;
@@ -1030,22 +1017,20 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // ─── Ω-K2 BAUM-FÜSSE ───
         // Flacher mossiger Saum am Stamm-Sockel: jeder Rich-Baum hat ein laub-Part mit y < trunkBaseR und
         // großem x/z-Stretch (Disk-Form).
-        if (typeof r._growTreeBlueprintRich === "function") {
-            const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
-            const sk = r._lastTreeSkeleton;
-            r._lastTreeSkeleton = null;
-            const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
-            // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
-            // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
-            const sockelParts = parts.filter(
-                (p) => p.material === "laub" && p.position.y < baseR * 2 && p.size.x > p.size.y * 1.5
-            );
-            out.k2HasFlare = sockelParts.length >= 1;
-            // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
-            if (sockelParts.length >= 1) {
-                const s = sockelParts[0];
-                out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
-            }
+        const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
+        const sk = r._lastTreeSkeleton;
+        r._lastTreeSkeleton = null;
+        const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
+        // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
+        const sockelParts = parts.filter(
+            (p) => p.material === "laub" && p.position.y < baseR * 2 && p.size.x > p.size.y * 1.5
+        );
+        out.k2HasFlare = sockelParts.length >= 1;
+        // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
+        if (sockelParts.length >= 1) {
+            const s = sockelParts[0];
+            out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
         }
 
         // ─── Ω-W VERTIEFTES WIND ───
@@ -1068,7 +1053,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
-        if (typeof r._growTreeBlueprintForSpawn === "function" && r.state && r.state.architectures) {
+        if (r.state && r.state.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
             if (grownKey && r.state.blueprints[grownKey]) {
                 // Spawn an Test-Position + harvest sofort.
@@ -1522,18 +1507,16 @@ async function checkBandV18217VariantenPool(ctx) {
         }
 
         // ─── (E) Snapshot-Persistierung von variantSeed ───────────────
-        if (typeof r.buildStateSnapshot === "function") {
-            const snap = r.buildStateSnapshot();
-            const wmSnap = snap && snap.worldMeta;
-            out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
-            if (out.snapshotCarriesPool) {
-                const liveKey = "baum_eiche";
-                const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
-                if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
-                    out.snapshotPoolMatchesLive =
-                        Array.isArray(wmSnap.variantSeed[liveKey]) &&
-                        wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
-                }
+        const snap = r.buildStateSnapshot();
+        const wmSnap = snap && snap.worldMeta;
+        out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
+        if (out.snapshotCarriesPool) {
+            const liveKey = "baum_eiche";
+            const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
+            if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
+                out.snapshotPoolMatchesLive =
+                    Array.isArray(wmSnap.variantSeed[liveKey]) &&
+                    wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
             }
         }
 

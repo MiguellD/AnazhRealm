@@ -166,8 +166,9 @@ class AnazhRealm_netz_p2p {
                     roomId: parsed.roomId,
                     peerId: typeof msg.peerId === "string" ? msg.peerId : null,
                 };
-                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA });
-                finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
+                this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA }).then((worldId) =>
+                    finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" })
+                );
             });
             ws.addEventListener("error", () => {
                 clearTimeout(timeout);
@@ -183,8 +184,8 @@ class AnazhRealm_netz_p2p {
     // Auto-Verbindung zum Host —, sind Parameter der EINEN Tür `_weltBetreten` (Sichern, Ablage mit Probe, Sperre). Bis
     // 10.10. schrieb diese Methode Platz, Index und Zeiger selbst (eigene Id-Regel `guest-<Zeit>`, keine Probe) — eine
     // zweite Tür neben der ersten. `opts.neuLaden` (Einladung, Adress-Portal: true), `opts.zeugnisA` (das Zeugnis der
-    // alten Welt). → worldId | null
-    _importGuestWorld(snapshot, hostInfo, slugHint, { neuLaden = false, zeugnisA = null } = {}) {
+    // alten Welt). → Promise worldId | null
+    async _importGuestWorld(snapshot, hostInfo, slugHint, { neuLaden = false, zeugnisA = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return null;
         const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
         if (erbgutNein) {
@@ -209,7 +210,7 @@ class AnazhRealm_netz_p2p {
             slug = `${originalSlug}-${suffix++}`;
         }
         const h = hostInfo || {};
-        const r = this._weltBetreten(
+        const r = await this._weltBetreten(
             snapshot,
             {
                 worldId,
@@ -2104,7 +2105,7 @@ class AnazhRealm_netz_p2p {
     // SEITE: bis 10.10. lud die Seite sie in sich und schrieb sie per saveState — die Tiere der alten Welt und (mit dem
     // Spread des Restores) ihr Erbgut, ihr Anker, ihre Edits (gate:weltgrenze Weg „weltpull": 50 Felder der alten Welt im
     // Speicher der Host-Welt); ein Snapshot ohne worldId landete roh auf dem Platz der alten Welt.
-    _p2pApplyWorldSnapshot(senderId, state) {
+    async _p2pApplyWorldSnapshot(senderId, state) {
         const p2p = this.state.p2p;
         const erbgutNein = AnazhRealm._erbgutEinlass(state);
         if (erbgutNein) {
@@ -2113,7 +2114,7 @@ class AnazhRealm_netz_p2p {
             return { ok: false, reason: erbgutNein };
         }
         p2p.pendingWorldSnapshot = false;
-        const r = this._weltBetreten(
+        const r = await this._weltBetreten(
             state,
             { role: "guest", hostInfo: { url: p2p.url, roomId: p2p.room, peerId: senderId } },
             { neuLaden: !p2p._testNoReload }

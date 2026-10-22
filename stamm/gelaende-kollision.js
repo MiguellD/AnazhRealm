@@ -255,6 +255,7 @@ class AnazhRealm_gelaende_kollision {
                 entry.userData = entry.userData || {};
                 entry.userData.rauchQuelle = entry.chimney;
             } else entry.chimney = null;
+            this._speicherMelden("bauten", entry); // die Spitze reist durch den Save
             this._blockerNetzSetzen(entry);
         }
         const alt = entry._hausHuelle;
@@ -564,6 +565,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Eintritt in den Bestand (nach dem push): die Ordnung und die Zellen.
     _blockerEintritt(entry) {
+        this._speicherMelden("bauten", entry, "neu"); // der Bestand ist die Schreib-Stelle der Bauten (Karte speicher-journal)
         const N = this._blockerNetz();
         entry._blockerGen = N.gen;
         entry._blockerSeq = ++N.seq;
@@ -572,6 +574,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
+        this._speicherMelden("bauten", entry, "weg");
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
         entry._blockerGen = 0;
@@ -580,6 +583,7 @@ class AnazhRealm_gelaende_kollision {
     // Ein Eintrag, dessen Position nach dem Eintritt wandert (das gerittene Werk folgt seinem Reiter in x/z, `_rittSchritt`):
     // sein Platz steht nicht mehr, wo er gestempelt wurde — die Frage nach Plätzen prüft ihn direkt, bis er den Bestand verlässt.
     _blockerBewegt(entry) {
+        this._speicherMelden("bauten", entry);
         const N = this._blockerNetz();
         if (entry._blockerGen === N.gen) N.beweger.add(entry);
     }

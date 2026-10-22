@@ -2894,6 +2894,7 @@ class AnazhRealm_gelaende_chunks {
         // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
         // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
+        this._speicherMelden("edits", newEdit); // das Journal des Speicher-Fadens (Karte speicher-journal)
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
@@ -2937,9 +2938,8 @@ class AnazhRealm_gelaende_chunks {
             const maxCZ = Math.floor((z + radius) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
-        // Persistenz debounced (~1.2 s nach dem letzten Hit): `saveState()` baut den VOLLEN Snapshot +
-        // JSON.stringify + synchrones localStorage.setItem — je Carve-Hit ein Ruckler. Der Edit liegt schon
-        // in `worldMeta.voxelEdits`; World-Switch/Beforeunload/andere Saves flushen sofort.
+        // Persistenz debounced (~1.2 s nach dem letzten Hit): EINE Sicherung trägt das Journal des Bursts. Der Edit liegt
+        // schon in `worldMeta.voxelEdits` und im Journal; World-Switch und andere Saves sichern sofort.
         this._scheduleEditSave();
         return true;
     }

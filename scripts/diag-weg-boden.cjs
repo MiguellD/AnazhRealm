@@ -11,12 +11,11 @@
 //   5 ECKE        ein um 45° gedrehter Acker trägt seine Ecke (die Ausdehnung ist die Diagonale, kein Achteck)
 //   6 FERNE       ein Weg 300 m vom Spieler steht in der Karte (die ferne Stufe der Clipmap, kein Loch hinter 120 m)
 //   7 BESTAND     die Kronen-Karte derselben Fenster: eine Eintrags-Krone übersteht 1,6 km Ausflug (Register, Streu,
-//                 verschoben = voll neu gemalt) — bis 06.10. vergaß der ferne Umzug jede Eintrags-Krone
+//                 verschoben = voll neu gemalt)
 //   8 TRITT       die Trittfläche einer Feuerstelle (`fx.tritt` des Gesetzbuchs) als EINZIGE Form der Karte: gesetzt
 //                 tragen GPU-Bytes und CPU-Leser Erde und die Wiesen-/Streu-Kachel darüber fällt; abgebaut über den
 //                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
-//                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen) — bis 06.10. wartete
-//                 der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte (GPU Erde, CPU 0, keine Wiese)
+//                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen)
 // --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug und der alte
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
@@ -148,7 +147,7 @@ function probe(stoerung) {
     const kz = o.z + 30;
     r._kronenStreuNeu("a:probe-bestand", kx, kz, 5);
     if (stoerung === "vergessen") {
-        // die Lücke bis 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters
+        // die Lücke: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters
         const fernStufe = wk.stufen[wk.stufen.length - 1];
         const umzug = r._kronenStreuUmzug;
         r._kronenStreuUmzug = function (stufe, war) {
@@ -249,7 +248,7 @@ function trittProbe(stoerung) {
     saeen();
     const version = nah.tex.version;
     if (stoerung === "tritt") {
-        // der Abbau bis 06.10.: die Form fällt, die Stufen warten auf den Takt, keine Wiese wächst nach
+        // der alte Abbau: die Form fällt, die Stufen warten auf den Takt, keine Wiese wächst nach
         r._trittFlaecheLoesen = function (e) {
             const k = this.state.wegeKarte;
             if (!e || !e._trittBox || !k) return;

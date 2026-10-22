@@ -502,9 +502,7 @@ function abnahmeSelbsttest(fixtureDir) {
 // Schwelle: das Pixel ZEIGT sie — ihr Schatten fehlt in G wie in O_k, eine Wurzel unter dem Boden zeigt in keinem der beiden.
 // Ein Misch-Pixel (zwei Klassen über der Schwelle, der Halm vor dem Grund) zählt EINMAL, bei der stärkeren; `misch` zählt sie.
 // Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
-// RAUSCHEN_MAX. Bis K63-n1 vier Schüsse unter freier Uhr und eine Schatten-Ausnahme nach der Farbart: zwei Schüsse derselben
-// Pose unterschieden sich an 27,5 % der Nah-Pixel um mehr als 18, 34 673 Pixel standen in zwei Masken, Gras unter den Tannen
-// in der Laub-Maske (Prüfer K63 R1).
+// RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
 function klassenTeilung(G, Os, W, H, schwelle) {
     const t = schwelle == null ? 18 : schwelle;

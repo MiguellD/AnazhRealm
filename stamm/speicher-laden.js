@@ -12,6 +12,7 @@ class AnazhRealm_speicher_laden {
         // DIE SPERRE DES LADENS (speicher.K1): bis der letzte Restore lief, ist die Welt halb — jeder Schreiber, der in ihr
         // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN saveState die ganze.
         const sperre = (this._ladeSperre = { verlangt: false });
+        this._speicherGrund = null; // jedes Laden ist eine Weltgrenze: die nächste Sicherung trägt das ganze Abbild
         try {
             this._loadStateRestorePlayerPosition(state);
             this._loadStateRestoreBasicState(state);
@@ -73,24 +74,14 @@ class AnazhRealm_speicher_laden {
         return true;
     }
 
-    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (IndexedDB des
-    // Boot-Vorlaufs ⇄ Abbild → .bak; der Vorlauf wird hier verbraucht; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
-    // Legacy-Single-Key. null, wenn nichts lesbar ist — dann sagt das Log, was die Kette fand.
+    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (der Fund des Vorlaufs
+    // `_speicherVorlauf`, hier verbraucht; Welt-Guard: nur für DIESELBE Welt). null, wenn nichts lesbar ist — dann sagt das
+    // Log, was die Kette fand.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
-        if (!activeId) {
-            const legacy = localStorage.getItem("anazhRealmState");
-            if (!legacy) return null;
-            try {
-                return JSON.parse(legacy);
-            } catch (e) {
-                this.log(`Legacy-Speicherstand korrupt (${e.message}).`, "ERROR");
-                return null;
-            }
-        }
-        const idb = this._idbVorlage(activeId);
-        this._idbPreloadedState = null;
-        const fund = this._weltRettungsKette(activeId, idb);
+        if (!activeId) return null;
+        const fund = this._weltRettungsKette(activeId);
+        this._speicherVorlage = null;
         if (!fund.state) {
             // Eine frische Welt hat noch keinen Stand (die Vorlade sagte es schon laut); ERROR nur, wenn etwas da war, das
             // sich nicht lesen ließ.
@@ -197,6 +188,7 @@ class AnazhRealm_speicher_laden {
             // (`AnazhRealm.WELT_GRENZE.gedaechtnis`: Erbgut-Merker, Ring, Vorschau, Dorf-Zug), fallen mit ihm — der
             // Heiß-Pfad liest den Erbgut-Merker direkt.
             this.state.worldMeta = this._weltMetaWechsel(state.worldMeta);
+            this._speicherGrund = null; // eine neue Welt (ihre Edits): die nächste Sicherung trägt das ganze Abbild
             AnazhRealm._weltMetaHeil(this.state.worldMeta);
             this._bewohnerFortAlle(); // die Leiber der Bewohner gehen vor ihrem Gedächtnis (`_bewohnerSiedlungen`)
             for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
@@ -583,6 +575,7 @@ class AnazhRealm_speicher_laden {
         // Respawn-Schleife baut sie lazy neu.
         this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
+        this._speicherGrund = null; // ein neuer Bestand: die nächste Sicherung trägt das ganze Abbild
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
@@ -844,15 +837,16 @@ class AnazhRealm_speicher_laden {
     //   1. IDENTITÄT: trägt sie keine worldId (ein Legacy-Save vor Ring 8, ein Minimal-Snapshot `{worldMeta:{}}`), bekommt sie
     //      ihre eigene (`_neueWeltId`) — nie den Platz der Welt davor. Bis 10.10. lag sie roh unter deren Id, und der Boot
     //      vergab vor dem Lesen des Platzes eine neue: beide Welten waren fort (Gegenprüfung Runde 3).
-    //   2. ABLAGE: sie liegt, wie sie kam, unter ihrer Id (`_weltAblegen`, mit Probe) — misslingt das (Quota), bleibt die
-    //      Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand. `p2pAuto` (der Gast): danach die
-    //      Auto-Verbindung zum Host.
-    //   3. SPERRE, ZEIGER, RELOAD (`_weltWechselNeuLaden`): die neue Welt erwacht in einer frischen Seite.
+    //   2. ABLAGE: sie liegt, wie sie kam, unter ihrer Id auf der Platte (`_weltAblegen`, mit Probe) — misslingt das (Quota),
+    //      bleibt die Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand. `p2pAuto` (der Gast): danach
+    //      die Auto-Verbindung zum Host.
+    //   3. SPERRE (sofort: kein Autosave schreibt mehr), ZEIGER, RELOAD (`_weltWechselNeuLaden`, wenn die Ablage fest ist):
+    //      die neue Welt erwacht in einer frischen Seite.
     // Die Seite lädt sie nie in sich (die alte Welt lebte darin weiter: Tiere, Chunks, Worker, Wasser). `meta` legt Felder
     // ins worldMeta (der Gast: role, hostInfo, slug); `neuLaden:false` legt nur ab (daneben legen, Tests), `aktiv:false`
-    // lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
+    // lässt dann auch den Aktiv-Zeiger (daneben legen). → Promise {ok, worldId|reason}
     _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
-        if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
+        if (!snapshot || typeof snapshot !== "object") return Promise.resolve({ ok: false, reason: "kein Snapshot" });
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
             if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
             this.saveState();
@@ -861,51 +855,59 @@ class AnazhRealm_speicher_laden {
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
-        const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
-        if (!ab.ok) {
-            this.log(`Die Welt konnte nicht abgelegt werden (${ab.reason}) — die Seite bleibt in ihrer Welt.`, "ERROR");
-            return ab;
-        }
-        if (p2pAuto) {
-            try {
-                localStorage.setItem("anazh.p2p.enabled", "true");
-                localStorage.setItem("anazh.p2p.url", p2pAuto);
-                localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
-            } catch (e) {
-                this.log(`Die Auto-Verbindung zum Host ließ sich nicht merken: ${e.message}`, "WARN");
+        const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden }).then((r) => {
+            if (!r.ok) {
+                this.log(
+                    `Die Welt konnte nicht abgelegt werden (${r.reason}) — die Seite bleibt in ihrer Welt.`,
+                    "ERROR"
+                );
+                return r;
             }
-        }
-        if (neuLaden) this._weltWechselNeuLaden(ab.worldId);
+            if (p2pAuto) {
+                try {
+                    localStorage.setItem("anazh.p2p.enabled", "true");
+                    localStorage.setItem("anazh.p2p.url", p2pAuto);
+                    localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
+                } catch (e) {
+                    this.log(`Die Auto-Verbindung zum Host ließ sich nicht merken: ${e.message}`, "WARN");
+                }
+            }
+            return r;
+        });
+        if (neuLaden) this._weltWechselNeuLaden(welt.worldMeta.worldId, ab);
         return ab;
     }
 
-    // DIE ABLAGE einer ganzen Welt, wie sie kam, unter IHRER Id (Per-Welt-Key + Index, mit `aktiv` der Aktiv-Zeiger), mit
-    // Probe: der Speicher trägt danach genau diese Bytes. Ohne worldId legt sie nichts ab (die Tür vergibt sie). Der EINE
-    // Schreiber neben saveState (der die lebende Welt schreibt): die Tür, die Geburt, daneben legen, die Fusion, die
-    // Legacy-Migration. → {ok, worldId|reason}
+    // DIE ABLAGE einer ganzen Welt, wie sie kam, unter IHRER Id auf der Platte des Speicher-Fadens (dann Index und, mit
+    // `aktiv`, der Aktiv-Zeiger), mit Probe: die Platte trägt danach genau diese Bytes. Ohne worldId legt sie nichts ab (die
+    // Tür vergibt sie). Der EINE Schreiber neben saveState (der die lebende Welt sichert): die Tür, die Geburt, daneben
+    // legen, die Fusion, die Legacy-Migration. Liegt die lebende Welt unter derselben Id, trägt ihre nächste Sicherung das
+    // ganze Abbild. → Promise {ok, worldId|reason}
     _weltAblegen(welt, { aktiv = true } = {}) {
         const m = welt && welt.worldMeta;
         const worldId = m && typeof m.worldId === "string" ? m.worldId : "";
-        if (!worldId) return { ok: false, reason: "keine worldId" };
+        if (!worldId) return Promise.resolve({ ok: false, reason: "keine worldId" });
+        let json;
         try {
-            const json = JSON.stringify(welt);
-            const at = Date.now(); // EIN Stempel für das Abbild und den atomaren Stand in IndexedDB (wie saveState)
-            this._idbPutWorld(worldId, json, at);
-            localStorage.setItem(this.worldStorageKey(worldId), json);
-            if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)
-                return { ok: false, reason: "der Speicher trägt andere Bytes" };
-            this.worldsIndexUpsert({
-                worldId,
-                slug: m.slug || "",
-                bornAt: m.bornAt || at,
-                lastPlayed: at,
-            });
+            json = JSON.stringify(welt);
+        } catch (e) {
+            return Promise.resolve({ ok: false, reason: String((e && e.message) || e) });
+        }
+        const at = Date.now();
+        if (this._speicherGrund && this._speicherGrund.id === worldId) this._speicherGrund = null;
+        // der Index sofort (die nächste Geburt wählt ihren slug an ihm), fällt die Ablage, fällt ein neuer Eintrag mit ihr
+        const neuImIndex = !this.worldsIndexLoad().some((e) => e.worldId === worldId);
+        this.worldsIndexUpsert({ worldId, slug: m.slug || "", bornAt: m.bornAt || at, lastPlayed: at });
+        return this._speicherRuf("ablegen", { id: worldId, json, at }).then((r) => {
+            if (!r.ok) {
+                if (neuImIndex) this.worldsIndexRemove(worldId);
+                return { ok: false, reason: r.grund };
+            }
+            (this._speicherBestand || (this._speicherBestand = new Set())).add(worldId);
             if (aktiv && !this.activeWorldSet(worldId))
                 return { ok: false, reason: "der Aktiv-Zeiger ließ sich nicht setzen" };
             return { ok: true, worldId };
-        } catch (e) {
-            return { ok: false, reason: String((e && e.message) || e) };
-        }
+        });
     }
 
     // DER WELT-WECHSEL IST EIN RELOAD — UND BIS DIE SEITE STIRBT, SCHREIBT SIE NICHTS MEHR (Gegenprüfung Runde 3, 10.10.):
@@ -914,16 +916,27 @@ class AnazhRealm_speicher_laden {
     // alten im Platz der neuen) oder setzte den Aktiv-Zeiger auf die alte zurück (der Beitritt durchs Adress-Portal und die
     // „Neue Welt" verschwanden still). DIE EINE SPERRE: der Edit-Timer fällt, `saveState` — jeder Speicher-Weg der lebenden
     // Welt geht durch ihn — verweigert, der Zeiger zeigt auf die Ziel-Welt. Rufer: jeder Welt-Wechsel (Neue Welt, Wechsel,
-    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal).
-    _weltWechselNeuLaden(zielId) {
+    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal). `ablage` (die
+    // Ablage der Ziel-Welt, ein Promise): die Seite lädt erst, wenn sie fest ist — misslingt sie, fällt die Sperre, die Seite
+    // bleibt laut in ihrer Welt. Vor dem Reload die Schranke des Speicher-Fadens: alles, was die Seite schrieb, ist fest.
+    _weltWechselNeuLaden(zielId, ablage = null) {
         this._weltWechselSperre = true;
         if (this._editSaveTimer) {
             clearTimeout(this._editSaveTimer);
             this._editSaveTimer = null;
         }
-        if (zielId) this.activeWorldSet(zielId);
-        if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
-            window.location.reload();
+        return Promise.resolve(ablage).then((ab) => {
+            if (ab && !ab.ok) {
+                this._weltWechselSperre = false;
+                return false;
+            }
+            return this._speicherRuf("still").then(() => {
+                if (zielId) this.activeWorldSet(zielId);
+                if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
+                    window.location.reload();
+                return true;
+            });
+        });
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
@@ -1088,15 +1101,17 @@ class AnazhRealm_speicher_laden {
         const neu = JSON.parse(JSON.stringify(parsed));
         AnazhRealm._zeugnisEintragen(neu, "Eine fremde Welt hat mich ersetzt.");
         this._closeWeltTorDialog();
-        const r = this._weltBetreten(neu);
-        if (chatOutput) {
-            const line = document.createElement("div");
-            line.textContent = r.ok
-                ? `Datei ${fileName} importiert — die Welt erwacht neu.`
-                : `Ersetzen fehlgeschlagen: ${fileName} ließ sich nicht ablegen (${r.reason}) — du bleibst in deiner Welt.`;
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
+        return this._weltBetreten(neu).then((r) => {
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.textContent = r.ok
+                    ? `Datei ${fileName} importiert — die Welt erwacht neu.`
+                    : `Ersetzen fehlgeschlagen: ${fileName} ließ sich nicht ablegen (${r.reason}) — du bleibst in deiner Welt.`;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+            return r;
+        });
     }
 
     _weltTorImportBeside() {
@@ -1107,23 +1122,25 @@ class AnazhRealm_speicher_laden {
         }
         const parsed = pending.parsed;
         const fileName = pending.fileName;
-        const result = this.importWorldBeside(parsed);
-        const chatOutput = document.getElementById("chat-output");
-        if (chatOutput) {
-            const line = document.createElement("div");
-            if (result.ok) {
-                line.textContent = `Datei ${fileName} liegt nun als „${result.slug}" neben dir (ID ${result.worldId.slice(0, 8)}…).`;
-            } else {
-                line.textContent = `Daneben legen fehlgeschlagen: ${result.reason}`;
-            }
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
-        if (result.ok) {
-            this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
-            this.updateWorldInfo();
-        }
         this._closeWeltTorDialog();
+        return this.importWorldBeside(parsed).then((result) => {
+            const chatOutput = document.getElementById("chat-output");
+            if (chatOutput) {
+                const line = document.createElement("div");
+                if (result.ok) {
+                    line.textContent = `Datei ${fileName} liegt nun als „${result.slug}" neben dir (ID ${result.worldId.slice(0, 8)}…).`;
+                } else {
+                    line.textContent = `Daneben legen fehlgeschlagen: ${result.reason}`;
+                }
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+            if (result.ok) {
+                this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+                this.updateWorldInfo();
+            }
+            return result;
+        });
     }
 
     _weltTorImportFuse() {
@@ -1134,20 +1151,22 @@ class AnazhRealm_speicher_laden {
             this._closeWeltTorDialog();
             return;
         }
-        const result = this.importWorldBeside(pending.parsed);
         this._closeWeltTorDialog();
-        if (result.ok) {
-            this.updateWorldInfo();
-            this._openWorldFusionDialog({ preselectB: result.worldId });
-        } else {
-            const chatOutput = document.getElementById("chat-output");
-            if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = `Fusion-Vorbereitung fehlgeschlagen: ${result.reason}`;
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+        return this.importWorldBeside(pending.parsed).then((result) => {
+            if (result.ok) {
+                this.updateWorldInfo();
+                this._openWorldFusionDialog({ preselectB: result.worldId });
+            } else {
+                const chatOutput = document.getElementById("chat-output");
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = `Fusion-Vorbereitung fehlgeschlagen: ${result.reason}`;
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
             }
-        }
+            return result;
+        });
     }
 
     // ### Fusion-UI ###
@@ -1247,11 +1266,13 @@ class AnazhRealm_speicher_laden {
             speak("Fusion verweigert: keine zweite Welt gewählt.");
             return;
         }
-        const result = this.fuseWorlds(activeId, parentBId, strategy, { slug, reload: true });
-        if (!result.ok) {
-            speak(`Fusion fehlgeschlagen: ${result.reason}`);
-            this._closeWorldFusionDialog();
-        }
+        return this.fuseWorlds(activeId, parentBId, strategy, { slug, reload: true }).then((result) => {
+            if (!result.ok) {
+                speak(`Fusion fehlgeschlagen: ${result.reason}`);
+                this._closeWorldFusionDialog();
+            }
+            return result;
+        });
         // Bei reload:true erreicht uns der Folge-Code nicht — der Browser
         // navigiert zur neuen Welt. Bei Test-Aufrufen ohne reload macht der
         // direkte Aufruf von fuseWorlds() die Arbeit.
@@ -1338,7 +1359,7 @@ class AnazhRealm_speicher_laden {
         return snap;
     }
 
-    importWorldBeside(parsed, { reload = false } = {}) {
+    async importWorldBeside(parsed, { reload = false } = {}) {
         if (!parsed || typeof parsed !== "object") {
             return { ok: false, reason: "kein gültiger Snapshot" };
         }
@@ -1384,7 +1405,7 @@ class AnazhRealm_speicher_laden {
         });
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
-        const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
+        const ab = await this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
@@ -1520,21 +1541,15 @@ class AnazhRealm_speicher_laden {
         return restored;
     }
 
-    importRecipesFromWorld(sourceWorldId) {
+    async importRecipesFromWorld(sourceWorldId) {
         if (!sourceWorldId || typeof sourceWorldId !== "string") {
             return { ok: false, reason: "keine Quell-Welt-ID" };
         }
         if (sourceWorldId === (this.state.worldMeta && this.state.worldMeta.worldId)) {
             return { ok: false, reason: "Quelle = aktive Welt" };
         }
-        const raw = localStorage.getItem(this.worldStorageKey(sourceWorldId));
-        if (!raw) return { ok: false, reason: "Quelle nicht im Speicher" };
-        let sourceSave;
-        try {
-            sourceSave = JSON.parse(raw);
-        } catch (e) {
-            return { ok: false, reason: `Quell-Save ungültig: ${e.message}` };
-        }
+        const sourceSave = await this._speicherLies(sourceWorldId);
+        if (!sourceSave) return { ok: false, reason: "Quelle nicht im Speicher" };
 
         // Quell-Inventar tief klonen, sonst würden Mutationen in der aktiven
         // Welt zurück in das Quell-Save bluten.
@@ -1647,7 +1662,7 @@ class AnazhRealm_speicher_laden {
         };
     }
 
-    fuseWorlds(idA, idB, strategy, { slug = null, reload = false } = {}) {
+    async fuseWorlds(idA, idB, strategy, { slug = null, reload = false } = {}) {
         if (!idA || !idB || idA === idB) {
             return { ok: false, reason: "zwei verschiedene Eltern-IDs nötig" };
         }
@@ -1658,17 +1673,9 @@ class AnazhRealm_speicher_laden {
         // letzten Autosave fiele sonst hinter die Sperre des Welt-Wechsels (und ist sie ein Elternteil, liest die Fusion
         // so ihren jetzigen Stand).
         if (reload && this.state.worldMeta && this.state.worldMeta.worldId) this.saveState();
-        const rawA = localStorage.getItem(this.worldStorageKey(idA));
-        const rawB = localStorage.getItem(this.worldStorageKey(idB));
-        if (!rawA || !rawB) {
+        const [saveA, saveB] = await Promise.all([this._speicherLies(idA), this._speicherLies(idB)]);
+        if (!saveA || !saveB) {
             return { ok: false, reason: "Eltern-Welt nicht im Speicher" };
-        }
-        let saveA, saveB;
-        try {
-            saveA = JSON.parse(rawA);
-            saveB = JSON.parse(rawB);
-        } catch (err) {
-            return { ok: false, reason: `Parent-Save ungültig: ${err.message}` };
         }
 
         const identity = this._fusionGenerateIdentity(saveA, saveB, slug);
@@ -1739,7 +1746,7 @@ class AnazhRealm_speicher_laden {
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
-        const ab = this._weltAblegen(snap, { aktiv: false });
+        const ab = await this._weltAblegen(snap, { aktiv: false });
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,

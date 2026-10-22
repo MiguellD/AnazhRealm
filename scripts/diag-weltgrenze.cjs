@@ -85,14 +85,18 @@ const server = statikServer({
         verzoegerung && p === "/index.html" ? new Promise((r) => setTimeout(() => r(data), verzoegerung)) : data,
 });
 
-// Beim Start JEDER Seite, vor dem Spiel: der Aktiv-Zeiger und sein Speicher-Eintrag (was die alte Seite hinterließ).
+// Beim Start JEDER Seite, vor dem Spiel: der Aktiv-Zeiger und sein Abbild auf der Platte (was die alte Seite hinterließ;
+// die Lese-Transaktion steht vor jedem Schreiben des neuen Speicher-Fadens).
 function startFang() {
-    try {
-        const id = localStorage.getItem("anazhRealmActiveWorld");
-        window.__grenzeStart = { id, json: id ? localStorage.getItem("anazhRealmState_" + id) : null };
-    } catch (_e) {
-        window.__grenzeStart = { id: null, json: null };
-    }
+    const id = localStorage.getItem("anazhRealmActiveWorld");
+    window.__grenzeStart = new Promise((ok) => {
+        const q = indexedDB.open("anazhRealm", 1);
+        q.onupgradeneeded = () => q.result.createObjectStore("worlds");
+        q.onsuccess = () => {
+            const g = q.result.transaction("worlds").objectStore("worlds").get(String(id));
+            g.onsuccess = () => (q.result.close(), ok({ id, json: g.result ? g.result.json : null }));
+        };
+    });
 }
 
 // Die Prüfer in der Seite (überleben jeden Reload: evaluateOnNewDocument).
@@ -159,12 +163,12 @@ function seitenPruefer() {
         },
         // A BLEIBT unter seiner Id: sein Platz trägt A (nicht B), der Index kennt A; mit `spaet` auch A's Fortschritt seit
         // dem letzten Autosave (die Tür sichert A vor der Sperre).
-        befundeA(aId, spaet) {
+        async befundeA(aId, spaet) {
             const r = window.anazhRealm;
-            const roh = localStorage.getItem(r.worldStorageKey(aId));
-            if (!roh) return [`A: unter ${aId} liegt keine Welt mehr`];
+            const s = await r._speicherLies(aId);
+            if (!s) return [`A: unter ${aId} liegt keine Welt mehr`];
             const out = [];
-            const s = JSON.parse(roh);
+            const roh = JSON.stringify(s);
             const id = s.worldMeta && s.worldMeta.worldId;
             if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);
             if (roh.includes("MARKER-B")) out.push("A: der Platz von A trägt B (MARKER-B)");
@@ -287,12 +291,11 @@ function seitenPruefer() {
             return Array.from(new Set(out));
         },
         // Der Speicher-Eintrag von B (die Wahrheit des nächsten Boots).
-        befundeSpeicher(weltId, erlaubt) {
+        async befundeSpeicher(weltId, erlaubt) {
             const r = window.anazhRealm;
             const ok = new Set(erlaubt || []);
-            const roh = localStorage.getItem(r.worldStorageKey(weltId));
-            if (!roh) return [`Speicher: kein Eintrag für ${weltId}`];
-            const s = JSON.parse(roh);
+            const s = await r._speicherLies(weltId);
+            if (!s) return [`Speicher: kein Eintrag für ${weltId}`];
             const out = pfade(s, "Speicher", 3).filter((p) => !ok.has(p.replace(/^Speicher\./, "")));
             const wm = s.worldMeta || {};
             for (const k of Object.keys(A_STUFEN)) {
@@ -318,12 +321,13 @@ async function bereit(page, weltId) {
 }
 
 // DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur saveState
-// (die lebende) und `_weltAblegen` (die EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel
-// `_weltWechselNeuLaden`. Jeder andere Ort fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
+// (die lebende: `_speicherSichern`, `_speicherAbbild`) und `_weltAblegen` (die EINE Ablage; der Umzug des alten Spiegels
+// `_speicherUmzug`) auf die Platte, `location.reload` steht nur im Welt-Wechsel `_weltWechselNeuLaden`. Jeder andere Ort
+// fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
 function absenz() {
     const out = [];
     const pruefe = (re, ausser, was) => stammLib.fehlt({ ausser }, re) || out.push(`${was}: ${stammLib.fehlt.wo}`);
-    pruefe(/localStorage\.setItem\(this\.worldStorageKey\(/, ["saveState", "_weltAblegen"], "Welt-Schreiber neben der EINEN Ablage");
+    pruefe(/_speicherRuf\("(abbild|sichern|ablegen)"/, ["_speicherSichern", "_speicherAbbild", "_weltAblegen", "_speicherUmzug"], "Welt-Schreiber neben der EINEN Ablage");
     pruefe(/location\.reload\(\)/, ["_weltWechselNeuLaden"], "Reload neben dem Welt-Wechsel");
     return out;
 }
@@ -428,27 +432,25 @@ async function fahreWeg(browser, weg, schein) {
                 async (weg, basis, B, aId) => {
                     const r = window.anazhRealm;
                     const g = window.__grenze;
-                    const ablage = (id) => ({
-                        ziel: id,
-                        abgelegt: id ? localStorage.getItem(r.worldStorageKey(id)) : null,
-                    });
+                    // die Bytes, die die Platte unter `id` trägt (der Speicher-Faden, nach der Ablage in seiner Reihe)
+                    const ablage = async (id) => {
+                        const q = id ? await r._speicherRuf("lesen", { id }) : {};
+                        return { ziel: id, abgelegt: q.daten ? new TextDecoder().decode(q.daten) : null };
+                    };
                     if (basis === "laden") {
                         r.loadState(B);
-                        return { inSeite: g.befundeLive([], false).concat(g.befundeA(aId)) };
+                        return { inSeite: g.befundeLive([], false).concat(await g.befundeA(aId)) };
                     }
                     if (basis === "ersetzen") {
                         if (weg === "ersetzen-quota") {
-                            const key = r.worldStorageKey(B.worldMeta.worldId);
-                            const roh = Storage.prototype.setItem;
-                            Storage.prototype.setItem = function (k, v) {
-                                if (k === key) throw new DOMException("Speicher voll (Linse)", "QuotaExceededError");
-                                return roh.call(this, k, v);
-                            };
+                            const roh = r._speicherRuf.bind(r);
+                            r._speicherRuf = (op, d) =>
+                                op === "ablegen" ? Promise.resolve({ ok: false, grund: "Speicher voll (Linse)" }) : roh(op, d);
                         }
                         g.fensterVor();
                         r.state.pendingImport = { parsed: B, fileName: "grenze-b.json" };
-                        r._weltTorImportReplace();
-                        const out = ablage(r.activeWorldGet());
+                        await r._weltTorImportReplace();
+                        const out = await ablage(r.activeWorldGet());
                         const chat = document.getElementById("chat-output");
                         out.chat = chat ? chat.textContent.slice(-400) : "";
                         out.liveWelt = r.state.worldMeta.worldId;
@@ -458,15 +460,15 @@ async function fahreWeg(browser, weg, schein) {
                     if (basis === "weltpull") {
                         g.fensterVor();
                         r.state.p2p.pendingWorldSnapshot = true;
-                        r._p2pApplyWorldSnapshot("grenze-host", B);
-                        const out = ablage(r.activeWorldGet());
+                        await r._p2pApplyWorldSnapshot("grenze-host", B);
+                        const out = await ablage(r.activeWorldGet());
                         g.fensterNach();
                         return out;
                     }
                     if (basis === "geburt") {
                         g.fensterVor();
                         const id = r.createNewWorld({ slug: "grenze-geburt", reload: true });
-                        const out = ablage(id);
+                        const out = await ablage(id);
                         g.fensterNach();
                         return out;
                     }
@@ -504,9 +506,9 @@ async function fahreWeg(browser, weg, schein) {
                         }
                         window.WebSocket = ScheinWS;
                         const roh = r._importGuestWorld.bind(r);
-                        r._importGuestWorld = (...a) => {
-                            const id = roh(...a);
-                            window.__grenzeMelde(ablage(id));
+                        r._importGuestWorld = async (...a) => {
+                            const id = await roh(...a);
+                            window.__grenzeMelde(await ablage(id));
                             g.fensterNach();
                             return id;
                         };
@@ -523,7 +525,7 @@ async function fahreWeg(browser, weg, schein) {
                     if (basis === "reload") {
                         const id =
                             B.worldMeta && B.worldMeta.worldId ? B.worldMeta.worldId : "grenze-platz-" + Date.now();
-                        localStorage.setItem(r.worldStorageKey(id), JSON.stringify(B));
+                        await r._speicherRuf("ablegen", { id, json: JSON.stringify(B), at: Date.now() });
                         r.worldsIndexUpsert({
                             worldId: id,
                             slug: "grenze-b",

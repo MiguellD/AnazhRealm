@@ -125,9 +125,9 @@ async function headless(laeufe) {
             });
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
             json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
-            const id = await page.evaluate((json) => {
+            const id = await page.evaluate(async (json) => {
                 const r = window.anazhRealm;
-                const res = r.importWorldBeside(json);
+                const res = await r.importWorldBeside(json);
                 if (!res.ok) return null;
                 r.activeWorldSet(res.worldId);
                 return res.worldId;

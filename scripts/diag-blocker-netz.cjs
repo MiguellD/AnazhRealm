@@ -579,8 +579,7 @@ async function probe() {
             R.proben++;
             R.liste += soll.length;
             R.bestand += st.architectures.length;
-            if (typeof r._blockerUmPlatz === "function") R.kandidaten += r._blockerUmPlatz(x, z, 8 + 1e-6, []).length;
-            else R.kandidaten += st.architectures.length;
+            R.kandidaten += r._blockerUmPlatz(x, z, 8 + 1e-6, []).length;
             if (beweger && soll.includes(beweger)) R.bewegerDrin++;
             const gleich = soll.length === ist.length && soll.every((e, k) => e === ist[k]);
             if (!gleich) {
