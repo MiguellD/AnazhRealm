@@ -277,17 +277,29 @@ async function kreaturProben(r, T, opts) {
         const lokal = (m, inst, v) => {
             const G = m.userData.gang;
             const a = m.geometry.attributes;
-            const vid = Math.abs(a.aVid.getX(v)) - 1;
             const x = a.aGang.getX(inst);
+            const w = a.aGang.getY(inst);
             const r0 = Math.floor(x) * G.n;
             const f = (x - Math.floor(x)) * G.n;
             const k0 = Math.floor(f);
-            const at = (k, c) => G.puffer[(k * G.nv + vid) * 4 + c];
-            const c3 = (c) => {
-                const lauf = at(r0 + k0, c) + (f - k0) * (at(r0 + ((k0 + 1) % G.n), c) - at(r0 + k0, c));
-                return at(G.baender * G.n, c) + a.aGang.getY(inst) * (lauf - at(G.baender * G.n, c));
-            };
-            return vL.set(c3(0), c3(1), c3(2));
+            const zs = G.baender * G.n;
+            const z0 = r0 + k0;
+            const z1 = r0 + ((k0 + 1) % G.n);
+            // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)
+            const el = (z, j, r, c) => G.puffer[((z * G.J + j) * 3 + r) * 4 + c];
+            const roh = [a.aRoh.getX(v), a.aRoh.getY(v), a.aRoh.getZ(v), 1];
+            const o = [0, 0, 0];
+            for (let c = 0; c < 4; c++) {
+                const g = a.aGewicht.getComponent(v, c);
+                if (g === 0) continue;
+                const j = a.aKnochen.getComponent(v, c);
+                for (let r = 0; r < 3; r++)
+                    for (let s = 0; s < 4; s++) {
+                        const lauf = el(z0, j, r, s) + (f - k0) * (el(z1, j, r, s) - el(z0, j, r, s));
+                        o[r] += g * roh[s] * (el(zs, j, r, s) + w * (lauf - el(zs, j, r, s)));
+                    }
+            }
+            return vL.set(o[0], o[1], o[2]);
         };
         const messen = (senken) => {
             n++;
@@ -3316,7 +3328,8 @@ async function kreaturProben(r, T, opts) {
         const befehle = () => {
             let haupt = 0,
                 wurf = 0,
-                leiber = 0;
+                leiber = 0,
+                satz = 0;
             for (const c of s.creatures) {
                 let n = 0;
                 c.traverse((o) => {
@@ -3328,13 +3341,32 @@ async function kreaturProben(r, T, opts) {
             }
             for (const o of saetze())
                 if (o.count > 0 && o.visible) {
-                    if (o.layers.mask & 1) haupt++;
+                    if (o.layers.mask & 1) (haupt++, satz++);
                     if (o.castShadow) wurf++;
                 }
-            return { haupt, wurf, leiber };
+            return { haupt, wurf, leiber, satz };
         };
         // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl) · der Satz geht schneller, als der Leib läuft
         if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
+        // · das Auge trägt jedes Satz-Tier (kein Blick) · der Takt schreibt jeden Platz, ob sich etwas rührte oder nicht
+        if (taeter === "tiersatz-blick") decke(restore, "_kreaturAusserBlick", () => () => false);
+        if (taeter === "tiersatz-schreiben") decke(restore, "_tierSatzStempel", () => () => true);
+        // · die Sicht-Kopien der Mitspieler stehen nicht in der Menge des Satzes (jede Kopie ein Leib)
+        if (taeter === "tiersatz-kopie")
+            decke(
+                restore,
+                "_tickTierSatz",
+                (alt) =>
+                    function (...a) {
+                        const k = s.p2p.remoteCreatures;
+                        s.p2p.remoteCreatures = new Map();
+                        try {
+                            return alt.apply(this, a);
+                        } finally {
+                            s.p2p.remoteCreatures = k;
+                        }
+                    }
+            );
         if (taeter === "tiersatz-gleiten")
             decke(
                 restore,
@@ -3364,6 +3396,55 @@ async function kreaturProben(r, T, opts) {
         ring(40, 15, 55, 101);
         laufen(240);
         const B50 = befehle();
+        // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit rückt keinen Gang — er schreibt nur die Plätze der
+        // Satz-Tiere, deren Lage oder Drehung sich rührte (je Tier höchstens eine Instanz je Senke); der Blick nach +x: das Auge trägt jedes Satz-Tier, dessen Lage
+        // der Frustum enthält (keines fehlt), und nicht alle; der Wurf jedes Satz-Tier
+        const schreibe = A._gangSatzInstanz;
+        let schriebe = 0;
+        A._gangSatzInstanz = function (...a) {
+            schriebe++;
+            return schreibe.apply(this, a);
+        };
+        restore.push(() => (A._gangSatzInstanz = schreibe));
+        const lage = (c) => [c.position.x, c.position.y, c.position.z, c.quaternion.x, c.quaternion.y, c.quaternion.z, c.quaternion.w];
+        let ruehrte = 0;
+        for (let i = 0; i < 4; i++) {
+            const vor = new Map(s.creatures.filter((c) => c.userData._satz).map((c) => [c, lage(c)]));
+            takt(0);
+            for (const [c, a] of vor) if (lage(c).some((x, k) => x !== a[k])) ruehrte++;
+        }
+        A._gangSatzInstanz = schreibe;
+        const ruhe = { schriebe, ruehrte, senken: saetze().length };
+        kamera(1, 0);
+        laufen(2);
+        const fr = new T.Frustum().setFromProjectionMatrix(
+            new T.Matrix4().multiplyMatrices(s.camera.projectionMatrix, s.camera.matrixWorldInverse)
+        );
+        const imSatz = s.creatures.filter((c) => c.userData._satz);
+        const fell = saetze().filter((m) => m.userData.teil === "fell");
+        const gezeichnet = (c) =>
+            fell.some((m) => {
+                const IM = m.instanceMatrix.array;
+                for (let i = 0; i < m.count; i++)
+                    if (Math.hypot(IM[i * 16 + 12] - c.position.x, IM[i * 16 + 14] - c.position.z) < 1e-3) return true;
+                return false;
+            });
+        const imBlick = imSatz.filter((c) => fr.containsPoint(c.position));
+        const zahlVon = (teil) => saetze().filter((m) => m.userData.teil === teil).reduce((n, m) => n + m.count, 0);
+        const blick = {
+            satz: imSatz.length,
+            imBlick: imBlick.length,
+            fehlt: imBlick.filter((c) => !gezeichnet(c)).length,
+            fell: zahlVon("fell"),
+            wurf: zahlVon("wurf"),
+        };
+        // DER PUFFER GEHÖRT DEM SKELETT (Lehre 19): je Gestalt der Gang-Puffer gegen die Ecken ihrer Senken
+        const puffer = saetze()
+            .filter((m) => m.userData.teil === "fell")
+            .map((m) => ({
+                puffer: m.userData.gang.puffer.byteLength,
+                ecken: Object.values(m.geometry.attributes).reduce((n, a) => n + (a.isInstancedBufferAttribute ? 0 : a.array.byteLength), 0),
+            }));
         // DER GANG IM SATZ (`satzGang`): je Senke `fell` die tiefste Ecke je Bein (Seite × vorn/hinten der stehenden Vorlage)
         const fuesse = (geo) => {
             const P = geo.attributes.position;
@@ -3390,10 +3471,34 @@ async function kreaturProben(r, T, opts) {
         });
         for (let i = 0; i < 360; i++) {
             takt(1 / 60);
-            gang.messen(saetze().filter((m) => m.userData.teil === "fell"));
+            gang.messen(saetze().filter((m) => m.userData.teil === "wurf"));
         }
         const G = gang.schlupf();
+        // DIE SICHT-KOPIEN (dieselbe Klasse): 8 Kopien eines Mitspielers im Ring 20–40 m stehen in der Menge — als Leib zeichnen
+        // höchstens die `nahLeiber` Nächsten aller Tiere, eigene und Kopien zusammen
+        const remote = s.p2p.remoteCreatures;
+        restore.push(() => {
+            for (const [key, rc] of remote) if (rc.peerId === "linse-satz") r._disposeRemoteCreature(key, rc);
+        });
+        const kopien = [];
+        for (let i = 0; i < 8; i++) {
+            const o = land(Math.cos(i * 0.785 + 0.3) * (20 + 2.5 * i), Math.sin(i * 0.785 + 0.3) * (20 + 2.5 * i));
+            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, soul: seelen[i % 4] });
+        }
+        for (let k = 0; k < 120; k++) {
+            r._p2pHandleCreaturePos("linse-satz", { list: kopien });
+            r._p2pTickRemoteCreatures(200 + k / 60, 1 / 60);
+            takt(1 / 60);
+        }
+        const kopieLeib = [...remote.values()].filter((rc) => {
+            let n = 0;
+            rc.mesh.traverse((o) => o.isMesh && sichtbar(o) && o.layers.mask & 1 && n++);
+            return rc.peerId === "linse-satz" && n > 0;
+        }).length;
+        const kopieSatz = [...remote.values()].filter((rc) => rc.peerId === "linse-satz" && rc.mesh.userData._satz).length;
+        const eigenLeib = befehle().leiber;
         return {
+            kopie: { leib: kopieLeib, satz: kopieSatz, eigenLeib },
             b10: B10,
             b50: B50,
             nahLeiber: A.KREATUR_SATZ ? A.KREATUR_SATZ.nahLeiber : null,
@@ -3401,6 +3506,9 @@ async function kreaturProben(r, T, opts) {
             satzTiere: G.spuren,
             schlupf: G.schlupf,
             wegLeib: G.wegLeib,
+            ruhe,
+            blick,
+            puffer,
         };
     });
 
@@ -3444,8 +3552,8 @@ function urteil(name, z) {
     };
     if (name === "tiersatz") {
         soll(
-            z.b50.haupt === z.b10.haupt && z.b50.wurf === z.b10.wurf,
-            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild + ${z.b10.wurf} Wurf, 50 Tiere ${z.b50.haupt} + ${z.b50.wurf} (Soll gleich: die Menge steht im Satz ihrer Gattung)`
+            z.b50.haupt - z.b50.satz === z.b10.haupt - z.b10.satz && z.b50.satz <= z.senken && z.b50.wurf === z.b10.wurf,
+            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild (${z.b10.satz} Satz) + ${z.b10.wurf} Wurf, 50 Tiere ${z.b50.haupt} (${z.b50.satz}) + ${z.b50.wurf} (Soll: die Leiber gleich, je Senke höchstens ein Befehl — ${z.senken} Senken, Wurf gleich)`
         );
         soll(
             z.nahLeiber != null && z.b50.leiber <= z.nahLeiber,
@@ -3454,6 +3562,27 @@ function urteil(name, z) {
         soll(
             z.satzTiere >= 10 && z.wegLeib >= 20 && z.schlupf !== null && z.schlupf <= 0.05,
             `der Satz gleitet: Schlupf ${z.schlupf} über ${z.wegLeib} m Gang von ${z.satzTiere} Satz-Tieren (Soll ≤ 0,05 über ≥ 20 m, ≥ 10 Tiere)`
+        );
+        const Rh = z.ruhe;
+        soll(
+            Rh.schriebe <= Rh.ruehrte * 4,
+            `der Satz schreibt ohne Änderung: 4 Takte ohne Zeit schrieben ${Rh.schriebe} Instanzen, ${Rh.ruehrte}× rührte sich ein Satz-Tier (Soll ≤ 4 je Rühren)`
+        );
+        const B = z.blick;
+        soll(
+            B.satz >= 10 && B.fell < B.satz && B.wurf === B.satz,
+            `das Auge zeichnet den Satz außer Blick: ${B.fell} Fell-Instanzen bei ${B.imBlick} von ${B.satz} Satz-Tieren im Blick, Wurf ${B.wurf} (Soll Auge < alle, Wurf = alle)`
+        );
+        soll(B.fehlt === 0, `dem Auge fehlen ${B.fehlt} von ${B.imBlick} Satz-Tieren im Blick (Soll 0)`);
+        const Kp = z.kopie;
+        soll(
+            Kp.satz >= 4 && Kp.leib + Kp.eigenLeib <= z.nahLeiber,
+            `die Sicht-Kopien zeichnen als Leib: ${Kp.leib} von 8 Kopien als Leib, ${Kp.satz} im Satz, dazu ${Kp.eigenLeib} eigene Leiber (Soll ≥ 4 im Satz, Leiber zusammen ≤ nahLeiber ${z.nahLeiber})`
+        );
+        const P = z.puffer || [];
+        soll(
+            P.length > 0 && P.every((p) => p.puffer <= p.ecken),
+            `der Gang-Puffer gehört den Ecken: ${P.map((p) => Math.round(p.puffer / 1024) + " KB gegen " + Math.round(p.ecken / 1024) + " KB Ecken").join(" · ")} (Soll je Gestalt ≤ die Ecken ihrer Senke)`
         );
         return { ok: !f.length, grund: f.join(" · ") };
     }
@@ -3913,6 +4042,9 @@ const TAETER = {
     tiersatz: [
         ["tiersatz-kopf", /hängen an der Kopfzahl/],
         ["tiersatz-gleiten", /der Satz gleitet/],
+        ["tiersatz-blick", /Satz außer Blick/],
+        ["tiersatz-schreiben", /schreibt ohne Änderung/],
+        ["tiersatz-kopie", /Sicht-Kopien zeichnen als Leib/],
     ],
     bewohner: [
         ["bewohner-haus", /Haus ohne Bewohner/],
