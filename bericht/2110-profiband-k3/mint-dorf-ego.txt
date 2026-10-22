@@ -1,0 +1,67 @@
+BAND UNGEMESSEN: Befehle 117/208 (0.56×) · Dreiecke 583k/680k (0.86×) · VRAM MB 114.8/118 (0.97×) · GPU ms/Frame ungemessen
+ORT dorf
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        9/12          7/1/1           99k/120k  fern-ring 4 · bodenSatz 3 · wasserSatz 1 · farWater 1
+streu                         4/9          3/1/0            18k/40k  streuSatz 4
+nahWiese                      4/4          4/0/0            54k/80k  nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0             880/1k  fimp:atlas:L2 1
+baum                        46/40        31/12/3           78k/150k !fscatter:fichte:L1 8 · f:fichte:L1 7 · f:fichte:L0 7 · f:birke:L0 6
+busch                         4/8          2/2/0             2k/40k  f:strauch:L1 4
+tier*                        0/30          0/0/0              0/60k  
+bewohner                    16/16          8/4/4           242k/80k !bewohner-satz 16
+bau                         12/40          7/3/2            44k/60k  bauSatz 9 · bauWurf 2 · siedlung-zaun 1
+    bauSatz k0: f:feuerstelle:L0 2 Zellen = 2 820 · f:laterne:L1 6 Zellen = 276
+    bauSatz k1: f:laterne:L1 2 Zellen = 92
+    bauSatz haupt: f:griechisch:L2 46 Zellen = 31 566 · f:roemisch:L2 8 Zellen = 3 834 · f:feuerstelle:L1 6 Zellen = 1 785 · f:marktstand:L1 4 Zellen = 754
+    bauWurf k0: f:griechisch:L3 14 Zellen = 792 · f:wandlaterne:L3 8 Zellen = 352 · f:feuerstelle:L3 5 Zellen = 120 · f:roemisch:L3 2 Zellen = 118
+    bauWurf k1: f:griechisch:L3 9 Zellen = 482 · f:wandlaterne:L3 4 Zellen = 176 · f:feuerstelle:L3 3 Zellen = 72
+formationen                  3/20          1/1/1             6k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 7 Zellen = 2 240
+    formationenSatz k1: f:zacken:L0 5 Zellen = 1 600
+    formationenSatz haupt: f:zacken:L0 7 Zellen = 2 240
+einzelstuecke               18/25          8/5/5            39k/15k !spieler 10 · dsl-insel 3 · feld-pass 2 · himmel 1
+reserve                       0/3          0/0/0               0/4k  
+SUMME                     117/208       72/29/16          583k/680k  Abstand 0.56× Befehle · 0.86× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Ausstattungs-Wurf nah ausstattung k0: 1410 Dreiecke je Exemplar (2 im Bild) / 3400 (0.41×) — Täter f:feuerstelle:L0 2 820
+SOLL Haus-Wurf haus k0: 57 Dreiecke je Exemplar (16 im Bild) / 96 (0.59×) — Täter f:griechisch:L3 792 · f:roemisch:L3 118
+SOLL Haus-Wurf haus k1: 54 Dreiecke je Exemplar (9 im Bild) / 96 (0.56×) — Täter f:griechisch:L3 482
+SOLL Ausstattungs-Wurf ausstattung k0: 39 Dreiecke je Exemplar (21 im Bild) / 48 (0.81×) — Täter f:wandlaterne:L3 352 · f:laterne:L1 276 · f:feuerstelle:L3 120
+SOLL Ausstattungs-Wurf ausstattung k1: 38 Dreiecke je Exemplar (9 im Bild) / 48 (0.79×) — Täter f:wandlaterne:L3 176 · f:laterne:L1 92 · f:feuerstelle:L3 72
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 3 Befehle
+
+VRAM 114.8 MB / Band 118 MB (0.97×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     31.6 MB  2     tex:TRAANode.resolve
+     23.2 MB  339   buf:szene
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.7 MB  189   buf:tier
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  1     tex:wege-karte
+      4.0 MB  2     tex:TRAANode.flacker
+      3.0 MB  1     tex:karte-albedo
+      2.7 MB  5     tex:spiegel
+      2.2 MB  2     tex:szene
+      2.0 MB  1     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.5 MB  1     tex:karte-normal
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+
+BAND UNGEMESSEN: Befehle 117/208 (0.56×) · Dreiecke 583k/680k (0.86×) · VRAM MB 114.8/118 (0.97×) · GPU ms/Frame ungemessen
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] baum haupt: 31 befehle über der Ratsche 28 (Täter: fscatter:fichte:L1, f:fichte:L1, f:fichte:L0)
+  [ratsche] VRAM buf:szene: 23.2 MB über der Ratsche 20.6
+  [ratsche] Summe (gebunden) 117 Befehle über der Ratsche 100
+  [ratsche] Summe (gebunden) 583417 Dreiecke über der Ratsche 362987
+  [ratsche] VRAM 107.1 MB (gebunden) über der Ratsche 100
+  [weit] streu haupt dreiecke: Ratsche 21116 über der Messung 14079 — zu weit
+  [weit] baum haupt dreiecke: Ratsche 75310 über der Messung 64044 — zu weit
+  [weit] VRAM tex:karte-albedo: Ratsche 5.7 über der Messung 3 — zu weit
+
+Ratsche ratsche-dorf-gtx-ego.json (Ort dorf × gtx × ego, V18.546.55) NEU GEMINTET (111): boden.haupt.befehle: – → 7 · boden.haupt.dreiecke: – → 61848 · boden.k0.befehle: – → 1 · boden.k0.dreiecke: – → 21741 · boden.k1.befehle: – → 1 · boden.k1.dreiecke: – → 15112 · streu.haupt.befehle: – → 3 · streu.haupt.dreiecke: – → 14079 · streu.k0.befehle: – → 1 · streu.k0.dreiecke: – → 3840 · streu.k1.befehle: – → 0 · streu.k1.dreiecke: – → 0 · nahWiese.haupt.befehle: – → 4 · nahWiese.haupt.dreiecke: – → 54188 · nahWiese.k0.befehle: – → 0 · nahWiese.k0.dreiecke: – → 0 · nahWiese.k1.befehle: – → 0 · nahWiese.k1.dreiecke: – → 0 · karten.haupt.befehle: – → 1 · karten.haupt.dreiecke: – → 880 · karten.k0.befehle: – → 0 · karten.k0.dreiecke: – → 0 · karten.k1.befehle: – → 0 · karten.k1.dreiecke: – → 0 · baum.haupt.befehle: – → 31 · baum.haupt.dreiecke: – → 64044 · baum.k0.befehle: – → 12 · baum.k0.dreiecke: – → 12326 · baum.k1.befehle: – → 3 · baum.k1.dreiecke: – → 1884 · busch.haupt.befehle: – → 2 · busch.haupt.dreiecke: – → 1020 · busch.k0.befehle: – → 2 · busch.k0.dreiecke: – → 1020 · busch.k1.befehle: – → 0 · busch.k1.dreiecke: – → 0 · bewohner.haupt.befehle: – → 8 · bewohner.haupt.dreiecke: – → 86307 · bewohner.k0.befehle: – → 4 · bewohner.k0.dreiecke: – → 77987 · bewohner.k1.befehle: – → 4 · bewohner.k1.dreiecke: – → 77987 · bau.haupt.befehle: – → 7 · bau.haupt.dreiecke: – → 38817 · bau.k0.befehle: – → 3 · bau.k0.dreiecke: – → 4548 · bau.k1.befehle: – → 2 · bau.k1.dreiecke: – → 822 · formationen.haupt.befehle: – → 1 · formationen.haupt.dreiecke: – → 2240 · formationen.k0.befehle: – → 1 · formationen.k0.dreiecke: – → 2240 · formationen.k1.befehle: – → 1 · formationen.k1.dreiecke: – → 1600 · einzelstuecke.haupt.befehle: – → 8 · einzelstuecke.haupt.dreiecke: – → 11853 · einzelstuecke.k0.befehle: – → 5 · einzelstuecke.k0.dreiecke: – → 13517 · einzelstuecke.k1.befehle: – → 5 · einzelstuecke.k1.dreiecke: – → 13517 · leerHuellen.haupt.befehle: – → 0 · leerHuellen.haupt.dreiecke: – → 0 · leerHuellen.k0.befehle: – → 0 · leerHuellen.k0.dreiecke: – → 0 · leerHuellen.k1.befehle: – → 0 · leerHuellen.k1.dreiecke: – → 0 · reserve.haupt.befehle: – → 0 · reserve.haupt.dreiecke: – → 0 · reserve.k0.befehle: – → 0 · reserve.k0.dreiecke: – → 0 · reserve.k1.befehle: – → 0 · reserve.k1.dreiecke: – → 0 · gesamt.befehle: – → 117 · gesamt.dreiecke: – → 583417 · gesamt.vramMB: – → 107.1 · vramMB.tex:TRAANode.resolve: – → 31.6 · vramMB.buf:szene: – → 23.2 · vramMB.tex:kaskade0: – → 8 · vramMB.tex:kaskade1: – → 8 · vramMB.tex:output: – → 4.4 · vramMB.tex:depth: – → 4.4 · vramMB.tex:wege-karte: – → 4 · vramMB.tex:TRAANode.flacker: – → 4 · vramMB.tex:karte-albedo: – → 3 · vramMB.tex:spiegel: – → 2.7 · vramMB.tex:szene: – → 2.2 · vramMB.tex:fluss-karte: – → 2 · vramMB.tex:feld-pass-panorama: – → 1.9 · vramMB.tex:karte-normal: – → 1.5 · vramMB.tex:laub-cluster-atlas: – → 1.3 · vramMB.tex:PMREM.cubeUv: – → 1 · vramMB.tex:rausch-atlas: – → 0.8 · vramMB.tex:karte-licht: – → 0.6 · vramMB.tex:kronen-streu: – → 0.5 · vramMB.tex:horizont-karte: – → 0.5 · vramMB.tex:welt-march-liste: – → 0.5 · vramMB.tex:welt-march-kapseln: – → 0.3 · vramMB.buf:bindingBuffer: – → 0.2 · vramMB.tex:atmo-himmel: – → 0.2 · vramMB.tex:atmo-durchlass: – → 0.1 · vramMB.buf:bindingBufferundefined_UniformBuffer_: – → 0.1 · vramMB.tex:himmel-umgebung: – → 0.1 · vramMB.buf:buffer_timestamp_resolve_render: – → 0 · vramMB.buf:buffer_timestamp_result_render: – → 0 · vramMB.tex:fern-krone-nah: – → 0 · vramMB.tex:atmo-mehrfach: – → 0 · vramMB.tex:welt-licht-himmel: – → 0 · vramMB.tex:fern-ring-maske: – → 0 · vramMB.tex:DFG_LUT: – → 0 · vramMB.tex:atmo-bestrahlung: – → 0 · vramMB.buf:bild: – → 0
+Der Re-Mint hebt 9 Zeilen: boden.haupt.dreiecke 61490 → 61848 · boden.k1.dreiecke 14813 → 15112 · karten.haupt.dreiecke 876 → 880 · baum.haupt.befehle 28 → 31 · nahWiese.haupt.dreiecke 51444 → 54188 · bau.haupt.befehle 6 → 7 · bau.haupt.dreiecke 38347 → 38817 · bau.k0.dreiecke 4242 → 4548 · bau.k1.dreiecke 692 → 822
