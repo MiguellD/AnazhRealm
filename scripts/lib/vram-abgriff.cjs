@@ -133,7 +133,7 @@ function vramAbgriff() {
         spitze();
         return t;
     };
-    // DER GRUND DES ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs, 07.10.): was eine Bind-Gruppe, ein Render-Bündel und eine
+    // DER GRUND DES ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): was eine Bind-Gruppe, ein Render-Bündel und eine
     // Pipeline lesen, steht nur beim ANLEGEN im Klartext — danach ist das GPU-Objekt undurchsichtig. Der Abgriff merkt es sich
     // je Objekt, nur beim Anlegen (nie im Frame): je Bind-Gruppe die Texturen ihrer Ansichten, je Bündel seine Gruppen und
     // Pipelines (aufgenommen am Bündel-Kodierer), je Pipeline, ob sie die Tiefe testet oder schreibt. Der Zensus liest es im

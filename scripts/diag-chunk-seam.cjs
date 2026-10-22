@@ -297,7 +297,7 @@ const server = statikServer();
     // aMorphTarget/aMorphWeight-Attribute (`_applyCrossLodGeomorph`) die feinen Boundary-Vertices
     // bei geomorph=1 auf die GROBEN Nachbar-Vertices. Wir rechnen die GEMORPHTE Position
     // (pos + weight·(target−pos)) und prüfen: liegt sie EXAKT auf einem groben Nachbar-Vertex?
-    // Vorher (roh, T0): 0 % geteilt, ~2.8 m Spalt. Nachher (gemorpht): die Naht-Vertices sind
+    // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
         const r = window.anazhRealm;

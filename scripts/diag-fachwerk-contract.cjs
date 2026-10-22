@@ -45,7 +45,7 @@ const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form sa
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "haeuser.json");
-// DIE AUSSTATTUNG (Architektur-Welle 05.10.): Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
+// DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
 const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -138,7 +138,7 @@ function shellPfad(name, seed, stufe) {
                       const H = FC.HAUS(THREE, FC.mat, hp2);
                       return { g: H.build({ gelaende: false }), H };
                   })();
-        // DORF-ERLEBNIS (17.07.) — die TÜR-FLÜGEL-SEPARATION wandert mit dem
+        // DORF-ERLEBNIS — die TÜR-FLÜGEL-SEPARATION wandert mit dem
         // Kern (Lehre 6: Tests wandern mit dem Code): Tür-Blätter (userData.side)
         // werden JE Blatt eigen gebakt + als Scharnier-Wrap angehängt — wörtlich
         // der buildStufe-Pfad; der Rumpf bakt danach LÜCKENLOS wie zuvor.
@@ -697,7 +697,7 @@ function bogenLinse() {
         t2.some((s) => s.includes("objects"))
     );
 
-    // 9b) DAS FARB-GESETZ DER HÄUSER (Architektur-Welle 05.10.) — die Linse der Täter-Klasse „Hex roh als linear": bis
+    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear": bis
     //     05.10. legte der Bake (`_colFor`) das Paletten-Hex roh in den Vertex, die Welt las es linear — Putz 0,82, Holz
     //     0,30, ganze Häuser 0,35–0,57 (das weiße Haus mit blassem Fachwerk). Gemessen wird, was die Welt liest: je Kultur
     //     (alle 32, Stufe 1 — die Flächen-Stufe, die das Auge am längsten sieht) die flächengewichtete lineare Albedo der
@@ -802,7 +802,7 @@ function bogenLinse() {
         );
     }
 
-    // 10) DIE AUSSTATTUNG (Architektur-Welle 05.10.) — die Linse der Täter-Klasse „Host-Part-Look": was der Wirt aus
+    // 10) DIE AUSSTATTUNG — die Linse der Täter-Klasse „Host-Part-Look": was der Wirt aus
     //     eigenen Teilen baute (Glut-Zylinder, Brett-Tisch, Brunnen-Zylinder), baut jetzt das Gesetzbuch. Die Gestalt hält:
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:

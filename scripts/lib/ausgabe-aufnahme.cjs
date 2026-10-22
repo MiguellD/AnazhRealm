@@ -150,7 +150,7 @@ function wetterBuch(seit) {
 // Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
-// (Leben-Schau 2, 09.10.) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
+// (Leben-Schau 2) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
 function wetterSetzen(wort) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -169,7 +169,7 @@ function wetterSetzen(wort) {
     return st.weather;
 }
 
-// DER UHR-SPION (die Linse der Uhr, Leben-Schau 2, 09.10.): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
+// DER UHR-SPION (die Linse der Uhr, Leben-Schau 2): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
 // Der EINE Uhr-Schreiber des Spiels (`_uhrSetzen`, falls es ihn gibt) bucht je Aufruf seine Quelle (`human` · `regler` ·
 // `nexus` · `rule:…` · `laden` …) und einen verweigerten Zug als „verweigert"; `state.timeOfDay` selbst trägt einen Accessor:
 // wer die Uhr am Schreiber vorbei setzt, steht als „roh" mit den Spiel-Rahmen seines Stapels im Buch (in der Schau: ein
@@ -380,7 +380,60 @@ function buehne(o) {
     // `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll — ohne Drift malt der Sprung nichts.
     r._himmelSprung = true;
     r._applyDayNightToScene();
-    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
+    // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
+    // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
+    // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
+    const buehnenTiere = () => st.creatures.filter((c) => c.userData.buehne).length;
+    if (o && o.tiere > 0) {
+        const p = st.playerMesh.position;
+        st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + o.tiere - buehnenTiere());
+        let saat = 11;
+        const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let i = 0; i < 400 && buehnenTiere() < o.tiere; i++) {
+            const w = zufall() * 2 * Math.PI, d = 15 + 45 * zufall(), x = p.x + d * Math.cos(w), z = p.z + d * Math.sin(w);
+            const c = r._landAt(x, z, 0.3) && r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy");
+            if (c) c.userData.buehne = true;
+        }
+        if (buehnenTiere() < o.tiere) throw new Error(`DIE BÜHNE: ${buehnenTiere()} von ${o.tiere} Tieren stehen`);
+    }
+    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather, tiere: buehnenTiere() };
+}
+
+// DIE TIERE DER BÜHNE im Selbsttest (ohne Welt, Attrappen; Land nur östlich des Spielers): 50 Tiere stehen im Ring 15–60 m auf
+// Land, ein zweiter Ruf stellt keines dazu, eine Welt ohne Platz bricht laut.
+function buehneSelbsttest() {
+    const v = [], tiere = [], w0 = global.window;
+    const r = {
+        state: { creatures: tiere, maxCreatures: 10, playerMesh: { position: { x: 5, z: 7 } } },
+        setSeason: () => true,
+        _naesseTakt() {},
+        _tickRain() {},
+        _applyDayNightToScene() {},
+        getTerrainHeightAt: () => 0,
+        _landAt: (x) => x > 5,
+        spawnCreatureAt: (x, y, z) => tiere[tiere.push({ position: { x, z }, userData: {} }) - 1],
+    };
+    global.window = { anazhRealm: r, __weltaktSpion() {}, __wetterSetzen: (w) => (r.state.weather = w), __uhrHalten() {} };
+    try {
+        buehne({ wetter: "stormy", tiere: 50 });
+        const ring = tiere.filter(
+            (c) => c.position.x > 5 && Math.abs(Math.hypot(c.position.x - 5, c.position.z - 7) - 37.5) <= 22.5
+        );
+        if (tiere.length !== 50 || ring.length !== 50 || r.state.weather !== "stormy")
+            v.push(`Sturm + 50 Tiere: ${tiere.length} gestellt, ${ring.length} im Ring auf Land, Wetter ${r.state.weather}`);
+        if (buehne({ tiere: 50 }).tiere !== 50 || tiere.length !== 50) v.push(`der zweite Ruf stellt ${tiere.length - 50} dazu`);
+        r._landAt = () => false;
+        let laut = "still";
+        try {
+            buehne({ tiere: 60 });
+        } catch (e) {
+            laut = e.message;
+        }
+        if (!/50 von 60/.test(laut)) v.push(`eine Welt ohne Platz bricht nicht laut (${laut})`);
+    } finally {
+        global.window = w0;
+    }
+    return v;
 }
 
 // DIE MEMBRAN OHNE FILM (D8, die Linse milchweiss — K5 `klassenMasse` liest Milch gegen das Bild ohne Film): `an` setzt jeder
@@ -682,7 +735,7 @@ function blickWahl(opt) {
     return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, posen };
 }
 
-// DAS GANZE BILD (04.10., echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
+// DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
 // des Frames in Originalgröße, nie das verkleinerte Bild — 1280×720 aus 1920×1080 waren ein 2/3-Ausschnitt,
 // 640×360 ein Drittel (gemessen: dieselbe Kamera, 640 = die linke obere 640×360-Ecke des 1920er Bildes). Die
 // Aufnahme rendert darum IMMER in Canvas-Größe (was der Spieler sieht) und mittelt danach auf W×H herunter.
@@ -729,7 +782,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         rend.setOutputRenderTarget(rt);
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
-            // (Listen-/Seiten-Upload + Pipelines, gemessen 30.09.).
+            // (Listen-/Seiten-Upload + Pipelines).
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
@@ -795,7 +848,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             const ms = performance.now() - t0;
             // WebGPU kopiert Zeilen auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster
             // durch: bei W·4 ∤ 256 (z. B. 480 oder 160 px) lag jede Zeile versetzt — gestreifte Bilder,
-            // Mittel über Polster-Nullen (gemessen 01.10.: 8×8-Probe exakt ¼ zu dunkel). Hier fällt es.
+            // Mittel über Polster-Nullen. Hier fällt es.
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
             const zeile = BW * 4;
             const schritt = roh.length > zeile * BH ? Math.ceil(zeile / 256) * 256 : zeile;
@@ -1212,7 +1265,7 @@ function himmelSelbsttest() {
             "ROT",
             "kein Wetter-Zug zieht ein gewünschtes",
         ],
-        // DAS WESEN IM SCHÖPFER-MODUS (Gegenprüfung 10.10.): sein Vorschlag läuft von selbst — verweigert/gewünscht grün, als
+        // DAS WESEN IM SCHÖPFER-MODUS: sein Vorschlag läuft von selbst — verweigert/gewünscht grün, als
         // Schreiber rot beim Namen, und fehlt es im Buch, ist es ungeprüft
         [
             "Wesen verweigert",
@@ -1325,6 +1378,7 @@ module.exports = {
     himmelSelbsttest,
     weltaktUrteil,
     weltaktSelbsttest,
+    buehneSelbsttest,
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +

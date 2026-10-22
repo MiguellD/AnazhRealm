@@ -536,7 +536,7 @@ function haengerAuswerten(roh, spur, opts) {
         lauf: {
             regler: roh.k && roh.k.regler,
             tiere: roh.k && roh.k.tiere,
-            wandern: roh.bahnM != null ? "bahn" : "aus",
+            wandern: roh.k && roh.k.wandern,
             kreaturen: roh.kreaturen,
             chunks: roh.chunks,
             loadScale: roh.loadScale,
@@ -684,7 +684,7 @@ function spitzenAuswerten(roh, spur) {
     );
     a.tabelle = [
         `TAKT-SPITZE: CPU-Takt ${JSON.stringify(a.cpuMs)} ms (K2 8 ms), ${a.spitzeN} Takte ab p95 (${a.gedeckt} mit Proben), ` +
-            `${S < 1 ? "Fahrt" : "Bahn"} ${a.bahnM} m`,
+            `Weg ${a.bahnM} m`,
         "  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms",
         ...a.zeilen.map((e) => `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`),
         `${S < 1 ? "BENANNT" : "TÄTER"} (Spitze − Mitte ≥ ${S} ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,

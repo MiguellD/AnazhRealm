@@ -22,7 +22,7 @@ const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 // page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf — und der Wurf ist eine verletzte
-// Invariante beim Namen (WUERFE, apparat-diaet 20.10.): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
+// Invariante beim Namen (WUERFE): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
 // darum trug jede Probe ihren Existenz-Wächter; jetzt trägt der Aufruf der Methode ihre Existenz.
 const WUERFE = [];
 async function safeEvaluate(page, fn, ...args) {

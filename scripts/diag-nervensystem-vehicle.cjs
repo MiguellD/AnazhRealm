@@ -89,7 +89,7 @@ function staticLaws(q) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {}, e: {}, f: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
@@ -197,7 +197,7 @@ function staticLaws(q) {
         // Geometrie (V18.477 FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
         // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
         // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
-        // Die Probe wanderte mit dem Gesetz (16.07.): vorher klemmte [0] hart. =====
+        // Die Probe wanderte mit dem Gesetz: vorher klemmte [0] hart. =====
         try {
             if (!f.requested) f.requested = new Set();
             const before = new Set(f.requested);

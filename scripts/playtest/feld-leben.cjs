@@ -335,7 +335,6 @@ async function checkBandV1742Wohl(ctx) {
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
         r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
-        r._wohlPruneLast = -Infinity;
         r._pruneWohlBaseline(W.pruneAgeSec + 10);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
@@ -667,7 +666,7 @@ async function checkBandWelle6APolish(ctx) {
         let topY = null;
         if (entry && entry.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (entry && entry.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -812,7 +811,7 @@ async function checkBandWelle6APolish(ctx) {
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (_entryA3 && _entryA3.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -971,7 +970,7 @@ async function checkBandWelle6APolish(ctx) {
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (!r || typeof r.describeProgram !== "function") return null;
+        if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
@@ -1300,7 +1299,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
         // der Leser des Ladeschirms). Die Lücke ist nur das WARTEN, nie das Urteil: „bauten" zählt jedes Bauwerk, ein Haus im Werk
-        // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
+        // sperrte G1 und D2M (n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
             r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
@@ -1467,17 +1466,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             // Mesher mit densityFn-Callback: untere Hälfte fest,
             // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
-            out.mesherAcceptsDensity =
-                typeof r._voxelChunkGeometry === "function" &&
-                (() => {
-                    try {
-                        const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
-                        const pos = g && g.getAttribute("position");
-                        return !!(pos && pos.count > 0);
-                    } catch {
-                        return false;
-                    }
-                })();
+            out.mesherAcceptsDensity = (() => {
+                try {
+                    const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                    const pos = g && g.getAttribute("position");
+                    return !!(pos && pos.count > 0);
+                } catch {
+                    return false;
+                }
+            })();
             return out;
         });
         check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
@@ -2096,7 +2093,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         if (typeof r.tryMouseBreak === "function") {
             const origRay = r._raycastWorldHit;
             const origPick = r._pickArchitectureAtCrosshair;
-            const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+            const origMode = r.getGameMode();
             r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;
@@ -2129,7 +2126,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
                 // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
                 for (let k = 0; k < 12; k++)
-                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+                    r._gameLoopTick(performance.now());
                 const cam = r.state.camera;
                 const pm = r.state.playerMesh;
                 const savedPos = cam.position.clone();

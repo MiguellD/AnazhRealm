@@ -74,7 +74,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Region wird erst NACH dem Restore neu gebaut, im ambienten Regime.
         try {
             const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
+            if (SCcfg && Number.isFinite(SCcfg.regionM)) {
                 const frx = Math.floor(ppD.x / SCcfg.regionM),
                     frz = Math.floor(ppD.z / SCcfg.regionM);
                 const fk = `${frx},${frz}`;
@@ -144,7 +144,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         try {
             const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const SCt = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCt && Number.isFinite(SCt.regionM) && typeof r._scatterRegion === "function" && st.scatterRegions) {
+            if (SCt && Number.isFinite(SCt.regionM) && st.scatterRegions) {
                 // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
                 // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
                 const snap = st.scatterRegions;
@@ -254,7 +254,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
     }
 }
 
-// DIE NAH-STREU (Waldboden 04.10.): der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
+// DIE NAH-STREU: der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
 // Boden-Zeilen des Studios (placement.boden, ring "nah"), gesetzt nach dem EINEN Boden-Gesetz (__phytoCore.
 // bodenGewicht), gebaut über die Foundry (Studio-Teile mit leafKey "f:…"). Konsum statt Existenz: eine echte Kachel
 // am Spieler wird gesetzt (deterministisch), der Takt baut ihre Blöcke in die Senken (InstancedMesh je Art × Gestalt ×
@@ -322,7 +322,7 @@ async function checkBandNahStreu(ctx) {
             cam.position.copy(camVor);
             return out;
         }
-        // (5b) DER WIND (Integration 05.10., W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
+        // (5b) DER WIND (W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
         // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt, die Höhe aus
         // dem Satz-Attribut aWiege), eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
         const weichK = new Set(["foliage", "foliageTex", "stem"]);
@@ -1061,7 +1061,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
-        if (typeof r._growTreeBlueprintForSpawn === "function" && r.state && r.state.architectures) {
+        if (r.state && r.state.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
             if (grownKey && r.state.blueprints[grownKey]) {
                 // Spawn an Test-Position + harvest sofort.
@@ -1118,7 +1118,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
-// Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel (W1 + Integration 05.10.): sie hatte keinen
+// Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel: sie hatte keinen
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald(ctx) {
     const { page, check } = ctx;
@@ -1147,7 +1147,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         }
 
         // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
-        // Seit dem Waldboden (integriert 05.10.) ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
+        // Seit dem Waldboden ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
         const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =

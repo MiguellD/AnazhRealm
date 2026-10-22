@@ -908,7 +908,7 @@ async function probe(arg) {
         try {
             const tS = performance.now();
             r.setCameraMode("third");
-            // DIE KRONEN-STELLUNG (K20, 12.10.): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
+            // DIE KRONEN-STELLUNG (K20): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
             // Stamm-Fuß steht kein Laub in der Nah-Kugel, der Schmuggel dort maß 0,0 % und die Linse war blind. Die Stellung
             // steigt je 1 m am Stamm hinauf (der Spieler schwebt, die 3rd-Kamera folgt), bis das Laub ohne Durchsicht die Linse
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).

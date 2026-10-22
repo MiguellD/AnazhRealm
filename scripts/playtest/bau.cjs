@@ -736,8 +736,7 @@ async function checkBandWave10b(ctx) {
             out.horizLineNotBroadcasting =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
             // Relais: ein broadcasting-Mast nahe einem Strahler verstärkt dessen Reichweite — Spieler 22 m vom
-            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m). Vorher ALLE radiating-
-            // Architekturen ringsum entfernen (natürliche kristall_geode aus `_populateVoxelChunkVegetation`).
+            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m).
             if (pmR) {
                 pmR.x = 60;
                 pmR.y = 0;
@@ -1107,7 +1106,7 @@ async function checkBandWave10b(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            if (r) r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1582,7 +1581,7 @@ async function checkBandPsi0Winkel(ctx) {
             op: maxCos(A.OP_CLASS_SIGNATURES),
         };
     });
-    // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
+    // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
     // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
     // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
@@ -1741,7 +1740,7 @@ async function checkBandV18266RockDetail(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        if (typeof r._makePartGeometry !== "function" || typeof THREE === "undefined") return out;
+        if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
             g && g.attributes && g.attributes.position
                 ? g.index

@@ -92,7 +92,7 @@ function scanAnker(playtestSrc, stammSrc) {
     return { entries, errs };
 }
 
-// KLINGE 3 (K38-N2, 15.10.) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
+// KLINGE 3 (K38-N2) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
 // die Liste festnagelt (im Regex `_x\(a, b\)\s*\{`, als Text "    _x(a, b) {"), bricht bei jedem neuen Parameter, obwohl das
 // geprüfte Gesetz steht: gate:foundry-crossfade fiel so an `_foundryBaumHoehe(preset, entry, wer)` (Zweig-CI 38651527401,
 // voll 4/11). Der Name wandert mit: im Regex `_x\([^)]*\)`, im Text `stammLib.kopf(text, "_x")`. Die Klinge liest JEDE Linse
@@ -184,7 +184,7 @@ function scanParameterAnker(dateien, stammSrc) {
     return { n: dateien.length, errs };
 }
 
-// KLINGE 5 (K60-N5, 15.10.) — DIE TASTE NACH DER WANDUHR: eine Linse hält eine Taste über einen Zeitgeber statt bis zu
+// KLINGE 5 (K60-N5) — DIE TASTE NACH DER WANDUHR: eine Linse hält eine Taste über einen Zeitgeber statt bis zu
 // ihrem Ereignis. Auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d)
 // „LEER: A lief 0.77 m“ nach 1,6 s W, Zweig-CI 38683406115; die Garage fuhr in 1,8 s 1,1 m/s). Gehalten ist eine Taste,
 // die gedrückt (`keyboard.down`, `KeyboardEvent("keydown")`) und später DIESELBE losgelassen wird; dazwischen steht kein
@@ -249,7 +249,7 @@ function tasteNachWanduhr(name, src) {
     }
     return errs;
 }
-// KLINGE 6 (D2-N1, 16.10.) — DER EINE RUMPF-SCHNEIDER: eine Linse schneidet einen Block über `stammLib.rumpf` (den Block an
+// KLINGE 6 (D2-N1) — DER EINE RUMPF-SCHNEIDER: eine Linse schneidet einen Block über `stammLib.rumpf` (den Block an
 // seiner DEFINITION), nie mit eigenem Klammer-Zähler. Zweiundzwanzig Schneider in zwanzig Linsen setzten am ERSTEN Text-
 // Treffer an; nach dem Umzug nach Domäne schnitt gate:vehicle-drive A5 den Aufruf in siedlung-ort.js statt der Definition
 // (Zweig-CI 38894453753, voll 11/18). Ein Klammer-Zähler ist ein Vergleich mit "{" (Token: `=== "{"`, `"{" ===`,

@@ -512,7 +512,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
         // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
         // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
-        // ein WAND-Segment (die Tür-Lücke der Front liegt dann bei x≈1.3..2.6, nicht im Weg).
+        // ein WAND-Segment (nicht im Weg).
         const KSlive = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (r.state.blueprints._t_live_haus) delete r.state.blueprints._t_live_haus;
         r.state.blueprints._t_live_haus = {
@@ -534,7 +534,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.keys = { w: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
         }
         const playerZ = r.state.playerMesh.position.z;
         const playerY = r.state.playerMesh.position.y;

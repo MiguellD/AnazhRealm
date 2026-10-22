@@ -6,7 +6,7 @@
 //
 // Dieselbe Sonde läuft auf JEDEM Stand (die APIs sind geguardet) → das Bild-PAAR
 // vorher↔nachher entsteht, indem man sie in einem Worktree des Mesh-Stands
-// (z. B. d7ca0a1f, 19.07.) und auf HEAD fährt:
+// (z. B. d7ca0a1f) und auf HEAD fährt:
 //
 //   node scripts/diag-beweis-e.cjs --tag analog [--out DIR] [--ohne-wiese] [--klassen baum,haus] [--proto-min 40]
 //   (im Worktree)  node scripts/diag-beweis-e.cjs --tag mesh --out <HEAD>/artifacts/beweis-e
@@ -33,13 +33,13 @@ const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
 const MIT_WIESE = !process.argv.includes("--ohne-wiese") && KLASSEN.includes("wiese");
 // Die Protokoll-Frist je page.evaluate: der Mesh-Stand (Juli) rendert im Wald Millionen Dreiecke
-// durch swiftshader — ein Doppel-Render dort sprengte 15 min (GEMESSEN 30.09.).
+// durch swiftshader — ein Doppel-Render dort sprengte 15 min.
 const PROTO_MS = Number(argOf("--proto-min", "15")) * 60000;
 const W = 640,
     H = 360;
 const server = statikServer();
 
-// DIE BLICK-WAHL (Befund 30.09.: Kameras standen im Laub, unter dem Bauch des Tiers, hinter Stämmen):
+// DIE BLICK-WAHL (unter dem Bauch des Tiers, hinter Stämmen):
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
 // meisten vom Objekt geänderten Pixeln trägt Fern- UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
@@ -122,7 +122,7 @@ const SCHUSS_FN = async (kam) => {
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
-    // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
+    // BODEN-KLEMME: das Auge nie im Hang.
     const sy = r._voxelSurfaceY(kam.px, kam.pz);
     if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
     cam.lookAt(kam.lx, kam.ly, kam.lz);
@@ -134,7 +134,7 @@ const SCHUSS_FN = async (kam) => {
     } catch (_e) {}
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
-    // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
+    // die neue Kamera veraltet.
     r._schattenAlleNeu();
     // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, Tonkurve + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
@@ -200,7 +200,7 @@ const SCHUSS_FN = async (kam) => {
         : null;
     zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
     try {
-        if (typeof r._analogEMetrologieZeile === "function") zahlen.zeile = String(r._analogEMetrologieZeile());
+        zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch (_e) {}
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
@@ -392,7 +392,7 @@ const SCHUSS_FN = async (kam) => {
         const out = { objekte: {}, hausName: hausName || null };
         // Wolf
         const pw = buehne(8, 50, 6, 1.2, 0.3);
-        // Am Kreatur-Limit (Befund 30.09.: spawnCreatureAt=null) weicht das FERNSTE Tier dem Beweis-Wolf.
+        // Am Kreatur-Limit weicht das FERNSTE Tier dem Beweis-Wolf.
         if (r.state.creatures.length >= r.state.maxCreatures) {
             let fern = null,
                 fd = -1;

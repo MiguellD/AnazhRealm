@@ -1,4 +1,4 @@
-// kamera-nah.cjs — DIE NAH-DECKUNG DER KAMERA (Leben-Schau 2, 09.10., Befund §6 #5): wie viel des Schirms eine Fläche
+// kamera-nah.cjs — DIE NAH-DECKUNG DER KAMERA (Leben-Schau 2, Befund §6 #5): wie viel des Schirms eine Fläche
 // deckt, die näher am Auge liegt als der Nah-Radius der Stellung — und wer sie ist, beim NAMEN. Befund: in allen drei
 // Spuren steckte die Kamera in Laub, Strauch oder Fels (A 12 · 27 · 44–47, B 24 · 28 · 31 · 35 · 53, C 12); durchsichtig
 // wurde nur, was im Rohr um den Sicht-Strahl lag.

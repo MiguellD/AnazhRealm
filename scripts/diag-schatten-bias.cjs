@@ -348,12 +348,7 @@ async function probe(cfg) {
         if (!lw || !f) return;
         const sh = lw.shadow;
         if (modus.art === "spiel") {
-            if (typeof r._schattenBias === "function") r._schattenBias(lw, texelVon(sh, f), f.zt - f.zb);
-            else {
-                const a = st.atmosphere && Number.isFinite(st.atmosphere.shadowBias) ? st.atmosphere.shadowBias : 1;
-                sh.normalBias = a;
-                if (K && K.biasM) sh.bias = K.biasM[Math.min(i, K.biasM.length - 1)] / (f.zt - f.zb);
-            }
+            r._schattenBias(lw, texelVon(sh, f), f.zt - f.zb);
             return;
         }
         const tex = texelVon(sh, f);

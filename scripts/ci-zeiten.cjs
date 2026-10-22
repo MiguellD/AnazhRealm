@@ -1,4 +1,4 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, 11.10.; CW, 16.10.): aus der GitHub-API je Schritt von check.yml der Median seiner
+// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CW): aus der GitHub-API je Schritt von check.yml der Median seiner
 // Laufzeit über die letzten 7 Läufe auf integ-probe, die ihn in einem grünen Job der GitHub-Läufer tragen (die Echt-Gruppe
 // fährt dieselben Schritte auf der Karte, eine andere Zeit), je Gruppe der Median ihrer Job-Dauer bei gleichem Schritt-Satz,
 // die Vorbereitung als Job-Dauer über die Gate-Schritte hinaus und der Kopf der Quelle (der neueste gemessene Lauf) →
@@ -6,7 +6,7 @@
 // Läufe — seit der Echt-Gruppe (K65) kaum einer — und rechnete mit Medianen vom 14.10. (Fenster-Wand 77 s statt 441 s). Ein
 // Schritt misst nur, wo er DENSELBEN Befehl fuhr (sein run-Text an check.yml des Laufs, K61); ohne Lauf `geschaetzt` mit Quelle.
 //
-// DERSELBE Befehl verteilt (CW2, 16.10.; Befund: nach 8 Merges sperrte die Waage jeden Merge, das Neu-Verteilen war Handarbeit):
+// DERSELBE Befehl verteilt (CW2, Befund: nach 8 Merges sperrte die Waage jeden Merge, das Neu-Verteilen war Handarbeit):
 // die Voll-Gruppen JE KLASSE (K61: cpu · gpu, scripts/lib/ci-klasse.cjs), so viele, wie neben dem Puls Läufer-Plätze frei
 // sind — der volle Playtest in Gruppe 1, der Rest größte zuerst in die leichteste, die Teile eines Skripts nie beisammen, die
 // Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe, die mehr als einen Schritt trägt — in check.yml (`if: matrix.gruppe`,

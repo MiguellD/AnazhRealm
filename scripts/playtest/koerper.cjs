@@ -489,7 +489,7 @@ async function checkBandRing5Soul(ctx) {
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
-        if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        r._gameLoopTick(performance.now());
         return {
             playerYaw: r.state.yaw,
             playerRotationY: r.state.playerMesh.rotation.y,
@@ -519,7 +519,7 @@ async function checkBandRing5Soul(ctx) {
                 r.state.playerVel.setValue(0, 0, 0);
                 r.state._fieldVy = 0;
             }
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
             const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
@@ -752,7 +752,7 @@ async function checkBandWFFluss(ctx) {
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
         // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
-        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot (Integration 08.10.).
+        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
         out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
@@ -1296,7 +1296,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
                     r._disposeSoulGroup(gz);
                 }
                 a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
-                // DIE NaN-LINSE: Welt-BBox finit + sinnvoll (0.05..20 Einheiten hoch).
+                // DIE NaN-LINSE: Welt-BBox finit + sinnvoll.
                 const bb = new THREE.Box3().setFromObject(g);
                 const h = bb.max.y - bb.min.y;
                 a.bboxFinit =
@@ -1445,7 +1445,6 @@ async function checkBandTierFern(ctx) {
         const abKern = BK && BK[1] ? BK[1].ab : null;
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
-        if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
     
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
         for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -1789,7 +1788,7 @@ async function checkBandKoerperBewegung(ctx) {
         const mesh = s.playerMesh;
         if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
         const savedSoul = p.soul;
-        if (!mesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        if (!mesh.userData.rig) r.applyPlayerSoul("human");
         const pmesh = s.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         const savedVel = s.playerVel;
@@ -1943,7 +1942,7 @@ async function checkBandKoerperBewegung(ctx) {
         p.walkPhase = savedPhase;
         p._gaitW = savedW;
         p.animationLastTick = savedTick;
-        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+        if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
     
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {

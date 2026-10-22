@@ -51,7 +51,7 @@ const server = statikServer();
             const cold = () => archs().filter((e) => kalt(e) && nah(e)).length;
             const foundry = () => archs().filter((e) => isTree(e) && e.instFoundry && (e.instanced || e.mesh)).length;
             // DIE VORAUSSETZUNG BAUEN: seit der EINEN Nah-Grenze (121856c) ist die Nähe nach dem Warm-up schon
-            // konvergiert (gemessen 05.10.: 0 kalte Bäume im Radius 149 m, die 8 kalten stehen bei 150-168 m). Der
+            // konvergiert (die 8 kalten stehen bei 150-168 m). Der
             // Spieler tritt an den nächsten kalten Baum heran (20 m davor, wie im Gehen) — die Bäume, die dabei in den
             // Radius kommen, sind die kalte Nähe, die unter Last konvergieren muss.
             out.coldFern = archs().filter((e) => kalt(e) && !nah(e)).length;

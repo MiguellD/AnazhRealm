@@ -1,7 +1,5 @@
-// shader-kosten.cjs — DIE SHADER-KOSTEN-LINSE (06.10., Welle G; Gebot 10: die Linse nennt den Täter beim Namen). Befund
-// (GTX 1060, Mess-Wiese, `werkbank zerlegen`): die Fragment-Arbeit trägt den Frame — der Boden-Satz kostete 6,90 ms GPU für
-// 6 Befehle (26 MaterialX-Hash-Rauschen je Pixel), die Godrays tasteten 20× je Pixel auch ohne Sonne im Bild (0,69 ms); die
-// Pass-Stempel und die Zerlegung nennen den Verbraucher, nicht seine Arbeit je Pixel. Was ein Fragment KOSTEN KANN, steht im
+// shader-kosten.cjs — DIE SHADER-KOSTEN-LINSE (Gebot 10: die Linse nennt den Täter beim Namen): die Pass-Stempel und die
+// Zerlegung nennen den Verbraucher, nicht seine Arbeit je Pixel. Was ein Fragment KOSTEN KANN, steht im
 // erzeugten WGSL (r184 TSL → WGSL, dasselbe, das die GPU zieht): diese Linse liest es je Programm (dem NodeBuilderState, den
 // r184 je Material × Objekt-Art × Pass baut) und zählt statisch, über alle Funktions-Aufrufe ausmultipliziert:
 //   Zugriffe — textureSample* · textureLoad · textureGather*: je Art (Proben · Schatten-Vergleiche · Ladungen · Sammeln) und
@@ -671,7 +669,7 @@ function shaderKostenSeite(o) {
             if (pp && ro.object === pp._quadMesh) return "post:ausgabe";
             if (traa && ro.material === traa._resolveMaterial) return "TRAA.resolve";
             try {
-                return typeof r._taeterKlasse === "function" ? r._taeterKlasse(ro.object) : ro.object.type;
+                return r._taeterKlasse(ro.object);
             } catch (_e) {
                 return (ro.object && (ro.object.name || ro.object.type)) || "?";
             }

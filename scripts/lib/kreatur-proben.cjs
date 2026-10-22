@@ -1,4 +1,4 @@
-// kreatur-proben.cjs — DIE KREATUR-PROBEN (Welle L, Leben-Prüfung 06.10.): jede Probe ruft den ECHTEN Kreatur-Takt
+// kreatur-proben.cjs — DIE KREATUR-PROBEN (Welle L): jede Probe ruft den ECHTEN Kreatur-Takt
 // (`updateCreatures`, der EINE Chokepoint) und misst, was das Fenster der Leben-Prüfung zeigte — Krebsgang, Hüpf-Sturm,
 // Geister, Geburt im Blick, Beute ohne Flucht, Bewegung am Frustum, Strahl je Frame. Derselbe Seiten-Code läuft headless
 // (gate:kreatur-takt, Null-Renderer, Produktions-Boot) und im sichtbaren Fenster der echten GPU (die Werkbank:
@@ -44,9 +44,7 @@ async function kreaturProben(r, T, opts) {
         // DIE UHR DER BÜHNE (K07): jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts und mit frischen
         // Fauna-Strömen (_faunaRng, aus dem Seed der Welt), der Blick vom Spieler nach Norden (der Schirm wählt, wessen Gang
         // ausgewertet wird: die Raten-Leiter, _creatureAnimDiv) — gleich, wie lange die Welt einschwang (performance.now: ihre
-        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief. Vorher hielt nur jede zweite Probe ihre Uhr
-        // selbst (sieben Abschriften); gier lief ab der Uhr des Einschwingens (9,73 oder 9,77 s), der Fuchs wechselte von
-        // Lauf zu Lauf 15- bis 32,5-mal je Minute zwischen Gas und Bremse.
+        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief.
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
         const altStroeme = r._faunaStroeme;
@@ -163,8 +161,7 @@ async function kreaturProben(r, T, opts) {
     // über jede Kante; der Jäger hinter ihm hält am Stamm (der Hüllen-Kontakt seines Leibs). Die Bahn liest die Probe darum
     // aus der Welt: Land ohne Wasser 8 m quer, ebener Grund (Spanne ≤ 3 m, die Dorfplatz-Grenze), kein Fels über ihr und
     // keine Hülle des Bestands in der Gasse (`_blockerUmPlatz` + `_boxAbstand2`, dieselbe Nachbarschaft und Box-Probe wie
-    // `_kreaturHuellenKontakt`). Vorher stand der Ort als Versatz der alten Welt (frei(-50, 60, 30): 30 m Umkreis um den
-    // Start, die Bahn 43 m lang): im neuen Gelände lag eine Tanne in der Gasse, der Wolf hielt am Stamm, der Sprinter entkam.
+    // `_kreaturHuellenKontakt`).
     const freieBahn = (dx, dz, laenge, vor) => {
         const gasse = 1.5; // halbe Breite der Gasse: Radius und halbe Länge des Wolf-Leibs mit Rand
         const bahnFrei = (x0, z0) => {
@@ -272,7 +269,6 @@ async function kreaturProben(r, T, opts) {
     // Menge leer und jeder Takt zählt als freier Lauf.
     const kontaktZaehler = (restore) => {
         const geschoben = new Set();
-        if (typeof r._kreaturHuellenKontakt !== "function") return geschoben;
         decke(
             restore,
             "_kreaturHuellenKontakt",
@@ -816,8 +812,7 @@ async function kreaturProben(r, T, opts) {
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
         // DIE PEILUNG DES ZIELS LIEST DEN ZUSTAND (K13): die Körper, die die Probe selbst kennt — die drei Beutetiere und den
-        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt. Vorher war sie das Argument des geprüften Jagd-Wegs
-        // (_kreaturJagdZug tx/tz): ein Raster, das schon das Ziel auf eine Achse legt, ginge als „auf dem Ziel" durch.
+        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt.
         const peilKoerper = [...beute, s.playerMesh];
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
         // Himmelsachse liegt (gleicher Abstand); ein Lauf darauf ist ein Raster, auch wenn er „auf sein Ziel" geht
@@ -1497,7 +1492,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── nexus (Leben-Schau 07.10. Neu 1): kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
+    // ── nexus: kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
     // 4–12 und Sprungkraft 8–20 zu (gemessen 11,1 m/s, Sprint 45 m/s, Sprung 18,6 statt 2,6), blähte jedes Tier um ×1,11
     // ohne die bodySize-Achse auf, und `spawn_creature at_player` setzte Geburten in den Blick. Gemessen werden der Würfel
     // (ein fester Strom über den Kompositions-Pool), die Ops selbst (die Werte des Würfels, Quelle nexus: das Ergebnis liegt
@@ -1651,7 +1646,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── temperament (D16 / K-D12, Leben-Schau 07.10.): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
+    // ── temperament (D16 / K-D12): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
     // Tiere sind tag-gleich) — Hirsch und Fuchs blieben „wehrhaft" (aus den Tags), alle Hirsche Wariness −1,0 (neugierig),
     // die Herde drängte auf 0,6 m heran. Gemessen: das Temperament je Seele und Größe, die Wariness vor einem ruhigen
     // Spieler in frieden, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und dass der Kampf dasselbe
@@ -1786,7 +1781,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── abstand (Leben-Schau 07.10., D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
+    // ── abstand (D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
     // Modus frieden kroch auf 0,7 m zusammen (Paar-Abstand 0,66–0,96 m), die Leiber durchdrangen sich und den Spieler. Der
     // Leib ist die EINE benannte Größe (_kreaturLeib: Achse längs der Gier ± halb, Radius); gemessen je Takt die Lücke
     // zwischen zwei Leibern (Kapsel gegen Kapsel in XZ) und zwischen Leib und Spieler-Kapsel (PLAYER_WALL_RADIUS), am Ende
@@ -1964,7 +1959,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── jagdkreis (Leben-Schau 07.10., Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
+    // ── jagdkreis (Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
     // stand still (ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten) und holte keinen Sprinter ein (der
     // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) der Riss (unten); (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
     // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
@@ -2145,7 +2140,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── rudel (Leben-Schau 07.10., Kampf: „Rudel gegen Spieler"): ein Rudel umstellt. Drei Wölfe, die von einer Seite
-    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau; 239° am 06.10.). Gemessen am
+    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau). Gemessen am
     // echten Takt: drei Wölfe in 15 m auf einer Seite des stehenden Spielers (Modus pfad); in jedem Takt, in dem alle drei
     // näher als 2 × jagd.hetzM stehen, die größte Winkel-Lücke ihrer Richtungen um den Spieler, dazu die Lücke beim ersten
     // Biss ──
@@ -2220,7 +2215,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── sockel (Leben-Schau 07.10., D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
+    // ── sockel (D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
     // durchs Dorf, 7,6 % ihrer Takte lagen in einer Hüllen-Box, p50 73 cm tief; ein Hirsch stand 0,35 m tief im Sockel, auf
     // dem der Spieler stand (Bild ls-09) — das Tier las nur den Boden (_standSicht ohne Struktur). Gemessen am echten Takt:
     // ein Sockel aus Stein, seine Oberkante 0,35 m über dem Boden seiner Mitte (wie der Sockel des Hauses), ein Hirsch steht
@@ -2300,7 +2295,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── querhang (Leben-Schau 07.10., D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
+    // ── querhang (D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
     // Beine 20–31° aus dem Lot (sie kippten mit dem Leib, Bild ls-10), der Stand-Schlupf im Lauf lag bei 0,56–1,27 (Soll
     // ≤ 0,2). Gemessen am echten Takt wie in der Leben-Schau: ein Hang von 20–30° nahe dem Spieler; Wolf und Hirsch stehen
     // QUER zur Fall-Linie (warten, 120 Takte): je Bein der Winkel Hüfte → Pfote gegen das Lot und die Sohle über dem Boden
@@ -2503,7 +2498,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
+    // ── ferngang (D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
     // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
     // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Seit S3 trägt jenseits der Stufen-Grenze (`ab` × Größe)
     // die gelenkige Grobstufe das Bild, an die Knochen der feinen gebunden (EIN Skelett, `_gelenkGestalt`). Gemessen am
@@ -2762,6 +2757,9 @@ async function kreaturProben(r, T, opts) {
                     e.seed >>> 0 === sl.seed >>> 0 &&
                     Math.hypot(e.position.x - (plan.ort.x + sl.x), e.position.z - (plan.ort.z + sl.z)) < 1
             );
+        const hausE = s.architectures.filter(
+            (e) => e && e.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
+        );
         const haeuser = plan.slots.filter(steht).map((sl) => ({
             seed: sl.seed >>> 0,
             rolle: sl.rolle,
@@ -2795,8 +2793,9 @@ async function kreaturProben(r, T, opts) {
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         let stall = null;
         try {
-            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`)
-            const offen = () => leiber().length < sollSumme || r._weltOffen().leiber > 0;
+            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios
+            const offen = () =>
+                leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle);
             for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && offen();) {
                 try {
                     r._gameLoopTick(performance.now());
@@ -2876,7 +2875,7 @@ async function kreaturProben(r, T, opts) {
         const lage = new Map(L.map((g) => [g, { x: g.position.x, z: g.position.z }]));
         const treffer = new Map();
         const vorher = new Map();
-        const z = { sprungN: 0, wandN: 0, alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
+        const z = { sprungN: 0, alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
         let blick10 = null;
         let planGleich = !!planFn;
         const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte.werk).map((b) => b.orte.werk);
@@ -3018,29 +3017,119 @@ async function kreaturProben(r, T, opts) {
         const ohnePlatz = liste.filter(
             (b) => !(b.orte.platz && Math.hypot(b.orte.platz.x - pc.x, b.orte.platz.z - pc.z) <= platzR)
         );
+        // ── DIE WEGE (mensch.K3): je Takt jeder Bewohner draußen als Kapsel des Spielers gegen das EINE Blocker-Netz — ein
+        // Takt in einer Box ist Durchdringung, beim Namen des Baus; drinnen steht er im Kern seines Hauses, wer einen Kern
+        // (Tür-Zeile `tuer` des Plans) betritt oder verlässt, geht durch die Ebene einer Tür; dazu die Gangzeit auf Wegen
+        // (`_aufWeg`) und je Bewohner die Wege (Ankunft nach ≥ 2 m) — wer im Haus bleibt, irrt nie.
+        const RW = A.PLAYER_WALL_RADIUS;
+        const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0 };
+        const wSpur = new Map();
+        const kandW = [];
+        const nameVon = (e) => `${e.type} #${e.seed >>> 0}`;
+        const kernVon = (e) => (e && e.tuer && e.tuer.W > 1.5 && e.tuer.D > 1.5 ? e.tuer : null);
+        const hausLage = (e, x, z) => {
+            const [c, sn, k] = [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0), e.scale > 0 ? e.scale : 1];
+            const [dx, dz] = [x - e.position.x, z - e.position.z];
+            return { x: (dx * c - dz * sn) / k, z: (dx * sn + dz * c) / k };
+        };
+        const durchTuer = (e, ax, az, ex, ez) => {
+            const [t, p, q] = [kernVon(e), hausLage(e, ax, az), hausLage(e, ex, ez)];
+            return [[t.z, t.x, t.w], t.hinten ? [-t.z, t.hinten.x, t.hinten.w] : []].some(([zF, xT, wT]) => {
+                const [u, v] = [p.z - zF, q.z - zF];
+                if (!(wT > 0) || (u * v > 0 && Math.abs(u) > 1e-3 && Math.abs(v) > 1e-3)) return false;
+                const k = Math.abs(u - v) > 1e-9 ? Math.max(0, Math.min(1, u / (u - v))) : 1;
+                return Math.abs(p.x + (q.x - p.x) * k - xT) <= wT / 2 + 0.05;
+            });
+        };
+        const wegeMessen = () => {
+            for (const b of liste) {
+                const [x, z] = [b.leib.position.x, b.leib.position.z];
+                if (!wSpur.has(b))
+                    wSpur.set(b, { x, z, innen: b.drinnen ? b.orte.tuer.haus : null, weg: null, m: 0, n: 0 });
+                const sp = wSpur.get(b);
+                kandW.length = 0;
+                r._blockerUmPlatz(x, z, 4, kandW);
+                let innen = b.drinnen ? b.orte.tuer.haus : null;
+                for (const e of b.drinnen ? [] : kandW) {
+                    const [t, l] = [kernVon(e), hausLage(e, x, z)];
+                    if (t && Math.abs(l.x) < t.W / 2 - 1e-3 && Math.abs(l.z) < t.D / 2 - 1e-3) innen = e;
+                }
+                for (const e of innen === sp.innen ? [] : [sp.innen, innen].filter(Boolean)) {
+                    WG.durch++;
+                    if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
+                    else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
+                }
+                const fuss = b.leib.position.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
+                const imLeib = (box) => box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 1.7 * (b.groesse || 1);
+                const wand = b.drinnen
+                    ? null
+                    : kandW.find((e) =>
+                          (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
+                      );
+                if (wand) WG.wand.set(nameVon(wand), (WG.wand.get(nameVon(wand)) || 0) + 1);
+                if (b.weg && !b.drinnen && (x !== sp.x || z !== sp.z)) {
+                    WG.geh++;
+                    if (r._aufWeg(x, z, 0)) WG.aufWeg++;
+                }
+                if (sp.weg) sp.m += Math.hypot(x - sp.x, z - sp.z);
+                if (b.weg !== sp.weg) {
+                    if (sp.weg && !b.weg && b.da && sp.m >= 2) sp.n++;
+                    [sp.weg, sp.m] = [b.weg, 0];
+                }
+                Object.assign(sp, { x, z, innen });
+            }
+        };
+        // der Takt (seine Kosten im Spieltakt, den Gang-Fenstern) und je Takt die Wege
+        const zeiten = [];
+        let quer = null;
+        const takt = (dt) => {
+            const t = performance.now();
+            r._tickBewohner(dt);
+            if (dt < 0.05) zeiten.push(performance.now() - t);
+            wegeMessen();
+            if (taeter === "bewohner-quer" && !quer) quer = querSetzen();
+        };
+        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, der die Wand nach ihm nie prüft
+        const querSetzen = () => {
+            const vorbild = s.architectures.find((e) => kernVon(e) && liste.some((b) => b.orte.tuer.haus === e));
+            const t = kernVon(vorbild);
+            const voraus = t.W / 2 + 1.5;
+            for (const b of liste) {
+                if (!b.weg || b.drinnen || !(b.wegRest > voraus + t.W + 2)) continue;
+                let p = { x: b.leib.position.x, z: b.leib.position.z };
+                let rest = voraus;
+                for (let i = b.wi; i < b.weg.length; p = b.weg[i++]) {
+                    const q = b.weg[i];
+                    const d = Math.hypot(q.x - p.x, q.z - p.z);
+                    if (d < rest) {
+                        rest -= d;
+                        continue;
+                    }
+                    const [ux, uz] = [(q.x - p.x) / d, (q.z - p.z) / d];
+                    const [x, y] = [p.x + ux * rest, p.z + uz * rest];
+                    r._bewohnerWegPruefen = () => {};
+                    restore.push(() => delete r._bewohnerWegPruefen);
+                    const e = r.spawnArchitecture(
+                        vorbild.type,
+                        { x, y: r.getTerrainHeightAt(x, y) + 0.5, z: y },
+                        { seed: 4242, rotationY: Math.atan2(-uz, ux), silent: true, tuer: t }
+                    );
+                    if (e) restore.push(() => r.removeArchitecture(e));
+                    return e;
+                }
+            }
+            return null;
+        };
         const tTag = performance.now();
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             r._uhrSetzen(stunde / 24, "regler");
             const SZ = saetze();
             for (let k = 0; k < takte; k++) {
-                r._tickBewohner(DT);
+                takt(DT);
                 // Täter (Selbsttest): der Teleport an den Soll-Ort
                 if (taeter === "bewohner-sprung")
                     for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
-                for (const b of liste) {
-                    // die Wand: wer geht, steht in keinem Haus — auf dem Bein zwischen Tür und Vor-Punkt in keinem fremden
-                    const g = b.leib;
-                    const o = b.orte;
-                    const q = b.weg && b.weg[b.wi];
-                    const bein = q === o.tuer || (q === o.vor && b.stand === o.tuer);
-                    if (
-                        q &&
-                        gezeichnet(g) &&
-                        r._imGrundriss(g.position.x, g.position.z, 0, 0, bein ? o.tuer.haus : null) === "haus"
-                    )
-                        z.wandN++;
-                }
                 for (const g of L) {
                     const v = lage.get(g);
                     const d = Math.hypot(g.position.x - v.x, g.position.z - v.z);
@@ -3061,7 +3150,7 @@ async function kreaturProben(r, T, opts) {
             if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
                 for (const sp of spuren.values()) sp.luecke = true;
                 for (let k = 0; k < 600; k++) {
-                    r._tickBewohner(1 / 60);
+                    takt(1 / 60);
                     // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 (die Pose friert ein)
                     if (taeter === "bewohner-gleiten")
                         for (const m of SZ) {
@@ -3121,7 +3210,6 @@ async function kreaturProben(r, T, opts) {
             planGleich,
             tagSek: Math.round((performance.now() - tTag) / 100) / 10,
             bewohner: liste.length,
-            bewegtN: L.filter(gegangen).length,
             trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
             unter: unter
                 .slice(0, 5)
@@ -3142,6 +3230,43 @@ async function kreaturProben(r, T, opts) {
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map((b) => `${b.rolle}/${b.beruf} #${b.heim}`),
+            takt: {
+                n: zeiten.length,
+                p95: q3(quantil(zeiten, 0.95)),
+                mittel: q3(zeiten.reduce((a, t) => a + t, 0) / zeiten.length),
+            },
+            huellen: hausE.filter((e) => e._hausHuelle).length,
+            wege: (() => {
+                const zahl = liste.map((b) => {
+                    const [o, sp] = [b.orte, wSpur.get(b) || { n: 0 }];
+                    const soll = o.platz ? 2 * Math.hypot(o.tuer.x - o.platz.x, o.tuer.z - o.platz.z) : Infinity;
+                    return {
+                        wer: `${b.rolle}/${b.beruf} #${b.heim}`,
+                        n: sp.n,
+                        m: Math.round(weg.get(b.leib) || 0),
+                        soll,
+                    };
+                });
+                const [ausser, kurz] = [zahl.filter((q) => q.n < 4 || q.n > 10), zahl.filter((q) => !(q.m >= q.soll))];
+                return {
+                    wandN: [...WG.wand.values()].reduce((a, n) => a + n, 0),
+                    wand: [...WG.wand]
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 4)
+                        .map(([n, k]) => `${n}: ${k}`),
+                    durch: WG.durch,
+                    tuer: WG.tuer,
+                    falsch: WG.falsch.slice(0, 4),
+                    aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
+                    wegeMin: Math.min(...zahl.map((q) => q.n)),
+                    wegeMax: Math.max(...zahl.map((q) => q.n)),
+                    ausserN: ausser.length,
+                    ausser: ausser.slice(0, 4).map((q) => `${q.wer}: ${q.n}`),
+                    streckeMin: Math.min(...zahl.map((q) => q.m)),
+                    kurzN: kurz.length,
+                    kurz: kurz.slice(0, 3).map((q) => `${q.wer}: ${q.m} von ${Math.round(q.soll)} m`),
+                };
+            })(),
             stall,
             sek: Math.round((performance.now() - t0) / 100) / 10,
         });
@@ -3202,7 +3327,6 @@ function urteil(name, z) {
         // DER TAG (mensch.K2): das Gesetz der Uhr, jeder Leib geht, trifft seine Soll-Orte, springt nie im Nahbereich
         soll(z.plan, "kein Tagesplan: koerper-core trägt kein tagesPlan (VERHALTEN) — der Bewohner kennt keinen Tag");
         soll(z.planGleich, "der Tagesplan ist bei gleichem Samen nicht bit-gleich");
-        soll(z.bewegtN === z.leiber, `${z.leiber - z.bewegtN} von ${z.leiber} Bewohnern ohne Bewegung im Tag`);
         soll(
             z.trefferMin !== null && z.trefferMin >= 0.9,
             `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9 je Bewohner; ${z.unterN} darunter: ${z.unter.join(" · ")})`
@@ -3210,10 +3334,6 @@ function urteil(name, z) {
         soll(z.stationen > 0, "keine Station Schmiede im Start-Dorf (kein Bewohner mit Rolle schmiede)");
         soll(z.schmiede10 > 0, `Station Schmiede um 10 Uhr leer (${z.schmiede10} am Werk)`);
         soll(z.schmiede2 === 0, `Station Schmiede um 2 Uhr besetzt (${z.schmiede2} am Werk)`);
-        soll(
-            z.wandN === 0,
-            `durch die Hauswand: ${z.wandN} Takte, in denen ein Gehender im Grundriss eines Hauses stand`
-        );
         soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame`);
         // DER GANG IM SATZ, DER BLICK, DER PLATZ (mensch.K1/K2 Staffel 2)
         const sg = z.satzGang || {};
@@ -3229,6 +3349,23 @@ function urteil(name, z) {
             z.ohnePlatz === 0,
             `ohne Platz: ${z.ohnePlatz} Bewohner ohne Stand am Platz, seinem Rand oder seinen Gassen (${z.ohnePlatzWer.join(" · ")})`
         );
+        // DIE WEGE (mensch.K3): keine Kapsel in einer Wand, jeder Durchgang durch die Tür, jeder geht seinen Tag
+        const w = z.wege || {};
+        soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} von ${z.haeuser} Häusern ohne die Hülle ihres Studios`);
+        soll(w.wandN === 0, `Durchdringung: ${w.wandN} Takte eines Leibs in einer Wand (${w.wand})`);
+        soll(
+            w.durch > 0 && w.tuer === w.durch,
+            `nicht über die Tür: ${w.durch - w.tuer} von ${w.durch} Ein- und Austritten (${w.falsch})`
+        );
+        soll(
+            w.ausserN === 0,
+            `Wege am Tag: ${w.ausserN} Bewohner außerhalb 4–10 (${w.wegeMin}–${w.wegeMax}: ${w.ausser})`
+        );
+        soll(
+            w.kurzN === 0,
+            `Strecke am Tag: ${w.kurzN} Bewohner unter zweimal der Luftlinie Tür–Platz (min ${w.streckeMin} m: ${w.kurz})`
+        );
+        soll(w.aufWeg >= 0.85, `Gangzeit auf Wegen ${w.aufWeg} (Soll ≥ 0,85)`);
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "geburt") {
@@ -3630,7 +3767,8 @@ const TAETER = {
         ["bewohner-menge", /Leiber als Leib gezeichnet/],
         ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
         ["bewohner-sprung", /Sprung im Nahbereich/],
-        ["bewohner-wand", /durch die Hauswand/],
+        ["bewohner-wand", /Durchdringung: [1-9]/],
+        ["bewohner-quer", /Durchdringung: [1-9]\d* Takte[^)]*#4242/],
         ["bewohner-gleiten", /der Satz gleitet/],
         ["bewohner-nord", /der Blick der Stehenden/],
         ["bewohner-daheim", /ohne Platz/],
