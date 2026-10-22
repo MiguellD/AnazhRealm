@@ -1910,12 +1910,12 @@ class AnazhRealm_siedlung_satz {
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         // Farbe je Instanz (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
-        const mat =
-            this._stlWegeMat ||
-            (this._stlWegeMat = this._leuchtStoff(
-                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
-                null
-            )); // der Licht-Pool (K11)
+        let mat = this._stlWegeMat;
+        if (!mat) {
+            mat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+            mat.userData.naesseFarbe = THREE.TSL.varyingProperty("vec3", "vInstanceColor"); // die Farbe ist die der Instanz
+            this._stlWegeMat = this._leuchtStoff(mat, null); // der Licht-Pool (K11) und die Nässe
+        }
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -2155,6 +2155,18 @@ class AnazhRealm_siedlung_satz {
         const n = typeof name === "string" && name ? name : b.name || "";
         return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
     }
+    // DIE REIHE DES KATALOGS (bauen.K1): griffbereit zuerst — die eigenen Werke des Spielers (weder eingebaut noch vom Studio
+    // geboren, `_foundryAutoSpecies` ist die Herkunfts-Marke), dann die seiner Hotbar in ihrer
+    // Reihe, dann der Rest in seiner Ordnung; jeder Picker liest sie (Werkstatt-Liste · Rezeptbuch). Griffbereit heißt
+    // Rang < Hotbar-Länge. Befund 22.10. (echte Eingaben): Eiche, Haus, GT und das eigene Werk lagen 2–22 Mausrad-Rasten tief.
+    _katalogRang(name) {
+        const b = this.state.blueprints && this.state.blueprints[name];
+        const hb = this.state.hotbar || [];
+        return b && !b.builtIn && !b._foundryAutoSpecies ? -1 : hb.includes(name) ? hb.indexOf(name) : hb.length;
+    }
+    _katalogReihe(namen) {
+        return namen.slice().sort((a, b) => this._katalogRang(a) - this._katalogRang(b));
+    }
 
     _stlWegeDispose() {
         const P = this.state.stlZaun;
@@ -2280,6 +2292,8 @@ class AnazhRealm_siedlung_satz {
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
         if (flat && flat.foundry && flat.huelle) this._hausHuelleSetzen(entry, flat.huelle);
+        // ein Bau ohne Haus-Hülle, dessen Form oben schließt (Marktstand · Brunnen · Tor), trägt seine Decke in den Dach-Pool
+        else if (flat && flat.foundry && entry._dachKasten === undefined) this._dachKastenSetzen(entry, flat.leaves);
         // Merker: aus dem Studio (Foundry) platziert → der LOD-Tick (`_switchArchitectureLOD`) serviert die
         // neue Stufe aus der Foundry statt aus `grown_..._lodN`. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot.

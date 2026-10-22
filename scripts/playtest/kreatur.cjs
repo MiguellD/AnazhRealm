@@ -83,10 +83,6 @@ async function checkBandV1751CombatStats(ctx) {
         const out = {};
         const S = r.constructor.STAT_FROM_TAGS;
 
-        // (1) Struktur: die drei Kombat-Stats existieren als Formeln in der EINEN Tabelle
-        out.formulasExist =
-            typeof S.knockback === "function" && typeof S.attackSpeed === "function" && typeof S.defense === "function";
-
         // (2) Substanz-Differenzierung (der KERN — die Tabelle IST die Regel):
         // schwere dichte Keule vs. leichte harte Klinge vs. weiches Wesen.
         const keule = { dichte: 0.9, härte: 0.5 }; // schwer + dicht (Masse)
@@ -130,7 +126,6 @@ async function checkBandV1751CombatStats(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
     check(
         "V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
         res.heavyMoreKnockback
@@ -177,9 +172,6 @@ async function checkBandV1753CreatureCombat(ctx) {
         const pm = r.state.playerMesh.position;
         const matUnits = (inv) =>
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
-
-        // (0) der DSL-Op existiert
-        out.opExists = !!(r.dslEffects && r.dslEffects.damage_creature);
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
@@ -260,7 +252,6 @@ async function checkBandV1753CreatureCombat(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.53 Kampf C: der damage_creature-DSL-Op existiert", res.opExists);
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
     check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);

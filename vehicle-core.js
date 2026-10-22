@@ -3495,11 +3495,31 @@
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
-        _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
-        try {
-            return baueFahrzeug(rezeptId, seed, P, st, werk);
-        } finally {
-            _vd = FAHRZEUG_DETAIL;
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): trägt der Bau mehr Dreiecke als die
+        // Budget-Zeile der Stufe, fällt das Detail-Gesetz `teil` um das Verhältnis und der Bau steht neu (höchstens vier
+        // Mal); ein Bau auf seiner Zeile bleibt byte-gleich. Die Teilungen wachsen mit der Größe (Blech hd · 30), die
+        // Zeile nicht — so reduziert die Stufe aus der Größe, nie aus dem Regler-Wert.
+        const zeile = PORTAL_RENDER_CONFIG.lod.budget.vehicle[st].tris;
+        const w = werk || {};
+        const n0 = [w.doors, w.corners].map((l) => (l ? l.length : 0));
+        let vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
+        for (let i = 0; ; i++) {
+            _vd = vd;
+            let g;
+            try {
+                g = baueFahrzeug(rezeptId, seed, P, st, werk);
+            } finally {
+                _vd = FAHRZEUG_DETAIL;
+            }
+            let n = 0;
+            g.traverse((o) => {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+            if (n <= zeile || i === 4) return g;
+            g.traverse((o) => o.geometry && o.geometry.dispose());
+            if (w.doors) w.doors.length = n0[0];
+            if (w.corners) w.corners.length = n0[1];
+            vd = { k: vd.k * Math.min(0.97, zeile / n) };
         }
     }
     function baueFahrzeug(rezeptId, seed, P, st, werk) {

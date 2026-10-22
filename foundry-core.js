@@ -2669,6 +2669,11 @@ function emitTreeRezept(P, stufe) {
     return nodes;
 }
 
+// DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Blüte zählt Röhrenblüten aus der
+// Kopf-Fläche (headR² · 900), Blütenblätter aus der Fülle und Köpfe aus der Blüten-Zahl; trägt der Bau mehr Dreiecke als
+// die Zeile seiner Stufe, fällt dieses Detail um das Verhältnis (buildInstance baut neu, höchstens vier Mal) — die Röhren-
+// und Blütenblätter je Kopf, fern (die L2 trägt je Kopf nur seine Kugel) die Zahl der Köpfe. 1 = das Lab-Maß, byte-gleich.
+var __blueteDetail = 1;
 function emitFlower(P) {
     const stemGeos = [],
         folGeos = [];
@@ -2743,7 +2748,7 @@ function emitFlower(P) {
             hsw
         );
         const ff = __lod === 0 ? 1 : 0.4,
-            NF = Math.round(headR * headR * 900 * ff),
+            NF = Math.round(headR * headR * 900 * ff * __blueteDetail),
             cc = headR / Math.sqrt(Math.max(1, NF));
         for (let n = 0; n < NF; n++) {
             const th = n * GOLDEN,
@@ -2771,6 +2776,7 @@ function emitFlower(P) {
         }
         let np = nearestFib(lerp(8, 18, prich));
         if (__lod > 0) np = nearestFib(np * (__lod === 1 ? 0.7 : 0.42));
+        if (__blueteDetail < 1) np = Math.max(3, nearestFib(np * __blueteDetail));
         // DAS BLÜTENBLATT (phyto-core BLUETEN_BLATT): Saftmal-Grund, Rückbiegung, je Blatt gewürfelt aus dem Ort.
         const BB = self.__phytoCore.BLUETEN_BLATT;
         const pc = petalCol.clone().lerp(vegFarbe(seasonTint), 0.08);
@@ -2813,7 +2819,7 @@ function emitFlower(P) {
         bloom(top, tdir, P.headR, P.petalLen, P.petalRich, hsTop);
     } else if (P.infl === "umbel") {
         // Dolde: Bluetchen auf Stielen vom Scheitel
-        const n = P.bloomCount;
+        const n = __lod === 2 && __blueteDetail < 1 ? Math.max(1, Math.round(P.bloomCount * __blueteDetail)) : P.bloomCount;
         for (let k = 0; k < n; k++) {
             const aa = (k / n) * 6.2831 + rnd() * 0.22,
                 sd = vnorm([Math.cos(aa) * 0.78, 0.64, Math.sin(aa) * 0.78]),
@@ -2838,7 +2844,7 @@ function emitFlower(P) {
         }
     } else {
         // Aehre: Bluetchen spiralig die obere Haelfte hinauf
-        const n = P.bloomCount;
+        const n = __lod === 2 && __blueteDetail < 1 ? Math.max(1, Math.round(P.bloomCount * __blueteDetail)) : P.bloomCount;
         for (let k = 0; k < n; k++) {
             const ff = 0.5 + 0.48 * (n > 1 ? k / (n - 1) : 0),
                 idx = Math.min(NS, Math.round(ff * NS)),
@@ -5078,7 +5084,28 @@ function buildInstance(presetId, seed, lod, ov) {
         } else {
             const P = deriveParamsPlant(pre);
             if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
-            if (P.kind === "flower") emitFlower(P);
+            if (P.kind === "flower") {
+                const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
+                try {
+                    for (let versuch = 0; ; versuch++) {
+                        emitFlower(P);
+                        let n = 0;
+                        g.traverse((o) => {
+                            if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                        });
+                        if (!(n > zeile) || versuch === 4) break;
+                        for (const c of g.children.slice()) {
+                            g.remove(c);
+                            if (c.geometry) c.geometry.dispose();
+                        }
+                        __blueteDetail *= Math.min(0.97, zeile / n);
+                        RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
+                        Object.assign(P, deriveParamsPlant(pre), ov || {});
+                    }
+                } finally {
+                    __blueteDetail = 1;
+                }
+            }
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
