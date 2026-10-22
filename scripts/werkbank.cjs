@@ -202,7 +202,7 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
-const { ZAEHLER_INSTALL, FALTE_INSTALL, gangUrteil, gangSelbsttest } = require("./lib/draw-zaehler.cjs");
+const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf, gangSelbsttest } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
@@ -2564,111 +2564,38 @@ async function starte() {
                     });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
-                // DIE PUFFER-LINSE: nach einem erzwungenen GC jeder Geometrie-Puffer beim Halter (szene · bild · ruhend ·
-                // verwaist, `__pufferZensus`) und der VRAM je Schlüssel — ohne Einschwingen, ohne Proben (der Stand jetzt).
-                if (req.url === "/puffer") {
+                // DIE PUFFER-LINSE: nach erzwungenem GC jeder Geometrie-Puffer beim Halter (szene · bild · ruhend · verwaist,
+                // `__pufferZensus`), der VRAM je Schlüssel, der Heap (JS + Typed-Arrays) und mit `halter` jeder Typed-Array-Pfad.
+                const pufferStand = async (halter, top) => {
                     const cdp = await page.target().createCDPSession();
-                    await cdp.send("HeapProfiler.collectGarbage");
+                    for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
+                    const u = await cdp.send("Runtime.getHeapUsage");
                     await cdp.detach();
                     const o = await page.evaluate(
-                        async (top) => {
-                            for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
-                            // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
-                            window.__buehne();
+                        async (halter, top) => {
                             await window.__drawZensus({ top: 1 });
                             window.__kehrausJetzt();
                             window.__texturZensus();
-                            const puffer = window.__pufferZensus();
-                            const v = window.__vram || {};
-                            const mb = (x) => +(x / 1048576).toFixed(1);
+                            const v = window.__vram || {},
+                                mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
-                                vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
-                                pufferMB: mb(v.puffer || 0),
-                                texturenMB: mb(v.texturen || 0),
-                                gcMB: mb(v.gc || 0),
-                                puffer,
-                                gross: window.__vramBericht ? window.__vramBericht(top) : null,
+                                vramMB: mb(v.puffer + v.texturen),
+                                pufferMB: mb(v.puffer),
+                                texturenMB: mb(v.texturen),
+                                puffer: window.__pufferZensus(),
+                                gross: window.__vramBericht(top),
+                                halter: halter ? window.__heapHalter(window.anazhRealm, 8) : null,
                             };
                         },
-                        Number(b.top) || 30
+                        halter,
+                        top
                     );
-                    return send(Object.assign(o, { ms: Date.now() - t0 }));
-                }
-                // DER GANG (profiband K5): am Start eingeschwungen messen, dann gehen · fahren (GT, Taste E) · Nacht (Spieler-Wort)
-                // je ein Drittel über die echten Tasten, zurück zum Start, eingeschwungen messen — Heap und VRAM nach GC, der
-                // Halter-Diff nennt, was wuchs (`gangUrteil`, scripts/lib/draw-zaehler.cjs).
-                if (req.url === "/gang") {
-                    const cdp = await page.target().createCDPSession();
-                    const T = { w: ["KeyW", "w", 87], e: ["KeyE", "e", 69], enter: ["Enter", "Enter", 13] };
-                    const taste = (n, type) =>
-                        cdp.send("Input.dispatchKeyEvent", { type, code: T[n][0], key: T[n][1], windowsVirtualKeyCode: T[n][2], text: type === "keyDown" && n !== "enter" ? T[n][1] : undefined });
-                    const tippe = async (n) => (await taste(n, "keyDown"), await taste(n, "keyUp"));
-                    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-                    const steht = () => page.evaluate(async () => { const r = window.anazhRealm; for (const dl = performance.now() + 90000; performance.now() < dl && !r._weltSteht(); ) await new Promise((f) => setTimeout(f, 250)); });
-                    const t0G = Date.now();
-                    const messe = async (halter) => {
-                        for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
-                        const u = await cdp.send("Runtime.getHeapUsage");
-                        const o = await page.evaluate((halter) => {
-                            return window.__drawZensus({ top: 1 }).then(() => {
-                                window.__kehrausJetzt();
-                                window.__texturZensus();
-                                const p = window.__pufferZensus() || {}, v = window.__vram || {}, mb = (x) => +((x || 0) / 1048576).toFixed(1);
-                                return { vramMB: mb(v.puffer + v.texturen), ruhend: (p.halter && p.halter.ruhend) || 0, verwaist: (p.halter && p.halter.verwaist) || 0, halter: halter ? window.__heapHalter(window.anazhRealm, 8) : null };
-                            });
-                        }, halter);
-                        return Object.assign(o, { min: +((Date.now() - t0G) / 60000).toFixed(2), heapMB: +((u.usedSize + (u.backingStorageSize || 0)) / 1048576).toFixed(1) });
-                    };
-                    const gehe = async (ms) => {
-                        await taste("w", "keyDown");
-                        let vor = null;
-                        for (const ende = Date.now() + ms; Date.now() < ende; ) {
-                            await warte(5000);
-                            const p = await page.evaluate(() => { const q = window.anazhRealm.state.playerMesh.position; return [q.x, q.z]; });
-                            if (vor && Math.hypot(p[0] - vor[0], p[1] - vor[1]) < 2) await page.evaluate(() => (window.anazhRealm.state.yaw += 1.7));
-                            vor = p;
-                        }
-                        await taste("w", "keyUp");
-                    };
-                    const drittel = ((Number(b.min) || 6) * 60000) / 3;
-                    // der Spiel-Loop des Spielers (die Werkbank hält ihn sonst an): der Takt läuft, wie er im Spiel läuft
-                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
-                    await steht();
-                    await warte(20000);
-                    const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
-                    const vor = await messe(true);
-                    await gehe(drittel);
-                    const gt = await page.evaluate(async () => {
-                        const r = window.anazhRealm, p = r.state.playerMesh.position;
-                        const e = r.spawnArchitecture("fahrzeug_gt", { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z }, { silent: true, precise: true });
-                        for (let n = 0; n < 600 && e && !e.instanced && !e.mesh; n++) await new Promise((f) => requestAnimationFrame(f));
-                        return { da: !!e };
-                    });
-                    await tippe("e");
-                    await warte(1000);
-                    gt.aufgesessen = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
-                    await gehe(drittel);
-                    if (gt.aufgesessen) await tippe("e");
-                    await tippe("enter");
-                    await warte(300);
-                    await cdp.send("Input.insertText", { text: "setze uhrzeit mitternacht" });
-                    await tippe("enter");
-                    await warte(500);
-                    const uhr = await page.evaluate(() => window.anazhRealm.state.timeOfDay);
-                    await gehe(drittel);
-                    await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
-                    await steht();
-                    await warte(20000);
-                    const nach = await messe(true);
-                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
-                    await cdp.detach();
-                    const urteil = gangUrteil({ vor, nach, halterVor: vor.halter, halterNach: nach.halter });
-                    if (!gt.aufgesessen) urteil.push("fahrt: die Taste E nahm den GT neben dem Spieler nicht");
-                    if (!(uhr < 0.05 || uhr > 0.95)) urteil.push(`nacht: das Spieler-Wort setzte die Uhr auf ${uhr}`);
-                    delete vor.halter;
-                    delete nach.halter;
-                    return send({ urteil, vor, nach, gt, uhr, ms: Date.now() - t0 });
-                }
+                    return Object.assign(o, { heapMB: +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1) });
+                };
+                if (req.url === "/puffer")
+                    return send(Object.assign(await pufferStand(false, Number(b.top) || 30), { ms: Date.now() - t0 }));
+                if (req.url === "/gang")
+                    return send(Object.assign(await gangLauf(page, pufferStand, b), { ms: Date.now() - t0 }));
                 if (req.url === "/zaehlen") {
                     const o = await page.evaluate(async (k) => {
                         const r = window.anazhRealm;

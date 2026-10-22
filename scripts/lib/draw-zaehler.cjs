@@ -540,60 +540,161 @@ function heapHalter(r, tiefe) {
             if (buf) {
                 if (buf !== v && gesehen.has(buf)) continue;
                 gesehen.add(buf);
-                const k = pp.split(/(?=[.[])/).slice(0, tiefe).join("");
+                const k = pp
+                    .split(/(?=[.[])/)
+                    .slice(0, tiefe)
+                    .join("");
                 je.set(k, (je.get(k) || 0) + buf.byteLength);
             } else if (v !== globalThis && !(typeof Node !== "undefined" && v instanceof Node)) q.push([v, pp]);
         }
     }
     return [...je];
 }
-// DAS GANG-URTEIL: Heap (JS + Typed-Arrays nach GC) und VRAM am Start vor und nach dem Gang (gehen · fahren · Nacht), je
-// Spielminute; was wuchs, nennt der Halter-Diff (`heapHalter` vorher → nachher) beim Pfad.
+// DAS GANG-URTEIL (`werkbank puffer --gang`): Heap (JS + Typed-Arrays nach GC) und VRAM am Start vor und nach dem Gang; was
+// wuchs, nennt der Diff der Halter-Pfade (`heapHalter`) und der VRAM-Erzeuger (`__vramBericht`).
 const GANG = { heapMBjeMin: 5, vramMB: 2 };
-function gangUrteil(g) {
-    const f = [];
-    const min = g.nach.min - g.vor.min;
-    if (!(min >= 1)) return [`gang: ${min} min — zu kurz für ein Urteil je Minute`];
-    const rate = (g.nach.heapMB - g.vor.heapMB) / min;
-    const vor = new Map(g.halterVor);
-    const wuchs = g.halterNach
-        .map(([k, b]) => [k, (b - (vor.get(k) || 0)) / 1048576])
-        .filter(([, d]) => d >= 1)
-        .sort((a, b) => b[1] - a[1]);
-    const name = wuchs.slice(0, 3).map(([k, d]) => `${k} +${d.toFixed(1)} MB`).join(" · ") || "kein Pfad über 1 MB";
+function gangUrteil({ vor, nach }) {
+    const wuchs = (a, b) => {
+        const m = new Map(a);
+        const d = b.map(([k, x]) => [k, x - (m.get(k) || 0)]).filter(([, x]) => x >= 1);
+        return (
+            d
+                .sort((p, q) => q[1] - p[1])
+                .slice(0, 3)
+                .map(([k, x]) => k + " +" + x.toFixed(1) + " MB")
+                .join(" · ") || "—"
+        );
+    };
+    const mb = (h) => h.map(([k, x]) => [k, x / 1048576]);
+    const vg = (g) => g.map((x) => [x.k, x.mb]);
+    const rate = (nach.heapMB - vor.heapMB) / nach.min;
+    const f = nach.min >= 1 ? [] : ["gang: " + nach.min + " min — zu kurz"];
     if (rate > GANG.heapMBjeMin)
-        f.push(`heap: +${rate.toFixed(1)} MB/min über ${min.toFixed(1)} min > ${GANG.heapMBjeMin} — Halter: ${name}`);
-    const dv = g.nach.vramMB - g.vor.vramMB;
-    if (dv > GANG.vramMB) f.push(`vram: +${dv.toFixed(1)} MB zurück am Start > ${GANG.vramMB}`);
-    for (const k of ["ruhend", "verwaist"]) if (g.nach[k] > 0) f.push(`buf:${k} ${g.nach[k]} MB`);
+        f.push(
+            "heap: +" +
+                rate.toFixed(1) +
+                " MB/min > " +
+                GANG.heapMBjeMin +
+                " — Halter: " +
+                wuchs(mb(vor.halter), mb(nach.halter))
+        );
+    if (nach.vramMB - vor.vramMB > GANG.vramMB)
+        f.push(
+            "vram: +" +
+                (nach.vramMB - vor.vramMB).toFixed(1) +
+                " MB zurück am Start — " +
+                wuchs(vg(vor.gross), vg(nach.gross))
+        );
+    for (const [k, x] of Object.entries((nach.puffer && nach.puffer.halter) || {}))
+        if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
     return f;
 }
-// Selbsttest: ein ungedeckelter Cache ist ROT und steht beim Namen, ein gedeckelter (LRU 2) GRÜN, VRAM-Drift 3 MB ROT.
+// Selbsttest: ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter (LRU 2) nicht, VRAM-Drift beim Erzeuger.
 function gangSelbsttest() {
-    const f = [];
-    const MB = () => new Float32Array(262144);
     const r = { state: { lru: new Map(), offen: [] } };
     const lauf = (offen) => {
-        const vor = heapHalter(r, 3);
+        const stand = (v) => {
+            const halter = heapHalter(r, 3);
+            return {
+                min: v,
+                heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
+                halter,
+                vramMB: 50 + v * (offen ? 3 : 1),
+                gross: [{ k: "buf:a", mb: 50 + v * (offen ? 3 : 1) }],
+            };
+        };
+        const vor = stand(0);
         for (let i = 0; i < 8; i++) {
-            if (offen) r.state.offen.push(MB());
-            r.state.lru.set(i + Math.random(), MB());
+            if (offen) r.state.offen.push(new Float32Array(262144));
+            r.state.lru.set(Math.random(), new Float32Array(262144));
             if (r.state.lru.size > 2) r.state.lru.delete(r.state.lru.keys().next().value);
         }
-        const nach = heapHalter(r, 3);
-        const sum = (h) => h.reduce((s, [, b]) => s + b, 0) / 1048576;
-        return gangUrteil({ vor: { min: 0, heapMB: sum(vor), vramMB: 50 }, nach: { min: 1, heapMB: sum(nach), vramMB: offen ? 53 : 51 }, halterVor: vor, halterNach: nach });
+        return gangUrteil({ vor, nach: stand(1) }).join(" | ");
     };
-    const gedeckelt = lauf(false);
-    if (gedeckelt.length) f.push("ein gedeckelter Cache ist rot: " + gedeckelt.join(" | "));
-    const offen = lauf(true);
-    if (!offen.some((z) => z.startsWith("heap: +8.0 MB/min") && z.endsWith("Halter: r.state.offen +8.0 MB")))
-        f.push("ein ungedeckelter Cache steht nicht beim Namen: " + offen.join(" | "));
-    if (!offen.some((z) => z.startsWith("vram: +3.0"))) f.push("VRAM-Drift 3 MB ist nicht rot");
-    return f;
+    const soll =
+        "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +3.0 MB zurück am Start — buf:a +3.0 MB";
+    return [lauf(false), lauf(true)].join(" / ") === " / " + soll ? [] : ["der Gang urteilt falsch: " + lauf(true)];
+}
+
+// DER GANG (profiband K5, `werkbank puffer --gang`): am Start eingeschwungen messen (`stand`, die Puffer-Linse der Werkbank),
+// je ein Drittel gehen · fahren (GT, Taste E) · Nacht (Spieler-Wort) über die echten Tasten und den Spiel-Loop, zurück am Start.
+async function gangLauf(page, pufferStand, b) {
+    const cdp = await page.target().createCDPSession();
+    const T = { w: ["KeyW", "w", 87], e: ["KeyE", "e", 69], enter: ["Enter", "", 13] };
+    const taste = (n, type) =>
+        cdp.send("Input.dispatchKeyEvent", {
+            type,
+            code: T[n][0],
+            key: T[n][1] || "Enter",
+            windowsVirtualKeyCode: T[n][2],
+            text: type === "keyDown" && T[n][1] ? T[n][1] : undefined,
+        });
+    const tippe = async (n) => (await taste(n, "keyDown"), await taste(n, "keyUp"));
+    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    const ruhig = () =>
+        page.evaluate(async () => {
+            for (const dl = performance.now() + 90000; performance.now() < dl && !window.anazhRealm._weltSteht();)
+                await new Promise((f) => setTimeout(f, 250));
+        });
+    const gehe = async (ms) => {
+        await taste("w", "keyDown");
+        for (let vor = null, ende = Date.now() + ms; Date.now() < ende;) {
+            await warte(5000);
+            vor = await page.evaluate((vor) => {
+                const st = window.anazhRealm.state,
+                    p = st.playerMesh.position;
+                if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
+                return [p.x, p.z];
+            }, vor);
+        }
+        await taste("w", "keyUp");
+    };
+    const drittel = ((Number(b.min) || 6) * 60000) / 3;
+    await page.evaluate(() =>
+        window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
+    );
+    await ruhig();
+    await warte(20000);
+    const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
+    const vor = Object.assign(await pufferStand(true, 60), { min: 0 });
+    const t0G = Date.now();
+    await gehe(drittel);
+    await page.evaluate(async () => {
+        const r = window.anazhRealm,
+            p = r.state.playerMesh.position;
+        const e = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
+            { silent: true, precise: true }
+        );
+        for (let n = 0; n < 600 && !e.instanced && !e.mesh; n++) await new Promise((f) => requestAnimationFrame(f));
+    });
+    await tippe("e");
+    await warte(1000);
+    const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
+    await gehe(drittel);
+    if (fahrt) await tippe("e");
+    await tippe("enter");
+    await cdp.send("Input.insertText", { text: "setze uhrzeit mitternacht" });
+    await tippe("enter");
+    await warte(500);
+    const uhr = await page.evaluate(() => window.anazhRealm.state.timeOfDay);
+    await gehe(drittel);
+    const min = (Date.now() - t0G) / 60000;
+    await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
+    await ruhig();
+    await warte(20000);
+    const nach = Object.assign(await pufferStand(true, 60), { min });
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+    await cdp.detach();
+    const urteil = gangUrteil({ vor, nach });
+    if (!fahrt) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");
+    if (!(uhr < 0.05 || uhr > 0.95)) urteil.push(`nacht: das Spieler-Wort setzte die Uhr auf ${uhr}`);
+    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vramMB, nach.vramMB], min };
 }
 
 module.exports = {
+    gangLauf,
     heapHalter,
     gangUrteil,
     gangSelbsttest,
