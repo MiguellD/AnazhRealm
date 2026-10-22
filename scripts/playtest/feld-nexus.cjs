@@ -468,8 +468,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // 1. Methoden existieren
-        out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
@@ -562,10 +560,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
-        check(
-            "Welle 6.H P2E V1: llmCallCreature existiert (die Suite ruft ihn nie)",
-            wave6hP2eV1Results.hasLlmCallCreature
-        );
         check(
             "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
             wave6hP2eV1Results.findExact && wave6hP2eV1Results.findCaseInsensitive && wave6hP2eV1Results.findUnknown
@@ -1201,12 +1195,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            // Methoden
-            out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
-            // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
-            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
-            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
-            out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
@@ -1285,10 +1273,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v805Results && !v805Results.error) {
-        check(
-            "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
-            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
-        );
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
             v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas

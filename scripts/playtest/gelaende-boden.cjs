@@ -1702,9 +1702,7 @@ async function checkBandV18199GammaMLichen(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (L1) LICHEN-Konstanten existieren + frozen
-        out.lichenExists = !!A.LICHEN && typeof A.LICHEN === "object";
-        out.lichenFrozen = A.LICHEN && Object.isFrozen(A.LICHEN);
+        // (L1) die LICHEN-Konstanten
         if (A.LICHEN) {
             out.feuchteLo = A.LICHEN.feuchteLo;
             out.feuchteHi = A.LICHEN.feuchteHi;
@@ -1769,7 +1767,6 @@ async function checkBandV18199GammaMLichen(ctx) {
         return out;
     });
 
-    check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,

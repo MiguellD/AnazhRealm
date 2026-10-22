@@ -32,6 +32,25 @@ const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
 // Gehens als Ratsche 0,15 → 0,08 (K07, das Abrollen des Fußes).
 const BECKEN = { gehen: { hub: 0.07, tief: 0.08 }, laufen: { hub: 0.12, tief: 0.25 } };
 const server = statikServer();
+// DER SCHLUPF, EIN Maß für Welt-Tier, Spieler-Leib und Labor (im Seiten-Kontext `window.__schlupf`): je Fuß die
+// Aufsetz-Punkte je Takt (der tiefere trägt) ab Takt `ab`, Stand = die untersten 5 % der Beinlänge, der Leib-Weg aus {x, z}
+const SCHLUPF = (spur, leib, ab, bein) => {
+    let [wegFuss, wegLeib, stand] = [0, 0, 0];
+    for (const s of spur) {
+        let ymin = Infinity;
+        for (let i = ab; i < s.length; i++) for (const p of s[i]) ymin = Math.min(ymin, p.y);
+        for (let i = ab + 1; i < s.length; i++) {
+            const k = s[i].length > 1 && s[i][1].y < s[i][0].y - 1e-4 ? 1 : 0;
+            const [a, b] = [s[i - 1][k], s[i][k]];
+            if (a.y > ymin + 0.05 * bein || b.y > ymin + 0.05 * bein) continue;
+            stand++;
+            wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
+            wegLeib += Math.hypot(leib[i].x - leib[i - 1].x, leib[i].z - leib[i - 1].z);
+        }
+    }
+    const standAnteil = +(stand / (spur.length * (spur[0].length - ab - 1))).toFixed(2);
+    return { standAnteil, schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null };
+};
 
 // Im Seiten-Kontext: eine Gattung läuft mit der Froude-Wurzel v̂ (v = v̂·√(g·L), L die Bein-Länge des Gangs), je Takt die
 // Aufsetz-Punkte und die Phasen der Beine (der Querhang misst am Hang der Welt: gate:kreatur-takt querhang).
@@ -97,8 +116,8 @@ const LAUF = (k) => {
         auswertungen++;
         r._animateCompoundMotion(cr, roles, t, phase, true, null);
         cr.updateMatrixWorld(true);
-        leib.push(cr.position.x);
-        pfoten.forEach((p, j) => spur[j].push(p.localToWorld(lokal[j].clone())));
+        leib.push({ x: cr.position.x, z: cr.position.z });
+        pfoten.forEach((p, j) => spur[j].push([p.localToWorld(lokal[j].clone())]));
         const ph = tb._gang.ph;
         if (auswertungen > 300)
             for (let j = 0; j < 4; j++) {
@@ -108,22 +127,7 @@ const LAUF = (k) => {
     }
     if (k.stub) core.gangSchritt = window.__gangEcht;
     r.removeCreature(cr);
-    // Schlupf je Pfote über die Stand-Takte (nach 60 Takten Einschwingen)
-    let wegFuss = 0,
-        wegLeib = 0,
-        standTakte = 0;
-    for (let j = 0; j < 4; j++) {
-        let ymin = Infinity;
-        for (let i = 60; i < N; i++) ymin = Math.min(ymin, spur[j][i].y);
-        for (let i = 61; i < N; i++) {
-            const a = spur[j][i - 1],
-                b = spur[j][i];
-            if (a.y > ymin + 0.05 * hueft || b.y > ymin + 0.05 * hueft) continue;
-            standTakte++;
-            wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
-            wegLeib += Math.abs(leib[i] - leib[i - 1]);
-        }
-    }
+    const sl = window.__schlupf(spur, leib, 60, hueft); // nach 60 Takten Einschwingen
     return {
         seele: k.seele,
         vh: k.vh,
@@ -131,8 +135,7 @@ const LAUF = (k) => {
         ph: c.map((x, j) => Math.atan2(sn[j], x)),
         last: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : "",
         hueftM: +hueft.toFixed(3),
-        standAnteil: +(standTakte / (4 * (N - 61))).toFixed(2),
-        schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
+        ...sl,
     };
 };
 
@@ -256,7 +259,7 @@ const LEIB = (k) => {
                 ton0 = s._schrittKlang ? s._schrittKlang.schritte : 0;
                 ph0 = p.walkPhase;
             }
-            leib.push(mesh.position.x);
+            leib.push({ x: mesh.position.x, z: mesh.position.z });
             knoechel.forEach((a, j) =>
                 spur[j].push([a.localToWorld(lokal[j].clone()), a.localToWorld(lokalB[j].clone())])
             );
@@ -272,28 +275,12 @@ const LEIB = (k) => {
         // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt (vor K07: 2 × _gaitSchrittLen)
         const lam = typeof r._gaitGesetz === "function" ? r._gaitGesetz(rig, v).schritt : 2 * r._gaitSchrittLen(rig);
         const soll = (2 * v * sek) / lam;
-        let wegFuss = 0,
-            wegLeib = 0,
-            standTakte = 0;
-        for (let j = 0; j < 2; j++) {
-            let ymin = Infinity;
-            for (let i = 30; i < N; i++) ymin = Math.min(ymin, spur[j][i][0].y, spur[j][i][1].y);
-            for (let i = 31; i < N; i++) {
-                const k = spur[j][i][1].y < spur[j][i][0].y - 1e-4 ? 1 : 0;
-                const a = spur[j][i - 1][k],
-                    b = spur[j][i][k];
-                if (a.y > ymin + 0.05 * beinM || b.y > ymin + 0.05 * beinM) continue;
-                standTakte++;
-                wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
-                wegLeib += Math.abs(leib[i] - leib[i - 1]);
-            }
-        }
+        const sl = window.__schlupf(spur, leib, 30, beinM);
         zeilen.push({
             name,
             v,
             beinM: +beinM.toFixed(3),
-            standAnteil: +(standTakte / (2 * (N - 31))).toFixed(2),
-            schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
+            ...sl,
             kadenz: +kadenz.toFixed(2),
             schrittM: kadenz > 0 ? +(v / kadenz).toFixed(2) : null,
             toene,
@@ -448,22 +435,7 @@ const STUDIO = (k) => {
     for (const c of Object.keys(keys)) delete keys[c];
     parkBoxes.splice(0, parkBoxes.length, ...boxen);
     if (k.stub && core) core.gangSchritt = window.__gangEcht;
-    let wegFuss = 0,
-        wegLeib = 0,
-        standTakte = 0;
-    for (let j = 0; j < 2; j++) {
-        let ymin = Infinity;
-        for (let i = EIN; i < N; i++) ymin = Math.min(ymin, spur[j][i][0].y, spur[j][i][1].y);
-        for (let i = EIN + 1; i < N; i++) {
-            const k = spur[j][i][1].y < spur[j][i][0].y - 1e-4 ? 1 : 0;
-            const a = spur[j][i - 1][k],
-                b = spur[j][i][k];
-            if (a.y > ymin + 0.05 * bein || b.y > ymin + 0.05 * bein) continue;
-            standTakte++;
-            wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
-            wegLeib += Math.hypot(leib[i].x - leib[i - 1].x, leib[i].z - leib[i - 1].z);
-        }
-    }
+    const sl = window.__schlupf(spur, leib, EIN, bein);
     let yMin = Infinity,
         yMax = -Infinity;
     for (let i = EIN; i < N; i++) {
@@ -476,8 +448,7 @@ const STUDIO = (k) => {
         name: k.name,
         v: +v.toFixed(2),
         beinE: +bein.toFixed(3),
-        standAnteil: +(standTakte / (2 * (N - EIN - 1))).toFixed(2),
-        schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
+        ...sl,
         kadenz: +((2 * phase) / zeit).toFixed(2),
         beckenHub: +((yMax - yMin) / bein).toFixed(3),
         taeter:
@@ -575,6 +546,7 @@ const GANG = (k) => {
     };
     try {
         if (!NUR_STUDIO) {
+            await page.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
             await warteAufWelt(page, 120000);
             await page.waitForFunction(
@@ -664,6 +636,7 @@ const GANG = (k) => {
             const sp = await sb.newPage();
             sp.setDefaultTimeout(280000);
             sp.on("pageerror", (e) => console.log("[STUDIO-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+            await sp.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
             await sp.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,

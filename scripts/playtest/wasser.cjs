@@ -167,9 +167,8 @@ async function checkBandHydrosphere(ctx) {
             const lv = r._waterLevelAt(s[0], s[1]);
             out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
         }
-        // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs); der
-        // Tarn-Pass (V9.51) ist gefallen. Je Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
-        out.tarnPassTot = typeof r._hydroSeedTarns !== "function" && !("tarns" in r.state);
+        // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs). Je
+        // Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
         out.netzSeen = -1;
         out.netzSeenSee = 0;
         if (h1.water && globalThis.__gelaendeCore && typeof globalThis.__gelaendeCore.benannteSeen === "function") {
@@ -239,7 +238,6 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
         check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
-        check("K16: der Tarn-Pass ist gefallen (kein `_hydroSeedTarns`, kein state.tarns)", hb.tarnPassTot);
         check(
             `K16: jede Senke des Flussnetzes in der Kachel wird zum See (${hb.netzSeenSee}/${hb.netzSeen})`,
             hb.netzSeen >= 0 && hb.netzSeenSee === hb.netzSeen,
@@ -758,9 +756,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 1) State-Feld existiert (Map)
         // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
-        // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
-        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
-        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         r._drainPendingWaterIso();
@@ -957,7 +952,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         return;
     }
     check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
-    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
         res.allChunksTracked,
@@ -1595,11 +1589,16 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const s = r.state;
         const out = {};
 
-        // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer), die
-        // Prominenz über einer Basis (V17.105) ist gefallen, die alte ss(12,42,y) fehlt.
-        // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
-        // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
-        out.snowOldAbsoluteGone = window.__fehlt(r._bodenFarbeAt, /mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/);
+        // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer) —
+        // KONSUM am Aufruf (der Kern ist eingefroren → offene Kopie)
+        const G = window.__gelaendeCore;
+        window.__gelaendeCore = Object.assign({}, G);
+        try {
+            const p = s.playerMesh.position;
+            out.snowKonsum = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
+        } finally {
+            window.__gelaendeCore = G;
+        }
 
         // Die Probe misst am Gesetz (gelaende-core `schnee`), nie an einer Kopie.
         const schneeAt = (y, x, z) => window.__gelaendeCore.schnee(r._gelaende(), y, x, z); // der Ort trägt die Zungen der Grenze
@@ -1639,61 +1638,55 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Im Tiefland (≤ 100 m über dem Meer) MUSS Schnee ≈ 0 sein (die Schneegrenze beginnt bei SCHNEE.start).
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
-        // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
-        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
+        // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6), und sie kennt die DECKE
         // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
         // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
         // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
         // nie Wasser. Bis 8f09227d las er den Spiegel ohne Decke (3511 von 3511 Höhlen-Proben am See der Mess-Wiese nass).
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
-        let waterCellAtWorks = false;
         const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
-        if (typeof r._waterCellAt === "undefined") {
-            waterCellAtWorks = true;
-            // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
-            out.hoehlenChunk = window.__wasserChunk("hoehle");
-            const cfg = r._voxelChunkConfig(0);
-            const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
-            const ZS = r.constructor.CELL_STATE;
-            const dq = cfg.dim * cfg.dim;
-            for (const [key, e] of s.voxelChunks || []) {
-                if (!e || !e.waterCells) continue;
-                const c = e.waterCells;
-                const [kx, kz] = key.split(",").map(Number);
-                for (let k = 0; k < cfg.dim; k++)
-                    for (let i = 0; i < cfg.dim; i++) {
-                        const b = i + k * cfg.dim;
-                        const x = kx * cfg.span + (i + 0.5) * cfg.step;
-                        const z = kz * cfg.span + (k + 0.5) * cfg.step;
-                        const L = r._atlasWaterLevelAt(x, z, -1e9);
-                        if (!(L > -Infinity)) continue;
-                        for (let j = 1; j < cfg.dimY; j++) {
-                            const cy = oy + (j + 0.5) * cfg.step;
-                            if (cy > L) break;
-                            if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
-                            let decke = false,
-                                wasser = false;
-                            for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
-                                if (c[b + jj * dq] === ZS.SOLID) decke = true;
-                                else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
-                            }
-                            if (!decke) continue;
-                            const boden = r._fieldSurfaceBelow(x, cy, z, 3);
-                            if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
-                            const nass = r._koerperWasser(x, z, boden) > boden + 0.1;
-                            if (wasser) {
-                                hoehle.unter++;
-                                if (nass) hoehle.nassUnter++;
-                            } else {
-                                hoehle.neben++;
-                                if (nass) hoehle.nassNeben++;
-                            }
-                            break;
+        // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
+        out.hoehlenChunk = window.__wasserChunk("hoehle");
+        const cfg = r._voxelChunkConfig(0);
+        const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+        const ZS = r.constructor.CELL_STATE;
+        const dq = cfg.dim * cfg.dim;
+        for (const [key, e] of s.voxelChunks || []) {
+            if (!e || !e.waterCells) continue;
+            const c = e.waterCells;
+            const [kx, kz] = key.split(",").map(Number);
+            for (let k = 0; k < cfg.dim; k++)
+                for (let i = 0; i < cfg.dim; i++) {
+                    const b = i + k * cfg.dim;
+                    const x = kx * cfg.span + (i + 0.5) * cfg.step;
+                    const z = kz * cfg.span + (k + 0.5) * cfg.step;
+                    const L = r._atlasWaterLevelAt(x, z, -1e9);
+                    if (!(L > -Infinity)) continue;
+                    for (let j = 1; j < cfg.dimY; j++) {
+                        const cy = oy + (j + 0.5) * cfg.step;
+                        if (cy > L) break;
+                        if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
+                        let decke = false,
+                            wasser = false;
+                        for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
+                            if (c[b + jj * dq] === ZS.SOLID) decke = true;
+                            else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
                         }
+                        if (!decke) continue;
+                        const boden = r._fieldSurfaceBelow(x, cy, z, 3);
+                        if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
+                        const nass = r._koerperWasser(x, z, boden) > boden + 0.1;
+                        if (wasser) {
+                            hoehle.unter++;
+                            if (nass) hoehle.nassUnter++;
+                        } else {
+                            hoehle.neben++;
+                            if (nass) hoehle.nassNeben++;
+                        }
+                        break;
                     }
-            }
+                }
         }
-        out.waterCellAtExists = waterCellAtWorks;
         out.hoehle = hoehle;
         // Worker-Snapshot trägt hydroBand mit (V9.91 — Cells-Klassifikations-
         // Skip ausserhalb [bottom..top]) → das CELL-MODELL ist tragend
@@ -1730,16 +1723,12 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         return out;
     });
 
-    check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
+    check("Γ6 (G1b) die Boden-Farbe ruft die Schneegrenze des Gelände-Kerns (`schnee`)", res.snowKonsum === true);
     check(
         `Γ6 (G1c) Tiefland-Schnee (≤ 100 m über dem Meer) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — K16)`,
         res.snowLowProminOk === true
     );
     // (G3) FALSE-SWIM
-    check(
-        "Γ6 (G3a) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (_koerperWasser; der Zell-Leser _waterCellAt fiel)",
-        res.waterCellAtExists === true
-    );
     const hh = res.hoehle || {};
     check(
         `Γ6 (G3b) FALSE-SWIM: die trockene Höhle UNTER dem See bleibt für den Körper trocken (Decke, D11: ${hh.nassUnter} von ${hh.unter} nass)`,

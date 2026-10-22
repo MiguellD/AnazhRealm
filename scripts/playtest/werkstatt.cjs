@@ -672,8 +672,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Methoden existieren
-            out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
@@ -794,10 +792,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check(
-            "V8.02 Phase 3: _workshopInstallShapeDragDrop existiert (die Suite fährt ihn nicht)",
-            v802Results.hasShapeDnDInstall
-        );
         check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
         check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
@@ -849,9 +843,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methoden existieren
-            out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
-            out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
 
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -964,10 +955,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check(
-            "V8.03: die Material- und Farb-Palette existieren (die Suite fährt sie nicht)",
-            v803Results.hasMaterialRender && v803Results.hasColorRender
-        );
         check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(

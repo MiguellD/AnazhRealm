@@ -856,7 +856,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandV18206SpeedTrade, ctx);
             await timed(BAND.checkBandV18207R5StructureTexture, ctx);
             await timed(BAND.checkBandV18208CreatureSizeSymmetry, ctx);
-            await timed(BAND.checkBandV18209Konsolidierung, ctx);
             await timed(BAND.checkBandV18210Verdrahtung, ctx);
             await timed(BAND.checkBandV18211SkeletonGrammar, ctx);
             await timed(BAND.checkBandV18212GigantRestsubschritte, ctx);

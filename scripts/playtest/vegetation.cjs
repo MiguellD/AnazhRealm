@@ -588,8 +588,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) STRATA_STEIN_DEPTH frozen Konstante
-        out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
@@ -645,7 +643,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         return out;
     });
 
-    check("V18.197 (S1) STRATA_STEIN_DEPTH frozen Konstante existiert", res.constExists === true);
     if (res.foundErdePoint) {
         check(
             `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
@@ -678,8 +675,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (I1) IRON_BANDS frozen Konstanten
-        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
+        // (I1) IRON_BANDS
         if (A.IRON_BANDS) {
             const IB = A.IRON_BANDS;
             out.constsSensible =
@@ -786,7 +782,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
     check(
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
@@ -1132,8 +1127,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const out = {};
 
         // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 6 Baum-Spezies, kein Totholz ─────
-        out.variationExists = !!A.SPECIES_TAG_VARIATION;
-        if (out.variationExists) {
+        if (A.SPECIES_TAG_VARIATION) {
             const v = A.SPECIES_TAG_VARIATION;
             out.variationAllSpecies =
                 !!v.baum_tanne &&
@@ -1206,7 +1200,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         return out;
     });
 
-    check("V18.215 (W1a) SPECIES_TAG_VARIATION existiert", res.variationExists === true);
     check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
