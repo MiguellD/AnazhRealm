@@ -1437,7 +1437,6 @@ async function gebaut(page, fehler) {
         async (saaten, selbst) => {
             const r = window.anazhRealm;
             const s = r.state;
-            const t0 = performance.now();
             await window
                 .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
                     fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),

@@ -458,7 +458,6 @@ if (require.main === module) (async () => {
             // Geduldig bis BOOT_READY_CAP_MS, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
             const BOOT_READY_CAP_MS = 60000;
-            const deadline = start + BOOT_READY_CAP_MS;
             await window.__weltDa();
             const r = window.anazhRealm;
             if (!r || typeof r._gameLoopTick !== "function") {

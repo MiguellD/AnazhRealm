@@ -669,12 +669,7 @@ const FIXTURES = [
             await nullRenderer(page, { foundry: true });
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
             const z = await page.evaluate(async (s) => {
-                const dl = performance.now() + 90000;
-                await window.__weltDa(() => {
-                    const r0 = window.anazhRealm;
-                    const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null;
-                    return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch;
-                });
+                await window.__weltDa(() => { const r0 = window.anazhRealm; const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null; return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch; });
                 const r = window.anazhRealm;
                 const out = {
                     arten: {},
@@ -1355,7 +1350,6 @@ const FIXTURES = [
         );
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
         // 1) Der Export durch den EINEN Worker (Timeout-bewacht — massBau × Häuser braucht Sekunden).

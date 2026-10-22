@@ -21,7 +21,7 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT).

@@ -1413,7 +1413,6 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
         await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche));
         // Das Welt-Auge steht beim Spieler (der Loop spiegelt es je Frame) — dort, wo der neue Spieler die Werkstatt öffnet.
         await tick(20);
@@ -1533,7 +1532,6 @@ async function probe(arg) {
         r._foundryCacheEvict(a.key);
         let same = 1;
         while (same < 100000 && r._foundryVariantFor(same, a.preset) !== a.variant) same++;
-        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // ohne Ort: die Gestalt kommt aus dem Samen (mit Ort wählt der Platz sie, `_foundryGestaltFor`), der Rang ist der
         // der Ferne (`_foundryAuftragD2` ohne Ort = ∞)
         r._foundryFlattenFor({ type: "baum_eiche", seed: same }, a.preset, 0);
@@ -1698,7 +1696,6 @@ async function probe(arg) {
             const ti = performance.now();
             if (art === "rezept") r.selectStudioRecipeForView(id);
             else r.selectBlueprintForEdit(id);
-            const dl = performance.now() + 20000;
             await window.__weltDa(() => !(r._wsStudioPending));
             e.ms = Math.round(performance.now() - ti);
             if (r._wsStudioPending) {

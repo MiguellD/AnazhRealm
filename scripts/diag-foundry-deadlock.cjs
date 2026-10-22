@@ -15,7 +15,6 @@ const server = statikServer();
     await nullRenderer(page, { foundry: true }); // die Foundry im Gate-Kontext an (die echte Pipeline)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
         await window.__weltDa((r) => r.state && r.state.blueprints);
     });
 
@@ -27,7 +26,6 @@ const server = statikServer();
         try {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();
-            const dl = performance.now() + 60000;
             await window.__weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
