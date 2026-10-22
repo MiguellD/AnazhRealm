@@ -43,7 +43,7 @@ const SELBST = process.argv.includes("--selftest");
             const r = window.anazhRealm;
             const st = r.state;
             st.weather = "sunny";
-            if (typeof r._buehneSteht === "function" && !r._buehneSteht()) return { fehler: "Bühne steht nicht" };
+            if (!r._buehneSteht()) return { fehler: "Bühne steht nicht" };
             const typ = "baum_eiche";
             if (!st.blueprints[typ]) return { fehler: "kein " + typ };
             const tags = r.computeCompoundTags(st.blueprints[typ]);

@@ -45,7 +45,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { warm: {}, s: {}, n: {}, w: {}, r: {}, b: {} };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // FNV-1a-Fingerabdruck über die Positions-Arrays (die praegung-welt-Sonde).
         const fnv = (h, f32) => {
             const u8 = new Uint8Array(f32.buffer, f32.byteOffset, f32.byteLength);

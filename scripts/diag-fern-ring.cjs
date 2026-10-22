@@ -53,7 +53,6 @@ const server = statikServer();
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa(() => !(!window.anazhRealm ||
                 !window.anazhRealm.state ||
                 !window.anazhRealm.state.scene ||
@@ -889,7 +888,7 @@ const server = statikServer();
                         punkte.push([cx * span9 + u, (cz + 1) * span9 - d, "+Z"]);
                     }
                 for (const [x, z, seite] of punkte) {
-                    const regel = typeof r._fernRingRegel === "function" ? r._fernRingRegel(fr9, x, z) : -1;
+                    const regel = r._fernRingRegel(fr9, x, z);
                     proben13.push(x, z);
                     const yc = deckY(x, z);
                     if (regel === 2) {

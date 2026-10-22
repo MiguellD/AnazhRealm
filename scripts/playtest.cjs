@@ -455,9 +455,8 @@ if (require.main === module) (async () => {
             const start = performance.now();
             // Phase 1 — auf den Game-Loop warten: das wahre Ready-Signal ist `_gameLoopTick` (von
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
-            // Geduldig bis BOOT_READY_CAP_MS, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
+            // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
-            const BOOT_READY_CAP_MS = 60000;
             await window.__weltDa();
             const r = window.anazhRealm;
             if (!r || typeof r._gameLoopTick !== "function") {
@@ -520,7 +519,7 @@ if (require.main === module) (async () => {
             // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
             // true, also „false nach ready“ = Prefetch fertig). Der Loop pumpt weiter; der Deckel ist nur
             // Hänger-Schutz — ein Cap-Treffer lässt die Bänder ehrlich rot werden.
-            const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
+            const _fdry = r._foundry || r._ensureAssetFoundry();
             const foundryT0 = performance.now();
             let foundryReadyMs = -1;
             if (_fdry) {

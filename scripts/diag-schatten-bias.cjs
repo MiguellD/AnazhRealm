@@ -269,7 +269,6 @@ const server = statikServer();
 
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
@@ -1357,7 +1356,7 @@ async function probe(cfg) {
             const bild = await schuss(k);
             // die Grenze in Sicht-Metern, wie der Stamm sie schneidet (`_kaskadenSaum` über `csm.breaks`, der Saum der Blende)
             let k0bis = null;
-            if (csm && csm.breaks && typeof r._kaskadenSaum === "function") {
+            if (csm && csm.breaks) {
                 const cam = st.camera;
                 const far = Math.min(cam.far, csm.maxFar);
                 const sm = [0, 1];

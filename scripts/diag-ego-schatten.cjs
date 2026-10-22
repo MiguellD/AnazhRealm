@@ -256,7 +256,7 @@ function buehne(arg) {
             licht.shadow.camera.layers.mask = dl.shadow.camera.layers.mask;
             licht.shadow.camera.updateProjectionMatrix();
             szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 1.5));
-            const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
+            const diaet = (m) => r._materialObserverDiaet(m);
             const boden = new T.Mesh(
                 new T.PlaneGeometry(16, 16),
                 diaet(new T.MeshStandardNodeMaterial({ color: 0xb0b0b0 }))

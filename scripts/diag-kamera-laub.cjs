@@ -27,11 +27,6 @@ const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
-const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 ? argv[i + 1] : d;
-};
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
@@ -397,7 +392,7 @@ function leibInstall(cfg) {
         st.yaw = gier;
         st.pitch = 0;
         st.playerMesh.position.set(x, y + 1.0, z);
-        if (gt.instanced && typeof r._archInstanceUpdate === "function") r._archInstanceUpdate(gt);
+        if (gt.instanced) r._archInstanceUpdate(gt);
         if (gt.mesh) {
             gt.mesh.position.set(x, y + 0.5, z);
             gt.mesh.rotation.y = gt.rotationY;
@@ -474,7 +469,7 @@ async function leibWiese(arg) {
             const boxen = Array.isArray(a.blockerAABBs) ? a.blockerAABBs.filter((b) => b && Number.isFinite(b.minX)) : [];
             typen[a.type] = (typen[a.type] || 0) + 1;
             if (!boxen.length) continue;
-            const art = boxen.every((b) => b.pflanze === true) ? "baum" : typeof r._istNatur === "function" && r._istNatur(a) ? "fels" : "haus";
+            const art = boxen.every((b) => b.pflanze === true) ? "baum" : r._istNatur(a) ? "fels" : "haus";
             let b = null;
             if (art === "haus") b = boxen.slice().sort((u, v) => (v.maxX - v.minX) * (v.maxZ - v.minZ) - (u.maxX - u.minX) * (u.maxZ - u.minZ))[0];
             else {
@@ -1111,7 +1106,7 @@ async function probe(arg) {
                         st.yaw = gier;
                         st.playerMesh.position.set(x, y + 1.0, zz);
                         // der Wagen steht im Bild, wo er steht (Instanz-Matrizen bzw. Mesh)
-                        if (gt.instanced && typeof r._archInstanceUpdate === "function") r._archInstanceUpdate(gt);
+                        if (gt.instanced) r._archInstanceUpdate(gt);
                         if (gt.mesh) {
                             gt.mesh.position.set(x, y + 0.5, zz);
                             gt.mesh.rotation.y = gt.rotationY;

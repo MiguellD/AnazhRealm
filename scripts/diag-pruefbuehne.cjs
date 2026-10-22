@@ -606,7 +606,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             }
             // (4) DER ABSENZ-ZENSUS in 300 m um den Ursprung der Welt (die Genesis-Plattform)
             {
-                const pl = typeof r._genesisPlattform === "function" ? r._genesisPlattform() : null;
+                const pl = r._genesisPlattform();
                 const M = pl && pl.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);

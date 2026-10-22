@@ -81,7 +81,7 @@ const server = statikServer();
             await new Promise((res) => setTimeout(res, 2));
         }
         const r = window.anazhRealm;
-        if (r && typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        if (r) r._drainDirtyVoxelChunks();
     });
 
     // ===== MESSUNG A + B — die RÄUMLICHE Naht (gleiche LOD vs Cross-LOD) =====
@@ -693,7 +693,7 @@ const server = statikServer();
         const cz1 = dcx !== 0 ? (pcz + 0.5) * span : cz0; // leicht versetzt, frischer Edit
         r.carveVoxelSphere(cx0, cy0 + 0.2, cz1, 3.5);
         const dirtyBeforeDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
-        const built = typeof r._drainDirtyVoxelChunks === "function" ? r._drainDirtyVoxelChunks() : 0;
+        const built = r._drainDirtyVoxelChunks();
         const dirtyAfterDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
 
         return {

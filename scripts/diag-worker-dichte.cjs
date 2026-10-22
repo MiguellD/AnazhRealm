@@ -462,7 +462,7 @@ async function probe(page, welt, mitAbdruck) {
             // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
             // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
             // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).
-            if (typeof r._fernAuftrag === "function" && r._getVoxelWorker()) {
+            if (r._getVoxelWorker()) {
                 const N = 48;
                 const pts = new Float32Array(N * N * 2);
                 const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
@@ -511,7 +511,7 @@ async function probe(page, welt, mitAbdruck) {
             // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
             // `_waldDartsEntpacken`, wie die Schlange des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
             // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
-            if (typeof r._voxelWorkerWaldDarts === "function" && r._getVoxelWorker() && r._forestGesetzWahr()) {
+            if (r._getVoxelWorker() && r._forestGesetzWahr()) {
                 const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
                 const seedInt = r._forestSeedInt();
                 const C = r.constructor.FOREST.cell;

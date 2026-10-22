@@ -137,7 +137,7 @@ function sichtLinse(cfg) {
     let pass = "?";
     const passName = (kam) => {
         if (kam === r.state.camera) return "haupt";
-        const k = typeof r._schattenKameraIndex === "function" ? r._schattenKameraIndex(kam) : -1;
+        const k = r._schattenKameraIndex(kam);
         return k >= 0 ? "k" + k : "anders";
     };
     z = neu();

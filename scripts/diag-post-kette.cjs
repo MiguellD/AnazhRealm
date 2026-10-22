@@ -504,7 +504,7 @@ function saumProbe() {
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
-        const y0 = (typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x0, z0) : 0) + 160;
+        const y0 = r._voxelSurfaceY(x0, z0) + 160;
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -614,7 +614,7 @@ function buehne(nFrames, nachtLicht) {
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
-        const y0 = (typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x0, z0) : 0) + 160;
+        const y0 = r._voxelSurfaceY(x0, z0) + 160;
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -832,7 +832,7 @@ function buehne(nFrames, nachtLicht) {
             gruppe.visible = false;
             st.timeOfDay = 0.3;
             if (st.world) st.world.timeOfDay = 0.3;
-            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            r._applyDayNightToScene();
             const blickSonne = () => {
                 cam.position.set(x0, y0, z0);
                 frame();
