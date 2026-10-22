@@ -1804,18 +1804,25 @@ class AnazhRealm_kreatur_leben {
         const N = AnazhRealm.KREATUR_NAH_MESH;
         const echt = !(st.renderer && st.renderer._isHeadlessNull);
         const M = this._tierSaetze || (this._tierSaetze = new Map());
-        for (const Z of M.values()) if (Z) Z.glieder.length = 0;
+        const takt = (this._tierSatzTakt = (this._tierSatzTakt || 0) + 1);
+        for (const Z of M.values()) if (Z) Z.dabei = 0;
         // ein Gefallener verlässt den Satz (er liegt als Leib, `_tickLeichname`)
         for (const cr of st.leichname) if (cr.userData._satz) this._tierSatzAus(cr);
         const kand = this._tierSatzKand || (this._tierSatzKand = []);
         kand.length = 0;
-        for (const cr of st.creatures) {
+        // die Menge: die eigenen Tiere und die Sicht-Kopien der Mitspieler (`_p2pTickRemoteCreatures`; ein Gefallener nie)
+        const kopien = st.p2p && st.p2p.remoteCreatures;
+        const menge =
+            kopien && kopien.size
+                ? st.creatures.concat(Array.from(kopien.values(), (rc) => (rc.tq ? null : rc.mesh)))
+                : st.creatures;
+        for (const cr of menge) {
             const u = cr && cr.userData;
             if (!u || !u._gelenk) continue;
             const d2 = (cr.position.x - playerPos.x) ** 2 + (cr.position.z - playerPos.z) ** 2;
-            // ohne Bild (kein Ziegel) ist der Nah-Kreis sein Gesetz: KREATUR_NAH_MESH mit seiner Hysterese
+            // ohne Bild und für die Kopie (kein Ziegel) ist der Nah-Kreis sein Gesetz: KREATUR_NAH_MESH mit seiner Hysterese
             const r = u._satz ? N.aus : N.ein;
-            if ((echt ? u._kzNah !== true : d2 >= r * r) || u._ruht === true) {
+            if ((echt && !u._kopie ? u._kzNah !== true : d2 >= r * r) || u._ruht === true) {
                 if (u._satz) this._tierSatzAus(cr);
                 continue;
             }
@@ -1831,9 +1838,13 @@ class AnazhRealm_kreatur_leben {
             const VA = u._verhaltenAktion;
             const nah = leiber < K.nahLeiber || !!(VA && VA.biss);
             const Z = nah ? null : this._tierSatzWahl(cr);
-            if (Z && Z.glieder.length < Z.satz.cap) {
-                if (u._satz !== Z) this._tierSatzEin(cr, Z);
-                Z.glieder.push(cr);
+            if (Z && Z.dabei < Z.satz.cap) {
+                if (u._satz !== Z) {
+                    this._tierSatzEin(cr, Z);
+                    Z.glieder.push(cr);
+                }
+                u._satzTakt = takt;
+                Z.dabei++;
             } else {
                 if (nah) leiber++;
                 if (u._satz) this._tierSatzAus(cr);
@@ -1841,25 +1852,83 @@ class AnazhRealm_kreatur_leben {
         }
         const m4 = this._tierSatzM4 || (this._tierSatzM4 = new THREE.Matrix4());
         const aus = st.creaturesHidden === true;
+        const fr = this._frustumCache;
+        const rand = fr && Number.isFinite(this._blickRand) ? this._blickRand : -1;
         for (const [key, Z] of M) {
             if (!Z) continue;
             if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
             if (Z.satz.senken[0].parent !== st.scene) for (const m of Z.satz.senken) st.scene.add(m);
-            const n = aus ? 0 : Z.glieder.length;
-            for (let i = 0; i < n; i++) {
-                const cr = Z.glieder[i];
+            // die Reihe hält (wer bleibt, behält seinen Platz; wer ging, fällt heraus): ein Platz schreibt nur, wenn ein
+            // anderes Tier ihn nimmt oder sein Tier sich rührt (Lage, Drehung, Größe, Band + Phase, Gewicht — `_tierSatzStempel`)
+            let w = 0;
+            for (const cr of Z.glieder)
+                if (cr.userData._satz === Z && cr.userData._satzTakt === takt) Z.glieder[w++] = cr;
+            Z.glieder.length = w;
+            let nB = 0;
+            let nW = 0;
+            let neuB = false;
+            let neuW = false;
+            for (const cr of aus ? [] : Z.glieder) {
                 const u = cr.userData;
-                m4.compose(cr.position, cr.quaternion, cr.scale);
-                for (const m of Z.satz.senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
+                const regt = this._tierSatzStempel(cr);
+                let lage = false;
+                const setze = (senken, i) => {
+                    if (!lage) m4.compose(cr.position, cr.quaternion, cr.scale);
+                    lage = true;
+                    for (const m of senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
+                };
+                // der Wurf trägt jedes Tier des Satzes (die Kaskade sieht weiter als das Auge), das Auge nur, wen der Blick
+                // trifft (`_kreaturAusserBlick`, dieselbe Frage wie die Ruhe; dreht die Kamera zu schnell, trifft er jeden)
+                if (regt || Z.ortW[nW] !== cr) {
+                    setze(Z.wurf, nW);
+                    Z.ortW[nW] = cr;
+                    neuW = true;
+                }
+                nW++;
+                if (rand >= 0 && this._kreaturAusserBlick(cr, fr, rand)) continue;
+                if (regt || Z.ortB[nB] !== cr) {
+                    setze(Z.bild, nB);
+                    Z.ortB[nB] = cr;
+                    neuB = true;
+                }
+                nB++;
             }
-            for (const m of Z.satz.senken) AnazhRealm._gangSatzZahl(m, n);
+            Z.ortW.length = nW;
+            Z.ortB.length = nB;
+            for (const m of Z.wurf) {
+                AnazhRealm._instanzZahl(m, nW);
+                if (neuW) AnazhRealm._gangSatzNeu(m);
+            }
+            for (const m of Z.bild) {
+                AnazhRealm._instanzZahl(m, nB);
+                if (neuB) AnazhRealm._gangSatzNeu(m);
+            }
             // ein Satz ohne Tier geht nach `leerTakte` Takten (seine Gestalt kommt wieder: er backt neu)
-            Z.leer = n > 0 ? 0 : Z.leer + 1;
+            Z.leer = w > 0 ? 0 : Z.leer + 1;
             if (Z.leer > K.leerTakte) {
                 this._tierSatzFort(Z);
                 M.delete(key);
             }
         }
+    }
+
+    // DER STEMPEL EINES SATZ-TIERS: rührte es sich seit dem letzten Schreiben (Lage, Drehung, Größe, Band + Phase, Gewicht)?
+    // Der Stempel wird zugleich neu gesetzt. Das Gewicht des Gangs klingt im Stand exponentiell aus (`_gaitBlendStep`): unter
+    // `KREATUR_SATZ.gewichtSaum` ist es kein Rühren.
+    _tierSatzStempel(cr) {
+        const u = cr.userData;
+        const s = u._satzS || (u._satzS = new Float64Array(10).fill(NaN));
+        const p = cr.position;
+        const q = cr.quaternion;
+        const g = u._satzBand + u._satzPh - Math.floor(u._satzPh);
+        const v = [p.x, p.y, p.z, q.x, q.y, q.z, q.w, cr.scale.x, g, u._satzW];
+        let regt = false;
+        for (let i = 0; i < 10; i++)
+            if (i === 9 ? !(Math.abs(s[i] - v[i]) < AnazhRealm.KREATUR_SATZ.gewichtSaum) : s[i] !== v[i]) {
+                s[i] = v[i];
+                regt = true;
+            }
+        return regt;
     }
 
     // DIE WAHL DES SATZES für ein Tier, das nicht als Leib lebt: der Satz seiner Gestalt (je Grobstufe EINER — die Gestalt ist
@@ -1939,6 +2008,12 @@ class AnazhRealm_kreatur_leben {
             leib,
             fertig: false,
             glieder: [],
+            dabei: 0,
+            // die Senken des Auges und des Wurfs, je Platz das Tier, das ihn zuletzt schrieb
+            bild: satz.senken.filter((m) => !m.castShadow),
+            wurf: satz.senken.filter((m) => m.castShadow),
+            ortB: [],
+            ortW: [],
             leer: 0,
             // je Band das Tempo des Backens (die Froude-Zahl der Gangart an der Hüft-Höhe), der Schritt (m je Zyklus bei
             // Größe 1) und die Phase des ersten Beins in Zeile 0
@@ -2038,6 +2113,12 @@ class AnazhRealm_kreatur_leben {
     // kein Lauf (`_lageTempo`) — rückt die Phase (`_tierSatzSchritt`)
     _tierSatzGang(cr, dt) {
         const u = cr.userData;
+        // ein Takt ohne Zeit rückt keinen Gang (der Weg dieses Takts ist kein Schritt)
+        if (!(dt > 0)) {
+            u._satzX = cr.position.x;
+            u._satzZ = cr.position.z;
+            return;
+        }
         const dx = cr.position.x - u._satzX;
         const dz = cr.position.z - u._satzZ;
         u._satzX = cr.position.x;
@@ -2267,6 +2348,7 @@ AnazhRealm.KREATUR_SATZ = Object.freeze({
     backJeTakt: 40,
     cap: 256,
     leerTakte: 1800,
+    gewichtSaum: 1e-3,
 });
 // Die Spanne, um die der gezeichnete Boden über dem Gesetz liegen kann (Lehre 22: Surface-Nets auf 1,8 m trägt die Feinform
 // ±0,2 m): der Schritt eines Leibs (`_koerperSchritt`) verlangt über dem Grund des Gesetzes Luft bis Leib-Höhe + Spanne.

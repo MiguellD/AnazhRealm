@@ -2813,6 +2813,8 @@ class AnazhRealm_kreatur_verhalten {
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
             if (winkel < 1.2) rand = Math.tan(winkel);
         }
+        // der Rand dieses Frames gilt jedem Leser des Blicks im Takt (`_kreaturAusserBlick`; < 0: keiner ist außer Blick)
+        this._blickRand = rand;
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
             if (!c || !c.userData) continue;
@@ -2859,6 +2861,16 @@ class AnazhRealm_kreatur_verhalten {
                     jz = j.position.z - p.z;
                 if (jx * jx + jz * jz < w2) return false;
             }
+        return this._kreaturAusserBlick(c, frustum, rand);
+    }
+
+    // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, der Satz `_tickTierSatz`): die
+    // Körper-Kugel samt Saum (`KREATUR_RUHE.saumM`) und Rand (`rand` je Meter Abstand zur Kamera: der Vor-Frame-Frustum und
+    // die Drehung bis zum Render, `_tickKreaturRuhe`) gegen den Frustum
+    _kreaturAusserBlick(c, frustum, rand) {
+        const R = AnazhRealm.KREATUR_RUHE;
+        const u = c.userData;
+        const p = c.position;
         // die Körper-Kugel: Reichweite des Leibs waagrecht, die halbe Höhe senkrecht (je Leib und Größe einmal)
         if (!(u._ruheKugelR > 0) || u._ruheKugelS !== c.scale.x) {
             const leib = this._kreaturLeib(c, 0, this._ruheLeib || (this._ruheLeib = {}));

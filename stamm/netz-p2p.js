@@ -1568,6 +1568,8 @@ class AnazhRealm_netz_p2p {
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
                 mesh.position.set(ex, ey, ez);
+                // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Gesetz KREATUR_NAH_MESH (`_tickTierSatz`)
+                mesh.userData._kopie = true;
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
@@ -1609,6 +1611,7 @@ class AnazhRealm_netz_p2p {
             const fern = this._leibSicht(m, ddx * ddx + ddz * ddz, this.isInFrustum(m));
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
+                if (m.userData._satz) this._tierSatzAus(m);
                 m.position.y += ((rc.ty || 0) - m.position.y) * k;
                 const q = this._p2pLageQ || (this._p2pLageQ = new THREE.Quaternion());
                 m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);
@@ -1626,7 +1629,9 @@ class AnazhRealm_netz_p2p {
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
             // Kosten am Schirm: jenseits der Stufen-Grenze (`ab` × Größe aus der Kern-Zeile, die Stufe aus _leibSicht oben)
             // trägt die Grobstufe das Bild und der Gang ruht.
-            if (!fern && m.userData && m.userData._tierBaum) {
+            // im Satz (`_tickTierSatz`, dieselbe Menge wie die eigenen Tiere) geht der Satz: sein Weg rückt die Phase
+            if (m.userData._satz) this._tierSatzGang(m, dt);
+            else if (!fern && m.userData && m.userData._tierBaum) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
                 this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
