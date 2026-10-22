@@ -1465,7 +1465,7 @@ class AnazhRealm_gelaende_chunks {
         const naht = this._bodenNaht(geom, cx, cz, lod);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
         const ref = art === "lage" ? lage : new Float32Array(lage);
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art]);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art], naht);
         naht[art] = k && Object.assign(k, { ref });
         return k;
     }
@@ -1864,7 +1864,7 @@ class AnazhRealm_gelaende_chunks {
         else karte = abdruck(false) !== abdruckAlt;
         if (lage) {
             entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenStufeMisch`)
-            this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"], A && R);
+            this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"], R);
         }
         // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
         // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
@@ -1929,7 +1929,8 @@ class AnazhRealm_gelaende_chunks {
         // Vertex (der Stoff zeichnet sie, wo er die Kante zeichnet — im Übergangs-Band wandert sie mit), die grobe Seite und der
         // Skirt stehen fest (Code 0, Ziel = Lage)
         const tA = tgt.array,
-            wA = wgt.array;
+            wA = wgt.array,
+            pA = pos.array;
         // die Ecken der feinen Kante und ihre Quell-Vertices: Normale und Stoff-Farbe wandern mit wie die Lage
         const nZiel = geom.attributes.aNormalZiel,
             fZiel = geom.attributes.aFarbeZiel;
@@ -1966,20 +1967,20 @@ class AnazhRealm_gelaende_chunks {
                     b = K[q + 1];
                 if (!bandVerts[a] || !bandVerts[b]) continue;
                 const spanA = Math.hypot(
-                    nahtZiel[a * 3] - pos.getX(a),
-                    nahtZiel[a * 3 + 1] - pos.getY(a),
-                    nahtZiel[a * 3 + 2] - pos.getZ(a)
+                    nahtZiel[a * 3] - pA[a * 3],
+                    nahtZiel[a * 3 + 1] - pA[a * 3 + 1],
+                    nahtZiel[a * 3 + 2] - pA[a * 3 + 2]
                 );
                 const spanB = Math.hypot(
-                    nahtZiel[b * 3] - pos.getX(b),
-                    nahtZiel[b * 3 + 1] - pos.getY(b),
-                    nahtZiel[b * 3 + 2] - pos.getZ(b)
+                    nahtZiel[b * 3] - pA[b * 3],
+                    nahtZiel[b * 3 + 1] - pA[b * 3 + 1],
+                    nahtZiel[b * 3 + 2] - pA[b * 3 + 2]
                 );
                 if (Math.max(spanA, spanB) < MIN_SPAN) continue;
                 // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schliesst (K51): trägt er beide
                 // Enden ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche — die Brücke wäre eine Finne
                 // zur unsichtbaren rohen Lage (14.10., Mess-Wiese: zwei von drei Naht-Dreiecken, in jedem Pass gezeichnet).
-                kanten.push(a, b, this._morphNaht(wgt.getX(a)) >= 1 && this._morphNaht(wgt.getX(b)) >= 1 ? 0 : 1);
+                kanten.push(a, b, this._morphNaht(wA[a]) >= 1 && this._morphNaht(wA[b]) >= 1 ? 0 : 1);
             }
         }
         if (kanten.length === 0) return;
@@ -1987,8 +1988,14 @@ class AnazhRealm_gelaende_chunks {
         for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
         const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
         const [MW, HS, SC] = Array.from({ length: 3 }, () => new Float32Array(nV));
-        const I = [];
-        let o = 0;
+        // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
+        const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
+        let o = 0,
+            oi = 0;
+        const nA = nrm && nrm.array,
+            cA = col && col.array,
+            hA = him.array,
+            sA = sch.array;
         // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); \`morph\`: Ziel, Code, Ziel-
         // Normale und -Farbe des Quell-Vertex (die feine Kante wandert mit), sonst fest (Ziel = Lage, Code 0)
         const ecke = (x, y, z, v, morph, vorhang) => {
@@ -2000,30 +2007,40 @@ class AnazhRealm_gelaende_chunks {
             MT[o3 + 1] = morph ? tA[v * 3 + 1] : y;
             MT[o3 + 2] = morph ? tA[v * 3 + 2] : z;
             MW[o] = morph ? wA[v] : 0;
-            N[o3] = vorhang || !nrm ? 0 : nrm.getX(v);
-            N[o3 + 1] = vorhang ? 0.2 : nrm ? nrm.getY(v) : 1;
-            N[o3 + 2] = vorhang || !nrm ? 0 : nrm.getZ(v);
-            C[o3] = col ? col.getX(v) : 0.5;
-            C[o3 + 1] = col ? col.getY(v) : 0.5;
-            C[o3 + 2] = col ? col.getZ(v) : 0.5;
+            N[o3] = vorhang || !nA ? 0 : nA[v * 3];
+            N[o3 + 1] = vorhang ? 0.2 : nA ? nA[v * 3 + 1] : 1;
+            N[o3 + 2] = vorhang || !nA ? 0 : nA[v * 3 + 2];
+            C[o3] = cA ? cA[v * 3] : 0.5;
+            C[o3 + 1] = cA ? cA[v * 3 + 1] : 0.5;
+            C[o3 + 2] = cA ? cA[v * 3 + 2] : 0.5;
             for (let k = 0; k < 3; k++) {
                 NZ[o3 + k] = morph ? nZiel.array[v * 3 + k] : N[o3 + k];
                 FZ[o3 + k] = morph ? fZiel.array[v * 3 + k] : C[o3 + k];
             }
-            HS[o] = him.getX(v);
-            SC[o] = sch.getX(v);
+            HS[o] = hA[v];
+            SC[o] = sA[v];
             o++;
         };
-        const quad = () => I.push(o - 4, o - 3, o - 2, o - 4, o - 2, o - 1);
+        const quad = () => {
+            I[oi++] = o - 4;
+            I[oi++] = o - 3;
+            I[oi++] = o - 2;
+            I[oi++] = o - 4;
+            I[oi++] = o - 2;
+            I[oi++] = o - 1;
+        };
         for (let k = 0; k < kanten.length; k += 3) {
             const a = kanten[k],
                 b = kanten[k + 1];
-            const [tax, tay, taz, tbx, tby, tbz] = [a * 3, a * 3 + 1, a * 3 + 2, b * 3, b * 3 + 1, b * 3 + 2].map(
-                (q) => nahtZiel[q]
-            );
+            const tax = nahtZiel[a * 3],
+                tay = nahtZiel[a * 3 + 1],
+                taz = nahtZiel[a * 3 + 2],
+                tbx = nahtZiel[b * 3],
+                tby = nahtZiel[b * 3 + 1],
+                tbz = nahtZiel[b * 3 + 2];
             if (kanten[k + 2]) {
-                ecke(pos.getX(a), pos.getY(a), pos.getZ(a), a, true, false);
-                ecke(pos.getX(b), pos.getY(b), pos.getZ(b), b, true, false);
+                ecke(pA[a * 3], pA[a * 3 + 1], pA[a * 3 + 2], a, true, false);
+                ecke(pA[b * 3], pA[b * 3 + 1], pA[b * 3 + 2], b, true, false);
                 ecke(tbx, tby, tbz, b, false, false);
                 ecke(tax, tay, taz, a, false, false);
                 quad();
@@ -2047,7 +2064,7 @@ class AnazhRealm_gelaende_chunks {
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
-        bg.setIndex(I);
+        bg.setIndex(new THREE.BufferAttribute(I, 1));
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);
         entry.lodStitchMesh = mesh;

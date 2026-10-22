@@ -1986,30 +1986,52 @@ class AnazhRealm_siedlung_bauten {
         const hub = s.spec.hub || 0;
         let F = nur && Z ? b.festRand : null;
         if (nur && Z && !(F && F.nur === nur && F.zellen === b.zellen)) {
+            // einmal je Bereich und Rand (der erste Morph ruft sie ohnehin ganz): je Zelle die feste Kiste und ihre Rand-Ecken
             const inR = new Uint8Array(P.length / 3);
             for (const v of nur) inR[v] = 1;
             const marke = new Int32Array(P.length / 3);
             F = b.festRand = { nur, zellen: b.zellen, je: [] };
-            b.zellen.forEach((zelle, zi) => {
-                const kiste = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+            for (let zi = 0; zi < b.zellen.length; zi++) {
+                const I = b.zellen[zi].idx;
+                let x0 = Infinity,
+                    y0 = Infinity,
+                    z0 = Infinity,
+                    x1 = -Infinity,
+                    y1 = -Infinity,
+                    z1 = -Infinity;
                 const rv = [];
-                const zu = (q, k) => {
-                    for (let a = 0; a < 3; a++) {
-                        if (q[k + a] < kiste[a]) kiste[a] = q[k + a];
-                        if (q[k + a] > kiste[3 + a]) kiste[3 + a] = q[k + a];
+                for (let i = 0; i < I.length; i++) {
+                    const v = I[i] - vs,
+                        o = v * 3;
+                    let x = P[o],
+                        y = P[o + 1],
+                        z = P[o + 2];
+                    if (x < x0) x0 = x;
+                    if (x > x1) x1 = x;
+                    if (y < y0) y0 = y;
+                    if (y > y1) y1 = y;
+                    if (z < z0) z0 = z;
+                    if (z > z1) z1 = z;
+                    if (inR[v]) {
+                        if (marke[v] !== zi + 1) {
+                            marke[v] = zi + 1;
+                            rv.push(v);
+                        }
+                        continue;
                     }
-                };
-                for (let i = 0; i < zelle.idx.length; i++) {
-                    const v = zelle.idx[i] - vs;
-                    zu(P, v * 3);
-                    if (!inR[v]) zu(Z, v * 3);
-                    else if (marke[v] !== zi + 1) {
-                        marke[v] = zi + 1;
-                        rv.push(v);
-                    }
+                    x = Z[o];
+                    y = Z[o + 1];
+                    z = Z[o + 2];
+                    if (x < x0) x0 = x;
+                    if (x > x1) x1 = x;
+                    if (y < y0) y0 = y;
+                    if (y > y1) y1 = y;
+                    if (z < z0) z0 = z;
+                    if (z > z1) z1 = z;
                 }
-                F.je.push({ kiste, rv: Int32Array.from(rv) });
-            });
+                const k = [x0, y0, z0, x1, y1, z1];
+                F.je.push({ kiste: k, rv: Int32Array.from(rv) });
+            }
         }
         for (let zi = 0; zi < b.zellen.length; zi++) {
             const zelle = b.zellen[zi];

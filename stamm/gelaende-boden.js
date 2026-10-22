@@ -1597,8 +1597,9 @@ class AnazhRealm_gelaende_boden {
     // DIE NAHT (gehen-takt, `_bodenKarteNaht`): `basis` ist die vorige Karte derselben Geometrie (`hoehe`, `gruen`, ihre Lage
     // `ref`, je Dreieck sein Zellen-Rechteck `zellen`). Neu gerastert werden nur die Zellen unter den Dreiecken, die gegen `ref`
     // ihre Lage ändern (ihr Rechteck alt und neu), dort jedes Dreieck mit markierter Zelle in der Reihe des Netzes; jede andere
-    // Zelle sieht dieselben Dreiecke in derselben Lage — byte-gleich mit der ganzen Karte.
-    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, basis = null) {
+    // Zelle sieht dieselben Dreiecke in derselben Lage — byte-gleich mit der ganzen Karte. `rand` (fahrt-takt): bewegen kann nur
+    // der Saum (`_bodenNaht`: `rand` die Vertices, `randTri` ihre Dreiecke) — die Suche nach bewegten geht nur ihn.
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, basis = null, rand = null) {
         if (!pos || !idx || idx.length < 3) return null;
         const cfg = this._voxelChunkConfig(lod || 0);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
@@ -1636,9 +1637,11 @@ class AnazhRealm_gelaende_boden {
         if (B) {
             const ref = B.ref;
             const neu = new Uint8Array(Math.min(pos.length, ref.length) / 3);
-            for (let v = 0; v < neu.length; v++)
-                neu[v] =
-                    pos[v * 3] !== ref[v * 3] || pos[v * 3 + 1] !== ref[v * 3 + 1] || pos[v * 3 + 2] !== ref[v * 3 + 2];
+            const bewegt1 = (v) =>
+                (neu[v] =
+                    pos[v * 3] !== ref[v * 3] || pos[v * 3 + 1] !== ref[v * 3 + 1] || pos[v * 3 + 2] !== ref[v * 3 + 2]);
+            if (rand) for (const v of rand.rand) bewegt1(v);
+            else for (let v = 0; v < neu.length; v++) bewegt1(v);
             maske = new Uint8Array(M * M);
             const markiere = (o) => {
                 for (let k = zl[o + 2]; k <= zl[o + 3]; k++)
@@ -1649,7 +1652,8 @@ class AnazhRealm_gelaende_boden {
                     }
             };
             let bewegt = 0;
-            for (let q = 0; q < nT; q++) {
+            for (let j = 0, m = rand ? rand.randTri.length : nT; j < m; j++) {
+                const q = rand ? rand.randTri[j] / 3 : j;
                 if (!(neu[idx[q * 3]] || neu[idx[q * 3 + 1]] || neu[idx[q * 3 + 2]])) continue;
                 bewegt++;
                 markiere(4 * q);
