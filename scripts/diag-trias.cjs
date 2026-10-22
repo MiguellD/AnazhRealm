@@ -240,7 +240,7 @@ const triasStaticLaws = () => [
         ]);
         if (!plan || !plan.slots) return Object.assign(res, { fatal: "kein Settlement-Export" });
         tp(anchor.x, anchor.z);
-        res.placed = r._spawnSettlementFromExport(plan, anchor).placed;
+        res.placed = (await r._spawnSettlementFromExport(await r._ortWahl(plan, anchor), anchor)).placed;
         // DER KALT-STEMPEL (vor dem ersten Tick): jeder kalte Foundry-Eintrag im Radius trägt seine Distanz-Stufe von Geburt an
         const kalt = r.state.architectures.filter(
             (e) => e && typeof e.type === "string" && e.type.indexOf("haus_") === 0 && !e.instanced && !e.mesh &&
