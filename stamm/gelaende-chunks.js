@@ -1733,7 +1733,7 @@ class AnazhRealm_gelaende_chunks {
         // Stufe oder Netz) — jeder andere Vertex sähe dieselben Treffer in derselben Reihe: byte-gleich mit dem ganzen Morph.
         // Wechselte keine, steht der Morph; was sich nicht ändert, zieht nicht nach (Hochladen, Karte, Naht-Band). Bis
         // fahrt-takt rechnete jeder Wechsel jeden feineren Nachbarn ganz (Radeon in Fahrt 20 m/s: 1 231 Morphs in 30 s,
-        // `_applyCrossLodGeomorph` 2,8–3,8 ms je Takt ab p95, `werkbank takt --wandern fahrt`).
+        // `_applyCrossLodGeomorph` 2,9–4,4 ms je Takt ab p95, `werkbank takt --wandern fahrt`; je Seite 2,2–2,4, ABAB 22.10.).
         let M = saum.morph;
         let A = null;
         let inA = null;
