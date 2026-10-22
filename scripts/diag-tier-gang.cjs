@@ -7,8 +7,7 @@
 // Stand-Fußes / Weg des Leibs in denselben Takten. Soll ≤ 0,05 (eine Pfote, die mit dem Leib gleitet, hat 1).
 // UNTER LAST (Integration W5-Körper): das Zielgerät läuft 30 fps, das Wesen steht im 1/4-Band der Anim-Raten-Leiter
 // (_creatureAnimDiv auf 0,8 × Fern-Distanz, mit dem Takt des Gangs) — gemessen wird zwischen zwei Auswertungen (der
-// Leib zieht jeden Frame weiter). Vorher deckelte der Takt seinen Schritt auf 0,1 s (die Phase blieb 25 % hinter dem
-// Weg, Schlupf 0,27) und die Leiter tastete den schnellen Fuchs-Trab unter seinem Takt ab (Schlupf 1,33).
+// Leib zieht jeden Frame weiter).
 //   DER SPIELER-LEIB (K07): derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne,
 //   das BECKEN (Hub und Tiefe unter der Ruhe, in Beinlängen: Gehen ≤ 0,07 / 0,15, Laufen ≤ 0,12 / 0,25 — Gard 2004,
 //   Cavagna 1976, Lee & Farley 1998) und die LOCK-LÖSER im Stand-Fenster (Soll 0: der stehende Fuß löst nie an der
@@ -31,12 +30,12 @@ const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 199
 const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
 // das Becken in Beinlängen (Hub = höchste − tiefste Lage, Tiefe = Ruhe − tiefste Lage): Gehen (Gard 2004: 4–5 cm bei
 // 0,9 m Bein) und Laufen (Cavagna 1976, Lee & Farley 1998: Hub 6–10 cm, das Bein federt um 10–15 %). Die Tiefe des
-// Gehens als Ratsche 0,15 → 0,08 (K07, das Abrollen des Fußes): mit flachem Fuß sank das Becken um 0,137 L, das Knie
-// knickte tief ein (Bild k07n2-mensch-folge).
+// Gehens als Ratsche 0,15 → 0,08 (K07, das Abrollen des Fußes).
 const BECKEN = { gehen: { hub: 0.07, tief: 0.08 }, laufen: { hub: 0.12, tief: 0.25 } };
 const server = statikServer();
 
-// Im Seiten-Kontext: eine Gattung läuft, je Takt die Aufsetz-Punkte.
+// Im Seiten-Kontext: eine Gattung läuft mit der Froude-Wurzel v̂ (v = v̂·√(g·L), L die Bein-Länge des Gangs), je Takt die
+// Aufsetz-Punkte und die Phasen der Beine (der Querhang misst am Hang der Welt: gate:kreatur-takt querhang).
 const LAUF = (k) => {
     const r = window.anazhRealm,
         s = r.state;
@@ -72,6 +71,9 @@ const LAUF = (k) => {
         return p.worldToLocal(w.clone());
     });
     const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
+    const Z = r._gangZeile(false);
+    const L = tb.beinL * (cr.scale.x || 1);
+    const v = k.vh * Math.sqrt((Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g) * L);
     // Frame-Takt und Raten-Leiter: je Frame zieht der Leib weiter, ausgewertet (und gemessen) wird, wenn die ECHTE
     // Leiter (_creatureAnimDiv mit dem Takt des Gangs) es will — im Band ihrer Stufe 1/4 (0,8 × Fern-Distanz).
     const dt = 1 / (k.fps || 60),
@@ -84,9 +86,11 @@ const LAUF = (k) => {
         phase = 0;
     const spur = pfoten.map(() => []);
     const leib = [];
+    const c = [0, 0, 0, 0],
+        sn = [0, 0, 0, 0];
     cr.userData._animFade = 1;
     for (let i = 0; auswertungen < N; i++) {
-        cr.position.x += k.v * dt;
+        cr.position.x += v * dt;
         t += dt;
         phase += dt * 5.0;
         const div = stufe();
@@ -97,6 +101,12 @@ const LAUF = (k) => {
         cr.updateMatrixWorld(true);
         leib.push(cr.position.x);
         pfoten.forEach((p, j) => spur[j].push(p.localToWorld(lokal[j].clone())));
+        const ph = tb._gang.ph;
+        if (auswertungen > 300)
+            for (let j = 0; j < 4; j++) {
+                c[j] += Math.cos(ph[j] - ph[0]);
+                sn[j] += Math.sin(ph[j] - ph[0]);
+            }
     }
     if (k.stub) core.gangSchritt = window.__gangEcht;
     r.removeCreature(cr);
@@ -104,11 +114,8 @@ const LAUF = (k) => {
     let wegFuss = 0,
         wegLeib = 0,
         standTakte = 0;
-    const drift = [];
     for (let j = 0; j < 4; j++) {
-        let ymin = Infinity,
-            dj = 0,
-            lj = 0;
+        let ymin = Infinity;
         for (let i = 60; i < N; i++) ymin = Math.min(ymin, spur[j][i].y);
         for (let i = 61; i < N; i++) {
             const a = spur[j][i - 1],
@@ -117,19 +124,17 @@ const LAUF = (k) => {
             standTakte++;
             wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
             wegLeib += Math.abs(leib[i] - leib[i - 1]);
-            dj += b.x - a.x;
-            lj += leib[i] - leib[i - 1];
         }
-        drift.push(lj > 0 ? +(dj / lj).toFixed(2) : null);
     }
     return {
         seele: k.seele,
-        v: k.v,
+        vh: k.vh,
+        v,
+        ph: c.map((x, j) => Math.atan2(sn[j], x)),
         last: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : "",
         hueftM: +hueft.toFixed(3),
         standAnteil: +(standTakte / (4 * (N - 61))).toFixed(2),
         schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
-        drift,
     };
 };
 
@@ -395,7 +400,7 @@ const SCHWERE = (k) => {
 // DAS KÖRPER-STUDIO (K07): derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
 // und playPhysics ziehen den Leib mit festem Takt 1/60 s über ebenen Boden (die Park-Boxen ruhen), je Takt das Fuß-
 // gelenk beider Beine in der Welt. Derselbe Schlupf (Weg des Stand-Fußes / Weg des Leibs, Stand = unterste 5 % der
-// Beinlänge), dazu die Kadenz aus der Phase. Vorher ging das Labor nach einem eigenen Modell (cad = sp·0,155).
+// Beinlänge), dazu die Kadenz aus der Phase.
 const STUDIO = (k) => {
     /* eslint-disable no-undef */
     const core = window.__tetrapodaCore;
@@ -485,16 +490,19 @@ const STUDIO = (k) => {
     /* eslint-enable no-undef */
 };
 
-// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3): je Gattung EIN Tier, das über v̂ = 0,3 · 0,74 · 1,2 · 3,5 beschleunigt
-// (0,74: Fr 0,55 liegt im Band der Hysterese — wer geht, geht weiter, in Welt UND Labor), in Welt und Labor die Phasen der
-// Beine [VL, VR, HL, HR] → Schritt lateral (nach dem Hinterfuß der Vorderfuß derselben Seite), Trab (Diagonalen gemeinsam),
-// Galopp (Paare vorn und hinten, getrennt). --selftest: das Muster der Stimmung (MOTION.joy) an jedem Tempo → ROT.
+// DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF) und Labor (worlds/tetrapoda, EIN
+// Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt lateral, Trab, Galopp,
+// Labor = Welt auf ≤ 0,05 Zyklus je Bein; der TASTGRAD (Anteil des Zyklus im Stand: Welt die Pfote am Boden, Labor der
+// Fuß aus gangFuss) im Band (Alexander 1984, Hildebrand 1965). --selftest: Stimmungs-Muster und Tastgrad 0,5 → ROT.
 const VH = [0.3, 0.74, 1.2, 3.5];
 const GANG_SOLL = { 0.3: "schritt-lateral", 0.74: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
+const TAST_SOLL = { 0.3: [0.6, 0.7], 0.74: [0.6, 0.7], 1.2: [0.4, 0.6], 3.5: [0.25, 0.35] };
+const LABOR_WELT = { wolf: "wolf", fox: "fuchs", bear: "baer", deer: "wesen" };
 const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
+const zyklus = (ph) => ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
 // Aufsetzen bei Phase π (gangFuss): ein größerer Versatz setzt früher auf
 function gangart(ph) {
-    const rel = ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
+    const rel = zyklus(ph);
     const d = (a, b) => Math.min(Math.abs(rel[a] - rel[b]), 1 - Math.abs(rel[a] - rel[b]));
     const aus = (art) => ({ art, rel: rel.map((x) => +x.toFixed(2)) });
     if (d(0, 3) < 0.1 && d(1, 2) < 0.1 && d(0, 1) > 0.4) return aus("trab");
@@ -504,71 +512,37 @@ function gangart(ph) {
     const nach = (bein) => folge[(folge.indexOf(bein) + 1) % 4];
     return aus(nach(2) === 0 && nach(3) === 1 ? "schritt-lateral" : "schritt-diagonal");
 }
-// je Ort (k.labor: worlds/tetrapoda über gangTakt, sonst die Welt durch _animateCompoundMotion) die Phasen gegen das erste
-// Bein, im Kreis gemittelt über die sechste Sekunde (ein Takt allein fiele auf den Sprung eines Beins an seiner Grenze)
+// das Labor (gangTakt): Phasen gegen das erste Bein und Tastgrad über die sechste Sekunde (im Kreis gemittelt)
 const GANG = (k) => {
     /* eslint-disable no-undef */
     const core = window.__tetrapodaCore;
-    const r = window.anazhRealm;
     const echt = core.gangSchritt;
     if (k.stub)
         core.gangSchritt = function (...a) {
-            return Object.assign(echt.apply(this, a), { folge: k.stimmung });
+            return Object.assign(echt.apply(this, a), { folge: k.stimmung, tast: 0.5 });
         };
     const zeilen = [];
-    let cr = null,
-        t = 0;
     try {
-        if (k.labor) document.querySelector('#presets button[data-p="' + k.art + '"]').click();
-        else {
-            const st = r.state,
-                pm = st.playerMesh.position;
-            const saveMax = st.maxCreatures;
-            st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 4);
-            cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", k.art, { precise: true, bodySize: 1 });
-            st.maxCreatures = saveMax;
-            if (!cr || !cr.userData._tierBaum) return { fehler: "Spawn " + k.art };
-            cr.userData.task = { name: "wait", args: {}, since: 0 };
-            cr.userData.emotions = null;
-            cr.rotation.set(0, Math.PI / 2, 0);
-            cr.userData._animFade = 1;
-        }
+        document.querySelector('#presets button[data-p="' + k.art + '"]').click();
         for (const vh of k.vh) {
             const c = [0, 0, 0, 0],
                 s = [0, 0, 0, 0];
-            const dazu = (ph) => {
-                for (let i = 0; i < 4; i++) {
-                    c[i] += Math.cos(ph[i] - ph[0]);
-                    s[i] += Math.sin(ph[i] - ph[0]);
+            let steht = 0;
+            gangTempo(vh);
+            for (let i = 0; i < 360; i++) {
+                gangTakt(1 / 60);
+                if (i < 300) continue;
+                for (let j = 0; j < 4; j++) {
+                    c[j] += Math.cos(cpgPhase[j] - cpgPhase[0]);
+                    s[j] += Math.sin(cpgPhase[j] - cpgPhase[0]);
+                    if (core.gangFuss(cpgPhase[j], gangS, gangTast).hub === 0) steht++;
                 }
-            };
-            let z = { vh };
-            if (k.labor) {
-                gangTempo(vh);
-                for (let i = 0; i < 360; i++) {
-                    gangTakt(1 / 60);
-                    if (i >= 300) dazu(cpgPhase);
-                }
-            } else {
-                const tb = cr.userData._tierBaum;
-                const roles = r._motionRolesForSoul(cr.userData.soul);
-                const Z = r._gangZeile(false);
-                const L = tb.beinL * (cr.scale.x || 1);
-                const v = vh * Math.sqrt((Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g) * L);
-                for (let i = 0; i < 360; i++) {
-                    cr.position.x += v / 60;
-                    r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
-                    if (i >= 300) dazu(tb._gang.ph);
-                }
-                z = { vh, v: +v.toFixed(2), L: +L.toFixed(2) };
             }
-            z.ph = c.map((x, i) => Math.atan2(s[i], x));
-            zeilen.push(z);
+            zeilen.push({ vh, ph: c.map((x, i) => Math.atan2(s[i], x)), tast: +(steht / 240).toFixed(2) });
         }
-        if (k.labor) gangTempo(0);
+        gangTempo(0);
     } finally {
         core.gangSchritt = echt;
-        if (cr) r.removeCreature(cr);
     }
     return { zeilen };
     /* eslint-enable no-undef */
@@ -583,19 +557,23 @@ const GANG = (k) => {
     await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
-    let gangRot = false;
-    const gangUrteil = (wo, res) => {
-        for (const z of res.zeilen || [{ fehler: res.fehler }]) {
-            const g = z.fehler ? { art: z.fehler, rel: [] } : gangart(z.ph);
-            const ok = g.art === GANG_SOLL[z.vh];
-            console.log(
-                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${ok ? "" : " — Soll " + GANG_SOLL[z.vh]}`
-            );
-            if (!ok) {
-                rot++;
-                gangRot = true;
-            }
-        }
+    let gangRot = false,
+        tastRot = false;
+    const weltGang = {};
+    const gangUrteil = (wo, z, vergleich) => {
+        const g = gangart(z.ph);
+        const [lo, hi] = TAST_SOLL[z.vh];
+        const art = g.art === GANG_SOLL[z.vh],
+            tast = z.tast >= lo && z.tast <= hi;
+        const rw = vergleich && zyklus(vergleich.ph),
+            dWelt = rw ? Math.max(...g.rel.map((x, i) => Math.min(Math.abs(x - rw[i]), 1 - Math.abs(x - rw[i])))) : 0;
+        const ok = art && tast && dWelt <= 0.05;
+        console.log(
+            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + GANG_SOLL[z.vh]} · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi} — Täter: tetrapoda gangSchritt)`}${rw ? ` · Welt − Labor ${dWelt.toFixed(2)} Zyklus${dWelt <= 0.05 ? "" : " (> 0,05)"}` : ""}`
+        );
+        if (!ok) rot++;
+        if (!art || dWelt > 0.05) gangRot = true;
+        if (!tast) tastRot = true;
     };
     try {
         if (!NUR_STUDIO) {
@@ -608,11 +586,11 @@ const GANG = (k) => {
                 }
             );
             const zeilen = [];
-            for (const seele of ["wolf", "fuchs", "baer", "wesen"]) {
-                for (const v of [0.8, 1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST }));
+            for (const seele of Object.values(LABOR_WELT)) {
+                for (const vh of VH) zeilen.push(await page.evaluate(LAUF, { seele, vh, stub: SELBST }));
                 // unter Last: 30 fps, die Raten-Leiter 1/4
-                for (const v of [1.6, 3.0])
-                    zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST, fps: 30, last: true }));
+                for (const vh of [0.74, 1.2])
+                    zeilen.push(await page.evaluate(LAUF, { seele, vh, stub: SELBST, fps: 30, last: true }));
             }
             for (const z of zeilen) {
                 if (z.fehler) {
@@ -622,9 +600,12 @@ const GANG = (k) => {
                 }
                 const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
                 console.log(
-                    `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} ${z.v.toFixed(1)} m/s${z.last ? " (" + z.last + ")" : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Drift je Pfote ${z.drift.join(" ")}`
+                    `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} v̂ ${z.vh} ${z.v.toFixed(1)} m/s${z.last ? " (" + z.last + ")" : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}`
                 );
                 if (!ok) rot++;
+                if (z.last) continue;
+                weltGang[z.seele + z.vh] = z;
+                gangUrteil("Welt " + z.seele, { vh: z.vh, ph: z.ph, tast: z.standAnteil });
             }
             const leib = await page.evaluate(LEIB, { stub: SELBST });
             if (leib.fehler) {
@@ -679,11 +660,6 @@ const GANG = (k) => {
                     schwereRot = true;
                 }
             }
-            for (const seele of ["wolf", "fuchs", "baer", "wesen"])
-                gangUrteil(
-                    "Welt " + seele,
-                    await page.evaluate(GANG, { art: seele, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
-                );
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
@@ -730,17 +706,10 @@ const GANG = (k) => {
             await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", {
                 timeout: 180000,
             });
-            for (const gattung of ["wolf", "fox", "bear", "deer"])
-                gangUrteil(
-                    "Labor " + gattung,
-                    await tp.evaluate(GANG, {
-                        art: gattung,
-                        labor: true,
-                        vh: VH,
-                        stub: SELBST,
-                        stimmung: STIMMUNG_FOLGE,
-                    })
-                );
+            for (const [gattung, seele] of Object.entries(LABOR_WELT)) {
+                const res = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
+                for (const z of res.zeilen) gangUrteil("Labor " + gattung, z, weltGang[seele + z.vh]);
+            }
         } finally {
             await sb.close();
         }
@@ -763,12 +732,18 @@ const GANG = (k) => {
             console.error("\n❌ SELBST-TEST ROT — das Muster der Stimmung blieb grün: die Gangart-Wand ist vakuös.");
             process.exit(1);
         }
+        if (!tastRot) {
+            console.error(
+                "\n❌ SELBST-TEST ROT — der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand ist vakuös."
+            );
+            process.exit(1);
+        }
         console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
         process.exit(0);
     }
     if (rot) {
         console.error(
-            `\n❌ ROT — ${rot} Läufe verletzt (Schlupf > ${SCHWELLE}, Kadenz, Töne, Becken, Lock-Löser oder Gangart).`
+            `\n❌ ROT — ${rot} Läufe verletzt (Schlupf > ${SCHWELLE}, Kadenz, Töne, Becken, Lock-Löser, Gangart oder Tastgrad).`
         );
         process.exit(1);
     }
