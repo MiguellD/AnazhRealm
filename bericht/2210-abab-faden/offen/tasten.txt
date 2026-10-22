@@ -1,0 +1,90 @@
+{
+ "ergebnis": {
+  "proben": 188,
+  "mitOffen": 185,
+  "offenJetzt": {
+   "foundry": 1,
+   "chunks": 0,
+   "wald": 0,
+   "karten": 0,
+   "felder": 0,
+   "leiber": 0,
+   "dorf": 0
+  },
+  "schluessel": [
+   {
+    "art": "pending",
+    "k": "stl-641",
+    "n": 17,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-651",
+    "n": 16,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-657",
+    "n": 16,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-643",
+    "n": 15,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-645",
+    "n": 15,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-647",
+    "n": 15,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-649",
+    "n": 15,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-653",
+    "n": 15,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-655",
+    "n": 14,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-642",
+    "n": 6,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-648",
+    "n": 6,
+    "v": "function () { [native code] }"
+   },
+   {
+    "art": "pending",
+    "k": "stl-644",
+    "n": 5,
+    "v": "function () { [native code] }"
+   }
+  ]
+ },
+ "ms": 6009
+}

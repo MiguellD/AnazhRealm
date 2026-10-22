@@ -1,0 +1,26 @@
+{
+ "ergebnis": {
+  "offen": {
+   "foundry": 0,
+   "chunks": 0,
+   "wald": 0,
+   "karten": 0,
+   "felder": 0,
+   "leiber": 0,
+   "dorf": 0
+  },
+  "pending": [],
+  "warte": [],
+  "nachAtlas": [],
+  "buch": null,
+  "ingest": [],
+  "dorfPending": null,
+  "queue": null,
+  "siedlungLog": [
+   "O] Siedlung „Steintal\" gewachsen (Zelle start, 18 Slots).",
+   "O] Siedlung „Aradunum\" gewachsen (Zelle -4,-4, 16 Slots).",
+   "O] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)"
+  ]
+ },
+ "ms": 3
+}
