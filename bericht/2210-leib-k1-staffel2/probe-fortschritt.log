@@ -1,0 +1,6 @@
+08:30:57 start e5003509
+08:32:32 selbsttest EXIT=1 WERKBANK-FEHLER: Cannot read properties of undefined (reading 'ego/gehen')
+08:32:35 hieb EXIT=0 ego/hieb {"n":3,"fehlt":0,"p50":13.2,"p95":35.4,"max":35.4,"eingabe":0.3,"hoerer":1.7,"kette":11.9,"kurve":0,"takte":2,"halt":10} LATENZ GRÜN (Bild 8.5 ms)  
+08:32:38 zustand1 {"ergebnis":{"latenz":true,"bilder":266,"takt":286,"still":0,"verb":"hieb","tier":true,"tierLeib":true,"swing":false,"maus":"hieb","sicht":"first","sichtbar":"visible","fokus":true,"zeiger":true},"ms":2}
+08:32:38 zustand2 {"ergebnis":{"latenz":true,"bilder":266,"takt":286,"still":0,"verb":"hieb","tier":true,"tierLeib":true,"swing":false,"maus":"hieb","sicht":"first","sichtbar":"visible","fokus":true,"zeiger":true},"ms":2}
+08:32:46 PROBE ENDE

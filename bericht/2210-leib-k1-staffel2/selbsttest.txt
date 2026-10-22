@@ -1,0 +1,3 @@
+LATENZ undefined (Bild undefined ms) Cannot read properties of undefined (reading 'toFixed')
+LATENZ undefined (Bild undefined ms) Cannot read properties of undefined (reading 'toFixed')
+WERKBANK-FEHLER: Cannot read properties of undefined (reading 'ego/gehen')

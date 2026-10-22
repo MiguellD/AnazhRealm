@@ -1,0 +1,10 @@
+{
+ "fehler": "Cannot read properties of undefined (reading 'toFixed')",
+ "stapel": [
+  "at rang (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n2010-b2b\\scripts\\lib\\haenger-linse.cjs:851:96)",
+  "at med (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n2010-b2b\\scripts\\lib\\haenger-linse.cjs:854:65)",
+  "at Object.latenzUrteil (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n2010-b2b\\scripts\\lib\\haenger-linse.cjs:857:54)",
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n2010-b2b\\scripts\\werkbank.cjs:1910:50)"
+ ],
+ "ms": 16061
+}
