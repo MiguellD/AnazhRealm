@@ -816,7 +816,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.checks.cSchwungFriert = !!p._swing && p._swing.t === 0;
             p._swing = null;
             // (C2) die Gang-Phase friert (echter Konsument animatePlayerSoul)
-            if (!pm.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+            if (!pm.userData.rig) r.applyPlayerSoul("human");
             const mesh = s.playerMesh;
             if (!mesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
             s.playerUnderwater = false;

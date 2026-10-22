@@ -104,7 +104,7 @@ function nahDeckungInSeite(o) {
         for (let k = 0; k < l.length; k += 2) if (v >= l[k] && v < l[k + 1]) return true;
         return false;
     };
-    const natur = (e) => !!e && typeof r._istNatur === "function" && r._istNatur(e);
+    const natur = (e) => !!e && r._istNatur(e);
     const artVonStoff = (mat) => {
         const k = mat && mat.userData ? mat.userData.foundryKind : null;
         if (k === "foliage" || k === "foliageTex") return "laub";

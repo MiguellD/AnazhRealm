@@ -61,7 +61,7 @@ const server = statikServer();
             const cam = r.state.camera;
             const scene = r.state.scene;
             if (!cam || !scene) return { fatal: "kein cam/scene" };
-            const schuss = async (name) => {
+            const schuss = async () => {
                 const w = 640,
                     h = 360;
                 // die EINE Aufnahme (scripts/lib/ausgabe-aufnahme.cjs): der echte, getonte Frame

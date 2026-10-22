@@ -726,7 +726,7 @@ async function probe(argW) {
                     brennbar(e)
             );
             st.timeOfDay = 0.5;
-            const licht = typeof r._sonnenRichtung === "function" ? r._sonnenRichtung() : null;
+            const licht = r._sonnenRichtung();
             const imLicht =
                 licht && typeof r._brennpunkte === "function"
                     ? nah.filter((e) =>

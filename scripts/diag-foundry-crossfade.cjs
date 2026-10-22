@@ -644,7 +644,7 @@ async function runPartB() {
                 return o;
             };
             const fdVor = st._foliageDensityScale;
-            if (core && typeof core.lodCrossfadeMask === "function" && typeof r._lodPerfMul === "function") {
+            if (core && typeof core.lodCrossfadeMask === "function") {
                 const fdMin = A.PERF_FOLIAGE_DENSITY_MIN;
                 res.stufenWahrheit = { voll: lochSweep(1), last: lochSweep(fdMin) };
                 const s2 = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
@@ -1043,7 +1043,7 @@ async function runPartB() {
                         // (ii) der Sprung: das Rig setzte das Auge 500 m vom Baum, der Spieler springt an den Baum → L0
                         st.playerMesh.position.set(px - 500, py, pz);
                         setzeKam(px - 509.6, py + 3, pz);
-                        if (typeof r._lodAugeGesetzt === "function") r._lodAugeGesetzt();
+                        r._lodAugeGesetzt();
                         st.playerMesh.position.set(px + 1, py, pz);
                         fall("Sprung", r._foundryLodForEntry(entry), 0);
                         // (iii) die Sonde setzt die Kamera an den Baum, der Spieler steht 500 m fern → das Auge ist die Kamera: L0

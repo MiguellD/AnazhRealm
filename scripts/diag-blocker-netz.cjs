@@ -660,7 +660,7 @@ async function probe() {
     for (const h of haeuser.slice(0, 3)) r.removeArchitecture(h);
     // (2) die Kappe nimmt einen Bau
     const bau = st.architectures.find((e) => e && e.blockerAABBs && !e.type.startsWith("haus_"));
-    if (bau && typeof r._evictArchitecture === "function") r._evictArchitecture(bau);
+    if (bau) r._evictArchitecture(bau);
     aus.runden.push(runde("Abriss", N));
     aus.loeser.push(loeserRunde("Abriss", 800));
     aus.tier.push(tierRunde("Abriss", 600));
@@ -697,7 +697,7 @@ async function probe() {
     st.architectures = st.architectures.slice();
     {
         const M = { proben: 0, vorgezaehlt: 0, abweichungen: 0, abweichung: [] };
-        const NN = typeof r._blockerNetz === "function" ? r._blockerNetz() : null;
+        const NN = r._blockerNetz();
         for (const { e, m } of marken) {
             // die oberste Box des Eintrags, senkrecht von oben getroffen (kein Gelände davor)
             let b = null;

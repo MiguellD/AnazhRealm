@@ -38,7 +38,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { s: {}, n: {}, w: {}, m: {}, e: {}, k: {} };
         // Farb-Set eines Peer-Meshes (Vertex-color-Attribut, Render-Diät-Muster).
         const colorsOf = (g) => {

@@ -1598,7 +1598,7 @@ async function probeLeben(expected) {
                 if (!c) return null;
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
-                if (typeof r.assignCreatureTask === "function") r.assignCreatureTask(c, "wait");
+                r.assignCreatureTask(c, "wait");
                 // Der Bär steht still (sein Hirn wählte Flucht oder Wandern mit Math.random — 07.10. kippte L5 so von
                 // 7,99 → 6,07 auf 7,92 → 3,70 m/s): ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
                 const A = Object.getPrototypeOf(r).constructor;

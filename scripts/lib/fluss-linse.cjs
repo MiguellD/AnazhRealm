@@ -162,7 +162,7 @@ function flussBericht() {
         cacheMB: r1((f.cacheBytes || 0) / 1e6),
         // Die Fernstufe: der EINE Karten-Atlas (W6) — Zellen, gebacken, Atlas-MB, Format, Haupt-Faden-ms je Bake (Median).
         karten: (() => {
-            const z = typeof r._impostorCensus === "function" ? r._impostorCensus() : null;
+            const z = r._impostorCensus();
             return z
                 ? { n: z.zellen, gebacken: z.gebacken, mb: z.mb, fmt: z.fmt, schichten: z.schichten, weltMs: pct(z.weltMs || [], 0.5) }
                 : { n: 0, gebacken: 0, mb: 0, fmt: null, schichten: 0, weltMs: 0 };

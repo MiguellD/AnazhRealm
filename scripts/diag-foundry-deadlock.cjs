@@ -22,7 +22,7 @@ const server = statikServer();
         const r = window.anazhRealm;
         const out = { ready: false, coldBefore: 0, foundryBefore: 0, foundryAfter: 0, ticks: 0, err: null };
         const isTree = (e) =>
-            e && e.position && typeof r._foundryPresetForEntry === "function" && !!r._foundryPresetForEntry(e);
+            e && e.position && !!r._foundryPresetForEntry(e);
         try {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();

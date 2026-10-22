@@ -245,11 +245,11 @@ function weltOrte(art, opts) {
     const anzahl = o.anzahl || 1;
     const abstand = o.abstand == null ? 5 : o.abstand;
     const H = (x, z) => r.getTerrainHeightAt(x, z);
-    const trocken = (x, z) => r._landAt(x, z) && !(typeof r._nassAt === "function" && r._nassAt(x, z));
+    const trocken = (x, z) => r._landAt(x, z) && !(r._nassAt(x, z));
     const grad = (t) => (Math.atan(t) * 180) / Math.PI;
     const gefaelle = (x, z, b) => [(H(x + b, z) - H(x - b, z)) / (2 * b), (H(x, z + b) - H(x, z - b)) / (2 * b)];
     const neigung = (x, z, b) => grad(Math.hypot(...gefaelle(x, z, b || 1)));
-    const unterFels = (x, z) => typeof r._kreaturUnterFels === "function" && r._kreaturUnterFels(x, H(x, z), z);
+    const unterFels = (x, z) => r._kreaturUnterFels(x, H(x, z), z);
     const fest = (x, y, z) => r._fieldSolid(x, y, z);
     // die Fahrt-Linie ab (sx, sz) längs (ux, uz): kein Blocker eines Baus von l0 bis l1 m, quer binnen q m (+ halbe Box)
     const bahnFrei = (sx, sz, ux, uz, l0, l1, q) => {
@@ -322,7 +322,7 @@ function weltOrte(art, opts) {
             if (neigung(x, z) > (o.fussMax == null ? 8 : o.fussMax)) return null;
             const bis = o.bis || 30,
                 breite = o.breite || 10;
-            const nass = (px, pz) => typeof r._nassAt === "function" && r._nassAt(px, pz);
+            const nass = (px, pz) => r._nassAt(px, pz);
             for (let k = 0; k < 16; k++) {
                 const a = (k / 16) * Math.PI * 2;
                 const dx = Math.sin(a),

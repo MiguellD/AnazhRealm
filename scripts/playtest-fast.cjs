@@ -296,7 +296,7 @@ function check(name, ok) {
                         continue;
                     }
                     let role = bp.role;
-                    if (!role && typeof r.computeBlueprintRole === "function") role = r.computeBlueprintRole(bp);
+                    if (!role) role = r.computeBlueprintRole(bp);
                     res[n] = role || "?";
                 }
                 return res;

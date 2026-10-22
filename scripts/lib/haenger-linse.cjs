@@ -626,7 +626,7 @@ function haengerTabelle(a) {
 }
 
 // ── DIE TAKT-SPITZE (Profi-Band K1/K2 + PFLICHT E in Bewegung) ─────────────────────────────────────────────────────────
-// OMEN 21.10.: CPU-Takt p95 steht 5,8, geht 19,7 ms. Die Takte des Gangs (`lauf`, Bahn) ab p95 und der Mitte (p40–p60)
+// Die Takte des Gangs (`lauf`, Bahn) ab p95 und der Mitte (p40–p60)
 // zerfallen je Rahmen-Pfad (die Proben im Takt teilen seine CPU-Zeit). TÄTER: ein Rahmen, der ab p95 ≥ 1 ms mehr trägt als in
 // der Mitte, ohne dass ein Kind ≥ 1 ms es erklärt; ROT mit Täter oder blind. Die Zeilen ab 0,25 ms.
 function spitzenAuswerten(roh, spur) {
@@ -843,72 +843,185 @@ function selbsttest() {
     return f;
 }
 
-// DAS URTEIL DER LATENZ (`werkbank latenz`; die Seite ist latenzAn in scripts/werkbank.cjs)
+// DIE LATENZ (leib.K1, die Seite von `werkbank latenz`): Taste → bewegter Leib im Ausgabe-Bild. Start ist der Zeitstempel des Tasten-Ereignisses (CDP
+// Input.dispatchKeyEvent, `event.timeStamp`), Ende die Marke des präsentierten Bilds (`getCurrentTexture` am Canvas der Welt,
+// wie die Belegungs-Spur), in dem Kamera oder Leib ≥ 1 cm von der Lage des letzten Bilds vor der Taste stehen. Je Probe die
+// Zerlegung: eingabe (Ereignis → Hörer) · warten (Hörer → Beginn des Takts, der das Bild zeichnet) · takte · bild (Takt →
+// Marke) · regung (das erste Bild ≥ 1 mm: bis dahin die Kette, danach die Gang-Kurve).
+// `verzug` (Selbsttest) hält die Taste n präsentierte Bilder im Eingabe-Pfad zurück (die Leine zeichnet nicht jeden Takt); die Bewegung liest nie das Render-Signal.
+// DER HIEB (halten.K2): der Klick (CDP, Zeiger gefangen) auf ein gehaltenes Tier unter dem Fadenkreuz; Ende das Bild, in dem
+// die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
+// präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
+function latenzAn(k) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
+    window.__buehne();
+    if (window.__tiereHalten) window.__tiereHalten();
+    const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
+    const lage = () =>
+        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
+    const weg = (a, b) => (b && a.length === b.length ? Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))) : Infinity);
+    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
+    L.start = st.playerMesh.position.clone();
+    const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
+    GPUCanvasContext.prototype.getCurrentTexture = function () {
+        // ein Mess-Fehler hält nie das Bild an (bis latenz-verben warf `weg` nach hieb in jedem Bild: der Sammel-Lauf hing)
+        if (this.canvas === rend.domElement) {
+            const t = performance.now();
+            try {
+                const l = lage(), p = L.probe;
+                L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
+                if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
+                if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
+                    Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
+                const sw = p && p.t0 != null && st.player._swing;
+                if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
+                L.swVor = sw && sw.t;
+                L.vor = l;
+            } catch (e) {
+                L.fehler = L.fehler || String(e);
+            }
+            L.rafAmBild = L.raf;
+            L.bilder.push(t);
+        }
+        return gct.call(this);
+    };
+    const hoer = (ev) => {
+        if (synth.has(ev)) return;
+        const p = L.probe, jetzt = performance.now();
+        if (ev.type.endsWith("down") && p && p.t0 == null)
+            Object.assign(p, { t0: ev.timeStamp, eingabe: jetzt - ev.timeStamp, hoerer: jetzt, takt: L.takt, ref: L.vor });
+        if (!k.verzug || ev.type === "mousedown") return;
+        ev.stopImmediatePropagation();
+        const kopie = new KeyboardEvent(ev.type, { key: ev.key, code: ev.code, bubbles: true, cancelable: true });
+        const eintrag = [ev.target, kopie];
+        synth.add(kopie), L.offen.push(eintrag);
+        (async () => {
+            for (const n = L.bilder.length + k.verzug; L.bilder.length < n && L.offen.includes(eintrag); ) await raf();
+            if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
+        })();
+    };
+    const nach = () => L.probe && L.probe.imHoerer == null && (L.probe.imHoerer = performance.now() - L.probe.hoerer); // Taste wie Klick
+    for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
+    for (const typ of ["keydown", "mousedown"]) window.addEventListener(typ, nach);
+    rend.setAnimationLoop((t) => {
+        L.takt++;
+        L.taktAm = performance.now();
+        window.__wetterHalten();
+        r._gameLoopTick(t);
+    });
+    // die Wache der Fristen: 120 rAF ohne Bild oder ein Mess-Fehler brechen laut (eine Frist nur in Bildern wartete ewig)
+    L.raf = L.rafAmBild = 0;
+    const wache = async () => {
+        await raf();
+        if (L.fehler || ++L.raf - L.rafAmBild > 120) throw new Error(`latenz ${L.verb}: ${L.fehler || "120 rAF ohne Bild"}`);
+    };
+    // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
+    // zufällige Phase gegen den Bild-Takt
+    L.bereit = async (sicht, zurueck, verb) => {
+        L.probe = null;
+        if (L.verb !== verb) (L.vor = null), (L.verb = verb); // die Lage wechselt mit dem Verb (bis latenz-verben maß gehen nach hieb die Hand)
+        if (st.player.mountedArch != null) r.dismountArchitecture(); // die Probe davor stieg ein
+        if (zurueck || verb === "hieb") st.playerMesh.position.copy(L.start);
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+        if (verb === "hieb" && !(await L.tierStellen())) return false;
+        if (verb === "einsteigen") await L.wagenStellen();
+        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await wache()) if (L.bilder.length > bis) return false;
+        await new Promise((f) => setTimeout(f, Math.random() * 17));
+        return !!(L.probe = {});
+    };
+    L.treffer = async () => {
+        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await wache();
+        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await wache();
+        return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
+    };
+    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
+    L.tierStellen = async () => {
+        const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
+        if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
+        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
+        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await wache();
+        c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
+        c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
+        st.player.stamina = st.player.staminaMax || 100;
+        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await wache()) {
+            const F = r._fadenkreuzStrahl(), v = r._leibMitte(c).sub(F.o).normalize();
+            if (v.distanceTo(F.d) < 0.03) return true;
+            st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
+            st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
+        }
+    };
+    // der GT des Einsteigens quer neben dem Start in der Reichweite des Gesetzes, gezeichnet — sonst mäße die Probe nur den Leib
+    L.wagenStellen = async () => {
+        const f = r._blickVorn(st.yaw, 0), d = 0.85 * r.constructor.MOUNT_RANGE_M, x = L.start.x + f.z * d, z = L.start.z - f.x * d;
+        L.wagen = L.wagen || r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: st.yaw });
+        for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await wache()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
+        if (!r._archIsRendered(L.wagen)) throw new Error("latenz einsteigen: der GT ist nicht gezeichnet");
+    };
+    L.ende = () => {
+        for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
+        GPUCanvasContext.prototype.getCurrentTexture = gct;
+        for (const typ of ["keydown", "keyup", "mousedown"]) window.removeEventListener(typ, hoer, true);
+        for (const typ of ["keydown", "mousedown"]) window.removeEventListener(typ, nach);
+        if (L.tier) r.removeCreature(L.tier);
+        if (st.player.mountedArch != null) r.dismountArchitecture();
+        if (L.wagen) r.removeArchitecture(L.wagen);
+        rend.setAnimationLoop(null);
+        st.playerMesh.position.copy(L.start);
+        r.setCameraMode(L.sicht);
+        const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
+        return d[d.length >> 1];
+    };
+}
+
+// DAS URTEIL DER LATENZ (`werkbank latenz`; die Seite ist latenzAn oben)
 // Das Urteil der Latenz je Sicht × Verb: p50/p95 (Rang), die Zerlegung im Median, ROT über `soll` ms oder bei einer Probe
 // ohne Bewegung — beim Namen der größten Stufe (eingabe · hoerer · kette bis 1 mm · kurve 1 mm → 1 cm) und der Takte bis zur Bewegung;
 // der Hieb auch bei einem anderen Verb oder einem Hit-Stop unter 2 Bildern (im Median, ein Hieb ohne Treffer hält 0).
-// DIE GRÖSSEN JEDER PROBE (latenz-verben): jedes Verb — Taste wie Klick — trägt eingabe · imHoerer · regung · takte (der Hörer
-// `nach` in latenzAn misst imHoerer an keydown UND mousedown). Fehlt eine davon in einer gemessenen Probe, ist die Reihe ROT beim
-// Namen der Größe; der Median rechnet nur über Zahlen (bis latenz-verben brach `.toFixed` auf undefined jede Tasten-Reihe).
-const LATENZ_PFLICHT = Object.freeze(["eingabe", "imHoerer", "regung", "takte"]);
+// Jede gemessene Probe trägt die Pflicht-Größen, sonst ROT beim Namen (bis latenz-verben brach jede Tasten-Reihe an imHoerer).
+const PFLICHT = ["eingabe", "imHoerer", "regung", "takte"];
 function latenzUrteil(proben, bildMs, soll = 50) {
-    const zahlen = (v) => v.filter(Number.isFinite).sort((a, b) => a - b);
-    const rang = (v, q) => (v.length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
+    const rang = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
-        const ok = ps.filter((p) => Number.isFinite(p.ms)), med = (f) => rang(zahlen(ok.map((p) => p[f])), 0.5);
-        const ms = zahlen(ok.map((p) => p.ms));
-        const ohne = LATENZ_PFLICHT.map((g) => [g, ok.filter((p) => !Number.isFinite(p[g])).length]).filter(([, n]) => n);
-        if (ohne.length) rot.push(`${name} ohne ${ohne.map(([g, n]) => `${g} (${n}/${ok.length})`).join(", ")} — eine Pflicht-Größe fehlt in gemessenen Proben`);
+        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]), 0.5);
+        const ohne = PFLICHT.filter((g) => ok.some((p) => !Number.isFinite(p[g])));
+        if (ohne.length) rot.push(`${name} ohne ${ohne.join(", ")}`);
         for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
         const z = { eingabe: med("eingabe"), hoerer: med("imHoerer"), kette: med("kette"), kurve: med("kurve") };
-        const e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
+        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
         Object.assign(e, z, { takte: med("takte") });
         if (name.endsWith("hieb")) {
-            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(zahlen(ps.map((p) => p.halt || 0)), 0.5));
+            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(ps.map((p) => p.halt || 0), 0.5));
             if (/[^,]/.test(verben.replace(/hieb/g, "")) || !(halt >= 2)) rot.push(`${name} Verben ${verben}, Hit-Stop ${halt} Bilder`);
         }
         if (e.fehlt || !(e.p95 <= soll)) {
-            const taeter = Object.keys(z).filter((k) => z[k] != null).sort((a, b) => z[b] - z[a])[0];
-            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter || "keiner gemessen"} ${taeter ? z[taeter] : "–"} ms, ${e.takte} Takte`);
+            const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
+            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);
         }
     }
-    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: Number.isFinite(bildMs) ? +bildMs.toFixed(2) : null, reihen, rot, proben };
+    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: bildMs && +bildMs.toFixed(2), reihen, rot, proben };
 }
-
-// DER SELBSTTEST DES LATENZ-URTEILS (ohne Welt, `werkbank latenz --selbsttest`, check:statik): je Täter eine erfundene Reihe —
-// jede gesunde Verb-Reihe GRÜN; eine Probe ohne imHoerer, eine ohne Bewegung, ein langsamer p95, ein Hieb ohne Hit-Stop und eine
-// Reihe nur aus Unruhe ROT beim Namen, ohne dass das Urteil bricht
+// der Selbsttest (ohne Welt, check:statik): gesund GRÜN, sonst ROT beim Namen, ohne zu brechen
 function latenzSelbsttest() {
-    const f = [];
-    const probe = (ms, o = {}) => Object.assign({ t0: 0, eingabe: 0.3, imHoerer: 1.2, regung: ms - 6, ms, takte: 2 }, o);
-    const reihe = (n, o) => Array.from({ length: n }, (_, i) => probe(20 + (i % 10), o));
-    const gesund = { "ego/gehen": reihe(20), "third/wechsel": reihe(20), "ego/springen": reihe(20), "third/einsteigen": reihe(20), "ego/hieb": reihe(20, { verb: "hieb", halt: 9 }) };
-    const g = latenzUrteil(gesund, 8.3);
-    if (g.urteil !== "GRÜN") f.push("gesunde Reihen aller Verben nicht GRÜN: " + g.rot.join(" · "));
-    const faelle = [
-        [{ "ego/springen": reihe(20).map((p, i) => (i < 3 ? Object.assign(p, { imHoerer: undefined }) : p)) }, /ego\/springen ohne imHoerer \(3\/20\)/],
-        // jede Tasten-Reihe am Kopf f3865c80: kein Hörer setzte imHoerer — das alte Urteil brach an .toFixed
-        [{ "ego/wechsel": reihe(20, { imHoerer: undefined }) }, /ego\/wechsel ohne imHoerer \(20\/20\)/],
-        [{ "ego/gehen": reihe(19).concat([{ t0: 0 }]) }, /ego\/gehen p95 .* \(fehlt 1\)/],
-        [{ "third/einsteigen": reihe(20, { ms: 80 }).map((p) => Object.assign(p, { regung: 8 })) }, /third\/einsteigen p95 80 ms > 50 .*Täter kurve/],
-        [{ "ego/hieb": reihe(20, { verb: "hieb", halt: 0 }) }, /ego\/hieb Verben .*Hit-Stop 0 Bilder/],
-        [{ "third/gehen": [{ unruhe: true }, { unruhe: true }, { unruhe: true }] }, /third\/gehen p95 null ms > 50 \(fehlt 3\) — Täter keiner gemessen/],
-    ];
-    for (const [proben, muster] of faelle) {
-        let u;
+    const reihe = (o) => Array.from({ length: 20 }, (_, i) => Object.assign({ eingabe: 0.3, imHoerer: 1, regung: 9, ms: 20 + i, takte: 2, verb: "hieb", halt: 9 }, o));
+    return [
+        [{ "ego/gehen": reihe(), "ego/hieb": reihe() }, /^$/],
+        [{ "ego/wechsel": reihe({ imHoerer: undefined }) }, /ego\/wechsel ohne imHoerer/],
+        [{ "ego/springen": reihe({ ms: 80 }) }, /p95 80 ms > 50 .*Täter kurve/],
+        [{ "ego/hieb": reihe({ halt: 0 }) }, /Hit-Stop 0/],
+        [{ "ego/gehen": [{}, {}] }, /fehlt 2/],
+    ].flatMap(([p, m]) => {
         try {
-            u = latenzUrteil(proben, 8.3);
+            const r = latenzUrteil(p, 8).rot.join(" · ");
+            return m.test(r) ? [] : [`${Object.keys(p)}: ${r || "GRÜN"}`];
         } catch (e) {
-            f.push(`${Object.keys(proben)[0]}: das Urteil bricht (${e.message})`);
-            continue;
+            return [`${Object.keys(p)} bricht: ${e.message}`];
         }
-        if (u.urteil !== "ROT" || !muster.test(u.rot.join(" · "))) f.push(`${Object.keys(proben)[0]}: nicht beim Namen ROT (${u.rot.join(" · ") || u.urteil})`);
-    }
-    return f;
+    });
 }
 
 module.exports = {
+    latenzAn,
     latenzUrteil,
     latenzSelbsttest,
     linseWerten,

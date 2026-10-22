@@ -527,7 +527,7 @@ async function probe(A) {
     };
     const spawnAlt = r.spawnArchitecture;
     const probeWerke = new Set();
-    r.spawnArchitecture = function (type, position, opts) {
+    r.spawnArchitecture = function (type, position) {
         const natur = r._istNatur({ type });
         const werk = !natur && !/^fahrzeug_/.test(String(type));
         let fussT = null;

@@ -820,7 +820,7 @@ async function probe() {
         const archs = st.architectures.slice();
         const vor = new Map(archs.map((e) => [e, e.heatBuildup]));
         // die Betroffenen vor dem Schritt: die warmen und, wenn die Sonne durch ein Glas scheint, die Plätze in Reichweite
-        const N = typeof r._blockerNetz === "function" ? r._blockerNetz() : null;
+        const N = r._blockerNetz();
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
         const gl = archs.filter((e) => e && e.affordances && e.affordances.focusing && e.position);
         const scheint = !!(sonne && sonne.y > 0 && gl.some((fa) => r._brennpunkte(fa, sonne).length));
@@ -918,7 +918,7 @@ async function probe() {
         // das Feuer wirkt jetzt (wie im Takt nach der Schleife)
         for (const e of ist.feuer) P.removeArchitecture.call(r, e);
         // jeder warme Eintrag des Bestands steht in der warmen Menge
-        const N2 = typeof r._blockerNetz === "function" ? r._blockerNetz() : null;
+        const N2 = r._blockerNetz();
         if (N2 && N2.warm)
             for (const e of st.architectures) if (e && e.heatBuildup > 0 && !N2.warm.has(e)) T.warmFehlt++;
     }
@@ -996,7 +996,7 @@ async function probe() {
         const R2 = weite * weite;
         const nah = (e) => e && e.position && (e.position.x - x) ** 2 + (e.position.z - z) ** 2 <= R2;
         const alt = st.architectures.filter(nah);
-        const kand = typeof r._blockerUmPlatz === "function" ? r._blockerUmPlatz(x, z, weite + 1e-6, []) : [];
+        const kand = r._blockerUmPlatz(x, z, weite + 1e-6, []);
         const neu = kand.filter(nah);
         res.proben++;
         res.kandidaten += kand.length;

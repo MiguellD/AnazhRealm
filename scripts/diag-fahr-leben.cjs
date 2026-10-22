@@ -938,7 +938,7 @@ async function probeBahn(B) {
         m.eingestiegen = st.player.mountedArch === e.id;
         if (!m.eingestiegen) {
             m.statt = logs.slice(vorLog).join(" · ") || "keine Meldung";
-            if (r._portalOverlay && typeof r.exitPortal === "function") r.exitPortal(); // die Probe geht weiter in der Heimat
+            if (r._portalOverlay) r.exitPortal(); // die Probe geht weiter in der Heimat
             return m;
         }
         takt(12);
@@ -1014,7 +1014,7 @@ async function probeBahn(B) {
     const gesetzt = [];
     stelle(M.x, M.z);
     for (const t of tore) {
-        const ort = typeof r._portalVorschauOrt === "function" ? r._portalVorschauOrt(t) : null;
+        const ort = r._portalVorschauOrt(t);
         if (!ort) {
             out.tore.push({ tor: t.type, da: false, grund: "kein Wunsch-Ort der Vorschau (_portalVorschauOrt)" });
             continue;
@@ -1088,7 +1088,7 @@ async function probeBahn(B) {
         // ohne Platz-Gesetz steht der Wagen in ihm. Die Welt allein trägt dort nicht immer ein Hindernis: am Flussnetz-Gelände
         // ist der Wunsch-Ort am Garage-Tor frei (3°, keine Wand, kein Blocker), und der Schmuggel fiel vakuös grün.
         const torG = st.architectures.find((a) => a && a.type === "welt_garage" && a.position);
-        const wo = torG && typeof r._portalVorschauOrt === "function" ? r._portalVorschauOrt(torG) : null;
+        const wo = torG && r._portalVorschauOrt(torG);
         const stamm = wo
             ? r.spawnArchitecture(
                   "baum_kiefer",
@@ -1207,7 +1207,7 @@ async function probeBahn(B) {
             tippe("e");
             frame();
             if (st.player.mountedArch !== e.id) {
-                if (r._portalOverlay && typeof r.exitPortal === "function") r.exitPortal();
+                if (r._portalOverlay) r.exitPortal();
                 wagenWeg(e);
                 return { grund: "E steigt an der Stelle der Schau nicht ein" };
             }
