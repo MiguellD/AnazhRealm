@@ -1971,7 +1971,10 @@ class AnazhRealm_siedlung_bauten {
     // Hang zur Sonne hin wirft über die nahe Ebene). Der Boden-Shader zeichnet zwischen Position und Morph-Ziel; das Ziel
     // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
     // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
-    _chunkSatzHuelle(s, b) {
+    // `nur` (fahrt-takt): ein Schreiber, der nur diese Vertices des Bereichs bewegt (der Teil-Morph, `_applyCrossLodGeomorph`),
+    // lässt jede andere Ecke stehen — je Zelle die feste Hülle (die Lage jeder Ecke, das Ziel jeder anderen) einmal je Bereich und
+    // Rand, danach nur die Ziele des Rands; dieselbe Hülle wie über jede Ecke (Minimum und Maximum kennen keine Reihe).
+    _chunkSatzHuelle(s, b, nur = null) {
         s.stand++;
         const h = b.huelle || (b.huelle = new THREE.Box3());
         h.makeEmpty();
@@ -1981,14 +1984,43 @@ class AnazhRealm_siedlung_bauten {
         const vs = b.vStart;
         const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
         const hub = s.spec.hub || 0;
-        for (const zelle of b.zellen) {
+        let F = nur && Z ? b.festRand : null;
+        if (nur && Z && !(F && F.nur === nur && F.zellen === b.zellen)) {
+            const inR = new Uint8Array(P.length / 3);
+            for (const v of nur) inR[v] = 1;
+            const marke = new Int32Array(P.length / 3);
+            F = b.festRand = { nur, zellen: b.zellen, je: [] };
+            b.zellen.forEach((zelle, zi) => {
+                const kiste = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+                const rv = [];
+                const zu = (q, k) => {
+                    for (let a = 0; a < 3; a++) {
+                        if (q[k + a] < kiste[a]) kiste[a] = q[k + a];
+                        if (q[k + a] > kiste[3 + a]) kiste[3 + a] = q[k + a];
+                    }
+                };
+                for (let i = 0; i < zelle.idx.length; i++) {
+                    const v = zelle.idx[i] - vs;
+                    zu(P, v * 3);
+                    if (!inR[v]) zu(Z, v * 3);
+                    else if (marke[v] !== zi + 1) {
+                        marke[v] = zi + 1;
+                        rv.push(v);
+                    }
+                }
+                F.je.push({ kiste, rv: Int32Array.from(rv) });
+            });
+        }
+        for (let zi = 0; zi < b.zellen.length; zi++) {
+            const zelle = b.zellen[zi];
             const I = zelle.idx;
-            let x0 = Infinity,
-                y0 = Infinity,
-                z0 = Infinity,
-                x1 = -Infinity,
-                y1 = -Infinity,
-                z1 = -Infinity;
+            const fk = F && F.je[zi].kiste;
+            let x0 = fk ? fk[0] : Infinity,
+                y0 = fk ? fk[1] : Infinity,
+                z0 = fk ? fk[2] : Infinity,
+                x1 = fk ? fk[3] : -Infinity,
+                y1 = fk ? fk[4] : -Infinity,
+                z1 = fk ? fk[5] : -Infinity;
             const dazu = (q, k) => {
                 const x = q[k],
                     y = q[k + 1],
@@ -2000,13 +2032,15 @@ class AnazhRealm_siedlung_bauten {
                 if (z < z0) z0 = z;
                 if (z > z1) z1 = z;
             };
-            for (let i = 0; i < I.length; i++) {
-                const v = I[i] - vs;
-                dazu(P, v * 3);
-                // das Morph-Ziel trägt Lage, sobald der Geomorph greift — Naht wie Stufe (K51-2: das Stufen-Gewicht folgt dem
-                // Auge, jedes Ziel kann ganz gezeichnet werden)
-                if (Z) dazu(Z, v * 3);
-            }
+            if (F) for (const v of F.je[zi].rv) dazu(Z, v * 3);
+            else
+                for (let i = 0; i < I.length; i++) {
+                    const v = I[i] - vs;
+                    dazu(P, v * 3);
+                    // das Morph-Ziel trägt Lage, sobald der Geomorph greift — Naht wie Stufe (K51-2: das Stufen-Gewicht folgt dem
+                    // Auge, jedes Ziel kann ganz gezeichnet werden)
+                    if (Z) dazu(Z, v * 3);
+                }
             const zh = zelle.huelle;
             zh.makeEmpty();
             if (x1 >= x0) {
@@ -2041,8 +2075,9 @@ class AnazhRealm_siedlung_bauten {
         return true;
     }
 
-    // Ein CPU-Schreiber (Geomorph) hat Attribute seines Bereichs geändert → genau dieser Bereich lädt hoch.
-    _chunkSatzMarke(art, key, namen) {
+    // Ein CPU-Schreiber (Geomorph) hat Attribute seines Bereichs geändert → genau dieser Bereich lädt hoch; `nur`: er bewegte
+    // nur diese Vertices (die Hülle, `_chunkSatzHuelle`).
+    _chunkSatzMarke(art, key, namen, nur = null) {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
@@ -2068,7 +2103,7 @@ class AnazhRealm_siedlung_bauten {
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
         }
-        this._chunkSatzHuelle(s, b); // der Geomorph legt neue Ziele — die Hülle folgt
+        this._chunkSatzHuelle(s, b, nur); // der Geomorph legt neue Ziele — die Hülle folgt
         // und der Horizont (`_hoehlenHorizont`) liest sie neu — jede gemerkte Sperre misst ihn neu (`H.boden`)
         if (b.hoehle) {
             b.hoehle.horizont = null;
