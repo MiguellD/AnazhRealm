@@ -1,0 +1,48 @@
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 7.9,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 468.6,
+   "bilder": 1,
+   "radius": 120.38950290778644
+  },
+  "latenzMs": 184.7,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 4245,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 653.3,
+   "bilder": 5,
+   "typ": "haus_fraenkisch",
+   "same": 285598,
+   "ort": [
+    -806.33,
+    -1147.85
+   ],
+   "abstand": 46.8
+  },
+  "hash": "ae2874f6",
+  "bilder": 4250,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -835.2742918000536,
+   "z": -1498.4410973754373
+  }
+ },
+ "ms": 48169
+}

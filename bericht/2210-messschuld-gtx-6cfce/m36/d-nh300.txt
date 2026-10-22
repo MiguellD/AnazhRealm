@@ -1,0 +1,42 @@
+{
+ "ergebnis": {
+  "nH": 300,
+  "gesamt": 191.8,
+  "slots": 309,
+  "glieder": {
+   "_scheduleEditSave": {
+    "n": 4,
+    "ms": 0.3
+   },
+   "_erdbauWirkt": {
+    "n": 1,
+    "ms": 45.4
+   },
+   "_ortPlanSetzen": {
+    "n": 1,
+    "ms": 95.6
+   },
+   "_dorfZug": {
+    "n": 1,
+    "ms": 0.7
+   },
+   "_bewohnerMelden": {
+    "n": 1,
+    "ms": 0
+   },
+   "_stlWegeBuild": {
+    "n": 1,
+    "ms": 25.1
+   },
+   "_dorfLaterneSetzen": {
+    "n": 104,
+    "ms": 38.1
+   },
+   "_spawnSettlementErlebnis": {
+    "n": 1,
+    "ms": 95.3
+   }
+  }
+ },
+ "ms": 4817
+}
