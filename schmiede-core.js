@@ -796,7 +796,7 @@
         for (let i = 0; i < turns; i++) {
             const xx = x0 + ((i + 0.5) / turns) * len,
                 rr = rA * 1.04 * (1 - ((xx - x0) / len) * 0.12) + 0.0016;
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.0022, 8, 22), wm);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.0022, Math.max(4, Math.round(8 * _wickelDetail)), Math.max(8, Math.round(22 * _wickelDetail))), wm);
             ring.rotation.y = Math.PI / 2;
             ring.position.set(xx, 0, 0);
             ring.rotation.z = 0.18;
@@ -2992,6 +2992,29 @@
                 tp[k] = ov[k];
             }
         }
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Wicklung zählt ihre Ringe aus der
+        // Griff-Länge (ein Ring je 2,2 cm); trägt der Bau mehr Dreiecke als die Zeile, fällt die Teilung jedes Rings um das
+        // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
+        var zeile = PORTAL_RENDER_CONFIG.lod.budget.weapon[0].tris;
+        for (var versuch = 0; ; versuch++) {
+            var g = bauWaffe(tp, trad);
+            var n = 0;
+            g.traverse(function (o) {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+            if (n <= zeile || versuch === 4) break;
+            g.traverse(function (o) {
+                if (o.geometry) o.geometry.dispose();
+            });
+            _wickelDetail *= Math.min(0.97, zeile / n);
+        }
+        _wickelDetail = 1;
+        g.userData = { kind: "weapon", rezeptId: rezeptId, seed: seed, lod: 0 };
+        g.updateMatrixWorld(true);
+        return g;
+    }
+    var _wickelDetail = 1; // die Teilung der Wicklungs-Ringe (1 = das Lab-Maß; buildInstance senkt sie nur über der Zeile)
+    function bauWaffe(tp, trad) {
         var g = new THREE.Group();
         if (tp.modus === "bogen") {
             tp.drawFrac = 0;
@@ -3009,8 +3032,6 @@
                 g.add(buildHead(tp, S));
             }
         }
-        g.userData = { kind: "weapon", rezeptId: rezeptId, seed: seed, lod: 0 };
-        g.updateMatrixWorld(true);
         return g;
     }
 

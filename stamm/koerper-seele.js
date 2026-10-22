@@ -1219,14 +1219,20 @@ class AnazhRealm_koerper_seele {
         // Werkstatt-FERTIGEN und Rezeptbuch („Bauen") rufen ihn (Welle L Folge: das Rezeptbuch zahlte beim Fertigen UND
         // beim Setzen und legte das Werk ins Inventar). Kann das Setzen nicht tragen (`_bauVorabTor` in der Engstelle
         // `_bauModusFuer`: das Gesetz des Modus), sagt FERTIGEN es, statt in einen Bau-Modus zu führen, der nur abgelehnt
-        // werden kann.
+        // werden kann. DIE WAHL IST DER WILLE (bauen.K1): das Werk steht, wohin der Spieler vor dem Öffnen blickte — das
+        // Setzen (`confirmBuild`, das EINE Mach-Tor) folgt im selben Akt; lehnt der Ort ab, spricht es und das Phantom bleibt
+        // zum Zielen (F/Rechtsklick), sonst endet der Bau-Modus (das nächste Werk derselben Art liegt in der Hotbar).
+        // Befund 22.10. (diag-werkstatt-weg, echte Eingaben): Werkstatt und Rezeptbuch verlangten nach der Wahl eine zweite
+        // Bestätigung im Bau-Modus.
         if (bp && this._isPlaceableBlueprint(bp)) {
             const res = this._bauModusFuer(name);
-            if (res.ok) {
-                this.closeAllDrawers();
-                if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
-            }
-            return res.ok ? { ok: true, bauModus: true, slot: res.slot, free: !!res.free } : res;
+            if (!res.ok) return res;
+            this.closeAllDrawers();
+            if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
+            this.tickBuildMode();
+            const steht = this.confirmBuild();
+            if (steht) this._clearBuildMode();
+            return { ok: true, bauModus: !steht, steht, slot: res.slot, free: !!res.free };
         }
         return this.forgeBlueprint(name);
     }

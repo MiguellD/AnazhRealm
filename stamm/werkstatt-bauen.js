@@ -100,7 +100,8 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // EIN BAUWERK GEHT IN DEN BAU-MODUS, NIE IN DIE HAND (Welle L, Befund V-k11): sein Hotbar-Platz (vorhanden, sonst
-    // der erste freie) wird gewählt — das Phantom steht vor dir, RMB oder F setzt es. Werkstatt-FERTIGEN legte die Eiche
+    // der erste freie) wird gewählt — das Phantom steht vor dir, RMB oder F setzt es (Werkstatt und Rezeptbuch setzen im
+    // selben Akt, `fertigeBlueprint`, bauen.K1). Werkstatt-FERTIGEN legte die Eiche
     // (7,8 × 8,8 × 6,4 m) in die Hand, RMB schüttete dann auf, und keine UI leerte die Hand. Ohne freien Platz: laut.
     // Das Vorab-Tor sitzt HIER, in der Engstelle jedes Wegs in den Bau-Modus (Werkstatt-Knopf, Rezeptbuch, das Werk in
     // der Hand — Gegenprüfung 08.10.: es saß am Aufrufer, der Rechtsklick mit dem Werk in der Hand führte in frieden ohne

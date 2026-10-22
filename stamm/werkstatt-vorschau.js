@@ -34,7 +34,9 @@ class AnazhRealm_werkstatt_vorschau {
         // Die Liste liest die EINE Katalog-Regel (_katalogSichtbar): Streaming-Varianten (`grown_<art>_v<N>`)
         // sind Worldgen-Render-Details, keine Baupläne; von Fels-/Kristall-/Glut-Formationen zeigt sie EINEN
         // Repräsentanten (`*_var0`) — var1+ bleiben in state.blueprints für den Scatter.
-        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n));
+        const blueprintNames = this._katalogReihe(
+            Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n))
+        );
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {
@@ -407,6 +409,15 @@ class AnazhRealm_werkstatt_vorschau {
     // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
     _workshopHandleDrawerChange(activeName) {
         const ws = this._ensureWorkshopState();
+        const liste = typeof document !== "undefined" && document.getElementById("workshop-list");
+        if (activeName === "werkstatt" && liste) {
+            // DIE WAHL ZUERST (bauen.K1): die Werkstatt öffnet mit der aufgeklappten Bauplan-Liste, oben, in der Reihe des
+            // Katalogs (`_katalogReihe`) — der erste Klick wählt. Befund 22.10. (echte Eingaben): die Liste brauchte einen
+            // Klick auf die Suche, Haus, GT und das eigene Werk lagen 2–7 Mausrad-Rasten tief.
+            this._workshopRenderBlueprintList(liste, ws);
+            liste.closest(".workshop-picker").classList.add("open");
+            liste.scrollTop = 0;
+        }
         if (activeName === "werkstatt") {
             // Legacy-Größen einmalig räumen — der Werkstatt-Rahmen kommt rein aus CSS.
             this._workshopApplyDefaultSizeOnce();
@@ -2232,8 +2243,8 @@ class AnazhRealm_werkstatt_vorschau {
         // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
         const role = this._displayRole(bp);
         // Station und Portal werden über ihren eigenen Akt gesetzt, eine geborene (built-in) Seele wird nicht geformt. Das
-        // Fahrzeug ist ein Bauwerk wie jedes (M2: Phantom + confirmBuild) — FERTIGEN führt es in den Bau-Modus (Welle L
-        // Folge: die Werkstatt hatte für den GT keinen Weg in die Welt).
+        // Fahrzeug ist ein Bauwerk wie jedes (M2: Phantom + confirmBuild) — FERTIGEN setzt es, wohin der Spieler blickt (Welle
+        // L Folge: die Werkstatt hatte für den GT keinen Weg in die Welt; bauen.K1: das Setzen im selben Akt).
         if (role === "workshop-station" || role === "portal") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
@@ -2247,7 +2258,7 @@ class AnazhRealm_werkstatt_vorschau {
                   : role === "consumable"
                     ? "Trank brauen (trinken)"
                     : bauwerk
-                      ? "Bauen (das Phantom steht vor dir)"
+                      ? "Bauen (das Werk steht, wohin du blickst)"
                       : "Gerät schmieden (in die Hand)";
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";

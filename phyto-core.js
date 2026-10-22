@@ -4223,8 +4223,8 @@
     // und jeder Stoff trägt seine SEH-KLASSE aus dem Gesetzbuch (`mat.seh`, `BUDGET_GESETZ.seh`: stoff · haut · haar ·
     // auge · glas · metall · glut): was dem Auge eine andere Funktion ist, faltet nie ineinander (das Auge nie in die
     // Haut, das Glas nie in den Putz, das Chrom nie in den Gummi, das Haar nie in den Stoff), auch wenn es dieselbe
-    // Bindung trägt. Die Glut-Klasse (Lichtquelle) und jeder Stoff, der sichtbar leuchtet (lum(emissive)·Intensität ≥
-    // `glut`), falten nie. Innerhalb von Bindung × Seh-Klasse fällt je Schritt das Stoff-Paar mit dem kleinsten
+    // Bindung trägt. Die Glut-Klasse (Lichtquelle) faltet nie; ein Stoff, der sichtbar leuchtet (lum(emissive)·Intensität
+    // ≥ `glut`), faltet nur in seinesgleichen, als letzter (Abstand + Glut-Farbe). Innerhalb von Bindung × Seh-Klasse fällt je Schritt das Stoff-Paar mit dem kleinsten
     // Seh-Fehler = sichtbare Fläche × Seh-Abstand (Rauheit · 2×Metall · Art · flach · Umgebung · Gewebe · Seite ·
     // Rest-Glimmen) — die kleinere Fläche in die größere, deterministisch, ohne Zufall. Die Seh-Klasse gehört zur
     // Identität des Stoffs (`budgetStoff`); ein Stoff ohne Seh-Klasse ist ein BRUCH. Die Farbe des gefalteten Teils wird Vertex-Farbe (wie der
@@ -4494,7 +4494,11 @@
     function _budgetAbstand(S, T) {
         // Die Seh-Klasse ist die Grenze: verschiedene (oder fehlende) Funktion faltet nie; Licht faltet nie.
         if (!S.seh || S.seh !== T.seh || S.seh === "glut") return Infinity;
-        if (S.glut >= BUDGET_GESETZ.glut || T.glut >= BUDGET_GESETZ.glut) return Infinity; // Glut faltet nie
+        // Ein sichtbar leuchtender Stoff faltet nie in einen, der nicht leuchtet; zwei Leucht-Linien derselben Seh-Klasse
+        // (die Rahmen-Metalle eines Tors, pipeline.K3) falten über der Zeile als letzte — die kleinere trägt dann das
+        // Glimmen der größeren, der Abstand ist die Glut-Farbe. Die Lichtquellen (Klasse glut) falten nie.
+        const leuchtet = S.glut >= BUDGET_GESETZ.glut;
+        if (leuchtet !== T.glut >= BUDGET_GESETZ.glut) return Infinity;
         // Emission ist eine Seh-Funktion: ein glimmender Stoff faltet nie in einen ohne Glimmen und umgekehrt (das
         // Augen-Glimmen des Wolfs verschwand sonst in der Hornhaut, Prüfer W8 (f)).
         if (S.glut > 0 !== T.glut > 0) return Infinity;
@@ -4513,7 +4517,13 @@
         if (S.seite !== T.seite) d += 0.1;
         // W5: eine Lackschicht und die Durchsicht sind sichtbare Funktion (der gefaltete Stoff erbt sie)
         d += Math.abs(n(a.clearcoat, 0) - n(b.clearcoat, 0)) + 2 * Math.abs(n(a.opacity, 1) - n(b.opacity, 1));
-        return d + 4 * (S.glut + T.glut); // ein Rest-Glimmen (unter der Glut-Schwelle) geht verloren
+        if (leuchtet) {
+            const ea = Array.isArray(a.emissive) ? a.emissive : [0, 0, 0],
+                eb = Array.isArray(b.emissive) ? b.emissive : [0, 0, 0];
+            for (let c = 0; c < 3; c++)
+                d += Math.abs(ea[c] * n(a.emissiveIntensity, 1) - eb[c] * n(b.emissiveIntensity, 1));
+        }
+        return d + 4 * (S.glut + T.glut); // ein Rest-Glimmen geht verloren (die Leucht-Linie faltet darum als letzte)
     }
     // Normalen eines Teils ohne Normalen (flächengewichtet, wie computeVertexNormals).
     function _budgetNormalen(P, I) {

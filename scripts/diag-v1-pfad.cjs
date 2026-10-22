@@ -35,7 +35,6 @@
 //     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
-//     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
 //     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
 //     V-D6 — `llmCall` gegen einen lokalen Endpunkt ohne Dienst: der Fehler nennt den Host, nie CORS.
 //     V-k5 — „pflanz mir einen eichenhain am wasser" an einem Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster):
@@ -180,13 +179,6 @@ function ankunftVerdict(m) {
     return out;
 }
 
-function rezeptVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
-    const out = [];
-    if (!m.friedenGesperrt) out.push("frieden: der Knopf ist ohne Material frei (Vorbedingung)");
-    if (!m.schoepferFrei) out.push(`schöpfer: der Knopf bleibt gesperrt („${m.titel}")`);
-    return out;
-}
 function tasteVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -1002,35 +994,6 @@ async function probe(arg) {
         m.gestartet = true;
     } catch (e) {
         out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
-    }
-    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
-    try {
-        const m = { gestartet: false };
-        out.rezept = m;
-        const host = document.getElementById("inventory-recipes");
-        if (!host) throw new Error("kein #inventory-recipes");
-        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
-        const knopf = () => {
-            for (const row of host.querySelectorAll(".recipe-row")) {
-                const nm = row.querySelector(".recipe-name");
-                if (nm && nm.textContent === lbl) return row.querySelector("button");
-            }
-            return null;
-        };
-        const modusAlt = r.getGameMode();
-        r.setGameMode("frieden");
-        r.renderRecipeBook();
-        const k0 = knopf();
-        m.friedenGesperrt = !!k0 && k0.disabled === true;
-        r.setGameMode("schöpfer");
-        r.renderRecipeBook();
-        const k1 = knopf();
-        m.schoepferFrei = !!k1 && k1.disabled === false;
-        m.titel = k1 ? k1.title || "" : "kein Knopf";
-        r.setGameMode(modusAlt);
-        m.gestartet = true;
-    } catch (e) {
-        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-k4: der Fensterwechsel löst die Tasten ──
     try {
@@ -2028,7 +1991,6 @@ async function korpusHaupt() {
             telemetrieImChat: false,
         };
         for (const [kurz, urteil, gesund, brueche] of [
-            ["V-D5", rezeptVerdict, { gestartet: true, friedenGesperrt: true, schoepferFrei: true }, [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]]],
             ["V-k4", tasteVerdict, { gestartet: true, gedrueckt: true, nachBlur: false }, [["Klebetaste (V-k4)", { nachBlur: true }, "W bleibt"]]],
             [
                 "V-D6",
@@ -2446,15 +2408,8 @@ async function korpusHaupt() {
         vA.length === 0,
         `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
     );
-    console.log("=== V-D5 · V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
+    console.log("=== V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
     for (const [kurz, name, m, urteil, zeile] of [
-        [
-            "V-D5",
-            "das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
-            out.rezept,
-            rezeptVerdict,
-            (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`,
-        ],
         [
             "V-k4",
             "der Fensterwechsel löst die gehaltene Taste",

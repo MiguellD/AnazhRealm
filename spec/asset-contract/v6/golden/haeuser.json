@@ -384,8 +384,8 @@
     },
     "hochhaus-s12345-L0": {
       "objects": 12,
-      "vertices": 346896,
-      "sha256": "83e494ce74b4362b9878357bda713e186f624768400e284a51afa469451e9e22"
+      "vertices": 321984,
+      "sha256": "a6db9e9f4c4c03bed85525ec4edd510a337324accb0119f927355c5ec05428a6"
     },
     "hochhaus-s12345-L1": {
       "objects": 7,
