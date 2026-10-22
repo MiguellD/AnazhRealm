@@ -62,9 +62,11 @@
 //                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
 //                                                           Empfänger) ist abgezogen und beim Pfad genannt
 //                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
-//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|aus] [--json datei] | takt --auswerten <x.roh.json>
+//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|fahrt|aus] [--gier rad] [--json datei] | takt --auswerten <x.roh.json>
 //                                                           DIE TAKT-SPITZE des Gehens je Methode (scripts/lib/haenger-
-//                                                           linse.cjs); Exit 1 bei einem Spitzen-Täter
+//                                                           linse.cjs); Exit 1 bei einem Spitzen-Täter; `fahrt` fährt den GT
+//                                                           20 m/s auf der Geraden (Sicht-Wechsel alle 4 s), Exit 1 bei
+//                                                           einem Fahrt-Posten > 0,5 ms je Takt ab p95
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
 //                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
 //                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
@@ -403,6 +405,12 @@ function lauf(k) {
         };
         const ort = st.playerMesh.position.clone();
         const bahn = k.wandern === "bahn" ? { t0: null, weg: 0 } : null;
+        // DIE FAHRT (`wandern: "fahrt"`, die OMEN-Zellen „GT-Fahrt Third ↔ Ego"): ein GT neben dem Spieler, aufgestiegen (der
+        // Ritt-Takt des Spiels fährt), alle 4 s der Sicht-Wechsel über den Hörer des Spiels (V). Die Bahn legt den Wagen je Takt
+        // vor dem Spiel-Takt auf eine Gerade, 20 m/s 0 → 800 m und zurück — ein gegen die Natur-Wand gefahrener Wagen stünde nach
+        // Sekunden (an der Mess-Wiese nach 39 m), und jede Seite eines ABAB fährt dieselbe Bahn.
+        const fahrt = k.wandern === "fahrt" ? { e: null, t0: null, weg: 0, gefahren: 0, vor: null, wechsel: 0, uhr: null, v: 20, L: 800 } : null;
+        const taste = (art, code) => window.dispatchEvent(new KeyboardEvent(art, { bubbles: true, code, key: code.slice(3).toLowerCase() }));
         let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         rend.setAnimationLoop((t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
@@ -418,6 +426,17 @@ function lauf(k) {
                 bahn.weg = (4 * (t - (bahn.t0 ??= t))) / 1000;
                 st.playerMesh.position.set(ort.x, st.playerMesh.position.y, ort.z - 60 + Math.abs((bahn.weg % 120) - 60));
             }
+            if (fahrt && fahrt.e) {
+                fahrt.weg = (fahrt.v * (t - (fahrt.t0 ??= t))) / 1000;
+                const s = fahrt.L - Math.abs((fahrt.weg % (2 * fahrt.L)) - fahrt.L);
+                // die Lage trägt der Fahr-Zustand des Kerns (`_fahr`), der Reiter folgt ihr — alle drei auf der Bahn
+                const x = fahrt.x0 + s * fahrt.fx, z = fahrt.z0 + s * fahrt.fz, fz = fahrt.e._fahr;
+                fahrt.e.position.x = x;
+                fahrt.e.position.z = z;
+                if (fz) [fz.x, fz.z, fz.vlong, fz.vlat] = [x, z, 0, 0];
+                st.playerMesh.position.x = x;
+                st.playerMesh.position.z = z;
+            }
             try {
                 if (window.__ortSchritt) window.__ortSchritt();
                 if (probeTakt > 0) {
@@ -429,6 +448,12 @@ function lauf(k) {
                 uhr.frameZ = null;
             }
             const c1 = performance.now(), innen = H && diff(H.acc, snap);
+            // der Weg des Wagens NACH dem Spiel-Takt (die Welt sagt, wo er steht — nie die Formel der Bahn)
+            if (fahrt && fahrt.e) {
+                const p = fahrt.e.position;
+                if (fahrt.vor) fahrt.gefahren += Math.hypot(p.x - fahrt.vor.x, p.z - fahrt.vor.z);
+                fahrt.vor = { x: p.x, z: p.z };
+            }
             if (H) snap = Object.assign({}, H.acc);
             // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
             const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
@@ -462,6 +487,25 @@ function lauf(k) {
             if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
         });
         try {
+            if (fahrt) {
+                const pm = st.playerMesh.position;
+                const e = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: pm.x + 4, y: r.getTerrainHeightAt(pm.x + 4, pm.z) + 0.5, z: pm.z },
+                    { silent: true, precise: true, rotationY: Number(k.gier) || 0, id: "werkbank-fahrt" }
+                );
+                if (!e) throw new Error("--wandern fahrt: kein GT gesetzt");
+                await window.__gebautNach(e, { takt: () => sleep(16) });
+                const m = r.mountArchitecture(e);
+                if (!m || m.ok === false || st.player.mountedArch !== e.id) throw new Error("--wandern fahrt: der Spieler steigt nicht auf");
+                const g = Number(k.gier) || 0;
+                Object.assign(fahrt, { e, x0: e.position.x, z0: e.position.z, fx: Math.cos(g), fz: -Math.sin(g) });
+                fahrt.uhr = setInterval(() => {
+                    taste("keydown", "KeyV");
+                    taste("keyup", "KeyV");
+                    fahrt.wechsel++;
+                }, 4000);
+            }
             await sleep(k.ein * 1000);
             // DIE RUHE: zwischen frischen Welten streute die GPU um ±5 ms (Foundry, Karten-Bäcker, Streaming noch
             // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
@@ -634,7 +678,8 @@ function lauf(k) {
                     buch: window.__wetterBuch(wetterVor.seq).buch,
                 },
                 saison: st.season,
-                bahnM: bahn && Math.round(bahn.weg),
+                bahnM: bahn ? Math.round(bahn.weg) : fahrt ? Math.round(fahrt.gefahren) : null,
+                fahrt: fahrt && { wechsel: fahrt.wechsel, sicht: st.cameraMode },
                 haenger,
             };
         } finally {
@@ -644,6 +689,13 @@ function lauf(k) {
             uhr.ab();
             st.perfTargetMs = decke;
             if (bahn) st.playerMesh.position.copy(ort);
+            if (fahrt) {
+                clearInterval(fahrt.uhr);
+                if (fahrt.e) {
+                    if (st.player.mountedArch === fahrt.e.id) r.dismountArchitecture();
+                    r.removeArchitecture(fahrt.e);
+                }
+            }
         }
     })();
 }
@@ -2956,10 +3008,11 @@ async function starte() {
                         ein: b.ein != null ? Number(b.ein) : 10,
                         tiere: b.tiere || "frei",
                         wandern: b.wandern || "aus",
+                        gier: b.gier,
                         probe: !!b.probe,
                         haenger: true,
                     }, PROBEN);
-                    const roh = Object.assign(l.haenger, { bahnM: l.bahnM, wetterHalt: wetterUrteil(l.wetterHalt) });
+                    const roh = Object.assign(l.haenger, { bahnM: l.bahnM, wandern: b.wandern, fahrt: l.fahrt, wetterHalt: wetterUrteil(l.wetterHalt) });
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
                     const datei = path.resolve(
@@ -3744,7 +3797,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN"
+                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen"
             );
             process.exit(f.length ? 1 : 0);
         }
@@ -3763,6 +3816,7 @@ async function starte() {
             regler: opt("--regler", "voll"),
             tiere: opt("--tiere", "frei"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
+            gier: opt("--gier"),
             schwelle: opt("--schwelle", 100),
             probe: argv.includes("--probe"),
             json: opt("--json"),

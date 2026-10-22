@@ -629,7 +629,26 @@ function haengerTabelle(a) {
 // Die Takte des Gangs (`lauf`, Bahn) ab p95 und der Mitte (p40–p60)
 // zerfallen je Rahmen-Pfad (die Proben im Takt teilen seine CPU-Zeit). TÄTER: ein Rahmen, der ab p95 ≥ 1 ms mehr trägt als in
 // der Mitte, ohne dass ein Kind ≥ 1 ms es erklärt; ROT mit Täter oder blind. Die Zeilen ab 0,25 ms.
+// IN FAHRT (`wandern: "fahrt"`, profiband.K1: Frame p95 ≤ 33 ms in jeder Bewegungszelle) ist die Schwelle 0,5 ms — der Wagen
+// streamt je Sekunde ein Vielfaches des Gangs, jeder Rahmen über 0,5 ms je Takt ab p95 steht BENANNT in der Tabelle. ROT ist
+// ein FAHRT-POSTEN (die Posten der OMEN-Zerlegung 22.10., GTX GT-Fahrt Third ↔ Ego F95 33,5 ms: ein Mesh-Nachrechnen, der
+// Naht-Morph, das Naht-Band, das Speichern) mit mehr als 0,5 ms je Takt ab p95 — über alle seine Orte im Baum, je Ast
+// einmal; eine Fahrt unter `FAHRT_MIN_M` (der Wagen stand) ist blind.
+const FAHRT_MIN_M = 150;
+const FAHRT_POSTEN = [/^computeVertexNormals\b/, /^_applyCrossLodGeomorph$/, /^_rebuildLodStitchBand$/, /^_loopAutoSave$/];
+function fahrtPosten(wurzel) {
+    const summe = FAHRT_POSTEN.map(() => 0);
+    const geh = (k, offen) =>
+        k.k.forEach((c, nm) => {
+            const i = FAHRT_POSTEN.findIndex((re) => re.test(nm));
+            if (i >= 0 && offen[i]) summe[i] += c.n;
+            geh(c, i >= 0 ? offen.map((o, j) => o && j !== i) : offen);
+        });
+    geh(wurzel, FAHRT_POSTEN.map(() => true));
+    return FAHRT_POSTEN.map((re, i) => ({ name: re.source.replace(/\\b|[$^]/g, ""), spitzeMs: +summe[i].toFixed(2) }));
+}
 function spitzenAuswerten(roh, spur) {
+    const S = roh.wandern === "fahrt" ? 0.5 : 1;
     const T = roh.takte,
         P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null,
         versatz = versatzVon(spur, T, P);
@@ -652,24 +671,30 @@ function spitzenAuswerten(roh, spur) {
         for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= 0.25).sort((x, y) => y[1].n - x[1].n)) {
             const cm = km && km.k.get(nm);
             a.zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
-            if (c.n >= 1) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
+            if (c.n >= S) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
             geh(c, cm, pfad.concat(nm));
         }
         const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
-        if (pfad.length && rest - restM >= 1) a.taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
+        if (pfad.length && rest - restM >= S) a.taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
     };
-    geh(baum(sp), baum(ids.filter((i) => cpu(i) >= q(0.4) && cpu(i) <= q(0.6))), []);
+    const wSp = baum(sp);
+    geh(wSp, baum(ids.filter((i) => cpu(i) >= q(0.4) && cpu(i) <= q(0.6))), []);
+    if (S < 1) a.posten = fahrtPosten(wSp);
     a.taeter.sort((x, y) => y.spitzeMs - y.mitteMs - (x.spitzeMs - x.mitteMs));
     a.befunde = haengerLinsenBefunde(a).concat(
         a.gedeckt < 0.9 * a.spitzeN ? [`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`] : [],
-        a.taeter.map((t) => `Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, Mitte ${t.mitteMs} ms`)
+        S < 1 && !(a.bahnM >= FAHRT_MIN_M) ? [`die Fahrt stand: ${a.bahnM} m < ${FAHRT_MIN_M} m Weg des Wagens`] : [],
+        S < 1
+            ? a.posten.filter((p) => p.spitzeMs > S).map((p) => `Fahrt-Posten ${p.name}: ${p.spitzeMs} ms je Takt ab p95 (> ${S} ms)`)
+            : a.taeter.map((t) => `Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, Mitte ${t.mitteMs} ms`)
     );
     a.tabelle = [
         `TAKT-SPITZE: CPU-Takt ${JSON.stringify(a.cpuMs)} ms (K2 8 ms), ${a.spitzeN} Takte ab p95 (${a.gedeckt} mit Proben), ` +
-            `Bahn ${a.bahnM} m`,
+            `${S < 1 ? "Fahrt" : "Bahn"} ${a.bahnM} m`,
         "  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms",
         ...a.zeilen.map((e) => `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`),
-        `TÄTER (Spitze − Mitte ≥ 1 ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,
+        `${S < 1 ? "BENANNT" : "TÄTER"} (Spitze − Mitte ≥ ${S} ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,
+        ...(a.posten ? [`FAHRT-POSTEN (≤ ${S} ms je Takt ab p95): ${a.posten.map((p) => `${p.name} ${p.spitzeMs}`).join(" | ")}`] : []),
     ].join("\n");
     return a;
 }
@@ -840,6 +865,19 @@ function selbsttest() {
         if (last ? s.befunde.length !== 1 || t.name !== "_spitzenLast" || Math.abs(t.spitzeMs - t.mitteMs - 3) > 0.3 : s.befunde.length)
             f.push(`Spitze ${last ? "mit" : "ohne"} 3 ms je 10. Takt falsch geurteilt:\n${s.tabelle}`);
     });
+    // DIE FAHRT: derselbe ruhige Lauf ist GRÜN; heißt der Rahmen, der in jedem Takt 2 ms trägt (_teilC), computeVertexNormals, ist er
+    // ROT beim Namen; ein stehender Wagen ist blind
+    const [v0, b0] = spitzen[0];
+    const teil0 = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
+    const cvn = (n) => Object.assign({}, n, { callFrame: Object.assign({}, n.callFrame, { functionName: "computeVertexNormals" }) });
+    const umbenannt = Object.assign({}, sp.profil, { nodes: sp.profil.nodes.map((n) => (n.id === 17 ? cvn(n) : n)) });
+    const fahrt = (profil, bahnM) =>
+        spitzenAuswerten({ takte: teil0, wandern: "fahrt", bahnM }, { profil, marken: sp.marken.slice(v0, b0) }).befunde;
+    const [ruhig, normalen, stand] = [fahrt(sp.profil, 500), fahrt(umbenannt, 500), fahrt(sp.profil, 20)];
+    if (ruhig.length) f.push("die ruhige Fahrt ist ROT: " + ruhig.join(" · "));
+    if (normalen.length !== 1 || !/^Fahrt-Posten computeVertexNormals: \d/.test(normalen[0]))
+        f.push("ein computeVertexNormals im Takt der Fahrt bleibt ungenannt: " + normalen.join(" · "));
+    if (stand.length !== 1 || !/^die Fahrt stand/.test(stand[0])) f.push("ein stehender Wagen bleibt grün: " + stand.join(" · "));
     return f;
 }
 
