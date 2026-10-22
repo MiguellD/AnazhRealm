@@ -17,11 +17,8 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { scanWarteWand } = require("./lib/welt-boot.cjs");
 
-// Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
-// fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
-// THREE.Sprite-falsch-positiv; die Seelen-Schlüssel sterben über die
-// CREATURE_SOULS-Schlüssel-Prüfung unten).
-// Je Eintrag der gefallene Name und EINE Zeile, was ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
+// Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
+// ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
