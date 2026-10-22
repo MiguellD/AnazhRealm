@@ -685,6 +685,17 @@ class AnazhRealm_studio_gestalt {
             if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
             this._foundryCacheEvict(oldest);
         }
+        // DER RUHE-DECKEL (profiband K5, Gebot 7): ein Körper, den keine Senke zeichnet (`_liveRefs` 0), wuchs mit der bereisten
+        // Welt bis an den Gewichts-Deckel (Gang 6 min: 110 untätige = 146,5 MB neben 40,6 MB lebenden). Die ältesten Untätigen
+        // fallen, bis ihr Gewicht unter FOUNDRY_RUHE_BYTES steht — die jüngsten (eben gewärmt, eben verlassen) bleiben.
+        let ruhe = 0;
+        for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
+        for (const [k, v] of f.cache) {
+            if (ruhe <= AnazhRealm.FOUNDRY_RUHE_BYTES) break;
+            if (k === key || !v || v._liveRefs > 0) continue;
+            ruhe -= v._cacheBytes || 0;
+            this._foundryCacheEvict(k);
+        }
     }
     // DIE EINE RÄUMUNGS-NAHT — jede Räumung (LRU-Überlauf UND präge-Flush) geht hier durch, nie rohes
     // f.cache.delete: (a) Dispose nur ohne lebende InstancedMesh-Gruppe (_liveRefs 0), sonst `_evicted`-
@@ -1106,6 +1117,8 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // (~351 MB @ Ring 4) — darunter fallen gewärmte Assets vor dem Konsum (gate:foundry-crossfade).
 // Räumung graziös (re-anfragbar; _liveRefs: nie ein sichtbarer Baum).
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
+// Der RUHE-DECKEL: das Gewicht der Körper ohne lebende Senke (`_liveRefs` 0), das der Cache hält (`_foundryCacheSet`).
+AnazhRealm.FOUNDRY_RUHE_BYTES = 64 * 1024 * 1024;
 // Proaktiver Dock, zwei Kosten: ein GEDOCKTES Asset (schon im Cache) ist ein billiger
 // WebGPU-Instance → viele je Idle-Tick; ein nicht gedocktes löst einen Studio-Bake aus (das iframe
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.

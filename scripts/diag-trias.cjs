@@ -391,15 +391,16 @@ const triasStaticLaws = () => [
         // MESSEN (die Budget-Begruendungs-Zahl: 189-255 MB Arbeits-Menge gemessen ->
         // Budget 512 MB = ~2x Kopfraum, KEIN Arbeits-Mengen-Churn [der Crossfade-Sweep
         // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
-        // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege deckeln am
-        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel); Deckel + 44 leichte deckeln an der
-        // Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
+        // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege mit lebender Senke deckeln am
+        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel), 80 untaetige am RUHE-Deckel (64/8 = 8, profiband K5);
+        // Deckel + 44 leichte deckeln an der Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
         const f2 = r._ensureAssetFoundry();
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
         res.warmCacheSize = f2.cache.size;
         const savedC = { cache: f2.cache, bytes: f2.cacheBytes, req: f2.requested, lru: f2.lruEvicted };
         const BYTES = r.constructor.FOUNDRY_CACHE_BYTES;
-        const mkFake = (mb) => ({
+        const mkFake = (mb, lebt) => ({
+            _liveRefs: lebt ? 1 : 0,
             children: [
                 {
                     geometry: {
@@ -414,9 +415,14 @@ const triasStaticLaws = () => [
         f2.cacheBytes = 0;
         f2.requested = new Set();
         f2.lruEvicted = new Set();
-        for (let i = 0; i < 80; i++) r._foundryCacheSet("gewicht8|" + i, mkFake(8));
+        for (let i = 0; i < 80; i++) r._foundryCacheSet("gewicht8|" + i, mkFake(8, true));
         res.heavySize = f2.cache.size;
         res.heavyBytesOk = f2.cacheBytes <= BYTES;
+        f2.cache = new Map();
+        f2.cacheBytes = 0;
+        for (let i = 0; i < 80; i++) r._foundryCacheSet("ruhe8|" + i, mkFake(8));
+        res.ruheSize = f2.cache.size;
+        res.ruheSoll = Math.floor(r.constructor.FOUNDRY_RUHE_BYTES / (8 * 1048576));
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
@@ -509,6 +515,11 @@ const triasStaticLaws = () => [
             `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap})`,
             out.heavySize === 64 && out.heavyBytesOk === true,
             `size=${out.heavySize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
+        );
+        check(
+            `B12b (K5/Ruhe): 80x8-MB-Eintraege ohne lebende Senke deckeln am RUHE-Deckel (${out.ruheSoll})`,
+            out.ruheSoll >= 1 && out.ruheSize === out.ruheSoll,
+            `size=${out.ruheSize}`
         );
         check(
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
