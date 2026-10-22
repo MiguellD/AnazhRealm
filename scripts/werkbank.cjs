@@ -3803,7 +3803,7 @@ async function starte() {
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
             const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle") });
+            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), posten: opt("--posten") });
             console.log(w.tabelle);
             if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
             process.exit(w.befunde.length ? 1 : 0);
@@ -3817,6 +3817,7 @@ async function starte() {
             wetter: opt("--wetter"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
+            posten: opt("--posten"),
             probe: argv.includes("--probe"),
             json: opt("--json"),
         });
