@@ -1,4 +1,4 @@
-// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ (V18.464, W9-Muster).
+// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ (W9-Muster).
 // Beweist in drei Wänden, dass die Portal-Passage EINE Zahlen-Quelle hat:
 //
 //   1. ZWILLINGS-WAND: porta-core.MEMBRAN_GESETZ trägt EXAKT die eingefrorenen

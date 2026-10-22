@@ -727,7 +727,7 @@ function validateManifest(m) {
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
     }
-    // V18.486 — DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
+    // DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
@@ -1063,7 +1063,7 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
+    // DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
     // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
     const pflicht = {
@@ -1323,7 +1323,7 @@ function validateManifest(m) {
         build: function () {},
         meshfrei: true,
     });
-    // V18.486 — auch die Gefühls-Block-Prüfungen feuern auf Injektion:
+    // auch die Gefühls-Block-Prüfungen feuern auf Injektion:
     const bvFx = validateManifest({
         vertrag: 1,
         presets: {

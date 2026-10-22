@@ -1422,6 +1422,39 @@ class AnazhRealm_studio_bruecke {
         }
         return null;
     }
+    // DER VERTRAG EINES FREMDEN STEMPELS (teilen-sicher): ein studioOv aus fremder Hand (Code, Mitspieler) trägt nur, was der
+    // Kern seiner Art als Regler ausweist — jede Zeile von PARAMS_BY_KIND[kind] als Zahl in ihrem Band [min, max], dazu die
+    // Charakter-Achse (`KIND_CHARAKTER`) als genau EINE Zeile ihrer Tafel. Die Kerne lesen ov per Object.assign(P, ov): ein
+    // Schlüssel außerhalb schriebe ein inneres Bau-Feld. null = trägt; sonst der Grund beim Namen (regler:<id> · band:<id> ·
+    // buch, kaltes Buch). Leser: spawn_blueprint (Slot 6, die Engstelle fremder Stempel) und `empfangeWerk` vor jedem Schreiben.
+    _ovVertrag(name, ov) {
+        if (ov == null) return null;
+        if (typeof ov !== "object" || Array.isArray(ov)) return "regler:form";
+        const f = this._foundry;
+        if (!f || !f.ready || !f.recipes || !f.paramsByKind) return "buch";
+        const preset = this._foundryPresetForEntry({ type: name });
+        const kind = preset && f.recipes[preset] ? f.recipes[preset].kind : null;
+        const zeilen = new Map(((kind && f.paramsByKind[kind]) || []).map((z) => [z.id, z]));
+        const wort = (k) =>
+            String(k)
+                .replace(/[^\w.-]/g, "?")
+                .slice(0, 32);
+        const rest = [];
+        for (const k of Object.keys(ov)) {
+            const z = zeilen.get(k);
+            const v = ov[k];
+            if (!z) rest.push(k);
+            else if (typeof v !== "number" || !Number.isFinite(v) || v < z.min || v > z.max) return "band:" + wort(k);
+        }
+        if (!rest.length) return null;
+        const achse = kind && AnazhRealm.KIND_CHARAKTER[kind];
+        const tafel = achse && globalThis[achse.ns] ? globalThis[achse.ns][achse.tabelle] : null;
+        const soll = tafel ? Object.keys(tafel).map((n) => achse.ov(n, tafel)) : [];
+        const traegt = (s) => Object.keys(s).length === rest.length && rest.every((k) => k in s && ov[k] === s[k]);
+        if (soll.some(traegt)) return null;
+        // benannt wird der Schlüssel, den keine Zeile der Achse kennt, sonst der erste (eine Zeile, die die Tafel nicht trägt)
+        return "regler:" + wort(rest.find((k) => !soll.some((s) => k in s)) || rest[0]);
+    }
     // Impostort das Preset (Fernstufe = Billboard statt L2-Geometrie)? Daten in zwei Schichten: (a) das
     // Studio klassifiziert (`PRESETS[id].kind` via `f.recipes`), (b) KIND_POLICY-Zeile `impostor: true`
     // sagt, welche kind-Klasse (tree, shrub, gate, vehicle; sonst fail-closed keine Karte). Vor dem Ingest

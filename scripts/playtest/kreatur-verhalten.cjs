@@ -25,7 +25,7 @@ async function checkBandV1758CreatureNature(ctx) {
         out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
@@ -114,8 +114,6 @@ async function checkBandV1758CreatureNature(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatures(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -481,7 +479,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        // ALTLASTEN-NULL (V9.56-i): die Seelen-Menge sind die VIER ehrlichen
+        // ALTLASTEN-NULL: die Seelen-Menge sind die VIER ehrlichen
         // Tiere (Hirsch·Wolf·Fuchs·Bär) — sprite/geist/glutwesen sind gefallen.
         out.threeSouls =
             souls &&
@@ -564,7 +562,7 @@ async function checkBandWelle6HCreatures(ctx) {
             firstRow.querySelector(".creature-soul") &&
             firstRow.querySelector(".creature-task");
         // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
-        // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
+        // KONSUM: er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
@@ -588,7 +586,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
         // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
-        // V18.55 — die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
+        // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
         const stageSpec = document.getElementById("hof-stage-spec");
         out.stageSpecPresent = !!stageSpec;
         out.stageShowsOneCard =
@@ -1511,7 +1509,7 @@ async function checkBandPhaseEThreat(ctx) {
             pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
-            // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
+            // W-D/M-F1 — die Spieler-Klemme schiebt frische Spawns auf
             // ≥3 m; dieser Test prüft den BISS, nicht den Spawn-Ort → die Kreatur
             // rückt explizit in die Weite ihres Ansprungs (V9.56-i; Welle LF kampf:
             // der Biss ist der Ansprung, 1,2 m reicht jeder Größe), ihm zugewandt.

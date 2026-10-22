@@ -397,7 +397,7 @@ function staticLaws(garage) {
                 } catch (eD) {
                     res.drive.donorErr = (eD && eD.message) || String(eD);
                 }
-                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
+                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
                 for (let i = 0; i < 120; i++) {

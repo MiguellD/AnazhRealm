@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (W17 — Multiplayer-Sub-Welten (B-Relay, JS-Compute, Phase C, Decl, Vendor)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW17Multiplayer(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1118,8 +1116,6 @@ async function checkBandW17Multiplayer(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (W12 Phase 1 (Portal-Rolle + Skelett + Betreten) + Phase 2 (fremde Welten + Registry + DSL-Brücke) + Phase 3 (Ereignisse zurück + Manifest)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW12WorldPortal(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -2009,7 +2005,7 @@ async function checkBandG8R3Locality(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
-        // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
+        // trusted → + allow-same-origin + allow-pointer-lock (unser
         // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
         out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
         out.trustedAttr =
@@ -2321,7 +2317,7 @@ async function checkBandW18Dwell(ctx) {
             else localStorage.setItem("anazh.portalState", savedStates);
         }
         // (7) der Empfänger merkt sich, wo der Gefährte wohnt, und sein Namensschild zeichnet es; die Chat-Gesten
-        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
+        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle.
         const pid = "peer-dwell-zensus";
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, r.state.p2p);
         const pe = r.state.p2p.peers.get(pid);

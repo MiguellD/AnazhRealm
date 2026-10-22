@@ -162,8 +162,6 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 6 architectureTemplates V1 + 6.3 Kollisions-Body + 6.4 Bauplan-Datenschicht + 6.5 Hotbar + 6.6 Werkstatt-Tab + 6 V2 Distance-Culling/Fraktal/Counter/Bau-Cursor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing6Workshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -201,7 +199,7 @@ async function checkBandRing6Workshop(ctx) {
         };
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
-        // V18.260 — der Render-Merge fasst die Teile per Material zu wenigen Meshes
+        // der Render-Merge fasst die Teile per Material zu wenigen Meshes
         // zusammen. Die Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
@@ -703,7 +701,7 @@ async function checkBandRing6Workshop(ctx) {
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
         out.hotbarInDom = !!bar;
-        // V18.109 — E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
+        // E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
         out.hotbarHasNineSlots =
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
@@ -777,7 +775,7 @@ async function checkBandRing6Workshop(ctx) {
         const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
-        // V18.59 — die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
+        // die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
         const config = document.getElementById("hotbar-config");
         out.hotbarConfigInDom = !!config;
         out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 10; // 9 + Off-Hand (E8)
@@ -1482,7 +1480,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
+        // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
@@ -1581,7 +1579,7 @@ async function checkBandWHWald(ctx) {
     );
 }
 
-// V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
 // seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
 async function checkBandV18198Gamma2Totholz(ctx) {
@@ -1616,7 +1614,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // nicht tag-identisch zu baum_eiche sein — darf aber in KEINER Achse höher resonieren, sonst
         // verdrängte er, je in candidates aufgenommen, einen Sieger (ohne Laub: magieleitung niedriger, OK).
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-        // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
+        // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&

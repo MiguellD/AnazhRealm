@@ -7,7 +7,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // V17.64 S5 (kampf-plan §11.7, §11.2) — Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
-// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
+// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz).
 async function checkBandV1764ForgeAvatar(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -111,8 +111,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -137,9 +135,9 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        // ALTLASTEN-NULL (V9.56-i) + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
+        // ALTLASTEN-NULL + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
         // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
-        // ist ALT_DOPPEL (V18.480) und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
+        // ist ALT_DOPPEL und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
         const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
         out.dropdownHasBuiltinSouls =
             ring5SoulVals.includes("human") &&
@@ -751,7 +749,7 @@ async function checkBandWFFluss(ctx) {
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
-        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (global) — dort gab der
         // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
         out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
         const hW = r._hydroFor(0, 0);
@@ -1057,7 +1055,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
     );
 }
 
-// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
+// MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
 // KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
 async function checkBandV18201ManaKonsum(ctx) {
@@ -1148,7 +1146,7 @@ async function checkBandV18201ManaKonsum(ctx) {
     );
 }
 
-// V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
 // Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
 async function checkBandV18206SpeedTrade(ctx) {
     const { page, check } = ctx;
@@ -1456,7 +1454,7 @@ async function checkBandTierFern(ctx) {
         };
     
         // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
-        // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
+        // sichtbaren geskinnten Haut (der Leib ist EINE Haut über den Gelenk-Baum).
         let zTris = 0,
             zBones = 0;
         const sichtbar = (node) => {

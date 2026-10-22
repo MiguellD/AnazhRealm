@@ -158,7 +158,7 @@ const server = statikServer();
 async function probe() {
     const r = window.anazhRealm;
     const st = r.state;
-    // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand (die Definition, V18.535) — der Gelände-Teil ist
+    // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand (die Definition) — der Gelände-Teil ist
     // derselbe Weg wie im Spiel (`_fieldSolid` · `_fieldGradient`), die Boxen gehen alle durch `_segmentAABB`.
     const orakel = (sx, sy, sz, ex, ey, ez, o) => {
         const durchPflanzen = !!(o && o.durchPflanzen);
@@ -383,7 +383,7 @@ async function probe() {
         R.bauten = st.architectures.length;
         return R;
     };
-    // DAS ORAKEL DES LÖSERS: die Schleife über den ganzen Bestand (V18.535), dieselben Löser je Box
+    // DAS ORAKEL DES LÖSERS: die Schleife über den ganzen Bestand, dieselben Löser je Box
     // (mit dem Sprung des rutschenden Wagens `huelle.eigen`, dem Gegner je Schub `huelle.quelle` und der Sammlung der Schübe
     // `quellen` aus integ-probe)
     const alterLoeser = (pos, feetY, headY, radius, huelle, quellen) => {

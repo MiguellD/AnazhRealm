@@ -110,7 +110,7 @@ async function checkBandV1757HeldSlot(ctx) {
 
 // V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
-// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
 async function checkBandV1761ForgeImplement(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -312,7 +312,7 @@ async function checkBandV1762ForgeMeaningful(ctx) {
 
 // V17.63 S4 (kampf-plan §11.7) — Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
-// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+// routet nach Rolle. KONSUM (nicht Existenz).
 async function checkBandV1763ForgeArmor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -432,7 +432,7 @@ async function checkBandV1763ForgeArmor(ctx) {
 
 // V17.65 S6 (kampf-plan §11.7, §11.3-Faden 6) — Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
-// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
 async function checkBandV1765BrewConsumable(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -555,7 +555,7 @@ async function checkBandV1766FertigenFlow(ctx) {
                 { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
-        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
+        // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
         // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
@@ -773,7 +773,7 @@ async function checkBandV1772Library(ctx) {
         out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
 
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
-        //     Snapshot des Player-States, danach restauriert (V17.66).
+        //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
@@ -1025,8 +1025,6 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1643,7 +1641,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
+        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
         out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
@@ -2039,10 +2037,7 @@ async function checkBandWelle6DSoul(ctx) {
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
-        // DSL-Op define_soul ist im Interpreter
-        const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
-        out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
-        // Fallback: prüfen via dslRun
+        // define_soul über dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
         const testParts = [
             {
@@ -2173,7 +2168,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
-        // V18.101 (Test wandert, V9.56-i): dynamisch gegen die def-Länge —
+        // V18.101 (Test wandert): dynamisch gegen die def-Länge —
         // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
             r.state.customSouls.test_clone_a &&
@@ -2316,7 +2311,7 @@ async function checkBandWelle6DSoul(ctx) {
         check(
             // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
-            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            // Die feste Satz-Assertion wandert mit.
             "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
@@ -2386,7 +2381,7 @@ async function checkBandWelle6DSoul(ctx) {
     }
 }
 
-// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+// PHASEN B–F (gigant-plan §5) — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2461,7 +2456,7 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
+        // E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
         // steht neben der Hotbar + der Tausch-Key ist gebunden.
         out.e8Swap = (() => {
@@ -3188,7 +3183,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // Disziplin — die meisten Bauplane sind voll, ein Save trägt nur die echt
         // gebrauchten). Float-tolerant (Math.max/min kann minimal driften).
         if (heldBp) {
-            // RE-FETCH (V18.180-Lehre, V9.82): zwischen W6-W11 wurde forge/strike/
+            // RE-FETCH (V18.180-Lehre): zwischen W6-W11 wurde forge/strike/
             // repair gerufen — jeder Pfad MAG state.blueprints[heldName] durch
             // Restore/Snapshot-Tanz neu referenzieren. Frische Referenz holen.
             heldBp = r.state.blueprints[heldName];
@@ -3285,7 +3280,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
+// Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
 // als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {

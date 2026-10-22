@@ -550,7 +550,7 @@ function selbsttest() {
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
-        // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        // (l) der Befund von OMEN 1110-3 (GTX 1060): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
             (b) =>

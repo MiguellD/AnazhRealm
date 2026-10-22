@@ -26,7 +26,7 @@ function eintraege(text) {
     return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
 }
 
-// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
+// 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
 const LISTE_MAX_ZEILEN = 40;
 function logbuchBefund(text) {
     const zeilen = text.split("\n");

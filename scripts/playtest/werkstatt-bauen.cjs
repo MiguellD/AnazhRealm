@@ -7,7 +7,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
-// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States (V17.66).
+// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22,7 +22,7 @@ async function checkBandV1774UseByRole(ctx) {
         const savedSoul = (p && p.soul) || "mensch";
         const savedHotbar = r.state.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
-        // V17.74 — falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
+        // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
 
@@ -74,7 +74,7 @@ async function checkBandV1774UseByRole(ctx) {
 
         // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
         // V18.66 Ich-J2 — der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
-        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
+        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit.
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
         r.renderPlayerEquipUI();
@@ -278,7 +278,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
     );
 }
 
-// V17.77 — die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
+// die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
 // Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
 // „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
 async function checkBandV1777SteigerungVisible(ctx) {
@@ -330,7 +330,7 @@ async function checkBandV1777SteigerungVisible(ctx) {
     check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
 }
 
-// V17.89 — der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
+// der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
 // ändern (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint im Werkzeuge-Feld
 // sobald platziert+nah; das Undo/Redo unter den Parts. Drei Befunde, eine Welle.
 async function checkBandV1789WorkshopReadout(ctx) {
@@ -410,10 +410,10 @@ async function checkBandV1789WorkshopReadout(ctx) {
         r._renderWorkshopDOM();
         // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
         out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
-        // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
+        // Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
             !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
-        // V17.91 — die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
+        // die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
         // (schöpfer → alle besessenen Werkstätten); auf einen Part im 3D ziehen wendet den Prozess an.
         out.domWorkshopChips = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
         // restore
@@ -599,8 +599,6 @@ async function checkBandV1790Recalibration(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A6 (Maus-Aktionen + Resonanz-Abklang) + 6.C3 V2/Tastenbelegung).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6Keybindings(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -851,7 +849,7 @@ async function checkBandWelle6Keybindings(ctx) {
             r.constructor.DEFAULT_KEYBINDINGS &&
             typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
-        // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
+        // 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
             Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
@@ -1197,8 +1195,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1356,13 +1352,13 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+        // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
         out.logbookSectionExists = !!document.getElementById("logbook-section");
         out.logbookToggleExists = !!document.getElementById("logbook-toggle");
         const consoleLog = document.getElementById("console-log-section");
         const logEl = document.getElementById("log");
         out.logbookConsoleSectionExists = !!consoleLog;
-        // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
+        // Section bleibt sichtbar, NUR #log (innen) hidden default
         out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
         out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
         // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
@@ -1376,7 +1372,7 @@ async function checkBandWelle6XAudit(ctx) {
             toggle.dispatchEvent(new Event("change"));
             out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
         }
-        // V8.14: Inline-Console-Toggle togglet selber State
+        // Inline-Console-Toggle togglet selber State
         const inlineBtn = document.getElementById("console-log-toggle");
         if (inlineBtn && logEl) {
             inlineBtn.click();

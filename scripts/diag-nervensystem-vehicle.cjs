@@ -298,7 +298,7 @@ function staticLaws(q) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
-        // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527); die Anfrage MUSS entstehen (sonst prüfte F nichts)
+        // Körper-Schlüssel preset|gestalt|stufe[|ov]; die Anfrage MUSS entstehen (sonst prüfte F nichts)
         !!out.f.gtKey && !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey),
         out.f.err || String(out.f.gtKey)
     );

@@ -8,7 +8,7 @@ const SK = require("../lib/shader-kosten.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-// V9.52 Sub-Welle a — die Basis-Invarianten direkt nach dem `finalState`-Greifen.
+// die Basis-Invarianten direkt nach dem `finalState`-Greifen.
 // Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
 function checkInitialState(ctx) {
     const { check, finalState } = ctx;
@@ -102,7 +102,7 @@ async function checkBandV1778LadderCut(ctx) {
         const out = {};
         const tools = r.state.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
-        // V17.88 — nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
+        // nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
         // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
         out.keptPresent =
             !!tools["hände"] &&
@@ -741,7 +741,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         out.a1ManyVariants = keys.size >= NVar;
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
-        // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
+        // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&

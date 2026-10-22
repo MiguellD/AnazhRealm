@@ -174,7 +174,7 @@ async function checkBandV1753CreatureCombat(ctx) {
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
@@ -293,7 +293,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.emotionField = new Map();
 
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
@@ -414,8 +414,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HBuildAndPersist(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1211,8 +1209,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureStats(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1320,7 +1316,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
         for (const row of rows) {
-            // V18.51 Hof-E (V9.56-i) — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
+            // V18.51 Hof-E — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
             const main = row.querySelector(".creature-row-main");
             const t = (main && main.title) || "";
             if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
@@ -1834,7 +1830,7 @@ async function checkBandWDRittSpawn(ctx) {
     );
 }
 
-// V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
+// KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
 async function checkBandV18208CreatureSizeSymmetry(ctx) {
     const { page, check } = ctx;
@@ -1928,7 +1924,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (V18.531, Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// DER HÜPFER LANDET (Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf

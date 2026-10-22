@@ -1734,7 +1734,7 @@ const FIXTURES = [
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
             res.c.idempotent = again === null && r.state.architectures.length === archAfter;
-            // C5 — DER GENESIS-PORTAL-RING (V18.486, Schöpfer: „beim ersten spawn
+            // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
             // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
             // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
             // Kreis R 11 m; doppelt idempotent

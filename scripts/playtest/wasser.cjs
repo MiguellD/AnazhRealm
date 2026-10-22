@@ -166,7 +166,7 @@ async function checkBandHydrosphere(ctx) {
             out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
         }
         // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs); der
-        // Tarn-Pass (V9.51) ist gefallen. Je Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
+        // Tarn-Pass ist gefallen. Je Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
         out.tarnPassTot = typeof r._hydroSeedTarns !== "function" && !("tarns" in r.state);
         out.netzSeen = -1;
         out.netzSeenSee = 0;
@@ -1509,7 +1509,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const out = {};
 
         // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer), die
-        // Prominenz über einer Basis (V17.105) ist gefallen, die alte ss(12,42,y) fehlt.
+        // Prominenz über einer Basis ist gefallen, die alte ss(12,42,y) fehlt.
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
         out.snowOldAbsoluteGone = window.__fehlt(r._bodenFarbeAt, /mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/);
@@ -1670,7 +1670,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
     );
 }
 
-// Die Wasser-Wahrheits-Linse (V18.475) — eingefaltet aus gate:wasser-wahrheit (D3b): die stehende Linse der Schöpfer-Browser-Symptome
+// Die Wasser-Wahrheits-Linse — eingefaltet aus gate:wasser-wahrheit (D3b): die stehende Linse der Schöpfer-Browser-Symptome
 // vom 14.07. — F1 „Wasser kriecht Wände hoch" (das Höhen-Gate der Zell-Dächer) · F2 „spiegelnder Filter über Terrain" (die Rim-Wand
 // bei −Infinity) · F4 die Stau-Qualifikation · F5 der Ruhe-Fixpunkt (auch nach dem Schnitt, F3 Graben am Fluss) · F6 die
 // geleerte Spalte · F7 das Netz trägt seine Bytes; der Selbsttest an der Naht der Welt (F4 · F5 · F7), nie am Quelltext.
@@ -2209,7 +2209,7 @@ async function checkBandScatterWasserAB(ctx) {
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
 }
 
-// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b, V18.345): der Worker baut den
+// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b): der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
 // je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.

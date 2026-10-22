@@ -1699,7 +1699,7 @@ async function kreaturProben(r, T, opts) {
             ["baer", 0.7],
         ])
             art[seele + "@" + bs] = probe(seele, bs);
-        // DIE EINE MASSE (V18.536): Temperament und Beute lesen die Masse des Leibs, die auch der Stoß liest (`_leibMasse`,
+        // DIE EINE MASSE: Temperament und Beute lesen die Masse des Leibs, die auch der Stoß liest (`_leibMasse`,
         // Volumen der Gestalt × Dichte des Kerns) — nie eine zweite (die Dial-Masse size × Größe fiel mit der Vereinigung).
         // Beweis am Ruf: `_leibMasse` zählt, was das Gemüt eines frischen Leibs und das Beute-Urteil lesen.
         const leibRufe = (fn) => {
@@ -1809,7 +1809,7 @@ async function kreaturProben(r, T, opts) {
             decke(restore, "_leibKontakte", () => function () {});
         }
         if (taeter === "abstand-spieler")
-            // die Separation ohne den Spieler (V18.536): nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
+            // die Separation ohne den Spieler: nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
             decke(
                 restore,
                 "_applyCreatureSeparation",

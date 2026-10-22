@@ -1,4 +1,4 @@
-// AnazhRealm — Strict-Audit-Suite (V8.23)
+// AnazhRealm — Strict-Audit-Suite
 //
 // Generische Audit-Tests die Bug-Klassen abdecken, die in V8.13-V8.22 mehrfach
 // durchgerutscht sind. Drei Schichten (V18.274 — die vierte ist entfernt):
@@ -122,7 +122,7 @@ function auditSoftDefaults() {
 
 // ============================================================
 // 1. State-Field-Audit (browser-basiert)
-// V18.274 — der frühere 4. „Public-Method-Smoke" (jede public Methode blind ohne Args
+// der frühere 4. „Public-Method-Smoke" (jede public Methode blind ohne Args
 // aufrufen) ist ENTFERNT: seine Prämisse ist für diesen Codebase unsound — ~20 Methoden
 // (Worldgen/Avatar/Skybox/Worker) EXEKUTIEREN beim Blind-Call massive async-Arbeit →
 // Event-Loop-Hunger + Page-Overload („Target closed"), in JEDER Variante (await=Hang,
@@ -144,7 +144,7 @@ async function auditStateAndMethods() {
         page.on("pageerror", (err) => {
             fail("PAGE-ERROR", "Script-Exception", err.message);
         });
-        // V18.274 — GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
+        // GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
         // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
         await nullRenderer(page);
@@ -198,7 +198,7 @@ async function auditStateAndMethods() {
                 "__scatterExactWater",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
-                // V8.57 — Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
+                // Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
                 "_cameraDesiredY",
@@ -212,7 +212,7 @@ async function auditStateAndMethods() {
                 "worldField",
                 "worldField.seed",
                 "worldField.rngNoise",
-                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand (V18.354):
+                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand:
                 // der Scheduler setzt ihn am Frame-Anfang auf false, Leser truthy-only.
                 "_frameChunksBuilt",
                 // Lazy-set State-Felder (werden bei Bedarf gesetzt, default
@@ -271,7 +271,7 @@ async function auditStateAndMethods() {
                 // Tick-Memoization (-Infinity Sentinel)
                 "_lastDayNightApply",
                 "_jumpPressedAt",
-                // V18.272 — Versöhnung der Whitelist mit den lazy-Feldern, die
+                // Versöhnung der Whitelist mit den lazy-Feldern, die
                 // die Wasser-CA- (V18.84–.94), Perf- (V18.260–.271), Scatter- und
                 // Worldgen-Bögen einführten. JEDES Feld unten ist VERIFIZIERT
                 // entweder `if (!state.X) state.X = …`-guarded ODER undefined-
@@ -311,7 +311,7 @@ async function auditStateAndMethods() {
                 "_creatureNetSeq", // `(state.X || 0) + 1`
                 "_herdContagionAcc", // `(state.X || 0) + delta`
                 "_skyEnvFailed", // gesetzt via `st._skyEnvFailed = true` im Fehlerpfad
-                // V18.275 — Kapazitäts-gewachsene Welt (beide undefined-sicher):
+                // Kapazitäts-gewachsene Welt (beide undefined-sicher):
                 "foliageRadius", // `state.X != null ? state.X : MAX`
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
@@ -350,7 +350,7 @@ async function auditStateAndMethods() {
 }
 
 // ============================================================
-// 5. Atmosphäre-Hardcode-Audit (V8.25)
+// 5. Atmosphäre-Hardcode-Audit
 // ============================================================
 // Heilt eine V8.24-Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
 // Klang) sind durchsetzt von Hardcode-Wunden wenn der Schreiber Werte aus

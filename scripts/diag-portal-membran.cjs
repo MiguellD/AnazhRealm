@@ -572,7 +572,7 @@ async function blickStufe(check) {
             res.n.keinNebelInSzene = fremd === 0;
         }
 
-        // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
+        // ── F: Tür-Flügel öffnen sich dem Reisenden ──
         // Erst die NÄHE (die Stufe misst vom Auge, K43: Stufe 0 bis 9,5 m — nur sie trägt die Flügel), dann MATERIALISIEREN
         // (das Asset ist async — der Rewarm-Weg von Hand, ein gesetzter Bau wechselt im Takt wie im Spiel), dann Ticks.
         p.x = ex;

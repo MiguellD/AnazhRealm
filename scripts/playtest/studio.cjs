@@ -498,7 +498,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 } catch (_e) {}
                 if (i % 15 === 0) await sleep(15);
             }
-            // DIE WARTENDEN REGIONEN (V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
             // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
             // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
             // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —

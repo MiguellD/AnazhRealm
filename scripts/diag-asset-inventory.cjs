@@ -112,7 +112,7 @@ const server = statikServer();
         // zeichnet nie, ihre Senken stünden leer und würden als „leerer Pool" übersprungen. Die Linse legt den Satz
         // selbst (scripts/lib/wiese-sicht.cjs) — jede Senke muss danach als STUDIO-Emitter im Zensus stehen.
         o.wiese = window.__wieseSicht(r);
-        // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert, V18.346):
+        // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert):
         const st = r.state;
         const grassSet = new Set();
         if (st.voxelChunkGrass) for (const m of st.voxelChunkGrass.values()) if (m) grassSet.add(m);
@@ -135,7 +135,7 @@ const server = statikServer();
                 if (!meshKeys.has(g.mesh)) meshKeys.set(g.mesh, []);
                 meshKeys.get(g.mesh).push(String(k));
             }
-        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
+        // die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
         // Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
         if (st.nahWiese)
             for (const a of st.nahWiese.senken.values())
@@ -282,7 +282,7 @@ const server = statikServer();
                 // 2) Welt-Substanz-Identitäten:
                 if ((node.userData && node.userData.isHydrosphere) || waterSet.has(node))
                     return tally("substanz", "wasser");
-                // V18.381 — das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
+                // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
                 if (node.userData && typeof node.userData.hydroKind === "string")
                     return tally("substanz", "wasser (" + node.userData.hydroKind + ")");

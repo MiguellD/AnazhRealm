@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 2 Phase 3/6/7 + Schicht 1 IQ).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing2Extended(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
@@ -125,7 +123,7 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
+        // „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
         for (let i = 0; i < 9; i++)
@@ -454,8 +452,6 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -526,7 +522,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
         out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
         out.promptInstructsJson = /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
-        // V3 (V7.93): Prompt erlaubt jetzt program + nennt
+        // V3: Prompt erlaubt jetzt program + nennt
         // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
         // wir prüfen, dass Whitelist + Anweisung enthalten sind.
         out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
@@ -1179,13 +1175,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWorkshopPolishAndLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+    // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1207,7 +1201,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
             }
 
-            // Stats-Panel im DOM + NACH Canvas (V18.37: jetzt VOLLBREIT aus dem Preview-Wrapper
+            // Stats-Panel im DOM + NACH Canvas (jetzt VOLLBREIT aus dem Preview-Wrapper
             // heraus, als Geschwister unter der ganzen Reihe → Dokument-Reihenfolge prüfen, nicht
             // Wrapper-Kind-Index; V9.56-i: der Test wandert mit dem Layout).
             const stats = document.getElementById("workshop-stats-panel");
@@ -1222,11 +1216,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Wenn Spieler Werkzeuge hat, sind Cards drin
             const playerTools = (r.state.player && r.state.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
-            // V17.91 — die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
+            // die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
             void playerTools;
             out.toolPaletteHasCards = out.toolCardsCount > 0;
 
-            // V17.91 — der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
+            // der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
             // Werkstatt ist 3D-zentrisch); die Editor-Akte Undo/Redo/Löschen wohnen jetzt in der Top-Leiste.
             out.editorRemoved =
                 !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
@@ -1304,7 +1298,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
     }
 
-    // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+    // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1317,7 +1311,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
+            // die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
@@ -1390,7 +1384,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
 
-    // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+    // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1507,7 +1501,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
         out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
 
-        // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
+        // Parser nutzt Plain-Text-Fallback statt strict-error.
         // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
         // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
         const broken = r.llmParseResponse("nicht json");
@@ -1569,7 +1563,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
     }
 
-    // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+    // ### Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
@@ -1604,7 +1598,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
 
         // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
-        // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
+        // 400→800 für Reasoning-Models (think-Block + Antwort)
         const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
             endpoint: "http://localhost:11434",
         });
@@ -1612,7 +1606,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
 
         // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
-        // V7.98: 400→800
+        // 400→800
         const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
             endpoint: "https://provider/v1/chat/completions",
         });
@@ -1666,7 +1660,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
     }
 
-    // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
+    // ### Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
@@ -1750,7 +1744,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
     }
 
-    // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+    // ### Parser-Robustheit für lokale Reasoning-Models ###
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {

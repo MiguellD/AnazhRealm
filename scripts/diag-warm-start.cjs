@@ -1,4 +1,4 @@
-// diag-warm-start.cjs — DER WARM-START-BEWEIS (DAS FELD ZEICHNET §4, V18.484):
+// diag-warm-start.cjs — DER WARM-START-BEWEIS (DAS FELD ZEICHNET §4):
 // gebaute uneditierte Chunk-Geometrie reist als GPU-fertige Bytes in IndexedDB
 // (DB "anazhChunkMesh") — der zweite Boot einer Welt liest den Ring aus der
 // Platte statt aus dem Meshing-Roundtrip. Vier Bänder (Browser, Null-Renderer;

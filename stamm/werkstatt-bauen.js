@@ -383,8 +383,7 @@ class AnazhRealm_werkstatt_bauen {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        // Geteilte string-id macht das Bauwerk peer-übergreifend identifizierbar (Abbau-Sync). Ein eigener
-        // (nicht-built-in) Bauplan reist als define_blueprint mit — sonst kennt der Empfänger ihn nicht.
+        // Geteilte string-id macht das Bauwerk peer-übergreifend identifizierbar (Abbau-Sync).
         const archId = this._newArchId();
         // Guss-Stempel: ein beim Craft gestempelter Bauplan (bp.studioOv) führt, sonst die gewählte
         // Werkstatt-Prägung (freier Bau: confirmBuild IST der Guss); EINE Quelle `_studioStampFor`.
@@ -436,14 +435,8 @@ class AnazhRealm_werkstatt_bauen {
         }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
-            // Same und Drehung des stehenden Werks (Slot 3 und 7; Slot 6 der Stempel oder null).
-            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId, bmStamp || null, dreh];
-            const ownBp = this.state.blueprints[bm.blueprintName];
-            const prog =
-                ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
-                    ? ["chain", ["define_blueprint", bm.blueprintName, ownBp.parts], spawnOp]
-                    : spawnOp;
-            this.p2pBroadcastDsl(prog);
+            // Same und Drehung des stehenden Werks — das EINE reisende Programm (`_werkProgramm`, auch der Werk-Code).
+            this.p2pBroadcastDsl(this._werkProgramm(bm.blueprintName, posNode, steht.seed, archId, bmStamp, dreh));
         }
         // Das Werk steht: das nächste Setzen zieht seinen eigenen Samen, das Phantom zeigt ihn (ein Wurf der Werkstatt
         // bleibt stehen, wie gewürfelt).
@@ -1054,7 +1047,11 @@ class AnazhRealm_werkstatt_bauen {
         const bm = this.state.buildMode;
         if (bm.active && bm.blueprintName) {
             const bp = this.state.blueprints[bm.blueprintName];
-            const label = bp && bp.label ? bp.label : bm.blueprintName;
+            // das Label wird Text, nie Markup (die Zeile ist innerHTML; ein Bauplan kann aus fremder Hand stammen — Welt-Import)
+            const label = String(bp && bp.label ? bp.label : bm.blueprintName).replace(
+                /[<>&"]/g,
+                (c) => `&#${c.charCodeAt(0)};`
+            );
             // HUD spiegelt die aktuellen Keybindings („B bauen“ statt „RMB bauen“);
             // Fallback DEFAULT_KEYBINDINGS, falls state.keybindings noch fehlt.
             const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
@@ -1834,6 +1831,29 @@ class AnazhRealm_werkstatt_bauen {
             sigBtn.disabled = !vpReady;
             if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
         });
+    }
+
+    // TEILEN in EINER Geste: der Knopf ruft `teileWerk` (Signatur → Code); der Code steht in der Zeile und geht in die
+    // Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
+    _workshopAppendTeilenRow(zone, bp) {
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-teilen-row";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "workshop-teilen-btn";
+        btn.textContent = "Teilen";
+        const out = document.createElement("code");
+        out.className = "workshop-teilen-code";
+        out.style.wordBreak = "break-all";
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            const res = await this.teileWerk(bp.name);
+            btn.disabled = false;
+            out.textContent = res.ok ? res.code : `Teilen fehlgeschlagen: ${res.grund}`;
+            if (res.ok && navigator.clipboard) navigator.clipboard.writeText(res.code).catch(() => {});
+        });
+        row.append(btn, out);
+        zone.appendChild(row);
     }
 
     // V8.06 — Klonen + Neuer Bauplan + (V17.91) Undo/Redo/Löschen direkt in der Mode-Bar. Idempotent.

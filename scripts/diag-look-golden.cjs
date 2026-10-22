@@ -15,7 +15,7 @@
 // degradiert→<1). Das GOLDEN gehört dir (echte GPU + ein Sign-off), darum ist
 // der Render-Pfad opt-in (--render/--mint). Der Default beweist die Linse.
 //
-// GEMESSEN (V18.359, 3 Wege probiert, NICHT angenommen): dieser CI-/Agent-
+// GEMESSEN (3 Wege probiert, NICHT angenommen): dieser CI-/Agent-
 // Container kann den WebGPU-WELT-Frame headless NICHT capturen — die DOM-UI +
 // die Engine rendern sauber, aber der WebGPU-Backbuffer komponiert nicht in den
 // puppeteer-Screenshot (naiver Shot → weiß · diag-settled-view → Timeout unter

@@ -428,7 +428,7 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
     check("Ω-W1: Warum-Chip ZITIERT gerechnete Physik (KONSUM, kein Passagier)", res.w1ConsumesPhysik === true);
 }
 
-// V17.79 — die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
+// die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
 // eines Produkts moduliert die Wirkung seiner Ausrüstung — eine scharfe Klinge wirkt als Gerät stärker als
 // ein gleich-materieller Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
 async function checkBandV1779RoleFitQuality(ctx) {
@@ -738,7 +738,7 @@ async function checkBandV1782CatalystReadout(ctx) {
         const hint = r._blueprintCatalystHint(block, "weapon");
         out.hintSharpness = !!hint && hint.axis === "pointedFraction" && hint.label === "Schärfe";
         out.hintVal = hint ? `${hint.axis}/${hint.label}` : "—";
-        // V18.44 — der Spec-Sheet-Body rendert das Rollen-Spektrum als Resonanz-Balken (.spec-bar-label).
+        // der Spec-Sheet-Body rendert das Rollen-Spektrum als Resonanz-Balken (.spec-bar-label).
         const panel = document.createElement("div");
         r._specRenderBody(panel, blade);
         const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
@@ -769,7 +769,7 @@ async function checkBandV1782CatalystReadout(ctx) {
     );
 }
 
-// V17.85 — Schöpfer-Browser-Befunde geheilt: (#1) die Prozess-Op rückgängig machen (removePartOp) +
+// Schöpfer-Browser-Befunde geheilt: (#1) die Prozess-Op rückgängig machen (removePartOp) +
 // (#3) die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool", nicht „Bauwerk").
 async function checkBandV1785RoleDisplayAndUndo(ctx) {
     const { page, check } = ctx;
@@ -876,7 +876,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
     check("V17.85 #1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
 }
 
-// V17.87 — das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
+// das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
 // nach vorn"). Jeder Editor-Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar.
 async function checkBandV1787UndoRedo(ctx) {
     const { page, check } = ctx;
@@ -1037,8 +1037,6 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 4 Phase 1/2/3 — Materialien + Helix + Werkzeuge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave4(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1270,7 +1268,7 @@ async function checkBandWave4(ctx) {
         // ziehbare Karten der FORMEN-Palette — der Spieler zieht eine Form ins 3D.
         r.selectBlueprintForEdit("test-quarz-orb");
         r._renderWorkshopDOM();
-        // V18.44 — die Tags sind jetzt das MATERIAL-PROFIL (Daten-Viz-Balken im Spec-Sheet), nicht mehr Chips.
+        // die Tags sind jetzt das MATERIAL-PROFIL (Daten-Viz-Balken im Spec-Sheet), nicht mehr Chips.
         const tagsLabel = [...document.querySelectorAll("#workshop-stats-panel .spec-col-head")].some(
             (l) => l.textContent === "Material-Profil"
         );
@@ -1322,7 +1320,7 @@ async function checkBandWave4(ctx) {
         const out = {};
         // Werkzeug-State + Konstanten
         const tools = r.state.tools || {};
-        // V17.88 — hände ist der einzige Starter; die Domain-Ops existieren als Werkstatt-Op-Bibliothek.
+        // hände ist der einzige Starter; die Domain-Ops existieren als Werkstatt-Op-Bibliothek.
         out.fiveStarterTools =
             !!tools["hände"] &&
             tools["hände"].isStarter &&
@@ -1352,7 +1350,7 @@ async function checkBandWave4(ctx) {
         const part2 = { shape: "sphere", material: "quarz" }; // no opChain
         out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
 
-        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
+        // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
         // direkten applyOpToPart-/Tools-Box-Tests leihen wir sie aus der Op-Bibliothek (state.tools).
         for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
             if (!r.state.player.tools.includes(dt)) r.state.player.tools.push(dt);
@@ -1364,7 +1362,7 @@ async function checkBandWave4(ctx) {
             builtIn: false,
             parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
         };
-        // V17.78 — drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
+        // drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
         const ap1 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
         // Schmiede-Hammer (plastic) auf stein (subtractive only): FAIL
@@ -1546,8 +1544,6 @@ async function checkBandWave4(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 5 B/B P2/A/C + Reflexions-Bugfixes).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave5(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1699,7 +1695,7 @@ async function checkBandWave5(ctx) {
             builtIn: false,
             parts: tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })),
         };
-        // V17.91 — die räumlichen Tags lebten in der entfernten Editor-Tags-Sektion; die DATEN-Schicht
+        // die räumlichen Tags lebten in der entfernten Editor-Tags-Sektion; die DATEN-Schicht
         // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
         // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
         r.selectBlueprintForEdit("wave5b-test");
@@ -2174,8 +2170,8 @@ async function checkBandWave5(ctx) {
         out.saveCarriesConnections =
             ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
 
-        // V17.91 — Verbindungen werden im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover);
-        // V18.162: zwei VERBUNDENE Parts öffnen den Dialog mit ✂-Lösen-Kachel (der stille Toggle fiel).
+        // Verbindungen werden im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover);
+        // zwei VERBUNDENE Parts öffnen den Dialog mit ✂-Lösen-Kachel (der stille Toggle fiel).
         r.selectBlueprintForEdit("w5a-test");
         r._renderWorkshopDOM();
         out.uiConnectMode = !!document.querySelector('#workshop-mode-bar [data-workshop-mode="connect"]');
@@ -2210,7 +2206,7 @@ async function checkBandWave5(ctx) {
             ],
             connections: [{ type: "sewing", partA: 0, partB: 1 }],
         };
-        // V17.91 — die „schwache Verbindung"-Markierung ist eine DATEN-Eigenschaft (computeConnectionStrength
+        // die „schwache Verbindung"-Markierung ist eine DATEN-Eigenschaft (computeConnectionStrength
         // unter der Solid-Schwelle); die alte Editor-Listen-Klasse entfiel. Eine sewing-Verbindung zwischen
         // kleinen Holz-Parts liegt unter der Schwelle (Brech-Risiko).
         const weakConnStrength = r.computeConnectionStrength(
@@ -2326,7 +2322,7 @@ async function checkBandWave5(ctx) {
         const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
-        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter, V17.78)
+        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter)
         r.state.blueprints["schmiede-hammer"] = {
             name: "schmiede-hammer",
             label: "Mein Schmiede-Hammer",
@@ -2553,7 +2549,7 @@ async function checkBandWave5(ctx) {
         r.deleteBlueprint("bug2-lathe");
         out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
         out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
-        // V17.88 — die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
+        // die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
         // Bauplan-Lösch unberührt (das Werkzeug ist ab V17.88 nicht mehr im player.tools-Starter-Satz).
         out.starterToolsUnaffected =
             !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("hände");
@@ -2628,8 +2624,6 @@ async function checkBandWave5(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves9And10a(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -2864,13 +2858,13 @@ async function checkBandWaves9And10a(ctx) {
             out.drehbankMechanism =
                 r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
 
-            // V17.88 — die 5 Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); sie
+            // die 5 Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); sie
             // bleiben als Op-Bibliothek in state.tools (isStarter:false), aus der die Werkstatt schöpft.
             out.allDomainToolsInInventory = domainToolNames.every(
                 (n) => r.state.tools[n] && r.state.tools[n].isStarter === false
             );
 
-            // V17.78 — insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
+            // insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
             // die generische Präzisions-Leiter (feuerstein/hammer/feile/polier) ist gefallen.
             const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
             out.sixBuiltInTools = builtIns.length === 6;
@@ -2899,7 +2893,7 @@ async function checkBandWaves9And10a(ctx) {
             r.cloneBlueprint("stein_block", "test_9b");
             r.selectBlueprintForEdit("test_9b");
             r._renderWorkshopDOM();
-            // V17.91 — die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
+            // die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
             // nicht im entfernten Editor-Header. Frisch geklont: architecture (emergent default) → der Chip
             // zeigt „Bauwerk" + trägt .role-emergent (der emergent/manuell-Indikator).
             const roleChip9b = document.querySelector("#workshop-stats-panel .role-chip");
@@ -2912,7 +2906,7 @@ async function checkBandWaves9And10a(ctx) {
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
             r._renderWorkshopDOM();
-            // V17.91 — die Rolle wird im Stats-Panel-Chip angezeigt; nach dem forging-Op sollte sie
+            // die Rolle wird im Stats-Panel-Chip angezeigt; nach dem forging-Op sollte sie
             // Werkzeug/Rüstung sein (emergent, via .role-emergent-Klasse statt eines Status-Texts).
             const roleChipAfter = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsForgingRole =
@@ -2920,7 +2914,7 @@ async function checkBandWaves9And10a(ctx) {
                 (roleChipAfter.textContent.includes("Werkzeug") || roleChipAfter.textContent.includes("Rüstung")) &&
                 roleChipAfter.classList.contains("role-emergent");
 
-            // V17.91 — der Domain-Punkt lebt jetzt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
+            // der Domain-Punkt lebt jetzt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
             // besessene schmiede-hammer erscheint dort als Karte mit Domänen-Punkt).
             out.toolChipHasDomainDot =
                 document.querySelectorAll("#workshop-tool-palette .workshop-tool-domain-dot").length > 0;
@@ -2992,7 +2986,7 @@ async function checkBandWaves9And10a(ctx) {
             out.allHaveRole = stationNames.every(
                 (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
             );
-            // S7-B (V17.67) — die bediente Domäne EMERGIERT jetzt aus der Substanz
+            // S7-B — die bediente Domäne EMERGIERT jetzt aus der Substanz
             // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
             out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
             out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
@@ -3370,7 +3364,7 @@ async function checkBandM2RollenWahrheit(ctx) {
         // und ein Baum wird nicht mehr GETRUNKEN (war useKind=drink via consumable).
         out.vehiclePlace =
             r._blueprintUseKind(blu._t_m2_wagen) === "place" && r._blueprintUseKind(blu.reittier_holzross) === "place";
-        // V18.257 — baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
+        // baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
         const __ukKey = r._growTreeBlueprintForSpawn("baum_eiche", "usekind");
         out.baumPlace = !!__ukKey && r._blueprintUseKind(blu[__ukKey]) === "place";
 
@@ -3720,7 +3714,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
             }
 
             // ─── (T9) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ──
-            // V18.215: der bpClone braucht _isGrown + _grownSpecies für faire
+            // der bpClone braucht _isGrown + _grownSpecies für faire
             // SPECIES_TAG_VARIATION-Anwendung (sonst Variation-an vs aus).
             const tagsSkel = r.computeCompoundTags(bp);
             const bpClone = {

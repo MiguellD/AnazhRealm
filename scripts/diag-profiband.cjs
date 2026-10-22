@@ -29,7 +29,7 @@
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
 //
-// Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
+// Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
 // --selftest: ein unbenanntes Mesh wird rot · eine injizierte fscatter:geroell:3:0-Instanz bei 200 m wird rot (bei
 // 40 m nicht) · eine Klasse über der Ratsche wird rot (auf ihr und in der Toleranz nicht) · eine Haushalt-Zeile über

@@ -1377,7 +1377,7 @@ function scanZwillinge(ersatz = {}) {
 // Tag trägt die AKTUELLE Version — ein stale ?v= serviert den Studios altes
 // Gesetz aus dem HTTP-Cache.
 function scanLabBuster() {
-    // V18.461: die Wand deckt JEDEN Buster (Kern UND Shell UND Wurzel-Seite) —
+    // die Wand deckt JEDEN Buster (Kern UND Shell UND Wurzel-Seite) —
     // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
     // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
@@ -1421,7 +1421,7 @@ function scanLabBuster() {
     return errs;
 }
 
-// DIE INSTANZ-WAND (V18.510): jede InstancedMesh der Welt entsteht im EINEN Chokepoint
+// DIE INSTANZ-WAND: jede InstancedMesh der Welt entsteht im EINEN Chokepoint
 // `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
 //. Erlaubt: genau EIN `new THREE.InstancedMesh(`
@@ -1715,7 +1715,7 @@ function scanNormalWand(srcRoh) {
             `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
-    // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
+    // DIE QUELLE: ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
     // normalNode (NORMAL-Stufe) sie zuerst, lasen Schatten-Lookup (normalBias), Halbkugel- und Umgebungslicht ihre
     // NORMAL-Fassung (die Geometrie-Normale mit Flächen-Vorzeichen: am Boden nach unten, der Boden lag im eigenen
     // Schatten). Die Geometrie-Normale heißt im Graphen `normalWorldGeometry` (× `faceDirection`). Geprüft wird der

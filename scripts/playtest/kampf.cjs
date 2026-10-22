@@ -250,7 +250,7 @@ async function checkBandV1755W2Profile(ctx) {
 
 // V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
-// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz, V17.31): die Werkstatt-Rollen-Zeile rendert es.
+// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
 async function checkBandV1759CapabilityReadout(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -300,7 +300,7 @@ async function checkBandV1759CapabilityReadout(ctx) {
             (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
         );
 
-        // KONSUM (DOM, V17.31): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
+        // KONSUM (DOM): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
         const panel = document.createElement("div");
         r._specRenderHeader(panel, blu.__cap_maul);
         const chips = Array.prototype.slice
@@ -329,7 +329,7 @@ async function checkBandV1759CapabilityReadout(ctx) {
     );
 }
 
-// V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
+// die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
 // Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
 // setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
 async function checkBandV1775MakeActCost(ctx) {
@@ -521,7 +521,7 @@ async function checkBandV1783ImplementClassification(ctx) {
     );
 }
 
-// V17.86 — Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
+// Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
 // Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
 async function checkBandV1786WorkshopCoherence(ctx) {
     const { page, check } = ctx;

@@ -1,11 +1,11 @@
-// DIE FERN-WASSER-LINSE (V18.381, `npm run gate:fern-wasser`) — beweist headless die Atlas-
+// DIE FERN-WASSER-LINSE (`npm run gate:fern-wasser`) — beweist headless die Atlas-
 // Kulisse jenseits des Voxel-Chunk-Rings: (1) sie BAUT (Quads > 0 in einer Wasser-Welt),
 // (2) der VOLLE Material-Vertrag (5 Attribute — WebGPU crasht sonst), (3) jede Quad-Zelle
 // ist ATLAS-NASS + liegt AUSSERHALB des Rings (kein Doppel-Wasser überm echten Sheet),
 // (4) nasse Vertices sitzen exakt bei Atlas-L − drop, (5) COVERAGE: ≥90 % der atlas-nassen
 // in-Region-Zellen im Annulus tragen ein Quad, (6) Re-Anker beim Spieler-Crossing,
 // (7) der Toggle (`atmosphere.farWater=false`) räumt sauber. Reine CPU-Geometrie (~40 s).
-// V18.464 — ZWEI LÄUFE: der Alt-Mechanik-Lauf (foundry deterministisch aus, V18.411-Hook)
+// ZWEI LÄUFE: der Alt-Mechanik-Lauf (foundry deterministisch aus, V18.411-Hook)
 // UND der PRODUKTIONS-Lauf (foundry AN — seit V18.462 ist das Provisorium zurück auf AN,
 // der Studio-Regime-Default-AUS-Term ist gefallen; die Linse prüfte bis dahin NUR die
 // gefallene Weiche = Verifikation von Existenz statt Konsum).
@@ -17,7 +17,7 @@ async function runOnce(browser, noFoundry) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((nf) => {
         window.__anazhHeadlessNullRenderer = true;
-        // V18.464: Lauf 1 = Alt-Mechanik (Foundry deterministisch aus, V18.411-Hook);
+        // Lauf 1 = Alt-Mechanik (Foundry deterministisch aus, V18.411-Hook);
         // Lauf 2 = PRODUKTIONS-Regime (Foundry an — das Fern-Wasser ist seit V18.462
         // auch dort DEFAULT AN, die alte Regime-Weiche ist gefallen).
         if (nf) window.__anazhGateNoFoundry = true;

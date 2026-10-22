@@ -1,4 +1,4 @@
-// diag-reload-treue.cjs — RELOAD-TREUE (V18.478): DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
+// diag-reload-treue.cjs — RELOAD-TREUE: DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
 // Der benannte V18.477-Richter-Befund [mittel]: Kreatur-Snapshots trugen soul/bodySize, aber
 // KEINE Guss-Dials — nach dem Reload goss spawnCreatureAt ALLE Kreaturen aus der AKTUELLEN
 // Studio-Übergabe: eine vormals klein gegossene Gattung wurde groß, sobald der Schöpfer die

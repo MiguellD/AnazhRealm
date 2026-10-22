@@ -624,7 +624,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const D = probeMesh(M, 0, 3.5);
         welt.add(D);
         const a0 = ESt.absagenN || 0;
-        // DER EINE MELDER (Integration V18.535): die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
+        // DER EINE MELDER: die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
         // zählt dort, und dieselbe Absage steht genau EINMAL im Log
         const g0 = r._gpuWache ? r._gpuWache.n : 0;
         let wurf = null;

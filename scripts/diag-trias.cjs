@@ -1,4 +1,4 @@
-// diag-trias.cjs — DIE TRIAS-LINSE (V18.444, Trias-Welle): die Szenen-Dreiecke bleiben
+// diag-trias.cjs — DIE TRIAS-LINSE (Trias-Welle): die Szenen-Dreiecke bleiben
 // ueber die Wanderung GEDECKELT — platzierte Studio-Architektur (haus_ u. a.) lebt in
 // der EINEN LOD-Geschichte statt fuer immer auf ihrer Bau-Stufe zu kleben.
 //
@@ -284,7 +284,7 @@ const triasStaticLaws = () => [
             }
         }
 
-        // (2b) FLAECHEN-STUFE (V18.500): im L1-RING stempelt die Distanz-Autoritaet 1 und
+        // (2b) FLAECHEN-STUFE: im L1-RING stempelt die Distanz-Autoritaet 1 und
         // die Foundry SERVIERT die echte Stufe 1 (das Studio liefert sie, kein Host-Mapping).
         // Ring visH-echt via _chooseLODForDistance gescannt, Konvergenz gepumpt.
         const h0b = near3[0];
@@ -424,7 +424,7 @@ const triasStaticLaws = () => [
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
-        // V18.527: der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
+        // der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
         // leichten Einträgen bewiesen, gelesen aus der EINEN Konstante.
         res.cap = r.constructor.FOUNDRY_CACHE_CAP;
         for (let i = 0; i < res.cap + 44; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));
