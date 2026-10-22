@@ -599,6 +599,10 @@ function standUrteil(b) {
         );
     // (W) WACH: ein Fege-Takt mit Offenem hält die Welt wach, beim Namen
     if (!/Fege-Takt[^]*archCull/.test(b.wach || "")) v.push(`WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${b.wach || "—"})`);
+    // (B) BAKE-SCHULD: was die Bake-Uhr abweist, wartet — die Welt steht erst ohne Schuld, und „offen" nennt die Felder
+    const BS = b.schuld || {};
+    if (BS.rest !== 0 || !(BS.abgewiesen > 0) || !/Felder offen/.test(BS.grund))
+        v.push(`BAKE-SCHULD: steht nach ${BS.takte} Takten mit ${BS.rest} offenen Fits (${BS.abgewiesen} abgewiesen, ${BS.grund})`);
     // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
     // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
     if (b.fixWach !== false)

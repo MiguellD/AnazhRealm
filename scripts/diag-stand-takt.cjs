@@ -143,6 +143,7 @@ function selbsttest() {
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
         wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
+        schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
         fixWach: false,
         fix: [
             { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
@@ -411,6 +412,8 @@ function selbsttest() {
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
         ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
+        ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
+        ["die Bake-Uhr weist nie ab", (b) => (b.schuld.abgewiesen = 0), /BAKE-SCHULD: .*0 abgewiesen/],
         [
             "die Welt steht mitten in der Runde der Stufen-Wahl (K-WANDUHR 08c017fb: steht nach 1 Takt, danach wirkte sie 4×)",
             (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
@@ -503,6 +506,18 @@ const server = statikServer();
                 aus.wach = await window.__weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
                 delete r._foundryRewarmColdTrees;
                 st.architectureCullingRadius = R0;
+                // (B) BAKE-SCHULD (CI 39700100953, GTX: „archCull wartet" nach 1 988 Takten): die EINE Bake-Uhr zählt Fits je
+                // Sekunde, der Deckel Takte — 24 Fits fragen je Takt; solange die Uhr abweist, steht die Welt nicht (beim Namen)
+                await window.__weltStehtNach(takt);
+                const schuld = new Set(Array.from({ length: 24 }, (_, i) => i));
+                const B = (aus.schuld = { abgewiesen: 0, grund: null });
+                const schuldTakt = () => {
+                    for (const i of [...schuld]) r._weltBakeErlaubt(i) ? schuld.delete(i) : B.abgewiesen++;
+                    takt();
+                    if (schuld.size) B.grund = r._weltStand.grund;
+                };
+                B.takte = await window.__weltStehtNach(schuldTakt, 30).catch((x) => String(x.message).slice(0, 160));
+                B.rest = schuld.size;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -1475,6 +1490,7 @@ const server = statikServer();
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
     console.log(`  Wach (ein kalter Bau): ${befund.wach}`);
+    console.log(`  Bake-Schuld (24 Fits): ${JSON.stringify(befund.schuld)}`);
     if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
     for (const [i, F] of (befund.fix || []).entries())
         console.log(
