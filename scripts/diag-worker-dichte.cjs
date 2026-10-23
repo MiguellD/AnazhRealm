@@ -64,6 +64,7 @@ const server = statikServer({ root, keinCache: true });
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
+        await window.__weltDa(); // nach dem Erwachen des Boots
         for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {

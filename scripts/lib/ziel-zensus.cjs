@@ -263,7 +263,8 @@ function zielZensus(k) {
             for (const v of vendor)
                 if (new RegExp(v.muster).test(name)) return { quelle: v.quelle, methode: suche(v.such) };
             const stamm = name.split(":")[0];
-            for (const c of [name, stamm, stamm.replace(/\d+$/, "")]) {
+            // ein Name aus Stamm und Endung (`spec.name + "-gang"`, der Gang-Satz) trägt sein Literal ohne die Endung
+            for (const c of [name, stamm, stamm.replace(/\d+$/, ""), stamm.replace(/-[a-z]+$/, "")]) {
                 if (!c) continue;
                 const m = suche('"' + c) || suche("'" + c) || suche("`" + c);
                 if (m) return { quelle: "Stamm", methode: m };

@@ -485,6 +485,7 @@ const WELT_HAKEN = () => {
 };
 const WELT_MESSEN = async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
         const r = window.anazhRealm;
         if (r && typeof r._gameLoopTick === "function") {
@@ -514,6 +515,9 @@ const WELT_MESSEN = async () => {
         await pump(20);
         if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
+    // der Ofen-Vorrat ist Boot-Arbeit (`_ofenPrefetchKreaturen`, nach dem ersten Bild): jeder Boot misst, bis er steht —
+    // sonst trägt der schnellere Zweit-Boot ihn ins Fenster, und der erste legte ihn nie auf die Platte
+    for (const weiter = window.__deckel("der Ofen-Vorrat", 600); !r._ofenVorratSteht && weiter(); ) await pump(20);
     await pump(60);
     const fl = window.__fl;
     const cfg = r.constructor._studioRenderConfig;

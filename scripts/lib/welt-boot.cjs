@@ -118,6 +118,10 @@ function deckel(name, max, offen) {
 // Sekunde).
 async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
+    // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
+    // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
+    while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+    await window.anazhRealm.erwacht;
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await new Promise((ok) => setTimeout(ok, 50));
     window.__weltDaWartet = null;

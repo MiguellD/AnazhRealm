@@ -109,7 +109,7 @@ function urteil(z) {
             await window.__weltDa((r) => r.state);
             const r = window.anazhRealm;
             if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
-            // der Loop ruht die ganze Probe: der Boot hängt ihn erst mit der Heimat aus dem Faden an (`startEternalLoop`)
+            // der Loop ruht die ganze Probe
             r.state.renderer.setAnimationLoop(null);
             r.state.renderer.setAnimationLoop = () => {};
             // Der Takt rendert NICHT (unter swiftshader kostet ein Voll-Render mit Studio-Meshes Sekunden — wie in
@@ -131,13 +131,15 @@ function urteil(z) {
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
             const sProbe = (sched, tick) => {
-                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken"];
+                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken", "_gpuLeineStraff"];
                 let bake = 0;
                 r._tickImpostorBake = () => (bake++, 0);
                 try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
-                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge
+                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge; die Leine ist
+                // nicht Gegenstand von S (der Takt der Linse zeichnet nicht, die Queue löst die Bilder vor dem Stopp erst mit der
+                // nächsten Abgabe: imFlug 2 = gerendert 2)
                 const at = { zellen: new Map([["fern", { key: "fern", _bedarfD2: 400 }], ["nah", { key: "nah", _bedarfD2: 4 }]]) };
-                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null) });
+                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null), _gpuLeineStraff: () => false });
                 try { tick.call(r, at); } finally { for (const k of stubs) delete r[k]; r._impostorBakeQueue = q; }
                 return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
             };

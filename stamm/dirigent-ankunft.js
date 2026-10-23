@@ -1409,8 +1409,15 @@ function _bootAnazhRealm() {
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
     }
+    // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
+    // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
+    const erwachen = Promise.resolve(anazhRealm.init());
+    anazhRealm.erwacht = erwachen.then(
+        () => true,
+        () => false
+    );
     // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
-    Promise.resolve(anazhRealm.init()).catch((e) => {
+    erwachen.catch((e) => {
         anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
         throw e;
     });

@@ -1602,6 +1602,9 @@ class AnazhRealm_koerper_leib {
     // Uhr; `_ofenVorratSteht` sagt Boot-Phase 3, dass jede Gattung im Memo liegt (oder laut fehlt).
     async _ofenPrefetchKreaturen() {
         await this._weltbildKommt();
+        // ohne Bild steht es vor der Welt (`_weltbildSteht` im Boot des Null-Renderers): der Vorrat wartet auf das Erwachen (die
+        // Heimat aus dem Faden, die Kreaturen des Boots) — sonst rennt er gegen ihren Guss, und jeder Boot bestellt andere Gattungen
+        if (this.erwacht) await this.erwacht;
         const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
