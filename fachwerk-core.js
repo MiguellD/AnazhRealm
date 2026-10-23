@@ -2051,7 +2051,7 @@
     //  8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), je Blick-Klasse (wand |n.y| < 0,25,
     //  flach sonst) die mittlere Vertex-Farbe der tragenden Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton),
     //  übertragen wird die Leuchtdichte je Klasse.
-    //  Die Stufe 1 misst sich im Warm-Pfad (`B.sichtTon`, fragFuer); die Stufe 2 und die Hülle (Stufe 3, Fernform
+    //  Die Stufe 1 misst sich im Warm-Pfad (`B.sichtTon`, stufe1Ton); die Stufe 2 und die Hülle (Stufe 3, Fernform
     //  `__fern`) messen sich selbst und tragen je Klasse den Faktor Soll/Ist (`tonUebertrag`). Bis S8 kam der Ton der L2
     //  aus Rollen-Farben × EINEM Wand-Ton (`wandTonAus`, Fenster 2,6..Traufe): der Giebel trug die Dach-Farbe, das
     //  Erdgeschoss den Ton des Obergeschosses — L2/L0 0,704 (gotisch) bis 1,108 (pueblo), 31 von 64 Häusern im Band.
@@ -2079,13 +2079,15 @@
     }
     // geoms (je Rolle { pos, nrm, col, idx }, Welt-Lage) → { k: [[r, g, b, n] wand, [r, g, b, n] flach], alle: [r, g, b, n] }
     function sichtTon(geoms) {
-        var tri = [],
+        var Gs = [],
+            tri = [],
             lo = [Infinity, Infinity, Infinity],
             hi = [-Infinity, -Infinity, -Infinity];
         for (var rolle in geoms) {
             var G = geoms[rolle];
             if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
-            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(G, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
+            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(Gs.length, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
+            Gs.push(G);
             for (var v = 0; v < G.pos.length; v += 3)
                 for (var c = 0; c < 3; c++) {
                     if (G.pos[v + c] < lo[c]) lo[c] = G.pos[v + c];
@@ -2094,6 +2096,20 @@
         }
         var aus = { k: [[0, 0, 0, 0], [0, 0, 0, 0]], alle: [0, 0, 0, 0] };
         if (!tri.length) return aus;
+        // die Blick-Klasse je Dreieck (aus seiner Fläche, nie aus dem Blick) — einmal, nicht je Pixel
+        var kl = new Int8Array(tri.length / 4);
+        for (var t0 = 0; t0 < tri.length; t0 += 4) {
+            var P0 = Gs[tri[t0]].pos,
+                a0 = tri[t0 + 1] * 3,
+                a1 = tri[t0 + 2] * 3,
+                a2 = tri[t0 + 3] * 3;
+            var e1 = [P0[a1] - P0[a0], P0[a1 + 1] - P0[a0 + 1], P0[a1 + 2] - P0[a0 + 2]],
+                e2 = [P0[a2] - P0[a0], P0[a2 + 1] - P0[a0 + 1], P0[a2 + 2] - P0[a0 + 2]];
+            var nx = e1[1] * e2[2] - e1[2] * e2[1],
+                ny = e1[2] * e2[0] - e1[0] * e2[2],
+                nz = e1[0] * e2[1] - e1[1] * e2[0];
+            kl[t0 / 4] = _sichtKlasse(ny, Math.sqrt(nx * nx + ny * ny + nz * nz));
+        }
         var mx = (lo[0] + hi[0]) / 2,
             my = (lo[1] + hi[1]) / 2,
             mz = (lo[2] + hi[2]) / 2;
@@ -2105,6 +2121,16 @@
             zb = new Float64Array(N * N),
             ti = new Int32Array(N * N),
             wb = new Float64Array(N * N * 2);
+        // die Lage jeder Ecke im Blick, je Rolle und Blick EINMAL (vorher je Dreiecks-Ecke — dieselbe Rechnung, dieselben Bits)
+        var PX = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            }),
+            PY = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            }),
+            PZ = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            });
         var X = [0, 0, 0],
             Y = [0, 0, 0],
             Z = [0, 0, 0];
@@ -2115,18 +2141,26 @@
             var rl = Math.sqrt(r[0] * r[0] + r[2] * r[2]);
             r = [r[0] / rl, r[1] / rl, r[2] / rl];
             var u = [f[1] * r[2] - f[2] * r[1], f[2] * r[0] - f[0] * r[2], f[0] * r[1] - f[1] * r[0]];
+            for (var gi = 0; gi < Gs.length; gi++) {
+                var P = Gs[gi].pos;
+                for (var q = 0, w = 0; q < P.length; q += 3, w++) {
+                    var px = P[q] - mx,
+                        py = P[q + 1] - my,
+                        pz = P[q + 2] - mz;
+                    PX[gi][w] = ((px * r[0] + py * r[1] + pz * r[2]) / rad) * 0.5 * N + 0.5 * N;
+                    PY[gi][w] = ((px * u[0] + py * u[1] + pz * u[2]) / rad) * 0.5 * N + 0.5 * N;
+                    PZ[gi][w] = px * f[0] + py * f[1] + pz * f[2];
+                }
+            }
             zb.fill(-Infinity);
             ti.fill(-1);
             for (var t = 0; t < tri.length; t += 4) {
-                var P = tri[t].pos;
+                var g3 = tri[t];
                 for (var e = 0; e < 3; e++) {
-                    var q = tri[t + 1 + e] * 3,
-                        px = P[q] - mx,
-                        py = P[q + 1] - my,
-                        pz = P[q + 2] - mz;
-                    X[e] = ((px * r[0] + py * r[1] + pz * r[2]) / rad) * 0.5 * N + 0.5 * N;
-                    Y[e] = ((px * u[0] + py * u[1] + pz * u[2]) / rad) * 0.5 * N + 0.5 * N;
-                    Z[e] = px * f[0] + py * f[1] + pz * f[2];
+                    var iv = tri[t + 1 + e];
+                    X[e] = PX[g3][iv];
+                    Y[e] = PY[g3][iv];
+                    Z[e] = PZ[g3][iv];
                 }
                 var den = (Y[1] - Y[2]) * (X[0] - X[2]) + (X[2] - X[1]) * (Y[0] - Y[2]);
                 if (Math.abs(den) < 1e-12) continue;
@@ -2155,22 +2189,16 @@
             for (var k2 = 0; k2 < N * N; k2++) {
                 var t2 = ti[k2];
                 if (t2 < 0) continue;
-                var G2 = tri[t2],
-                    a0 = tri[t2 + 1] * 3,
-                    a1 = tri[t2 + 2] * 3,
-                    a2 = tri[t2 + 3] * 3,
-                    P2 = G2.pos;
-                var e1 = [P2[a1] - P2[a0], P2[a1 + 1] - P2[a0 + 1], P2[a1 + 2] - P2[a0 + 2]],
-                    e2 = [P2[a2] - P2[a0], P2[a2 + 1] - P2[a0 + 1], P2[a2 + 2] - P2[a0 + 2]];
-                var nx = e1[1] * e2[2] - e1[2] * e2[1],
-                    ny = e1[2] * e2[0] - e1[0] * e2[2],
-                    nz = e1[0] * e2[1] - e1[1] * e2[0];
-                var S = aus.k[_sichtKlasse(ny, Math.sqrt(nx * nx + ny * ny + nz * nz))],
+                var C2 = Gs[tri[t2]].col,
+                    c0 = tri[t2 + 1] * 3,
+                    c1 = tri[t2 + 2] * 3,
+                    c2 = tri[t2 + 3] * 3;
+                var S = aus.k[kl[t2 / 4]],
                     v0 = wb[k2 * 2],
                     v1 = wb[k2 * 2 + 1],
                     v2 = 1 - v0 - v1;
                 for (var ch = 0; ch < 3; ch++) {
-                    var cv = v0 * G2.col[a0 + ch] + v1 * G2.col[a1 + ch] + v2 * G2.col[a2 + ch];
+                    var cv = v0 * C2[c0 + ch] + v1 * C2[c1 + ch] + v2 * C2[c2 + ch];
                     S[ch] += cv;
                     aus.alle[ch] += cv;
                 }
@@ -2180,13 +2208,18 @@
         }
         return aus;
     }
-    // DER WARM-PFAD (der EINE, S8): das Soll jeder fernen Stufe ist die gemessene Stufe 1 — fehlt sie, baut der Bau sie
-    // einmal (das Fragment fällt, Wand-Ton und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
+    // DER WARM-PFAD (der EINE, S8): das Soll jeder fernen Stufe ist die gemessene Stufe 1 — gemessen erst, wenn eine ferne
+    // Stufe sie braucht (eine gezeigte Stufe 1 misst nichts): am Fragment im Fach, sonst baut der Bau sie einmal (das
+    // Fragment fällt, Wand-Ton und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
     function stufe1Ton(B) {
         if (!B.sichtTon) {
-            fragFuer(B, 1);
-            B.frag = null;
-            B.fragStufe = undefined;
+            var g = B.frag && B.fragStufe === 1 ? B.frag : null;
+            if (!g) {
+                g = fragFuer(B, 1);
+                B.frag = null;
+                B.fragStufe = undefined;
+            }
+            B.sichtTon = sichtTon(g);
         }
         return B.sichtTon;
     }
@@ -3031,7 +3064,6 @@
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
     if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
-  if(stufe===1&&!B.sichtTon) B.sichtTon=sichtTon(geoms);                                    // DER STUFEN-TON (S8): die Stufe 1 misst, was das Auge an ihr sieht — das Soll jeder fernen Stufe
   if(stufe===2) tonUebertrag(geoms, B.sichtTon);                                              // die Stufe 2 trägt je Blick-Klasse den Ton der Stufe 1
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
