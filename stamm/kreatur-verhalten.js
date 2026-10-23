@@ -964,24 +964,22 @@ class AnazhRealm_kreatur_verhalten {
         for (let i = 0; i < cr.length; i++) {
             const c = cr[i];
             if (!c || !c.position || !c.userData) continue;
-            const t = teil(n++);
-            const lb = this._kreaturLeib(c, 0, t.leib);
-            t.q = c;
-            t.x = c.position.x;
-            t.z = c.position.z;
-            t.hx = lb.fx * lb.halb;
-            t.hz = lb.fz * lb.halb;
-            t.r = lb.radius;
-            t.y0 = c.position.y;
-            t.y1 = c.position.y + lb.hoehe;
-            t.reich = lb.halb + lb.radius;
+            this._leibTeil(c, teil(n++));
         }
         const pm = st.playerMesh;
-        const zuFuss = pm && pm.position && !(st.player && st.player.mountedArch != null);
-        if (zuFuss) {
-            const t = teil(n++);
+        if (pm && pm.position && !(st.player && st.player.mountedArch != null)) this._leibTeil(pm, teil(n++));
+        if (n < 2) return;
+        const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
+        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
+            if (!this._leibKontaktGang(T, n, nah)) break;
+        }
+    }
+    // DER TEIL EINES LEIBS im Kontakt Leib an Leib: das Tier seine Strecke −halb … +halb längs der Gier mit seinem Radius
+    // (`_kreaturLeib`), der Spieler zu Fuß seine Kapsel (`_spielerKapsel`). `t` wird überschrieben.
+    _leibTeil(q, t) {
+        t.q = q;
+        if (q === this.state.playerMesh) {
             const K = this._spielerKapsel(this._leibKapsel || (this._leibKapsel = {}));
-            t.q = pm;
             t.x = K.x;
             t.z = K.z;
             t.hx = 0;
@@ -990,76 +988,106 @@ class AnazhRealm_kreatur_verhalten {
             t.y0 = K.y0;
             t.y1 = K.y1;
             t.reich = t.r;
+            return t;
         }
-        if (n < 2) return;
-        const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
-        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
-            if (!this._leibKontaktGang(T, n, nah)) break;
-        }
+        const lb = this._kreaturLeib(q, 0, t.leib || (t.leib = {}));
+        t.x = q.position.x;
+        t.z = q.position.z;
+        t.hx = lb.fx * lb.halb;
+        t.hz = lb.fz * lb.halb;
+        t.r = lb.radius;
+        t.y0 = q.position.y;
+        t.y1 = q.position.y + lb.hoehe;
+        t.reich = lb.halb + lb.radius;
+        return t;
     }
     // EIN GANG über alle Paare (`_leibKontakte`): true, wenn ein Leib wich.
     _leibKontaktGang(T, n, nah) {
         let wich = false;
-        for (let i = 0; i < n; i++) {
-            const a = T[i];
-            for (let j = i + 1; j < n; j++) {
-                const b = T[j];
-                const grob = a.reich + b.reich;
-                if (Math.abs(a.x - b.x) > grob || Math.abs(a.z - b.z) > grob) continue;
-                if (a.y1 <= b.y0 || b.y1 <= a.y0) continue;
-                AnazhRealm._streckenNah2D(
-                    a.x - a.hx,
-                    a.z - a.hz,
-                    a.x + a.hx,
-                    a.z + a.hz,
-                    b.x - b.hx,
-                    b.z - b.hz,
-                    b.x + b.hx,
-                    b.z + b.hz,
-                    nah
-                );
-                const tief = a.r + b.r - nah.d;
-                if (!(tief > 0)) continue;
-                if (tief > 1e-4) wich = true; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
-                let nx;
-                let nz;
-                if (nah.d > 1e-6) {
-                    nx = (nah.qx - nah.px) / nah.d;
-                    nz = (nah.qz - nah.pz) / nah.d;
-                } else {
-                    // genaue Deckung: der Goldwinkel des Paares (deterministisch)
-                    nx = Math.cos((i + j) * 2.39996);
-                    nz = Math.sin((i + j) * 2.39996);
-                }
-                // die Lage: der leichte weicht nach dem Verhältnis der Massen (der Spieler weicht nie — sein Sim-Schritt)
-                const KA = this._stossKoerper(a.q, this._leibKontaktKA || (this._leibKontaktKA = {}));
-                const KB = this._stossKoerper(b.q, this._leibKontaktKB || (this._leibKontaktKB = {}));
-                if (!KA || !KB) continue;
-                const fest = (K) => K.art === "spieler";
-                const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
-                const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
-                if (wa > 0) {
-                    const x0 = a.q.position.x;
-                    const z0 = a.q.position.z;
-                    a.q.position.x -= nx * tief * wa;
-                    a.q.position.z -= nz * tief * wa;
-                    this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
-                    a.x = a.q.position.x;
-                    a.z = a.q.position.z;
-                }
-                if (wb > 0) {
-                    const x0 = b.q.position.x;
-                    const z0 = b.q.position.z;
-                    b.q.position.x += nx * tief * wb;
-                    b.q.position.z += nz * tief * wb;
-                    this._kreaturHuellenKontakt(b.q, 0, x0, z0);
-                    b.x = b.q.position.x;
-                    b.z = b.q.position.z;
-                }
-                this._stossPaar(a.q, b.q, nx, nz);
-            }
-        }
+        for (let i = 0; i < n; i++)
+            for (let j = i + 1; j < n; j++) if (this._leibPaar(T[i], T[j], i + j, nah)) wich = true;
         return wich;
+    }
+    // DAS PAAR Leib an Leib — gelesen vom Gang (`_leibKontaktGang`) und vom Weg des Leibs (`_leibGegenLeiber`): durchdringen
+    // sich a und b (Teile aus `_leibTeil`), weicht der leichte nach dem Verhältnis der Massen, und sie tauschen Impuls; `saat`
+    // dreht die Normale bei genauer Deckung (deterministisch). true, wenn ein Leib wich.
+    _leibPaar(a, b, saat, nah) {
+        const grob = a.reich + b.reich;
+        if (Math.abs(a.x - b.x) > grob || Math.abs(a.z - b.z) > grob) return false;
+        if (a.y1 <= b.y0 || b.y1 <= a.y0) return false;
+        AnazhRealm._streckenNah2D(
+            a.x - a.hx,
+            a.z - a.hz,
+            a.x + a.hx,
+            a.z + a.hz,
+            b.x - b.hx,
+            b.z - b.hz,
+            b.x + b.hx,
+            b.z + b.hz,
+            nah
+        );
+        const tief = a.r + b.r - nah.d;
+        if (!(tief > 0)) return false;
+        const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
+        let nx;
+        let nz;
+        if (nah.d > 1e-6) {
+            nx = (nah.qx - nah.px) / nah.d;
+            nz = (nah.qz - nah.pz) / nah.d;
+        } else {
+            // genaue Deckung: der Goldwinkel des Paares (deterministisch)
+            nx = Math.cos(saat * 2.39996);
+            nz = Math.sin(saat * 2.39996);
+        }
+        // die Lage: der leichte weicht nach dem Verhältnis der Massen (der Spieler weicht nie — sein Sim-Schritt)
+        const KA = this._stossKoerper(a.q, this._leibKontaktKA || (this._leibKontaktKA = {}));
+        const KB = this._stossKoerper(b.q, this._leibKontaktKB || (this._leibKontaktKB = {}));
+        if (!KA || !KB) return wich;
+        const fest = (K) => K.art === "spieler";
+        const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
+        const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
+        if (wa > 0) {
+            const x0 = a.q.position.x;
+            const z0 = a.q.position.z;
+            a.q.position.x -= nx * tief * wa;
+            a.q.position.z -= nz * tief * wa;
+            this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
+            a.x = a.q.position.x;
+            a.z = a.q.position.z;
+        }
+        if (wb > 0) {
+            const x0 = b.q.position.x;
+            const z0 = b.q.position.z;
+            b.q.position.x += nx * tief * wb;
+            b.q.position.z += nz * tief * wb;
+            this._kreaturHuellenKontakt(b.q, 0, x0, z0);
+            b.x = b.q.position.x;
+            b.z = b.q.position.z;
+        }
+        this._stossPaar(a.q, b.q, nx, nz);
+        return wich;
+    }
+    // DER WEG GEGEN DIE LEIBER (je Teil-Schritt des Wegs, `_kreaturWeg`): der gehende Leib c (Index i) gegen jeden anderen in
+    // seiner Reichweite — das Paar des Kontakts Leib an Leib (`_leibPaar`). Der grobe Filter liest den weitesten Raum des
+    // Takts (`_raumMaxTakt` ≥ die Reichweite jedes Leibs).
+    _leibGegenLeiber(c, i) {
+        const st = this.state;
+        const cr = st.creatures || [];
+        const a = this._leibTeil(c, this._leibWegA || (this._leibWegA = { leib: {} }));
+        const b = this._leibWegB || (this._leibWegB = { leib: {} });
+        const nah = this._leibWegNah || (this._leibWegNah = {});
+        const rm = this._raumMaxTakt;
+        const grob = a.reich + (Number.isFinite(rm) ? Math.max(rm, AnazhRealm.PLAYER_WALL_RADIUS) : Infinity);
+        for (let j = 0; j < cr.length; j++) {
+            const o = cr[j];
+            if (o === c || !o || !o.position || !o.userData) continue;
+            if (Math.abs(o.position.x - a.x) > grob || Math.abs(o.position.z - a.z) > grob) continue;
+            this._leibPaar(a, this._leibTeil(o, b), i + j, nah);
+        }
+        const pm = st.playerMesh;
+        if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
+        if (Math.abs(pm.position.x - a.x) > grob || Math.abs(pm.position.z - a.z) > grob) return;
+        this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
     }
 
     // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
@@ -1071,10 +1099,46 @@ class AnazhRealm_kreatur_verhalten {
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
     }
 
+    // DER WEG DES LEIBS (kontakt-tempo, Lehre 13): EIN Weg für jeden Schritt, der ein Tier trägt — den Gang im Frame-Takt
+    // (updateCreatures: Gier × Tempo + Strömung) und den Stoß im Sim-Schritt (`_kreaturStossSchritt`). v·dt geht in
+    // Teil-Schritten von höchstens LEIB_TEIL.radius Leib-Radien (mindestens LEIB_TEIL.minM), je Teil-Schritt die EINE Hülle
+    // (`_kreaturHuellenKontakt`) und im Gang (`leiber`: der Frame-Takt, dem bis zum nächsten Sim-Schritt kein Löser folgt) das
+    // EINE Paar Leib an Leib (`_leibGegenLeiber`; den Stoß trennt `_leibKontakte` im selben Sim-Schritt): die Achse erreicht in
+    // einem Teil-Schritt nie die Mitte einer Wand oder eines Leibs, gleich wie dünn, gleich bei welcher Bildrate. Was die
+    // Berührung schiebt, nimmt v die Komponente in sie (v wird fortgeschrieben). Vorher ging der Gang EINEN Schritt je Frame
+    // mit EINER Hülle: bei 10 fps (der Takt-Deckel 100 ms) liefen Fuchs, Wolf und Bär im Galopp 6 von 6 Mal durch eine
+    // 0,35-m-Mauer, 4 von 4 durch die 0,3-m-Wand des Hauses, der Wolf 2 von 4 durch einen stehenden Bären. Die Kosten folgen
+    // dem Weg (Gebot 7): ein stehender Leib geht einen Teil-Schritt, ohne Leib-Paar.
+    _kreaturWeg(c, L, v, dt, i, leiber) {
+        const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
+        const T = AnazhRealm.LEIB_TEIL;
+        const weg = Math.hypot(v.x, v.z) * dt;
+        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
+        const h = dt / teile;
+        for (let k = 0; k < teile; k++) {
+            const x0 = c.position.x;
+            const z0 = c.position.z;
+            c.position.x += v.x * h;
+            c.position.z += v.z * h;
+            const kx = c.position.x;
+            const kz = c.position.z;
+            this._kreaturHuellenKontakt(c, L, x0, z0);
+            if (leiber && weg > 0) this._leibGegenLeiber(c, i);
+            const hx = c.position.x - kx;
+            const hz = c.position.z - kz;
+            const hd = Math.hypot(hx, hz);
+            const vn = hd > 1e-6 ? (v.x * hx + v.z * hz) / hd : 0;
+            if (vn < 0) {
+                v.x -= (vn * hx) / hd;
+                v.z -= (vn * hz) / hd;
+            }
+        }
+        return v;
+    }
+
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
-    // getragenem Stoß der Weg dieses Schritts — in Teil-Schritten von höchstens dem halben Leib-Radius, je Teil-Schritt die
-    // EINE Hülle (`_kreaturHuellenKontakt`): die Achse erreicht in einem Teil-Schritt nie die Mitte einer Wand, gleich wie
-    // dünn sie ist (dieselbe Regel wie der Deckel des Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
+    // getragenem Stoß der Weg dieses Schritts (`_kreaturWeg`, Teil-Schritte gegen die Hülle; dieselbe Regel wie der Deckel des
+    // Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
     // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
     // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
     // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
@@ -1084,7 +1148,8 @@ class AnazhRealm_kreatur_verhalten {
         const ST = AnazhRealm.STOSS;
         const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
         const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
-        for (const c of wesen) {
+        for (let i = 0; i < wesen.length; i++) {
+            const c = wesen[i];
             const ud = c && c.userData;
             const sv = ud && ud._stossV;
             if (!sv) continue;
@@ -1095,8 +1160,6 @@ class AnazhRealm_kreatur_verhalten {
             }
             const L = this._kreaturHueftL(c);
             this._kreaturLeib(c, L, leib);
-            const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
-            const h = dt / teile;
             ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
             ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
             // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
@@ -1108,23 +1171,7 @@ class AnazhRealm_kreatur_verhalten {
             const amOrt = sg0 && sg0.x === sx && sg0.z === sz;
             const sg = amOrt ? sg0.g : this._koerperBodenUnter(sx, c.position.y, sz);
             const sgGenau = amOrt ? sg0.genau : this._feldKanteGenau(sx, sg, sz);
-            for (let k = 0; k < teile; k++) {
-                const x0 = c.position.x;
-                const z0 = c.position.z;
-                c.position.x += sv.x * h;
-                c.position.z += sv.z * h;
-                const kx = c.position.x;
-                const kz = c.position.z;
-                this._kreaturHuellenKontakt(c, L, x0, z0);
-                const hx = c.position.x - kx;
-                const hz = c.position.z - kz;
-                const hd = Math.hypot(hx, hz);
-                const vn = hd > 1e-6 ? (sv.x * hx + sv.z * hz) / hd : 0;
-                if (vn < 0) {
-                    sv.x -= (vn * hx) / hd;
-                    sv.z -= (vn * hz) / hd;
-                }
-            }
+            this._kreaturWeg(c, L, sv, dt, i, false);
             // die HÖHE des gleitenden Leibs gehört demselben Schritt (Q4: die Sim steht auf dem Gesetz, die Sicht liest es um
             // den Stand-Leser): erdete erst der Frame-Takt (Budget, 0,5-m-Cache), lag die Höhe je Bildrate verschieden, und
             // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
@@ -3059,7 +3106,7 @@ class AnazhRealm_kreatur_verhalten {
             const emotion = this.state.creatureEmotions[i];
             // DER GROBE TAKT (K59): ein ruhender Leib geht nur in seinem Fenster (jeder `takt`-te Frame, gestaffelt am Index)
             // mit der aufgelaufenen Zeit; ein erwachter trägt die Rest-Zeit in seinen ersten Schritt. Der Takt ändert die
-            // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über `wegMax`.
+            // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über den Teil-Schritt (`_kreaturWeg`).
             const dt = this._kreaturTaktDt(creature, aiFrame + i, delta);
             if (dt === null) continue;
             // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
@@ -3297,28 +3344,28 @@ class AnazhRealm_kreatur_verhalten {
             const steuer = udS._steuer || (udS._steuer = { gier: creature.rotation.y || 0, v: 0 });
             AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, dt, hueftL);
             creature.rotation.y = steuer.gier;
-            const px0 = creature.position.x;
-            const pz0 = creature.position.z;
-            creature.position.x += Math.sin(steuer.gier) * steuer.v * dt;
-            creature.position.z += Math.cos(steuer.gier) * steuer.v * dt;
-            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
-            // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
-            // Spieler).
+            // DER GANG geht den EINEN Weg des Leibs (`_kreaturWeg`): Gier × Tempo und die STRÖMUNG, die SCHWIMMENDE Kreaturen
+            // trägt (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie — Land-Läufer nie: eine Drift des
+            // Wassers, kein Wunsch des Tiers; Quelle = DIESELBE `_waterFlowAt` wie beim Spieler), in Teil-Schritten gegen Hülle
+            // und Leiber.
+            const gang = this._kreaturGangV || (this._kreaturGangV = { x: 0, z: 0 });
+            gang.x = Math.sin(steuer.gier) * steuer.v;
+            gang.z = Math.cos(steuer.gier) * steuer.v;
             if (waterSurface !== null) {
                 const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
                 if (_fl) {
-                    creature.position.x += _fl.x * dt;
-                    creature.position.z += _fl.z * dt;
+                    gang.x += _fl.x;
+                    gang.z += _fl.z;
                 }
             }
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
             // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
             // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
             // DER RUHENDE LEIB GEHÖRT DEM SCHRITT: steht ein Leib, wo ihn sein letzter Stoß-Schritt ließ (`_kreaturRuhtImSchritt`),
-            // löst der Frame-Takt ihn weder gegen die Hüllen noch setzt er seine Höhe — beides tat der Stoß-Schritt mit derselben
-            // Regel; erst wenn er selbst geht, trägt ihn der Frame-Takt.
-            const ruhtImSchritt = this._kreaturRuhtImSchritt(creature);
-            if (!ruhtImSchritt) this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
+            // und geht er nicht, löst der Frame-Takt ihn weder gegen die Hüllen noch setzt er seine Höhe — beides tat der
+            // Stoß-Schritt mit derselben Regel; erst wenn er selbst geht, trägt ihn der Frame-Takt.
+            const ruhtImSchritt = gang.x === 0 && gang.z === 0 && this._kreaturRuhtImSchritt(creature);
+            if (!ruhtImSchritt) this._kreaturWeg(creature, hueftL, gang, dt, i, true);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -3612,6 +3659,8 @@ AnazhRealm._steuerGesetz = function () {
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;
+// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m
+AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02 });
 AnazhRealm._leibGesetz = function () {
     if (AnazhRealm._leibGesetzMemo) return AnazhRealm._leibGesetzMemo;
     const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3711,8 +3760,8 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
 // nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
 // mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
-// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (der Hüllen-Kontakt schiebt hinaus,
-// er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
+// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (ein schnellerer Leib geht voll; der
+// Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
 // Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
 // des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
 // In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens

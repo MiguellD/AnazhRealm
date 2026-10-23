@@ -1200,11 +1200,7 @@ class AnazhRealm_netz_portal {
         }
         if (!kern) return null; // Art ohne Regler-Zeilen, fremdes Rezept oder kalter Kern
         const roh = ov && typeof ov === "object" && !Array.isArray(ov) ? ov : {};
-        const out = {};
-        for (const z of zeilen) {
-            const v = z && typeof z.id === "string" ? roh[z.id] : undefined;
-            if (typeof v === "number" && Number.isFinite(v)) out[z.id] = Math.min(z.max, Math.max(z.min, v));
-        }
+        const out = this._reglerKlemme(zeilen, roh).werte; // die EINE Klemme des Vertrags; was keine Zeile trägt, fällt hier (must-ignore)
         // Die Wahlen des Rezepts (der Körper: Haut, Haar, Kleid) gegen die Tafeln des Kerns; ein erfundener Haar-Stil fiele in
         // haarStreu still auf "mittel" — er kommt gar nicht erst hinein.
         const tafel = (t, v) => !!(t && Object.prototype.hasOwnProperty.call(t, v));

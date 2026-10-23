@@ -1,9 +1,5 @@
 // diag-verdeckungs-abfrage.cjs — DIE LINSE DER VERDECKUNGS-ABFRAGE (npm run gate:verdeckungs-abfrage; 0910-3 A).
 //
-// Befund (Leben-Schau 2, Radeon, Spur B, beim Aussteigen am Bachufer): „No occlusion queries are active" in
-// EndOcclusionQuery (renderContext_4/_6), danach 4× „Invalid CommandBuffer … invalid due to a previous error", 1× THREE
-// „No occlusion queries are active" (r184s Fehler-Bereich um einen asynchronen Pipeline-Bau hatte den Fehler geschluckt und
-// DIESE Pipeline für immer als gescheitert markiert) und 3× PAGEERROR „Invalid value used in weak set".
 // Wurzel: r184 hält die offene Occlusion-Query nur indirekt (`lastOcclusionObject`, träges Ende beim nächsten Draw) und
 // nimmt an, JEDES gezählte Objekt (`occlusionQueryCount`, die Render-Liste) beginne in einem durchgehenden Pass:
 //   - ein Stellvertreter des Berg-Culls (`_bundleQueryTick`), dessen Pipeline noch nicht steht, wird gezählt, aber nicht

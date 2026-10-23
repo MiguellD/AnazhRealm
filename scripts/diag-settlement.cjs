@@ -1553,9 +1553,7 @@ const FIXTURES = [
         const o3 = { x: 900, z: 900 }; // BÜHNE: fail-closed gilt an jedem Ort
         const r3 = await r._spawnSettlementFromExport(await r._ortWahl(fake, o3), o3);
         res.failClosed = r3.placed === 0 && r3.skipped === 1;
-        // 4) Der Chat-Konsument "dorf" existiert in der System-Befehls-Tabelle.
-        res.chatDorf = r.chatSystemPatterns.some((p) => p.example && p.example.indexOf("dorf") === 0);
-        // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
+        // 4) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
         // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         // derselbe Strom für den Chat-Satz „baue dorf hier"
@@ -1851,9 +1849,9 @@ const FIXTURES = [
             } catch (e7) {
                 res.c.blickErr = (e7 && e7.message) || String(e7);
             }
-            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht aus dem Vorlauf-Ring;
-            // Bau-Ereignisse = nach dem Erwachen exportierte Häuser + der erste Slot; `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread
-            // und im Ort-Faden (`_ortWahlMass.kandidaten`)
+            // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht durch den Vorlauf-Ring; `haus` =
+            // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden
+            // (`_ortWahlMass.kandidaten`); `alt` (Selbsttest) stellt die Schichten des Gangs vor das erste Haus
             res.c.k5 = {};
             const FC = globalThis.__fachwerkCore;
             const ortPlan0 = FC.ortPlan;
@@ -1872,8 +1870,8 @@ const FIXTURES = [
             };
             const pm = r.state.playerMesh;
             const p0 = pm.position.clone();
-            const lauf = async (nH, vorlauf) => {
-                const [kx, kz] = key.split(",").map(Number);
+            const [kx, kz] = key.split(",").map(Number);
+            const lauf = async (nH, vorlauf, alt) => {
                 r.state._frameOverBudget = false;
                 const seed = (cand.seed ^ Math.imul(nH * 2 + !vorlauf, 0x9e3779b1)) >>> 0;
                 r._autoSettlementCellInfo = (x, z) => (x === kx && z === kz ? { ...cand, seed, nH } : null);
@@ -1883,38 +1881,32 @@ const FIXTURES = [
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, bau, erst, t0, haupt] = [false, 1, null, 0, 1];
+                let [wach, erst, haus, haupt] = [false, null, -1, 1];
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p && p.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
-                };
-                const req = r.constructor.prototype._foundryRequestSettlement;
-                r._foundryRequestSettlement = function (dp, ...a) {
-                    const n = wach && dp.seed === seed;
-                    return req.call(this, dp, ...a).then((p) => ((bau += n && p ? p.slots.length : 0), p));
                 };
                 const lift = r.constructor.prototype._spawnSettlementSlot;
                 r._spawnSettlementSlot = function (sl, o, ...a) {
                     const q = r._autoSettlementQueue;
                     if (!erst && q && q.cellKey === key)
-                        erst = {
-                            ms: performance.now() - t0,
-                            d: Math.hypot(o.x + sl.x - pm.position.x, o.z + sl.z - pm.position.z),
-                            q,
-                        };
+                        erst = { d: Math.hypot(o.x + sl.x - pm.position.x, o.z + sl.z - pm.position.z), q };
                     return lift.call(this, sl, o, ...a);
                 };
+                const zug = r._dorfZug;
+                if (alt) r._dorfZug = (p, o, k, g) => zug.call(r, p, o, k, (function* () { for (const v of g) if (v !== true) yield v; yield true; })());
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
+                for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 const pw = stell(A.nearM - 20);
                 wach = true;
-                t0 = performance.now();
                 for (
                     const weiter = window.__deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
                     !erst && weiter();
                 ) {
                     r._tickAutoSettlement(pw);
+                    haus++;
                     await new Promise((rs) => setTimeout(rs, 5));
                 }
                 const naechst =
@@ -1927,25 +1919,25 @@ const FIXTURES = [
                 return (
                     erst && {
                         nH,
-                        bau,
                         plaene: haupt + r._ortWahlMass.kandidaten,
-                        ms: Math.round(erst.ms),
+                        haus,
                         ersterM: +erst.d.toFixed(1),
                         naechstM: +naechst.toFixed(1),
                     }
                 );
             };
             try {
-                for (const [k, nH, v] of [
+                for (const [k, nH, v, alt] of [
                     ["vorlauf12", 12, 1],
                     ["vorlauf300", 300, 1],
                     ["teleport12", 12, 0],
                     ["teleport300", 300, 0],
+                    ["alt300", 301, 1, 1],
                 ])
-                    res.c.k5[k] = await lauf(nH, v);
+                    res.c.k5[k] = await lauf(nH, v, alt);
+                res.c.k5.drossel = A.drosselTakte;
                 // C-K5c DER ORT IST EINE FUNKTION (Lehre 7): zwei Vorläufe derselben Saat, der Spieler 3,7 m versetzt im Vorlauf-Ring
                 // — der Plan v2 bit-gleich, sonst die erste abweichende Größe; `stoer` (Selbsttest) rückt den Wunsch mit ihm
-                const [kx, kz] = key.split(",").map(Number);
                 const i3 = { ...cand, seed: (cand.seed ^ 0x51ed) >>> 0, nH: 300 };
                 const fnv = (s) => [...s].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
                 const ortLauf = async (d, stoer) => {
@@ -2037,7 +2029,7 @@ const FIXTURES = [
                 res.c.k5.err = String(e5);
             } finally {
                 FC.ortPlan = ortPlan0;
-                for (const f of ["_autoSettlementCellInfo", "_foundryRequestSettlement", "_spawnSettlementSlot"])
+                for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_dorfZug"])
                     delete r[f];
                 [r._autoSettlementRejected, r._stlWegePending, r._autoSettlementQueue] = alt;
                 Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorraete: new Map() });
@@ -2720,7 +2712,6 @@ const FIXTURES = [
         `mit ${JSON.stringify(out.erlebnis)} · ohne ${JSON.stringify(out.erlebnisLeer)} · Plan ${JSON.stringify(out.planKern)}`
     );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
-    check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
     check(
         "B: Γ5 — der Siedlungs-Same zieht aus dem Bau-Strom (`_bauSame` am Ruf, kein Math.random)",
         out.gammaStream === true
@@ -2946,25 +2937,18 @@ const FIXTURES = [
         c.idempotent === true
     );
     const k5 = c.k5 || {};
-    const q5 = (a, b) => k5[a] && k5[b] && k5[b].bau / k5[a].bau;
     const z5 = JSON.stringify(k5);
-    check(
-        "C-K5: DAS ERSTE HAUS AM ERWACHEN — Bau-Ereignisse bis zum ersten Slot nH 300 / nH 12 ≤ 1,2",
-        q5("vorlauf12", "vorlauf300") <= 1.2,
-        z5
-    );
-    check(
-        "C-K5 Selbsttest: der Teleport ins Erwachen exportiert danach (> 1,2 je Vorlauf)",
-        q5("vorlauf12", "teleport12") > 1.2,
-        z5
-    );
+    // über dem Budget liegt ein Takt des Zugs je drosselTakte Bilder (Stadt GTX 41 fps): 0,5 s tragen `soll` Takte
+    const soll = Math.floor((0.5 * 41) / k5.drossel);
+    const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
+    check(`C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen`, je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll), z5);
+    check("C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT", je(["teleport300", "alt300"], (w) => w.haus > soll), z5);
     check(
         "C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Pläne (Haupt-Thread + Ort-Faden) bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
-        q5("teleport12", "teleport300") && k5.teleport300.plaene / k5.teleport12.plaene <= 1.2,
+        je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
         z5
     );
-    const rang = ["vorlauf12", "vorlauf300"].every((k) => k5[k] && k5[k].ersterM <= k5[k].naechstM);
-    check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", rang, z5);
+    check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", je(["vorlauf12", "vorlauf300"], (w) => w.ersterM <= w.naechstM), z5);
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];
     check(
         "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich",

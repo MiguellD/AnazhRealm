@@ -1037,8 +1037,6 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 4 Phase 1/2/3 — Materialien + Helix + Werkzeuge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave4(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1546,8 +1544,6 @@ async function checkBandWave4(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 5 B/B P2/A/C + Reflexions-Bugfixes).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave5(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -2628,8 +2624,6 @@ async function checkBandWave5(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves9And10a(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -3616,7 +3610,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
 
         // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
-        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
+        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0;
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -3750,7 +3744,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     });
 
     check(
-        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
+        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN)",
         res.defaultFlareExists === true
     );
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);

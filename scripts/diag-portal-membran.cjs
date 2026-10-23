@@ -10,7 +10,7 @@
 //   Z (Ziel, D8): das Fenster wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
 //     Welt (die Datei, die das Studio in seiner Welt backt, `worlds/tor-ziele.json`, gate:studio-huelle H5) mit dem SHA-Stempel
 //     ihrer Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
-//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
+//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel; die Methoden trägt gate:altlasten).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
 //     Fallback), und die Uniforms atmen (time folgt der Bild-Uhr `_bildZeit`).
@@ -533,9 +533,6 @@ async function blickStufe(check) {
         // ── N (Absenz, D8): kein Nebel-Kasten, kein Nebel-Gesetz, kein Host-Panorama ──
         res.n = {
             gesetz: mu.fog === undefined && globalThis.__portaCore.NEBEL_GESETZ === undefined,
-            methoden: ["_nebelMaterialFor", "_nebelGraph", "_torPanorama", "_torPanoMal"].filter(
-                (m) => typeof r[m] === "function"
-            ),
         };
 
         // ── M: Membran-Bau + Atem ──
@@ -755,11 +752,6 @@ async function blickStufe(check) {
         );
     if (out.n) {
         check("N: kein Nebel-Gesetz am Tor (mu.fog, NEBEL_GESETZ fielen)", out.n.gesetz === true);
-        check(
-            "N: keine Methode des Nebel-Kastens und des Host-Panoramas",
-            out.n.methoden.length === 0,
-            out.n.methoden.join(" · ")
-        );
         check(
             "N: kein Nebel-Kasten an der Membran, keiner in der Szene",
             out.n.keinKasten === true && out.n.keinNebelInSzene === true
