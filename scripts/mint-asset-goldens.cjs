@@ -14,7 +14,7 @@ const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
 
 // Die kuratierte Fall-Liste (Playbook P1): die Baum-Presets über die Matrix + je 1 Nicht-Baum. Buche · Karst ·
-// stehendes Totholz (Waldboden 04.10.) tragen seit der Integration (05.10.) dieselbe Matrix wie jeder Baum — zwei
+// stehendes Totholz tragen seit der Integration dieselbe Matrix wie jeder Baum — zwei
 // Samen × L0/L1/L2 × Sommer/Winter: der Laubfall, das kahle Totholz und das Bake-Subjekt der Karte sind eingefroren.
 const TREES = ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz"];
 const T_SEEDS = [7, 12345];
@@ -26,13 +26,13 @@ const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed
 // Die GELIEFERTEN Strauch-Stufen (Welle 6: kindStages shrub [0, 1, 2]) — die Nah-Stufe L0 (OTHERS, die alte L1 Byte für
 // Byte) und die Mittel-Stufe L1 (hier), eingefroren wie die Baum-Stufen (gate:asset-contract hält sie byte-genau).
 const EXTRA = [{ presetId: "strauch", seed: 7, lod: 1, season: "summer" }];
-// DER WALDBODEN (04.10., additiv gemünzt — die 77 Fälle davor blieben byte-gleich): je Boden-Art ihre gelieferten
+// DER WALDBODEN (additiv gemünzt — die 77 Fälle davor blieben byte-gleich): je Boden-Art ihre gelieferten
 // Stufen L0/L1 und die neue Blumen-Stufe L2.
 const WALDBODEN = [];
 for (const presetId of ["farn", "schilf", "gestruepp", "totstamm", "stumpf"])
     for (const lod of [0, 1]) WALDBODEN.push({ presetId, seed: 7, lod, season: "summer" });
 WALDBODEN.push({ presetId: "blume", seed: 7, lod: 2, season: "summer" });
-// DAS GRAS (S3 wiese-gestalten 08.10., additiv gemünzt — die Fälle davor blieben byte-gleich): die zwei Vorlagen der
+// DAS GRAS (additiv gemünzt — die Fälle davor blieben byte-gleich): die zwei Vorlagen der
 // Nah-Wiese (Samen 1 und 2 = die Gestalten der Welt) je gelieferter Stufe L1/L2 — die gestufte Rispe ist eingefroren.
 const GRAS = [];
 for (const seed of [1, 2]) for (const lod of [1, 2]) GRAS.push({ presetId: "gras", seed, lod, season: "summer" });

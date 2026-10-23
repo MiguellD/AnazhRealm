@@ -78,12 +78,6 @@ async function checkBandV1757HeldSlot(ctx) {
         const snap = r.buildStateSnapshot();
         out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
 
-        // (8) UI: kein Rollen-Schloss — der gehaltene Bauplan geht durch den EINEN merged Pfad (wieldBlueprint),
-        // keine getrennte Waffen-Zeile. V18.66 Ich-J2: der „In der Hand"-DROPDOWN ist geschnitten (Parallel-Pfad
-        // zur Hotbar); das Wechseln läuft in der Hand (Hotbar) + Rezeptbuch (wieldBlueprint). Test wandert mit.
-        out.heldDropdownCut = typeof r._equipAppendHeldRow !== "function";
-        out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
-
         // cleanup
         r.equipHeld(null);
         delete r.state.blueprints[wName];
@@ -112,10 +106,6 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldDrivesHarvest
     );
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
-    check(
-        "V18.66 Ich-J2: kein Rollen-Schloss — keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
-        res.noWeaponRow && res.heldDropdownCut
-    );
 }
 
 // das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
@@ -552,12 +542,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
-        // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
-        out.stationLabel = typeof r._stationLabelForDomain === "function";
-
-        // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
-        // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
-        out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -632,11 +616,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
-    check(
-        "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
-        res.oldButtonsGone
-    );
     check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
         "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
@@ -1233,23 +1212,11 @@ async function checkBandWelle6DSoul(ctx) {
         const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
         out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-        // (3) Die Avatar-Aura ist gefallen: Probe auf ABWESENHEIT (Tick, Haut-Shells, Hue-Map,
-        // Loop-Aufruf, p2p-Senden). Der p2p-Empfangs-Stub bleibt must-ignore-tolerant (Alt-Peers senden
-        // aura weiter).
+        // (3) Die Avatar-Aura ist gefallen (ihre Namen bewacht gate:altlasten): eine aura-Nachricht eines Alt-Peers ist
+        // ein UNBEKANNTER Typ, der Dispatcher verwirft sie still (kein Crash, kein Handler, kein State).
         r.applyPlayerSoul("human");
-        const sub = r.state.playerMesh.children[0];
-        out.subMeshExists = !!sub && !!sub.material;
-        out.auraTickGone = typeof r.tickPlayerAura !== "function";
-        out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
-        out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
-        out.auraLoopGone = window.__fehlt(r.startEternalLoop, /tickPlayerAura/);
-        out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
-        // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
-        // Nachricht ist ein UNBEKANNTER Typ und wird vom Dispatcher generisch
-        // still verworfen (kein Crash, kein Handler, kein State).
         out.auraStubTolerant = (() => {
             try {
-                if (typeof r._p2pMsgAura === "function") return false;
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
             } catch (_e) {
@@ -1427,19 +1394,13 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
         check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
-        // (3) SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN (das Band wandert, V9.56-i):
-        check("Reflex 3 SYNERGIE: tickPlayerAura ist PHYSISCH raus", reflexResults.auraTickGone);
-        check("Reflex 3 SYNERGIE: die Fresnel-Haut-Shells sind PHYSISCH raus", reflexResults.auraShellsGone);
-        check("Reflex 3 SYNERGIE: AURA_TAG_HUE-Map ist gefallen", reflexResults.auraMapGone);
-        check("Reflex 3 SYNERGIE: der Loop ruft keine Aura mehr", reflexResults.auraLoopGone);
-        check("Reflex 3 SYNERGIE: die p2p-Sende-Seite ist gefallen", reflexResults.auraSendGone);
         check(
             "Reflex 3 (NULL): aura ist dem Dispatcher unbekannt und wird still verworfen",
             reflexResults.auraStubTolerant
         );
         check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
         check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
-        // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
+        // Drache-Orientierung: KEIN
         // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
         check(
             "Compound-Körper: kein Inner-π-Flip (Avatar schaut vom Spieler weg in 3rd-Person)",
@@ -1608,9 +1569,6 @@ async function checkBandWelle6DSoul(ctx) {
             snap.playerEquipped.held === "test_armor_eisen";
         r.equipHeld(null);
 
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: kein Tick, kein Tint (V9.56-i).
-        out.auraSubMeshTinted = typeof r.tickPlayerAura !== "function";
-
         // Cleanup
         r.equipArmor(null);
         r.equipTool(null);
@@ -1668,10 +1626,6 @@ async function checkBandWelle6DSoul(ctx) {
         check(
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
-        );
-        check(
-            "Welle 6.D 3b/SYNERGIE: der Aura-Tint ist mit der Avatar-Aura gefallen (kein Tick mehr)",
-            wave6d3bResults.auraSubMeshTinted
         );
     } else if (wave6d3bResults && wave6d3bResults.error) {
         check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
@@ -2448,9 +2402,7 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
-        out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
-        // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
+        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
         // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
         // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
         // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
@@ -2590,14 +2542,6 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_phoenix &&
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
-        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
-        out.a4PlaneCut =
-            typeof r._buildHydroWaterfall === "undefined" &&
-            typeof r._buildHydroWaterfallPool === "undefined" &&
-            typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "undefined" &&
-            typeof r.setWaterfallSteep === "undefined";
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
         // Gebaut wird das Sheet eines Meeres-Chunks dreimal: ruhig (Wogen), unter voller Strömung (Fluss) und als See.
@@ -2848,12 +2792,6 @@ async function checkBandPhasenBF(ctx) {
         // if-else-Handler); behavioral: „liste welten“ läuft durch die Tabelle; KONSUM: chatSuggest liest
         // BEIDE Tabellen (der Tippfehler „speichre zustand“ bekommt den System-Vorschlag).
         out.e1OneGate = (() => {
-            const oldHandlersGone =
-                typeof r._chatTryWorldCommand !== "function" &&
-                typeof r._chatTrySystemCommand !== "function" &&
-                typeof r._chatTryAbilityCommand !== "function" &&
-                typeof r._chatTryPersistenceCommand !== "function";
-            if (!oldHandlersGone) return "alte if-else-Handler leben noch";
             const pLw = r.chatSystemPatterns.find((q) => q.re.test("liste welten"));
             if (!pLw) return "Tabelle trägt liste welten nicht";
             const out0 = document.getElementById("chat-output");
@@ -2923,7 +2861,6 @@ async function checkBandPhasenBF(ctx) {
         })();
         // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
         // Material-Probe wandert zur Abwesenheit (der Schnitt bleibt geschnitten).
-        out.b3Mantle = typeof r._ensureHorizonMantle === "undefined";
         // A4-SCHELF, KÜSTEN-AQUIFER — synthetisch auf präpariertem preDensity-Grid (atlas-frei, in-region):
         // (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER; (b) Land über dem Spiegel bleibt
         // trocken; (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (_skyOpenWaterFilter trennt).
@@ -3019,7 +2956,6 @@ async function checkBandPhasenBF(ctx) {
         return;
     }
     check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
-    check("C6/SYNERGIE: die Avatar-Aura (Tick + Haut-Shells) ist PHYSISCH gefallen", res.c6Src);
     check(
         "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
@@ -3035,7 +2971,6 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
         "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
@@ -3056,7 +2991,6 @@ async function checkBandPhasenBF(ctx) {
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
-    check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,
@@ -3415,64 +3349,9 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
-// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
-// Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
-async function checkBandV18209Konsolidierung(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
-
-        // (K2) die R5-Konstante steht (Mana-Drain, Geruch und Baum-Grammatik fahren ihre Bänder am Verhalten)
-        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-
-        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
-        out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
-        // KONSUM: die Boden-Farbe fragt die Schneegrenze des Gelände-Kerns (der Kern ist eingefroren → offene Kopie)
-        const G = window.__gelaendeCore;
-        window.__gelaendeCore = Object.assign({}, G);
-        try {
-            const p = r.state.playerMesh.position;
-            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
-        } finally {
-            window.__gelaendeCore = G;
-        }
-        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
-        out.gammaMLichen = !!A.LICHEN;
-        out.gammaMIronBands = !!A.IRON_BANDS;
-        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
-        out.gamma3Char = !!A.FIELD_CHARACTER;
-        out.gammaBogenKomplett =
-            out.gamma4Anker &&
-            out.gamma6Snowband &&
-            out.gammaMStrata &&
-            out.gammaMLichen &&
-            out.gammaMIronBands &&
-            out.gamma2Totholz &&
-            out.gamma3Char;
-
-        // (K5) MANA-SYMMETRIE Foundation:
-        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
-
-        return out;
-    });
-
-    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
-    check(
-        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
-        res.gammaBogenKomplett === true
-    );
-    check(
-        "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
-        res.manaMaxFn && res.manaRegenConst
-    );
-}
-
 module.exports = {
     checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
     checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
     checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
-    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld, checkBandV18209Konsolidierung,
+    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld,
 };

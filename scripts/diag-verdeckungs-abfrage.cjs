@@ -13,7 +13,7 @@
 //     der Szenen-Tiefe), endet der alte Pass mit offener Query;
 //   - ist ein Stellvertreter der LETZTE Draw eines Probe-Frames, erbt der nächste Frame (Zähler 0 — r184s `beginRender` setzt
 //     `lastOcclusionObject` nur bei Zähler > 0 zurück) die offene Query und schließt sie in einem Pass ohne Abfrage-Satz
-//     (Gegenprüfung 10.10., Radeon, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
+//     (Radeon, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
 // Der Schnitt: der EINE Block „Verdeckungs-Abfrage" in `_configureRenderer` (be.__anazhVerdeckung).
 //
 // Die Linse (echter Frame, WebGPU auf swiftshader, holz=kienspan), am Bach der Mess-Wiese:
@@ -599,7 +599,7 @@ async function verdeckungPhase(opts) {
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
-    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
+    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus)
     for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
     S.phase = "zwischen";
     aus.z = z;

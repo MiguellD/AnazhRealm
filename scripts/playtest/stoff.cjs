@@ -7,7 +7,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // Reflexions-Audit — vier Wände: (1) der Schatten-Weite-Slider treibt unter CSM csm.maxFar (kein
 // toter Knopf) · (2) Kachel-Erosion ohne flowTo-Ballast · (3) die Bestbewertet-Rail liest die
-// aggregierte Wertung · (4) die Nah-Streu würfelt je (Zelle, Art) aus Zelle + Welt-Seed (Γ5, Waldboden 04.10.).
+// aggregierte Wertung · (4) die Nah-Streu würfelt je (Zelle, Art) aus Zelle + Welt-Seed (Γ5).
 // Gegenprobe: die CSM-Haupt-Map rendert NICHT (mainMap=false).
 async function checkBandV18136Audit(ctx) {
     const { page, check } = ctx;

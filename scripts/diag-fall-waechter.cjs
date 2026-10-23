@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-fall-waechter.cjs — DER FALL-WÄCHTER: jeder Körper steht auf dem Boden
-// UNTER ihm — keiner fällt durch ihn, keiner springt aufs Dach. Befund (sichtbar gefahren, echte Radeon, Spur B Bilder 34–37):
-// der GT flog mit 38 km/h über die Spaltkante (−904/−975), prallte an die Gegenwand, rollte zurück in den Grund und unter den
-// Überhang der Westwand (Fels 22,3–29,5 m, Luft 16–22,3 m) — dort lag sein Boden 12 m ÜBER ihm: der Fahr-Schritt las die
-// Oberkante der Säule (`getTerrainHeightAt`), und der Flug-Zweig des Kerns ließ ihn fallen, −6 428 m nach 30 s, das Bild
-// fror senkrecht ein. Dieselbe Klasse trug das gestoßene Tier (der Gleit-Schritt las die Oberkante: in der Höhle aufs Dach)
-// und der Ritt (`_rittEbene`, `_rittSchritt`); der Spieler (`_fieldSurfaceBelow`) und das gehende Tier
-// (`_creatureGroundY` → `_koerperBodenUnter`) lasen den Boden unter dem Körper schon. Die Wand (Null-Renderer, echter
+// diag-fall-waechter.cjs — DER FALL-WÄCHTER (Familie koerper-bild): jeder Körper — Wagen, Ritt, gestoßenes und gehendes
+// Tier, Spieler — steht auf dem Boden UNTER ihm (`_koerperBodenUnter`), keiner fällt durch ihn, keiner springt aufs Dach.
+// Die Wand (Null-Renderer, echter
 // Spiel-Takt `_gameLoopTick`, die Boden-Wahrheit ist das Dichtefeld selbst — der erste Fels unter dem Körper):
 //   (O) DIE ORTE DER SCHAU
 //       O1 der Wagen im Spaltgrund unter dem Überhang (die nächste Spalte der Welt, in die er passt — welt-orte `hoehle`): aufgesessen, in der Luft wie in der Schau — nach 4 s
@@ -16,16 +11,12 @@
 //          tiefer als FALL_M unter seinem Grund, nie unter der Todes-Ebene;
 //       O3 die Höhle der Boden-Funktion (die nächste Kammer der Welt mit Wand, welt-orte `hoehle`): ein Wagen auf dem Höhlen-Grund,
 //          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
-//          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
-//          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach); und ein Wolf, der auf dem Grund
+//          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib); und ein Wolf, der auf dem Grund
 //          STIRBT, in TOD_GIER Blickrichtungen: die tiefste Stelle seiner Haut (je Punkt gegen den Fels unter ihm, absolut)
 //          liegt nach dem Kippen nie tiefer als TOD_M im Fels und nie höher als TOD_LIEGT_M über ihm (über einem Stand
-//          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
-//          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund; CI 38029478199: eine andere Gier sank
-//          0,24 m — die Tafel hielt einen Stand, der schon im Hang steckte). Der lebende Stand liegt nie tiefer als TOD_M im
+//          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M. Der lebende Stand liegt nie tiefer als TOD_M im
 //          Fels (STAND IM FELS), und der in die Wand laufende Wolf steht am Ende nie mit der Stirn höher über seinem Heck, als
-//          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND, Prüfung 2 K02a: er
-//          stieg die gekrümmte Wand hinauf, Stirn 3,60 m über dem Heck; unter CPU-Last ruhte er 1,00 m über seinem Grund);
+//          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND);
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
@@ -809,8 +800,7 @@ async function probe(K) {
     // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
     // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
     // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
-    // die Tiefe darin). Vorher las die Tod-Lage die Oberkante der Säule als Boden: in der Höhle legte sich der Leib nach dem
-    // Hang des Dachs.
+    // die Tiefe darin).
     const hautAbstand = (c) => {
         c.updateMatrixWorld(true);
         const T = window.THREE || globalThis.THREE;

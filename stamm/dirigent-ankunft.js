@@ -792,7 +792,7 @@ class AnazhRealm_dirigent_ankunft {
     // DER KOPF DER ANKUNFTS-KETTE geht mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
     // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
     // zwölf Bäumen); er wartet im Werk hinter dem Blatt-Atlas. Das Start-Dorf ist ein WARTENDER am Buch (`_startDorfAmBuch`,
-    // K22): rief der Ingest seinen Export, schloss die Dorf-Kette über die Ort-Wahl (`_ortPlanWarten`) einen Zeit-Kreis
+    // K22): rief der Ingest seinen Export, schloss die Dorf-Kette über die Ort-Wahl (`_ortWahl`) einen Zeit-Kreis
     // zurück in den Ingest (gate:v1-pfad W7).
     _buchKoepfe() {
         if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
@@ -995,7 +995,7 @@ class AnazhRealm_dirigent_ankunft {
             let haeuser = 0;
             if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
                 for (let i = q.idx; i < q.plan.slots.length; i++) {
-                    const s = q.plan.slots[i];
+                    const s = q.plan.slots[q.reihe[i]];
                     const hx = s && q.origin.x + s.x;
                     const hz = s && q.origin.z + s.z;
                     if (s && (hx - p.x) ** 2 + (hz - p.z) ** 2 <= R * R && imBlick(hx, hz)) haeuser++;

@@ -98,7 +98,7 @@ const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
     await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(() => {
@@ -448,7 +448,7 @@ async function stufenMessen(h, opts) {
         if (pl.nurAbdruck) return;
         // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
         if (!(pl.k.teile && pl.k.teile.length)) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
-        // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß: am Regler-Rand richtet der WURF
+        // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A): am Regler-Rand richtet der WURF
         const zu = ["tris", "draws"].filter(
             (f) =>
                 Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)

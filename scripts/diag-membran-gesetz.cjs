@@ -1,4 +1,4 @@
-// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ.
+// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ (V18.464, W9-Muster).
 // Beweist in drei Wänden, dass die Portal-Passage EINE Zahlen-Quelle hat:
 //
 //   1. ZWILLINGS-WAND: porta-core.MEMBRAN_GESETZ trägt EXAKT die eingefrorenen
@@ -33,7 +33,7 @@ function eq(a, b, tol) {
 
 console.log("— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —");
 
-// ── Wand 1: die Zwillings-Tabelle ──
+// ── Wand 1: die Zwillings-Tabelle (Alt-Literale V18.463, eingefroren) ──
 const FROZEN = {
     profilW: 64,
     seg: 45, // 1310-3: von 90 (Vertex-Welle bildgleich bei 45, Genesis −47k Dreiecke, −1,0 ms GPU) — ein erklärter Akt
@@ -55,7 +55,7 @@ const FROZEN = {
     swirlK: 0.5,
     openK: [0.4, 0.6],
     centerK: 0.55,
-    // D8: der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block fallen —
+    // D8 (ein erklärter Vertrags-Akt): der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block fallen —
     // die Öffnung zeigt das Ziel-Panorama über die Stellvertreter-Kugel, darüber der Seifenfilm (Rand gezähmt)
     film: {
         kugel: 4.0,

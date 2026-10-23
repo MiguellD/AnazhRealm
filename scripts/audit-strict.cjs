@@ -266,9 +266,7 @@ async function auditStateAndMethods() {
                 "blueprintEditHistory",
                 // Lebendiges Feld (V17.27-Overlays — alle lazy-init mit `if (!state.X)`)
                 "lifeField",
-                "lifeFieldLastPrune",
                 "emotionField",
-                "emotionFieldLastPrune",
                 "wohlBaseline",
                 // Tick-Memoization (-Infinity Sentinel)
                 "_lastDayNightApply",

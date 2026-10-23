@@ -5,7 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Band-Funktion (Ring 2 Phase 3/6/7 + Schicht 1 IQ).
+// V9.52-b Sub-Welle b — Band-Funktion (Ring 2 Phase 3/6/7 + Schicht 1 IQ).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing2Extended(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
@@ -91,7 +91,7 @@ async function checkBandRing2Extended(ctx) {
             learned.source === "human";
 
         // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
-        // Kreatur ist Group; Color lebt auf Sub-Meshes.
+        // Welle 6.H P2A — Kreatur ist Group; Color lebt auf Sub-Meshes.
         const someCreature = r.state.creatures[0];
         const readCreatureColor = (c) => {
             if (!c) return 0;
@@ -125,14 +125,7 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // 10. Phase 5: createDynamicAbility/codeParser sind weg
-        out.dynamicCodeMethodsRemoved =
-            typeof r.createDynamicAbility === "undefined" &&
-            typeof r.codeParser === "undefined" &&
-            typeof r.developAdvancedPhysics === "undefined" &&
-            typeof r.developAdvancedRenderer === "undefined";
-
-        // „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
+        // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
         for (let i = 0; i < 9; i++)
@@ -195,10 +188,6 @@ async function checkBandRing2Extended(ctx) {
         check(
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
-        );
-        check(
-            "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
-            phase3Results.dynamicCodeMethodsRemoved
         );
         check(
             "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
@@ -465,7 +454,7 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
-// Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -479,12 +468,10 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // 1. Methoden existieren
-        out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
-        // die Kreatur-Liste ISOLIEREN — am vollen
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -574,10 +561,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
         check(
-            "Welle 6.H P2E V1: llmCallCreature existiert (die Suite ruft ihn nie)",
-            wave6hP2eV1Results.hasLlmCallCreature
-        );
-        check(
             "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
             wave6hP2eV1Results.findExact && wave6hP2eV1Results.findCaseInsensitive && wave6hP2eV1Results.findUnknown
         );
@@ -659,7 +642,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 7. Liste rendert Soul-Klassen auf creature-name
         const player = r.state.playerMesh.position;
-        // die Kreatur-Liste ISOLIEREN — am vollen
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -785,7 +768,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         r.state.creatureProactiveSpeechEnabled = true;
         r.state.lastCreatureProactiveSpeech = -Infinity;
         const player = r.state.playerMesh.position;
-        // die Kreatur-Liste ISOLIEREN — am vollen
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -988,7 +971,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
         out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
         // 2. Validator: erlaubtes Programm
@@ -1014,7 +996,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
         const player = r.state.playerMesh.position;
-        // die Kreatur-Liste ISOLIEREN — am vollen
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -1119,10 +1101,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
+            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
                 wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.hasRareEventTrigger &&
                 wave6hP2eV3Results.rareEventGap
         );
         check(
@@ -1197,7 +1178,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-// Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
+// V9.52-e Sub-Welle e — Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWorkshopPolishAndLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1212,12 +1193,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            // Methoden
-            out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
-            // der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
-            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
-            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
-            out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
@@ -1247,11 +1222,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Wenn Spieler Werkzeuge hat, sind Cards drin
             const playerTools = (r.state.player && r.state.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
-            // die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
+            // V17.91 — die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
             void playerTools;
             out.toolPaletteHasCards = out.toolCardsCount > 0;
 
-            // der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
+            // V17.91 — der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
             // Werkstatt ist 3D-zentrisch); die Editor-Akte Undo/Redo/Löschen wohnen jetzt in der Top-Leiste.
             out.editorRemoved =
                 !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
@@ -1296,10 +1271,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v805Results && !v805Results.error) {
-        check(
-            "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
-            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
-        );
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
             v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
@@ -1346,13 +1317,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
+            // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
-
-            // Methode existiert
-            out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
 
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");
@@ -1407,10 +1375,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(
             "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
-        );
-        check(
-            "V8.06: _workshopInstallActionButtons existiert (die Suite fährt ihn nicht)",
-            v806Results.hasActionInstall
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
@@ -1543,7 +1507,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
         out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
 
-        // Parser nutzt Plain-Text-Fallback statt strict-error.
+        // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
         // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
         // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
         const broken = r.llmParseResponse("nicht json");
@@ -1640,7 +1604,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
 
         // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
-        // 400→800 für Reasoning-Models (think-Block + Antwort)
+        // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
         const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
             endpoint: "http://localhost:11434",
         });
@@ -1648,7 +1612,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
 
         // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
-        // 400→800
+        // V7.98: 400→800
         const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
             endpoint: "https://provider/v1/chat/completions",
         });

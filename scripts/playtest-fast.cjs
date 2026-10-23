@@ -27,7 +27,7 @@ function check(name, ok) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
+    const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
@@ -304,10 +304,8 @@ function check(name, ok) {
             // STATS: der Spieler hat sinnvolle Werte (hp in state.player.hp, speed in state.speed)
             out.playerStats = safe(() => {
                 let hpMax = null;
-                if (typeof r.computePlayerStats === "function") {
-                    const cs = r.computePlayerStats();
-                    hpMax = cs && cs.stats ? cs.stats.hpMax : null;
-                }
+                const cs = r.computePlayerStats();
+                hpMax = cs && cs.stats ? cs.stats.hpMax : null;
                 return {
                     hp: st.player ? st.player.hp : null,
                     hpMax,

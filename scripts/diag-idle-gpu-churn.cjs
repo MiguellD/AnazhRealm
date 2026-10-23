@@ -92,7 +92,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     r.state.renderer.render = function () {};
                     if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
                     r.state.postProcessingFailed = true;
-                    // P0 — die Bühne für diese Linse VOR-latchen: sie misst
+                    // P0 (Bühnen-Ordnung) — die Bühne für diese Linse VOR-latchen: sie misst
                     // Steady-State-Idle-Churn, nicht die Boot-Ordnung. Ohne Latch könnte das Bühnen-
                     // Prädikat mitten im 16-Frame-Mess-Fenster schließen → Fern-Deko (Planeten/Sterne)
                     // + Bake-Queue kompilierten neue Pipelines = falsches ❌ (Boot-Transient, kein Churn).
@@ -467,7 +467,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     const a1 = await stand();
     const idle = { gesamt: a1.tot - a0.tot, wdh: a1.wdh - a0.wdh };
 
-    // CHECK B — ENV-REGENERIERUNG: die Himmelsfarbe wechselt (wie die
+    // CHECK B — ENV-REGENERIERUNG (die scharfe V18.322-Wand): die Himmelsfarbe wechselt (wie die
     // Tag-Nacht-Uhr es im Stehen tut) → die Env regeneriert. Eine KORREKTE Implementierung nutzt
     // das Target wieder (stabile Identität → 0 Recompiles); der alte Churn rekompilierte ~270/Regen.
     // SELBSTTEST (--selbsttest-churn): die V18.322-Klasse künstlich zurück — jede Regenerierung eine NEUE

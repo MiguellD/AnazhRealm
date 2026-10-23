@@ -1,4 +1,4 @@
-// tor-huelle.cjs — DIE MASSE DER GEZEICHNETEN TOR-GESTALT (Leben-Schau 2, Nachbesserung 10.10.): je Tor-Rezept die Hülle,
+// tor-huelle.cjs — DIE MASSE DER GEZEICHNETEN TOR-GESTALT (Leben-Schau 2): je Tor-Rezept die Hülle,
 // mit der der Wirt das Tor stoßen lässt (`_torBlockerAABBs`), gemessen an der Gestalt, die das Studio zeichnet (porta-core
 // `buildInstance`, LOD 0 — seed-invariant, im Foundry-Worker auf three r128 gebaut wie hier in Node). Je Seite (0: x < 0,
 // 1: x > 0 — eine Ruine fehlt hier ein Stein, dort nicht): die Außenkante der Pfosten (Punkte außerhalb der Öffnung ±rimAx

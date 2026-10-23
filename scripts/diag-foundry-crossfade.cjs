@@ -308,7 +308,7 @@ function mitTaeter(glied, taeter) {
 async function runPartB() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const pageErrors = [];
@@ -764,7 +764,7 @@ async function runPartB() {
                         st.playerMesh.position.set(E.px - raw, E.py, E.pz);
                         r._archLODCursor = 0;
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
-                        r._tickBauSatz(); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`)
+                        r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
                         const neu = new Map(),
                             alt = new Map();
                         for (const list of [E.entry.instSlots, E.entry.instSlotsBand])
@@ -826,7 +826,7 @@ async function runPartB() {
                         for (const [art, S] of st.chunkSaetze || [])
                             if (st.satzStoffe && st.satzStoffe.has(art)) for (const key of S.bloecke.keys()) r._bauSatzMarke(key, art);
                         for (const g of (st.archInstanceGroups || new Map()).values()) if (g.satz) r._bauSatzMarke(g.key, g.satz);
-                        r._tickBauSatz();
+                        r._tickBauSatz(Infinity);
                     }
                 };
                 for (const op of res.kette || []) {

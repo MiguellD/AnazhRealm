@@ -1379,7 +1379,8 @@ class AnazhRealm_dienst {
     //   · der Ort: der Ring die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings, Stufen-Wahlen und Kacheln Spieler
     //     oder Auge auf STAND_RAND_M, der Cull (Urteile ab 100 m) auf STAND_RAND_FERN_M — so kostet Gehen nur, was es ändert.
     // Offenes (ein Asset lädt, ein Budget ist leer) hält nur den eigenen Takt wach. Die Zeit weckt nie: Takte mit eigener Uhr
-    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
+    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Wuchs, Feld, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache —
+    // die langsamen Simulationen schlafen an ihrem eigenen Fixpunkt bis zu ihrem Ereignis (feld.K3, gate:stand-takt RUHE-SIM).
     // Die Wand: gate:stand-takt (Ruhe 0, Treue, Wecken, Gehen, Strom; der Bruch fällt rot).
     // `boden`: die Chunk-Menge regt sich — das weckt auch die Boden-Takte.
     // `stufe` (K51-5): ein Chunk tauschte nur seine Stufe (`_rebuildVoxelChunk`) — die Menge steht, es regt sich nur die

@@ -648,14 +648,12 @@ function erstWandInstall(BUNDLE_FRAMES) {
         }
         // die Backend-Weiche: eine Anmeldung auf WebGL2 trägt sich nicht in die Schlange ein, der wartende Draw zählt
         let webgl = null;
-        if (typeof r._erstWartet === "function") {
-            const n0 = ESt.offen.size,
-                w0 = ESt.wartetN;
-            const attrappe = { cacheKey: "webgl-attrappe", vertexProgram: { name: "webgl" } };
-            r._erstWartet({ isWebGPUBackend: false, isWebGLBackend: true, get: () => ({}) }, attrappe, null);
-            webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
-            ESt.offen.delete(attrappe);
-        }
+        const n0 = ESt.offen.size,
+            w0 = ESt.wartetN;
+        const attrappe = { cacheKey: "webgl-attrappe", vertexProgram: { name: "webgl" } };
+        r._erstWartet({ isWebGPUBackend: false, isWebGLBackend: true, get: () => ({}) }, attrappe, null);
+        webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
+        ESt.offen.delete(attrappe);
         const gpuWache = (r._gpuWache ? r._gpuWache.n : 0) - g0;
         return { ruheMs, ruheOffen, zeilen, absagen: (ESt.absagenN || 0) - a0, gpuWache, frames, offenDanach, wurf, webgl };
     };

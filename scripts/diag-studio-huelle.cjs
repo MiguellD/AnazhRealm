@@ -155,7 +155,7 @@ function baum() {
 
 function pruefe(karte) {
     const rot = [];
-    // VERALTET sperrt nicht: ein Panorama, dessen Quellen sich seither änderten, steht benannt
+    // VERALTET sperrt nicht (D8-Merge, wie K5): ein Panorama, dessen Quellen sich seither änderten, steht benannt
     // „veraltet“, bis jemand backt (`--panorama`) — sonst sperrte jede Welle an einer Studio-Quelle, der Hülle oder einem Kern check:statik
     const veraltet = [];
     const zahl = { handRegler: 0, bruecken: [] };

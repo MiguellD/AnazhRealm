@@ -242,7 +242,7 @@ function staticLaws(garage) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
@@ -254,7 +254,7 @@ function staticLaws(garage) {
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
@@ -397,7 +397,7 @@ function staticLaws(garage) {
                 } catch (eD) {
                     res.drive.donorErr = (eD && eD.message) || String(eD);
                 }
-                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
+                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
                 for (let i = 0; i < 120; i++) {
@@ -452,7 +452,7 @@ function staticLaws(garage) {
         } catch (e) {
             res.driveErr = (e && e.message) || String(e);
         }
-        // ===== B-e: DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
+        // ===== B-e (W5 Gegenstände): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
         // Der GT fährt durch den echten Sim-Schritt `_stepFixedSim` (Kapsel · Bewegung · Ritt-Sitz, 60 Hz) + den Frame-Tick:
         // 90 Ticks Gas geradeaus, dann 120 Ticks voller Lenk-Einschlag. Gemessen an der GERENDERTEN Matrix
         // (`_archEntryWorldMatrix`) und am Gesetz (exportDrive.huelle):
@@ -515,7 +515,7 @@ function staticLaws(garage) {
                 let vEnde = 0;
                 const tick = (lenk) => {
                     t += dt;
-                    // der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
+                    // Welle L (Q0 F-L6): der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
                     // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
                     r._stepFixedSim(t, dt);
                     const v = r.state.playerVel;
@@ -586,7 +586,7 @@ function staticLaws(garage) {
         } catch (e) {
             res.gefuehlErr = (e && e.message) || String(e);
         }
-        // ===== B-f: DER STAND AM HANG =====
+        // ===== B-f (W5 Gegenstände): DER STAND AM HANG =====
         // Je Hang-Probe (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der Spawn-Pfad wie
         // Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der GERENDERTEN
         // Matrix gegen das Boden-Gesetz. Die Hänge kommen aus der Welt (welt-orte `hang`, K55-5 — bis dahin ±40 m um die

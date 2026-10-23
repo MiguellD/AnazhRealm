@@ -31,7 +31,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     console.log("\n=== TEIL B-D: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const pageErrors = [];
@@ -40,7 +40,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._foundryWorldScaleMatrix !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         // Worker + Config abwarten (get-render-config folgt dem ready-Handshake).

@@ -913,9 +913,7 @@ const server = statikServer();
                     const weicheP9 =
                         regel !== 1
                             ? 0
-                            : typeof r._fernRingWeiche === "function"
-                              ? r._fernRingWeiche(fr9, x, z, rN.x, rN.y, rN.z)
-                              : weiche9;
+                            : r._fernRingWeiche(fr9, x, z, rN.x, rN.y, rN.z);
                     weicheMax9 = Math.max(weicheMax9, weicheP9);
                     const ueber = yr - weicheP9 - yc;
                     const gesetz9 = r._terrainMacroSurfaceY(x, z, true);

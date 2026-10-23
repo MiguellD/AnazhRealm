@@ -1,14 +1,14 @@
-// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept, 05.10.): jede Linse, die WebGPU fährt,
+// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt,
 // holt ihre Browser-Schalter aus scripts/lib/software-gpu.cjs. Befund: 13 Skripte trugen eigene Kopien in 5 Varianten;
 // auf dem Linux-Runner starb das Gerät an der fehlenden Swapchain-Ablage, unter Windows fuhren sieben „WebGPU"-Linsen
 // still den WebGL2-Rückfall (die Vulkan-Kopie liefert dort keinen Adapter). Rein statisch, kein Browser.
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
 //   W2  das Rezept selbst: Linux trägt die Swapchain-Schalter, Windows trägt keinen Vulkan-/ANGLE-Schalter; die Weiche
-//       gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
+//       (K39) gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
 //   W3  keine Linse ruft das swiftshader-Rezept (`softwareWebGpuArgs`) an der Weiche vorbei — der Rückweg ist LINSE_GPU
 //   W4  jede Linse an der Weiche nennt ihren Adapter: je Aufruf von `linsenWebGpuArgs()` ein `adapterZeile(…)`
-//   W5  DIE ZEIT-ACHSE: die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
+//   W5  DIE ZEIT-ACHSE (K39-2): die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
 //       swiftshader; jede Zeit-Linse (ZEIT_LINSEN: ein Urteil, das auf swiftshaders Zeit geeicht ist) trägt `zeit: true`
 //       an ihrem Start und fährt so swiftshader; die Zeit-Zeile in welt-boot nennt eine Zeit-Linse auf der Karte ROT
 //   --selftest: ein eingeschmuggeltes Literal (auch ein eigenes Adapter-Literal) wird genannt, eine Kommentar-Erwähnung

@@ -242,7 +242,7 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (THREE && THREE.Color && pm) {
-            // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
+            // V18.369 — Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
             // (deterministisch, V18.236-Muster), dann den Default (0) wiederherstellen.
             const _origAuraK1732 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
@@ -335,7 +335,6 @@ async function checkBandV1742Wohl(ctx) {
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
         r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
-        r._wohlPruneLast = -Infinity;
         r._pruneWohlBaseline(W.pruneAgeSec + 10);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
@@ -618,7 +617,7 @@ async function checkBandV1750Klammer(ctx) {
     );
 }
 
-// Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6APolish(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -661,13 +660,13 @@ async function checkBandWelle6APolish(ctx) {
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
         out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0);
 
-        // temple ist jetzt instanced (kein entry.mesh). Die
+        // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
         if (entry && entry.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (entry && entry.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -686,7 +685,7 @@ async function checkBandWelle6APolish(ctx) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
             r.state.playerMesh.position.set(archX, topY + 50, archZ);
-            // Cache invalidieren vor frischem Compute.
+            // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
             delete r.state._groundedCachedAt;
             out.isGroundedHighInSky = r.isPlayerGrounded();
             // Positiv-Test: die visuelle Top-BBox ist nicht 1:1 die Kollision (Dekor-Spitzen ragen über die
@@ -808,11 +807,11 @@ async function checkBandWelle6APolish(ctx) {
             ? `mesh=${!!_entryA3.mesh} instanced=${!!_entryA3.instanced} keys=${Object.keys(_entryA3).slice(0, 10).join("/")}`
             : "null";
         let flatBlueprintNotSteep = false;
-        // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
+        // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+        } else if (_entryA3 && _entryA3.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -971,7 +970,7 @@ async function checkBandWelle6APolish(ctx) {
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (!r || typeof r.describeProgram !== "function") return null;
+        if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
@@ -1030,9 +1029,7 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // (a) Das Anleitungs-Modal ist restlos entfernt.
-        out.introDialogGone = typeof r.initIntroDialog === "undefined";
-        out.introPagesGone = typeof r._introPages === "undefined";
+        // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
         const msg = r._firstWelcomeMessage();
@@ -1057,8 +1054,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wowStartResults) {
-        check("UI-Putz WOW-Start: Anleitungs-Modal (initIntroDialog) entfernt", wowStartResults.introDialogGone);
-        check("UI-Putz WOW-Start: _introPages-Helper entfernt", wowStartResults.introPagesGone);
         check("UI-Putz WOW-Start: kein #intro-dialog im DOM", wowStartResults.noDialogInDom);
         check("UI-Putz WOW-Start: Begrüssung ist eine Einladung (nicht-leer)", wowStartResults.welcomeIsInvitation);
         check("UI-Putz WOW-Start: Begrüssung ist KEINE Steuerungs-Anleitung", wowStartResults.welcomeNotManual);
@@ -1111,7 +1106,7 @@ async function checkBandWelle6APolish(ctx) {
         // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
         // wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
         const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
-        // eine Verbindung erzeugt jetzt eine Linie UND
+        // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
         let connLineCount = 0;
@@ -1131,7 +1126,7 @@ async function checkBandWelle6APolish(ctx) {
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
-        // OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
+        // V18.153 — OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
         // keine Linien/Marker über gespawnten Gefährten/Portalen.
         let worldLines = 0;
         const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
@@ -1268,7 +1263,7 @@ async function checkBandWelle6APolish(ctx) {
     }
 }
 
-// Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6GHylomorphism(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1281,14 +1276,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // Spawn-Pfade für Inseln + UFOs leben; die Baum-Helfer (spawnTreeAt, _buildTreeCollision) und die
-        // Ammo-Kollisions-Builder (`_buildIslandCollision`/`_disposeStaticCollision`) sind WEG — die
-        // Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
-        out.islandCollisionHelpersRemoved =
-            typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
-        out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
-        out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
-
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
         const bps = r.state.blueprints || {};
@@ -1312,7 +1299,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
         // der Leser des Ladeschirms). Die Lücke ist nur das WARTEN, nie das Urteil: „bauten" zählt jedes Bauwerk, ein Haus im Werk
-        // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
+        // sperrte G1 und D2M (n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
             r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
@@ -1382,7 +1369,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.newTreeTakte++;
             if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
         }
-        // instancierter Baum: gerendert via Instance-Slot
+        // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
         // DETERMINISMUS-BOGEN P3 — Baum-Kollision ist feld-nativ via blockerAABBs
@@ -1435,39 +1422,33 @@ async function checkBandWelle6GHylomorphism(ctx) {
         }
 
         // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
-        if (typeof r.parseChatToDsl === "function") {
-            const treeBuilt = r.parseChatToDsl("pflanze baum hier");
-            const treeProg = treeBuilt && treeBuilt.program;
-            out.chatTreeProg =
-                Array.isArray(treeProg) &&
-                treeProg[0] === "spawn_tree" &&
-                Array.isArray(treeProg[1]) &&
-                treeProg[1][0] === "at";
-            const islandBuilt = r.parseChatToDsl("setze insel hier");
-            const islandProg = islandBuilt && islandBuilt.program;
-            out.chatIslandProg =
-                Array.isArray(islandProg) &&
-                islandProg[0] === "spawn_island" &&
-                Array.isArray(islandProg[1]) &&
-                islandProg[1][0] === "at" &&
-                Number.isFinite(islandProg[3]);
-            const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
-            const ufoProg = ufoBuilt && ufoBuilt.program;
-            out.chatUfoProg =
-                Array.isArray(ufoProg) &&
-                ufoProg[0] === "spawn_ufo" &&
-                Array.isArray(ufoProg[1]) &&
-                ufoProg[1][0] === "at";
-        }
+        const treeBuilt = r.parseChatToDsl("pflanze baum hier");
+        const treeProg = treeBuilt && treeBuilt.program;
+        out.chatTreeProg =
+            Array.isArray(treeProg) &&
+            treeProg[0] === "spawn_tree" &&
+            Array.isArray(treeProg[1]) &&
+            treeProg[1][0] === "at";
+        const islandBuilt = r.parseChatToDsl("setze insel hier");
+        const islandProg = islandBuilt && islandBuilt.program;
+        out.chatIslandProg =
+            Array.isArray(islandProg) &&
+            islandProg[0] === "spawn_island" &&
+            Array.isArray(islandProg[1]) &&
+            islandProg[1][0] === "at" &&
+            Number.isFinite(islandProg[3]);
+        const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
+        const ufoProg = ufoBuilt && ufoBuilt.program;
+        out.chatUfoProg =
+            Array.isArray(ufoProg) &&
+            ufoProg[0] === "spawn_ufo" &&
+            Array.isArray(ufoProg[1]) &&
+            ufoProg[1][0] === "at";
 
         return out;
     });
 
     if (wave6gResults && !wave6gResults.error) {
-        check(
-            "Welle 6.G P1.5 → P3: die Ammo-Insel-Kollisions-Helfer sind feld-nativ ersetzt (geschnitten)",
-            wave6gResults.islandCollisionHelpersRemoved
-        );
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
@@ -1483,17 +1464,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             // Mesher mit densityFn-Callback: untere Hälfte fest,
             // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
-            out.mesherAcceptsDensity =
-                typeof r._voxelChunkGeometry === "function" &&
-                (() => {
-                    try {
-                        const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
-                        const pos = g && g.getAttribute("position");
-                        return !!(pos && pos.count > 0);
-                    } catch {
-                        return false;
-                    }
-                })();
+            out.mesherAcceptsDensity = (() => {
+                try {
+                    const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                    const pos = g && g.getAttribute("position");
+                    return !!(pos && pos.count > 0);
+                } catch {
+                    return false;
+                }
+            })();
             return out;
         });
         check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
@@ -1524,7 +1503,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
             (r42bSkirt.duplicates || 0) >= 200
         );
-        // Insel-Höhen-Amplitude skaliert mit `height`.
+        // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
         const r42bIslandAmp = await page.evaluate(() => {
             const r = window.anazhRealm;
             const noise = { noise2D: () => 0.5 };
@@ -1539,7 +1518,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
             r42bIslandAmp.ratio > 1.5
         );
-        // DSL spawn_island akzeptiert 5. `size`-Argument.
+        // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
         const r42bDsl = await page.evaluate(() => {
             const r = window.anazhRealm;
             const before = r.state.floatingIslands.length;
@@ -1577,14 +1556,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
-        check(
-            "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-            wave6gResults.parallelTreeHelperRemoved
-        );
-        check(
-            "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-            wave6gResults.parallelSpawnTreeAtRemoved
-        );
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
@@ -1651,7 +1622,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // der Voxel-Populator ist die lebende Schicht.
+        // V9.39 — der Voxel-Populator ist die lebende Schicht.
         const bps = r.state.blueprints || {};
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
@@ -1735,17 +1706,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // (am Voxel-Chunk-Lifecycle); geprüft wird dessen Idempotenz-Cache `voxelPopulatedChunks`, den
         // die initialen Voxel-Chunks beim Welt-Aufbau füllen.
         out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
-        if (typeof r._populateVoxelChunkVegetation === "function") {
-            const before = archs.length;
-            // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
-            // zurückgeben dank voxelPopulatedChunks-Cache.
-            const firstChunkKey = r.state.voxelPopulatedChunks ? [...r.state.voxelPopulatedChunks][0] : null;
-            if (firstChunkKey) {
-                const [cx, cz] = firstChunkKey.split(",").map(Number);
-                const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
-                const after = r.state.architectures.length;
-                out.populateIdempotent = secondReturn === 0 && after === before;
-            }
+        const before = archs.length;
+        // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
+        // zurückgeben dank voxelPopulatedChunks-Cache.
+        const firstChunkKey = r.state.voxelPopulatedChunks ? [...r.state.voxelPopulatedChunks][0] : null;
+        if (firstChunkKey) {
+            const [cx, cz] = firstChunkKey.split(",").map(Number);
+            const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
+            const after = r.state.architectures.length;
+            out.populateIdempotent = secondReturn === 0 && after === before;
         }
         // Die Stamm-Dicke ist grammatik-getrieben: geprüft wird nur, dass der gewachsene Baum einen
         // holz-Stamm trägt.
@@ -1760,31 +1729,29 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.archAffinityTags = {};
         out.archResoniert = {};
         out.archBroadcasting = {};
-        if (typeof r.computeCompoundTags === "function") {
-            // 4 Spawn-Affinitäts-Achsen + resoniert (Musik-Achse): resoniert treibt nicht den Spawn, aber den
-            // Resonator/Abschied-Ping — und kann über FORM_TAG_ACTIVATION genauso unbemerkt kippen.
-            const AFF_AXES = ["lebendig", "dichte", "brennbar", "magieleitung"];
-            const spawnable = [
-                "baum_eiche",
-                "baum_kiefer",
-                "stein_block",
-                "kristall_geode",
-                "glutbrunnen",
-                "felsbogen",
-                "felsturm",
-            ];
-            for (const n of spawnable) {
-                const bp = bps[n];
-                if (!bp) continue;
-                const tags = r.computeCompoundTags(bp) || {};
-                const slim = {};
-                for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
-                out.archAffinityTags[n] = slim;
-                out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
-                const aff =
-                    r.computeBlueprintAffordances(bp);
-                out.archBroadcasting[n] = !!(aff && aff.broadcasting);
-            }
+        // 4 Spawn-Affinitäts-Achsen + resoniert (Musik-Achse): resoniert treibt nicht den Spawn, aber den
+        // Resonator/Abschied-Ping — und kann über FORM_TAG_ACTIVATION genauso unbemerkt kippen.
+        const AFF_AXES = ["lebendig", "dichte", "brennbar", "magieleitung"];
+        const spawnable = [
+            "baum_eiche",
+            "baum_kiefer",
+            "stein_block",
+            "kristall_geode",
+            "glutbrunnen",
+            "felsbogen",
+            "felsturm",
+        ];
+        for (const n of spawnable) {
+            const bp = bps[n];
+            if (!bp) continue;
+            const tags = r.computeCompoundTags(bp) || {};
+            const slim = {};
+            for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
+            out.archAffinityTags[n] = slim;
+            out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
+            const aff =
+                r.computeBlueprintAffordances(bp);
+            out.archBroadcasting[n] = !!(aff && aff.broadcasting);
         }
         return out;
     });
@@ -1844,7 +1811,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // verschiebt den Spawn-Ort (Winner-take-all) und kann Bäume verdrängen; bewusste Shifts ziehen
         // die Baseline nach (felsturm: eisen-Mast → dichte 1.8, resoniert 1.2).
         const AFF_BASELINE = {
-            // die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
+            // V18.259 — die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
             // baum_eiche = Basis + Art-Variation (lebendig +0.05); baum_kiefer = Basis +
             // (brennbar +0.1, resoniert +0.05). Die statische Kugel-Baum-Baseline ist tot.
             baum_eiche: { lebendig: 1.45, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
@@ -1879,7 +1846,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             check(`V17.18: Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
         }
-        // der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
+        // V17.18 — der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
         // Relais): sichert die neue Funktion ab (geht sie verloren, war's eine
         // Regression). Gegenprobe: felsbogen (stein, nicht leitfähig) ist es NICHT.
         const bc = wave6gP2Results.archBroadcasting || {};
@@ -1950,12 +1917,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
         window.__withNoFoundry(() => {
             const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
             out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-            // felsbogen ist instanced (kein eb.mesh); „gerendert"
+            // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
             // = instanced ODER klassischer Mesh.
             out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
             out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
             out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
-            // der Felsbogen rendert in der stein-Material-Farbe
+            // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
             // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
             // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
             if (eb) {
@@ -2007,42 +1974,40 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
         // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
         // statistisch sicher).
-        if (typeof r._populateVoxelChunkVegetation === "function") {
-            const vorArch = new Set(r.state.architectures);
-            // Frische Voxel-Chunk-Indices, deutlich außerhalb des
-            // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
-            const fresh = new Set();
-            for (let cx = 20; cx <= 31; cx++) {
-                for (let cz = 20; cz <= 31; cz++) {
-                    const key = `${cx},${cz}`;
-                    if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
-                    fresh.add(key);
-                    // der Test-Pfad braucht synchrone Spawns (er
-                    // misst gleich danach state.architectures); im echten
-                    // Streaming geht das durch die Per-Frame-Queue.
-                    r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
-                }
+        const vorArch = new Set(r.state.architectures);
+        // Frische Voxel-Chunk-Indices, deutlich außerhalb des
+        // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
+        const fresh = new Set();
+        for (let cx = 20; cx <= 31; cx++) {
+            for (let cz = 20; cz <= 31; cz++) {
+                const key = `${cx},${cz}`;
+                if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
+                fresh.add(key);
+                // V9.96 — der Test-Pfad braucht synchrone Spawns (er
+                // misst gleich danach state.architectures); im echten
+                // Streaming geht das durch die Per-Frame-Queue.
+                r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
             }
-            let fbCount = 0;
-            let ftCount = 0;
-            for (const e of r.state.architectures) {
-                if (vorArch.has(e)) continue;
-                const t = e.type;
-                if (t === "felsbogen") fbCount++;
-                else if (t === "felsturm") ftCount++;
-            }
-            out.placedFelsbogen = fbCount;
-            out.placedFelsturm = ftCount;
-            out.placementWorks = fbCount > 0 && ftCount > 0;
-            // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
-            // einen Journal-Eintrag und füllte dessen Deckel (200)
-            r.state.architectures = r.state.architectures.filter((x) => vorArch.has(x));
-            // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
-            // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
-            // einen späteren echten Pass).
-            for (const k of fresh) {
-                if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
-            }
+        }
+        let fbCount = 0;
+        let ftCount = 0;
+        for (const e of r.state.architectures) {
+            if (vorArch.has(e)) continue;
+            const t = e.type;
+            if (t === "felsbogen") fbCount++;
+            else if (t === "felsturm") ftCount++;
+        }
+        out.placedFelsbogen = fbCount;
+        out.placedFelsturm = ftCount;
+        out.placementWorks = fbCount > 0 && ftCount > 0;
+        // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
+        // einen Journal-Eintrag und füllte dessen Deckel (200)
+        r.state.architectures = r.state.architectures.filter((x) => vorArch.has(x));
+        // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
+        // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
+        // einen späteren echten Pass).
+        for (const k of fresh) {
+            if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
         }
         return out;
     });
@@ -2117,69 +2082,66 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
         // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
         // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
-        if (typeof r.tryMouseBreak === "function") {
-            const origRay = r._raycastWorldHit;
-            const origPick = r._pickArchitectureAtCrosshair;
-            const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
-            r.setGameMode("frieden"); // Stamina frei
-            const digX = 60;
-            const digZ = -40;
-            const digY = 5;
-            r._raycastWorldHit = () => ({ hit: true, x: digX, y: digY, z: digZ });
-            r._pickArchitectureAtCrosshair = () => null;
-            // Das gegrabene Material schichtet nach Tiefe: DENSELBEN 3-arg-Aufruf wie digTerrain machen,
-            // sonst rechnet der Test ohne Tiefe gegen die Strata.
-            const expectMat = r._terrainMaterialAt(digX, digZ, digY);
-            const inv = r.state.player.inventory;
-            // Inventar tief snapshotten — der Grabe-Test darf den
-            // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
-            // prüfen „Inventar initial leer"). V8.97-Disziplin.
-            const invSnapshot = inv.map((s) => (s ? { ...s } : null));
-            const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
-            const ok = r.tryMouseBreak();
-            const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
-            out.digReturned = ok === true;
-            out.digYieldedMaterial = !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
-            out.digYieldMatchesField = !!dugSlot;
-            out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
-            for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
-            r._raycastWorldHit = origRay;
-            r._pickArchitectureAtCrosshair = origPick;
+        const origRay = r._raycastWorldHit;
+        const origPick = r._pickArchitectureAtCrosshair;
+        const origMode = r.getGameMode();
+        r.setGameMode("frieden"); // Stamina frei
+        const digX = 60;
+        const digZ = -40;
+        const digY = 5;
+        r._raycastWorldHit = () => ({ hit: true, x: digX, y: digY, z: digZ });
+        r._pickArchitectureAtCrosshair = () => null;
+        // Das gegrabene Material schichtet nach Tiefe: DENSELBEN 3-arg-Aufruf wie digTerrain machen,
+        // sonst rechnet der Test ohne Tiefe gegen die Strata.
+        const expectMat = r._terrainMaterialAt(digX, digZ, digY);
+        const inv = r.state.player.inventory;
+        // Inventar tief snapshotten — der Grabe-Test darf den
+        // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
+        // prüfen „Inventar initial leer"). V8.97-Disziplin.
+        const invSnapshot = inv.map((s) => (s ? { ...s } : null));
+        const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
+        const ok = r.tryMouseBreak();
+        const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
+        out.digReturned = ok === true;
+        out.digYieldedMaterial = !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
+        out.digYieldMatchesField = !!dugSlot;
+        out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
+        for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+        r._raycastWorldHit = origRay;
+        r._pickArchitectureAtCrosshair = origPick;
 
-            // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
-            // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
-            // unten → beweist Raycast + `carveVoxelSphere` + Material-Yield ohne Mock.
-            if (r.state.camera && r.state.playerMesh) {
-                // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
-                // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
-                for (let k = 0; k < 12; k++)
-                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-                const cam = r.state.camera;
-                const pm = r.state.playerMesh;
-                const savedPos = cam.position.clone();
-                const savedQuat = cam.quaternion.clone();
-                cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
-                cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
-                cam.updateMatrixWorld(true);
-                r._pickArchitectureAtCrosshair = () => null;
-                const realHit = r._raycastWorldHit(40);
-                out.realRaycastHit = !!(realHit && realHit.hit);
-                const matSumBefore = inv
-                    .filter((s) => s && s.kind === "material")
-                    .reduce((a, s) => a + (s.count || 0), 0);
-                r.tryMouseBreak();
-                const matSumAfter = inv
-                    .filter((s) => s && s.kind === "material")
-                    .reduce((a, s) => a + (s.count || 0), 0);
-                out.realDigYielded = matSumAfter > matSumBefore;
-                for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
-                r._pickArchitectureAtCrosshair = origPick;
-                cam.position.copy(savedPos);
-                cam.quaternion.copy(savedQuat);
-                cam.updateMatrixWorld(true);
-            }
-            r.setGameMode(origMode);
+        // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
+        // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
+        // unten → beweist Raycast + `carveVoxelSphere` + Material-Yield ohne Mock.
+        if (r.state.camera && r.state.playerMesh) {
+            // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
+            // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
+            for (let k = 0; k < 12; k++) r._gameLoopTick(performance.now());
+            const cam = r.state.camera;
+            const pm = r.state.playerMesh;
+            const savedPos = cam.position.clone();
+            const savedQuat = cam.quaternion.clone();
+            cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
+            cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
+            cam.updateMatrixWorld(true);
+            r._pickArchitectureAtCrosshair = () => null;
+            const realHit = r._raycastWorldHit(40);
+            out.realRaycastHit = !!(realHit && realHit.hit);
+            const matSumBefore = inv
+                .filter((s) => s && s.kind === "material")
+                .reduce((a, s) => a + (s.count || 0), 0);
+            r.tryMouseBreak();
+            const matSumAfter = inv
+                .filter((s) => s && s.kind === "material")
+                .reduce((a, s) => a + (s.count || 0), 0);
+            out.realDigYielded = matSumAfter > matSumBefore;
+            for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+            r._pickArchitectureAtCrosshair = origPick;
+            cam.position.copy(savedPos);
+            cam.quaternion.copy(savedQuat);
+            cam.updateMatrixWorld(true);
         }
+        r.setGameMode(origMode);
         return out;
     });
 
@@ -2209,7 +2171,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     }
 }
 
-// Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv-plan §4.A):
+// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv-plan §4.A):
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
 async function checkBandV18203Gamma3FeldCharakter(ctx) {

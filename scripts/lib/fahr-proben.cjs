@@ -5,7 +5,7 @@
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {
     const res = {};
-    await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const VC = window.__vehicleCore;
@@ -71,7 +71,7 @@ async function probeLeben(expected) {
         const sitz = Number.isFinite(me._sitzHeight) ? me._sitzHeight : 0;
         const hub = fz && Number.isFinite(fz.fHub) ? fz.fHub : Number.isFinite(me._rideHeave) ? me._rideHeave : 0;
         if (Math.abs(st.playerMesh.position.y - (me.position.y - 0.5 + sitz + hub)) > 0.05) return true;
-        if (!fz || fz.luft || !Number.isFinite(fz.y) || typeof r._rittAufstand !== "function") return false;
+        if (!fz || fz.luft || !Number.isFinite(fz.y)) return false;
         const a = r._rittAufstand(me);
         const boden = r._fahrBoden(me);
         const yk = (Number.isFinite(me._rideYaw) ? me._rideYaw : 0) - Math.PI / 2; // der Rahmen des Kerns
@@ -610,7 +610,7 @@ async function probeLeben(expected) {
             };
             weg(gR);
         }
-        // P — DIE KERN-PFLICHT IM SPIEL (Gegenprüfung 07.10.): ein alter Kern ohne fahrGesetz/fahrEbene muss LAUT brechen
+        // P — DIE KERN-PFLICHT IM SPIEL: ein alter Kern ohne fahrGesetz/fahrEbene muss LAUT brechen
         // (`_kernPflichtBruch`), nie still null liefern (dann ritt der Gesetz-Wagen richtungs-folgend). Die Probe tauscht das
         // Kern-Objekt gegen eine Kopie ohne die beiden Funktionen (wie ein Boot mit altem Kern) und ruft die zwei Leser.
         const gP = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -860,7 +860,7 @@ async function probeLeben(expected) {
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
         // kommt aus der Welt (welt-orte `querhang`, K55-2 — bis dahin ± 160 m um die Mess-Wiese, die flache Aue trug keinen):
         // die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H) — seit die Stamm-Hülle eines Studio-Baums im
-        // Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
+        // Weltmaß steht (Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
         const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
         const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
@@ -1285,7 +1285,7 @@ async function probeLeben(expected) {
             }
         }
 
-        // ═══ L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2, Befund 07.10. auf integ-l 828d5ace, sichtbar gefahren) ═══
+        // ═══ L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2, sichtbar gefahren) ═══
         // An GENAU den Orten der Leben-Schau, mit ihrem Tempo und ihrer Gier, durch den echten Sim-Schritt. Je Sim-Schritt:
         // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands) über der Höhe des Wagens,
         // solange er nicht fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.

@@ -207,8 +207,7 @@ function kernProbe(VC) {
     ]);
     // K7 — DIE WAND IST EIN SPRUNG DES BODENS (0710-2, die Hangfuß-Falle): der GT steht auf ebenem Boden, dann liegt der Boden
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
-    // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe. Vorher fror die Höhe ein:
-    // der Wand-Zweig verglich den Boden mit der Höhe des Wagens, nie mit dem Boden des letzten Schritts.
+    // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.
     {
         const P7 = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
         const G7 = VC.fahrGesetz(VC.exportDrive(P7));
@@ -1433,7 +1432,7 @@ async function probeBahn(B) {
     }
     phase("F5–F7");
     out.log.push("Dauer: " + uhr.zeilen.join(" · "));
-    hilfe.zeilen = typeof r._hilfeZeilen === "function" ? r._hilfeZeilen() : [];
+    hilfe.zeilen = r._hilfeZeilen();
     out.tacho = tacho;
     out.stimme = stimme;
     out.hilfe = hilfe;
@@ -2182,7 +2181,7 @@ function quellenAbgriff() {
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
-        art: "linse",
+        art: "null",
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });

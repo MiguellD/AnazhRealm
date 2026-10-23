@@ -1370,8 +1370,11 @@
     //    Wende um bis zu ±streuH (aus seinem Samen — das Dorf wacht nicht im selben Atemzug). Die Rollen der Häuser mit
     //    eigenem Werk (die Schmiede, die Kirche, das Gasthaus) tragen ihre eigenen Stunden; im Wohnhaus wählt der Same den
     //    Beruf nach `berufe` (markt: der Stand auf dem Platz · feld: der Acker · hof: der eigene Hof). Mittags und abends geht
-    //    der Anteil platzMittag / platzAbend auf den Platz. Das Tempo des Gangs ist das Gesetz des Leibs (tetrapoda
-    //    tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und gate:kreatur-takt bewohner. ──
+    //    der Anteil platzMittag / platzAbend auf den Platz, wer mittags nicht dort ist, isst daheim (drinnen; die Rolle mit
+    //    mittagAmWerk am Werk). DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder
+    //    über den Platz (Brunnen, Markt) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. Das Tempo des Gangs
+    //    ist das Gesetz des Leibs (tetrapoda tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und
+    //    gate:kreatur-takt bewohner. ──
     var TAGES_GESETZ = Object.freeze({
         wach: 6.5,
         werk: Object.freeze([8, 17]),
@@ -1380,6 +1383,7 @@
         streuH: 0.5,
         platzMittag: 0.45,
         platzAbend: 0.4,
+        morgenPlatzH: 1,
         gang: 1.3,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
@@ -1433,9 +1437,10 @@
             return { ort: wo === "werk" ? w : wo === "platz" ? p : heim, wo: wo, akt: akt, drinnen: !!drinnen };
         };
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
+        if (h < wach + G.morgenPlatzH) return aus("platz", "morgen", false);
         if (h < w0) return aus("heim", "morgen", false);
         if (h >= m0 && h < m1 && !R.mittagAmWerk)
-            return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("werk", "mittag", false);
+            return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("heim", "mittag", true);
         if (h < w1) return aus("werk", "arbeit", false);
         return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
     }

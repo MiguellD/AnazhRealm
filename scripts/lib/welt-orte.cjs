@@ -147,20 +147,18 @@ function wieseMessen(r, x, z, blick, S, nurBoden) {
     m.blick = blick || [Math.round((x + w.ux * 10) * 10) / 10, Math.round((z + w.uz * 10) * 10) / 10];
     // das Gras der gebauten Boden-Karte (nur in der Welt)
     m.gras = null;
-    if (typeof r._bodenSichtAt === "function") {
-        const g = {};
-        let s = 0,
-            n = 0;
-        for (const [dx, dz] of pkt) {
-            if (r._bodenSichtAt(x + dx, z + dz, g) === null) {
-                n = -1;
-                break;
-            }
-            s += g.gruen;
-            n++;
+    const g = {};
+    let s = 0,
+        n = 0;
+    for (const [dx, dz] of pkt) {
+        if (r._bodenSichtAt(x + dx, z + dz, g) === null) {
+            n = -1;
+            break;
         }
-        m.gras = n > 0 ? r3(s / n) : null;
+        s += g.gruen;
+        n++;
     }
+    m.gras = n > 0 ? r3(s / n) : null;
     return m;
 }
 

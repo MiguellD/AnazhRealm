@@ -1003,9 +1003,10 @@ class AnazhRealm_dirigent_regler {
             buckets: [0, 0, 0, 0, 0, 0],
             overBudget: 0,
             worst: [], // die schlimmsten N Frames (absteigend), mit vollem Kontext
-            lastSaveAt: -Infinity,
             device: this._flightRecorderDevice(),
             memSeries: [], // V18.294 — Leck-Detektor: Heap + Sammlungs-Größen über Zeit
+            probeAt: -Infinity, // die letzte Leck-Probe (`_flightRecorderMemProbe`, im Leerlauf)
+            probeOffen: false,
             _leakAnnounced: false,
             _announced: false,
             // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die vier Hitch-Summen der
@@ -1036,20 +1037,22 @@ class AnazhRealm_dirigent_regler {
                 this._ltObs = null; // fail-soft — ohne Ohr bleiben ltN/ltMs ehrlich 0
             }
         }
-        // EINMAL: beim Verlassen/Verstecken der Seite einen letzten Auszug sichern
-        // (sonst geht die Sitzung verloren, bevor der periodische Save feuert).
+        // DER AUSZUG NUR AUF ANFORDERUNG (stadt-takt): der Takt füllt Ring und Stocker-Liste, die Auswertung
+        // (`_flightRecorderBuildTrace`: Heap-, Bündel- und Stoff-Zensus über die Szene) läuft, wenn der Spieler die Seite
+        // verlässt oder versteckt, und im Download (`perf`) — nie im Spiel. Vorher baute der Takt sie alle 4 s: am Messort
+        // stadt 7,7 ms je Takt ab p95 (Radeon echt).
         if (typeof window !== "undefined" && window.addEventListener) {
-            const flush = () => {
+            const flush = (final) => {
                 try {
-                    this._flightRecorderSave(true);
+                    this._flightRecorderSave(final);
                 } catch {
                     /* der Flugschreiber darf nie stören */
                 }
             };
-            window.addEventListener("pagehide", flush);
+            window.addEventListener("pagehide", () => flush(true));
             if (typeof document !== "undefined" && document.addEventListener) {
                 document.addEventListener("visibilitychange", () => {
-                    if (document.visibilityState === "hidden") flush();
+                    if (document.visibilityState === "hidden") flush(false);
                 });
             }
         }
@@ -1250,11 +1253,17 @@ class AnazhRealm_dirigent_regler {
                 fr.worst.sort((a, c) => c.frameMs - a.frameMs);
                 if (fr.worst.length > cap) fr.worst.length = cap;
             }
-            // periodisch sichern (gedrosselt) — fire-and-forget
-            const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-            if (now - fr.lastSaveAt > AnazhRealm.FLIGHT_RECORDER_SAVE_INTERVAL_MS) {
-                fr.lastSaveAt = now;
-                this._flightRecorderSave(false);
+            // DIE LECK-PROBE IM LEERLAUF (Lehre 14, stadt-takt): je FLIGHT_RECORDER_PROBE_MS eine Probe der Sammlungen
+            // (`_flightRecorderMemProbe`) — sie läuft, wenn der Haupt-Faden ruht (`_imLeerlauf`, spätestens nach derselben
+            // Frist), nie im Takt; die Speicher-Zeile des HUD und der Leck-Detektor lesen ihre Reihe.
+            const jetzt = performance.now();
+            if (!fr.probeOffen && jetzt - fr.probeAt > AnazhRealm.FLIGHT_RECORDER_PROBE_MS) {
+                fr.probeAt = jetzt;
+                fr.probeOffen = true;
+                this._imLeerlauf(() => {
+                    fr.probeOffen = false;
+                    this._flightRecorderMemProbe();
+                }, AnazhRealm.FLIGHT_RECORDER_PROBE_MS);
             }
         } catch {
             /* der Flugschreiber darf NIE den Loop stören */
@@ -1869,15 +1878,23 @@ class AnazhRealm_dirigent_regler {
 
     // Mess-Punkt in die Reihe (Fenster ~160 s), Wachstum lesen: Heap-Rate (MB/s) + die am stärksten
     // wachsende Sammlung — die Attribution des Lecks.
-    _flightRecorderMemoryReport() {
+    // Eine Probe in die Reihe des Leck-Detektors (Heap + Sammlungs-Größen, ~160 s rollend: 40 Proben je
+    // FLIGHT_RECORDER_PROBE_MS); false, wenn sie misslingt.
+    _flightRecorderMemProbe() {
         const fr = this.state.flightRecorder;
-        if (!fr) return null;
+        if (!fr) return false;
         try {
             fr.memSeries.push(this._flightRecorderSampleSizes());
-            if (fr.memSeries.length > 40) fr.memSeries.shift(); // ~160 s rollend (40 × 4 s)
+            if (fr.memSeries.length > 40) fr.memSeries.shift();
         } catch {
-            return null;
+            return false;
         }
+        return true;
+    }
+
+    _flightRecorderMemoryReport() {
+        const fr = this.state.flightRecorder;
+        if (!fr || !this._flightRecorderMemProbe()) return null;
         const series = fr.memSeries;
         if (series.length < 2) return null;
         const a = series[0],
@@ -1931,13 +1948,12 @@ class AnazhRealm_dirigent_regler {
         };
     }
 
-    // Sichern: immer auf window.__anazhPerf; als anazhRealmPerf.json POSTen NUR auf dem lokalen
-    // save-server (sonst stiller Skip), headless nie. Fire-and-forget.
+    // Sichern (Seite verlassen oder versteckt): als anazhRealmPerf.json POSTen NUR auf dem lokalen save-server (sonst
+    // stiller Skip), headless nie. Fire-and-forget; `final` (pagehide) lässt den Request die Seite überleben.
     _flightRecorderSave(final) {
         try {
             const trace = this._flightRecorderBuildTrace();
             if (!trace) return;
-            if (typeof window !== "undefined") window.__anazhPerf = trace;
             const r = this.state.renderer;
             if (r && r._isHeadlessNull) return; // Gate sauber halten — kein File im headless-Lauf
             if (typeof fetch === "undefined" || !this.isSaveServerHost || !this.isSaveServerHost()) return;
@@ -2038,11 +2054,11 @@ AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKi
 // render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.
 AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
-// (WORST_CAP), wie oft die Spur nach anazhRealmPerf.json gesichert wird (SAVE_INTERVAL_MS),
-// und ab welcher Frame-Zeit ein Frame als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
+// (WORST_CAP), wie oft der Leck-Detektor im Leerlauf eine Probe nimmt (PROBE_MS) und ab welcher Frame-Zeit ein Frame
+// als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
 AnazhRealm.FLIGHT_RECORDER_WORST_CAP = 12;
-AnazhRealm.FLIGHT_RECORDER_SAVE_INTERVAL_MS = 4000;
 AnazhRealm.FLIGHT_RECORDER_FREEZE_MS = 50;
+AnazhRealm.FLIGHT_RECORDER_PROBE_MS = 4000;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der

@@ -1,27 +1,21 @@
-// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen": im
-// Analog-Pfad ist ein gesetzter Bau nur sichtbar, wenn er einen Feld-Slot bekommt
-// (_archZiegelFern). GEMESSEN vor der Heilung: eine gesetzte Eiche + ein Haus blieben
-// 300 Takte ohne jeden Versuch (Verhungern in der Listen-Reihenfolge, 4 Bakes/s über
-// Budget), und nach vorn gezogen brannte die Eiche nach 8 „leer"-Versuchen aus (das
-// Foundry-Mesh lädt asynchron) — dauerhaft unsichtbar, wie 26 von 28 Weltgen-Bauten.
-// Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
+// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen": im Analog-Pfad ist ein gesetzter Bau nur sichtbar, wenn er
+// einen Feld-Slot bekommt (_archZiegelFern). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
 //   A  nah (10 m · 26 m): gesetzte Eiche UND Haus sind binnen 200 Takten sichtbar — das Studio-Mesh steht
-//      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; AAA nah, V18.496: nah ist das
-//      Mesh die Gestalt). Die Eiche hat seit dem Fernwald keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
+//      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; nah ist das Mesh die Gestalt). Die
+//      Eiche hat keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
 //      und das wartet nie hinter einem Karten-Bake (der Bäcker hat seinen Faden, gate:takt T7)
 //   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
 //      Gestalt, nicht die Brücke
 //   A' fern (jenseits der Mesh-Zone): das gesetzte Haus bekommt seinen Feld-Slot — der Feld-Bake-Takt geht
-//      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
-//      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
-//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte,
+//      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte); die
+//      gesetzte Eiche steht dort als ihre Karte (Karten-Zone),
 //      sobald der Bäcker ihre Zelle erreicht: das Karten-Buch prüft das Gesetz (keine fernere Zelle überholt die ihre,
 //      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
-//      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
-// Das Licht des Felds (bis Licht K3 hier D: eine Feld-Box gegen eine Mesh-Box zu Mittag, Band 0,8–1,25) misst der Lichtweg
+//      gate:fernwald)
+// Das Licht des Felds misst der Lichtweg
 // (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
 "use strict";

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe, 18.07.)
+// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe)
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf den WebGL2-Backend zurück; die WGSL-Konsumenten
 // (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die V18.267-Falle
@@ -13,7 +13,7 @@
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht endlich, der Canvas nach einem echten Frame trägt SUBSTANZ (nicht
 //      schwarz) ohne page-error, und jedes Programm, das das Spiel baut, linkt — sonst ROT beim Stoff-Namen mit Info-Log im
 //      Fehler-Sammler (r184 nennt es namenlos) — „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
-//   W6 (Karten W3 + S5, 16.10., ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
+//   W6 (Karten W3 + S5, ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
 //      GL sie zählt (aktive Sampler × Feldgröße, nie Textur-Objekte), gezählt im GLSL OHNE Link (swiftshader linkt je Programm
 //      20–48 s); Selbsttests: ein Stoff mit 17 Karten fällt beim Namen, ein linkender Zensus ist ROT (r184-Drift)
 //   node scripts/diag-webgl-probe.cjs

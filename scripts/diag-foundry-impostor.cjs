@@ -27,7 +27,7 @@ async function bootPage(browser, nullRenderer) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.evaluate(() => window.__weltDa((r) => r.state && typeof r._foundryEnsureImpostorRecord === "function"));
+    await page.evaluate(() => window.__weltDa((r) => r.state));
     return { page, pageErrors };
 }
 
@@ -159,7 +159,7 @@ async function driveImpostor(page) {
                 const g = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
-                // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline (Echt-GPU 04.10.: 10 → das Bundle starb) —
+                // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline —
                 // gezählt im schlimmsten Fall: ab 1024 Instanzen reist auch instanceMatrix als Vertex-Puffer (r184)
                 const geo = g && g.mesh.geometry;
                 const puffer = geo ? Object.keys(geo.attributes).length + (g.mesh.instanceColor ? 1 : 0) + 1 : 99;
@@ -183,7 +183,7 @@ async function driveImpostor(page) {
                     attribute: geo ? Object.keys(geo.attributes) : [],
                 };
             }
-            // DIE STRICH-WAND am Graphen: steht die Peilung auf einer Ansichts-Grenze, springt
+            // DIE STRICH-WAND am Graphen (Integration W6): steht die Peilung auf einer Ansichts-Grenze, springt
             // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
             // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
             // (die Albedo je Ansicht A und B, die Normale der nächsten, S2b) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
@@ -445,7 +445,7 @@ async function kleberProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE =====
+// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE (K20) =====
 // Die Stufe 0 der Karte ist binär (Karten-Gesetz, BC1). Bilinear gelesen schnitt der alphaTest jede vergrößerte Krone in
 // Texel-Treppen (Werkbank, Radeon, Bestand von innen: Texel bis 3,3 px, Blöcke mit rechteckigen Löchern). Die Probe zeichnet
 // eine Karte mit einer DIAGONALEN Kante so nah, dass ein Texel ~4 px misst, und liest die Kontur je Zeile: die Treppe ist
@@ -550,7 +550,7 @@ async function vergroessertProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE =====
+// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE (K20) =====
 // r184 setzt den positionNode VOR die Instanz-Matrix (WGSL der Karte gelesen): las das Quad dort positionLocal und den
 // Normal-Probe, blickte es aus dem Vorlagen-Raum und die Matrix drehte es danach mit dem Baum — jede Karte stand als
 // feste Tafel in der Drehung ihrer Instanz (die Solitär-Eiche aus 22 m ein Strich, aus 70 m breit). Die Probe stellt
@@ -651,7 +651,7 @@ async function blickProbe(page) {
     }, BLICK_DREHUNGEN);
 }
 
-// ===== TEIL C4 — DER WIND WEHT IN DER WELT =====
+// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1) =====
 // Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
 // Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
 // Matrix danach mit jedem Baum — jeder Baum bog sich in die Richtung seiner eigenen Drehung. Die Probe stellt EINE

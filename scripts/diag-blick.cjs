@@ -1,4 +1,4 @@
-// diag-blick.cjs — DIE AUGEN: ein ECHTER Welt-Schuss
+// diag-blick.cjs — DIE AUGEN (T0 des Erlebnis-Ziels): ein ECHTER Welt-Schuss
 // aus dem Container. Die V18.359-Narbe (WebGPU-Frame komponiert nicht in den
 // puppeteer-Screenshot: weiß/schwarz/Timeout — 3 Wege gemessen) wird UMGANGEN, nicht
 // wiederholt: die Welt rendert EINMAL in ein explizites RenderTarget und die Pixel

@@ -828,7 +828,6 @@ function pruefRaum(echt) {
             const r = window.anazhRealm,
                 S = [...(r.state.chunkSaetze || new Map()).values()];
             if (!auf) delete r._chunkSatzVerdichten;
-            else if (typeof r._chunkSatzVerdichten !== "function") return ["_chunkSatzVerdichten fehlt"];
             else
                 [window.__frostFenster, r._chunkSatzVerdichten] = [
                     new Map(S.map((s) => [s, s.verdichtet || 0])),

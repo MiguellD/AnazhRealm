@@ -22,7 +22,7 @@ const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 // page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf — und der Wurf ist eine verletzte
-// Invariante beim Namen (WUERFE, apparat-diaet 20.10.): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
+// Invariante beim Namen (WUERFE): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
 // darum trug jede Probe ihren Existenz-Wächter; jetzt trägt der Aufruf der Methode ihre Existenz.
 const WUERFE = [];
 async function safeEvaluate(page, fn, ...args) {
@@ -76,9 +76,7 @@ async function gatherInitialFinalState(page) {
         return {
             terrainEverGenerated: r.state.terrainEverGenerated,
             chunkMapSize: r.state.chunkMap?.size || 0,
-            // V9.33 Phase 5c.2.b — die Eingangs-Welt ist jetzt voxel-
-            // default; chunkMap/groundChunks sind dann legitim leer,
-            // voxelChunks/voxelTerrainActive sind die neue Wahrheit.
+            // die Eingangs-Welt ist voxel: chunkMap/groundChunks leer, voxelChunks/voxelTerrainActive tragen
             voxelChunksSize: r.state.voxelChunks?.size || 0,
             voxelTerrainActive: r.state.voxelTerrainActive === true,
             voxelTerrainFlag: !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain),
@@ -830,7 +828,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandV18206SpeedTrade, ctx);
             await timed(BAND.checkBandV18207R5StructureTexture, ctx);
             await timed(BAND.checkBandV18208CreatureSizeSymmetry, ctx);
-            await timed(BAND.checkBandV18209Konsolidierung, ctx);
             await timed(BAND.checkBandV18210Verdrahtung, ctx);
             await timed(BAND.checkBandV18211SkeletonGrammar, ctx);
             await timed(BAND.checkBandV18212GigantRestsubschritte, ctx);

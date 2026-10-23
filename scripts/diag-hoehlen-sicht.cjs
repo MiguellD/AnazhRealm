@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-hoehlen-sicht.cjs — DIE HÖHLEN-SICHT (Welle 7): die Höhlen-Schicht des Bodens zeichnet nur, was ein Strahl durch
-// Luft erreicht. Befund (echte GPU, Mess-Wiese −900/−850): 68 % der Boden-Dreiecke trennen Fels von HÖHLEN-Luft (Luft unter
-// der obersten festen Ecke ihrer Spalte), 16–52 m tief, und der Boden-Satz zeichnete sie in jedem Pass (Hauptbild, k0, k1)
-// mit. Die Wahl je Pass (`_chunkSatzPass` → `_hoehlenSicht`) läuft vom Auge durch Mündung und Portale (Schirm-Rechteck +
+// diag-hoehlen-sicht.cjs — DIE HÖHLEN-SICHT: die Höhlen-Schicht des Bodens (Fels gegen Luft unter der obersten festen Ecke
+// ihrer Spalte) zeichnet nur, was ein Strahl durch Luft erreicht. Die Wahl je Pass (`_chunkSatzPass` → `_hoehlenSicht`) läuft vom Auge durch Mündung und Portale (Schirm-Rechteck +
 // Tiefe), die Kaskade vom sichtbaren Empfänger zum Licht. Die Wand prüft sie gegen eine UNABHÄNGIGE Wahrheit — Strahlen
 // gegen jedes Dreieck des Boden-Satzes (scripts/lib/hoehlen-strahl.cjs) — an der Mess-Wiese, Null-Renderer:
 //   (a) SPIEGEL — Main (`_voxelHoehlenGraph` im Sync-Bau) und Worker (`hoehlenGraph`) liefern für dieselben Chunks
@@ -14,9 +12,8 @@
 //       Jeder Blick läuft, bis jede Mündung im Bild ihre Horizont-Sperre trägt (die Probe wirkt ganz, nicht nur 8 je Bild);
 //   (b') HINAUS — das Auge in Höhlen-Luft, 16 m unter der Wiese (−1041/−738, der Ring um den Spieler dort), der Blick durch
 //       die Mündung hinaus: die Strahlen beginnen in der Höhle, laufen an den Sperren vorbei und erreichen Mündungen
-//       dahinter (`_hoehlenHinaus`). Die alte Probe — die Sperre ohne den Weg hinaus — ließ dort 3 Zellen weg (2,8 % des
-//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt. Mund, Gang und Auge liegen auf dem Gitter der Stufe 0
-//       (K55-5 — ein Spalt flacher als ein Schritt trug das Auge in den Fels des Netzes); eine versiegelte Zelle zeichnet nie,
+//       dahinter (`_hoehlenHinaus`); der Blick ist scharf nur, solange die Sperre ohne den Weg hinaus dort rot fällt. Mund,
+//       Gang und Auge liegen auf dem Gitter der Stufe 0; eine versiegelte Zelle zeichnet nie,
 //       ein Strahl läuft durch sie weiter (der Geomorph der Stufe hebt sie durch gezeichnete Flächen, `versiegelt` zählt es);
 //   (c) SCHATTEN — je Blick: jeder Empfänger des Bilds, dessen Weg zur Sonne im Licht-Frustum Boden trifft, trifft einen,
 //       den die Kaskade zeichnet (sonst fiele Licht durch Fels: ein Licht-Leck);
@@ -27,34 +24,29 @@
 //       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error;
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
-//       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging);
-//   (i) HIMMELS-LICHT (K02a, Auge 11 bei 762/−138) — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
+//       Pass jede Mündung im Bild neu;
+//   (i) HIMMELS-LICHT — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
 //       `aHimmel`, gelaende-core `himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
-//       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
-//       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
+//       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell.
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
 //       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß). Es ist
 //       EIN Term des Boden-Stoffs (`_buildPbrNodeMaterial`, gewichtet mit 1 − `aHimmel`), seine Stärke die geteilte Uniform
 //       `_augenLeuchte`, ein Platz des Licht-Pools mit Himmels-Ersatz (K11): der Boden reicht dem Pool seine Himmels-Sicht,
 //       `_lichtPoolTerm` ist das EINE Punktlicht-Gesetz des Stamms (der Abfall des Labors); die Wand zählt dazu die Wesen in
 //       Höhlen-Luft (ohne Himmels-Sicht tragen sie es nicht);
-//   (l) SZENEN-LICHT (K15, OMEN 1110-3): unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0
-//       steht trotzdem im Licht-Hash JEDES beleuchteten Stoffs und kostet in jedem Fragment (das Punkt-Licht des Auges ab
-//       Boot: 0,48 ms je Frame auf der GTX 1060, wo es nicht leuchtete);
-//   (k) DER FELS HAT STOFF (K17) — jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff (gelaende-core
-//       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30; vorher
-//       die eine graue Masse des Palette-Steins, davor
-//       das Grün der Wiese 25 m über ihm.
-//   (m) DIE BANKUNG IST UNREGELMÄSSIG (K17, Nachbesserung 1) — am Gesetz (gelaende-core `felsBankung`, ohne Browser): der
+//   (l) SZENEN-LICHT: unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0 steht trotzdem im
+//       Licht-Hash JEDES beleuchteten Stoffs und kostet in jedem Fragment;
+//   (k) DER FELS HAT STOFF — jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff (gelaende-core
+//       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30.
+//   (m) DIE BANKUNG IST UNREGELMÄSSIG — am Gesetz (gelaende-core `felsBankung`, ohne Browser): der
 //       Variationskoeffizient der Bank-Mächtigkeit ≥ 0,4, die Eigen-Welligkeit der Fugen ≥ 0,1 Bänke, der Durchlauf der Klüfte
 //       durch die Fuge ≥ 0,4; der Detail-Term des Boden-Shaders liest dieselben Größen (paketDicke · fugeWelle · kehle ·
-//       kluftVersatz · fugeLambda). Vorher (9f400dd5) lasen sich gleich hohe Bänke mit geraden Strich-Fugen und je Bank neu
-//       ansetzenden Klüften als Ziegelmauer: im Shader CV 0, am Gesetz 0,20, Welligkeit 0, Durchlauf 0,13.
-//   (n) DER STOFF ENTSTEHT IM WORKER (K17-2) — wo der Worker das Netz baut, baut er Himmels-Sicht, Fels-Stoff und Schutt
+//       kluftVersatz · fugeLambda).
+//   (n) DER STOFF ENTSTEHT IM WORKER — wo der Worker das Netz baut, baut er Himmels-Sicht, Fels-Stoff und Schutt
 //       (gelaende-core `himmelsSicht` · `felsStoff` in `buildChunkMesh`) und reicht sie per Transfer: im Ring der Mess-Wiese
 //       ruft der Haupt-Thread in keinem Worker-Bau (`_buildVoxelChunkDataFromWorkerMesh`) das Fels-Gesetz, und (a) prüft
 //       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
-//       zählte die Wand blind). Vorher (c8e46330) rechnete `_felsStoff` je Worker-Bau im Haupt-Thread: Wiese Σ 59,4 ms.
+//       zählte die Wand blind).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -71,7 +63,7 @@ const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
 const FELS_FREMD_ANTEIL = 0.01;
 const FELS_STREUUNG_MIN = 0.08;
 const FELS_ALBEDO_MAX = 0.3;
-// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0,4, Koordinator-Auge 13.10.).
+// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0, 4).
 const BANK_CV_MIN = 0.4;
 const FUGE_WELLE_MIN = 0.1;
 const KLUFT_DURCHLAUF_MIN = 0.4;
@@ -558,7 +550,7 @@ function selbsttest() {
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
-        // (l) der Befund von OMEN 1110-3: das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
             (b) =>

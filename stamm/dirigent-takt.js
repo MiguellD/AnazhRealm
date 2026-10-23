@@ -369,7 +369,9 @@ class AnazhRealm_dirigent_takt {
                               ? `Karten offen ${o.karten}`
                               : o.felder
                                 ? `Felder offen ${o.felder}`
-                                : null;
+                                : o.dorf
+                                  ? `Dorf offen ${o.dorf}`
+                                  : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -391,7 +393,7 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`) und die Leiber der Bewohner,
+    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`) und die Leiber der Bewohner,
     // deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist — `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie
     // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
@@ -399,7 +401,7 @@ class AnazhRealm_dirigent_takt {
         const st = this.state;
         const o =
             this._weltOffenWert ||
-            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0 }); // je Takt, ohne Müll
+            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -415,6 +417,8 @@ class AnazhRealm_dirigent_takt {
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
+        o.dorf = this._dorfOffen();
+        o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
@@ -1146,7 +1150,7 @@ class AnazhRealm_dirigent_takt {
     }
 
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
-    // eigenen Takt (die Ort-Wahl `_ortPlanWarten` per setTimeout) eine andere; gestellt beim ersten Leser, gelöscht am Ende
+    // eigenen Takt (per setTimeout; bis K5 die Ort-Wahl, heute im Ort-Faden) eine andere; gestellt beim ersten Leser, gelöscht am Ende
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
     // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
     // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
@@ -1365,22 +1369,36 @@ class AnazhRealm_dirigent_takt {
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 
+    // DAS SPEICHERN IM LEERLAUF (fahrt-takt, Lehre 14): der Takt entscheidet nur, dass ein Stand fällig ist; Schnappschuss,
+    // JSON und die Schreiber laufen im nächsten Leerlauf-Fenster des Haupt-Fadens (`requestIdleCallback`, Frist 2 s — das
+    // Alter eines Stands bleibt ≤ saveInterval + 2 s), nie im Takt. Bis fahrt-takt trug der Takt beides (Radeon GT-Fahrt
+    // 20 m/s: _loopAutoSave 5,8 ms an der Mess-Wiese, 9,2 ms am Genesis-Ring je Takt ab p95).
     _loopAutoSave(currentTime) {
-        // ### Speichern ###
-        if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
-            this.saveState();
-            this.state.lastSaveUpdate = currentTime;
+        const st = this.state;
+        const lokal = currentTime - st.lastSaveUpdate >= st.saveInterval;
+        const server = !st.isServerSaveInFlight && currentTime - st.lastServerSaveUpdate >= st.serverSaveInterval;
+        if (lokal) st.lastSaveUpdate = currentTime;
+        if (server) {
+            st.lastServerSaveUpdate = currentTime;
+            st.isServerSaveInFlight = true;
         }
-        if (
-            !this.state.isServerSaveInFlight &&
-            currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
-        ) {
-            this.state.isServerSaveInFlight = true;
-            this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                this.state.isServerSaveInFlight = false;
-            });
-            this.state.lastServerSaveUpdate = currentTime;
-        }
+        if (!lokal && !server) return;
+        this._imLeerlauf(() => {
+            if (lokal) this.saveState();
+            if (server)
+                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                    st.isServerSaveInFlight = false;
+                });
+        }, 2000);
+    }
+
+    // DER LEERLAUF DES HAUPT-FADENS (Lehre 14): `f` läuft im nächsten Leerlauf-Fenster (`requestIdleCallback`), spätestens
+    // nach `fristMs` — nie im Takt; ohne die API im nächsten Task. Leser: das Speichern (`_loopAutoSave`), die Leck-Probe des
+    // Flugschreibers (`_flightRecorderTick`).
+    _imLeerlauf(f, fristMs) {
+        const ric = globalThis.requestIdleCallback;
+        if (typeof ric === "function") ric.call(globalThis, f, { timeout: fristMs });
+        else setTimeout(f, 0);
     }
 
     _loopRender() {

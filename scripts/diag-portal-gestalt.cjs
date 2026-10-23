@@ -36,7 +36,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 (async () => {
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -44,7 +44,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {}, warm: false };
-        await window.__weltDa((r) => typeof r._ensureAssetFoundry === "function");
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         const f = r._ensureAssetFoundry();

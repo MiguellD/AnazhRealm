@@ -1728,7 +1728,9 @@ class AnazhRealm_feld_leben {
         const obs = this._fieldWohlStruktur(this.auraAt(x, z, now));
         const cur = this.state.wohlBaseline.get(key);
         if (!cur) {
-            this.state.wohlBaseline.set(key, { b: obs, t: now });
+            const wb = this.state.wohlBaseline;
+            wb.set(key, { b: obs, t: now });
+            if (wb.size > (this._wohlRaeumAb || AnazhRealm.WERTUNG.raeumAb)) this._pruneWohlBaseline(now);
             return obs;
         }
         const dt = Math.max(0, now - cur.t);
@@ -1749,22 +1751,22 @@ class AnazhRealm_feld_leben {
 
     // Prune ferner Baseline-Zellen (bounded halten, wie _pruneLifeField). Eine EMA-Baseline
     // „zerfällt" nicht von selbst (sie hält die letzte Schätzung) → wir prunen nach ALTER
-    // (lange nicht beobachtet → die Region ist fern/irrelevant). Rate-limitiert.
+    // (lange nicht beobachtet → die Region ist fern/irrelevant). Die neue Zelle ruft ihn (`_observeFieldWohl`), sobald die
+    // Map ihre Räum-Schwelle überschreitet — kein Takt fegt (feld.K3).
     _pruneWohlBaseline(now) {
         const wb = this.state.wohlBaseline;
-        if (!wb || wb.size === 0) return;
-        if (now - (this._wohlPruneLast || -Infinity) < AnazhRealm.WERTUNG.pruneEverySec) return;
-        this._wohlPruneLast = now;
+        if (!wb) return;
         const maxAge = AnazhRealm.WERTUNG.pruneAgeSec;
         for (const [k, e] of wb) {
             if (now - e.t > maxAge) wb.delete(k);
         }
+        this._wohlRaeumAb = Math.max(AnazhRealm.WERTUNG.raeumAb, 2 * wb.size);
     }
 
     // === Das lebendige Feld — die SCHREIB-Seite ===
     // Sparse Map: "cx,cz" (16-m-Zelle) → { a, t } (Overlay-Menge, `state.spielZeit` in s — nie die Wanduhr: ein Takt liest,
     // was er schrieb, die Pause zerfällt nicht; Lese- und Gefühls-Seite teilen die Uhr). Decay LAZY beim Lesen
-    // (a · e^(−λ·Δt)), kein Sweep (O(1) je Lese/Deposit, Prune ~alle 5 s). Nur intentionale Spawns
+    // (a · e^(−λ·Δt)), kein Sweep (O(1) je Lese/Deposit, die Tat räumt das Tote). Nur intentionale Spawns
     // (Nexus/Chat/DSL via spawn_creature) deponieren — ambiente Fauna und Restore nicht (kein Runaway).
     // Nicht persistiert (reaktiv wie Wetter).
     _lifeCellKey(x, z) {
@@ -1772,14 +1774,16 @@ class AnazhRealm_feld_leben {
         return Math.floor(x / cs) + "," + Math.floor(z / cs);
     }
 
-    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle.
+    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle oder sie unter `epsilon` zerfiel (tot: die
+    // Räumung ist nur Gedächtnis, sie entscheidet nie, was gelesen wird).
     _lifeOverlayAt(x, z) {
         const lf = this.state.lifeField;
         if (!lf || lf.size === 0) return 0;
         const e = lf.get(this._lifeCellKey(x, z));
         if (!e) return 0;
         const dt = Math.max(0, this.state.spielZeit - e.t);
-        return dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
+        const a = dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
+        return a < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
     }
 
     // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
@@ -1809,21 +1813,23 @@ class AnazhRealm_feld_leben {
                 lf.set(key, { a: Math.min(cfg.max, cur + add), t: now });
             }
         }
+        if (lf.size > (this._lebenRaeumAb || cfg.raeumAb)) this._pruneLifeField();
     }
 
-    // Billiger Prune (rate-limited via updatePlayerEmotions): Zellen unter
-    // epsilon raus → die Map bleibt bounded (nur aktiv getendete Regionen leben).
+    // DIE TAT RÄUMT (feld.K3): Zellen unter `epsilon` fallen, sobald eine Tat das Feld über seine Räum-Schwelle hebt — die
+    // doppelte Zahl der Zellen nach der letzten Räumung, mindestens `raeumAb` (amortisiert O(1) je Tat, die Map bleibt unter
+    // 2 × lebend + 9). In Ruhe fegt kein Takt: die Overlays zerfallen beim Lesen, und ohne Tat wächst die Map nicht. Bis feld.K3
+    // fegte `updatePlayerEmotions` alle 5 s jede Zelle (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 1 164 Besuche).
     _pruneLifeField() {
         const lf = this.state.lifeField;
-        if (!lf || lf.size === 0) return;
+        if (!lf) return;
         const cfg = AnazhRealm.LIFE_FIELD;
         const now = this.state.spielZeit;
-        if (now - (this.state.lifeFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
-        this.state.lifeFieldLastPrune = now;
         for (const [key, e] of lf) {
             const dt = Math.max(0, now - e.t);
             if (e.a * Math.exp(-cfg.decayPerSec * dt) < cfg.epsilon) lf.delete(key);
         }
+        this._lebenRaeumAb = Math.max(cfg.raeumAb, 2 * lf.size);
     }
 
     // Kreatur-Trickle: eine tendende Kreatur (userData.tendsLife) träufelt Leben in ihre Zelle,
@@ -1859,6 +1865,7 @@ class AnazhRealm_feld_leben {
         for (const axis of Object.keys(emotionMap)) {
             cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
         }
+        if (ef.size > (this._gefuehlRaeumAb || cfg.raeumAb)) this._pruneEmotionField();
     }
 
     // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
@@ -1871,23 +1878,24 @@ class AnazhRealm_feld_leben {
         const dt = Math.max(0, this.state.spielZeit - cell.t);
         const f = dt === 0 ? 1 : Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * dt);
         let out = null;
+        let lebt = false; // tot, wenn jede Achse unter `epsilon` zerfiel (wie die Räumung urteilt)
         for (const axis of Object.keys(cell.axes)) {
             const v = cell.axes[axis] * f;
+            if (v >= AnazhRealm.EMOTION_FIELD.epsilon) lebt = true;
             if (v > 1e-4) {
                 if (!out) out = {};
                 out[axis] = v;
             }
         }
-        return out;
+        return lebt ? out : null;
     }
 
+    // Die Räumung des Gefühls-Abdrucks — wie das Leben (`_pruneLifeField`): die Tat ruft sie über der Räum-Schwelle.
     _pruneEmotionField() {
         const ef = this.state.emotionField;
-        if (!ef || ef.size === 0) return;
+        if (!ef) return;
         const cfg = AnazhRealm.EMOTION_FIELD;
         const now = this.state.spielZeit;
-        if (now - (this.state.emotionFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
-        this.state.emotionFieldLastPrune = now;
         for (const [key, cell] of ef) {
             const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t));
             let alive = false;
@@ -1899,6 +1907,7 @@ class AnazhRealm_feld_leben {
             }
             if (!alive) ef.delete(key);
         }
+        this._gefuehlRaeumAb = Math.max(cfg.raeumAb, 2 * ef.size);
     }
 
     // Welt-Affinität (worldFieldAt: lebendig/dichte/glut/magie) pro Terrain-Vertex als vec4-Attribut;
@@ -2274,7 +2283,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     pulseNeighbor: 0.1, // 3×3-Kernel-Rand (weiche räumliche Ausbreitung, kein Block)
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
-    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    raeumAb: 64, // Zellen, ab denen die Tat das Tote räumt (danach die doppelte Zahl der Lebenden, `_pruneLifeField`)
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —
     // die ambiente Fauna ist die FOLGE des Feldes (kein Runaway). Sanft + rate-limitiert; wandernde
     // Kreaturen ziehen einen zarten Lebens-Pfad.
@@ -2287,6 +2296,6 @@ AnazhRealm.EMOTION_FIELD = Object.freeze({
     imprintScale: 0.5, // wie viel der Tat-Emotion sich am Ort einprägt
     max: 0.8, // Sättigung pro Achse/Zelle (ein Ort wird nicht unendlich traurig)
     epsilon: 0.004, // darunter wird eine Zelle gepruned
-    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    raeumAb: 64, // wie LIFE_FIELD.raeumAb
     // cell = LIFE_FIELD.cell (16 m) — dieselbe Zell-Quelle (`_lifeCellKey`)
 });

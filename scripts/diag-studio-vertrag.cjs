@@ -568,7 +568,7 @@ function validateManifest(m) {
                         v.push(`B2c: lod.budget.${k}[${st}].ab steigt nicht streng (${abVor} → ${z.ab})`);
                     if (typeof z.ab === "number") abVor = z.ab;
                 }
-                // das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
+                // Welle 5: das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
                 if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
                     v.push(`B2c: lod.budget.${k}[${st}] muss 0 < schnitt < rute < 1 tragen`);
@@ -597,8 +597,7 @@ function validateManifest(m) {
         }
         // K43 (Studio-Welle 1, DIE TOR-STUFEN) — PFLICHT, wo die Art gate lebt: die Kosten liegen im Asset, nicht im Wirt. Das Tor
         // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
-        // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
-        // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern).
         // K64 (die Stufe 2): die Kette L0 → L1 → L2 → Fernform, die Grenze der Stufe 2 jenseits der Stufe 1, tris streng fallend.
         if (ks.gate) {
             const G = B.gate || {};
@@ -728,7 +727,7 @@ function validateManifest(m) {
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
     }
-    // DIE GEFÜHLS-BLÖCKE sind VERTRAG, nicht mehr nur
+    // V18.486 — DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
@@ -843,7 +842,7 @@ function validateManifest(m) {
         const seeleOk =
             V.jagd &&
             Number.isFinite(V.jagd.strikeCooldownSec) &&
-            // DER BISS IST DER ANSPRUNG: die Reichweite um die Mitten und der feste
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf): die Reichweite um die Mitten und der feste
             // Pirsch-Stopp kehren nicht zurueck (die Reichweite ist der Weg des Ansprungs, der Halt das Maul am Leib).
             V.jagd.strikeRange === undefined &&
             V.jagd.pirschStoppM === undefined &&
@@ -851,7 +850,7 @@ function validateManifest(m) {
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
             V.temperament.profile &&
-            // DAS TEMPERAMENT DER GATTUNG: die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF): die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
             // der Natur sind Vertrag; die Substanz-Signaturen, ihr Floor und die Substanz-Gewichte der Furcht kehren nicht
             // zurueck (die Tiere sind tag-gleich, Lehre 8).
             V.temperament.gattung &&
@@ -870,7 +869,7 @@ function validateManifest(m) {
             Number.isFinite(V.wandern.leashBaseM) &&
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
-            // DIE JAGD SCHLIESST SICH: der Ring der Hetze, die Pirsch-Sicht und die
+            // DIE JAGD SCHLIESST SICH (Welle LF): der Ring der Hetze, die Pirsch-Sicht und die
             // Beute-Masse sind Vertrag; der Gradienten-Schritt der Witterung und der Trab der Flucht kehren nicht zurueck
             // (die Flucht ist der Sprint der Gestalt, STEUER_GESETZ.sprint).
             Number.isFinite(V.jagd.hetzM) &&
@@ -883,7 +882,7 @@ function validateManifest(m) {
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
             Number.isFinite(V.freude.tempoMul) &&
-            // DAS SPRUNG-GESETZ: die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
+            // DAS SPRUNG-GESETZ (Welle L): die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
             // eine Aktion traegt nur `hop: true` (der Abflug in m/s und sprung.impulsProM fielen).
             Number.isFinite(V.freude.hopHochM) &&
             Number.isFinite(V.freude.hopBasisM) &&
@@ -892,7 +891,7 @@ function validateManifest(m) {
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.separation &&
-            // DER PERSOENLICHE RAUM: der Raum je Leib (raumKugel × Koerper-Kugel), das
+            // DER PERSOENLICHE RAUM (Welle LF): der Raum je Leib (raumKugel × Koerper-Kugel), das
             // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
             Number.isFinite(V.separation.raumKugel) &&
             V.separation.radiusBaseM === undefined &&
@@ -1064,7 +1063,7 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
+    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
     // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
     const pflicht = {
@@ -1092,7 +1091,7 @@ function validateManifest(m) {
                 // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke:
                 m.verhalten.stimmung.schwellen &&
                 m.verhalten.freude &&
-                // (sprung fiel mit dem Sprung-Gesetz, Vertrags-Akt Welle L 07.10. — die Hoehe lebt in freude)
+                // (sprung fiel mit dem Sprung-Gesetz)
                 m.verhalten.groessen &&
                 m.verhalten.separation &&
                 m.verhalten.aufgaben &&
@@ -1324,7 +1323,7 @@ function validateManifest(m) {
         build: function () {},
         meshfrei: true,
     });
-    // auch die Gefühls-Block-Prüfungen feuern auf Injektion:
+    // V18.486 — auch die Gefühls-Block-Prüfungen feuern auf Injektion:
     const bvFx = validateManifest({
         vertrag: 1,
         presets: {
@@ -1400,7 +1399,7 @@ function validateManifest(m) {
             bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
         `${bv.length + bvS3.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
-    // DAS SPRUNG-GESETZ: der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
+    // DAS SPRUNG-GESETZ (Welle L): der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
     // Aktion (der alte bound-Zwilling 3,2) und einmal mit dem linearen sprung-Faktor — beide feuern die VERHALTEN-Wand.
     {
         const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
@@ -1420,7 +1419,7 @@ function validateManifest(m) {
                 faktor.some((s) => s.includes("ohne sprung-Zwilling")),
             `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
         );
-        // DAS TEMPERAMENT DER GATTUNG: die Substanz-Signaturen kehren zurueck, oder die
+        // DAS TEMPERAMENT DER GATTUNG (Welle LF): die Substanz-Signaturen kehren zurueck, oder die
         // Gattungs-Zeile fehlt — beide feuern die VERHALTEN-Wand.
         const sig = tm ? mitZwilling((V) => (V.temperament.signaturen = { wehrhaft: { dichte: 1 } })) : [];
         const ohneG = tm ? mitZwilling((V) => delete V.temperament.gattung) : [];
