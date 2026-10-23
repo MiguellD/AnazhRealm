@@ -3420,20 +3420,27 @@ async function starte() {
         console.log(`NÄSSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--luft")) {
-        // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr
-        // der Referenz, das Urteil `luftTiefeUrteil` gegen die externe Referenz spec/farbe/luft-referenz.json.
+        // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr der Referenz,
+        // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die
+        // externe Referenz spec/farbe/luft-referenz.json.
         const LL = require("./lib/licht-linsen.cjs");
         const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT");
+        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT");
         if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        const luft = async (o) =>
+            ((a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" })(await rufe("/eval", { code: `const kantenLinie = ${LL.kantenLinie}; return await (${LL.luftTiefe})(${JSON.stringify(o)});` }));
         let m;
         try {
             await rufe("/umstellen", { ort: opt("--ort", "genesis"), sicht: "ego" });
-            const o = { ref, augeM: 120 };
-            const a = await rufe("/eval", { code: `return await (${LL.luftTiefe.toString()})(${JSON.stringify(o)});` });
-            m = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
+            m = await luft({ ref, augeM: 120 });
+            const g = (await rufe("/eval", {
+                code: "const p = r.state.playerMesh.position; let g = [0, 0, -1e9]; for (let x = -3e3; x <= 3e3; x += 50) for (let z = -3e3; z <= 3e3; z += 50) " +
+                    "{ const y = r._terrainMacroSurfaceY(p.x + x, p.z + z, false); if (y > g[2]) g = [p.x + x, p.z + z, y]; } return g;",
+            })).ergebnis;
+            await rufe("/umstellen", { x: g[0], z: g[1] });
+            m.gipfel = Object.assign({ ort: g.map(Math.round) }, await luft({ ref: Object.assign({}, ref, { uhren: [0.5] }), augeM: 40 }));
         } finally {
             if (halt) await halt();
         }

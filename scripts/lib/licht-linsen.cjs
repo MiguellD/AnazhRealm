@@ -220,10 +220,8 @@ function albedoSicht(opts) {
                     pos = g.position.clone();
                 }
                 else if (ex.typ === "boden" && ex.wald) {
-                    // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
-                    // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
-                    // Kronen-Tafel (T2 f6fa9f63) von −48/−19 nach 0/36 (Welt-Y 0,0837 → 0,0739, der Stoff an der alten Stelle 0,0833 →
-                    // 0,0837; die ersten acht Wald-Stellen 0,071–0,110). Dort steht das Wald-Gesetz (`_forestCellDarts` →
+                    // DER WALD-BODEN AN SEINER STELLE (A5): der Boden ist ein Feld, die Ratsche misst ihn an EINER festen Stelle
+                    // (`stelle`, Welt-x/z), nie an der nächsten Wald-Stelle um den Spieler. Dort steht das Wald-Gesetz (`_forestCellDarts` →
                     // `_forestDartSteht` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
                     const W0 = ex.wald,
                         C = r.constructor.FOREST.cell,
@@ -510,8 +508,7 @@ function albedoSicht(opts) {
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
                     // DIE POSE DES LABORS (Karte WL, Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
-                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0) — mitten im Schritt eingefroren las das
-                    // Fell je Phase 0,1746 bis 0,1862, im Stand 0,1849 bis 0,1853
+                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0), nie mitten im Schritt
                     if (ex.kreatur) {
                         ex.kreatur.rotation.y = 0;
                         r._tierBaumNeutralStance(ex.kreatur);
@@ -559,8 +556,7 @@ function albedoSicht(opts) {
                     cam.aspect = W / H;
                     cam.updateProjectionMatrix();
                     // DIE TAFEL-BLICKE (`TAFEL_BLICKE`, dieselben im Labor): vier Dreiviertel-Seiten und oben, die übrige Welt aus;
-                    // die Albedo ist das Mittel über alle Blicke — ein einziger Blick las den Wolf je nach seiner Wendung 0,17
-                    // oder 0,24 (Rücken gegen Bauch).
+                    // die Albedo ist das Mittel über alle Blicke (Rücken gegen Bauch).
                     const stellungen = [];
                     if (w.blick === "oben") {
                         const y = r._voxelSurfaceY(um.x, um.z);
@@ -690,7 +686,7 @@ function albedoSicht(opts) {
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
     // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
-    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
+    // über der Linse (A7)
     const zeichne = () => {
         window.anazhRealm._schattenAlleNeu();
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -988,8 +984,8 @@ function tagKurveUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
 }
 
-// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis f5b66780
-// (Belichtung 2,78 → 4,57 mit der Sonne, das Bild 1,34 EV über dem Mittag) und jeder in den Kopf gespielte Täter beim Namen.
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis und jeder
+// in den Kopf gespielte Täter beim Namen.
 function tagKurveSelbsttest() {
     const T = require("../../spec/farbe/tag-kurve.json");
     const grob = (x) => TAG_UHREN.includes(x.uhr);
@@ -1019,7 +1015,7 @@ function tagKurveSelbsttest() {
     ];
 }
 
-// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): Boden-Satz (nah) und Fern-Ring (fern, er liegt
+// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE: Boden-Satz (nah) und Fern-Ring (fern, er liegt
 // darunter) zeichnen dieselbe Stelle. Aus 420 m Höhe (über der Karten-Sicht des Baums, 384 m) orthogonal über 2 × `halb` (132 m) je
 // Ort zwei Schüsse unter weißem Umgebungslicht π (hell − dunkel = die Albedo, wie `__albedoSicht`): nur der Satz, nur der Ring. Das
 // Quadrat trägt mehrere Zellen des Rings (Schale 0 schnappt auf 24 m: auf 132 m −12 … +7 % neben dem Gesetz, auf 44 m −22 … +20 %).
@@ -1119,9 +1115,8 @@ function nahFernSicht(opts) {
             fogAlt = sc.fog;
         sc.environment = null;
         sc.fog = null;
-        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
-        // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
-        // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
+        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg dämpfte
+        // sie die Albedo. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
         const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
         if (sc.fogNode && !luftU) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
         const betaAlt = luftU ? luftU.value : null;
@@ -1186,7 +1181,7 @@ function nahFernSicht(opts) {
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
             // Das Licht der Linse ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff wartet auf seine Pipeline
-            // (`_erstWartet`, asynchron; ein erster Schuss zeigte den Boden-Satz bei voller Deckung mit Y 0,694 statt 0,053). Der Schuss
+            // (`_erstWartet`, asynchron). Der Schuss
             // steht erst, wenn zwei Läufe dieselben Bildpunkte UND dieselbe Helligkeit zeigen (höchstens 20 s); die Spur reist mit,
             // steht er nach der Frist nicht still, urteilt die Linse laut (`still`).
             let px = null,
@@ -1260,9 +1255,7 @@ function nahFernSicht(opts) {
                 cam.updateMatrixWorld(true);
                 // DIE WIEDERHOLUNG: ein Paar (nah, fern) zählt erst, wenn die nächste Runde an derselben Stelle dieselben
                 // Bildpunkte und dieselbe Albedo (1 %) zeigt — höchstens vier Runden, sonst urteilt die Linse laut
-                // (`wiederholt` false). In frischen Sitzungen (Software-Holz unter Last, 2 von 16 Läufen)
-                // zeigte die ERSTE Runde am ersten Ort einen Leser falsch und still: der Boden-Satz Y 0,694 statt 0,053, der
-                // Fern-Ring 0,152 statt 0,063 — die Stille eines Schusses allein hielt ein falsches Bild für fertig.
+                // (`wiederholt` false): die Stille eines Schusses allein hält ein falsches Bild für fertig.
                 const paar = async () => ({
                     nah: mittel(await schuss(istNah, Math.PI), await schuss(istNah, 0)),
                     fern: mittel(await schuss(istFern, Math.PI), await schuss(istFern, 0)),
@@ -1317,7 +1310,7 @@ function nahFernSicht(opts) {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
         }
-        // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
+        // Die Karte der Fern-Krone im Boden-Stoff: steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
         const nk = st.fernKroneNah;
         return {
@@ -2132,11 +2125,31 @@ function kronenObenUrteil(messung) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
-// DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
-// Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
-// Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
-// Pixel. Misst eine Sicht kein Band (zur tiefen Sonne liegt die In-Streuung in der Kompression), schießt sie mit Blende 1/4 nach;
-// der Bloom ruht, seine Schwelle bricht die Linearität (zur Sonne 7° hob er T bei 8 km um 70 %).
+// DIE KANTE ALS LINIE (Ferne K2-2): je Rand-Spalte (`kante[x]`: die erste gezeichnete Zeile, über ihr läuft das Gesetz weiter)
+// die Stufe |Δ ln Y| zur Zeile darüber und der Struktur-Tensor von ln Y (9 × 4) um sie; `linie` die längste Folge mit Stufe ≥
+// `schwelle`, Kohärenz ≥ 0,5, Kante ≤ 10° aus der Waagrechten, Sprung ≤ 2 px. Der Kamm eines Grats davor ist keine Kante.
+function kantenLinie(Y, W, H, kante, schwelle, schritt) {
+    const ln = (x, y) => Math.log(Y[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))] + 1e-4);
+    let [lauf, linie, stufe, vor] = [0, 0, 0, {}];
+    for (const x of Object.keys(kante).map(Number).sort((a, b) => a - b)) {
+        const [y0, j] = [kante[x], [0, 0, 0, 0]];
+        for (let v = y0 - 2; v <= y0 + 1; v++)
+            for (let u = x - 4; u <= x + 4; u++) {
+                const [gx, gy] = [ln(u + 1, v) - ln(u - 1, v), ln(u, v + 1) - ln(u, v - 1)];
+                [j[0], j[1], j[2]] = [j[0] + gx * gx, j[1] + gy * gy, j[2] + gx * gy];
+            }
+        j[3] = Math.abs(ln(x, y0) - ln(x, y0 - 1));
+        const ist = j[3] >= schwelle && (j[0] - j[1]) ** 2 + 4 * j[2] ** 2 >= 0.5 * (j[0] + j[1]) ** 2 && Math.abs(Math.atan2(2 * j[2], j[1] - j[0])) <= Math.PI / 9;
+        lauf = !ist ? 0 : vor.ist && x - vor.x === schritt && Math.abs(y0 - vor.y) <= 2 ? lauf + schritt : schritt;
+        [linie, stufe, vor] = [Math.max(linie, lauf), Math.max(stufe, j[3]), { x, y: y0, ist }];
+    }
+    return { linie, stufe: +stufe.toFixed(4) };
+}
+
+// DIE LUFT IM BILD (Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei Schüsse aus dem Ausgabe-Pfad —
+// Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe Referenz längs des Strahls
+// zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste Pixel, die Kante
+// `kantenLinie`. Blende 1/4 nach, wo kein Band misst; der Bloom ruht (seine Schwelle bricht die Linearität).
 function luftTiefe(o) {
     return (async () => {
         const r = window.anazhRealm;
@@ -2252,6 +2265,7 @@ function luftTiefe(o) {
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
             const fern = {};
+            const gesetzOben = {};
             for (let yy = 0; yy < H; yy += 2)
                 for (let xx = 4; xx < W; xx += 8) {
                     const t = treffer(xx, yy, D);
@@ -2259,6 +2273,7 @@ function luftTiefe(o) {
                     const l = roh(L, i);
                     const l0 = roh(L0, i);
                     const sa = roh(S, i);
+                    if (t && !(xx in gesetzOben)) gesetzOben[xx] = yy;
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
@@ -2272,7 +2287,16 @@ function luftTiefe(o) {
                     b.dh.push(Math.min(dh, 360 - dh));
                 }
             const rand = med(Object.values(fern));
+            const Yd = Float32Array.from({ length: W * H }, (_, p) => Y([lin[L[p * 4]], lin[L[p * 4 + 1]], lin[L[p * 4 + 2]]]));
+            // je Spalte die erste Zeile, die die Luft ändert (8 Bit, auch über der Kompression): das Ende der gezeichneten Welt
+            const oben = {};
+            for (const x in gesetzOben)
+                for (let y = 0, i = +x * 4; y < H && !(x in oben); y++, i += W * 4) if (Math.abs(L0[i] - S[i]) + Math.abs(L0[i + 1] - S[i + 1]) + Math.abs(L0[i + 2] - S[i + 2]) > 4) oben[x] = y;
+            const kante = Object.fromEntries(Object.keys(oben).filter((x) => gesetzOben[x] < oben[x] - 1).map((x) => [x, oben[x]]));
+            const kl = kantenLinie(Yd, W, H, kante, R.kontrast, 8);
+            const hfov = (2 * Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect) * 180) / Math.PI;
             return {
+                kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
@@ -2333,32 +2357,49 @@ function luftTiefeUrteil(m, R) {
     gemessen.forEach((n, i) => {
         if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);
     });
+    // K2-2 am Hügel und am Gipfel zu Mittag: keine waagrechte Linie über `band.linie` Grad
+    for (const [ort, zs] of [["Hügel", m.zeilen], ["Gipfel", m.gipfel && m.gipfel.zeilen]])
+        for (const az of [0, 90, 180, 270]) {
+            const k = ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante || { spalten: 0 };
+            if (!(k.spalten >= M.spalten && k.linie < B.linie)) liste.push(`K2-2 KANTENLINIE ${ort} Azimut ${az}°: Linie ${k.linie}° Stufe ${k.stufe} (${k.rand}/${k.spalten} Spalten)`);
+        }
     const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
     const staffel = {};
-    for (const k of ["K1-1", "K1-2", "K2-1"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
+    for (const k of ["K1-1", "K1-2", "K2-1", "K2-2"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
     const befunde = liste.filter((b) => !offen(b));
     return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
 }
 
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
-    const sichten = (dk, C, n = 50) =>
+    const sichten = (dk, C, n = 50, linie = 0) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
                 sonne: 60,
                 az,
                 rand: { km: 20, C },
+                kante: { spalten: n, rand: n, linie, stufe: 0.01 },
                 baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen) => luftTiefeUrteil({ zeilen }, Object.assign({}, R, { offen: {} }));
+    const urteil = (zeilen, gipfel = zeilen) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel } }, Object.assign({}, R, { offen: {} }));
     const leer = urteil(sichten(null, null, 0)).staffel;
+    const k = ref[2] - ref[0];
+    // das Bild einer Welt-Kante: Himmel 0,5 über einer Stufe `c` ab Zeile 100 (`zacke`: je zweite Spalte 8 px tiefer)
+    const bild = (c, zacke) => {
+        const kante = {};
+        for (let x = 4; x < 480; x += 8) kante[x] = 100 + (zacke ? (x >> 3) % 2 : 0) * 8;
+        return kantenLinie(Float32Array.from({ length: 129600 }, (_, p) => (p / 480 >= kante[(p % 480 & ~7) + 4] ? 0.5 - c / 2 : 0.5)), 480, 270, kante, R.kontrast, 8).linie;
+    };
     return [
-        urteil(sichten(ref[2] - ref[0], 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
+        urteil(sichten(k, 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
         urteil(sichten(0, 0.005)).befunde.some((b) => /JE KANAL/.test(b)) || "ein grauer β ist nicht ROT",
-        urteil(sichten(ref[2] - ref[0], 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
-        (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT") || "eine leere Messung ist nicht ROT",
+        urteil(sichten(k, 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, R.band.linie)).staffel["K2-2"] === "ROT" || "eine Linie an der Schwelle ist nicht ROT",
+        urteil(sichten(k, 0.005), []).staffel["K2-2"] === "ROT" || "ein fehlender Gipfel ist nicht ROT",
+        (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
+        (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
     ].filter((x) => x !== true);
 }
@@ -2552,6 +2593,7 @@ function naesseUrteil(welt) {
 module.exports = {
     naesseSicht,
     naesseUrteil,
+    kantenLinie,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

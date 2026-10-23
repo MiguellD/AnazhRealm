@@ -1,12 +1,12 @@
 {
-    "quelle": "Koschmieder 1924 (C = C0 e^(-beta d), Schwelle 0,02: V = 3,912/beta bei 550 nm); klare Sicht 20 km (DWD-Sichtklasse sehr gut 20-50 km, unterer Rand); Rayleigh auf Meereshoehe bei 680/550/440 nm nach Bucholtz 1995 (Appl. Opt. 34(15):2765); das Aerosol grau; Dunst-Skalenhoehe der Grenzschicht 1 km (Elterman 1968)",
+    "quelle": "Koschmieder 1924 (C = C0 e^(-beta d), Schwelle 0,02 fuer Ziele ab 1 Grad nach Middleton 1952: V = 3,912/beta bei 550 nm); klare Sicht 20 km (DWD-Sichtklasse sehr gut 20-50 km, unterer Rand); Rayleigh auf Meereshoehe bei 680/550/440 nm nach Bucholtz 1995 (Appl. Opt. 34(15):2765); das Aerosol grau; Dunst-Skalenhoehe der Grenzschicht 1 km (Elterman 1968)",
     "sichtKlarM": 20000,
     "kontrast": 0.02,
     "rayleigh": [4.6e-6, 1.16e-5, 2.88e-5],
     "skalenHoeheM": 1000,
     "baenderM": [1000, 2000, 5000, 8000],
     "uhren": [0.5, 0.27],
-    "mindest": { "n": 10, "nk": 30, "azimute": 3 },
-    "band": { "T": 0.15, "kanal": [0.5, 1.5], "dh": 10, "rand": 0.02 },
+    "mindest": { "n": 10, "nk": 30, "azimute": 3, "spalten": 20 },
+    "band": { "T": 0.15, "kanal": [0.5, 1.5], "dh": 10, "rand": 0.02, "linie": 1 },
     "offen": { "FARBTON": "die In-Streuung am Horizont traegt Ton 130-138 Grad, das ferne Gelaende ist helle Wiese: Himmel und Albedo, nie beta" }
 }

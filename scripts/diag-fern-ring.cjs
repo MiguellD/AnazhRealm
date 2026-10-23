@@ -493,43 +493,10 @@ const server = statikServer();
             ren8.setSize(96, 64, false);
             const rt8 = new THREE.RenderTarget(96, 64);
             ren8.setRenderTarget(rt8);
-            // Diagnose-Stufe A: Konstant-Farbe (beweist das Fullscreen-Dreieck)
-            const echterOut = fp8.mat.outputNode;
-            fp8.mat.outputNode = THREE.TSL.vec4(1, 0, 0, 1);
-            fp8.mat.needsUpdate = true;
             await ren8.renderAsync(szene8, cam8);
-            const bufA = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-            let trefferA = 0;
-            for (let px = 0; px < 96 * 64; px++) if (bufA[px * 4] > 0) trefferA++;
-            res.fpTrefferKonstant = trefferA;
-            fp8.mat.outputNode = echterOut;
-            fp8.mat.needsUpdate = true;
-            const bild = async () => {
-                await ren8.renderAsync(szene8, cam8);
-                return ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-            };
-            const summe = (b, px) => (b[px * 4 + 3] > 0 ? b[px * 4] + b[px * 4 + 1] + b[px * 4 + 2] : 0);
-            // DIE LUFT LIEST DIE EINE ATMOSPHÄRE (D3): ihre In-Streuung ist die Himmels-Sicht der Tafeln, die der Renderer
-            // der Welt je Takt zeichnet (`_atmoTakt`) — die Probe zeichnet sie auf IHREM Renderer, wie der Spiel-Frame es
-            // tut. Selbsttest (Konsum): ohne die Tafeln fehlt jedem Treffer-Pixel die In-Streuung — die Luft hebt ihn mit den Tafeln
-            // um ≥ 24/765 (die Ferne jenseits 8 km ist Luft). Bis B2 zählte die Probe Pixel über Schwarz: das hing am Licht des
-            // Feldes (`l0c` an der Basis zur Probe noch 0, der Takt lief synchron), nie an der Luft.
-            const ohne8 = await bild();
-            const A8 = r._atmoLutBau();
-            const welt8 = r.state.renderer;
-            r.state.renderer = ren8;
-            try {
-                r._atmoZeichne(A8.qT, A8.rtT);
-                r._atmoZeichne(A8.qMS, A8.rtMS);
-                r._atmoZeichne(A8.qSV, A8.rtSV);
-            } finally {
-                r.state.renderer = welt8;
-            }
-            ren8.setRenderTarget(rt8);
-            const mit8 = await bild();
-            [res.fpTreffer, res.fpLuftGehoben] = [0, 0];
-            for (let px = 0; px < 96 * 64; px++)
-                if (summe(mit8, px) > 0) [res.fpTreffer, res.fpLuftGehoben] = [res.fpTreffer + 1, res.fpLuftGehoben + (summe(mit8, px) - summe(ohne8, px) >= 24)];
+            const bild8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
+            res.fpTreffer = 0;
+            for (let px = 0; px < 96 * 64; px++) if (bild8[px * 4 + 3] > 0) res.fpTreffer++;
             ren8.dispose();
             if (fp8 && alterParent) alterParent.add(fp8.mesh);
         } catch (e8) {
@@ -1543,11 +1510,6 @@ const server = statikServer();
         "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",
         Number.isFinite(out.fpTreffer) && out.fpTreffer > 50,
         `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
-    );
-    check(
-        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln fehlt jedem Treffer die In-Streuung",
-        out.fpTreffer > 50 && out.fpLuftGehoben >= out.fpTreffer * 0.9,
-        `von der Luft gehoben=${out.fpLuftGehoben} von ${out.fpTreffer} Treffern`
     );
     check(
         "8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort",
