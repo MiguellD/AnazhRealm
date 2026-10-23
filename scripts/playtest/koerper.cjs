@@ -111,8 +111,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
