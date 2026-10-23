@@ -2071,9 +2071,11 @@ class AnazhRealm_koerper_fahrt {
         // verschmolzen, _heldImplementBlueprint) faltet mit HELD_STAT_WEIGHT über den kanonischen
         // _foldEquippedStatTags NUR in die Angriffs-Größen (AnazhRealm.HELD_ANGRIFF_STATS) — es bestimmt Angriff wie
         // Abbau. Vorher faltete es in ALLE Stats: jede Eisenwaffe hob defense 12,8 → 20,94 und hpMax 134 → 185,2, ein
-        // Wolf-Biss (roh 15,8) kostete 1 HP. Schutz kommt nur aus dem Slot armor.
+        // Wolf-Biss (roh 15,8) kostete 1 HP. Schutz kommt nur aus dem Slot armor. Ein Werk der Schmiede faltet NICHT
+        // (halten-gesetz): seinen Treffer urteilt der Kern aus Masse × Schneide × Tempo — die Tags seines Spenders
+        // (geraet_schwert / geraet_spitzhacke, zwei feste Sätze für 21 Gestalten) hoben den Schaden der Hand 22 auf 36,7–40,4.
         const heldBp = this._heldImplementBlueprint();
-        if (heldBp) {
+        if (heldBp && !this._schmiedeWerk(heldBp)) {
             const angriffTags = { ...finalTags };
             this._foldEquippedStatTags(angriffTags, heldBp, AnazhRealm.HELD_STAT_WEIGHT, "held");
             const angriff = this._statsFromTags(angriffTags);

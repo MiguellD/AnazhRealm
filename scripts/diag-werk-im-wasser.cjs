@@ -20,15 +20,14 @@
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
 //       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
 //       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
-//   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): keine Zwillings-Probe des Lands (`_isAboveWaterAt`), `_waterLevelAt`
-//       nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald liest den Bezug nie als Wasser, kein Bau weckt den
-//       Automaten am Setz-Punkt, der Stempel läuft nie den ganzen Bestand, keine zweite Wasser-Wahrheit (`_stempelImWasser`,
-//       `_wasserVerdraengt`), keine Wurzel sagt still ab, `natur_weicht` ist fort.
+//   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): `_waterLevelAt` nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`),
+//       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
+//       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
 //   K — DER KONSUM AM RUF (D3c): am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
 //       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
-//       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
+//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
 //   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
 //       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl
@@ -332,7 +331,6 @@ function urteil(b) {
 function leserUrteil(w) {
     const v = [];
     const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
-    nicht(null, /_isAboveWaterAt\s*\(/, "die Zwillings-Probe des Lands `_isAboveWaterAt` lebt");
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
     nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
     nicht("_forestCellDarts", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
@@ -343,8 +341,6 @@ function leserUrteil(w) {
         /for \(const \w+ of this\.state\.architectures\)/,
         "der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)"
     );
-    nicht(null, /_stempelImWasser\(/, "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)");
-    nicht(null, /_wasserVerdraengt/, "das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
     // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
     for (const wer of ["spawnArchitecture", "spawnCreatureAt"])
         nicht(wer, /(?<!const nein = \(grund\) => \{[^}]*)return null;/, `die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
@@ -2103,8 +2099,8 @@ function selbsttest() {
         ],
         [
             "L Zwilling",
-            (b) => b.leser.push("die Zwillings-Probe des Lands `_isAboveWaterAt` lebt"),
-            /L: die Zwillings-Probe/,
+            (b) => b.leser.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis"),
+            /L: das alte Protokoll/,
         ],
         ["F ohne Widerstand", (b) => (b.wagen.v1 = 11.9), /F: Wagen im Wasser ohne Widerstand — 39\.60 km\/h/],
         [
@@ -2241,27 +2237,9 @@ function selbsttest() {
     const echt = leserUrteil();
     const gifte = [
         [
-            "Zwilling zurück",
-            (s) =>
-                s.replace(
-                    /\n {4}_nassAt\(/,
-                    "\n    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt("
-                ),
-            /Zwillings-Probe/,
-        ],
-        [
             "Bezug als Probe",
             (s) => s.replace("this._waterLevelAt(x, z, uf);", "this._waterLevelAt(x, z);"),
             /liest den Bezug/,
-        ],
-        [
-            "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
-            (s) =>
-                s.replace(
-                    /\n {4}_stempelSpanne\(/,
-                    "\n    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne("
-                ),
-            /zweite Wasser-Wahrheit/,
         ],
         [
             "Stempel läuft den Bestand",

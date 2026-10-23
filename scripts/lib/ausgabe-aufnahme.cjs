@@ -2,8 +2,7 @@
 // was der Spieler SIEHT). Ein eigenes Render-Target liefert in r184 LINEARE, ungetonte Werte:
 // `currentToneMapping`/`currentColorSpace` greifen nur am Ausgabe-Ziel (`isOutputTarget`). Die
 // Beweisbilder aaa8–aaa11, die Wiesen- und die Fell-Linse lasen so — dunkle Schattenseiten, harte
-// Kontraste, ausgebrannte Lichter, die das Spiel nie zeigt (gemessen 01.10.: Prüf-Kiste im Render-
-// Target navy, im präsentierten Canvas hell-lavendel; das Ausgabe-Target trifft den Canvas-
+// Kontraste, ausgebrannte Lichter, die das Spiel nie zeigt (das Ausgabe-Target trifft den Canvas-
 // Screenshot pixelgleich im Bild).
 //
 // Der Weg hier: das Render-Target wird per `setOutputRenderTarget` zum Ausgabe-Puffer, dann läuft
@@ -328,7 +327,7 @@ function uhrHalten() {
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
 // `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt nur Takte
 // ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973
-// Takte). Sonst bricht der Schuss LAUT beim Täter. Bis K-WANDUHR trug die Bühne eine eigene Schleife (der Zwilling des Einschwingens).
+// Takte). Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -375,8 +374,7 @@ function buehne(o) {
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
-    // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
-    // E 0,28 statt 1,89). Ohne Drift malt der Sprung nichts.
+    // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
     r._himmelSprung = true;
     r._applyDayNightToScene();
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
@@ -482,9 +480,8 @@ function membranOhneFilm(an) {
     return { n, ohneZiel };
 }
 
-// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern —
-// gemessen 01.10. (aaa13 Haus fern, aaa14 Kreatur fern): ein Tier lief in die Kamera und füllte das
-// Bild. Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
+// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
+// (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
 // und LOD laufen weiter.
 function tiereHalten() {
     const r = window.anazhRealm;
@@ -587,7 +584,7 @@ function erstRuhe(frame, opt, wer) {
 // näher als 1 m, Gelände näher als 2 m und höchstens 1 m unter dem Auge — die Kamera an der Böschung oder in der Wand; die Linse der
 // Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r }: im Bild, ohne
 // Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
-// steht. Anlass 13.10.: vier Beweisbilder standen in Laub und Zweigen (K17 Dorfhang, K20 Waldrand, K24 Tanne, K16 Wald).
+// steht.
 function abnahmeMessen(opt) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -603,10 +600,10 @@ function abnahmeMessen(opt) {
         for (const e of st.architectures || [])
             if (e && e.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
     }
-    const RADIUS = 2;
     const E = cam.position;
-    // DER FUSS DES ZIELS (gemessen 13.10., Werkbank: die Blick-Wahl stand hinter einer Kuppe, die Birke zeigte nur die Krone,
-    // der Strahl zum Ziel-Punkt war frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
+    // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt
+    const RADIUS = z ? Math.min(2, 0.5 * Math.hypot(z.x - E.x, z.y - E.y, z.z - E.z)) : 2;
+    // DER FUSS DES ZIELS (hinter einer Kuppe zeigt ein Baum nur die Krone, der Strahl zum Ziel-Punkt ist frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
     // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand).
     const fussY = (q) => {
         if (q.fuss === false) return undefined;
@@ -628,8 +625,7 @@ function abnahmeMessen(opt) {
                   ohne,
                   ziel: z ? { x: z.x, y: z.y, z: z.z, name: z.name, saum: z.saum, fussY: fussY(z) } : null,
               });
-    // DER VORDERGRUND (gemessen 13.10., echte GPU: die Blick-Wahl stand frei, doch eine Kuppe 2–4 m vor dem Auge füllte ein Drittel
-    // des Bilds): mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
+    // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
     // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
     let vorn = null;
     if (z && nd.ziel) {
@@ -669,8 +665,7 @@ function abnahmeMessen(opt) {
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
         },
         sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
-        // DIE GESTALT DES ZIELS (gemessen 13.10., echte GPU: drei gesetzte Bäume ungebaut, das Bild zeigte einen leeren Hang und
-        // war frei): jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
+        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
         ziel: nd.ziel
             ? Object.assign(nd.ziel, {
                   gestalt: ohne.map((id) => {
@@ -748,7 +743,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const BH = Math.max(1, Math.round(db.y));
         const rt = new T.RenderTarget(BW, BH, { depthBuffer: true, samples: 0 });
         const prevOut = typeof rend.getOutputRenderTarget === "function" ? rend.getOutputRenderTarget() : null;
-        // DAS ZIEL DES RENDERERS mit zurück (06.10., echte GPU, `werkbank zerlegen --bilder`): im Direktpfad (ohne Post-Kette)
+        // DAS ZIEL DES RENDERERS mit zurück: im Direktpfad (ohne Post-Kette)
         // stellt r184 am Ende von `_renderScene` das aktuelle Ziel auf `_renderTarget || _outputRenderTarget` — nach einer
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
@@ -796,8 +791,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
             // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
-            // erfüllt sich kein Versprechen (gemessen 07.10., Werkbank, Wiese: ein Bär, der eben ins Bild kam, fehlte im
-            // Beweisbild). Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
+            // erfüllt sich kein Versprechen. Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
             // für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt und keine Pipeline offen ist. Steht die
             // Erst-Zeichnung 120 s ohne Fortschritt (kein Bau, keine Pipeline wird bereit; `opt.erstFristMs`, die Wand prüft mit
             // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene

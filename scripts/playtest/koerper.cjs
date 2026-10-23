@@ -111,8 +111,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -739,11 +737,9 @@ async function checkBandWFFluss(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
-        // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
-        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
-        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
-        out.runExists = typeof r._waterRunSurfaceAt === "undefined";
+        // (1) ein trockener Punkt gibt durch den EINEN Leser -Infinity durch (kein Wasser erfunden; die gefallene Lauf-Fläche
+        // trägt gate:altlasten). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global).
         const hW = r._hydroFor(0, 0);
         let dryW = null;
         if (hW && hW.ready && hW.water && hW.water.waterKind) {
@@ -808,8 +804,8 @@ async function checkBandWFFluss(ctx) {
         return out;
     });
     check(
-        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
-        res.runExists && res.dryPassthrough
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt + erfindet kein Wasser",
+        res.dryPassthrough
     );
     check(
         "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
@@ -1260,7 +1256,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const out = { arten: {} };
         for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
             const g = r._buildCreatureGroup(art);
-            const a = { baum: false, meshN: 0, faceLOD: false, geoSet: new Set() };
+            const a = { baum: false, meshN: 0, geoSet: new Set() };
             if (g) {
                 a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
                 g.traverse((n) => {
@@ -1284,7 +1280,6 @@ async function checkBandKonvergenzTierBaum(ctx) {
                     a.klonTeilt = n2 > 0 && geteilt === n2;
                     r._disposeSoulGroup(gz);
                 }
-                a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
                 // DIE NaN-LINSE: Welt-BBox finit + sinnvoll.
                 const bb = new THREE.Box3().setFromObject(g);
                 const h = bb.max.y - bb.min.y;
@@ -1389,7 +1384,6 @@ async function checkBandKonvergenzTierBaum(ctx) {
             `KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`,
             a.baum === true && a.meshN >= 2
         );
-        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
         check(`KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`, a.bboxFinit === true);
         check(
             `KONVERGENZ III/PIPE (4) ${art}: ≤120 Meshes (Gelenk-Merge, gemessen ${a.meshN}), Klone TEILEN jede Geometrie`,

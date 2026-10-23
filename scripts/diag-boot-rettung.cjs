@@ -1,14 +1,9 @@
 #!/usr/bin/env node
 // gate:boot-rettung — DER BOOT VERLIERT DIE WELT DES AKTIV-ZEIGERS NIE.
 //
-// Die Gegenprüfung Runde 4 fand zwei Formen, in denen der Boot eine rettbare Welt durch eine frische ersetzte: ein
-// korrupter Platz mit gültigem `.bak` (die Vorlade fing den Parse-Fehler, ensureWorldMeta vergab eine neue Id samt
-// Aktiv-Zeiger, die `.bak`-Rettung in loadState kam nie dran) und eine Welt, die nur in IndexedDB lag (der IDB-Vorlauf lief
-// erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE (der Speicher-Faden: Platte → .bak; der Platz im localStorage ist
-// seit der Karte speicher-journal der alte Spiegel, den der Vorlauf EINMAL auf die Platte zieht, der jüngere Stand gewinnt)
-// und läuft, BEVOR eine neue Id vergeben wird; eine neue Welt erwacht nur, wenn alles leer ist — und dann laut. Diese Linse
-// fährt die acht Formen der Boot-Sonde des Prüfers (C:\Users\micha\AppData\Local\Temp\claude\pruef4-pruefbuehne\boot-sonde.cjs)
-// und eine neunte:
+// Die Rettungs-Kette ist EINE (der Speicher-Faden: Platte → .bak; der Platz im localStorage ist der alte Spiegel, den der
+// Vorlauf EINMAL auf die Platte zieht, der jüngere Stand gewinnt) und läuft, BEVOR eine neue Id vergeben wird; eine neue
+// Welt erwacht nur, wenn alles leer ist — und dann laut. Diese Linse fährt neun Formen:
 //
 //   platz-ohne-id     der Platz der aktiven Welt trägt einen Save ohne worldId      → die Welt DIESES Platzes
 //   platz-ohne-meta   … ohne worldMeta                                             → dito

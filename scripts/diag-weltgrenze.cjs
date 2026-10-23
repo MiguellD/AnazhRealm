@@ -1,14 +1,8 @@
 #!/usr/bin/env node
 // gate:weltgrenze — KEIN WELT-ZUSTAND REIST ÜBER EINE WELTGRENZE.
 //
-// Die Gegenprüfung Runde 2 fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
-// Welt, die ohne Erbgut geladen wurde, behielt das Erbgut, den Anker, die Edits, die Dorf-Zellen und die Stempel der
-// Welt davor — über das Welt-Tor „Ersetzen" wurde eine Wildnis-Welt still als Insel gezeichnet und mit dem Erbgut der
-// Prüfbühne gespeichert. Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A
-// betritt, und nennt jedes Feld von A, das B danach trägt, beim Namen. Die Gegenprüfung Runde 3 fand zwei Wege, auf denen
-// der Speicher eine Mischung trägt oder eine Welt verliert: eine Welt ohne worldId lag roh auf dem Platz von A, und der
-// Boot vergab vor dem Lesen des Platzes eine neue Id (beide Welten fort); und zwischen `location.reload()` und dem Tod der
-// Seite schrieb jeder saveState die lebende Seite unter den Namen von B oder setzte den Aktiv-Zeiger auf A zurück.
+// Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A betritt, und nennt jedes Feld
+// von A, das B danach trägt, beim Namen — dazu jede Mischung im Speicher und jeden Schreiber im Reload-Fenster.
 //
 //   laden               `loadState(B)` in der lebenden Seite (der Engpass jedes Ladens: Boot, „lade zustand")
 //   ersetzen[-ohne-id|-ohne-meta]   das Welt-Tor „Ersetzen" (`_weltTorImportReplace`)
@@ -204,7 +198,7 @@ function seitenPruefer() {
                 // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
                 macro: { herkunft: T },
                 // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
-                voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, strength: 48, mode: "carve", herkunft: T }],
+                voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
                 genesisPortalRing: T,
                 portalPreviewFachwerk: T,

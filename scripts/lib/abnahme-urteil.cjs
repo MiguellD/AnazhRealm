@@ -1,6 +1,5 @@
 // abnahme-urteil.cjs — DIE ABNAHME-ZEILE (K32, Entscheidung 1110 §2.10 / D3): das EINE Ergebnis-Format, mit dem jedes Beweisbild
-// sich selbst prüft. Anlass 13.10. (Augen-Befund 10): vier Beweisbilder anderer Karten waren unbrauchbar — die Kamera stand in
-// Laub und Zweigen (K17 Dorfhang, K20 Waldrand, K24 Tanne, K16 1,7 m im Wald), die Aufnahme speicherte sie still.
+// sich selbst prüft — eine Kamera in Laub und Zweigen speichert kein Beweisbild still.
 //
 // Die Messung (`m`) trägt die Aufnahme selbst (scripts/lib/ausgabe-aufnahme.cjs, `__abnahmeMessen` + `__bildMasse`):
 //   stand  { version, sha }            der Stand aus dem LAUFENDEN Spiel (AnazhRealm.VERSION), die SHA setzt der Node-Aufrufer
@@ -606,33 +605,26 @@ function spiegelDaten() {
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   luma          Mittel der Luma auf der Klasse (deckung, kontrast, nyquist, silhouette, deckungUnten fielen mit A13: kein Leser)
-//   detail        mittlerer Gradient-Betrag im Inneren / Mittel (die Normalen- und Textur-Frequenz: glatt → 0)
+//   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
-        s = 0,
-        g = 0,
-        ng = 0;
-    const inM = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1;
+        s = 0;
     for (let y = 0; y < H; y++)
         for (let x = 0; x < W; x++) {
             const p = y * W + x;
             if (m[p] !== 1) continue;
             n++;
             s += L[p];
-            if (inM(x - 1, y) && inM(x + 1, y) && inM(x, y - 1) && inM(x, y + 1)) {
-                g += Math.hypot(L[p + 1] - L[p - 1], L[p + W] - L[p - W]) / 2;
-                ng++;
-            }
         }
     // ZWEITON (K63-n2, das Dither-Raster): je Fenster 8×8 (Schritt 4), in dem die Klasse ≥ ¼ der Pixel trägt, das BILD (nicht
     // die Maske — ein Raster über dem Himmel zeigt die Klasse nur auf jedem zweiten Pixel): Kontrast p90 − p10 ≥ 40, höchstens
     // 20 % Zwischentöne (|L − Mitte| < ¼ Kontrast) und Wechsel über die Mitte in BEIDEN Achsen an ≥ 30 % der Nachbar-Paare →
     // die Klassen-Pixel des Fensters sind Raster. Eine Kante wechselt einmal je Zeile, ein Halm nur quer, eine aufgelöste
-    // Alpha-Kante trägt Zwischentöne; ein Muster aus zwei Tönen im Pixel-Takt ist das sichtbare Dither (Prüfer K63 R2).
+    // Alpha-Kante trägt Zwischentöne; ein Muster aus zwei Tönen im Pixel-Takt ist das sichtbare Dither.
     const zmark = new Uint8Array(W * H);
     const zw = new Float32Array(64);
     for (let y0 = 0; y0 + 8 <= H; y0 += 4)
@@ -700,7 +692,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (ohne && weissIn(ohne, p)) wtZiel++;
         else wt++;
     }
-    // DIE KANTE DER SILHOUETTE (K68-n2, Augen-Befund 14.10. „Nadelbaum-Karten groß und kantig"): je Rand-Pixel der Klasse,
+    // DIE KANTE DER SILHOUETTE (K68-n2): je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
@@ -815,6 +807,37 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
     const mittel = n ? s / n : null;
+    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil mit Luma-σ < 4;
+    // `nyquist` der Anteil der Schachbrett-Energie an der Gradient-Energie seiner 2×2-Zellen (k = (a−b−c+d)/4 gegen gx, gy: ein
+    // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
+    // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
+    const mk = [0, 0, 0, 0, 0, 0, 0]; // Blöcke, glatte, Σk², Σ(gx² + gy²), E je Stufe 0 … 2
+    for (let y0 = 0; y0 + 8 <= H; y0 += 8)
+        for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
+            let voll = true;
+            const B = new Float32Array(64);
+            for (let i = 0; i < 64 && voll; i++) {
+                const p = (y0 + (i >> 3)) * W + x0 + (i & 7);
+                voll = m[p] === 1;
+                B[i] = L[p];
+            }
+            if (!voll) continue;
+            const mb = B.reduce((a, b) => a + b, 0) / 64;
+            mk[0]++;
+            if (Math.sqrt(B.reduce((a, b) => a + (b - mb) * (b - mb), 0) / 64) < 4) mk[1]++;
+            for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
+                const Q = new Float32Array((q * q) / 4);
+                for (let i = 0; i < Q.length; i++) {
+                    const o = 2 * (i % (q / 2)) + 2 * q * Math.floor(i / (q / 2));
+                    const [a, b, c, d] = [P[o], P[o + 1], P[o + q], P[o + q + 1]];
+                    const [kk, eg] = [((a - b - c + d) / 4) ** 2, ((a - b + c - d) / 4) ** 2 + ((a + b - c - d) / 4) ** 2];
+                    if (st === 0) (mk[2] += kk), (mk[3] += eg);
+                    mk[4 + st] += (kk + eg) / Q.length;
+                    Q[i] = (a + b + c + d) / 4;
+                }
+                P = Q;
+            }
+        }
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
@@ -828,14 +851,17 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
         luma: mittel == null ? null : +mittel.toFixed(2),
-        detail: ng ? r4(g / ng / Math.max(1, mittel)) : null,
         kante: kr ? r4(ks / kr) : null,
         kr,
+        bloecke: mk[0],
+        glatt: mk[0] ? r4(mk[1] / mk[0]) : null,
+        nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
+        beta: mk[4] > 0 && mk[6] > 0 ? r4(2 + Math.log2(mk[6] / mk[4]) / 2) : null,
     };
 }
 
 // DAS GESICHT IM BILD (rein, in der Seite als `__gesichtMasse`; K63-n2, `werkbank bild --gesicht`): die Züge, die KOPF_SOLL
-// nennt, wie die AUSGABE sie zeigt (Prüfer K63 R2: Augen, Mund und Haar-Fleck maß nichts). `proben` sind die Vertices des Kopfs,
+// nennt, wie die AUSGABE sie zeigt. `proben` sind die Vertices des Kopfs,
 // projiziert: { z: iris|lippe|hoehle|haut|kappe, x, y, k (Teil der Teilung + 1), vorn, kalotte }; eine Probe ist SICHTBAR, wenn
 // die Teilung an ihrem Pixel ihren eigenen Teil zeigt. Farben in CIELAB (D65) aus dem Mittel der linearisierten sRGB-Pixel (je
 // Pixel einmal):
@@ -945,8 +971,7 @@ function farbtonProbe(k, u8, i, W) {
 const farbtonSigma = (k) =>
     (Math.sqrt(-2 * Math.log(Math.max(1e-9, Math.min(1, k[3] ? Math.hypot(k[1], k[2]) / k[3] : 1)))) * 180) / Math.PI;
 // DIE RECHNUNGEN der Soll-Bänder (rein): ein Band, das die Tafel „[gerechnet]" nennt, rechnet DIESE Funktion — die Tafel trägt
-// dann nur die Rechnung, nie ihr Ergebnis (Prüfer K63 R1: das Laub-Band [0,11; 0,16] stand ohne Skript im Baum, nachgerechnet
-// 0,16–0,22).
+// dann nur die Rechnung, nie ihr Ergebnis.
 //   einsDurch  { von: [a, b] }     das Band [1/b, 1/a] (Licht: E gesamt / E Himmel aus dem Diffus-Anteil des klaren Himmels)
 // Ein Bild mit Leistungsspektrum 1/f^β (β = 0: weißes Rauschen), n² Pixel (n Zweierpotenz), RGBA grau.
 function rauschBild(n, beta, saat) {
@@ -1027,7 +1052,7 @@ function sollRechnung(r) {
     }
     // zweiton1f { beta: [b0, b1] } (b0 ≥ 0, weißes Rauschen eingeschlossen): die obere Grenze [−∞, max] des Zweiton-Anteils in
     // Bildern ohne Muster, je β in Schritten von 0,4. Unschärfe der Kamera fügt nur Zwischentöne hinzu, Rauschen reicht bis β 0
-    // — das Band gilt darum für JEDE Kamera (Prüfer K63 R2: das nyquist-Band aus Bildern ohne Unschärfe ließ das Raster grün).
+    // — das Band gilt darum für JEDE Kamera.
     if (r.art === "zweiton1f") {
         const b = r.beta;
         if (!(Array.isArray(b) && b.length === 2 && b[0] >= 0 && b[1] >= b[0]))
@@ -1128,7 +1153,6 @@ const SOLL_MASSE = Object.freeze([
     "farbtonStreuung",
     "zweiton",
     "kante",
-    "detail",
     "milchweiss",
     "oeffnungBunt",
     "zielTreue",
@@ -1141,13 +1165,12 @@ const SOLL_MASSE = Object.freeze([
     "spiegelTreue",
 ]);
 // DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
-// endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
+// endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0).
 const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
     farbtonStreuung: 0.1,
     zweiton: 0.01,
     kante: 0.01,
-    detail: 0.005,
     milchweiss: 0.01,
     oeffnungBunt: 0.5,
     zielTreue: 0.02,
@@ -1160,7 +1183,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
     spiegelTreue: 1,
 });
-// DER ORT EINES BILDS der Tafel (K63-n8; Koordinator 15.10.: die `bild`-Felder zeigten in den Scratch, AppData): relativ zur
+// DER ORT EINES BILDS der Tafel (K63-n8): relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
 // absolut, nie mit `..`, nie mit Backslash.
 function bildPfadFehler(p) {
@@ -1267,23 +1290,6 @@ const MASS_RECHNER = {
             teile: `${ks.length} Kacheln ${rc.kachel} m in ${rc.band.join("–")} m · Belichtung ${ft.belichtung}`,
         };
     },
-    // DAS DETAIL der Klasse (`klassenMasse` detail, Pixel-Mittel über ihre Teil-Klassen): glatt → 0
-    detail(ma) {
-        const me = ma.messung;
-        const f = bildMessungFehler(me);
-        if (f) return { fehler: f };
-        let s = 0,
-            n = 0,
-            arg = null;
-        for (const [k, z] of Object.entries(me.klassen)) {
-            if (z.detail == null) continue;
-            s += z.detail * z.pixel;
-            n += z.pixel;
-            if (!arg || z.detail < arg[1]) arg = [k, z.detail];
-        }
-        if (!n) return { fehler: "kein Inneres in der Klasse" };
-        return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
-    },
     // DIE SPIEGEL-TREUE der Klasse (D10, `klassenMasse` spiegelTreue über die Summen `sp` ihrer Teil-Klassen): Pearson r der
     // Block-Luma gegen ihr Bild an der Wasser-Ebene (`spiegelPartner`); der Täter die Teil-Klasse mit den meisten Blöcken.
     spiegelTreue(ma) {
@@ -1350,8 +1356,7 @@ const MASS_RECHNER = {
             anteil: px / flaeche(me),
         };
     },
-    // MILCHWEISS (K63-n4; Prüfer K63 R3: die weiße Tafel der Tore hieß „geheilt", weil die Kamera den Spieler mitnahm — der
-    // Portal-Nebel wacht am SPIELER, nicht am Auge): der Anteil der Apertur-Pixel (`rechnung.apertur`: Membran und Nebel), die
+    // MILCHWEISS (K63-n4; der Portal-Nebel wacht am SPIELER, nicht am Auge): der Anteil der Apertur-Pixel (`rechnung.apertur`: Membran und Nebel), die
     // als Weiß lesen statt als Farbe (`klassenMasse` wt), über die Schüsse JE STUFE (`messung.L<n>`, die Tore des Schusses in
     // ihrer Stufe beim Namen, `rechnung.tor`). Die Stufen liest die Linse im Kern (`rechnung.stufen`: porta-core
     // PORTAL_RENDER_CONFIG lod.kindStages.gate ab der Stufe `ab`) — eine Stufe ohne Schuss lässt das Maß offen (ROT), ein
@@ -1554,8 +1559,7 @@ function albedoZeile(ma, q) {
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
-// DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
-// es GRÜN): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
+// DER STAND einer Messung (K63-n2): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
 // die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
 // Integration hebt VERSION und machte jede Zeile veraltet, ohne dass ihr Code sich rührte; Version und Commit stehen als Beleg).
 // Ein Block ohne Version, Commit oder Abdruck ist ungeprüft, einer mit fremdem Abdruck „veraltet seit <Commit der Messung>" —
@@ -1654,11 +1658,10 @@ function eigenschaftBand(e, q, wo) {
     return { fehler: `${wo}: Verweis ${v.datei} ${v.feld} — kein lesbares Band (art toleranz)` };
 }
 
-// DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine Kommentarzeile in einer Stamm-Datei machte jede Zeile der Albedo-Tafel veraltet
-// und sperrte jeden folgenden Merge): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
+// DER CODE-ABDRUCK (K63-n8; eine Kommentarzeile macht keine Zeile veraltet): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
 // Kommentare und Leerraum zwischen den Token; JSON kanonisch (geparst, neu geschrieben). Eine andere Dateiart trägt keinen
-// Stand (laut, nie still die Bytes); ein Token-Fehler bricht laut. Form `c:` + 16 Hex — eine Prüfsumme anderer Form (die
-// Bytes bis K63-n7) ist ungeprüft, nie gleich.
+// Stand (laut, nie still die Bytes); ein Token-Fehler bricht laut. Form `c:` + 16 Hex — eine Prüfsumme anderer Form
+// ist ungeprüft, nie gleich.
 const ABDRUCK = /^c:[0-9a-f]{16}$/;
 function codeAbdruck(text, datei) {
     const h = require("crypto").createHash("sha256");
@@ -1761,7 +1764,7 @@ function standLeser(root) {
     }
 }
 
-// DER EINE SCHUSS (W1-n1; Prüfer W1 R1: drei Tor-Zeilen trugen denselben Schuss dreimal, 988 Zeilen Kopie): misst ein Schuss
+// DER EINE SCHUSS (W1-n1): misst ein Schuss
 // mehrere Ziele (`werkbank bild --ist a,b:L1`), trägt ihn das erste, jedes weitere NENNT es („<id>[:L<n>|:wirkung]") — gelesen
 // nur hier, für jedes Maß; ein Name ins Leere oder auf einen Namen ist ein Bruch.
 function schussVon(kl, m, bruch) {
@@ -1799,7 +1802,7 @@ function sollTafelUrteil(tafel, q) {
         if (!(k.referenz || []).some((r) => r.titel && r.technik))
             fehler.push(`${wo}: keine benannte AAA-Referenz (Titel + Technik)`);
         // DIE VORLAGE (K63-n2): ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
-        // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
+        // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch.
         for (const vl of k.vorlage || []) {
             const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
             if (w === undefined)
@@ -1883,12 +1886,10 @@ function sollTafelUrteil(tafel, q) {
             urteil = "ROT";
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
-        // DER BENANNTE MANGEL (K63-n2; Prüfer K63 R2: Kopf, Laub und Tore standen GRÜN, ihre Maße sahen den Mangel des Plans nicht):
-        // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
+        // DER BENANNTE MANGEL (K63-n2): trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
-        // nie ein Bruch der Tafel (A10, 17.10.: der Schreiber `--ist` wies das ehrliche ROT von boden-nah-farbe ab, die Tafel behielt
-        // die Messung vom 16.10. — fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
+        // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
         const mg = (k.wirkung || {}).mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
         const gh = (k.wirkung || {}).geheilt;
@@ -2011,10 +2012,20 @@ function sollTafelSelbsttest(tafel, q) {
     if (nm !== 1) v.push(`Teilung: ${nm} Misch-Pixel statt 1`);
     if (bildRauschen(G, G, W, H, 18).anteil !== 0) v.push("Rauschen: zwei gleiche Schüsse rauschen");
     if (bildRauschen(G, OA, W, H, 18).pixel !== 25) v.push("Rauschen: 25 geänderte Pixel nicht gezählt");
-    const voll = new Uint8Array(W * H).fill(1);
-    const glatt = klassenMasse(bild((x) => 40 + x * 8), voll, W, H);
-    if (!(glatt.detail > 0)) v.push(`Maß detail: Verlauf ${glatt.detail} nicht > 0`);
-    if (klassenMasse(bild(() => 99), voll, W, H).detail !== 0) v.push("Maß detail: Flachbild nicht 0");
+    // das Mikro-Detail (material.K2): ein Schachbrett nyquist 1, ein Verlauf 0 und glatt, das Spektrum 1/f^β trifft sein β
+    {
+        const n = 64,
+            v1 = new Uint8Array(n * n).fill(1),
+            grau = (f) => Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 === 3 ? 255 : f((i >> 2) % n, (i >> 2) / n | 0)));
+        const sb = klassenMasse(grau((x, y) => ((x + y) & 1 ? 60 : 180)), v1, n, n);
+        const vl = klassenMasse(grau((x) => 40 + x), v1, n, n);
+        if (!(sb.nyquist > 0.99 && vl.nyquist < 0.01 && vl.glatt === 1 && sb.glatt === 0))
+            v.push(`Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt} statt 1/0, 0/1`);
+        for (const b of [0, 1, 2]) {
+            const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
+            if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
+        }
+    }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
     // (die Ufer-Achse bis A13: 0,37), unter dem Fresnel-Verlauf je Zeile (2 % → 100 %) > 0,9; ohne Himmel im Wasser und 12 px
@@ -2358,8 +2369,7 @@ function sollTafelSelbsttest(tafel, q) {
             "zeile",
         ],
         ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
-        // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß; A10
-        //: boden-nah-farbe hieß geheilt, die Neumessung 9,27 < 10,7 — die Zeile ROT „er ist zurück", der Schreiber schreibt
+        // geheilt neben einem ROTEN Maß: die Zeile ROT „er ist zurück", der Schreiber schreibt
         [
             // das Maß FRISCH gestempelt (am heutigen Code), sonst stünde es veraltet und der Widerspruch ruhte bis zur Neumessung
             "geheilt neben einem roten Maß",
@@ -2404,8 +2414,7 @@ function sollTafelSelbsttest(tafel, q) {
     (tn.klassen || []).push(Object.assign(JSON.parse(JSON.stringify(kn)), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
     const istN = sollTafelUrteil(tn, q).zeilen.filter((z) => z.id === kn.id || z.id === "x-name").map((z) => z.ist);
     if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1])) v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
-    // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt (Prüfer K63 R1: die Kopie
-    // in der Tafel blieb grün, als die Albedo-Tafel sich änderte)
+    // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt
     const ka = tafel && mitAlbedo(klon());
     if (ka) {
         const ro = ka.mass.rohdatei;
@@ -2522,8 +2531,7 @@ function sollTafelSelbsttest(tafel, q) {
         if (vorher.urteil !== "ROT" || !/schattenAnteil 0\.239/.test(vorher.grund || "") || !/umgebungAzimut 1/.test(vorher.grund || ""))
             v.push(`${k7.id}: die Licht-Bilanz vor D3 nennt Schatten und Richtung nicht (${vorher.urteil} ${vorher.grund})`);
     } else v.push("die Tafel trägt das Licht-Verhältnis ohne umgebungAzimut (der Fall der Licht-Bilanz fehlt)");
-    // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): der Schuss vom 15.10. 02:14 (K63-n6, 14 s nach dem Umstellen) zeigte nur
-    // Membran und Nebel — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
+    // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
     const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
     const s6 = k6 && Object.keys(k6.mass.messung).find((s) => /^L\d$/.test(s) && !/^L3$/.test(s));
@@ -2541,8 +2549,7 @@ function sollTafelSelbsttest(tafel, q) {
     return v;
 }
 
-// DER SCHREIBER PRÜFT (K63-n7; Prüfer K63-2 Rot B: ein L1-Schuss 14 s nach dem Umstellen zeigte nur Membran und Nebel, das
-// Werkzeug schrieb ihn, die Linse las ihn nicht — tor-fern blieb auf dem Ist von 5a912d6e stehen): eine Messung fällt in die
+// DER SCHREIBER PRÜFT (K63-n7): eine Messung fällt in die
 // Tafel nur, wenn die Linse sie liest — sie bringt der Klasse keinen neuen Bruch, und wo vorher ein Ist stand, steht wieder eines.
 // `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben). Geprüft wird
 // JEDE Zeile (W1-n1, `schussVon`): wer den Schuss eines Ziels nennt, liest den neuen mit.

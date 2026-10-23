@@ -208,7 +208,17 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }
-                } else if (ex.typ === "spieler") pos = pp.clone();
+                } else if (ex.typ === "mensch") {
+                    // derselbe Bau wie Spieler und Bewohner, mit der Wahl des Labors (material.K1)
+                    const [x, zz] = [pp.x + 4, pp.z - 4];
+                    const g = r._buildHumanGroup(Object.assign({}, window.__koerperCore.START_PARAMS, ex.wahl));
+                    g.name = "mensch";
+                    g.position.set(x, r._voxelSurfaceY(x, zz) + r.constructor.PLAYER_FOOT_OFFSET, zz);
+                    sc.add(g);
+                    gesetzt = true;
+                    await ticke(20, () => false);
+                    pos = g.position.clone();
+                }
                 else if (ex.typ === "boden" && ex.wald) {
                     // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
                     // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
@@ -239,30 +249,33 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
-            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufe`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
             // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
-            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
-            // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
-            // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
-            const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
-            if (nahe.length > 1) throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): die Welt wählt die Stufe n ihres Exemplars von einem Auge
+            // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
+            // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+            const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
+            if (nahe.length > 1) throw new Error(`stufe: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
             for (const x of nahe) {
-                const e = x.eintrag;
-                const l0 = () => {
+                const e = x.eintrag,
+                    n = x.zeile.welt.exemplar.stufe,
+                    D = r.constructor.LOD_DISTANCES;
+                const zeigt = () => {
                     for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
-                        if (g && g.slotEntry && g.mesh && /:L0$/.test(r._taeterKlasse(g.mesh) || ""))
+                        if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
                             for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                     return false;
                 };
-                const auge = new T.Vector3(e.position.x + 3, e.position.y + 1.7, e.position.z + 3);
+                const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / Math.SQRT2;
+                const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
                 r._lodAuge = () => auge;
                 try {
-                    await ticke(600, l0);
+                    await ticke(600, zeigt);
                     await ticke(20, () => false);
                 } finally {
                     delete r._lodAuge;
                 }
-                if (!l0()) x.verweigert = `das Exemplar zeigt seine Stufe 0 nicht (das Auge 4,2 m vor ihm, 30 s)`;
+                if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
             }
         }
         const karte = new T.Mesh(
@@ -329,10 +342,7 @@ function albedoSicht(opts) {
         };
         if (luftU) luftU.beta.value = 0;
         sc.environment = null;
-        // DIE SCHICHTEN (K63-n7; gemessen 15.10., Radeon: die Haut las „kein Pixel" — in der Ich-Sicht trägt der eigene Leib
-        // nur seinen Schatten-Zwilling, alle 14 Spieler-Meshes auf Schicht 2, die das Auge nie zeichnet): der Schuss zeichnet
-        // jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
-        st.camera.layers.enableAll();
+        // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
         const half = T.DataUtils.fromHalfFloat;
@@ -356,9 +366,14 @@ function albedoSicht(opts) {
         const lu = st.lodUniforms;
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const schuss = async (sicht) => {
-            for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            bundles();
             const pass = async (e) => {
+                // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
+                sc.traverse((o) => {
+                    if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && !visAlt.has(o))
+                        meshes.push(o) && visAlt.set(o, o.visible) && kl.set(o, klasse(o));
+                });
+                for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
+                bundles();
                 for (const [l] of lichtAlt) l.intensity = 0;
                 A.color.setRGB(1, 1, 1);
                 A.intensity = e;
@@ -486,7 +501,6 @@ function albedoSicht(opts) {
         };
         const ergebnisse = [];
         const metallAlt = new Map();
-        const ahnenAlt = new Map();
         try {
             if (opts.zeilen) {
                 for (const ex of exemplare) {
@@ -577,14 +591,6 @@ function albedoSicht(opts) {
                                 mt.metalness = 0;
                             }
                         }
-                    // Die Ahnen der gewählten Züge stehen für den Schuss sichtbar: die Ich-Sicht verbirgt den eigenen Leib
-                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar — 0 Pixel).
-                    for (const m of sel)
-                        for (let a = m.parent; a && a !== sc; a = a.parent)
-                            if (!ahnenAlt.has(a)) {
-                                ahnenAlt.set(a, a.visible);
-                                a.visible = true;
-                            }
                     const set = new Set(sel);
                     const hell = new Float32Array(W * H * 4 * stellungen.length);
                     const dunkel = new Float32Array(W * H * 4 * stellungen.length);
@@ -597,8 +603,6 @@ function albedoSicht(opts) {
                         dunkel.set(t.dunkel, i * W * H * 4);
                     }
                     const s = { hell, dunkel };
-                    for (const [a, v] of ahnenAlt) a.visible = v;
-                    ahnenAlt.clear();
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
@@ -657,7 +661,6 @@ function albedoSicht(opts) {
         } finally {
             ausschnitteFort();
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
-            for (const [a, v] of ahnenAlt) a.visible = v;
             for (const [mt, v] of metallAlt) mt.metalness = v;
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();

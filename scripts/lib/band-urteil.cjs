@@ -127,7 +127,8 @@ function ortGier(ort) {
 }
 
 // DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
-// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne Aufzeichnung ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
+// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne
+// Aufzeichnung ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
 // gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
 function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
@@ -267,8 +268,7 @@ function einschwingOffen(r) {
     if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
     // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
     // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
-    // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
-    // aufgeschoben" und sah fehlende und angeschnittene Regionen nie.
+    // Die EINE Antwort der Welt (`_streuWartet`).
     const streuListe = [];
     if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
     const q = r._autoSettlementQueue;
@@ -857,8 +857,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
 
 // DIE ZU WEITE RATSCHE (K26, rein): je gebundene Klasse × Pass × Größe, die Summe und jeder VRAM-Erzeuger, deren Ratsche über
 // der Messung liegt — über max(Ist × (1 + toleranzPct), Ist + toleranzAbs), die Regel der Ratsche gespiegelt. `u` ist ein
-// Band-Urteil oder eine gespeicherte Band-Messung (`klassen[].je`, `summe.gebunden`, `vram`). An der Mess-Wiese lag die
-// Ratsche baum haupt bei 385 630 Dreiecken, gemessen 60 976 (1110-12): ein Rückschritt um das Sechsfache wäre grün geblieben.
+// Band-Urteil oder eine gespeicherte Band-Messung (`klassen[].je`, `summe.gebunden`, `vram`).
 function ratscheWeit(ratsche, u, paesse) {
     const out = [];
     if (!ratsche || !u) return out;
@@ -900,7 +899,7 @@ function ratscheWeit(ratsche, u, paesse) {
 // DER WURF (S3 haus, `stufen`): was in einer Kaskade für die Art wirft, gleich welche Stufe — über die Art zusammen, die
 // Exemplare aus dem Satz-Inhalt (je Zelle ihr Eintrag: das Haus, die Feuerstelle); eine Klasse außerhalb eines Satzes (ein
 // Tür-Flügel) zählt ihre Dreiecke mit, Exemplare trägt sie im Schatten-Pass keine. Am Dorf: der Haus-Wurf je Haus und
-// Kaskade gegen 96 Dreiecke (die Stufe 3 des Gesetzbuchs) — vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k).
+// Kaskade gegen 96 Dreiecke (die Stufe 3 des Gesetzbuchs).
 function ortSoll(ort, zensus) {
     const out = [];
     for (const s of ort.soll || []) {
@@ -994,8 +993,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
             if (!lebt.has(k) && !vramFrei(neu, k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
     // DIE GESAMT-ZEILE IST HÖCHSTENS DIE SUMME IHRER ZEILEN (gate:profiband H2b): jede Zeile zieht je Lauf auf ihr EIGENES
-    // Minimum, die Summe der Minima liegt dann unter dem Minimum der Gesamt-Zeile (14.10., GTX-Re-Mint: vramMB 96,3 gegen
-    // die Erzeuger 96,2) — eine Gesamt-Zeile darüber feuerte nie. Die Kappe gilt, sobald jede Zeile gemessen ist.
+    // Minimum, die Summe der Minima liegt dann unter dem Minimum der Gesamt-Zeile — eine Gesamt-Zeile darüber feuerte nie. Die Kappe gilt, sobald jede Zeile gemessen ist.
     const kappe = (key, zeilen, name) => {
         const alt = neu.gesamt[key];
         if (alt == null || zeilen.some((v) => v == null)) return;

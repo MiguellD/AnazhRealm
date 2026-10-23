@@ -1226,6 +1226,10 @@ class AnazhRealm_dienst {
             this._ladeSperre.verlangt = true;
             return false;
         }
+        // DAS DORF IST NIE HALB (stadt-erwachen): der Gang seines Erlebnisses (`_dorfErlebnis`, Raten je Takt) schließt vor dem
+        // Schnappschuss — nach dem Laden baut die Zelle nur ihre Wege neu, nie Laterne, Brunnen und Hof-Baum; seine Bauten
+        // gehen über `_blockerEintritt` ins Journal, ehe `_speicherSichern` es zählt
+        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
         if (!worldId) {
             this._bruchMelden("SPEICHER: die Welt trägt keine worldId (ensureWorldMeta lief nicht) — nichts gesichert");

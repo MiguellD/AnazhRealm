@@ -1114,7 +1114,7 @@ function zerlegeMessen(k) {
             try {
                 auf = await window.__ausgabeAufnahme(W, H, 1);
             } finally {
-                if (wieseRuht) wieseRuht();
+                wieseRuht();
             }
             await lese();
             const cv = document.createElement("canvas");

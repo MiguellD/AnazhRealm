@@ -162,8 +162,6 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 6 architectureTemplates V1 + 6.3 Kollisions-Body + 6.4 Bauplan-Datenschicht + 6.5 Hotbar + 6.6 Werkstatt-Tab + 6 V2 Distance-Culling/Fraktal/Counter/Bau-Cursor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing6Workshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

@@ -97,8 +97,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -976,8 +974,6 @@ async function checkBandCadWorkshop(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1242,7 +1238,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
         out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
         // Welle 5 Klang — der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
-        out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
+        out.keinDrohn = !("ambient" in s) && !("weather" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
         out.busAmRegler =
@@ -1300,7 +1296,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
         check("Welle 5 Klang: die Klang-Welt steht (Bus + Graph + Hör-Ring)", ring4Results.hasUmwelt);
-        check("Welle 5 Klang: kein Drohn, keine Wetter-/Hydro-Schicht neben dem Gesetz", ring4Results.keinDrohn);
+        check("Welle 5 Klang: kein Drohn, keine Wetter-Schicht neben dem Gesetz", ring4Results.keinDrohn);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
         check(

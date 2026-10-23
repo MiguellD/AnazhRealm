@@ -169,7 +169,7 @@ function shellPfad(name, seed, stufe) {
         FC.bakeLOD(st.g, p.col, geoms, 0, true);
         disposeGroup(st.g);
     } else {
-        // ≡ LOD-Sonde: MASS-BUILD → B, Warm-Pfad für Stufe 2, dann fragFuer.
+        // ≡ LOD-Sonde: MASS-BUILD → B, dann fragFuer (der Warm-Pfad lebt in ihm, S8).
         const mass = FC.stapelBau(Object.assign({}, p, { nur: FC.MASSNUR }), FC.LOD1F);
         const bx = new THREE.Box3().setFromObject(mass.g);
         const B = {
@@ -186,11 +186,6 @@ function shellPfad(name, seed, stufe) {
             meshes: [],
         };
         disposeGroup(mass.g);
-        if (stufe >= 2 && !turm) {
-            FC.fragFuer(B, 1);
-            B.frag = null;
-            B.fragStufe = undefined;
-        }
         FC.mischeGeoms(geoms, FC.fragFuer(B, stufe));
         B.frag = null;
         B.fragStufe = undefined;

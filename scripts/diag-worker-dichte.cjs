@@ -8,9 +8,11 @@
 // Je Welt (Standard: der Boot-Seed; Bühne: spec/pruefbuehne/welt.json, importiert wie im Spiel) und je Ort (die
 // Messorte des Haushalts, ein Fluss-Chunk; auf der Bühne ihre Stationen) wird das Gitter jeder LOD-Stufe 0–3 im
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
-// Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann mit zwei Kugeln am ersten Ort: einer Schnitz-Kugel
-// im Oberflächen-Band und einer FÜLL-KUGEL ÜBER dem Band. Dazu DIE EDIT-WAHRHEIT: 300 Kugeln über den Spielpfad
-// (`carveVoxelSphere`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn sind SHA Main = Worker.
+// Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann DIE HÜLLE am ersten Ort: ein Turm aus Füll-Edits bis
+// ÜBER das Band und ein Graben (der Band-Befund des Richters 09.10.: der Main legt den Edit auf jede Ecke seines Kastens,
+// der Worker übersprang über dem Band), Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
+// über den Spielpfad (`carveVoxel`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
+// sind SHA Main = Worker.
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
 //   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,
@@ -83,9 +85,9 @@ async function boote(page) {
 }
 
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
-async function probe(page, welt, mitAbdruck) {
+async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
-        async (welt, mitAbdruck, punkte, messorte) => {
+        async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
             const r = window.anazhRealm;
             const s = r.state;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
@@ -276,19 +278,120 @@ async function probe(page, welt, mitAbdruck) {
                         `die Flut-Saat: der Worker baut den Chunk ${F.cx},${F.cz} mit und ohne Saat gleich — er sieht sie nicht`
                     );
             }
-            // (2) mit Edits am ersten Ort: Schnitz-Kugel im Band, Füll-Kugel ÜBER dem Band (Band-Oberkante LOD 0 =
-            // Makro + 12 + 4 · 1,8 = +19,2 m; die Kugel liegt von +25 bis +35 m)
+            // (2) DIE HÜLLE (F2a „hoch bauen", Karte editform-kern): die Form des Edits ist EIN Gesetz des Kerns (gelaende-core
+            // `editForm` · `editReich` · `mitEdits` · `editsImGitter` · `bandUmEdits`). Ein Turm aus N_TURM Füll-Edits über den
+            // Spielpfad (`_addVoxelEdit`, r 3,5 wie der Hieb), jeder auf der Krone des vorigen (`_voxelSurfaceY`),
+            // hebt sich je Edit um r (−0,1 … +0,3 m, die Interpolation der Flächen-Probe) und steht als EINE Hülle (in jeder Höhe
+            // 0,5 m innerhalb des Rands Fels, 0,6 m außerhalb Luft) — bis über das Band (+19,2 m); dazu ein Graben an seinem Fuß.
+            // Jeder Leser trägt das Gesetz über die ganze Liste: der Haupt-Faden im Punkt (`_terrainDensityAt`, `_fieldDensityAt`
+            // mit und ohne Spalten-Kontext) und im Gitter (`_voxelEditedDensityGrid`), der Worker = Main (LOD 0–3), und die Wache
+            // des Fern-Rings (`_fernRingDeckWache` auf einer Naht aus 640 Probe-Ecken) weckt genau die Ecken in der Reichweite;
+            // jenseits ändert sich keine Fläche. An der Basis e3dd2b67 stapelte jeder Edit an vier Stellen einen additiven Kegel
+            // der Stärke 48: 10 Blöcke hoben 24,5 m (Hub 3,26 → 1,90 m). `zwilling` (Selbsttest): der Kegel im Punkt des
+            // Haupt-Fadens (`_mitEdits`) und die alte Reichweite r + 4 m in der Wache — beide MÜSSEN beim Namen rot werden.
             const o0 = orte[0];
-            const surf = r._terrainMacroSurfaceY(o0.x, o0.z);
-            s.worldMeta.voxelEdits = [
-                { x: o0.x + 3, y: surf, z: o0.z + 2, r: 4, strength: 48, mode: "carve" },
-                { x: o0.x - 4, y: surf + 30, z: o0.z - 3, r: 5, strength: 48, mode: "fill" },
-            ];
+            s.worldMeta.voxelEdits = [];
             await r._voxelWorkerSyncState({ op: "state-set" });
-            const zeilenEdit = [];
-            for (let lod = 0; lod <= 3; lod++) zeilenEdit.push(await vergleiche(o0, lod, "edits"));
-            out.orte.push({ id: o0.id + "+edits", x: o0.x, z: o0.z, zeilen: zeilenEdit });
-            // (3) DIE EDIT-WAHRHEIT (K23): 300 Kugeln über den Spielpfad (`carveVoxelSphere` → `_addVoxelEdit` → das Delta an den
+            const G = globalThis.__gelaendeCore;
+            const [R, tx, tz] = [3.5, o0.x + 0.37, o0.z + 0.61];
+            const naht = [];
+            for (let a = 0; a < 640; a++) {
+                const [w, q] = [((a % 16) * Math.PI) / 8, 0.5 + Math.floor(a / 16) / 2];
+                naht.push({ li: a, g: a, x: tx + Math.cos(w) * q, z: tz + Math.sin(w) * q });
+            }
+            const vor = naht.map((p) => r._voxelSurfaceY(p.x, p.z));
+            if (zwilling)
+                r._mitEdits = function (b, x, y, z) {
+                    for (const e of this.state.worldMeta.voxelEdits) {
+                        const d2 = (x - e.x) ** 2 + (y - e.y) ** 2 + (z - e.z) ** 2;
+                        if (d2 < e.r * e.r) b += (e.mode === "fill" ? 48 : -48) * (1 - Math.sqrt(d2) / e.r);
+                    }
+                    return b;
+                };
+            const y0 = r._voxelSurfaceY(tx, tz);
+            const hub = [];
+            let krone = y0;
+            for (let k = 0; k < N_TURM; k++) {
+                r._addVoxelEdit(tx, krone, tz, R, "fill");
+                const y = r._voxelSurfaceY(tx, tz);
+                hub.push(+(y - krone).toFixed(3));
+                krone = y;
+            }
+            r._addVoxelEdit(tx + 6, y0, tz - 2, 2.5, "carve");
+            const alle = s.worldMeta.voxelEdits;
+            out.huelle = { hub, fern: "—" };
+            if (!hub.every((h) => Math.abs(h - R - 0.1) <= 0.2))
+                out.befunde.push(
+                    `TURM: ${N_TURM} Füll-Edits r ${R} heben ${(krone - y0).toFixed(2)} m statt ${N_TURM * R} m`
+                );
+            let loch = 0;
+            for (let y = y0 + 2; y < krone - 1; y++)
+                for (let a = 0; a < 16; a++) {
+                    const [w, q] = [(a * Math.PI) / 4, a < 8 ? R - 0.5 : R + 0.6];
+                    if (r._terrainDensityAt(tx + Math.cos(w) * q, y, tz + Math.sin(w) * q) > 0 !== a < 8) loch++;
+                }
+            if (loch) out.befunde.push(`HÜLLE: ${loch} Proben am Rand des Turms falsch (innen Luft oder außen Fels)`);
+            if (!G.editForm)
+                return (out.befunde.push("KERN: gelaende-core trägt die Form des Edits nicht (editForm)"), out);
+            let ab = 0;
+            for (let i = 0; i < 3000; i++) {
+                const x = tx - 12 + ((i * 7919) % 2400) / 100;
+                const z = tz - 12 + ((i * 104729) % 2400) / 100;
+                const y = y0 - 6 + ((i * 0.618034) % 1) * (krone - y0 + 12);
+                const [K, d] = [r._kellerLage(x, z), G.mitEdits(r._terrainBaseDensityAt(x, y, z), x, y, z, alle)];
+                const soll = K ? G.erdbauHohl(K, x, y, z, d) : d;
+                const c = r._terrainColumnContext(x, z);
+                for (const ist of [
+                    r._terrainDensityAt(x, y, z),
+                    r._fieldDensityAt(x, y, z),
+                    r._fieldDensityAt(x, y, z, c),
+                ])
+                    if (!Object.is(ist, soll)) ab++;
+            }
+            if (ab)
+                out.befunde.push(
+                    `HAUPT-FADEN PUNKT (_terrainDensityAt · _fieldDensityAt): ${ab} von 9000 Proben ≠ Gesetz`
+                );
+            const col = (x, y, z, c) => r._terrainBaseDensityAtCol(x, y, z, c);
+            const turm = { id: o0.id + "+turm", x: tx, z: tz, zeilen: [] };
+            for (let lod = 0; lod <= 3; lod++) {
+                turm.zeilen.push(await vergleiche(turm, lod, "turm"));
+                const cfg = r._voxelChunkConfig(lod);
+                const [ox, oz] = [
+                    Math.floor(tx / cfg.span) * cfg.span - cfg.step,
+                    Math.floor(tz / cfg.span) * cfg.span - cfg.step,
+                ];
+                const g = [ox, base - cfg.floorDrop, oz, cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step];
+                const N = [cfg.dim + 4, cfg.dimY + 1, cfg.dim + 4, cfg.step];
+                const main = new Uint32Array(r._voxelEditedDensityGrid("linse-turm", ...g).buffer);
+                s.voxelBaseDensityCache.delete("linse-turm");
+                const b = r._voxelSampleDensityGrid(...g, (x, y, z) => r._terrainBaseDensityAt(x, y, z), col, true, []);
+                G.bandUmEdits(b, ox, g[1], oz, ...N, alle, base, (x, z) => r._terrainColumnContext(x, z), col);
+                const soll = new Uint32Array(G.editsImGitter(b, ox, g[1], oz, ...N, alle).buffer);
+                const n = main.filter((w, i) => w !== soll[i]).length;
+                if (n) out.befunde.push(`HAUPT-FADEN GITTER (_voxelEditedDensityGrid): L${lod} ${n} Ecken ≠ Gesetz`);
+            }
+            out.orte.push(turm);
+            const fr = {
+                zoneVerts: 640,
+                teilung: { randV: new Uint8Array(640).fill(1) },
+                feldY: new Float32Array(640),
+            };
+            [fr.feldEdits, fr.feldEditsN, r._fernRingPunkt, r._standRuht] = [alle, 0, (f, i) => naht[i], () => true];
+            const reich = (p) => alle.some((e) => (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < G.editReich(e) ** 2);
+            if (zwilling) globalThis.__gelaendeCore = { ...G, editReich: (e) => e.r + 4 };
+            r._fernRingDeckWache(fr);
+            globalThis.__gelaendeCore = G;
+            for (const k of ["_fernRingPunkt", "_standRuht", "_mitEdits"]) delete r[k];
+            const fehlt = naht.filter((p, i) => reich(p) === (fr.feldY[i] === fr.feldY[i])).length;
+            const jenseits = naht.filter((p, i) => !reich(p) && r._voxelSurfaceY(p.x, p.z) !== vor[i]).length;
+            out.huelle.fern = `${naht.filter(reich).length} von 640 Ecken in der Reichweite`;
+            if (fehlt)
+                out.befunde.push(
+                    `FERN-RING (_fernRingDeckWache): ${fehlt} Ecken der Naht gegen die Reichweite geweckt`
+                );
+            if (jenseits) out.befunde.push(`REICHWEITE (editReich): ${jenseits} Flächen ändern sich jenseits von ihr`);
+            // (3) DIE EDIT-WAHRHEIT (K23): 300 Edits über den Spielpfad (`carveVoxel` → `_addVoxelEdit` → das Delta an den
             // Worker), 20 × 15 im 2-m-Raster über die Chunk-Naht des ersten Orts. Kein Edit fällt still: der Main hält alle 300,
             // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter). Der FIFO-Deckel
             // (256) verdrängte die ersten 44 nur im Main — der Worker hielt sie: zwei Böden ab Edit 257.
@@ -301,7 +404,7 @@ async function probe(page, welt, mitAbdruck) {
             for (let i = 0; i < N_EDITS; i++) {
                 const x = ex0 + (i % 20) * 2;
                 const z = ez0 + Math.floor(i / 20) * 2;
-                r.carveVoxelSphere(x, r._terrainMacroSurfaceY(x, z) - 1, z, 2.5);
+                r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 2.5);
             }
             out.editWahrheit = { gesetzt: N_EDITS, imMain: s.worldMeta.voxelEdits.length, gitter: [] };
             const zeilenWahr = [];
@@ -322,49 +425,38 @@ async function probe(page, welt, mitAbdruck) {
             out.orte.push(...zeilenWahr);
             out.editWahrheit.shaGleich = out.editWahrheit.gitter.filter((g) => g.main === g.worker).length;
             // KARTE = LISTE: die Edit-Karte (je Chunk) trägt jeden beitragenden Edit — das Gitter über die Karte und über die
-            // ganze Liste sind byte-gleich (LOD 0 an den drei Orten), und 4000 Punkt-Proben im Feld summieren gleich.
-            if (typeof r._voxelEditsImKasten === "function") {
-                const karte = r._voxelEditsImKasten;
-                const liste = function () {
-                    return this.state.worldMeta.voxelEdits;
-                };
-                let gleich = 0;
-                for (const ort of nachbarn) {
-                    const cfg = r._voxelChunkConfig(0);
-                    const cx = Math.floor(ort.x / cfg.span);
-                    const cz = Math.floor(ort.z / cfg.span);
-                    const args = [cx * cfg.span - cfg.step, base - cfg.floorDrop, cz * cfg.span - cfg.step];
-                    const dims = [cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step];
-                    const a = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
-                    r._voxelEditsImKasten = liste;
-                    const b = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
-                    r._voxelEditsImKasten = karte;
-                    s.voxelBaseDensityCache.delete(`linse-karte|${cx},${cz}`);
-                    if ((await hex(a)) === (await hex(b))) gleich++;
-                }
-                let punkte = 0;
-                const alle = s.worldMeta.voxelEdits;
-                for (let i = 0; i < 4000; i++) {
-                    const x = ex0 - 4 + ((i * 7919) % 4800) / 100;
-                    const z = ez0 - 4 + ((i * 104729) % 3800) / 100;
-                    const y = r._terrainMacroSurfaceY(x, z) - 1 + ((i % 7) - 3) * 0.6;
-                    let d = 0;
-                    for (const ed of alle) {
-                        const dx = x - ed.x;
-                        const dy = y - ed.y;
-                        const dz = z - ed.z;
-                        const d2 = dx * dx + dy * dy + dz * dz;
-                        if (d2 < ed.r * ed.r)
-                            d += (ed.mode === "fill" ? 1 : -1) * (1 - Math.sqrt(d2) / ed.r) * (ed.strength || 48);
-                    }
-                    if (Object.is(d, r._voxelEditDeltaAt(x, y, z)) || d === r._voxelEditDeltaAt(x, y, z)) punkte++;
-                }
-                out.editWahrheit.karteGleich = `${gleich}/${nachbarn.length} Gitter · ${punkte}/4000 Punkte`;
-                if (gleich !== nachbarn.length || punkte !== 4000)
-                    out.befunde.push(
-                        `EDIT-KARTE ≠ LISTE: ${out.editWahrheit.karteGleich} — Täter _voxelEditKarte (ein Edit fehlt seinem Chunk)`
-                    );
+            // ganze Liste sind byte-gleich (LOD 0 an den drei Orten), und 4000 Punkt-Proben im Feld tragen dieselbe Form.
+            const karte = r._voxelEditsImKasten;
+            const liste = function () {
+                return this.state.worldMeta.voxelEdits;
+            };
+            let gleich = 0;
+            for (const ort of nachbarn) {
+                const cfg = r._voxelChunkConfig(0);
+                const cx = Math.floor(ort.x / cfg.span);
+                const cz = Math.floor(ort.z / cfg.span);
+                const args = [cx * cfg.span - cfg.step, base - cfg.floorDrop, cz * cfg.span - cfg.step];
+                const dims = [cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step];
+                const a = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
+                r._voxelEditsImKasten = liste;
+                const b = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
+                r._voxelEditsImKasten = karte;
+                s.voxelBaseDensityCache.delete(`linse-karte|${cx},${cz}`);
+                if ((await hex(a)) === (await hex(b))) gleich++;
             }
+            let gleichP = 0;
+            for (let i = 0; i < 4000; i++) {
+                const x = ex0 - 4 + ((i * 7919) % 4800) / 100;
+                const z = ez0 - 4 + ((i * 104729) % 3800) / 100;
+                const y = r._terrainMacroSurfaceY(x, z) - 1 + ((i % 7) - 3) * 0.6;
+                const b = r._terrainBaseDensityAt(x, y, z); // das Gesetz des Kerns über die Liste, der Main über die Karte
+                if (Object.is(G.mitEdits(b, x, y, z, s.worldMeta.voxelEdits), r._mitEdits(b, x, y, z))) gleichP++;
+            }
+            out.editWahrheit.karteGleich = `${gleich}/${nachbarn.length} Gitter · ${gleichP}/4000 Punkte`;
+            if (gleich !== nachbarn.length || gleichP !== 4000)
+                out.befunde.push(
+                    `EDIT-KARTE ≠ LISTE: ${out.editWahrheit.karteGleich} — Täter _voxelEditKarte (ein Edit fehlt seinem Chunk)`
+                );
             if (out.editWahrheit.imMain !== N_EDITS)
                 out.befunde.push(
                     `EDIT-WAHRHEIT: der Main hält ${out.editWahrheit.imMain} von ${N_EDITS} Edits — Täter _addVoxelEdit (FIFO-Deckel verdrängt still)`
@@ -542,7 +634,9 @@ async function probe(page, welt, mitAbdruck) {
         welt,
         mitAbdruck,
         mitAbdruck ? abdruckPunkte() : [],
-        ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id)))
+        ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id))),
+        10,
+        zwilling
     );
 }
 
@@ -597,7 +691,7 @@ async function probeVerfaelscht(page) {
         };
     });
     await verfaelsche(page, true);
-    const rep = await probe(page, "standard", false);
+    const rep = await probe(page, "standard", false, true);
     await page.evaluate(() => {
         const r = window.anazhRealm;
         r._voxelWorkerSnapshotState = r.__dichteOrig;
@@ -618,6 +712,7 @@ function zeige(rep) {
                     `      ✗ L${z.lod}: ${z.abweichend} Ecken, maxDiff ${z.maxDiff} — erste bei (${z.erste.x}|${z.erste.y}|${z.erste.z}) Main ${z.erste.main} ≠ Worker ${z.erste.worker}`
                 );
     }
+    if (rep.huelle) console.log(`    Hülle: Turm Hub ${rep.huelle.hub.join(" · ")} m · Fern-Ring ${rep.huelle.fern}`);
     if (rep.editWahrheit) {
         const w = rep.editWahrheit;
         console.log(
@@ -1753,6 +1848,7 @@ async function gebaut(page, fehler) {
                 gitter: v.gitter,
                 ferne: v.ferne ? v.ferne.abweichend : 0,
                 wald: v.wald ? v.wald.abweichend : 0,
+                namen: ["HAUPT-FADEN PUNKT", "FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
             };
             console.log(
                 `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
@@ -1794,7 +1890,8 @@ async function gebaut(page, fehler) {
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
+        // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, die Zwillinge der Form beim Namen
+        console.log(`  SELBSTTEST Zwillinge der Form (2): rot ${selbst ? selbst.namen : "?"} (Soll HAUPT-FADEN PUNKT,FERN-RING)`);
         pass =
             !rot &&
             selbst &&
@@ -1802,7 +1899,8 @@ async function gebaut(page, fehler) {
             selbst.ferne > 0 &&
             selbst.wald > 0 &&
             urform &&
-            urform !== STROM_SOLL;
+            urform !== STROM_SOLL &&
+            selbst.namen === "HAUPT-FADEN PUNKT,FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(

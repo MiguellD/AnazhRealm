@@ -1,7 +1,6 @@
 "use strict";
-// DIE ORTE AUS DER WELT (K16, Prüfung Runde 2): eine Probe trägt keinen Ort als Zahlen-Paar — seit die Landform im
-// Gelände-Kern liegt, steht an den Orten der alten Welt anderes Gelände (der Biss am Hang, der Baum im Haus, die Ankunft im
-// Ursprung: drei rote Gruppen der CI). Zwei Quellen tragen jeden Ort einer Probe:
+// DIE ORTE AUS DER WELT (K16): eine Probe trägt keinen Ort als Zahlen-Paar — der Ort folgt dem Gelände-Kern. Zwei Quellen
+// tragen jeden Ort einer Probe:
 //   - der MESSORT der Band-Serie aus EINER Datei (spec/profiband/haushalt.json, `messorte[].spieler`/`blick` — dieselbe, an
 //     der `werkbank umstellen --ort` den Spieler aufstellt), nie als Abschrift;
 //   - die STELLE aus der Welt (`__weltOrt` in der Seite): gesucht in Ringen um die Mitte, geprüft am Gesetz und am gebauten
@@ -21,8 +20,7 @@ function messort(id) {
 // DIE WIESE (K55): ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER
 // Funktion mit zwei Wirten: in der Seite die Welt selbst (`werkbank umstellen --ort`, die Suche `__weltOrt("wiese")`), ohne
 // Browser der Wirt am Gesetz (`wirtAmGesetz`: gelaende-core, phyto-core und die Wald-Methoden aus dem Stamm-Text —
-// gate:profiband H1).
-// Gemessen am Ort (x, z) mit Blick-Punkt `blick` ([x, z]; null = die beste von 16 Richtungen) über den Ring `ring` m:
+// gate:profiband H1). Gemessen am Ort (x, z) mit Blick-Punkt `blick` ([x, z]; null = die beste von 16 Richtungen) über den Ring `ring` m:
 //   hang     — die Neigung der Ausgleichs-Ebene des Gesetzes (`_terrainMacroSurfaceY`, Mitte + 5 Kreise × 12 Speichen), Grad
 //   nass     — der Anteil der Ring-Punkte, die das Land nicht trägt (`_landAt` mit `trockenMarge`)
 //   krone    — die Kronen-Fläche π·T² der STEHENDEN Bäume des Wald-Gesetzes (`_forestCellDarts` → `_forestDartSteht` →

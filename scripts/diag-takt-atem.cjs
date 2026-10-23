@@ -2,11 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-takt-atem.cjs — DIE ATEM-WAND DES TAKTS (gate:takt-atem, 0910-7)
 //
-// Befund (OMEN 0910-6/0910-7, V18.538, Regler frei): der CPU-Takt p95 stieg 4,8 → 11,7 ms. Die Laub-Dichte
-// (`_foliageDensityScale`) war die einzige Stellgröße des Reglers ohne Grenzzyklus-Wand: wo der Regler mitten in seiner
-// Spanne steht, pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte). Jeder Wechsel weckte über den Stand-Stempel jeden
-// Fege-Takt zu einer vollen Runde über den Bestand (`_tickArchitectureLOD` → `_lodTreeVisHeight` → `_foundrySichtHoehe`) und
-// über `uLodPerf` die Lage jedes Passes (`_passSicht` → `_chunkSatzPass` → `_chunkSatzAbschnitt` + `_hoehlenSicht`).
+// Keine Stellgröße des Reglers pendelt je Takt um ihr Ziel: jeder Wechsel weckt über den Stand-Stempel jeden Fege-Takt zu
+// einer vollen Runde über den Bestand und über `uLodPerf` die Lage jedes Passes.
 //
 // Die Linse fährt die echte Welt (swiftshader, kienspan) ohne Spiel-Loop und ohne Wanduhr — sie ZÄHLT. Je Takt: der Aktuator
 // (`_nexusPerfActuate`) mit einem festen Sinn (Frame 14 ms, ehrliche Last), `uLodPerf` wie in `_loopRender`, der Takt-Planer

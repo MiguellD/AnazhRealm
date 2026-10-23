@@ -1,8 +1,5 @@
 // diag-reload-treue.cjs — RELOAD-TREUE (V18.478): DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
-// Der benannte V18.477-Richter-Befund [mittel]: Kreatur-Snapshots trugen soul/bodySize, aber
-// KEINE Guss-Dials — nach dem Reload goss spawnCreatureAt ALLE Kreaturen aus der AKTUELLEN
-// Studio-Übergabe: eine vormals klein gegossene Gattung wurde groß, sobald der Schöpfer die
-// Übergabe später änderte. Jetzt friert der GUSS die wirksame Übergabe je Wesen ein
+// Der GUSS friert die wirksame Übergabe je Wesen ein
 // (group.userData.gussDials — nur wenn eine aktiv war, sonst feld-los + byte-alt), der Snapshot
 // trägt sie, und der Restore pinnt sie durch DENSELBEN Validator (Kreatur-PARAMS-Clamps) als
 // dialsOv in den Neu-Guss. Diese Linse hält die Naht:
@@ -43,26 +40,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Leere Bühne + genug Kapazität.
         for (const c of r.state.creatures.slice()) r.removeCreature(c);
         r.state.maxCreatures = 12;
-        // Geometrie-Fingerabdruck (position-Attribute des NAH-Templates).
-        const fnv = (h, arr) => {
-            const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h >>> 0;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
+        const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const setUe = (size) => {
             r._studioUebergabeEmpfang({ kind: "kreatur", gattung: "wolf", s: { size } });
         };

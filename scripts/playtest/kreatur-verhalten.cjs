@@ -114,8 +114,6 @@ async function checkBandV1758CreatureNature(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatures(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1723,13 +1721,13 @@ async function checkBandTierSeparation(ctx) {
         delete a2.userData._wanderSlot;
         a1.userData.wanderAnchor = null;
         a2.userData.wanderAnchor = null;
-        // genullt: die Separation UND der EINE Leib-Löser `_leibKontakte` (nie Durchdringung — er allein trennte das Paar)
+        // genullt: die Separation UND das EINE Paar Leib an Leib `_leibPaar` (es allein trennte das Paar)
         const savedSep = r._applyCreatureSeparation;
         r._applyCreatureSeparation = function () {};
-        r._leibKontakte = function () {};
+        r._leibPaar = () => false;
         tick(200, 0.05);
         r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
-        delete r._leibKontakte;
+        delete r._leibPaar;
         o.cGap = gap(a1, a2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
@@ -2807,8 +2805,7 @@ async function checkBandKreaturKosten(ctx) {
         // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
         // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
         o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)).length;
-        o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
-        o.checks.wAbsenz = o.wLiterale === 0 && o.wDistKonst.length === 0;
+        o.checks.wAbsenz = o.wLiterale === 0;
     
         // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
         // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten

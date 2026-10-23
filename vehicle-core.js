@@ -2400,12 +2400,15 @@
     // V18.491.230 Lab Garage Lack-Swatches; seit W5 trägt die Welt sie je Gestalt (`lackIndex`/`lackStoff`, LACK_VIS.host).
     // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`); das vierte Feld ist die
     // LACK-ART (`LACK_ART`: uni pigmentiert · metallic geflockt), Labor und Welt lesen denselben Stoff (`lackStoff`).
+    // DAS REALE BAND (material.K1, Re-Mint 23.10.): ein uni-Lack ist ein Dielektrikum — seine Albedo liegt in sRGB 30–240
+    // (Frostbite, Lagarde & de Rousiers 2014; linear 0,0123–0,871). Tiefschwarz 0x111319 las 0,006 (Tafel lack, beide Seiten),
+    // 0x22252c liest 0,0185 und bleibt das tiefe Blau-Schwarz.
     const LACK_GESETZ = [
         ["Clay", 0x8d9499, 1, "uni"],
         ["Signalrot", 0xc4181b, 0, "uni"],
         ["Racing-Grün", 0x1d4a30, 0, "uni"],
         ["Silber", 0xb6babf, 0, "metallic"],
-        ["Tiefschwarz", 0x111319, 0, "uni"],
+        ["Tiefschwarz", 0x22252c, 0, "uni"],
         ["Azurblau", 0x1c5190, 0, "metallic"],
         ["Solargelb", 0xe2b21e, 0, "uni"],
         ["Kupfer-Orange", 0xc8641a, 0, "metallic"],
