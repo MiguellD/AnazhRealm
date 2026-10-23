@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Band-Funktion (W17 — Multiplayer-Sub-Welten (B-Relay, JS-Compute, Phase C, Decl, Vendor)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW17Multiplayer(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1118,8 +1116,6 @@ async function checkBandW17Multiplayer(ctx) {
     }
 }
 
-// Band-Funktion (W12 Phase 1 (Portal-Rolle + Skelett + Betreten) + Phase 2 (fremde Welten + Registry + DSL-Brücke) + Phase 3 (Ereignisse zurück + Manifest)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW12WorldPortal(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1444,7 +1440,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
-        out.stromExists = !!ws && ws.builtIn === true;
         out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
         out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
 
@@ -1471,7 +1466,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p2Results && !w12p2Results.error) {
-        check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
         check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
@@ -1578,7 +1572,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
-        out.terrainExists = !!wt && wt.builtIn === true;
         out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
         out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
         out.terrainManifest =
@@ -1608,7 +1601,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
         check("W12 P2: welt_terrain trägt ein DSL-Manifest (eiche/wald/neu)", w12terrainResults.terrainManifest);

@@ -90,9 +90,8 @@ const server = statikServer();
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
-                    // ZWILLINGS-ABSCHIED 19.07.: der Begehbarkeits-Winkel ist kein
-                    // State-Feld mehr — _stepCharacter liest das Steilhang-Gesetz
-                    // (hang.maxSlopeY) direkt aus dem Kern (fail-closed Memo-Leser).
+                    // der Begehbarkeits-Winkel ist kein State-Feld: _stepCharacter liest das Steilhang-Gesetz
+                    // (hang.maxSlopeY) aus dem Kern.
                     worldMeta: { voxelTerrain: true },
                     forward: new THREE.Vector3(),
                     right: new THREE.Vector3(),

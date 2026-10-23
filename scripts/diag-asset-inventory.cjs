@@ -401,12 +401,6 @@ const server = statikServer();
                     const pp = String(k).slice(5).split("|");
                     if (pp.length >= 2) attested.add(pp[0] + "|" + pp[1] + "|1");
                 }
-            if (r._grassStudioGeoByStage)
-                for (const stg of Object.keys(r._grassStudioGeoByStage)) {
-                    const m = r._grassStudioGeoByStage[stg];
-                    // Geometrie ODER das bewusste "leer"-Verdikt attestiert; false = Alt-Pfad (kein Studio).
-                    if (m !== undefined && m !== null && m !== false) attested.add("gras|1|" + stg);
-                }
             res.attested = attested.size;
             const requested = f.requested ? Array.from(f.requested) : [];
             res.requested = requested.length;

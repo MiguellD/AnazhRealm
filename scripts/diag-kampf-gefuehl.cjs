@@ -35,39 +35,14 @@
 //      nichts — die Treffer-Messung fließt durch die echte Kapsel-Mathe.
 //      Beide Stubs restauriert (Gate-Hook-Lehre).
 //
-// Die Leben-Prüfung „Kampf" als Linse am ECHTEN Chokepoint, gespielt wie ein Mensch: das Fadenkreuz wird über Gier und Neigung durch die ECHTE Kamera
-// (_loopCamera, 1st und 3rd) auf das Ziel geführt, geklickt wird über den EINEN Dispatcher (tryMouseBreak /
-// _tickHarvest / tryMousePlace / Canvas-mousedown), geschlagen über _beginPlayerSwing + _tickKampfSchwung.
-// Gezählt wird nur mitlaufend (damageCreature, _kampfHitJuice, _beginPlayerSwing, dslRun-Voxel-Ops); keine Probe
-// ersetzt die Stelle, an der ein Defekt saß (Q0). Die Voxel-Ops werden gezählt und nicht ausgeführt (der Krater ist
-// das Urteil des Dispatchers, nicht des Schnitzers).
-//  (Q8 TREFFER) Zone wirkt (Kopf ÷ Hinterlauf, jeder Treffer trägt eine Zone) · hangab (Hirsch 1,6 m/−0,62 m, Fuchs
-//      1,3 m/−0,6 m) und klein flach (Hirsch L 0,64) je ≥ 8/10 · Hit-Stop-Energie Keule ≠ Grossschwert (≥ 10 %) · keine Schadens-Kappe (höchstens
-//      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr nach dem Temperament der Gattung (Bär > 0, Hirsch 0 bei 20 Treffern in 1,6 m, pfad) · die Hand ist
-//      kein Panzer (defense/hpMax gleich) · Kampf verschleißt, ein verbrauchtes Gerät schlägt nicht · der Pfeil:
-//      Schaden ∝ Energie (25 %-Auszug ≤ 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
-//      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold) · der Bogen
-//      verschleißt wie die Klinge (wear 0,5 → 0,65 des Schadens, jeder Schuss zehrt, verbraucht löst er nicht) und
-//      JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden · fehlt
-//      tetrapoda trefferZone, bricht der Treffer-Test laut · der erste Treffer auf eine Gattung zerlegt keine Haut
-//      (vorgebacken im Takt der EINEN Bake-Uhr) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
-//  (Q9 MAUS) 1st-Person Halten nach dem Stoß →
-//      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
-//      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
-//  (Q10 BLICK) Ego-Neigung −90° → Blick −90° · jedes „vor dir" (at_player_forward, „baue dorf hier") liegt vor dem
-//      Blick (cos > 0,9) · der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung).
-//  SELBST-TESTS (nur wo die Naht existiert): (S3) _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir" kippt
-//      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
-//      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
-//      rot · (S7) ein Wurf-Täter setzt seinen Schaden selbst zusammen (die alte Pfeil-Zeile) → die Klassen-Linse nennt
-//      ihn · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut · (S9) der Leib ohne Glieder (Reichweite halb +
-//      radius) → das Grob-Tor weist Kopf und Rute ab, die Deckungs-Probe T12 nennt sie. Jede Naht restauriert.
-//  (KEIN DRITTER LEIB) G3: Klinge und Pfeil fragen das EINE Grob-Tor _trefferErreichbar, es liest
-//      den kreatur-Leib (_kreaturLeib.reichweite) · T12: das Tor deckt die Gestalt (jedes Ende jeder Treffer-Glied-Kapsel,
-//      vier Gattungen in jeder Größen-Grenze, 90 Spiel-Takte).
-//  (K27 LEBENSWERTE SIND ZUSTAND) T27: im Modus pfad senken Biss und Hieb hp und Ausdauer; kein Rufer der Stat-
-//      Neuberechnung (Gerät · Panel · Boost · Tod-Takt) hebt hp, Ausdauer oder Mana über Regen·dt. (S11) die alte Zeile (jede Neuberechnung = Maximum) als Hülle → der
-//      erste Rufer heißt equipHeld, 4 Wege.
+// Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) am ECHTEN Chokepoint, gespielt wie ein Mensch: das
+// Fadenkreuz geht über Gier und Neigung durch die ECHTE Kamera (_loopCamera, 1st und 3rd), geklickt wird über den EINEN
+// Dispatcher (tryMouseBreak / _tickHarvest / tryMousePlace / Canvas-mousedown); gezählt wird nur mitlaufend
+// (damageCreature, _kampfHitJuice, _beginPlayerSwing, dslRun-Voxel-Ops — gezählt, nicht geschnitzt). Q8 Treffer (Zone,
+// hangab, Hit-Stop-Energie, keine Kappe, Gegenwehr, kein Panzer, Verschleiß, Pfeil, EINE Güte, EIN Roh-Schaden,
+// vorgebackene Haut, _blickVorn) · Q9 Maus (Halten, RMB, Werkstatt, Bau-Modus) · Q10 Blick · Q11 das Gesetz des Haltens
+// (die Mutation einer Kern-Zahl, kein Spender-Fold, das Werk nach der Form, EINHEITSBREI) · G3/T12 das EINE Grob-Tor · T27
+// Lebenswerte · die Posten der Leben-Schau (T13–T26). Die Selbst-Tests S3–S13 feuern je an ihrer Naht; jede Naht restauriert.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
@@ -166,8 +141,7 @@ function bissVerdict(B) {
 // Befund-Lage (abgewandt, 1,5 · 1,6 · 1,7 m) springt seine Energie nicht (höchstens ×1,25); jede Streuung ist
 // BENANNT — ein Treffer unter voller Wirkung nennt seinen Ort auf der Klinge (griffnah, hand, spitze) — und BEGRENZT (keine
 // Energie unter 0,2 × der stärksten desselben Geräts, der Boden des Kerns); das schwere Schwert schlägt im
-// Mittel nie schwächer als der Dolch. Befund 07.10.: abgewandt 1,6 m 15–18 J (Griff-Drittel), 1,7 m 91 J (×6), schwächer als
-// der Dolch (24–32 J).
+// Mittel nie schwächer als der Dolch.
 const ENERGIE_SOLL = { treffer: 13, befund: 1.25, boden: 0.2 };
 function energieVerdict(E) {
     if (!E || !Array.isArray(E.gross) || !Array.isArray(E.dolch)) return ["energie keine Probe"];
@@ -304,7 +278,7 @@ function poseVerdict(P, E) {
 }
 // (T19) DIE AUSDAUER JE HIEB AUS DER WAFFEN-MASSE (Posten 8 — pure Funktion, Probe UND Selbst-Test): ein Hieb
 // zehrt mit der Masse des Geräts — die Reihe steigt streng mit kg (Faust < Dolch < … < Vorschlaghammer), zwei Geräte
-// verschiedener Masse zehren nie gleich. Befund 07.10.: 5 je Hieb für Dolch, Großschwert und Keule.
+// verschiedener Masse zehren nie gleich.
 function ausdauerVerdict(A) {
     if (!Array.isArray(A) || A.length < 3) return ["ausdauer keine Probe"];
     const v = [];
@@ -319,8 +293,7 @@ function ausdauerVerdict(A) {
 }
 // (T27) LEBENSWERTE SIND ZUSTAND (K27 — pure Funktion, Probe UND Selbst-Test): ein Biss senkt hp, ein Hieb die Ausdauer;
 // kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll. Jede Verletzung
-// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt). Befund K27: recomputePlayerStats setzte hp, Ausdauer
-// und Mana bei JEDER Neuberechnung auf das Maximum.
+// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt).
 const LEBEN_SOLL = { eps: 1e-3 };
 function lebenswerteVerdict(L) {
     if (!L || !Array.isArray(L.schritte) || L.schritte.length < 10) return ["lebenswerte keine Probe"];
@@ -362,7 +335,7 @@ function lebenswerteWege(L) {
 }
 // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6 — pure Funktion, Probe UND Selbst-Test): Biss, Haut
 // und Leben eines Tiers steigen streng mit der Masse seines Leibs — über alle Gattungen und Größen hinweg (die Masse IST
-// Gattung × Größe). Befund 07.10.: damage 19,75 und defense 11,9 für jede Gattung und Größe.
+// Gattung × Größe).
 function kampfWerteVerdict(R) {
     if (!Array.isArray(R) || R.length < 6) return ["kampfwerte keine Probe"];
     const v = [];
@@ -401,7 +374,7 @@ function pfeilVerdict(P, shell) {
 }
 // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
 // der Leib auf der Flanke — die Leibes-Achse waagrecht (|vorn·y| ≤ 0,3), die Hochachse gekippt (oben·y ≤ 0,35) — auch wenn
-// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da. Befund: Kopf senkrecht (vorn·y ≈ 1), nach 22 Takten fort.
+// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da.
 function todVerdict(T) {
     if (!T) return ["tod keine Probe"];
     const v = [];
@@ -450,7 +423,7 @@ function todVerdict(T) {
 }
 // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
 // der drei Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) beißt das Tier im Ansprung (die Geste pounce läuft im
-// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m). Befund K-D13: 9 von 12 Bissen ohne Geste, aus 1,36–2,39 m XZ.
+// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m).
 function bissGesteVerdict(B) {
     if (!B) return ["biss-geste keine Probe"];
     const v = [];
@@ -491,15 +464,13 @@ function wundeVerdict(W) {
 // (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (pure Funktion, Probe
 // UND Selbst-Test): die Wahl der Beute rechnet keine Gestalt eines Tiers jenseits des Grob-Tors (Lehre 25: billige Filter
 // zuerst), und kein Jäger springt einen Leib an, der über seinem Sprung liegt (der Spieler auf einem Sims) — die Gegenprobe:
-// waagrecht stand er in der Weite seines Ansprungs. Befund Gegenprüfung 1: 15 Gestalten je Takt bei 15 Beutetieren außer
-// Reichweite (1,29–2,35 ms je Jäger), unter dem Sims ein Ansprung alle 1,6 s. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
+// waagrecht stand er in der Weite seines Ansprungs. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
 // 1,3 m): mindestens 5 von 6 Ansprüngen beißen — der Biss trifft auch ein Ziel, das größer ist als das Kitz, und dort, wo die
 // Hetze hält.
-// Der Kopf zielt aus der gezeigten Pose (98042fd4, Nachbesserung 3 die Wand): stehen Pose und Ziel still, steht das Ziel der
-// Kopf-Neigung still — zehn Takte _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt
-// nur, wenn der erste Rest ≥ 0,05 rad ist). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher
-// 12–18 von 60, danach 2–8 von 42–84) stehen in der Zeile daneben. Die Probe hält Ort, Haltung und die Gier des Rehs fest (K13b): ihr erster
-// Rest hing an der Gier, in die das Reh sich unter den Ansprüngen gedreht hatte (20 Läufe: 18 × 0,5871, 2 × 1,0 an der Klemme).
+// Der Kopf zielt aus der gezeigten Pose: stehen Pose und Ziel still, steht das Ziel der Kopf-Neigung still — zehn Takte
+// _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt nur, wenn der erste Rest
+// ≥ 0,05 rad ist); die Klemmen-Takte im Spiel-Takt stehen als Bericht daneben. Die Probe hält Ort, Haltung und die Gier des
+// Rehs fest.
 const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {
     if (!R) return ["biss-reich keine Probe"];
@@ -546,6 +517,69 @@ function bissReichVerdict(R, reh) {
             );
     }
     return v;
+}
+// (Q11) DAS URTEIL DES GESETZES (halten-gesetz, pure Funktion — Probe UND Selbst-Test): die Mutation einer Kern-Zahl ändert
+// den Treffer monoton — Masse (jedes Werk bis auf eines wiegt nach MAT — die Keule ist ganz aus Holz) hebt den Stoß jedes
+// schwereren Werks, Schneide hebt jeden Schnitt, Tempo hebt Wirkung und Stoß jedes frei schwingenden —, und die Kraft der
+// Führung ist der Leib (kein Spender faltet). Die Täter.
+function gesetzVerdict(G) {
+    if (!G || !G.vor) return ["keine Messung"];
+    const v = [];
+    const pc = (a, b) => `${a.toFixed(2)} → ${b.toFixed(2)}`;
+    const ids = Object.keys(G.vor);
+    const schwer = ids.filter((id) => G.masse[id].kg > G.vor[id].kg * 1.001).length;
+    if (schwer < ids.length - 1) v.push(`masse: ${schwer} von ${ids.length} Werken wiegen nach der Stoff-Zeile MAT`);
+    if (!ids.some((id) => G.eisen[id].art === "SCHNITT") || !ids.some((id) => G.vor[id].frei))
+        v.push("kein Schnitt/frei");
+    for (const id of ids) {
+        const [a, m, t, e, s] = [G.vor, G.masse, G.tempo, G.eisen, G.schneide].map((x) => x[id]);
+        if (![a, m, t, e, s].every((x) => x && x.wirk)) v.push(`${id}: traf nicht`);
+        else {
+            if (m.kg > a.kg * 1.001 && !(m.p > a.p * 1.01))
+                v.push(`masse ${id}: ${pc(a.kg, m.kg)} kg, Stoß ${pc(a.p, m.p)}`);
+            if (a.frei && !(t.wirk > a.wirk * 1.01 && t.p > a.p * 1.01))
+                v.push(`tempo ${id}: Wirkung ${pc(a.wirk, t.wirk)}, Stoß ${pc(a.p, t.p)}`);
+            if (e.art === "SCHNITT" && !(s.wirk > e.wirk * 1.01))
+                v.push(`schneide ${id}: Wirkung ${pc(e.wirk, s.wirk)}`);
+            if (!(Math.abs(a.leib / G.leib - 1) < 1e-6))
+                v.push(`fold ${id}: Kraft ÷ Güte ${pc(a.leib, G.leib)} (Leib)`);
+        }
+    }
+    return v;
+}
+// (Q11) DAS URTEIL DES WERKS (pure Funktion): die Referenz des Werkzeug-Gebrauchs, in Klicks über den Dispatcher (null: nie)
+// — die Fällaxt fällt die Eiche vor Klinge, Hacke, Hammer, Spaten und Hand; Hacke und Vorschlaghammer brechen den Fels vor
+// Axt und Klinge, die Hacke auch vor Spaten und Hand; Spaten und Schaufel graben vor der Hand, Klinge, Hammer und Axt
+// schwingen; die umgeformte Gestalt wirkt nach ihrer neuen Form (formVerdict).
+const klickZahl = (x) => (x === null ? Infinity : x);
+function formVerdict(F) {
+    const v = [];
+    if (!(F.axtBlatt.boden !== null && F.axt.boden === null))
+        v.push(`form: die Fällaxt gräbt mit dem Grab-Blatt ${F.axtBlatt.boden}, mit dem Axt-Kopf ${F.axt.boden}`);
+    if (!(klickZahl(F.axtBlatt.baum) > klickZahl(F.axt.baum)))
+        v.push(`form: die Fällaxt fällt mit dem Grab-Blatt in ${F.axtBlatt.baum}, mit dem Axt-Kopf in ${F.axt.baum}`);
+    if (!(F.spatenAxt.boden === null && F.spaten.boden !== null))
+        v.push(`form: der Spaten gräbt mit dem Axt-Kopf ${F.spatenAxt.boden}, mit dem Blatt ${F.spaten.boden}`);
+    if (!(klickZahl(F.spatenAxt.baum) < klickZahl(F.spaten.baum)))
+        v.push(`form: der Spaten fällt mit dem Axt-Kopf in ${F.spatenAxt.baum}, mit dem Blatt in ${F.spaten.baum}`);
+    return v;
+}
+function werkVerdict(W) {
+    if (!W || !W.baum_eiche || !W.stein_block || !W.boden || !W.form) return ["keine Messung"];
+    const v = [];
+    const vor = (wo, tab, sieger, andere) => {
+        for (const x of andere)
+            if (!(tab[sieger] !== null && tab[sieger] < klickZahl(tab[x])))
+                v.push(`${wo}: ${sieger} ${tab[sieger]} Klicks, ${x} ${tab[x]}`);
+    };
+    vor("baum", W.baum_eiche, "faellaxt", ["langschwert", "spitzhacke", "vorschlaghammer", "spaten", "hand"]);
+    vor("fels", W.stein_block, "spitzhacke", ["faellaxt", "langschwert", "spaten", "hand"]);
+    vor("fels", W.stein_block, "vorschlaghammer", ["faellaxt", "langschwert"]);
+    vor("boden", W.boden, "spaten", ["hand"]);
+    vor("boden", W.boden, "schaufel", ["hand"]);
+    for (const x of ["langschwert", "vorschlaghammer", "faellaxt"])
+        if (W.boden[x] !== null) v.push(`boden: ${x} gräbt in ${W.boden[x]} Klicks, soll schwingen`);
+    return v.concat(formVerdict(W.form));
 }
 const server = statikServer();
 
@@ -606,8 +640,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             ]) {
                 if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
             }
-            // KERN-PFLICHT 17.07. — der SWING_LAWS-Zwilling ist gefallen: die
-            // Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).
+            // KERN-PFLICHT: die Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).
             const AG = A._arenaGesetz();
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
             const K = AG.schwung;
@@ -951,78 +984,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             tick(Math.ceil((GT.kippDauerSec + GT.leichnamSec - 1.4) / 0.1) + 3, 0.1);
             o.checks.dDespawnNachFrist = liegtNoch && (s.leichname || []).indexOf(cTod) === -1 && !cTod.parent;
 
-            // ── EINHEITSBREI-WAND — die 13 Gattungen differenzieren ──
-            // Fake-Blueprints mit BYTE-GLEICHEN Donor-Parts (KIND_SUBSTANCE.
-            // geraet_schwert) aber verschiedener studioGestalt: unterscheiden
-            // sich Dauer/Reichweite/Schaden, KANN die Quelle nur der Kern sein
-            // (kampfMasze) — die Donor-Parts können es nicht liefern (Absenz-
-            // Beweis im Konsum-Beweis). Selbst-Test: kampfMasze gestubbt →
-            // alles kollabiert auf EINE Dauer — die Wand MUSS es sehen.
-            try {
-                const sc = globalThis.__schmiedeCore;
-                const donorParts = JSON.parse(JSON.stringify(r.constructor.KIND_SUBSTANCE.geraet_schwert.parts));
-                const gattungen = ["dolch", "messer", "langschwert", "saebel", "grossschwert", "keule", "kriegsaxt"];
-                const probe = () => {
-                    const rows = [];
-                    for (const id of gattungen) {
-                        const bp = { name: "klinge_" + id, studioGestalt: id, parts: donorParts };
-                        const dauer = r._swingDauerFuerBlueprint(bp);
-                        const heldSaved = r._heldImplementBlueprint;
-                        r._heldImplementBlueprint = () => bp;
-                        let reach = null;
-                        let dmgF = null;
-                        try {
-                            reach = r._kampfBladeReach();
-                            // die WIRKUNG des Treffer-Urteils (seine Energie gegen keRefJ, keine Klemme)
-                            // bei EINEM Klingen-Tempo — die Ordnung trägt die gemessene Masse.
-                            dmgF = r._trefferWirkung(r._kampfUrteil(20, 0, null));
-                        } finally {
-                            r._heldImplementBlueprint = heldSaved;
-                        }
-                        rows.push({ id, dauer, reach, dmgF });
-                    }
-                    return rows;
-                };
-                r._kampfMaszeMemo = null; // frisch messen
-                const rows = probe();
-                const by = {};
-                for (const row of rows) by[row.id] = row;
-                o.brei = rows
-                    .map((x) => `${x.id}:${x.dauer.toFixed(2)}s/${x.reach.toFixed(2)}m/×${x.dmgF.toFixed(2)}`)
-                    .join(" ");
-                o.checks.breiDauerDistinct = new Set(rows.map((x) => x.dauer.toFixed(3))).size >= 3;
-                o.checks.breiReachDistinct = new Set(rows.map((x) => x.reach.toFixed(2))).size >= 3;
-                o.checks.breiDmgDistinct = new Set(rows.map((x) => x.dmgF.toFixed(2))).size >= 3;
-                o.checks.breiOrdnung =
-                    by.dolch.dauer < by.grossschwert.dauer &&
-                    by.dolch.reach < by.grossschwert.reach &&
-                    by.messer.dmgF < by.langschwert.dmgF &&
-                    by.langschwert.dmgF < by.keule.dmgF;
-                // Texel==Gesetz: das UNGEKLEMMTE Paar langschwert/grossschwert
-                // hält dauer2/dauer1 == √(I2/I1) ± 5 % gegen kampfMasze.
-                const k1 = sc.kampfMasze("langschwert");
-                const k2 = sc.kampfMasze("grossschwert");
-                const soll = Math.sqrt(k2.traegheit / k1.traegheit);
-                const ist = by.grossschwert.dauer / by.langschwert.dauer;
-                o.breiRatio = { ist, soll };
-                o.checks.breiRatio = Math.abs(ist / soll - 1) < 0.05;
-                // Selbst-Test: ohne kampfMasze kollabiert alles auf die EINE
-                // Donor-Dauer — die Distinct-Wand MUSS rot sehen können.
-                const kmSaved = r._schmiedeKampfMasze;
-                r._schmiedeKampfMasze = () => null;
-                let stubRows = null;
-                try {
-                    stubRows = probe();
-                } finally {
-                    r._schmiedeKampfMasze = kmSaved;
-                }
-                o.checks.breiSelbsttest =
-                    new Set(stubRows.map((x) => x.dauer.toFixed(3))).size === 1 &&
-                    new Set(stubRows.map((x) => x.reach.toFixed(2))).size === 1;
-            } catch (eBrei) {
-                o.breiErr = (eBrei && eBrei.message) || String(eBrei);
-            }
-
             // ── Bühne restaurieren (der Rücken-Zeuge fällt zuletzt den EINEN Fall: er liest das Gefälle am Spion) ──
             o.checks.todKipptStattDespawn = ruft(() => r._kreaturFaellt(cRuecken), "_fieldGradient") && absenzTod;
             for (const c of [cNeben, cRuecken]) if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener
@@ -1071,24 +1032,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         console.log(
             `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
-        );
-        if (out.brei) console.log(`  (BREI) ${out.brei}\n`);
-        check(
-            c.breiDauerDistinct && c.breiReachDistinct && c.breiDmgDistinct,
-            "EINHEITSBREI: byte-gleiche Donor-Parts, ≥3 distinkte Dauern/Reichweiten/Schadens-Faktoren — die Quelle ist der Kern (kampfMasze)" +
-                (out.breiErr ? " — FEHLER: " + out.breiErr : "")
-        );
-        check(
-            c.breiOrdnung,
-            "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule im Schaden)"
-        );
-        check(
-            c.breiRatio,
-            `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist ${out.breiRatio ? out.breiRatio.ist.toFixed(3) : "?"} soll ${out.breiRatio ? out.breiRatio.soll.toFixed(3) : "?"})`
-        );
-        check(
-            c.breiSelbsttest,
-            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → alles kollabiert auf EINE Donor-Dauer (die Wand sieht den Riss)"
         );
         check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft");
         check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)");
@@ -1192,6 +1135,71 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         console.log(
             `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
+        );
+        const G = z.gesetz || {},
+            W = G.werk || {},
+            T = G.vor || {};
+        const zeile = (id) =>
+            ["vor", "masse", "tempo", "eisen", "schneide"].map((k) => `${k} ${f1(G[k][id].wirk)}/${f1(G[k][id].p)}`);
+        console.log(
+            `  (Q11) Leib ${f1(G.leib)} · Wirkung/Stoß: langschwert ${zeile("langschwert")} · dolch ${zeile("dolch")}`
+        );
+        for (const k of ["baum_eiche", "stein_block", "boden", "form", "s13"])
+            console.log(`        ${k} ${JSON.stringify(W[k])}`);
+        const gv = gesetzVerdict(G);
+        check(
+            gv.length === 0,
+            "Q11 halten.K1: eine Kern-Zahl ändert den Treffer monoton — Masse (MAT.*.rho) den Stoß, Tempo beides, Schneide (MAT.eisen.sigY) den Schnitt; die Kraft der Führung ist der Leib (kein Spender-Fold)" +
+                (gv.length ? " — " + gv.slice(0, 8).join(" · ") + ` (${gv.length})` : "")
+        );
+        const s12 = gesetzVerdict(Object.assign({}, G, G.s12 || {}));
+        check(
+            s12.some((x) => x.startsWith("tempo")),
+            "SELBST-TEST (S12): ein fester Schaden neben dem Gesetz (_trefferWirkung ≡ 1) — die Tempo-Mutation bleibt stumm, die Linse nennt sie"
+        );
+        const werkV = werkVerdict(W);
+        check(
+            werkV.length === 0,
+            "Q11 halten.K3: das Werk wirkt nach seiner Form — Fällaxt fällt, Hacke und Hammer brechen Fels, Spaten und Schaufel graben, die umgeformte Gestalt (Grab-Blatt, Axt-Kopf) folgt der neuen Form" +
+                (werkV.length ? " — " + werkV.join(" · ") : "")
+        );
+        const s13 = W.s13 ? formVerdict(W.s13) : [];
+        check(
+            s13.some((x) => x.includes("gräbt")) && s13.some((x) => x.includes("fällt")),
+            "SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie"
+        );
+        // EINHEITSBREI an der Tafel: zwei Spender tragen 17 Gestalten — Dauer, Reichweite und die Wirkung bei EINEM Klingen-
+        // Tempo (20 m/s) unterscheiden sich, wo nur der Kern sie trägt; ohne Kern (Selbsttest) fällt die Tafel auf die Spender
+        const je = (f) =>
+            new Set(
+                Object.values(T)
+                    .filter((x) => x.wirk)
+                    .map(f)
+            ).size;
+        const [L, Gr] = [T.langschwert || {}, T.grossschwert || {}];
+        check(
+            je((x) => x.dauer.toFixed(3)) >= 3 &&
+                je((x) => x.reach.toFixed(2)) >= 3 &&
+                je((x) => x.w20.toFixed(2)) >= 3,
+            "EINHEITSBREI: Spender-Teile, ≥3 distinkte Dauern/Reichweiten/Wirkungen — die Quelle ist der Kern (kampfMasze)"
+        );
+        check(
+            T.dolch &&
+                T.dolch.dauer < Gr.dauer &&
+                T.dolch.reach < Gr.reach &&
+                T.messer.w20 < L.w20 &&
+                L.w20 < T.keule.w20,
+            "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule bei gleichem Tempo)"
+        );
+        const ratio = [Gr.dauer / L.dauer, Math.sqrt(Gr.I / L.I)];
+        check(
+            Math.abs(ratio[0] / ratio[1] - 1) < 0.05,
+            `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist ${f1(ratio[0])} soll ${f1(ratio[1])})`
+        );
+        const ohne = G.ohneKern || [];
+        check(
+            ohne.length >= 15 && [0, 1].every((i) => new Set(ohne.map((x) => x[i].toFixed(3))).size <= 2),
+            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → die Tafel kollabiert auf die zwei Spender (die Wand sieht den Riss)"
         );
         check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)");
         check(c.zoneWirkt, "Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)");
@@ -1570,7 +1578,9 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
         );
-        const shellPf = { eigenerPfeil: !stammLib.fehlt(null, /function buildPfeil\s*\(/, { datei: "worlds/schmiede/schmiede.js" }) };
+        const shellPf = {
+            eigenerPfeil: !stammLib.fehlt(null, /function buildPfeil\s*\(/, { datei: "worlds/schmiede/schmiede.js" }),
+        };
         console.log(
             `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
         );
@@ -1607,8 +1617,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler und am Alter; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" +
                 (tv.length ? " — " + tv.join(" · ") : "")
         );
-        // die Befunde: Runde 1 (auf dem Hinterteil, nach 22 Takten fort, Ziel/Platz/Zahl) und Gegenprüfung 2 (der Leichnam unter
-        // den Wesen: Ältester, Nächster, die stehende Kopie beim Mitspieler, 17 Leser mit eigener Frage)
+        // die Befunde (auf dem Hinterteil, fort, Ziel/Platz/Zahl; der Leichnam unter den Wesen) fallen rot beim Namen
         const tvAlt = todVerdict({
             vornY: 0.99,
             obenY: 0.12,
@@ -1819,7 +1828,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.grobDeckt,
             "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen × Größen-Grenzen, 90 Takte)"
         );
-        check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
+        check(
+            c.keinPanzer,
+            "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt; ein Werk der Schmiede faltet auch nicht in den Angriff)"
+        );
         check(
             c.gegenwehr,
             "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)"

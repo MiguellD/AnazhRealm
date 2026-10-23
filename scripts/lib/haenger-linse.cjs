@@ -696,7 +696,8 @@ function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_PO
 }
 // Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
 function linseWerten(roh, spur, b) {
-    if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : []);
+    // ohne `--posten` urteilt die Fahrt ihre Posten (der Vorgabe-Wert): ein leeres [] schwieg sie still grün (integ 93588264)
+    if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
     const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
@@ -870,7 +871,7 @@ function selbsttest() {
     const fahrt = (nm, bahnM) => {
         const nodes = sp.profil.nodes.map((n) => (n.id === 17 ? { ...n, callFrame: { ...n.callFrame, functionName: nm } } : n));
         const takte = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
-        return spitzenAuswerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }).befunde.join();
+        return linseWerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }, { spitze: true }).befunde.join();
     };
     const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
     if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))

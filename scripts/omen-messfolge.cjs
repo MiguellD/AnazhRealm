@@ -87,7 +87,7 @@ const FOLGEN = {
 
 // DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
 // Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
-// dieser Größe blind und nennt die Pose. An der Mess-Wiese lag sie am 11.10. bis 1,8 ms (der Baum-Inhalt je Sitzung).
+// dieser Größe blind und nennt die Pose.
 // DER TAKT (1110-7): die GTX des OMEN läuft unter Last am Leistungs-Deckel (Drossel 0x4, ~70 W) mit 1680–1710 MHz, in Ruhe mit
 // 1771 MHz — zwischen Sitzungen ~4 %, so viel wie der vermeintliche Merge-Täter von 1110-6. Verglichen wird nur bei gleichem
 // Takt (±0,5 % um den Median); fehlt er in einer Sitzung (kein nvidia-smi), ist der gleiche Takt nicht belegt — beides laut.
@@ -157,8 +157,7 @@ function bankJe(lauf) {
 }
 
 // DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
-// Befund 12.10. (1110-9, Genesis): jeder Eingriff machte das folgende 10-s-Band ~1 ms teurer — auch das Entfernen des
-// Tor-Zwillings. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
 // wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
 // Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
@@ -389,8 +388,7 @@ function tierUrteil(name, t) {
 // DIE BAND-MESSUNG SELBST (rein, 0910-1; der LESER K26): was die Band beim Zählen aufzeichnete — der gestellte Ort
 // (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf zählt nie),
 // das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt ·
-// stufe · leck · weit · ungemessen) als Befund. Bis 13.10. las die Folge nur Ort und Rahmen-Ziel, der Exit sah die Linse nie:
-// 1110-12 urteilte in 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0".
+// stufe · leck · weit · ungemessen) als Befund.
 // `basis` = die Band-Messung der Basis-Seite A des ABAB (`--basis`): eine Zeile, die A am selben Ort, Gerät und in derselben
 // Sicht trägt (derselbe Schlüssel, B nicht über A hinaus), ist kein Befund dieser Seite — sie bleibt der Befund von A.
 function bandBefunde(messung, basis) {
@@ -1222,7 +1220,7 @@ async function selbsttest() {
             wachenUrteil("band", anWiese, anWiese, g, true),
             /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
         );
-        // DER LESER DER BAND-LINSE (K26; 1110-12: 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0"): jede
+        // DER LESER DER BAND-LINSE (K26): jede
         // Rot-Zeile der Linse ist ein Befund der Folge — außer die Basis-Seite A des ABAB trägt sie (derselbe Schlüssel, B nicht
         // über A hinaus, A am selben Ort, Gerät und in derselben Sicht).
         const { haushalt } = BAND.ladeSpec("genesis");
@@ -1296,7 +1294,7 @@ async function selbsttest() {
         );
     }
     // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
-    // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
+    // `beendeBaum` lebt keiner der beiden mehr
     {
         const werkbank = spawn(
             process.execPath,

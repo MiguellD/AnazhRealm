@@ -11,8 +11,6 @@ const { checkBandG8R2SovereignWall } = require("./feld.cjs");
 const { checkBandG8R1DampedChannel } = require("./netz-p2p.cjs");
 const { checkBandG8R3Locality } = require("./netz-portal.cjs");
 
-// Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW13W14VibePassLibrary(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

@@ -326,6 +326,11 @@ async function selbsttest() {
     const m5 = messungZumTest(T0);
     m5.karten.garage.kL = 0.62;
     t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
+    // S5p — die Pflicht-Zeile (material.K1): unter ihrer Ratsche, außerhalb des Solls ROT
+    const P = tafelZumTest();
+    P.zeilen.find((z) => z.id === "haut").ratsche = 0.2;
+    const uP = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
+    t("Pflicht-Zeile 0,86 → nur ROT `soll`", uP.rot.length === 1 && hatRot(uP, "soll"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -360,6 +365,10 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
+    // S6t — DER TON DER STUFE (S8, Radeon 22.10.): Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
+    const m6t = messungZumTest(T0);
+    m6t.welt["haus-l2"].Y = 0.1892;
+    t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
@@ -648,6 +657,7 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
+    for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);

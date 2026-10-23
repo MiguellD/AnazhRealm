@@ -599,8 +599,6 @@ async function checkBandV1790Recalibration(ctx) {
     );
 }
 
-// Band-Funktion (Welle 6.A6 (Maus-Aktionen + Resonanz-Abklang) + 6.C3 V2/Tastenbelegung).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6Keybindings(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1194,8 +1192,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// Band-Funktion (der Audit-Fixes-Quartett).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

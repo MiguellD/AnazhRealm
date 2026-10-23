@@ -1,8 +1,5 @@
 // diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (Leben-Schau 2, 09.10., Befund §6 #5, V1-Lücke
-// „laufen und sehen"). Befund: in allen drei Spuren füllte Laub, Strauch oder Ast das Bild (A 12 · 27 · 44–47,
-// B 24 · 28 · 31 · 35 · 53, C 12) — zu Fuß in der Eichenkrone ein Loch um die Figur, im Ritt Weidenstränge und Fichtenäste
-// vor der Linse, im Ich-Auge ein Strauch vor dem Gesicht; durchsichtig wurde nur, was im Rohr um den Sicht-Strahl lag.
-//
+// „laufen und sehen").
 // Die Linse fährt die echte Welt (headless, Foundry an, Null-Renderer) an die Orte der Schau — die Ankunft (A 27), das Ufer
 // mit dem Eichenhain des Satzes (−872/−1127, A 41–47) und den 30°-Hang (−744/−1356, B 28–31, C 05–12) — und stellt dort an
 // jeder nahen Pflanze den Spieler in acht Richtungen auf: zu Fuß in 3rd, im Ritt (der GT, die Verfolger-Kamera des Kerns)

@@ -2,14 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // cut-method.cjs — DER AST-PRÄZISE METHODEN-SCHNITT (die Klasse strukturell heilen)
 //
-// DIE WURZEL: ein Line-Range-Delete
-// (`sed 'A,Bd'`) eines „toten Clusters" kann eine NICHT-passende Methode
-// ENTHALTEN, die der Pattern-Grep nie sieht (damals `_configureRenderer`
-// mitten zwischen zwei `_voxelGpu*` → mit-gelöscht → die ganze Welt tot,
-// und `node --check` fängt es NICHT, weil die Syntax valide bleibt).
-//
-// DIE HEILUNG (Gesetz #0 — die Linse statt der Wachsamkeit): man löscht
-// NICHT mehr per Zeilen-Range, sondern per AST-SPANNE. acorn (eslint-Dep)
+// Ein Line-Range-Delete eines toten Clusters kann eine NICHT-passende Methode ENTHALTEN, die der Pattern-Grep
+// nie sieht (`node --check` fängt es nicht) — darum schneidet dieses Werkzeug per AST-SPANNE. acorn (eslint-Dep)
 // liefert die EXAKTEN Grenzen jeder Methode → ein Schnitt kann per
 // Konstruktion keinen Nachbarn mehr fangen. Plus build-before-dispose:
 // nach dem Schnitt `node --check`; bricht es, wird die Datei restauriert.

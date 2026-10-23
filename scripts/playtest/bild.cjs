@@ -24,19 +24,14 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         // um zu beweisen, dass die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
         const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
-        const THREE = window.THREE;
-        if (THREE && THREE.Color) {
-            for (const k of Object.keys(e)) e[k] = 0;
-            const cold = r._dayNightComputeTint();
-            for (const k of Object.keys(e)) e[k] = 0;
-            e.joy = 0.9;
-            const warm = r._dayNightComputeTint();
-            out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
-            out.coldR = cold.skyColor.r;
-            out.warmR = warm.skyColor.r;
-        } else {
-            out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
-        }
+        for (const k of Object.keys(e)) e[k] = 0;
+        const cold = r._dayNightComputeTint();
+        for (const k of Object.keys(e)) e[k] = 0;
+        e.joy = 0.9;
+        const warm = r._dayNightComputeTint();
+        out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
+        out.coldR = cold.skyColor.r;
+        out.warmR = warm.skyColor.r;
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
         return out;
@@ -69,8 +64,6 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
     );
 }
 
-// Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G3Lebendigkeit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -383,18 +376,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
         // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
-        const THREE_g3 = window.THREE;
-        if (THREE_g3 && THREE_g3.Color) {
-            const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-            r.state.player.emotions.awe = 0;
-            r.state.player.emotions.sorrow = 0;
-            const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
-            r.state.player.emotions.sorrow = 1.0;
-            const satG3High = satG3(r._dayNightComputeTint().skyColor);
-            out.sorrowReducesSaturation = satG3High < satG3Zero;
-        } else {
-            out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
-        }
+        const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+        r.state.player.emotions.awe = 0;
+        r.state.player.emotions.sorrow = 0;
+        const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
+        r.state.player.emotions.sorrow = 1.0;
+        const satG3High = satG3(r._dayNightComputeTint().skyColor);
+        out.sorrowReducesSaturation = satG3High < satG3Zero;
         // Reset
         r.state.player.emotions.sorrow = 0;
         r._applyDayNightToScene();
@@ -565,8 +553,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     }
 }
 
-// Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1265,8 +1251,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-// Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

@@ -1333,9 +1333,11 @@ class AnazhRealm_studio_bruecke {
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
     // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
-    // die Wörter des Programms („fachwerkhaus", „eiche").
+    // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
+    // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
     _studioWordsForPrompt(nennen = false) {
         const K = this._studioWortKatalog();
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const GRUPPE = {
             tree: "Bäume",
             rock: "Stein",
@@ -1343,6 +1345,7 @@ class AnazhRealm_studio_bruecke {
             gate: "Tore",
             vehicle: "Fahrzeuge",
             ausstattung: "Ausstattung",
+            weapon: "Klingen",
         };
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
@@ -1354,10 +1357,15 @@ class AnazhRealm_studio_bruecke {
             if (!g.includes(nenn)) g.push(nenn);
         }
         const kappe = nennen ? 5 : 8;
+        const regler = (a) =>
+            !nennen && Array.isArray(PBK[a]) && PBK[a].length
+                ? ` (Regler: ${PBK[a].map((d) => `${d.id} ${d.lab} ${d.min}–${d.max}`).join(", ")})`
+                : "";
         return Object.keys(GRUPPE)
             .filter((a) => gruppen[a] && gruppen[a].length)
             .map(
-                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
+                (a) =>
+                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
             )
             .join(" · ");
     }
@@ -2941,6 +2949,13 @@ class AnazhRealm_studio_bruecke {
                 mat.emissiveNode = TSL.attribute("aGlut", "vec3");
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
+        }
+        // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
+        // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
+        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
+        if (flat && kind === "unknown") {
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+            this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
         }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die

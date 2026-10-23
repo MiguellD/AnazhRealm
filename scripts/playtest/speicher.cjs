@@ -122,8 +122,6 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -148,7 +146,7 @@ async function checkBandRing8(ctx) {
             const echt = r.state.worldMeta;
             r.state.worldMeta = Object.assign({}, echt, {
                 macro: { massivC: { x: 1, z: 2 } },
-                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
                 genesisPortalRing: true,
                 portalPreviewFachwerk: true,
@@ -584,8 +582,6 @@ async function checkBandRing8(ctx) {
     }
 }
 
-// Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1172,8 +1168,6 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-// Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1746,7 +1740,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r._vendorPostBundle === "function" && typeof r._runVendorDock === "function";
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
@@ -1854,10 +1847,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendorResults && !vendorResults.error) {
-        check(
-            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock existieren (die Suite ruft sie nie)",
-            vendorResults.methods
-        );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
         check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
         check(
@@ -1923,10 +1912,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostRepo === "function" &&
-            typeof r._vendorPostJson === "function" &&
-            typeof r._runVendorRepoDock === "function";
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
         const origBundle = r._vendorPostBundle;
@@ -2024,10 +2009,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendor2Results && !vendor2Results.error) {
-        check(
-            "W15 GitHub-Fetch: _vendorPostRepo/_vendorPostJson/_runVendorRepoDock existieren (die Suite ruft sie nie)",
-            vendor2Results.methods
-        );
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
         check(

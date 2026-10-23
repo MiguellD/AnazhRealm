@@ -2264,6 +2264,7 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
     gestalt: "die Gestalt ließ sich nicht gießen",
     buehne: "die Welt hat noch keine Bühne",
     platz: "kein fahrbarer Grund in Reichweite, die Welt stellt den Wagen nicht hin",
+    regler: "das Werk kennt diesen Regler nicht (das Log nennt ihn und die Regler seiner Art)",
     unbenannt: "ohne benannten Grund (das Log der Welt nennt ihn)",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·

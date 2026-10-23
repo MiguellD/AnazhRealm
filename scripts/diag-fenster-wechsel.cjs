@@ -1,12 +1,7 @@
 // diag-fenster-wechsel.cjs — DIE FENSTER-WAND (npm run gate:fenster-wechsel).
 //
-// Befund 03.10. (echte GPU, Radeon 890M): ein Fenster-Wechsel machte die Welt für immer SCHWARZ — die Textur-Bindung des
-// Wassers (des Lesers der Szenen-Tiefe) zog nach `renderer.setSize` nicht nach („Destroyed texture … used in a submit").
-// Befund 09.10. (Leben-Schau 2, laufender Loop): 264× „Destroyed texture [Texture "szene:tiefenabbild"]" beim Vergrößern und
-// Maximieren (DPR 2) — die Pixel-Ratio stellt die DPR-Kappe (`_applyRenderScale` → `setPixelRatio`) Frames NACH dem resize-
-// Ereignis. Die Wurzel beider: die Observer-Diät sah das neu angelegte Tiefen-Abbild nie. Der EINE Schnitt ist der Vorher-
-// Textur-Wächter der Diät (`_diaetVorTextur`); der Wasser-Neubau im resize-Handler war sein Zwilling und ist gefallen
-// (0910-3 A, Gegenprüfung; der Name steht in gate:altlasten).
+// Ein Fenster-Wechsel (Größe, DPR) lässt keine zerstörte Textur in einer Bindung („Destroyed texture … used in a submit"):
+// die Observer-Diät sieht das neu angelegte Tiefen-Abbild über ihren Vorher-Textur-Wächter (`_diaetVorTextur`).
 //
 // Die Wand fährt den ECHTEN Frame: WebGPU auf swiftshader, das Software-Holz (`?holz=kienspan`) mit der Pixel-Kappe des
 // Holzes nah (1,25 — die Kappe, die ein DPR-Wechsel trifft), am Ufer des Bachs der Mess-Wiese (das Wasser liest das Tiefen-

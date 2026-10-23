@@ -1,14 +1,6 @@
 // diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie): ein kleinerer Schirm trägt höchstens
 // gleich viel Welt — je Pass und Täter-Klasse —, und jedes Gesetz liest den Schirm aus der EINEN Quelle (`_schirm`).
 //
-// Befund (OMEN GTX 1060, main 2b60988b, EINE Welt, gleiche Stellgrößen): „beim Verkleinern des Fensters verdoppeln sich
-// Befehle und Dreiecke" (1080p 124 · 720p/540p 267–276 · zurück 126). Gemessen 06.10. (Radeon 890M, Mess-Wiese, dieselben
-// Stellgrößen): die Welt zeichnet in jeder Größe dasselbe — `werkbank zaehlen` 282/283 Befehle bei 1080p, 540p und 4K,
-// je gerendertem Frame im Mittel 227–235 von 540p bis 4K. Die Sprung-Zahl war das Perzentil des Werkbank-Laufs über die
-// TAKTE: die nahe Kaskade rendert jeden zweiten Frame, das Perzentil sprang zwischen den zwei Moden (540p 273 und im
-// nächsten Lauf 176). Und zwei Gesetze lasen den Schirm an der EINEN Quelle vorbei: der Geräte-Seed (innerWidth·dpr,
-// VERKEHRT herum: ab 4 MPix 0,1–0,2 weniger Welt) und das Fell-Gesetz (Canvas-Höhe, Rückfall 1080 und 60°).
-//
 // Die Wand fährt die echte Welt (Null-Renderer, Foundry an; sein Zeichenpuffer ist der Canvas, den der ECHTE
 // resize-Handler setzt):
 //   Q  QUELLE (kommentar-frei): eine Schirm-Größe (Zeichenpuffer · Canvas-Maß · Fenster-Maß · Bildschirm) liest nur die

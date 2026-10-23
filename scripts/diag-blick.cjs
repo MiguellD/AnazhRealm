@@ -1,9 +1,6 @@
-// diag-blick.cjs — DIE AUGEN (T0 des Erlebnis-Ziels): ein ECHTER Welt-Schuss
-// aus dem Container. Die Narbe (WebGPU-Frame komponiert nicht in den
-// puppeteer-Screenshot: weiß/schwarz/Timeout — 3 Wege gemessen) wird UMGANGEN, nicht
-// wiederholt: die Welt rendert EINMAL in ein explizites RenderTarget und die Pixel
-// reisen über die RENDERER-API zurück (readRenderTargetPixelsAsync, r184 — derselbe
-// Weg, den der Studio-Bäcker seit V18.471 erfolgreich geht). Kein Composite nötig.
+// diag-blick.cjs — DIE AUGEN: ein ECHTER Welt-Schuss aus dem Container. Der WebGPU-Frame komponiert nicht in den
+// puppeteer-Screenshot: die Welt rendert EINMAL in ein explizites RenderTarget, die Pixel reisen über die
+// RENDERER-API zurück (readRenderTargetPixelsAsync, r184 — der Weg des Studio-Bäckers).
 //
 //   node scripts/diag-blick.cjs [--out DIR] [--zeit 10|22] [--blick wald|boden]
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss

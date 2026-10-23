@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Band-Funktion (W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW4LofiPad(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

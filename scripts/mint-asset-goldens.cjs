@@ -14,11 +14,11 @@ const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
 
 // Die kuratierte Fall-Liste (Playbook P1): die Baum-Presets über die Matrix + je 1 Nicht-Baum. Buche · Karst ·
-// stehendes Totholz tragen seit der Integration dieselbe Matrix wie jeder Baum — zwei
+// stehendes Totholz tragen dieselbe Matrix wie jeder Baum — zwei
 // Samen × L0/L1/L2 × Sommer/Winter: der Laubfall, das kahle Totholz und das Bake-Subjekt der Karte sind eingefroren.
 const TREES = ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz"];
 const T_SEEDS = [7, 12345];
-// L1 ist eine GELIEFERTE Stufe (die Mittelfeld-Krone, Blattkarten bei Eiche/Birke) — seit 04.10. eingefroren wie
+// L1 ist eine GELIEFERTE Stufe (die Mittelfeld-Krone, Blattkarten bei Eiche/Birke) — eingefroren wie
 // L0/L2; gate:asset-contract misst an den L0/L1-Paaren die Budget-Deckung.
 const T_LODS = [0, 1, 2];
 const T_SEASONS = ["summer", "winter"];

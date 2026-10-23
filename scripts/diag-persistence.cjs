@@ -139,7 +139,7 @@ async function serverLauf(quelle, tod) {
 // (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
 // gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
 // `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
-// unter derselben Version). Bis 1310-16 sandte der Server keinen Validator — jeder Zweit-Boot lud 8,84 MB neu.
+// unter derselben Version).
 async function cacheProbe(quelle) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
     fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
@@ -270,7 +270,7 @@ function ttTreiber(e0) {
     setInterval(() => {
         const { x, z } = r.state.playerMesh.position;
         const [lx, lz] = [200 + ((e0 + n[0]) % 20) * 10, 200 + Math.floor((e0 + n[0]) / 20) * 10];
-        if (++t % 2 === 0) (n[0]++, r.carveVoxelSphere(lx, r._terrainMacroSurfaceY(lx, lz) - 2, lz, 3));
+        if (++t % 2 === 0) (n[0]++, r.carveVoxel(lx, r._terrainMacroSurfaceY(lx, lz) - 2, lz, 3));
         const ort = { x: x - 40, y: r._terrainMacroSurfaceY(x - 40, z), z };
         if (t % 50 === 0 && r.spawnArchitecture("stein_block", ort, { silent: true })) n[1]++;
         r._gameLoopTick(performance.now());
@@ -320,8 +320,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         const g = (zeile.geladen = await page.evaluate(async () => {
             const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
-            const loch = (o) =>
-                Math.abs(r._terrainBaseDensityAt(o.x, o.y, o.z) - r._terrainDensityAt(o.x, o.y, o.z) - 48);
+            const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
             const g0 = window.__ttRec({ ...r.state, playerPosition: r.state.playerMesh.position });
             return { ...g0, l: (r.state.worldMeta.voxelEdits || []).filter((o) => loch(o) < 0.01).length };
         }));

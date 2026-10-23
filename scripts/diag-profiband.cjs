@@ -161,7 +161,7 @@ function buendelReiheWand(A) {
 // H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
 // vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
 // (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
-// Welt. Bis K55 stand die Mess-Wiese als Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
+// Welt.
 let _wirt = null;
 function wieseAmGesetz(haushalt) {
     const WO = require("./lib/welt-orte.cjs");

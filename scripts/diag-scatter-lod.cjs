@@ -22,9 +22,7 @@
 //     und zeichnet selbst; je Pass ordnet die Wahl (`_instanzWahlPass`, das EINE Gesetz der Pass-Wahl) genau die Karten nach
 //     vorn, die das Frustum der Pass-Kamera treffen — eine Linsen-Kamera über den 16 Karten sieht alle 16, eine in den Himmel
 //     keine, eine über der Westhälfte die 8 der Westhälfte; jede gezeichnete Instanz ist eine Karte der Fixtur, jede Marke
-//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Befund (echte GPU, Mess-Wiese): die Gruppe im
-//     @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
-//     Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
+//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
@@ -107,8 +105,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): die Probe MUSS eine
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
-        // BY DESIGN dem Region-Lifecycle (seit der Keying-Welle trägt
-        // JEDE Stufe der Boden-Schichten den Region-Key).
+        // BY DESIGN dem Region-Lifecycle (JEDE Stufe der Boden-Schichten trägt den Region-Key).
         const map = r.state.scatterRegions;
         const b2Privat = (c) =>
             Array.isArray(c.slots) &&
@@ -146,9 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         //       ferne Zelle: NAH heran (Stufe sinkt). Nah-Ziel 20 m: die
         //       Wahrnehmungs-Distanz dn ≤ raw (min(12/visH,1) ≤ 1) ⇒ raw 20 <
         //       thresh12 − hysteresis = 22.6 ⇒ der Abstieg 2→1 ist für JEDE
-        //       Sichthöhe garantiert (das alte Ziel 30 lag für visH ≤ 12-
-        //       Subjekte AUSSERHALB des Abstiegs-Bandes — nie abgedeckt, weil
-        //       die Nah-Richtung vor der Keying-Welle nie gewählt wurde). ──
+        //       Sichthöhe garantiert. ──
         const dx = probe.x - pm.x;
         const dz = probe.z - pm.z;
         const d0 = Math.hypot(dx, dz);
@@ -266,7 +261,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
                 pm.x = dz2.x + 420;
                 pm.z = dz2.z;
-                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): seit V18.527 trägt eine Art
+                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): eine Art trägt
                 // nur ihre Budget-Gestalten (strauch 1), also teilen sich alle Zellen der Region dieselbe Hülle — der
                 // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
                 const huelleLeer = () =>

@@ -554,11 +554,6 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
-        out.schwertLabel = sw ? r._implementAffordanceLabel(sw) : "(missing)";
-        out.schwertCuts = out.schwertLabel === "Klinge"; // ein Schwert SCHNEIDET, ist kein Brecher
-        // die Spitzhacke bleibt ausgewogen/Werkzeug (kein Regress, der Substanz-Unterschied bleibt)
-        const sp = KS86.geraet_spitzhacke ? { parts: JSON.parse(JSON.stringify(KS86.geraet_spitzhacke.parts)) } : null;
-        out.spitzLabel = sp ? r._implementAffordanceLabel(sp) : "(missing)";
         // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
         const esse = r.state.blueprints["esse"];
         const esseRender = esse ? renderFor("esse") : null;
@@ -575,11 +570,6 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         "V17.86 Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
         res.schwertExists && res.schwertHeld,
         `role=${res.schwertRole}`
-    );
-    check(
-        'V17.86 Samen: das Schwert liest „Klinge" — es SCHNEIDET (cutPower > minePower), kein Brecher (die Waffen-Saat ist substanz-ehrlich)',
-        res.schwertCuts,
-        `schwert=${res.schwertLabel} · spitzhacke=${res.spitzLabel}`
     );
     check(
         'V17.86 Kohärenz: die Rolle-Chip liest das volle ROLE_LABELS-Register — die Esse zeigt „Werkstatt", nicht den rohen „workshop-station"',

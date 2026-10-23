@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Band-Funktion (Ring 2 Phase 3/6/7 + Schicht 1 IQ).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing2Extended(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
@@ -454,8 +452,6 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
-// Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1178,8 +1174,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-// Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWorkshopPolishAndLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
