@@ -1,35 +1,1005 @@
 {
- "kopf": "3528f2d0",
+ "kopf": "7c6f4b49",
  "je": {
+  "bauen.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 7c6f4b49 headless — offen: bauen.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "bauen.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "bauen.K3": {
+   "punkte": 1,
+   "beleg": "Maschine: Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 11 s, brennt 20 s („Die Sonne entzündete durch „Prüf-Linse\" „Eiche\" (30 m von di\") · Nacht Wärme 0 ·  an 7c6f4b49 headless — offen: bauen.K3#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "bauen.K3#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 11 s, brennt 20 s („Die Sonne entzündete durch „Prüf-Linse\" „Eiche\" (30 m von di\") · Nacht Wärme 0 · ",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "fahrzeug.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: fahrzeug.K3#1 radeon: ungemessen (R10) · fahrzeug.K3#1 gtx: ungemessen (R10) · fahrzeug.K3#2 radeon: ungemessen (R10) · fahrzeug.K3#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "fahrzeug.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K3#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K3#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "fahrzeug.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: fahrzeug.K4#1 radeon: ungemessen (R10) · fahrzeug.K4#1 gtx: ungemessen (R10) · fahrzeug.K4#2 radeon: ungemessen (R10) · fahrzeug.K4#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "fahrzeug.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K4#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "fahrzeug.K4#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "feld.K3": {
+   "punkte": 1,
+   "beleg": "Maschine: Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 32400); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 an 7c6f4b49 headless — offen: feld.K3#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "feld.K3#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 32400); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "ferne.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ferne.K1#1 radeon: ungemessen (R10) · ferne.K1#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "ferne.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "ferne.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "ferne.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ferne.K2#1 radeon: ungemessen (R10) · ferne.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "ferne.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "ferne.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "gelaende.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an 7c6f4b49 headless — offen: gelaende.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "gelaende.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "gelaende.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: gelaende.K2#1 radeon: ungemessen (R10) · gelaende.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "gelaende.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "gelaende.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "gelaende.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: gelaende.K3#1 radeon: ungemessen (R10) · gelaende.K3#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "gelaende.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "gelaende.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
   "gelaende.K4": {
    "punkte": 1,
-   "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 3528f2d0 headless",
+   "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 7c6f4b49 headless — offen: gelaende.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "gelaende.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
-     "sha": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "gelaende.K5": {
+   "punkte": 1,
+   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an 7c6f4b49 headless — offen: gelaende.K5#2 radeon: ungemessen (R10) · gelaende.K5#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "gelaende.K5#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    },
+    {
+     "id": "gelaende.K5#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "gelaende.K5#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "halten.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: (A) I1=0.437 → 0.364 s · I2=2.624 → 0.891 s · Ratio 2.449 (soll √(I2/I1)=2.449) · 0 von 5 Proben ROT an 7c6f4b49 headless — offen: halten.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "halten.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "(A) I1=0.437 → 0.364 s · I2=2.624 → 0.891 s · Ratio 2.449 (soll √(I2/I1)=2.449) · 0 von 5 Proben ROT",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "halten.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: halten.K2#1 radeon: ungemessen (R10) · halten.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "halten.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "halten.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "halten.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: halten.K3#1 headless: ROT: Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel ungemessen (keine Probe) an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "halten.K3#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel ungemessen (keine Probe)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel ungemessen (keine Probe)"
+    }
+   ]
+  },
+  "ki.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: 22 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-20) an 7c6f4b49 headless — offen: ki.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "ki.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "22 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-20)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "ki.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ki.K2#1 headless: ROT: keine ERREICHT-Zeile: spawn_studio trägt kein ov (Exit 0) an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "ki.K2#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine ERREICHT-Zeile: spawn_studio trägt kein ov (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine ERREICHT-Zeile: spawn_studio trägt kein ov (Exit 0)"
+    }
+   ]
+  },
+  "klang.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: klang.K2#1 radeon: ungemessen (R10) · klang.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "klang.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "klang.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "klang.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: klang.K4#1 radeon: ungemessen (R10) · klang.K4#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "klang.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "klang.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "klang.K5": {
+   "punkte": 1,
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 7c6f4b49 headless — offen: klang.K5#2 radeon: ungemessen (R10) · klang.K5#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "klang.K5#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    },
+    {
+     "id": "klang.K5#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "klang.K5#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "leib.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ungemessen (R10) · leib.K1#1 gtx: ungemessen (R10) · leib.K1#2 radeon: ungemessen (R10) · leib.K1#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "leib.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "leib.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "leib.K1#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "leib.K1#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "leib.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: leib.K4#1 radeon: ungemessen (R10) · leib.K4#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "leib.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "leib.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "leib.K5": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: leib.K5#1 headless: ROT: keine Zeile der Gamepad-Probe für /: Gehen ∝/ /: Fahren:/ (Exit 0) an 7c6f4b49 · leib.K5#2 headless: ROT: keine Zeile der Gamepad-Probe für /: jedes Verb liest NUR/ /: Gehen ∝/ /: Fahren:/ /: jeder Knopf über/ (Exit 0) an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "leib.K5#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine Zeile der Gamepad-Probe für /: Gehen ∝/ /: Fahren:/ (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine Zeile der Gamepad-Probe für /: Gehen ∝/ /: Fahren:/ (Exit 0)"
+    },
+    {
+     "id": "leib.K5#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine Zeile der Gamepad-Probe für /: jedes Verb liest NUR/ /: Gehen ∝/ /: Fahren:/ /: jeder Knopf über/ (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine Zeile der Gamepad-Probe für /: jedes Verb liest NUR/ /: Gehen ∝/ /: Fahren:/ /: jeder Knopf über/ (Exit 0)"
+    }
+   ]
+  },
+  "licht.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: licht.K2#1 radeon: ungemessen (R10) · licht.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "licht.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "licht.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "material.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ungemessen (R10) · material.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "material.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "material.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "material.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: material.K3#1 radeon: ungemessen (R10) · material.K3#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "material.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "material.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "mensch.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: ungemessen (R10) · mensch.K1#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "mensch.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "mensch.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "mensch.K2": {
+   "punkte": 1,
+   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 7c6f4b49 headless — offen: mensch.K2#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "mensch.K2#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
      "grund": null
     }
    ]
   },
   "mensch.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945 an 3528f2d0 headless",
+   "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945 an 7c6f4b49 headless — offen: mensch.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "mensch.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945",
-     "sha": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "physik.K2": {
+   "punkte": 1,
+   "beleg": "Maschine: Durchdringen 60 0/10 · 30 0/10 · gemischt 0/10, Lage nach 200 Schritten Bär 0 m, Wagen 0 m an 7c6f4b49 headless — offen: physik.K2#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "physik.K2#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Durchdringen 60 0/10 · 30 0/10 · gemischt 0/10, Lage nach 200 Schritten Bär 0 m, Wagen 0 m",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "pipeline.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: pipeline.K1#1 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an 7c6f4b49 · pipeline.K1#2 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "pipeline.K1#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0)"
+    },
+    {
+     "id": "pipeline.K1#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0)"
+    }
+   ]
+  },
+  "pipeline.K3": {
+   "punkte": 2,
+   "beleg": "Maschine: über Budget 0 (Staffel 1 ≤ 3) in 6559 Bauten, leer 0, Exits 0/0/0 an 7c6f4b49 headless · über Budget 0, Quote max L1/L0 0.49 · L2/L0 0.15 an 7c6f4b49 headless",
+   "stationen": [
+    {
+     "id": "pipeline.K3#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 6559 Bauten, leer 0, Exits 0/0/0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    },
+    {
+     "id": "pipeline.K3#2",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "über Budget 0, Quote max L1/L0 0.49 · L2/L0 0.15",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "profiband.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ungemessen (R10) · profiband.K4#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "profiband.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "profiband.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "siedlung.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 7c6f4b49 headless — offen: siedlung.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "siedlung.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "siedlung.K5": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: siedlung.K5#1 radeon: ungemessen (R10) · siedlung.K5#1 gtx: ungemessen (R10) · siedlung.K5#2 radeon: ungemessen (R10) · siedlung.K5#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "siedlung.K5#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "siedlung.K5#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "siedlung.K5#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "siedlung.K5#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "speicher.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: speicher.K1#1 radeon: ungemessen (R10) · speicher.K1#1 gtx: ungemessen (R10) · speicher.K1#2 radeon: ungemessen (R10) · speicher.K1#2 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "speicher.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "speicher.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "speicher.K1#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "speicher.K1#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "speicher.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: speicher.K2#1 radeon: ungemessen (R10) · speicher.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "speicher.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "speicher.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "speicher.K4": {
+   "punkte": 1,
+   "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4) | ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe | ✅ (W) Werke auf der Lichtung nach dem Reload 2/2 | ✅ Dichte über den Reload: Linie 673 Löcher, 0 korrupt an 7c6f4b49 headless — offen: speicher.K4#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "speicher.K4#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4) | ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe | ✅ (W) Werke auf der Lichtung nach dem Reload 2/2 | ✅ Dichte über den Reload: Linie 673 Löcher, 0 korrupt",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "speicher.K5": {
+   "punkte": 1,
+   "beleg": "Maschine: ✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {\"von\":0,\"nach\":2, | ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null) an 7c6f4b49 headless — offen: speicher.K5#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "speicher.K5#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {\"von\":0,\"nach\":2, | ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "streaming.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: streaming.K4#1 headless: ROT: keine Faden-Zeile (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "streaming.K4#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine Faden-Zeile (die Linse kennt --faden nicht?) · Exit 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine Faden-Zeile (die Linse kennt --faden nicht?) · Exit 0"
+    }
+   ]
+  },
+  "streaming.K5": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: streaming.K5#1 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49 · streaming.K5#2 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "streaming.K5#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0"
+    },
+    {
+     "id": "streaming.K5#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0"
+    }
+   ]
+  },
+  "studios.K2": {
+   "punkte": 1,
+   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 7c6f4b49 headless — offen: studios.K2#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "studios.K2#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "tiere.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 0.98 (min 0.6, in Flucht 0.28), fremder Verband 0 m an 7c6f4b49 headless — offen: tiere.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "tiere.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 0.98 (min 0.6, in Flucht 0.28), fremder Verband 0 m",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "tiere.K3": {
+   "punkte": 1,
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 24 Läufen (4 Gattungen), Satz-Tiere 0.036 über 122.4 m von 11 an 7c6f4b49 headless — offen: tiere.K3#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "tiere.K3#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Schlupf des Stand-Fußes max 0.017 in 24 Läufen (4 Gattungen), Satz-Tiere 0.036 über 122.4 m von 11",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "ultiversum.K5": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ultiversum.K5#1 headless: ROT: Zeile fehlt: /^\\s*(✅|❌) op:rule / /^\\s*(✅|❌) P2P: eine Regel mit verbotenem Effekt fällt benannt/ /^\\s*(✅|❌) 0 Schreibe: / (Exit 0) an 7c6f4b49",
+   "stationen": [
+    {
+     "id": "ultiversum.K5#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "Zeile fehlt: /^\\s*(✅|❌) op:rule / /^\\s*(✅|❌) P2P: eine Regel mit verbotenem Effekt fällt benannt/ /^\\s*(✅|❌) 0 Schreibe: / (Exit 0)",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": "ROT: Zeile fehlt: /^\\s*(✅|❌) op:rule / /^\\s*(✅|❌) P2P: eine Regel mit verbotenem Effekt fällt benannt/ /^\\s*(✅|❌) 0 Schreibe: / (Exit 0)"
+    }
+   ]
+  },
+  "vegetation.K4": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: ungemessen (R10) · vegetation.K4#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "vegetation.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "vegetation.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "wetter.K1": {
+   "punkte": 1,
+   "beleg": "Maschine: saat-a an 2 Orten × 2 Wanduhren gleich (10 Züge: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders an 7c6f4b49 headless — offen: wetter.K1#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "wetter.K1#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "saat-a an 2 Orten × 2 Wanduhren gleich (10 Züge: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+     "grund": null
+    }
+   ]
+  },
+  "wetter.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: wetter.K2#1 radeon: ungemessen (R10) · wetter.K2#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "wetter.K2#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    },
+    {
+     "id": "wetter.K2#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
+    }
+   ]
+  },
+  "wetter.K5": {
+   "punkte": 1,
+   "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 7c6f4b49 headless — offen: wetter.K5#2: kein Werkzeug (fehlt)",
+   "stationen": [
+    {
+     "id": "wetter.K5#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+     "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
      "grund": null
     }
    ]
   }
  },
- "kopfVoll": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
- "zeit": "2026-10-23T06:29:35.858Z"
+ "kopfVoll": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+ "zeit": "2026-10-23T07:43:27.259Z"
 }
