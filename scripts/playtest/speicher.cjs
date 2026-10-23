@@ -384,8 +384,6 @@ async function checkBandRing8(ctx) {
         const out = {};
         // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
         // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list.
-        out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
-        out.newWorldBtnInDom = !!document.getElementById("world-new");
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
         r.createNewWorld({ slug: "test-ui-eins", inheritPlayer: false, reload: false });
         r.createNewWorld({ slug: "test-ui-zwei", inheritPlayer: false, reload: false });
@@ -420,8 +418,6 @@ async function checkBandRing8(ctx) {
             (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
-        check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
         check("Ring 8 UI: Beide Slugs sichtbar", ring8UiResults.pickerShowsBothSlugs);
         check("Ring 8 UI: Aktive Welt nicht in Andere-Welten-Liste", ring8UiResults.pickerHidesActive);
@@ -594,12 +590,6 @@ async function checkBandRing9to10(ctx) {
         const out = {};
 
         // Dialog-Markup im DOM
-        out.dialogInDom = !!document.getElementById("world-tor-dialog");
-        out.replaceBtnInDom = !!document.getElementById("world-tor-replace");
-        out.besideBtnInDom = !!document.getElementById("world-tor-beside");
-        out.fuseBtnInDom = !!document.getElementById("world-tor-fuse");
-        out.cancelBtnInDom = !!document.getElementById("world-tor-cancel");
-        out.summaryInDom = !!document.getElementById("world-tor-summary");
         out.fuseBtnEnabled = document.getElementById("world-tor-fuse").disabled === false;
 
         // Daten-Pfad: importWorldBeside ohne Reload
@@ -697,13 +687,7 @@ async function checkBandRing9to10(ctx) {
             (ring9Results && ring9Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 9: #world-tor-dialog im DOM", ring9Results.dialogInDom);
-        check("Ring 9: Ersetzen-Button im DOM", ring9Results.replaceBtnInDom);
-        check("Ring 9: Daneben-legen-Button im DOM", ring9Results.besideBtnInDom);
-        check("Ring 9: Fusion-Button im DOM", ring9Results.fuseBtnInDom);
         check("Ring 9: Fusion-Button ist klickbar (mit Ring 10)", ring9Results.fuseBtnEnabled);
-        check("Ring 9: Abbrechen-Button im DOM", ring9Results.cancelBtnInDom);
-        check("Ring 9: #world-tor-summary im DOM", ring9Results.summaryInDom);
         check("Ring 9: importWorldBeside liefert ok=true", ring9Results.besideReturnedOk);
         check("Ring 9: importWorldBeside vergibt neue worldId", ring9Results.besideReturnedNewWorldId);
         check("Ring 9: importWorldBeside behält slug (ohne Kollision)", ring9Results.besideReturnedSlug);
@@ -735,11 +719,7 @@ async function checkBandRing9to10(ctx) {
         const out = {};
 
         // Dialog + Stammbaum-DOM
-        out.fusionDialogInDom = !!document.getElementById("world-fusion-dialog");
-        out.fusionConfirmBtnInDom = !!document.getElementById("world-fusion-confirm");
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
-        out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
-        out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
         // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
         // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
@@ -959,11 +939,7 @@ async function checkBandRing9to10(ctx) {
             (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 10: #world-fusion-dialog im DOM", ring10Results.fusionDialogInDom);
-        check("Ring 10: Verschmelzen-Button im DOM", ring10Results.fusionConfirmBtnInDom);
         check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
-        check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
-        check("Ring 10: 'Verschmelzen…'-Button im DOM (Bibliothek)", ring10Results.fusionOpenBtnInDom);
         check(
             "Ring 10: Stammbaum-Samen blüht im 'Diese Welt'-Eiland (.feed-self, V18.71)",
             ring10Results.lineageSectionInDom

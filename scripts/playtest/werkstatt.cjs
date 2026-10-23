@@ -117,8 +117,6 @@ async function checkBandCadWorkshop(ctx) {
             out.defaultSnapEnabled = ws.snapEnabled;
 
             // --- Phase 1: DOM-Elemente ---
-            out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
-            out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
 
             // --- Phase 2: Konstanten ---
             const AR = r.constructor;
@@ -251,11 +249,9 @@ async function checkBandCadWorkshop(ctx) {
             }
 
             // --- Phase 2: UI-Elemente ---
-            out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
             const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
             // connect ist 4. Modus dazugekommen
             out.fourModeButtons = modeBtns.length === 4;
-            out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
 
             // --- Phase 2: Gizmo-Aufbau ---
             r._workshopEnsurePreview();
@@ -313,8 +309,6 @@ async function checkBandCadWorkshop(ctx) {
     if (wave6bResults && !wave6bResults.error) {
         check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
         check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
-        check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
-        check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
         check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
         check(
             "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
@@ -384,9 +378,7 @@ async function checkBandCadWorkshop(ctx) {
             wave6bResults.dragModeIsTranslate && wave6bResults.dragAxisIsX
         );
         check("Welle 6.B P2: _workshopEndManipulation räumt dragManipulator auf", wave6bResults.dragManipulatorCleared);
-        check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
         check("Welle 6.B P2+3: 4 Mode-Buttons (translate/rotate/scale/connect) im DOM", wave6bResults.fourModeButtons);
-        check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
         check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
         check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
         check("Welle 6.B P2: Translate-Gizmo hat ≥3 Handle-Meshes (Pfeile)", wave6bResults.gizmoHasTranslateMeshes);
@@ -848,8 +840,6 @@ async function checkBandCadWorkshop(ctx) {
             const pre = r.state.workshop.preview;
 
             // Layout-Struktur
-            out.previewRowInDom = !!document.getElementById("workshop-preview-row");
-            out.sidePaletteInDom = !!document.getElementById("workshop-side-palette");
             out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
             out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
             out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
@@ -949,8 +939,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
-        check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
             "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
             v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom

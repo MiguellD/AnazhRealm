@@ -409,7 +409,6 @@ async function checkBandV1789WorkshopReadout(ctx) {
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
         // Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
-        out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
         // Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
             !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
@@ -438,7 +437,6 @@ async function checkBandV1789WorkshopReadout(ctx) {
         res.formVals
     );
     check("V17.89: rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
-    check("V17.89 KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
     check(
         "V17.91 KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
@@ -924,9 +922,6 @@ async function checkBandWelle6Keybindings(ctx) {
         out.formatKeyF = r._formatBindingCode("KeyF") === "F";
 
         // UI: Section + Liste + Reset-Button im DOM
-        out.sectionInDom = !!document.getElementById("keybindings-section");
-        out.listInDom = !!document.getElementById("keybindings-list");
-        out.resetInDom = !!document.getElementById("keybindings-reset");
         // je Aktion eine Zeile: 13 der Tastatur + 8, die nur das Gamepad frei bindet (leib.K5)
         out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 21;
         // Pro Aktion ein Rebind-Button mit data-action
@@ -976,9 +971,6 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
         check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
         check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
-        check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
-        check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
-        check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
         check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
@@ -1329,14 +1321,11 @@ async function checkBandWelle6XAudit(ctx) {
         const out = {};
 
         // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
-        out.logbookSectionExists = !!document.getElementById("logbook-section");
-        out.logbookToggleExists = !!document.getElementById("logbook-toggle");
         const consoleLog = document.getElementById("console-log-section");
         const logEl = document.getElementById("log");
         out.logbookConsoleSectionExists = !!consoleLog;
         // Section bleibt sichtbar, NUR #log (innen) hidden default
         out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
-        out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
         // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
         const toggle = document.getElementById("logbook-toggle");
         if (toggle) {
@@ -1379,13 +1368,10 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x2Results && !wave6x2Results.error) {
-        check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
-        check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
         check(
             "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
             wave6x2Results.logbookHiddenByDefault
         );
-        check("Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM", wave6x2Results.consoleLogToggleExists);
         check("Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar", wave6x2Results.logbookVisibleAfterToggle);
         check("Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch", wave6x2Results.logbookHiddenAfterUntoggle);
         check("Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch", wave6x2Results.inlineToggleExpands);

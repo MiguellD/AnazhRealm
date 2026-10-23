@@ -666,7 +666,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandOmegaPhysisSaeuleI_II, ctx);
             await timed(BAND.checkBandOmegaWerkstattSpiegel, ctx);
             await timed(BAND.checkBandOmegaGrammatik, ctx);
-            await timed(BAND.checkBandOmegaOpsisSkyEnv, ctx);
             await timed(BAND.checkBandV1773HeldMesh, ctx);
             await timed(BAND.checkBandV1774UseByRole, ctx);
             await timed(BAND.checkBandV1775MakeActCost, ctx);

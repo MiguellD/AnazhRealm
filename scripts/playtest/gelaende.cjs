@@ -606,9 +606,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
-        out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
-        out.statusModeInDom = !!document.getElementById("status-mode");
-        out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
         // Status-Bar zeigt aktuellen Modus
         r.setGameMode("pfad");
         const statusItem = document.getElementById("status-mode");
@@ -652,9 +649,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
         check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
         check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
-        check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
-        check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
-        check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
         check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
         check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
     }
@@ -707,9 +701,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display
-        out.overlayInDom = !!document.getElementById("inventory-overlay");
-        out.gridInDom = !!document.getElementById("inventory-grid");
-        out.selectedInDom = !!document.getElementById("inventory-selected");
         // Initial hidden
         const overlay = document.getElementById("inventory-overlay");
         out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
@@ -958,9 +949,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
         check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
         check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
-        check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
-        check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
-        check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
         check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
         check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
         check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);

@@ -39,7 +39,8 @@
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
 //                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
-//   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
+//   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Farbton,
+//                                                           Sonnenseite, fernes Weiß; Rand und Kante an Hügel und Gipfel)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
 //                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`

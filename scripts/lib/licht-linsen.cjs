@@ -2266,6 +2266,7 @@ function luftTiefe(o) {
             const gez = [];
             const fern = {};
             const gesetzOben = {};
+            const inS = [[], [], []];
             for (let yy = 0; yy < H; yy += 2)
                 for (let xx = 4; xx < W; xx += 8) {
                     const t = treffer(xx, yy, D);
@@ -2276,6 +2277,7 @@ function luftTiefe(o) {
                     if (t && !(xx in gesetzOben)) gesetzOben[xx] = yy;
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
+                    sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
@@ -2299,10 +2301,12 @@ function luftTiefe(o) {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
+                himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
             };
         };
         const zeilen = [];
+        let weiss = null;
         try {
             for (const u of R.uhren) {
                 const so = uhr(u);
@@ -2313,6 +2317,28 @@ function luftTiefe(o) {
                     zeilen.push(Object.assign({ uhr: u, sonne: so.sonne, az: k * 90 }, z));
                 }
             }
+            // FERNES WEISS bei Sonne 5° (die Uhr in Halbierungen): eine weiße Lambert-Tafel `weiss.m` vor dem Auge, die Sonne im Rücken
+            let [a, b] = [0.2, 0.3];
+            for (let k = 0; k < 14; k++) [a, b] = uhr((a + b) / 2).sonne < 5 ? [(a + b) / 2, b] : [a, (a + b) / 2];
+            const so = uhr(b);
+            const az = so.az + Math.PI;
+            const [wx, wz] = [gx + Math.sin(az) * R.weiss.m, gz - Math.cos(az) * R.weiss.m];
+            const tafel = new T.Mesh(new T.PlaneGeometry(R.weiss.seite, R.weiss.seite), new T.MeshStandardMaterial());
+            tafel.position.set(wx, gesetz(wx, wz) + R.weiss.seite, wz);
+            st.scene.add(tafel);
+            try {
+                blick(az);
+                tafel.lookAt(cam.position);
+                const p = tafel.position.clone().project(cam);
+                for (const k of [1, 0.25]) {
+                    const c = !weiss && roh(await schuss(null, k), (Math.round(((1 - p.y) / 2) * H) * W + Math.round(((p.x + 1) / 2) * W)) * 4);
+                    if (c) weiss = { sonne: so.sonne, blende: k, RB: +(c[0] / c[2]).toFixed(3) };
+                }
+            } finally {
+                st.scene.remove(tafel);
+                tafel.geometry.dispose();
+                tafel.material.dispose();
+            }
         } finally {
             delete r._dayNightApplyHemiUndLuft;
             delete r._dayNightApplyBelichtung;
@@ -2321,7 +2347,7 @@ function luftTiefe(o) {
             cam.updateProjectionMatrix();
             window.__buehne();
         }
-        return { gy: Math.round(gy), zeilen };
+        return { gy: Math.round(gy), zeilen, weiss };
     })();
 }
 
@@ -2357,6 +2383,14 @@ function luftTiefeUrteil(m, R) {
     gemessen.forEach((n, i) => {
         if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);
     });
+    // die Sonnenseite: Y der In-Streuung zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
+    const Y = (c) => c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    for (const u of R.uhren) {
+        const h = [0, 180].map((az) => Y((m.zeilen.find((x) => x.uhr === u && x.az === az) || {}).himmel));
+        const s = h[1] > 0 ? +(h[0] / h[1]).toFixed(3) : null;
+        if (!(s >= B.seite)) liste.push(`K1-2 SONNENSEITE Uhr ${u}: Y der In-Streuung zur Sonne / gegen sie ${s} < ${B.seite}`);
+    }
+    if (!(m.weiss && m.weiss.RB >= B.weissRB)) liste.push(`K1-2 FERNES WEISS bei Sonne 5°: R/B ${JSON.stringify(m.weiss)} < ${B.weissRB}`);
     // K2-2 am Hügel und am Gipfel zu Mittag: keine waagrechte Linie über `band.linie` Grad
     for (const [ort, zs] of [["Hügel", m.zeilen], ["Gipfel", m.gipfel && m.gipfel.zeilen]])
         for (const az of [0, 90, 180, 270]) {
@@ -2372,7 +2406,7 @@ function luftTiefeUrteil(m, R) {
 
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
-    const sichten = (dk, C, n = 50, linie = 0) =>
+    const sichten = (dk, C, n = 50, linie = 0, seite = 1.3) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
@@ -2380,10 +2414,11 @@ function luftTiefeSelbsttest(R) {
                 az,
                 rand: { km: 20, C },
                 kante: { spalten: n, rand: n, linie, stufe: 0.01 },
+                himmel: n ? [1, 1, 1].map((x) => (az ? x : seite)) : null,
                 baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen, gipfel = zeilen) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel } }, Object.assign({}, R, { offen: {} }));
+    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, Object.assign({}, R, { offen: {} }));
     const leer = urteil(sichten(null, null, 0)).staffel;
     const k = ref[2] - ref[0];
     // das Bild einer Welt-Kante: Himmel 0,5 über einer Stufe `c` ab Zeile 100 (`zacke`: je zweite Spalte 8 px tiefer)
@@ -2398,6 +2433,8 @@ function luftTiefeSelbsttest(R) {
         urteil(sichten(k, 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
         urteil(sichten(k, 0.005, 50, R.band.linie)).staffel["K2-2"] === "ROT" || "eine Linie an der Schwelle ist nicht ROT",
         urteil(sichten(k, 0.005), []).staffel["K2-2"] === "ROT" || "ein fehlender Gipfel ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.some((b) => /SONNENSEITE/.test(b)) || "die Sonnenseite 1,15 ist nicht ROT",
+        urteil(sichten(k, 0.005), undefined, null).befunde.some((b) => /FERNES WEISS/.test(b)) || "ein ungemessenes fernes Weiß ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",

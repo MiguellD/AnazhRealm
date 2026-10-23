@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 12 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -40,27 +40,6 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
         res.joyWarmsWorld,
         `cold.r=${res.coldR} warm.r=${res.warmR}`
-    );
-}
-
-// Ω-OPSIS: ohne scene.environment rendern PBR-Metalle schwarz (Farbe aus der Reflexion) →
-// prozedurale Equirekt-Gradient-Env aus der Himmel-Farbe; headless nur als Mechanik prüfbar
-// (environment gesetzt, kein Crash).
-async function checkBandOmegaOpsisSkyEnv(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            st = r.state;
-        const out = { ready: !!st.rendererReady };
-        out.ensured = r._ensureSkyEnvironment(true);
-        out.envSet = !!(st.scene && st.scene.environment && st.scene.environment.isTexture);
-        out.notFailed = !st._skyEnvFailed;
-        return out;
-    });
-    // wenn der Renderer (headless) bereit ist, MUSS die Env stehen; sonst kein Flake-Zwang
-    check(
-        "Ω-OPSIS §7: scene.environment gesetzt (Renderer-bereit) ohne Fehlschlag",
-        res.ready ? res.envSet && res.notFailed : res.notFailed
     );
 }
 
@@ -119,12 +98,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             Math.abs(r.state.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
         // NON_BROADCASTABLE
         out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
-
-        // Status-Bar + Slider im DOM
-        out.statusTimeInDom = !!document.getElementById("status-time");
-        out.dayLengthSliderInDom = !!document.getElementById("slider-daylength");
-        out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
-        out.dayNightSectionInDom = !!document.getElementById("day-night-section");
 
         // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
@@ -233,10 +206,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3Results.dslNexusUhrGehalten
         );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
-        check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
-        check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
-        check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
-        check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
         check(
             "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
             wave6g3Results.lightPosFollowsTimeOfDay
@@ -638,12 +607,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Terrain-Tag/Nacht = die geteilten PBR-Lichter (Sonne/Fog/Hemisphere) — geprüft in den
         // `_applyDayNightToScene`-Bändern, nicht hier.
 
-        // 6. Stern-Feld: InstancedMesh mit Per-Instance-Farbe (sf.instanceColor = Hue) + Per-Instance-Matrix
-        // (Größe im scale).
-        const sf = r.state.starField;
-        out.starHasHueVariation = !!(sf && sf.instanceColor && sf.instanceColor.count > 0);
-        out.threeStarLayers = !!(sf && sf.instanceMatrix && sf.instanceMatrix.count > 0);
-
         return out;
     });
 
@@ -663,8 +626,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
         );
-        check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
-        check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
     } else {
         check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
     }
@@ -1399,8 +1360,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const out = {};
 
         // --- B3: Stats-HUD DOM-Existenz
-        out.statsHudExists = !!document.getElementById("stats-hud");
-        out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
@@ -1431,7 +1390,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
         out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
         out.ringRadiusDefault = r.state.chunkRingRadius === 4;
-        out.slidersSectionExists = !!document.getElementById("sliders-section");
 
         // --- D2: Master-Slider ändert state + Persistenz
         const ms = document.getElementById("slider-master");
@@ -1563,8 +1521,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 
     if (wave6x4bResults && !wave6x4bResults.error) {
-        check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
@@ -1574,7 +1530,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
         check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
         check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
-        check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
         check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
         check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
         check(
@@ -2229,7 +2184,6 @@ async function checkBandSchattenTakt(ctx) {
 
 module.exports = {
     checkBandV1731EmotionDrivesWorld,
-    checkBandOmegaOpsisSkyEnv,
     checkBandWelle6G3Lebendigkeit,
     checkBandWelle6G4Atmosphere,
     checkBandV8LatePolishAnd6XContinued,

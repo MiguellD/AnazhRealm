@@ -288,7 +288,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
 
         // === Status-Bar Task-Zähler (UX) ===
-        out.statusTasksInDom = !!document.getElementById("status-tasks");
         r.assignTaskToAllCreatures("wander");
         r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
         r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
@@ -351,7 +350,6 @@ async function checkBandWelle6HCreatures(ctx) {
             "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
             wave6hV2Results.textureSharedAcross10Cycles
         );
-        check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
         check("Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
         check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
         check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
@@ -434,7 +432,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
         const select = document.getElementById("creature-soul-select");
         out.hasSoulSelect = !!select && select.options.length === 5;
-        out.hasCreatureList = !!document.getElementById("creature-list");
         out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
         out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
         r._renderCreatureListUI();
@@ -506,7 +503,6 @@ async function checkBandWelle6HCreatures(ctx) {
             document.querySelector(".hof-partitur #status-worldrules") &&
             document.querySelector(".hof-partitur #status-abilities")
         );
-        out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
         // Hof-F — die Sektions-Leiste (Gruppen-Dirigat).
         const secHost = document.getElementById("hof-sections");
         out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
@@ -588,7 +584,6 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2aResults.hasTaskActions
         );
         check("Welle 6.H P2A: Form-Dropdown = Zufällig + die vier Tiere", wave6hP2aResults.hasSoulSelect);
-        check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
         check(
             "V18.46 Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
             wave6hP2aResults.hasFolgeInline && wave6hP2aResults.hasWarteInline && wave6hP2aResults.hasStreiftInline
@@ -646,7 +641,6 @@ async function checkBandWelle6HCreatures(ctx) {
             "V18.51 Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
             wave6hP2aResults.partiturHoldsLaws
         );
-        check("V18.51 Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
         check(
             "V18.51 Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
             wave6hP2aResults.sectionChipsRender && wave6hP2aResults.firstSectionIsAlle

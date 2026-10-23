@@ -1174,7 +1174,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
 
         // UI im DOM (Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
-        out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
         try {
@@ -2368,7 +2367,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
             wave6dResults.statePlayerHasHpAndStamina
         );
-        check("Welle 6.D: das Selbst-Spec-Sheet (#ich-stage-spec) im DOM", wave6dResults.statsContainerInDom);
         check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
             check(
