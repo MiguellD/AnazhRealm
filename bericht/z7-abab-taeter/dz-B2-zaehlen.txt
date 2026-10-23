@@ -1,0 +1,924 @@
+{
+ "gesamt": {
+  "cmd": 105,
+  "tris": 439600
+ },
+ "passe": {
+  "OrthographicCamera": {
+   "cmd": 3,
+   "tris": 3,
+   "ro": 3
+  },
+  "haupt": {
+   "cmd": 72,
+   "tris": 326232,
+   "ro": 40
+  },
+  "k0": {
+   "cmd": 17,
+   "tris": 66634,
+   "ro": 17
+  },
+  "k1": {
+   "cmd": 13,
+   "tris": 46731,
+   "ro": 13
+  }
+ },
+ "klassen": [
+  {
+   "klasse": "bewohner-satz",
+   "stufe": null,
+   "art": null,
+   "cmd": 16,
+   "tris": 68321,
+   "je": {
+    "k0": 4,
+    "k1": 4,
+    "haupt": 8
+   },
+   "jeTris": {
+    "k0": 15492,
+    "k1": 15492,
+    "haupt": 37337
+   },
+   "inst": 42,
+   "exemplare": 21,
+   "dMin": 40,
+   "dMax": 71
+  },
+  {
+   "klasse": "spieler",
+   "stufe": null,
+   "art": null,
+   "cmd": 10,
+   "tris": 27034,
+   "je": {
+    "k0": 5,
+    "k1": 5
+   },
+   "jeTris": {
+    "k0": 13517,
+    "k1": 13517
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "bauSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 9,
+   "tris": 41945,
+   "je": {
+    "k0": 2,
+    "k1": 1,
+    "haupt": 6
+   },
+   "jeTris": {
+    "k0": 3096,
+    "k1": 92,
+    "haupt": 38757
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:feuerstelle:L0",
+      "stufe": 0,
+      "art": "ausstattung",
+      "zellen": 2,
+      "tris": 2820,
+      "eintraege": [
+       16,
+       79
+      ]
+     },
+     {
+      "klasse": "f:laterne:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 6,
+      "tris": 276,
+      "eintraege": [
+       153,
+       151,
+       152,
+       145,
+       146,
+       148
+      ]
+     }
+    ],
+    "k1": [
+     {
+      "klasse": "f:laterne:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 2,
+      "tris": 92,
+      "eintraege": [
+       146,
+       148
+      ]
+     }
+    ],
+    "haupt": [
+     {
+      "klasse": "f:griechisch:L2",
+      "stufe": 2,
+      "art": "haus",
+      "zellen": 46,
+      "tris": 31566,
+      "eintraege": [
+       189,
+       188,
+       182,
+       185,
+       187,
+       194,
+       181,
+       196,
+       198,
+       192,
+       197,
+       195
+      ]
+     },
+     {
+      "klasse": "f:roemisch:L2",
+      "stufe": 2,
+      "art": "haus",
+      "zellen": 8,
+      "tris": 3834,
+      "eintraege": [
+       174,
+       169
+      ]
+     },
+     {
+      "klasse": "f:feuerstelle:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 6,
+      "tris": 1785,
+      "eintraege": [
+       132,
+       125,
+       129
+      ]
+     },
+     {
+      "klasse": "f:marktstand:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 4,
+      "tris": 754,
+      "eintraege": [
+       155,
+       154
+      ]
+     },
+     {
+      "klasse": "f:wandlaterne:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 16,
+      "tris": 528,
+      "eintraege": [
+       175,
+       184,
+       183,
+       186,
+       190,
+       191,
+       193,
+       199
+      ]
+     },
+     {
+      "klasse": "f:laterne:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 10,
+      "tris": 290,
+      "eintraege": [
+       151,
+       152,
+       145,
+       146,
+       148
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "f:birke:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 6,
+   "tris": 31698,
+   "je": {
+    "haupt": 6
+   },
+   "jeTris": {
+    "haupt": 31698
+   },
+   "inst": 5,
+   "exemplare": 2,
+   "dMin": 10,
+   "dMax": 20
+  },
+  {
+   "klasse": "streuSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 5,
+   "tris": 19199,
+   "je": {
+    "k0": 1,
+    "haupt": 4
+   },
+   "jeTris": {
+    "k0": 3840,
+    "haupt": 15359
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:strauch:L1",
+   "stufe": 1,
+   "art": "shrub",
+   "cmd": 4,
+   "tris": 2040,
+   "je": {
+    "k0": 2,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 1020,
+    "haupt": 1020
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 19,
+   "dMax": 19
+  },
+  {
+   "klasse": "f:fichte:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 4,
+   "tris": 12988,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 12988
+   },
+   "inst": 3,
+   "exemplare": 1,
+   "dMin": 13,
+   "dMax": 61
+  },
+  {
+   "klasse": "f:fichte:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 4,
+   "tris": 13140,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 13140
+   },
+   "inst": 14,
+   "exemplare": 6,
+   "dMin": 27,
+   "dMax": 80
+  },
+  {
+   "klasse": "f:tanne:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 4,
+   "tris": 5396,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 5396
+   },
+   "inst": 6,
+   "exemplare": 1,
+   "dMin": 39,
+   "dMax": 66
+  },
+  {
+   "klasse": "fscatter:fichte:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 4,
+   "tris": 5600,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 5600
+   },
+   "inst": 6,
+   "exemplare": 3,
+   "dMin": 99,
+   "dMax": 105
+  },
+  {
+   "klasse": "fern-ring",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 39936,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 39936
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "formationenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 6400,
+   "je": {
+    "k0": 1,
+    "k1": 1,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 2560,
+    "k1": 1600,
+    "haupt": 2240
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 8,
+      "tris": 2560,
+      "eintraege": [
+       86,
+       131,
+       130,
+       99,
+       87,
+       97,
+       98,
+       127
+      ]
+     }
+    ],
+    "k1": [
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 5,
+      "tris": 1600,
+      "eintraege": [
+       131,
+       130,
+       99,
+       97,
+       98
+      ]
+     }
+    ],
+    "haupt": [
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 7,
+      "tris": 2240,
+      "eintraege": [
+       131,
+       130,
+       99,
+       87,
+       97,
+       98,
+       127
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "bodenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 61161,
+   "je": {
+    "k0": 1,
+    "k1": 1,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 25657,
+    "k1": 15300,
+    "haupt": 20204
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "dsl-insel",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 9064,
+   "je": {
+    "haupt": 3
+   },
+   "jeTris": {
+    "haupt": 9064
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:birke:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 4500,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 4500
+   },
+   "inst": 4,
+   "exemplare": 1,
+   "dMin": 12,
+   "dMax": 20
+  },
+  {
+   "klasse": "bauWurf",
+   "stufe": null,
+   "art": null,
+   "cmd": 2,
+   "tris": 2182,
+   "je": {
+    "k0": 1,
+    "k1": 1
+   },
+   "jeTris": {
+    "k0": 1452,
+    "k1": 730
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:griechisch:L3",
+      "stufe": 3,
+      "art": "haus",
+      "zellen": 14,
+      "tris": 792,
+      "eintraege": [
+       176,
+       168,
+       189,
+       188,
+       182,
+       185,
+       187,
+       194,
+       181,
+       196,
+       198,
+       192,
+       197,
+       195
+      ]
+     },
+     {
+      "klasse": "f:wandlaterne:L3",
+      "stufe": 3,
+      "art": "ausstattung",
+      "zellen": 8,
+      "tris": 352,
+      "eintraege": [
+       175,
+       184,
+       183,
+       186,
+       190,
+       191,
+       193,
+       199
+      ]
+     },
+     {
+      "klasse": "f:feuerstelle:L3",
+      "stufe": 3,
+      "art": "ausstattung",
+      "zellen": 5,
+      "tris": 120,
+      "eintraege": [
+       132,
+       123,
+       124,
+       125,
+       129
+      ]
+     },
+     {
+      "klasse": "f:roemisch:L3",
+      "stufe": 3,
+      "art": "haus",
+      "zellen": 2,
+      "tris": 118,
+      "eintraege": [
+       174,
+       169
+      ]
+     },
+     {
+      "klasse": "f:marktstand:L3",
+      "stufe": 3,
+      "art": "ausstattung",
+      "zellen": 2,
+      "tris": 70,
+      "eintraege": [
+       155,
+       154
+      ]
+     }
+    ],
+    "k1": [
+     {
+      "klasse": "f:griechisch:L3",
+      "stufe": 3,
+      "art": "haus",
+      "zellen": 9,
+      "tris": 482,
+      "eintraege": [
+       189,
+       188,
+       187,
+       194,
+       196,
+       198,
+       192,
+       197,
+       195
+      ]
+     },
+     {
+      "klasse": "f:wandlaterne:L3",
+      "stufe": 3,
+      "art": "ausstattung",
+      "zellen": 4,
+      "tris": 176,
+      "eintraege": [
+       190,
+       191,
+       193,
+       199
+      ]
+     },
+     {
+      "klasse": "f:feuerstelle:L3",
+      "stufe": 3,
+      "art": "ausstattung",
+      "zellen": 3,
+      "tris": 72,
+      "eintraege": [
+       132,
+       125,
+       129
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "f:eiche:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 6954,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 6954
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 18,
+   "dMax": 18
+  },
+  {
+   "klasse": "f:eiche:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 2740,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 2740
+   },
+   "inst": 4,
+   "exemplare": 2,
+   "dMin": 16,
+   "dMax": 18
+  },
+  {
+   "klasse": "fscatter:tanne:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 2004,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 2004
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 98,
+   "dMax": 98
+  },
+  {
+   "klasse": "nahWiese:L1",
+   "stufe": 1,
+   "art": null,
+   "cmd": 2,
+   "tris": 47190,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 47190
+   },
+   "inst": 61,
+   "exemplare": 55,
+   "dMin": 2,
+   "dMax": 6
+  },
+  {
+   "klasse": "nahWiese:L2",
+   "stufe": 2,
+   "art": null,
+   "cmd": 2,
+   "tris": 24642,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 24642
+   },
+   "inst": 237,
+   "exemplare": 232,
+   "dMin": 5,
+   "dMax": 19
+  },
+  {
+   "klasse": "feld-pass",
+   "stufe": null,
+   "art": null,
+   "cmd": 2,
+   "tris": 13,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 13
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "Render Pipeline",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "TRAA",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "fimp:atlas:L2",
+   "stufe": 2,
+   "art": null,
+   "cmd": 1,
+   "tris": 894,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 894
+   },
+   "inst": 447,
+   "exemplare": 353,
+   "dMin": 30,
+   "dMax": 341
+  },
+  {
+   "klasse": "siedlung-zaun",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 60,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 60
+   },
+   "inst": 5,
+   "exemplare": 5,
+   "dMin": 38,
+   "dMax": 90
+  },
+  {
+   "klasse": "himmel",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1984,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 1984
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "dorf-rauch",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 288,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 288
+   },
+   "inst": 24,
+   "exemplare": 22,
+   "dMin": 29,
+   "dMax": 1327
+  },
+  {
+   "klasse": "himmel-sonne",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 480,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 480
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "wasserSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1346,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 1346
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "farWater",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 398,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 398
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "spiegel:strahl",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  }
+ ],
+ "unbenannt": [],
+ "programme": {
+  "vertex": 77,
+  "fragment": 68,
+  "familien": 62,
+  "pipelines": 86
+ },
+ "frameMs": 44,
+ "kaskaden": 2,
+ "kamera": [
+  -841,
+  86.9,
+  -861
+ ],
+ "ms": 113
+}

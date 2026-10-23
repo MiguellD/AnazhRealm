@@ -65,3 +65,10 @@ GTX 1060, `--echt` 1920×1080, Regler voll, Messplatz-Dienst (zug/messplatz.md).
 | **fahrt** | 4+4 | | **Urteil** | | | | | **nicht-langsamer** |
 
 Roh: `bericht/z7-abab/`.
+
+## Täter (Dorf Ego LANGSAMER: fps stehend 78,95 → 75,1, gpu-bank 11,90 → 12,81 ms, 4+4)
+- **stadt-k1 e09c1b5c: `PASS_WAHL.haltM` 0,02 → 1 m.** Der Halt geht als Rand in jedes Sicht-Urteil (`L.halt = PW.haltM * (1 + PW.sichtRand)`, `stamm/bild-kosten.js:2537`). Der Rand ist damit 50-mal so breit, und im Stand bestehen mehr Instanzen die Wahl.
+- **Gezählt** mit `werkbank zaehlen --alle`, Dorf 8 Uhr, 2+2 Boots, beide Paare gleich (`bericht/z7-abab-taeter/`):
+  - Hauptpass 69 → 72 Befehle, 286,3k → 326,2k Dreiecke; Kaskaden k0/k1 +0,9k.
+  - nahWiese:L1 +14,6k · f:birke:L0 +10,9k · f:eiche:L0 0 → 2 Befehle, +7,0k · nahWiese:L2 +3,1k · f:birke:L1 +2,3k · streuSatz 4 → 5 Befehle, +1,3k.
+- **Dieselbe Spur auch anderswo, unter der Schwelle:** Wiese stehend 290k → 320k Dreiecke p95, Genesis Third 357k → 378k, Wiese gehend 53 → 54 Befehle.
