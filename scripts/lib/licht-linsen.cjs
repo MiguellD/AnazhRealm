@@ -208,7 +208,17 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }
-                } else if (ex.typ === "spieler") pos = pp.clone();
+                } else if (ex.typ === "mensch") {
+                    // derselbe Bau wie Spieler und Bewohner, mit der Wahl des Labors (material.K1)
+                    const [x, zz] = [pp.x + 4, pp.z - 4];
+                    const g = r._buildHumanGroup(Object.assign({}, window.__koerperCore.START_PARAMS, ex.wahl));
+                    g.name = "mensch";
+                    g.position.set(x, r._voxelSurfaceY(x, zz) + r.constructor.PLAYER_FOOT_OFFSET, zz);
+                    sc.add(g);
+                    gesetzt = true;
+                    await ticke(20, () => false);
+                    pos = g.position.clone();
+                }
                 else if (ex.typ === "boden" && ex.wald) {
                     // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
                     // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
@@ -329,10 +339,7 @@ function albedoSicht(opts) {
         };
         if (luftU) luftU.beta.value = 0;
         sc.environment = null;
-        // DIE SCHICHTEN (K63-n7; gemessen 15.10., Radeon: die Haut las „kein Pixel" — in der Ich-Sicht trägt der eigene Leib
-        // nur seinen Schatten-Zwilling, alle 14 Spieler-Meshes auf Schicht 2, die das Auge nie zeichnet): der Schuss zeichnet
-        // jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
-        st.camera.layers.enableAll();
+        // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
         const half = T.DataUtils.fromHalfFloat;
@@ -356,9 +363,14 @@ function albedoSicht(opts) {
         const lu = st.lodUniforms;
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const schuss = async (sicht) => {
-            for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            bundles();
             const pass = async (e) => {
+                // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
+                sc.traverse((o) => {
+                    if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && !visAlt.has(o))
+                        meshes.push(o) && visAlt.set(o, o.visible) && kl.set(o, klasse(o));
+                });
+                for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
+                bundles();
                 for (const [l] of lichtAlt) l.intensity = 0;
                 A.color.setRGB(1, 1, 1);
                 A.intensity = e;
@@ -486,7 +498,6 @@ function albedoSicht(opts) {
         };
         const ergebnisse = [];
         const metallAlt = new Map();
-        const ahnenAlt = new Map();
         try {
             if (opts.zeilen) {
                 for (const ex of exemplare) {
@@ -577,14 +588,6 @@ function albedoSicht(opts) {
                                 mt.metalness = 0;
                             }
                         }
-                    // Die Ahnen der gewählten Züge stehen für den Schuss sichtbar: die Ich-Sicht verbirgt den eigenen Leib
-                    // (Spieler-Gruppe und Körper-Gruppe unsichtbar, die Haut darunter sichtbar — 0 Pixel).
-                    for (const m of sel)
-                        for (let a = m.parent; a && a !== sc; a = a.parent)
-                            if (!ahnenAlt.has(a)) {
-                                ahnenAlt.set(a, a.visible);
-                                a.visible = true;
-                            }
                     const set = new Set(sel);
                     const hell = new Float32Array(W * H * 4 * stellungen.length);
                     const dunkel = new Float32Array(W * H * 4 * stellungen.length);
@@ -597,8 +600,6 @@ function albedoSicht(opts) {
                         dunkel.set(t.dunkel, i * W * H * 4);
                     }
                     const s = { hell, dunkel };
-                    for (const [a, v] of ahnenAlt) a.visible = v;
-                    ahnenAlt.clear();
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
@@ -657,7 +658,6 @@ function albedoSicht(opts) {
         } finally {
             ausschnitteFort();
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
-            for (const [a, v] of ahnenAlt) a.visible = v;
             for (const [mt, v] of metallAlt) mt.metalness = v;
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();

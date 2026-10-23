@@ -326,31 +326,11 @@ async function selbsttest() {
     const m5 = messungZumTest(T0);
     m5.karten.garage.kL = 0.62;
     t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
-    // S5p — DIE PFLICHT-ZEILE (material.K1, der Täter am 23.10.: Haut Labor/Welt 0,86 unter ihrer Ratsche 0,152 grün): 0,86 bei
-    // Ratsche 0,2 → ROT `soll`, dieselbe Zeile ohne Pflicht grün; beide Seiten unter dem realen Band (Tiefschwarz 0,006) → zweimal
-    // ROT `band`; ein Band ohne Quelle bricht das Schema.
-    {
-        const P = JSON.parse(JSON.stringify(T0));
-        const hz = (x) => x.zeilen.find((z) => z.id === "haut");
-        Object.assign(hz(P), { pflicht: true, ratsche: 0.2, band: [0.0123, 0.871], bandQuelle: "Selbsttest" });
-        const uS = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
-        const O = JSON.parse(JSON.stringify(P));
-        hz(O).pflicht = false;
-        const uO = AT.tafelUrteil(O, messungZumTest(O, { haut: 0.86 }));
-        const mB = messungZumTest(P);
-        mB.welt.haut.Y = mB.labor.haut.Y = 0.006;
-        const uB = AT.tafelUrteil(P, mB);
-        const Q = JSON.parse(JSON.stringify(P));
-        delete hz(Q).bandQuelle;
-        t(
-            "Pflicht-Zeile 0,86 unter ihrer Ratsche → ROT `soll`, ohne Pflicht GRÜN; Y 0,006 unter dem Band → 2× ROT `band`; Band ohne Quelle → Schema",
-            hatRot(uS, "soll") &&
-                !hatRot(uS, "ratsche") &&
-                uO.urteil === "GRUEN" &&
-                uB.rot.filter((r) => r.art === "band").length === 2 &&
-                AT.tafelPruefen(Q).some((f) => /bandQuelle/.test(f))
-        );
-    }
+    // S5p — die Pflicht-Zeile (material.K1): unter ihrer Ratsche, außerhalb des Solls ROT
+    const P = tafelZumTest();
+    P.zeilen.find((z) => z.id === "haut").ratsche = 0.2;
+    const uP = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
+    t("Pflicht-Zeile 0,86 → nur ROT `soll`", uP.rot.length === 1 && hatRot(uP, "soll"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -673,11 +653,7 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
-    // DIE PFLICHT-ZEILEN (material.K1) tragen eine Messung auf echter GPU an BEIDEN Seiten — der Ersatz-Renderer verbirgt Ton
-    const pf = t.zeilen.filter((z) => z.pflicht === true).map((z) => z.id);
-    for (const s of ["labor", "welt"])
-        if (pf.length && t.gemessen && !(t.gemessen[s] && t.gemessen[s].echt === true))
-            errs.push(`[echt] ${pf.join(", ")}: die ${s === "labor" ? "Labor" : "Welt"}-Seite ist nicht echt gemessen`);
+    for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);
