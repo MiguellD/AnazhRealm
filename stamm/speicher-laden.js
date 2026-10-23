@@ -854,11 +854,19 @@ class AnazhRealm_speicher_laden {
     _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
-            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
+            if (zeugnisA)
+                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", AnazhRealm._datum(zeugnisA.text));
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
+        // jede Erinnerung der fremden Welt ist Datum (`_erinnerungFuerKi`): ihr Stempel `d` fällt, wer ihn auch schrieb
+        const wj = welt.worldJournal;
+        if (wj && Array.isArray(wj.entries))
+            welt.worldJournal = {
+                ...wj,
+                entries: wj.entries.map((e) => (e && typeof e === "object" ? { ...e, d: 0 } : e)),
+            };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
         const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
@@ -1120,7 +1128,7 @@ class AnazhRealm_speicher_laden {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
         if (result.ok) {
-            this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.journalAppend("witness", AnazhRealm._datum`Eine andere Welt „${result.slug}" liegt nun neben mir.`);
             this.updateWorldInfo();
         }
         this._closeWeltTorDialog();
@@ -1377,11 +1385,15 @@ class AnazhRealm_speicher_laden {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(cloned, `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`, {
-            fromWorldId: originalId,
-            asWorldId: newWorldId,
-            asSlug: slug,
-        });
+        AnazhRealm._zeugnisEintragen(
+            cloned,
+            AnazhRealm._datum`Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
+            {
+                fromWorldId: originalId,
+                asWorldId: newWorldId,
+                asSlug: slug,
+            }
+        );
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
         const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
@@ -1618,7 +1630,7 @@ class AnazhRealm_speicher_laden {
         const total = addedBPs.length + addedMats.length + addedTools.length;
         this.journalAppend(
             "witness",
-            `Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            AnazhRealm._datum`Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
             {
                 fromWorldId: sourceWorldId,
                 fromSlug: sourceSlug,

@@ -273,8 +273,7 @@ class AnazhRealm_netz_identitaet {
                 this.journalAppendOnce(
                     "vibepass:genesis",
                     "ritual",
-                    `Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ` +
-                        `ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    AnazhRealm._datum`Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
                     { fingerprint: vp.fingerprint }
                 );
             }
@@ -386,7 +385,7 @@ class AnazhRealm_netz_identitaet {
             this._persistVibePass();
             this.journalAppend(
                 "ritual",
-                `Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
+                AnazhRealm._datum`Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
             );
             this._renderVibePassUI();
             this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
@@ -576,7 +575,7 @@ class AnazhRealm_netz_identitaet {
         // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
         this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
-        this.journalAppend("ritual", `Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", AnazhRealm._datum`Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
             blueprint: name,
         });
         return { ok: true, authorPubKey: bp.authorPubKey };
@@ -1857,7 +1856,7 @@ class AnazhRealm_netz_identitaet {
         if (!opts.silent && typeof this.journalAppend === "function") {
             this.journalAppend(
                 "ritual",
-                `Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
+                AnazhRealm._datum`Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
             );
         }
         return { ok: true, key: norm, purged };
@@ -2020,7 +2019,7 @@ class AnazhRealm_netz_identitaet {
         };
         this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
-        this.journalAppend("ritual", `Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", AnazhRealm._datum`Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
             world: key,
         });
         return { ok: true, authorPubKey: vp.publicKeyHex };

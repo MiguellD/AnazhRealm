@@ -813,12 +813,18 @@ class AnazhRealm_kreatur_leben {
                 this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             ) {
                 this._feelAction("triumph", { magnitude: 1 });
-                this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
+                this.journalAppend(
+                    "relationship",
+                    AnazhRealm._datum`Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`
+                );
             }
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
-            this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
+            this.journalAppend("relationship", AnazhRealm._datum`${name} fiel im Kampf${lootSummary}.`, {
+                source,
+                loot,
+            });
         }
         this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
     }
@@ -851,7 +857,7 @@ class AnazhRealm_kreatur_leben {
             if (zurueck.length)
                 this.journalAppend(
                     "loss",
-                    `${ud.name || "Ein Wesen"} fiel mit seiner Last — sie fällt an dich zurück: ${zurueck.join(", ")}.`,
+                    AnazhRealm._datum`${ud.name || "Ein Wesen"} fiel mit seiner Last — sie fällt an dich zurück: ${zurueck.join(", ")}.`,
                     {
                         materials: last.materials,
                     }
@@ -1213,7 +1219,7 @@ class AnazhRealm_kreatur_leben {
             };
             const role = labels[kind] || `Spezialist von „${key}"`;
             const name = (creature.userData && creature.userData.name) || "Eine Kreatur";
-            this.journalAppend("growth", `${name} erreicht Stufe ${newLevel} als ${role}.`, {
+            this.journalAppend("growth", AnazhRealm._datum`${name} erreicht Stufe ${newLevel} als ${role}.`, {
                 kind,
                 key,
                 level: newLevel,
@@ -1261,8 +1267,8 @@ class AnazhRealm_kreatur_leben {
         // reaktiver Pfad behandelt: say in Chat (Soul-Span), program durch
         // _handleCreatureProposedProgram.
         const eventHint = isMaxLevel
-            ? `Du hast gerade die HÖCHSTE Stufe (5) als ${kind === "gather" ? "Sammler" : "Bauer"} von „${key}" erreicht. Drücke aus, was dieser Meisterschafts-Moment in dir auslöst — und biete ggf. eine Welt-Aktion an, die zu deiner Freude passt.`
-            : `Du hast eine NEUE Stärke entwickelt: ${kind === "gather" ? "Sammler" : "Bauer"} von „${key}" (Stufe ${newLevel}). Drücke diesen Wachstums-Moment aus — und biete ggf. eine Welt-Aktion an, die diesen neuen Pfad feiert.`;
+            ? `Du hast gerade die HÖCHSTE Stufe (5) als ${kind === "gather" ? "Sammler" : "Bauer"} von „${AnazhRealm._datum(key)}" erreicht. Drücke aus, was dieser Meisterschafts-Moment in dir auslöst — und biete ggf. eine Welt-Aktion an, die zu deiner Freude passt.`
+            : `Du hast eine NEUE Stärke entwickelt: ${kind === "gather" ? "Sammler" : "Bauer"} von „${AnazhRealm._datum(key)}" (Stufe ${newLevel}). Drücke diesen Wachstums-Moment aus — und biete ggf. eine Welt-Aktion an, die diesen neuen Pfad feiert.`;
         const personaPrompt = this._buildCreaturePersonaPrompt(creature);
         if (!personaPrompt) return false;
         const fullPrompt = personaPrompt + "\n\n" + eventHint;
@@ -1510,7 +1516,7 @@ class AnazhRealm_kreatur_leben {
         }
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
+            this.journalAppend("loss", AnazhRealm._datum`${name} kehrt zur Erde zurück.`, {
                 creature: name,
                 soul,
                 ageSec,
@@ -1680,7 +1686,7 @@ class AnazhRealm_kreatur_leben {
             const name = (geboren[0].userData && geboren[0].userData.name) || "(Wesen)";
             const n = geboren.length;
             const text = n > 1 ? `${name} und ${n - 1} weitere treten` : `${name} tritt`;
-            this.journalAppend("growth", `${text} in die Welt ein (${best.soul}).`, {
+            this.journalAppend("growth", AnazhRealm._datum`${text} in die Welt ein (${best.soul}).`, {
                 creature: name,
                 soul: best.soul,
                 gruppe: n,

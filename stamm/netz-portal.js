@@ -523,7 +523,7 @@ class AnazhRealm_netz_portal {
         this.journalAppendOnce(
             `portalVisit:${worldKey}`,
             "portal",
-            `Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
+            AnazhRealm._datum`Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
         );
         // Gruppen-Portal: Mitspieler bekommen eine „mitkommen?"-Einladung — nur bei Multiplayer-Portal (nur
         // dort verbindet B-Relay die Gruppe) und library-bekannter Welt (sonst liefert
@@ -774,7 +774,9 @@ class AnazhRealm_netz_portal {
         }
         if (po.eventWindowCount >= AnazhRealm.PORTAL_EVENT_RATE_MAX) return false;
         po.eventWindowCount++;
-        this.journalAppend("portal", text.slice(0, 160), { world: po.label || po.world || "Portal-Welt" });
+        this.journalAppend("portal", AnazhRealm._datum(text.slice(0, 160)), {
+            world: po.label || po.world || "Portal-Welt",
+        });
         return true;
     }
 
@@ -1044,7 +1046,7 @@ class AnazhRealm_netz_portal {
         this._savePortalDwelling({ worldId, label, at: Date.now() });
         this._portalRefreshHint(po);
         this._p2pBroadcastSoul();
-        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", `Du wohnst jetzt in „${label}".`);
+        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", AnazhRealm._datum`Du wohnst jetzt in „${label}".`);
         this.log(
             `Du wohnst jetzt in „${label}" — der nächste Aufbruch bringt dich HIERHER zurück („ziehe heim" beendet das Wohnen).`,
             "INFO"
@@ -1320,7 +1322,7 @@ class AnazhRealm_netz_portal {
         if (typeof this.journalAppend === "function") {
             this.journalAppend(
                 "growth",
-                `Eine fremde Fähigkeit wurde Teil deiner Welt: „${key}" (von „${prop.fromLabel}").`,
+                AnazhRealm._datum`Eine fremde Fähigkeit wurde Teil deiner Welt: „${key}" (von „${prop.fromLabel}").`,
                 {
                     capability: key,
                 }
@@ -1708,7 +1710,7 @@ class AnazhRealm_netz_portal {
         this.journalAppendOnce(
             `portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`,
             "portal",
-            `Du tratst zum ersten Mal durch das Tor „${inv.label}".`
+            AnazhRealm._datum`Du tratst zum ersten Mal durch das Tor „${inv.label}".`
         );
         return { ok: true };
     }
