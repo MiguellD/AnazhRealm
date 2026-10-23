@@ -1,0 +1,54 @@
+{
+ "ergebnis": {
+  "nachErwachen": {
+   "maxMs": 66.7,
+   "beiBild": 127,
+   "ueber33": 16,
+   "bilder": 301
+  },
+  "gesetzt": {
+   "ms": 7.3,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 33197.7,
+   "bilder": 3291,
+   "radius": 105.10709987054814
+  },
+  "latenzMs": 132.1,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 4431,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 33329.8,
+   "bilder": 3302,
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.52,
+    -1350.34
+   ],
+   "abstand": 104.6
+  },
+  "hash": "f5558d2c",
+  "bilder": 7733,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 80849
+}
