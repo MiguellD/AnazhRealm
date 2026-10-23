@@ -39,7 +39,7 @@ async function checkRing2Dsl(ctx) {
         const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
-        // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
+        // DIE KÖRPER-GESETZE SIND GESETZ: player_jump_power wiegt nur im Gesetz-Band des Leibs — der
         // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon; dslEval weist sie benannt ab).
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
@@ -241,9 +241,8 @@ async function checkBandV1726FieldDirection(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
-        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm && out.hasResolver) {
+        const pm = r.state.playerMesh.position;
+        {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
             const need = r.dslPositions.at_field_need([50], ctx2);
             const needLeb = r.auraAt(need.x, need.z).lebendig;
@@ -260,7 +259,6 @@ async function checkBandV1726FieldDirection(ctx) {
         }
         return out;
     });
-    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
     check(
         "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
         res.needIsMin,

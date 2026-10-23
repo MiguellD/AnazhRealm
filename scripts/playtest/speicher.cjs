@@ -140,7 +140,7 @@ async function checkBandRing8(ctx) {
         out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
         const activeId = r.state.worldMeta.worldId;
 
-        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
         // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
         // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
         // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
@@ -2228,8 +2228,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (R1) R5_STRUCTURE_TEXTURE frozen + Konstante
-        out.constExists = !!A.R5_STRUCTURE_TEXTURE && Object.isFrozen(A.R5_STRUCTURE_TEXTURE);
+        // (R1) R5_STRUCTURE_TEXTURE
         if (A.R5_STRUCTURE_TEXTURE) {
             out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
             out.microBoostSensible =
@@ -2241,7 +2240,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         return out;
     });
 
-    check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
     check(
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true

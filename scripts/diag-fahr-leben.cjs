@@ -11,7 +11,7 @@
 //       gier     — die Gier dreht in Frames OHNE Sim-Schritt                                               Soll ≤ 0,5°
 //     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht. T3 das Pferd
 //     (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-Gesetz): teleport 0, weg ±2 %.
-//     T4 (F1 des Schöpfers 17.10.) DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
+//     T4 DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
 //     (die Schwellen am Verdikt `WECHSEL`).
 //
 //   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:
@@ -207,8 +207,7 @@ function kernProbe(VC) {
     ]);
     // K7 — DIE WAND IST EIN SPRUNG DES BODENS (0710-2, die Hangfuß-Falle): der GT steht auf ebenem Boden, dann liegt der Boden
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
-    // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe. Vorher fror die Höhe ein:
-    // der Wand-Zweig verglich den Boden mit der Höhe des Wagens, nie mit dem Boden des letzten Schritts.
+    // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.
     {
         const P7 = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
         const G7 = VC.fahrGesetz(VC.exportDrive(P7));
@@ -2182,7 +2181,7 @@ function quellenAbgriff() {
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
-        art: "linse",
+        art: "null",
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });

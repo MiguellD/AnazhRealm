@@ -1109,7 +1109,7 @@ function zerlegeMessen(k) {
         const bild = async () => {
             const W = 480,
                 H = 270;
-            const wieseRuht = typeof r._tickNahWiese === "function" ? haken(r, "_tickNahWiese", () => 0) : null;
+            const wieseRuht = haken(r, "_tickNahWiese", () => 0);
             let auf;
             try {
                 auf = await window.__ausgabeAufnahme(W, H, 1);

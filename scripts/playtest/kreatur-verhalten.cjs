@@ -1790,7 +1790,7 @@ async function checkBandTierSeparation(ctx) {
         o.b2LeashShy = r._creatureMoveCharacter(shy).leashM;
         o.b2LeashBold = r._creatureMoveCharacter(bold).leashM;
         o.checks.b2LeashDiff = o.b2LeashBold - o.b2LeashShy >= 25;
-        // Mut-Achsen-KONSUM: das Temperament der Gattung (Welle LF 08.10.) — der scheue Hirsch (fleeMul 1,7, Mut 0)
+        // Mut-Achsen-KONSUM: das Temperament der Gattung — der scheue Hirsch (fleeMul 1,7, Mut 0)
         // hält eine kürzere Basis-Leine als der wilde Wolf (0,7) — fleeMul wird gelesen.
         const wolfProbe = spawn(spotShy, "wolf", 1);
         const deerProbe = spawn(spotBold, "wesen", 1);

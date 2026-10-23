@@ -144,7 +144,7 @@ function tafelPruefen(t) {
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
         // DIE STUFEN-PFLICHT (K63-n7): eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
-        // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe (der Lack las am 15.10. Chrom und Glas mit)
+        // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
         const wk = String((z.welt && z.welt.klasse) || "");
         const st = z.welt && z.welt.stufen;
         if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
@@ -191,7 +191,7 @@ function tafelStand(t, pruefsumme) {
         }
     return rot;
 }
-// DIE WAND DES STANDS (K63-n8, H5-Gesetz 21.10.): ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
+// DIE WAND DES STANDS (K63-n8): ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
 function standWand(rot) {
     const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
     const veraltet = {};

@@ -53,7 +53,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
@@ -62,7 +62,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const res = { boot: false };
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa((w) => typeof w._tickScatterLod === "function");
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
@@ -628,7 +628,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const H = (window.__buchHalt = { nachrichten: [], frei: false, zuSpaet: false, los: null });
         const iv = setInterval(() => {
             const r = window.anazhRealm;
-            if (!r || typeof r._foundryIngestBook !== "function") return;
+            if (!r) return;
             clearInterval(iv);
             if (r._foundry && r._foundry.recipes) {
                 H.zuSpaet = true;

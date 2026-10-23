@@ -1,4 +1,4 @@
-// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots, 05.10.): ein freier Slot und eine leere Hülle zeichnen NIE,
+// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
 // Befund (Radeon 890M, Mess-Wiese −900/−850, drei Wander-Schleifen à 1,2 km, Regler voll): `_archGroupFree` setzte nur die
@@ -57,7 +57,7 @@ function quellBefunde(q) {
 async function welt() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);

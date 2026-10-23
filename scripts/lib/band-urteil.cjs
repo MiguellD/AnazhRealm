@@ -41,7 +41,7 @@ const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
 // DIE MESSORTE (S1 W1f): das Band gilt überall, gemessen wird an benannten Orten — die Mess-Wiese (W0, Wald und
 // Wiese fern vom Ursprung) und der Genesis-Ring (die Ankunft: zehn Kern-Portale, die Vorschauen). Je Ort Spieler,
 // Blick, Dorf-Zug, Ort-Takt und seine EIGENE Ratsche (die Kosten zweier Orte sind zwei Hüllen, nie eine). Ohne Wahl
-// gilt der erste Ort (die Mess-Wiese, die Serie seit 04.10.).
+// gilt der erste Ort (die Mess-Wiese).
 function ortOf(haushalt, id) {
     const orte = (haushalt && haushalt.messorte) || [];
     const o = id == null ? orte[0] : orte.find((x) => x.id === id);
@@ -54,7 +54,8 @@ function ortOf(haushalt, id) {
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
-const istBandOrt = (o) => !!o && o.bank === undefined;
+// Ein Ort, den der Spieler erst gründet (`gruendung`, die Stadt), misst den Lauf (Profiband K1), nicht das Band: keine Ratsche.
+const istBandOrt = (o) => !!o && o.bank === undefined && o.gruendung === undefined;
 
 function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
@@ -168,6 +169,13 @@ function messortePruefen(h) {
         // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
+        // DIE GRÜNDUNG (die Stadt): das Wort des Spielers (`dorf <same> <häuser>`), sein Platz und Blick, der Anker der Siedlung, und die
+        // Bahn — eine Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
+        const g = o.gruendung;
+        if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || ![g.platz, g.blick, g.anker].every(xz)))
+            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>", platz, blick oder anker [x, z]`);
+        if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && `${o.bahn[0]}` === `${o.spieler}`))
+            f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
         // das Urteil am Ort spricht gate:profiband H1 (am Gesetz) und `werkbank umstellen --ort` (in der Welt, mit Gras).
         if (o.id === "wiese" && o.wiese === undefined) f.push(`${o.id}: das Wiesen-Gesetz (wiese) fehlt`);
@@ -260,7 +268,7 @@ function einschwingOffen(r) {
     // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
     // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
     // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
-    // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
+    // aufgeschoben" und sah fehlende und angeschnittene Regionen nie.
     const streuListe = [];
     if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
     const q = r._autoSettlementQueue;

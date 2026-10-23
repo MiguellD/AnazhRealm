@@ -795,12 +795,6 @@ class AnazhRealm_feld_sprache {
             }
         }
 
-        // V17.27/V17.32 — die Schreib-Overlays (Leben + Emotion) bounded halten:
-        // rate-limiteter Prune zerfallener Zellen (alle ~5 s). Lazy-Decay läuft
-        // beim Lesen; dies räumt nur die toten Zellen aus den Maps.
-        this._pruneLifeField();
-        this._pruneEmotionField();
-
         // === Das lebendige Feld — Welt→Spieler ===
         // Die lokale Aura unter dem Spieler nährt seine Emotion: EIN Feld-Read (auraAt), generisch über
         // AnazhRealm.FIELD_TO_EMOTION. Drift NUR Richtung ZIEL und nur HEBEND (der Decay senkt) — schwaches
@@ -856,7 +850,6 @@ class AnazhRealm_feld_sprache {
             }
             // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2).
             this._observeFieldWohl(pm.x, pm.z, currentTime);
-            this._pruneWohlBaseline(currentTime);
         }
 
         // === Der ZUSTAND-Kanal ===
@@ -1132,13 +1125,13 @@ _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 //   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)
 //   fieldTau    — ORTS-Baseline (s); ~120 s → ein Ort re-normalisiert langsam
 //   playerTau   — SPIELER-Baseline (s); ~30 s → Gewöhnung in einer Sitzung
-//   pruneEverySec / pruneAgeSec — die Baseline-Map bounded halten
+//   pruneAgeSec / raeumAb — die Baseline-Map bounded halten (eine neue Zelle über `raeumAb` räumt die alten)
 AnazhRealm.WERTUNG = Object.freeze({
     cell: 16,
     fieldTau: 120,
     playerTau: 30,
-    pruneEverySec: 5,
     pruneAgeSec: 180,
+    raeumAb: 64,
     // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
     // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1].

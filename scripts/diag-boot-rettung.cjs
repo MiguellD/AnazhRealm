@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // gate:boot-rettung — DER BOOT VERLIERT DIE WELT DES AKTIV-ZEIGERS NIE.
 //
-// Die Gegenprüfung Runde 4 (10.10.) fand zwei Formen, in denen der Boot eine rettbare Welt durch eine frische ersetzte: ein
+// Die Gegenprüfung Runde 4 fand zwei Formen, in denen der Boot eine rettbare Welt durch eine frische ersetzte: ein
 // korrupter Platz mit gültigem `.bak` (die Vorlade fing den Parse-Fehler, ensureWorldMeta vergab eine neue Id samt
 // Aktiv-Zeiger, die `.bak`-Rettung in loadState kam nie dran) und eine Welt, die nur in IndexedDB lag (der IDB-Vorlauf lief
 // erst nach ensureWorldMeta). Die Rettungs-Kette ist EINE (der Speicher-Faden: Platte → .bak; der Platz im localStorage ist

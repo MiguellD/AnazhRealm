@@ -30,14 +30,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 (async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, d: {}, e: {}, st: {} };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._placePolicyFor !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm bootet nicht" };
         const A = r.constructor;

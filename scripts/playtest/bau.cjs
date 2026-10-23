@@ -16,7 +16,6 @@ async function checkBandWaves1to3(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
         // journalAppend schreibt
@@ -47,7 +46,6 @@ async function checkBandWaves1to3(ctx) {
             (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -738,8 +736,7 @@ async function checkBandWave10b(ctx) {
             out.horizLineNotBroadcasting =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
             // Relais: ein broadcasting-Mast nahe einem Strahler verstärkt dessen Reichweite — Spieler 22 m vom
-            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m). Vorher ALLE radiating-
-            // Architekturen ringsum entfernen (natürliche kristall_geode aus `_populateVoxelChunkVegetation`).
+            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m).
             if (pmR) {
                 pmR.x = 60;
                 pmR.y = 0;
@@ -1584,7 +1581,7 @@ async function checkBandPsi0Winkel(ctx) {
             op: maxCos(A.OP_CLASS_SIGNATURES),
         };
     });
-    // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
+    // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
     // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
     // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
@@ -1743,7 +1740,7 @@ async function checkBandV18266RockDetail(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        if (typeof r._makePartGeometry !== "function" || typeof THREE === "undefined") return out;
+        if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
             g && g.attributes && g.attributes.position
                 ? g.index

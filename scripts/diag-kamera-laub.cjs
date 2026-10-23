@@ -34,6 +34,8 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_LAUB_STUDIO) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · ninja (NP-03, K3) —
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
+// `--bild`: Leib, Gang und Ninja zeichnen, das Laub nie
+const BILD = process.argv.includes("--bild");
 const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
@@ -908,7 +910,7 @@ async function probe(arg) {
         try {
             const tS = performance.now();
             r.setCameraMode("third");
-            // DIE KRONEN-STELLUNG (K20, 12.10.): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
+            // DIE KRONEN-STELLUNG (K20): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
             // Stamm-Fuß steht kein Laub in der Nah-Kugel, der Schmuggel dort maß 0,0 % und die Linse war blind. Die Stellung
             // steigt je 1 m am Stamm hinauf (der Spieler schwebt, die 3rd-Kamera folgt), bis das Laub ohne Durchsicht die Linse
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).
@@ -1240,7 +1242,7 @@ async function probe(arg) {
 
     const t0 = Date.now();
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {

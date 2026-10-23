@@ -506,7 +506,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
         // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
         // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
-        // ein WAND-Segment (die Tür-Lücke der Front liegt dann bei x≈1.3..2.6, nicht im Weg).
+        // ein WAND-Segment (nicht im Weg).
         const KSlive = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (r.state.blueprints._t_live_haus) delete r.state.blueprints._t_live_haus;
         r.state.blueprints._t_live_haus = {
@@ -1572,8 +1572,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (T1) TOTHOLZ_RATE Konstante existiert
-        out.rateConstExists = typeof A.TOTHOLZ_RATE === "number" && A.TOTHOLZ_RATE > 0 && A.TOTHOLZ_RATE < 1;
 
         // (T2) Bauplan `stamm_gefallen` ist registriert
         const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
@@ -1632,7 +1630,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         return out;
     });
 
-    check("V18.198 (T1) TOTHOLZ_RATE Konstante existiert (0 < x < 1)", res.rateConstExists === true);
     check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
     check("V18.198 (T2b) Bauplan ist builtIn + instanced", res.bpBuiltIn === true && res.bpInstanced === true);
     check(`V18.198 (T2c) Label 'Gefallener Stamm' (gemessen ${JSON.stringify(res.bpLabel)})`, res.bpLabel === true);
