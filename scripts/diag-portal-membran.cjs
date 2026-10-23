@@ -424,8 +424,8 @@ async function blickStufe(check) {
             b.hell.n > 200 && hellRot(b.hell, b.hell.milch),
             hellZeile(b.hell, b.hell.milch)
         );
-        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
-        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
+        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm (ein kaltes kostet auf swiftshader Minuten); HMS:
+        // derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
         check(
             "HM die Maske zeichnet ohne kaltes Programm",
             b.hell.kalt.M === 0,

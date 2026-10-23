@@ -974,7 +974,7 @@ function wetterSelbsttest() {
     return v;
 }
 
-// DAS URTEIL DER HIMMELS-WACHE (rein, Node; Leben-Schau 2, 09.10.: „Uhr und Wetter gehören dem Spieler"). `g` = ein getakteter
+// DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
 // takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
 // ROT, beim Namen:

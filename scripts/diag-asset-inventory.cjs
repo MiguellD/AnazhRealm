@@ -17,9 +17,8 @@
 //                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
 //                Emitter, an der QUELLE geklärt; die Klein-Streu ist Studio, das Fernfeld fiel).
 //   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (start_plattform + fliegende Inseln [E-F]); im Parity-Shot seit
-//                W2 versteckt, in der Welt daheim. (E-E „glut = Nicht-Studio-Silhouette" fiel 06.10.: die Feuerstelle
-//                trägt die Gestalt des Gesetzbuchs — ein Bauplan mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen,
-//                ist eine VERLETZUNG.)
+//                W2 versteckt, in der Welt daheim. Die Feuerstelle trägt die Gestalt des Gesetzbuchs — ein Bauplan
+//                mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen, ist eine VERLETZUNG.
 //   VERLETZUNG — alles andere: eine Vegetations-/Deko-Silhouette OHNE Studio-Herkunft
 //                (Grammatik-Baum/-Strauch/-Fels · Alt-Tuft-Gras · Totholz; die Vor-Studio-
 //                Kulissen Mantle/Shell sind N7.4 GESCHNITTEN — per Konstruktion unmöglich)

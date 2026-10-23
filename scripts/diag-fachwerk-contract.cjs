@@ -205,8 +205,8 @@ function shellPfad(name, seed, stufe) {
 }
 
 
-// ── DER BOGEN IM VERBAND (K66, Augen-Runde 15.10. am Auto-Dorf −812,7/−819,0: die Bögen der Laube der römischen Kirche
-//    ragten aus 20 m über die Traufe, nah schwebten die Keilsteine lose und verdreht neben den Pfeilerköpfen). Je Bogen —
+// ── DER BOGEN IM VERBAND (K66: kein Bogen ragt über die Traufe, kein Keilstein schwebt lose neben dem Pfeilerkopf). Je
+//    Bogen —
 //    die Marke `keil` an jedem Keilstein (bogenRahmen: Lage, Kurve, Deckel, Pfeiler), `zwickel` an seiner Mauer — in der
 //    Ebene des Bogens (u längs der Wand ab der Bogenmitte, v über dem Kämpfer):
 //    B1 die Öffnung ist frei: keine Ecke eines Keilsteins liegt in der Öffnung unter der Laibung (1 cm);
@@ -568,7 +568,7 @@ function bogenLinse() {
         check("SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot", huellenBruch(korrupt).length === 1);
     }
     {
-        // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m, vorher −5,65 m)
+        // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m)
         const hm = huellen["marokkanisch-s7-L0"] || [];
         let zMin = Infinity;
         for (let i = 2; i < hm.length; i += 6) zMin = Math.min(zMin, hm[i]);
@@ -692,9 +692,8 @@ function bogenLinse() {
         t2.some((s) => s.includes("objects"))
     );
 
-    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear": bis
-    //     05.10. legte der Bake (`_colFor`) das Paletten-Hex roh in den Vertex, die Welt las es linear — Putz 0,82, Holz
-    //     0,30, ganze Häuser 0,35–0,57 (das weiße Haus mit blassem Fachwerk). Gemessen wird, was die Welt liest: je Kultur
+    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear" (der Bake `_colFor` legt das
+    //     Paletten-Hex nie roh in den Vertex). Gemessen wird, was die Welt liest: je Kultur
     //     (alle 32, Stufe 1 — die Flächen-Stufe, die das Auge am längsten sieht) die flächengewichtete lineare Albedo der
     //     Vertex-Farbe × Stoff-Farbe, je Rolle und gesamt, gegen das Band der Natur (diag-albedo-zensus): Holz-Klasse
     //     (holz · stamm · blockholz · lattung · boden) ≤ 0,25 · Kalk und Lehm (putz · gefach · lehm) ≤ 0,85 · jeder andere

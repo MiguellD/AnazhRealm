@@ -44,7 +44,7 @@ const BAND = require("./lib/band-urteil.cjs");
 const N_FRAMES = 4;
 const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
-// gemessen 06.10. (kienspan, 64×48): 0,14 % mittlere Änderung über das ganze Bild, sie sitzt um die Sonne.
+// sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
 // Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von
 // r184s Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN

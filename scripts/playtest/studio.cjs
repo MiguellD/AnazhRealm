@@ -507,8 +507,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
                 const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
-                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
-                // — der Streamer lief noch nie — als „keine wartet")
+                // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                 await window
                     .__gebautNach("die Streu um den Spieler und der Vorrat", {
@@ -582,7 +581,7 @@ async function checkBandLeistungsVertrag(ctx) {
             // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
                 // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
-                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // Karte) und jede Region der Karte, die noch wartet
                 // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
                 const ringWartet = () => {
                     const liste = [];

@@ -647,9 +647,8 @@ async function probe(cfg) {
     const isoAn = () => lichter.forEach((lw) => lw.shadow.camera.layers.set(ISO));
     const isoAus = () => lichter.forEach((lw, i) => (lw.shadow.camera.layers.mask = isoAlt[i]));
     // DIE SCHATTEN-PIPELINE VORWÄRMEN: unter der Isolation zeichnet ein frisch gesetzter Körper erst nach dem Aufschalten der
-    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin (Werkbank
-    // 09.10.: derselbe Fuchs warf 1 077 Pixel, wenn seine Pipeline schon stand — in der Sonde 12). Frames mit kurzen Pausen,
-    // bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
+    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin.
+    // Frames mit kurzen Pausen, bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
     const schattenWarm = async (k) => {
         const E = r._erstZeichnung;
         for (let i = 0; i < 60; i++) {

@@ -65,8 +65,7 @@ const KOERPER_SCHRITTE = [
     "_todHebeTafel",
 ];
 const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurfaceAbove", "_terrainMacroSurfaceY"]);
-// DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren (Gegenprüfung 10.10.: `_todHebeTafel` las die
-// Oberkante als Boden des sterbenden Leibs, und die Wand kannte ihn nicht): jede Methode, die einen Dach-Leser ruft UND
+// DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren: jede Methode, die einen Dach-Leser ruft UND
 // `.position.y` liest oder schreibt (oder `.position.set` ruft), ist ein Körper-Schritt (oben, dort ist die Oberkante
 // verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
 // benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
@@ -204,9 +203,8 @@ function urteil(b) {
             if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
                 v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
             else {
-                // DER LEBENDE STAND (Prüfung 2 K02a, vorher OFFEN): am Fuß der Höhlenwand stand der Wolf vor dem Tod in 5 von 8
-                // Blickrichtungen mit der Haut bis 0,46 m im Fels — die Pfoten lasen in der Höhle die Höhe des Leibs, nie den
-                // Boden unter sich (`_standSicht` ohne Karte)
+                // DER LEBENDE STAND (K02a): am Fuß der Höhlenwand steht der Wolf vor dem Tod nie mit der Haut im Fels — die
+                // Pfoten lesen den Boden unter sich, nie die Höhe des Leibs
                 if (t.stehtM < -TOD_M)
                     v.push(
                         `(O) STAND IM FELS: ${p.name} — ${wo} steht lebend mit der Haut ${(-t.stehtM).toFixed(2)} m im Fels ` +
@@ -909,8 +907,7 @@ async function probe(K) {
             st.maxCreatures = kappe;
         }
     };
-    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier — CI 38029478199:
-    // eine Gier, die der lokale Lauf nicht zog, sank 0,24 m in den Grund)
+    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier)
     for (let k = 0; k < K.todGier; k++) {
         const name = "O3 Wolf stirbt in der Höhle";
         if (!hoehleOk) {

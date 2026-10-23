@@ -1,5 +1,5 @@
 // diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt
-// (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah-
+// (AAA, nicht Kapseln), das Analog-Feld trägt erst jenseits der EINEN Nah-
 // Grenze `ANALOG_NAH_M` (64 m). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den Analog-Pfad blind) auf der
 // Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit, welcher Satz zeichnet)
 // und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
@@ -60,8 +60,7 @@ function urteil(z) {
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
     // Die Linse nennt den Täter eines Seiten-Fehlers: die Phase (die letzte [N]-Zeile) und die Zeit seit dem Start;
-    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI-Runner fahren Dawns
-    // swiftshader auf Linux — 05.10. brach dort die Instanz mitten im Lauf weg, lokal nie).
+    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI fährt Dawns swiftshader).
     const t0 = Date.now();
     let phase = "boot";
     let gpuMeldungen = 0;
@@ -84,8 +83,7 @@ function urteil(z) {
             console.log(`  [GPU-Konsole] Phase „${phase}" +${Date.now() - t0} ms: ${t.slice(0, 300)}`);
         }
     });
-    // Wer zerstört ein Gerät? (CI 05.10.: „destroyed · Device was destroyed" 3,8 s nach dem Start, nur auf Linux) — der
-    // Aufrufer-Stapel jedes GPUDevice.destroy reist ins Log.
+    // Wer zerstört ein Gerät? Der Aufrufer-Stapel jedes GPUDevice.destroy reist ins Log.
     await page.evaluateOnNewDocument(() => {
         if (typeof GPUDevice === "undefined" || !GPUDevice.prototype || !GPUDevice.prototype.destroy) return;
         const org = GPUDevice.prototype.destroy;
@@ -129,7 +127,7 @@ function urteil(z) {
             await window.__weltDa(() => !(!r.state.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
-            // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
+            // S am Ruf (D3c); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
             const sProbe = (sched, tick) => {
                 const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken", "_gpuLeineStraff"];
                 let bake = 0;

@@ -1334,8 +1334,8 @@ function selbsttestGegenrichtung() {
             (s, d) => d["check.yml"].jobs.check.steps.push({ name: "A allein", run: "npm run gate:a" }),
             /\(R\) REDUNDANT: „A allein" \(check\.yml\/check\) fährt nur, was schon „Statik" fährt/,
         ],
-        // (S) DER ABGESCHALTETE SCHRITT (Gegenprüfung 09.10.: `|| true`, continue-on-error am Schritt und im nächtlichen
-        // Job zählten als Deckung) — die Klasse: jeder Weg, auf dem das Rot einer Wand den Merge nicht hält
+        // (S) DER ABGESCHALTETE SCHRITT (`|| true`, continue-on-error) — die Klasse: jeder Weg, auf dem das Rot einer
+        // Wand den Merge nicht hält
         [
             "|| true hinter dem Gate",
             (s, d) => (C(d).run = "npm run gate:c || true"),
@@ -1523,7 +1523,7 @@ function selbsttestPlaytest() {
     return f;
 }
 
-// ci-zeiten: liefert die API keinen Lauf, endet die Messung ROT (22.10.: eine leere Tafel)
+// ci-zeiten: liefert die API keinen Lauf, endet die Messung ROT (nie eine leere Tafel)
 async function selbsttestZeiten() {
     const leer = async (p) => (p.includes("/runs?per_page") ? { total_count: 0, workflow_runs: [] } : { jobs: [] });
     const u = await messe(leer, { jobs: { puls: { steps: [{ name: "Lint", run: "npm run lint" }] } } }, {}, 0).then(

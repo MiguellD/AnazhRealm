@@ -357,8 +357,8 @@ function selbsttest() {
             if (!v.some((s) => re.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${re})`);
         console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
-    // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu, gemessen
-    // 06.10. an der Mess-Wiese) und ein fremder Umzug fallen rot, beim Namen.
+    // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
+    // ein fremder Umzug fallen rot, beim Namen.
     const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };
     if (urteilNeu(neuGruen).length !== 0)
         fehler.push("die ruhige Messung fällt rot: " + urteilNeu(neuGruen).join(" · "));
@@ -972,7 +972,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
-            // der Hörer fällt im Register (D3c, vorher am Rumpf-TEXT): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
+            // der Hörer fällt im Register (D3c): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
             // die neue Geometrie behält keinen Entsorgungs-Hörer, der beim Tausch ihre GPU-Puffer mitnähme
             {
                 const h = () => {};

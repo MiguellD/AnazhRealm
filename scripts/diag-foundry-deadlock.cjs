@@ -70,8 +70,8 @@ const server = statikServer();
                     out.schritt = Math.round(zd - 20);
                 }
             }
-            // Ist die Welt ganz konvergiert (der CI-Runner backt im Warm-up jeden Baum, gemessen 05.10.: 299
-            // platziert, 0 kalt — auch jenseits des Radius), entsteht die kalte Nähe wie im Spiel nach einer
+            // Ist die Welt ganz konvergiert (der CI-Runner backt im Warm-up jeden Baum, auch jenseits des Radius), entsteht
+            // die kalte Nähe wie im Spiel nach einer
             // Räumung: die nächsten Foundry-Bäume verlieren Platz UND Körper über die EINE Räumungs-Naht
             // _foundryCacheEvict — sie sind nicht gedockt und müssen unter Über-Budget neu BACKEN (der Deadlock-Pfad).
             if (cold() === 0) {

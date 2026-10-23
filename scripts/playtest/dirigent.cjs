@@ -1352,9 +1352,8 @@ async function checkBandPerfPanel(ctx) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): Schöpfer-Trace 14.07. — die render-gebundene
-// Maschine hielt das deferrable-Budget ≤ 0, `break` ließ die Substanz-Queues monoton wachsen (Heap +1,6 MB/s, Wasser mit
-// Schwimm-Physik ohne Oberfläche). Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): ein Budget ≤ 0 lässt die Substanz-Queues
+// nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden(ctx) {
     const { page, check } = ctx;
@@ -1718,8 +1717,7 @@ async function checkBandReglerSim(ctx) {
                 const s6NachPuls = st.foliageRadius;
                 o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
                 o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
-                // DIESELBE Wand trägt den Architektur-Radius (04.10.: er folgte dem PID Frame für Frame, 100↔150 m,
-                // Rand-Bauten im Cull/Rewarm-Kreis — die großen Bundles nahmen je Frame neu auf).
+                // DIESELBE Wand trägt den Architektur-Radius (er folgt dem PID nie Frame für Frame).
                 const s6ArchNachPuls = st.architectureCullingRadius;
                 o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
                 o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;

@@ -227,8 +227,7 @@ function kernProbe(VC) {
             `Boden +0,35 m: Höhe je Schritt ${ys.map((y) => y.toFixed(3)).join(" · ")} (Stufe ${stufe7.toFixed(3)} m)`,
         ]);
     }
-    // K6 — DIE VERWINDUNG (Gegenprüfung 07.10.: M3 an (102, 60) — auf verwundenem Boden lagen zwei diagonale Räder des
-    // Teile-Wagens 0,229 m im Boden): bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
+    // K6 — DIE VERWINDUNG: bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
     // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
     // Federweg trägt, hebt die Verwindung den Wagen nicht.
     const Pv = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));

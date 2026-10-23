@@ -69,8 +69,8 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// Die Stellvertreter-Wand — eingefaltet aus gate:feld-stellvertreter (D3b): Befund 06.10. (OMEN, gpu-bank) der Feld-Pass kostete
-// 2,40 ms je Frame für EINEN Vollbild-Draw mit Fragment-Tiefe und Discard. Die Heilung im Pass (`_feldPassEnsure`): MARCH je Satz ein
+// Die Stellvertreter-Wand — eingefaltet aus gate:feld-stellvertreter (D3b): der Feld-Pass zeichnet keinen Vollbild-Draw
+// mit Fragment-Tiefe und Discard. Die Heilung im Pass (`_feldPassEnsure`): MARCH je Satz ein
 // Stellvertreter (Rückseiten seiner Hülle, EIN instanzierter Draw), PANORAMA ein Vollbild-Dreieck ohne Fragment-Tiefe. Die ECHTEN
 // Organ-Methoden: O1/O2 die Obergrenze folgt dem höchsten belegten Slot, freie Slots kehren zurück · T1 der Takt aus EINER Matrix ·
 // K1 der March-Draw · K2 das statische Budget je Fragment (`wgslKosten`); Selbsttests S1 (Panorama mit Tiefe) und S2 (ohne Nachzug).

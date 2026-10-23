@@ -1805,8 +1805,8 @@ function laubGegenlicht(opts) {
                 sc.traverse((o) => {
                     if (o.isLight) lichter.push([o, o.intensity]);
                 });
-                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
-                // jedes Programms — gemessen 15.10.: A 0,002–0,06 statt der Tafel 0,16), die übrigen Lichter und der Himmel still
+                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselte die
+                // Licht-Signatur jedes Programms), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
                 let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
                 const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);

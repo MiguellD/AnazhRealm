@@ -436,8 +436,7 @@ function sichtLinse(cfg) {
     // DIE BLENDE (die LIVE-Uniforms jeder LOD-Maske: an · Auge · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes — der
     // Regler legt sie): ändert sie sich nach dem Gesetz der Lage (`_blendeHaelt` — das Auge über den halben Halt gegen den
     // ANKER, alles andere gleich), wählt jeder Pass neu: eine Änderung, und der Anker rückt nach (`sichtBlendeBewegt`).
-    // Gegenprüfung 07.10.: die Linse verglich das Auge exakt — atmete es ±1 mm quer, hieß jeder Frame „Blende" und jede
-    // Arbeit war entschuldigt (14 999 Prüfungen je Frame GRÜN).
+    // das Auge wird nie exakt verglichen — ein Atmen von ±1 mm quer ist keine Blende
     let blendeAnker = null;
     let blendeOffen = 0;
     const blendeDreht = () => {
@@ -1054,7 +1053,7 @@ function sichtUrteil(b) {
                     `${JSON.stringify((x && x.legeOhneJe) || {})})`
             );
     }
-    // das atmende Auge (`b.auge`, Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer,
+    // das atmende Auge (`b.auge`): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer,
     // unter dem Halt — das ist keine Änderung: die Linse nennt es weder Kamera noch Blende, und die Kette arbeitet
     // nicht
     if (b.auge !== undefined) {
@@ -1076,7 +1075,7 @@ function sichtUrteil(b) {
                 );
         }
     }
-    // der Stand-Bruch (`b.standBruch`, Gegenprüfung 07.10.): jeder Satz zählt je Frame seinen Stand, ohne dass ein
+    // der Stand-Bruch (`b.standBruch`): jeder Satz zählt je Frame seinen Stand, ohne dass ein
     // Bereich, ein Anker oder eine Hülle sich ändert — die Linse muss seine Arbeit als Arbeit OHNE Änderung zählen und
     // `stand:ohne` beim Namen nennen
     if (b.standBruch !== undefined) {

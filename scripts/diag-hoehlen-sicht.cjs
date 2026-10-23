@@ -539,7 +539,7 @@ function selbsttest() {
         ],
         // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
         ["zwei Punktlicht-Gesetze", (b) => (b.code.poolGesetz = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
-        // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
+        // die zwei Fallen der Werkbank (echte GPU): die Mündung schwarz
         [
             "Normale im Zweig",
             (b) => (b.code.augenVorZweig = false),
@@ -570,7 +570,7 @@ function selbsttest() {
         ],
         ["Szenen-Licht ungezählt", (b) => (b.szenenLicht = null), /LEER: \(l\) Szenen-Licht/],
         ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
-        // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): steil am Auge lag die Wand in 0,2 m weiß ohne Maserung
+        // (j) die Falle der Werkbank: steil am Auge die Wand in 0,2 m weiß ohne Maserung
         [
             "geblendet",
             (b) => Object.assign(b.augenLicht.hoehle, { abfall: 2, kern: 0.3, blendung: 23.6 }),
@@ -641,9 +641,7 @@ const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
 // Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).
-// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die
-// Orte der alten Welt waren Literale; K55-2 — bis dahin lag das Quadrat um die Mess-Wiese, in der flachen Aue −278/−1038 trug
-// es 5 Mündungen ohne ein Paar, der Blick hinaus prüfte nichts, CI 38546830515).
+// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt.
 const { messort, WELT_MITTE } = require("./lib/welt-orte.cjs");
 const ORTE = { mess: messort("wiese"), welt: WELT_MITTE, mundHalb: 1000 };
 const server = statikServer();

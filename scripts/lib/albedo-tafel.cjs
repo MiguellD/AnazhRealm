@@ -373,7 +373,7 @@ function tafelTabelle(u) {
 }
 
 // DAS ZIEL DES LABORS (EINE Quelle für Albedo und Karte): ein Halbfloat-Ziel W × H und sein Leser. Die Engine der Welt (r184,
-// die Garage seit 18.10.) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
+// auch die Garage) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
 // liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt). Die Kopie bucht beim Aufruf, das Ziel
 // wechselt sofort zurück.
 function laborZiel(R, W, H) {

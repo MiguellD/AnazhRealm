@@ -1236,8 +1236,8 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         tor: w[5] != null,
         strahler: w[6].filter((k) => /^radiating/.test(k)).length,
     };
-    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilte unter Last falsch, CI 39471460860: die
-    // Gegenprobe „balancieren" 0,0117 → 0,0253 ms, BLIND): jeder Griff eines Takts an einen Eintrag der fernen Menge — sein
+    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilt unter Last falsch): jeder Griff eines
+    // Takts an einen Eintrag der fernen Menge — sein
     // Platz (`position`) oder die Marke der Zellen-Frage (`_blockerFrage`) — zählt; ein Ruf nach einem Ruf zum Anwärmen.
     let griffe = 0;
     const arbeit = (T) => {

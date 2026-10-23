@@ -3405,7 +3405,7 @@ async function checkBandM2RollenWahrheit(ctx) {
         delete blu._t_m2_wagen;
 
         // (6) der Klon erbt den INTENT: ein geklonter Brennkolben BLEIBT Werkstatt-
-        // Station (Chip + _workshopStationGate lesen bp.role — Befund 6-Kette).
+        // Station (Chip + _workshopStationGate lesen bp.role).
         if (blu.__m2_kolbenklon) delete blu.__m2_kolbenklon;
         r.cloneBlueprint("brennkolben", "__m2_kolbenklon");
         const kk = blu.__m2_kolbenklon;

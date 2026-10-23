@@ -719,7 +719,7 @@ async function leibGang(G) {
 function ninja(arg) {
     const out = { posen: [] };
     try {
-        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal (D3c, vorher am Studio-TEXT)
+        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal (D3c)
         out.kernBlock = typeof _KAM !== "undefined" && _KAM === window.__koerperCore.bewegung.kamera;
         enterPlay();
         resetRun();

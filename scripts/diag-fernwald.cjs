@@ -494,8 +494,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return { sichtH: sichtH && +sichtH.toFixed(1), imBand, jenseitsBand, zurueck, luecke, takte };
         };
         res.D2 = await riese();
-        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
-        // Karten-Ding keinen Band-Partner) — D2 muss rot werden; Tausch und Rückweg wecken (wie S1), der Regler hält (unter
+        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme: jenseits des Radius trug ein Karten-Ding
+        // keinen Band-Partner) — D2 muss rot werden; Tausch und Rückweg wecken (wie S1), der Regler hält (unter
         // CI-Last klemmt er), die Wahl schläft nie über den Rückweg ──
         if (riesenEintrag) {
             const e = riesenEintrag;

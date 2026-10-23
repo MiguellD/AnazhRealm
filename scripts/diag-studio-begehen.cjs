@@ -19,9 +19,6 @@
 //   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
 //   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
-//   Vorher-Lauf gegen die Basis cf9a07ba (der Lauf des Commits 9876ffd2): B1 10/10 zu · 0/8 demotiert mit Hülle
-//   · B2 0/10 betreten · B3 Klemme 32/105 (Basis-Körper auf geheilter Hülle, Selbsttest „kopf"), Speicher 0/4 oben · B4
-//   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");

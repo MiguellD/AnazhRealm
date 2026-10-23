@@ -346,8 +346,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
     }
     // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
-    // Linse jeden Ruhe-Frame — Radeon 07.10.: 299 von 299), ein Schritt über den Halt und eine Drehung über den halben
-    // Dreh-Rand sind es
+    // Linse jeden Ruhe-Frame), ein Schritt über den Halt und eine Drehung über den halben Dreh-Rand sind es
     const mat = (yawGrad, x, y, z) => {
         const w = (yawGrad * Math.PI) / 180;
         const c = Math.cos(w),
@@ -369,7 +368,7 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein
+    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`): das Auge der Maske ist ein Ort der Lage — sein
     // Atmen unter dem halben Halt ist keine Bewegung
     if (typeof SICHT.sichtBlendeBewegt !== "function")
         fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
@@ -432,7 +431,7 @@ function selbsttest() {
         if (n !== soll) fehler.push(`Arbeit ohne Änderung „${name}": ${n} statt ${soll}`);
         console.log(`  ${n === soll ? "✅" : "❌"} Selbsttest Arbeit ohne Änderung „${name}" → ${n}`);
     }
-    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`, Gegenprüfung 07.10.): je Bild die Bereiche (Identität und
+    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`): je Bild die Bereiche (Identität und
     // Hülle), der Anker, die offene Ordnung, Geometrie und Überhang — der Stand und der Verdichten-Zähler belegen nichts
     if (typeof SICHT.sichtSatzInhalt !== "function")
         fehler.push("LINSE: `sichtSatzInhalt` fehlt — der Inhalt hat keine Belege");

@@ -9,8 +9,8 @@
 // Messorte des Haushalts, ein Fluss-Chunk; auf der Bühne ihre Stationen) wird das Gitter jeder LOD-Stufe 0–3 im
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann DIE HÜLLE am ersten Ort: ein Turm aus Füll-Edits bis
-// ÜBER das Band und ein Graben (der Band-Befund des Richters 09.10.: der Main legt den Edit auf jede Ecke seines Kastens,
-// der Worker übersprang über dem Band), Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
+// ÜBER das Band und ein Graben (der Main legt den Edit auf jede Ecke seines Kastens, der Worker ebenso über dem Band),
+// Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
 // über den Spielpfad (`carveVoxel`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
 // sind SHA Main = Worker.
 //
@@ -1700,20 +1700,14 @@ async function gebaut(page, fehler) {
     return rot ? 1 : 0;
 }
 
-// ── DER FADEN TRÄGT DIE BYTES (Karte hydro-faden, `--faden`; Meisterkarte Streaming H3: K4 und K5) ───────────────────────
-// (a) K4: jede Hydrosphäre (Heimat, Kachel), die NICHT per Faden-Nachricht in den Main kam, und jeder Bau des Haupt-Fadens —
-//     Chunk-Stoff (`_buildVoxelChunkData`) und Guss des Bäckers (`BAKERS_BY_KIND`, der Ofen verfehlt) — außerhalb der Sync-Stellen
-//     und Test-Nähte (`FADEN_SYNC`: die drei forceSync-Stellen; der Null-Renderer gießt Avatar und Tiere sofort) ist ROT beim
-//     Namen seines Rufers.
-// (b) K5: DAS INSTRUMENT AM EMPFANG — vor den Quelltext JEDES Fadens (Voxel und Neben-Fäden, Buch und Werk der Foundry,
-//     Klang) setzt die Seite eine Hülle (`fadenHuelle`), die jeder Nachricht ihre Klon-Bytes anheftet (übertragene
-//     ArrayBuffer zählen nicht); jeder onmessage des Mains summiert sie je Faden und Art — die Byte-Summe, nie die Zahl der
-//     Nachrichten (ein Klon in tausend Krumen ist derselbe Klon) —, dazu jede Kopie empfangener Bytes danach (slice · set ·
-//     Array.from · new XArray(empfangen)) und die Platte (der Warm-Start klont in den Haupt-Faden und aus ihm). An JEDEM
-//     onmessage: die Gegenrichtung (Main → Faden, am onmessage des Fadens) zählt mit. Je Minute im Kalt-Boot und in einer
-//     Minute Fahrt (960 m in Takten), Soll ≤ 5 MB/min in der Fahrt.
-//   --faden [--selftest] [--wurzel baum]   Selbsttest: ein injizierter Hydro-Bau, ein Chunk-Bau und ein Klon (3 MB in einer
-//                                           Nachricht, 3 MB in 300 Krumen, eine Kopie) fallen ROT beim Namen.
+// ── DER FADEN TRÄGT DIE BYTES (`--faden`, Streaming H3) ──
+// K4: eine Hydrosphäre (Heimat, Kachel), die nicht als Faden-Nachricht kam, und ein Bau im Haupt-Faden (Chunk-Stoff
+//     `_buildVoxelChunkData`, Guss aus `BAKERS_BY_KIND`) außerhalb von `FADEN_SYNC` ist ROT beim Namen des Rufers.
+// K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
+//     der Main summiert sie je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes und die Platte —
+//     je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min in der Fahrt.
+//   --faden [--selftest]   ein injizierter Hydro-Bau, Chunk-Bau und Klon (3 MB in einer Nachricht, 3 MB in 300
+//                          Krumen, eine Kopie) fallen ROT beim Namen.
 const FADEN_SYNC = ["_syncRebuildEditFootprint", "spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures"];
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen) {
@@ -1828,9 +1822,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         zu("gesendet", `${this.__faden}:${(m && m.type) || "?"}`, klonBytes(m, frei, new Set()));
         return post.call(this, m, tr);
     };
-    // DIE PLATTE wie im Spiel (der Warm-Start ist headless sonst aus): ein Put klont seinen Wert synchron im Haupt-Faden,
-    // ein Get liefert ihn als Klon in den Haupt-Faden — beides zählt wie der Klon einer Nachricht, wo der Wert Bytes trägt
-    // (der Spielstand ist Text des Mains, kein Byte eines Fadens)
+    // DIE PLATTE wie im Spiel: Put und Get klonen ihren Wert im Haupt-Faden — es zählt, wo der Wert Bytes trägt
     window.__anazhChunkIdb = true;
     const binaer = (v, t) =>
         !!v && typeof v === "object" && t < 3 && (v instanceof ArrayBuffer || ArrayBuffer.isView(v) || Object.values(v).some((x) => binaer(x, t + 1)));
@@ -1852,8 +1844,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
             return v;
         },
     });
-    // die Kopien empfangener Bytes: ein NEUES Array aus ihnen (slice, new XArray(empfangen), Array.from) — das Ablegen in
-    // einen bestehenden Puffer (set: der Satz, die Karte) ist ihr Verbrauch, keine Kopie
+    // die Kopien empfangener Bytes: ein NEUES Array aus ihnen (set in einen bestehenden Puffer ist Verbrauch)
     const kopie = (src, b) => zu("kopie", rufer(), b);
     const da = (x) => !!x && (bytes.has(x) || (ArrayBuffer.isView(x) && bytes.has(x.buffer)));
     const TA = Object.getPrototypeOf(Int8Array).prototype;
@@ -1929,8 +1920,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
             if (sync.some((n) => namen.includes(n))) F.bau.sync++;
             else F.bau.rot.push(`${was} · ${rufer()}`);
         };
-        // der Asset-Bau: ein Guss des Bäckers im Haupt-Faden (foundry-core `BAKERS_BY_KIND`, der Ofen verfehlte sein Memo) —
-        // das Zusammensetzen der Meshes, die der Faden goss (`_ofenAssembleAsset`), ist Verbrauch, kein Guss
+        // der Guss des Bäckers im Haupt-Faden (der Ofen verfehlte sein Memo); `_ofenAssembleAsset` ist Verbrauch
         const [bau, B] = [P._buildVoxelChunkData, globalThis.BAKERS_BY_KIND];
         if (typeof bau !== "function" || !B || !B.kreatur || !B.koerper) return (F.blind = "die Bau-Haken greifen nicht");
         P._buildVoxelChunkData = function fadenBau(...a) {
@@ -1965,8 +1955,7 @@ async function faden(page, fehler, url) {
         ).then(() => localStorage.clear())
     );
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-    // die Fahrt in Takten, nie an der Wanduhr (K-WANDUHR): eine Minute bei vmax des GT-Eichankers (vehicle-core carPhys
-    // ≈ 16 m/s) sind 960 m nach Osten, 1 800 Takte zu 30 Hz — ihre Minute ist Spielzeit
+    // die Fahrt in Takten (K-WANDUHR): eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten
     const takt = (n) =>
         page.evaluate(async (n) => {
             await window.__weltDa(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function");
@@ -2033,22 +2022,26 @@ async function faden(page, fehler, url) {
     const mb = (b) => (b / 1e6).toFixed(2);
     const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
     const proMin = {};
-    console.log("\n========= DER FADEN TRÄGT DIE BYTES (K4 · K5, Karte hydro-faden) =========");
+    console.log("\n=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===");
     for (const w of Object.keys(dauer)) {
-        const T = Object.assign({ empfang: {}, kopie: {}, gesendet: {}, platte: {} }, F.t[w]);
-        const s = summe(T.empfang) + summe(T.kopie) + summe(T.gesendet) + summe(T.platte);
-        proMin[w] = (s / dauer[w]) * 60000;
+        const T = F.t[w] || {};
+        const teile = [
+            ["Faden → Main", T.empfang],
+            ["Main → Faden", T.gesendet],
+            ["Kopie", T.kopie],
+            ["Platte", T.platte],
+        ];
+        proMin[w] = (teile.reduce((a, [, o]) => a + summe(o), 0) / dauer[w]) * 60000;
         const top = (o) =>
             Object.entries(o)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 4)
                 .map(([k, b]) => `${k} ${mb(b)} MB`)
-                .join(" · ") || "—";
+                .join(" · ");
         console.log(
-            `  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min am Empfang: Faden → Main ${mb(summe(T.empfang))} MB · Main → Faden ${mb(summe(T.gesendet))} MB · Kopie ${mb(summe(T.kopie))} MB · Platte ${mb(summe(T.platte))} MB`
+            `  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min: ${teile.map(([n, o]) => `${n} ${mb(summe(o))} MB`).join(" · ")}`
         );
-        for (const [n, o] of [["Faden → Main", T.empfang], ["Main → Faden", T.gesendet], ["Kopie", T.kopie], ["Platte", T.platte]])
-            if (summe(o)) console.log(`         ${n}: ${top(o)}`);
+        for (const [n, o] of teile) if (summe(o)) console.log(`         ${n}: ${top(o)}`);
     }
     console.log(`  Fäden: ${F.geboren.join(" · ")}`);
     console.log(

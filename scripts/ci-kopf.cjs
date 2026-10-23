@@ -39,7 +39,7 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
     return u;
 }
 
-// die Läufe, neueste zuerst, OHNE Filter der API (22.10.: gefiltert total_count 0): `nimm` wählt, `seit` endet; eine kurze Seite
+// die Läufe, neueste zuerst, OHNE Filter der API: `nimm` wählt, `seit` endet; eine kurze Seite
 // wird bis 3× neu gefragt — sonst ROT, nie leer.
 async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
     const [out, je, neu] = [[], 100, (x) => new Date(x.created_at) >= seit];

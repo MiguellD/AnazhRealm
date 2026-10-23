@@ -345,8 +345,8 @@ async function probeLeben(expected) {
             r._foundry = fo;
         }
         r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
-        // Welt (welt-orte `hang`, K55-2 — bis dahin ±48 m um die Mess-Wiese, die flache Aue trug keinen): das Gefälle über ±3 m
+        // (2) Am Hang ohne Taste: der GT steht bergauf (er rollt nicht zurück und dreht sich nicht). Der Hang kommt aus
+        // der Welt (welt-orte `hang`, K55-2): das Gefälle über ±3 m
         // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
         const grad = (t) => (Math.atan(t) * 180) / Math.PI;
         const hangOrt = window.__weltOrt("hang", {
@@ -713,8 +713,7 @@ async function probeLeben(expected) {
             : null;
         S.klippeOrt = kl;
         // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
-        // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
-        // AUF dem Wagen und schoben ihn 3,3 m in den Hang: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
+        // und die Welt streut dort neu ein (Spawn-Affinität: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
         // Vor dem Aufsitzen läuft die Welt 60 Frames, dann räumt die Probe, was auf dem Anlauf bis 8 m über die Kante blockt.
         let geraeumt = 0;
         const bahnFrei = (k) => (wagen) => {
@@ -799,8 +798,8 @@ async function probeLeben(expected) {
                 weg(g2);
             }
             bahnWache = klippenBahn(kl);
-            // S4 ABSTEIGEN IM FLUG (Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen nicht ab — wer im Flug
-            // ausstieg, ließ ihn bis zum Reload in der Luft hängen): dieselbe Klippe, W bis der Wagen `STATION.flugM` über dem
+            // S4 ABSTEIGEN IM FLUG (`dismountArchitecture` stellt den Wagen ab): dieselbe Klippe, W bis der Wagen
+            // `STATION.flugM` über dem
             // Boden fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
             // Sprung > 0,5 m je Sim-Schritt.
             const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
@@ -1373,8 +1372,8 @@ async function probeLeben(expected) {
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
                 r.assignCreatureTask(c, "wait");
-                // Der Bär steht still (sein Hirn wählte Flucht oder Wandern mit Math.random — 07.10. kippte L5 so von
-                // 7,99 → 6,07 auf 7,92 → 3,70 m/s): ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
+                // Der Bär steht still (kein Hirn wählt mit Math.random): ein Steuer-Gesetz, dessen Schritt das Tempo nullt;
+                // nur der Stoß bewegt ihn.
                 const A = Object.getPrototypeOf(r).constructor;
                 if (!A.__steuerRoh) {
                     A.__steuerRoh = A._steuerGesetz;

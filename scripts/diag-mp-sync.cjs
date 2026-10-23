@@ -78,7 +78,7 @@ const dTaeter = (m) =>
           : m.some((x) => x.startsWith("Abstand"))
             ? " — das Gesetz hält, der Ort weicht: Täter der Schritt des Ghosts (_lockstepStepGhost) oder sein Anker"
             : "";
-// DER SCHUB VOR DEM FENSTER (Prüfer K60 Runde 4, B gedrosselt × 8; dieselbe Form CI 38677065212): ein Puffer, der VOR dem
+// DER SCHUB VOR DEM FENSTER (K60, B gedrosselt × 8): ein Puffer, der VOR dem
 // Fenster auflief, steht nach dem ersten Takt (dt 25 ms, Kappe 15) bei 235 Schritten — das Gesetz trug ihn, das Urteil mit
 // festem Verzug (≤ Reserve + aufholJeSchritt) nannte `_lockstepTickPeers` als Täter. Je Takt [dt ms, Schritte, Puffer danach].
 const SCHUB_VOR_DEM_FENSTER = [

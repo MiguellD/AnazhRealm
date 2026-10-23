@@ -1403,8 +1403,7 @@ async function probe(A) {
                         frame();
                     } catch (_e) {}
                 stelle(cx, cz);
-                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier) — die Gier des Birken-Falls zeigte auf
-                // ein anderes Ufer, der Tempel stand 13.10. acht Meter landein und wurde gebaut (E LEER)
+                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier), nie auf ein anderes Ufer
                 st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
                 fall("Tempel im See", "baue tempel hier", 1, "tempel vor dir gebaut", G.wasser);
                 {
@@ -1572,9 +1571,8 @@ async function probe(A) {
                 let res = null;
                 const v0 = new Set(st.architectures);
                 // der Nexus-Deckel ruht, solange R misst: über dem Deckel fällt der fernste autonome Bau (`_capNexusStructures`),
-                // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht. K16: die Welt trägt
-                // nach den früheren Proben ein Nexus-Dorf 80 m vom Spieler (27 autonome Bauten vor dem Dorf, vorher 19 in 600 m),
-                // der Deckel 48 nahm dem Dorf 9 Bauten, zuerst das Haus am Seerand (131,7 m) — R prüft das Wasser, nicht den Deckel
+                // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht — R prüft das
+                // Wasser, nicht den Deckel
                 const Klasse = r.constructor;
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
@@ -1667,7 +1665,7 @@ async function probe(A) {
             } catch (e) {
                 out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
-        // ── K: DER KONSUM AM RUF (D3c — vorher Präsenz-Proben am Stamm-Text): am Ort des Spielers ruft jeder Leser sein
+        // ── K: DER KONSUM AM RUF (D3c): am Ort des Spielers ruft jeder Leser sein
         //    Gesetz WIRKLICH (der Spion zählt und reicht durch); der Zensus endet vorher, die gesetzten Werke fallen wieder ──
         if (!A.nur)
             try {

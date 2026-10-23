@@ -593,7 +593,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
-        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
+        // nicht für jede Höhe (≈ 1 % der Höhen läge 1 ulp über D → „stein").
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;

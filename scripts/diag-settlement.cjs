@@ -1707,8 +1707,7 @@ const FIXTURES = [
             const archAfter = r.state.architectures.length;
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
-            // DORF-ERLEBNIS — die Siedlung hebt jetzt auch BRUNNEN (brunnen_dorf)
-            // und HOF-BÄUME (SCHICHT-VOLLENDUNG 18.07.: Studio-Bäume der
+            // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
             // trees-Schicht): das Band wandert mit dem Gesetz.
             res.c.allHaus = r.state.architectures
                 .slice(archBefore)
@@ -2288,7 +2287,7 @@ const FIXTURES = [
                     // Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
                     res.laternenWelt = laternen.length;
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
-                    // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
+                    // der Zwilling: ein Licht ohne Leib (ein Laternen-Leser mit Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
                     // DIE LATERNE VOR DER WAND (K66): je Laterne der
                     // Zelle der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN

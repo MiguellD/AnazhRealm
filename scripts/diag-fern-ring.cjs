@@ -838,8 +838,7 @@ const server = statikServer();
                 // 2 verworfen, 1 Saum — der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe —, 0 frei), an den vier
                 // Kanten (innen UND außen, 0,05–1,5 m) und im Inneren:
                 //   DAS LOCH — die Regel verwirft, und kein Deck (Chunk oder Stich-Band der 3 × 3 Nachbarn) trifft den senkrechten
-                //   Strahl: dort zeichnet niemand (Befund der Prüfung 12.10.: die Zelle verwarf, das Deck lag eine halbe Voxel-Kante
-                //   versetzt — 47 von 52 Punkten 5 cm innen an der −X-Kante, im Bild eine blaue Linie über die Bau-Kante).
+                //   Strahl: dort zeichnet niemand (im Bild eine blaue Linie über die Bau-Kante).
                 //   DER DURCHSTICH — der Ring zeichnet (Saum oder frei), ein Deck liegt darunter, und der Ring (im Saum um die
                 //   Weiche gesenkt) steht über ihm.
                 // Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) MUSS Löcher zeigen; ohne Karte sticht die Sehne durch.
@@ -928,8 +927,8 @@ const server = statikServer();
                     if (tief9 && feld9 !== null && feld9 >= gesetz9 - 2) {
                         muendungLuecke9++;
                         // DIE LÜCKE UNTER DER WEICHE (gezählt, beim Ort genannt): steht der tiefere Boden näher als die Weiche,
-                        // gewinnt er — ein Deck steht dort (13.10. an der Stufen-Naht 11|12 das gröbere Deck der Stufe 1 unter dem
-                        // Sockel-Rand), das Gesetz des Saums: wo das Deck fehlt, trägt der Ring, wo es steht, gewinnt es
+                        // gewinnt er — ein Deck steht dort, das Gesetz des Saums: wo das Deck fehlt, trägt der Ring, wo es
+                        // steht, gewinnt es
                         if (yr - weicheT9 < yc - 0.05) {
                             lueckeOffen9++;
                             if (lueckeOrte9.length < 4)

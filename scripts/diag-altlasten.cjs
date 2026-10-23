@@ -1309,8 +1309,8 @@ const ZWILLINGE = [
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
 // Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
-// (worlds/gelaende: das Panel und sein Makro-Worker — bis K16b außerhalb der Wand). Diese Wand trägt die Muster selbst
-// als Proben und steht nicht in der Liste.
+// (worlds/gelaende: das Panel und sein Makro-Worker). Diese Wand trägt die Muster selbst als Proben und steht nicht in
+// der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
     // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
@@ -1426,8 +1426,7 @@ function scanLabBuster() {
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
 //. Erlaubt: genau EIN `new THREE.InstancedMesh(`
 // (der Chokepoint selbst). Gezählt wird JEDER Bau, auch über einen Alias (`const T = THREE; new T.InstancedMesh(`):
-// bis 05.10. sah die Wand nur die THREE-Schreibweise — der Feld-Cull-Konsument und die Werkstatt-Vorschau bauten an
-// ihr vorbei.
+// keine Schreibweise baut an der Wand vorbei.
 const INSTANZ_BAU = /new\s+(?:[A-Za-z_$][\w$]*\.)?InstancedMesh\(/g;
 function scanInstanzWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -1699,8 +1698,7 @@ function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
 
 // DIE NORMAL-WAND: ein normalNode ist VIEW-space (r184 NodeMaterial.setupNormal → normalView). Welt/Lokal →
 // Sicht ist MATRIX.transformDirection(n) (= M·n, three's transformNormalToView); n.transformDirection(MATRIX) rechnet
-// Mᵀ·n (three's normalWorld: Sicht → Welt). So standen Boden, Karte und Laub bis 06.10.: von Süden gesehen lag der Boden
-// ohne Sonne (Boden-Licht-Sonde Sonne/Umgebung 1,12 statt 2,16), die Krone drehte ihr Licht mit dem Blick.
+// Mᵀ·n (three's normalWorld: Sicht → Welt) — das Licht der Krone dreht sonst mit dem Blick.
 function scanNormalWand(srcRoh) {
     const code = stripComments(srcRoh);
     const errs = [];

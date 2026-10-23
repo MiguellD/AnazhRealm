@@ -254,8 +254,7 @@ async function selbsttest() {
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
-        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in einer Stamm-Datei machte jede Zeile veraltet und
-        // sperrte jeden folgenden Merge): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
+        // DER CODE-ABDRUCK (K63-n8): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
@@ -345,8 +344,8 @@ async function selbsttest() {
             AT.tafelPruefen(s6c).some((f) => /nicht Labor\/Welt/.test(f)) &&
             !AT.tafelPruefen(AT.ladeTafel()).length
     );
-    // S6s — DIE STUFE (K63-n7; der Lack am 15.10.: der Wagen in der Blende L0/L1, die Stufe 1 faltet Chrom und Glas in den Lack,
-    // Welt 0,0175 gegen 0,0066): die Zeile erklärt L0, die Welt zeichnet L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
+    // S6s — DIE STUFE (K63-n7; die Stufe 1 faltet Chrom und Glas in den Lack): die Zeile erklärt L0, die Welt zeichnet
+    // L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
     // Befund; eine Messung ohne Stufen → ROT; eine Foundry-Klasse ohne erklärte Stufen → Schema rot.
     {
         const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen) && z.welt.stufen.length === 1);
