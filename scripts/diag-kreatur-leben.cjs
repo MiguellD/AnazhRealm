@@ -134,9 +134,52 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf), orte: ort } };
     });
+    // ── lebensraum: die Art wählt der Ort (Tiere K4, tetrapoda LEBENSRAUM_GESETZ). An neun Orten des Spielers (Raster 300 m)
+    // je 25 natürliche Geburten (`_creatureNaturalBirth`): je geborenes Tier seine Gattung und die Boden-Klasse unter ihm
+    // (`_bodenKlasseAt`) — der Anteil im Lebensraum seiner Gattung; die Gegenprobe fährt der Läufer in einer Welt anderer Saat ──
+    await buehne("lebensraum", async (restore) => {
+        const namen = A.CREATURE_SOUL_NAMES;
+        if (taeter === "lebensraum")
+            decke(restore, "_pickFaunaSoulAtPlayer", () => (x, z, rng) => namen[Math.floor(rng() * 4)]);
+        const LG = A._lebensraumGesetz();
+        const z = { n: 0, drin: 0, gattung: {}, klasse: {} };
+        const p0 = pm.clone();
+        for (let i = 0; i < 9; i++) {
+            pm.set(p0.x + ((i % 3) - 1) * 300, p0.y, p0.z + (Math.floor(i / 3) - 1) * 300);
+            for (let k = 0; k < 25; k++) {
+                const vor = s.creatures.length;
+                r._creatureNaturalBirth();
+                for (const c of s.creatures.slice(vor)) {
+                    const g = A.TETRAPODA_SOUL_MAP[c.userData.soul],
+                        kl = r._bodenKlasseAt(c.position.x, c.position.z);
+                    z.n++;
+                    if (LG.lebensraum(g, kl, LG.L) > 0) z.drin++;
+                    z.gattung[g] = (z.gattung[g] || 0) + 1;
+                    z.klasse[kl] = (z.klasse[kl] || 0) + 1;
+                    r.removeCreature(c);
+                }
+            }
+        }
+        return Object.assign(z, { anteil: z.n ? +(z.drin / z.n).toFixed(3) : null, saat: s.worldMeta.seed });
+    });
 }
 // das Soll der Lebens-Proben (gerufen aus dem Urteil der Kreatur-Proben, `soll(bedingung, grund)`)
 function lebenUrteil(name, z, soll) {
+    if (name === "lebensraum")
+        for (const [wo, L] of [
+            ["", z],
+            ["Gegenprobe ", z.gegen || { fehler: "die Gegenprobe in einer Welt anderer Saat lief nicht" }],
+        ]) {
+            if (L.fehler) soll(false, wo + L.fehler);
+            else
+                soll(
+                    L.n >= 150 &&
+                        Object.keys(L.gattung).length >= 3 &&
+                        L.anteil >= 0.9 &&
+                        L.saat !== (wo ? z.saat : null),
+                    `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} im Lebensraum ihrer Gattung (Soll ≥ 0,9, ≥ 150 Tiere, ≥ 3 Gattungen; ${JSON.stringify(L.gattung)} auf ${JSON.stringify(L.klasse)}, Saat ${L.saat})`
+                );
+        }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
     soll(
@@ -168,8 +211,9 @@ const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     // der Rumpf mit seinen Bühnen, gerufen mit den Helfern der Seiten-Funktion
     BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
-    PROBEN: ["furcht"],
+    PROBEN: ["furcht", "lebensraum"],
     TAETER: {
+        lebensraum: [["lebensraum", /^Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/]],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
             ["furcht-ort", /meidet den Riss nicht/],

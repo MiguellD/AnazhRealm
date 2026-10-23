@@ -1818,6 +1818,55 @@
         return m > 0 ? m : 0;
     }
 
+    // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
+    // Boden-Klasse eines Orts kommt aus dem Gelaende (bodenKlasse): am Fluss, wo sein Rand naeher als flussM liegt, am Hang, wo
+    // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
+    // forestStandDensity): Wald ab waldSd, Waldrand ab randSd, darunter Wiese. Je Gattung ihr Lebensraum (gattung: Klasse →
+    // Eignung) und ihre Haeufigkeit (Beute ist haeufig, der Jaeger selten); lebensraum = Eignung × Haeufigkeit, 0 = die Gattung
+    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982), der Wolf jagt aus dem Wald, der Baer
+    // sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8).
+    var LEBENSRAUM_GESETZ = Object.freeze({
+        flussM: 40,
+        hangTan: 0.36,
+        waldSd: 0.7,
+        randSd: 0.5,
+        gattung: Object.freeze({
+            deer: Object.freeze({ wiese: 1, waldrand: 1 }),
+            fox: Object.freeze({ waldrand: 1, wiese: 0.5 }),
+            wolf: Object.freeze({ wald: 1 }),
+            bear: Object.freeze({ fluss: 1, hang: 1 }),
+        }),
+        haeufigkeit: Object.freeze({ deer: 1, fox: 0.4, wolf: 0.35, bear: 0.25 }),
+    });
+    // flussRandM = der Abstand zum Rand des naechsten Flusses (m, Infinity ohne), hangTan = der Hang (tan), sd = die
+    // Bestandsdichte (0..1). Liefert "fluss" · "hang" · "wald" · "waldrand" · "wiese".
+    function bodenKlasse(flussRandM, hangTan, sd, L) {
+        if (flussRandM <= L.flussM) return "fluss";
+        if (hangTan >= L.hangTan) return "hang";
+        return sd >= L.waldSd ? "wald" : sd >= L.randSd ? "waldrand" : "wiese";
+    }
+    function lebensraum(gattung, klasse, L) {
+        var g = L.gattung[gattung];
+        return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
+    }
+    // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
+    // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
+    var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
+    function lebensraumWahl(klasse, u, L) {
+        var max = 0,
+            g,
+            i,
+            s;
+        for (i = 0; i < LEBENSRAUM_KLASSEN.length; i++) {
+            s = 0;
+            for (g in L.gattung) s += lebensraum(g, LEBENSRAUM_KLASSEN[i], L);
+            if (s > max) max = s;
+        }
+        var w = u * max;
+        for (g in L.gattung) if ((w -= lebensraum(g, klasse, L)) < 0) return g;
+        return null;
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3241,6 +3290,10 @@
         bedrohung: bedrohung,
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
+        LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
+        bodenKlasse: bodenKlasse,
+        lebensraum: lebensraum,
+        lebensraumWahl: lebensraumWahl,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

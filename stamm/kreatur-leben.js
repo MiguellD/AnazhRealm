@@ -1450,28 +1450,26 @@ class AnazhRealm_kreatur_leben {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
-    // [ATMOSPHERE] Soul-Wahl für eine neue Kreatur per Affinity-Pick: Compound-Tags · Welt-Feld
-    // (Dot-Product), höchste Resonanz gewinnt (dieselbe Logik wie spawnAffinityForBlueprint);
-    // noise 0.15 streut wiederholte Spawns (aus dem Fauna-Strom). Optionales x, z ersetzt die Spieler-Position.
+    // DIE ART WÄHLT DER ORT (Tiere K4, tetrapoda lebensraumWahl): die Boden-Klasse des Orts (`_bodenKlasseAt`) und je Gattung
+    // ihr Lebensraum (Eignung × Häufigkeit), ein Wurf aus dem Fauna-Strom; trägt der Ort keine Geburt, gibt es keine Seele
+    // (null). Vorher wählte ein Affinitäts-Pick über Tags × Feld mit 0,15 Rauschen — die Seelen sind tag-gleich (Lehre 8), es
+    // entschied das Rauschen. Ohne Ort gilt der Ort des Spielers.
     _pickFaunaSoulAtPlayer(x, z, rng = this._faunaRng()) {
         const pm = this.state.playerMesh;
-        if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
-            return this._pickCreatureSoulName(null, rng);
-        }
-        const px = x !== undefined ? x : pm.position.x;
-        const pz = z !== undefined ? z : pm.position.z;
-        const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
-        if (!field) return this._pickCreatureSoulName(null, rng);
-        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags — auch der Wolf (G4a: das Rudel kommt ambient in die Wildnis;
-        // bis dahin hielt ein predator-Filter jedes Raubtier aus der Welt, der Spieler sah ein Rudel nur, wenn er es rief)
-        const souls = AnazhRealm.CREATURE_SOULS;
-        if (!souls) return this._pickCreatureSoulName(null, rng);
-        const candidates = Object.keys(souls).map((name) => ({
-            name,
-            tags: this._creatureSoulTags(name),
-        }));
-        const { pick } = this._affinityPickFromCandidates(candidates, field, 0.15, rng);
-        return (pick && pick.name) || this._pickCreatureSoulName(null, rng);
+        const LG = AnazhRealm._lebensraumGesetz();
+        const klasse = this._bodenKlasseAt(x !== undefined ? x : pm.position.x, z !== undefined ? z : pm.position.z);
+        const g = LG.wahl(klasse, rng(), LG.L);
+        return AnazhRealm.CREATURE_SOUL_NAMES.find((n) => AnazhRealm.TETRAPODA_SOUL_MAP[n] === g) || null;
+    }
+
+    // DIE BODEN-KLASSE an (x, z) (Tiere K4, tetrapoda bodenKlasse): der Rand des nächsten Flusses (`_hydroDistAt`), der Hang
+    // des Gelände-Gesetzes (`_terrainMacroSurfaceY`, aus.hang) und die Bestandsdichte des Walds (`_forestStandDensity`).
+    _bodenKlasseAt(x, z) {
+        const LG = AnazhRealm._lebensraumGesetz();
+        const h = this._hydroDistAt(x, z);
+        const aus = this._bodenKlasseAus || (this._bodenKlasseAus = {});
+        this._terrainMacroSurfaceY(x, z, true, aus);
+        return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
     }
 
     // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
@@ -1620,13 +1618,21 @@ class AnazhRealm_kreatur_leben {
         // der Abstand der Spirale: abstandRaum × der Paar-Raum der Gattung (der Raum des ersten bei Größe 1 — die Größe
         // jedes Tiers ist seine Identität, `_creatureBodySize`); ein Platz, der nicht trägt, gibt sein Tier dem nächsten
         let abstand = 0;
+        // DER LEBENSRAUM DES WURFS (Tiere K4): liegt der Wurf-Ort im Lebensraum der Gattung, steht jeder Geworfene in ihm (ein
+        // Platz am Saum, der schon Wald ist, gibt sein Tier dem nächsten); ein Akt, der anderswo wirft, wirft frei
+        const LG = AnazhRealm._lebensraumGesetz();
+        const lebt = (x, z) => LG.lebensraum(AnazhRealm.TETRAPODA_SOUL_MAP[soul], this._bodenKlasseAt(x, z), LG.L) > 0;
+        const imRaum = lebt(ort.x, ort.z);
         for (let k = 0; geboren.length < n && k < 2 * n; k++) {
+            // der Abstand wächst mit den Geworfenen, nicht mit den Würfen: ein Platz, der nicht trägt, gibt seinen Ring dem
+            // nächsten Winkel (sonst stünde der Nächste weiter als das Fenster der Herde)
             const a = dreh + k * 2.39996;
-            const x = ort.x + Math.cos(a) * abstand * Math.sqrt(k);
-            const z = ort.z + Math.sin(a) * abstand * Math.sqrt(k);
+            const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
+            const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
             if (k > 0) {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
-                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z)) continue;
+                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z)))
+                    continue;
             }
             const gY = this.getTerrainHeightAt(x, z);
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
@@ -1667,9 +1673,10 @@ class AnazhRealm_kreatur_leben {
             if (!ort) continue; // die Wildnis trägt den Ort nicht
             const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
             const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+            if (!soul) continue; // der Lebensraum trägt hier keine Gattung (Tiere K4)
             // Resonanz-Score: Soul-Tags · Field, total
             let score = 0;
-            if (field && soul) {
+            if (field) {
                 const tags = this._creatureSoulTags(soul);
                 for (const ax of ["lebendig", "dichte", "glut", "magieleitung"]) {
                     score += (field[ax] || 0) * (tags[ax] || 0);

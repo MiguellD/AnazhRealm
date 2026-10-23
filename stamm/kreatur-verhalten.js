@@ -2399,6 +2399,7 @@ class AnazhRealm_kreatur_verhalten {
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
         const soul = soulName || this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+        if (!soul) return 0; // der Lebensraum trägt hier keine Gattung (Tiere K4)
         return this._kreaturWurf(ort, soul, emotion, rng, platz).length;
     }
 
@@ -3740,6 +3741,31 @@ AnazhRealm._furchtGesetz = function () {
         return AnazhRealm._furchtGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
+};
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, Tiere K4): die Boden-Klasse eines Orts und die Eignung
+// je Gattung. Fail-closed.
+AnazhRealm._lebensraumGesetz = function () {
+    if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const L = k && k.LEBENSRAUM_GESETZ;
+    if (
+        L &&
+        [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
+        L.gattung &&
+        L.haeufigkeit &&
+        typeof k.bodenKlasse === "function" &&
+        typeof k.lebensraum === "function" &&
+        typeof k.lebensraumWahl === "function"
+    ) {
+        AnazhRealm._lebensraumMemo = Object.freeze({
+            L,
+            bodenKlasse: k.bodenKlasse,
+            lebensraum: k.lebensraum,
+            wahl: k.lebensraumWahl,
+        });
+        return AnazhRealm._lebensraumMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:LEBENSRAUM_GESETZ");
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;

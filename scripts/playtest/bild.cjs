@@ -192,9 +192,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.oldestIsOlder = true; // skip wenn keine Kreaturen
         }
 
-        // _pickFaunaSoulAtPlayer liefert eine valide Soul — die AMBIENT-Menge ist jede Seele (G4a: auch der Wolf)
-        out.faunaSoulValid = r.constructor.CREATURE_SOUL_NAMES.includes(r._pickFaunaSoulAtPlayer());
-
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
             const beforeCount = r.state.creatures.length;
@@ -280,7 +277,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
         check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
         check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-        check("Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide ambient-Soul", wave6g3Results.faunaSoulValid);
         check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
         check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
         check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
