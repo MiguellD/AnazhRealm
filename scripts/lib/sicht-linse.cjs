@@ -435,7 +435,7 @@ function sichtLinse(cfg) {
             kameraAnker = e;
             return 0;
         }
-        const PW = r.constructor.PASS_WAHL || {};
+        const PW = r.constructor.PASS_WAHL;
         if (!window.__sichtKameraBewegt(kameraAnker, e, PW.haltM, PW.drehRand)) return 0;
         kameraAnker = e;
         return 1;
@@ -464,7 +464,7 @@ function sichtLinse(cfg) {
             blendeAnker = jetzt;
             return 0;
         }
-        const PW = r.constructor.PASS_WAHL || {};
+        const PW = r.constructor.PASS_WAHL;
         if (!window.__sichtBlendeBewegt(blendeAnker, jetzt, PW.haltM)) return 0;
         blendeAnker = jetzt;
         return 1;
@@ -676,8 +676,8 @@ function sichtBytesKlasse(f, feld) {
 // halben Dreh-Rand (`drehRand`), oder die Projektion änderte sich (Sichtfeld, Seiten, Nah/Fern — die Lage einer Perspektive
 // verlangt sie gleich). Das Atmen des Auges im Stand (±4 mm, keine Drehung) ist keine Bewegung.
 function sichtKameraBewegt(a, e, haltM, drehRand) {
-    const halt = (Number.isFinite(haltM) ? haltM : 0.02) / 2;
-    const dreh = (Number.isFinite(drehRand) ? drehRand : Math.PI / 90) / 2;
+    const halt = haltM / 2;
+    const dreh = drehRand / 2;
     if (Math.hypot(e[12] - a[12], e[13] - a[13], e[14] - a[14]) > halt) return true;
     for (let i = 16; i < Math.min(a.length, e.length); i++) if (a[i] !== e[i]) return true;
     for (const o of [4, 8]) {
@@ -693,7 +693,7 @@ function sichtKameraBewegt(a, e, haltM, drehRand) {
 // Kamera), oder ein Wert der Blende (an · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes) änderte sich. Das Atmen des
 // Auges unter dem Halt ist keine Bewegung — es entschuldigt keine Arbeit.
 function sichtBlendeBewegt(a, e, haltM) {
-    const halt = (Number.isFinite(haltM) ? haltM : 0.02) / 2;
+    const halt = haltM / 2;
     if ((a.ex == null) !== (e.ex == null)) return true;
     if (e.ex != null && Math.hypot(e.ex - a.ex, e.ez - a.ez) > halt) return true;
     const wa = a.werte || [],

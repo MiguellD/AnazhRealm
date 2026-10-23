@@ -372,22 +372,18 @@ function selbsttest() {
     }
     // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein Atmen
     // unter dem halben Halt ist keine Bewegung (vorher exakt verglichen: jeder Frame hieß „Blende", jede Arbeit entschuldigt)
-    if (typeof SICHT.sichtBlendeBewegt !== "function")
-        fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
-    else {
-        const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
-        for (const [name, b, soll] of [
-            ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
-            ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
-            ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
-            ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
-            ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
-            ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
-        ]) {
-            const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, 0.02);
-            if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
-            console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
-        }
+    const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
+    for (const [name, b, soll] of [
+        ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
+        ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
+        ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
+        ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
+        ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
+        ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
+    ]) {
+        const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, HALT);
+        if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
+        console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
     }
     // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und ein Inhalt mit benanntem Grund erklären alles, das
     // Licht nur die Kaskaden, der Stand eines Satzes allein nichts
