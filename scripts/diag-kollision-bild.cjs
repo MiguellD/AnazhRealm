@@ -140,7 +140,6 @@ function urteil(b) {
     if (!q.ohneBau) v.push("(Q) QUELLE: ein Blocker-Erzeuger ruft `buildInstance` (die Gestalt am Spawn nachgebaut)");
     if (!q.felsOhneTypListe) v.push("(Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)");
     if (!q.partsSkala) v.push("(Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)");
-    if (!q.gestaltKern) v.push("(Q) QUELLE: der Fels-Blocker kennt die Gestalt nicht (_studioGestaltenKern fehlt)");
     v.push(...tempoUrteil(b.tempo));
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
@@ -157,7 +156,6 @@ function selbsttest() {
         quelle: {
             felsOhneTypListe: true,
             partsSkala: true,
-            gestaltKern: true,
             torTafel: true,
             ohneBau: true,
         },
@@ -443,11 +441,7 @@ async function probe(K) {
         const funde = [];
         // (G) die Gestalt des Fels-Blockers gegen die gezeichnete
         if (kind === "rock") {
-            const kern =
-                typeof r.constructor._studioGestaltenKern === "function"
-                    ? r.constructor._studioGestaltenKern(pr)
-                    : undefined;
-            const gB = r._foundryVariantFor(e.seed, pr, kern);
+            const gB = r._foundryVariantFor(e.seed, pr, r.constructor._studioGestaltenKern(pr));
             if (gB !== g) funde.push({ art: "gestalt", wer, ort, bildG: g, blockG: gB });
         }
         if (kind === "tree" && !B.length) funde.push({ art: "stamm", wer, ort });
@@ -620,7 +614,6 @@ async function probe(K) {
     aus.quelle = {
         felsOhneTypListe: window.__fehlt(r._felsBlockerParts, /_var/),
         partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
-        gestaltKern: typeof r.constructor._studioGestaltenKern === "function",
         torTafel:
             !!drache &&
             ruft(() => r._torBlockerAABBs(drache), r.constructor, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
