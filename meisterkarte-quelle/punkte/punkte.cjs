@@ -71,6 +71,10 @@ function pruefeStationen(liste, karte) {
         const k = st && karte.get(st.kriterium);
         if (!k) f.push("Kriterium unbekannt");
         if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
+        if (st && st.befehl === null) {
+            fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
+            continue;
+        }
         const ge = geraeteVon(st);
         if (!ge.length || ge.some((g) => !GERAETE.includes(g)) || new Set(ge).size !== ge.length) f.push("geraet ungültig");
         if (ge.includes("headless") && (ge.length > 1 || st.gpu)) f.push("headless läuft allein und ohne GPU");
@@ -101,16 +105,42 @@ function pruefeStationen(liste, karte) {
     return { stationen: ok, fehler };
 }
 
-function ladeStationen(dir = path.join(DIR, "stationen")) {
+function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
     for (const g of GRUPPEN) {
         const f = path.join(dir, g + ".js");
         if (!fs.existsSync(f)) continue;
         const m = require(f);
         if (!Array.isArray(m)) throw new Error(g + ".js exportiert keine Liste");
-        for (const st of m) alle.push(st);
+        if (m.fehlt != null && !Array.isArray(m.fehlt)) throw new Error(g + ".js: fehlt ist keine Liste");
+        for (const st of teil === "fehlt" ? m.fehlt || [] : m) alle.push(st);
     }
     return alle;
+}
+// die Staffeln OHNE Werkzeug (module.exports.fehlt): beim Namen, mit Grund, nie zugleich eine fahrbare Station
+function pruefeFehlt(fehlt, karte, stationen) {
+    const fehler = [];
+    const fahrbar = new Set(stationen.map(schluessel));
+    const gesehen = new Set();
+    for (const e of fehlt) {
+        const wer = (e && e.kriterium) + "#" + (e && e.staffel);
+        const f = [];
+        if (!e || !karte.get(e.kriterium)) f.push("Kriterium unbekannt");
+        if (!e || ![1, 2].includes(e.staffel)) f.push("staffel nicht 1|2");
+        if (!e || e.befehl !== null) f.push("fehlt trägt befehl: null");
+        if (!e || typeof e.grund !== "string" || e.grund.length < 8) f.push("grund fehlt");
+        if (fahrbar.has(wer)) f.push("zugleich fahrbare Station");
+        if (gesehen.has(wer)) f.push("doppelt");
+        gesehen.add(wer);
+        if (f.length) fehler.push("fehlt " + wer + ": " + f.join(" · "));
+    }
+    return fehler;
+}
+function ladeGeprueft() {
+    const karte = kriterienDerKarte();
+    const r = pruefeStationen(ladeStationen(), karte);
+    const fehlt = ladeStationen(undefined, "fehlt");
+    return { ...r, fehlt, fehler: [...r.fehler, ...pruefeFehlt(fehlt, karte, r.stationen)] };
 }
 
 // ───────────────────────────────── Glob (R6) ─────────────────────────────────
@@ -166,7 +196,7 @@ function portRaeumen(port) {
         const pids = new Set();
         for (const l of String(r.stdout || "").split(/\r?\n/)) {
             const s = l.trim().split(/\s+/);
-            if (s.length >= 5 && /LISTEN/i.test(s[3]) && new RegExp(":" + port + "$").test(s[1]) && s[4] !== "0") pids.add(s[4]);
+            if (s.length >= 5 && /^(LISTEN|ABH)/i.test(s[3]) && new RegExp(":" + port + "$").test(s[1]) && s[4] !== "0") pids.add(s[4]);
         }
         for (const pid of pids) spawnSync("taskkill", ["/F", "/T", "/PID", pid], { encoding: "utf8" });
     } else spawnSync("sh", ["-c", "lsof -ti tcp:" + port + " -sTCP:LISTEN | xargs -r kill -9"], { encoding: "utf8" });
@@ -191,7 +221,10 @@ function fahreStation(st, ctx) {
         const deckelS = Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = st.befehl.map((a) => ersetze(a, ctx));
         const env = { ...process.env };
-        for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
+        // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
+    if (!st.gpu) env.LINSE_GPU = "software";
+    for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
+    if (!st.gpu && env.LINSE_GPU !== "software") return rot("headless verlangt LINSE_GPU=software — die Karte nur unter dem Schloss");
         let exe;
         let warteS = 0;
         if (argv[0] === "node") exe = process.execPath;
@@ -272,7 +305,7 @@ const messDatei = (sha, geraet, mdir = path.join(DIR, "messung")) => path.join(m
 async function run(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
-    const { stationen, fehler } = pruefeStationen(ladeStationen(), kriterienDerKarte());
+    const { stationen, fehler } = ladeGeprueft();
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const nur = opt.nur ? new Set(opt.nur.split(",")) : null;
     // je Station ein fester Port aus ihrer Stelle in der GANZEN Liste (stabil über Läufe), nie 4312
@@ -312,7 +345,7 @@ async function run(opt) {
 
 // ───────────────────────────────── Buchung ─────────────────────────────────
 // messungen: Liste {sha, geraet, je}; geaendert(messSha) → Liste der Dateien bis zum Kopf (wirft, wenn unbekannt)
-function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText()) {
+function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = []) {
     const diffCache = new Map();
     const diff = (sha) => {
         if (!diffCache.has(sha)) {
@@ -362,6 +395,8 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText()) {
                     if (y.e.gruen) teile.push(y.e.zahl + " an " + y.e.sha.slice(0, 8) + " " + y.g);
                     else if (!(n === 1 && s.ok)) offen.push(k + "#" + n + " " + y.g + ": " + (y.e.ungemessen ? y.e.grund : y.e.grund || "ROT: " + y.e.zahl) + (y.e.sha ? " an " + y.e.sha.slice(0, 8) : ""));
                 }
+        // eine Staffel ohne Werkzeug (fehlt) nennt sich im Beleg — die Maschine bucht sie nie
+        if (s1.ok) for (const f of fehlt) if (f.kriterium === k && f.staffel === 2) offen.push(k + "#2: kein Werkzeug (fehlt)");
         je[k] = {
             punkte,
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
@@ -378,12 +413,12 @@ function ladeMessungen(mdir = path.join(DIR, "messung")) {
 
 function buchenCli(opt) {
     if (!opt.kopf) throw new Error("--kopf fehlt");
-    const { stationen, fehler } = pruefeStationen(ladeStationen(), kriterienDerKarte());
+    const { stationen, fehler, fehlt } = ladeGeprueft();
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
-        git(["diff", "--name-only", sha, kopfVoll], repo).split("\n").filter(Boolean));
+        git(["diff", "--name-only", sha, kopfVoll], repo).split("\n").filter(Boolean), hilfeText(), fehlt);
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
@@ -418,9 +453,9 @@ async function selbsttest() {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-selbst-"));
     const karte = kriterienDerKarte();
     // (1) die echten Stationen gegen die Karte
-    const echt = pruefeStationen(ladeStationen(), karte);
+    const echt = ladeGeprueft();
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
-        echt.stationen.length + " Stationen, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
+        echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
     // (2) jede Format-Verletzung beim Namen
     const st0 = { kriterium: "gelaende.K4", staffel: 1, geraet: "headless", befehl: ["node", "-e", "0"], gpu: false, minuten: 1,
         urteil: () => ({ gruen: true, zahl: "x" }), pfad: ["stamm/wasser-*.js"], quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort" };
@@ -443,6 +478,10 @@ async function selbsttest() {
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
+        const n = pruefeStationen([st0, { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "kein Werkzeug" }], karte);
+        pruef("FORMAT-ROT befehl null in der fahrbaren Liste", n.fehler.some((f) => /gehört in module.exports.fehlt/.test(f)) && n.stationen.length === 1, n.fehler.join(" | "));
+        const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
+        pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
     const ctx = (n) => ({ baum: tmp, koord: KOORD, port: null, aus: path.join(tmp, n + ".json"), roh: path.join(tmp, n + ".out"), geraet: "radeon", bash: findeBash(), gpuLauf: null, deckelMinS: 0 });
@@ -456,6 +495,9 @@ async function selbsttest() {
     pruef("LÄUFER Absturz ohne Ausgabe", e.gruen === false && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
     pruef("LÄUFER Deckel", e.gruen === false && /Deckel/.test(e.grund), JSON.stringify(e));
+    e = await fahreStation({ ...st0, env: { LINSE_GPU: "hardware" }, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: true, zahl: l.stdout.trim() || "leer" }) }, ctx("karte"));
+    const e2 = await fahreStation({ ...st0, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: l.stdout.trim() === "software", zahl: l.stdout.trim() || "leer" }) }, ctx("soft"));
+    pruef("LÄUFER headless fährt LINSE_GPU=software, nie die Karte", e.gruen === false && /LINSE_GPU=software/.test(e.grund) && e2.gruen === true, JSON.stringify([e, e2]));
     e = await fahreStation({ ...st0, urteil: () => ({ gruen: 1, zahl: "" }) }, ctx("ungueltig"));
     pruef("LÄUFER Urteil ungültig", e.gruen === false && /Urteil ungültig/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: schreib({ n: 0 }), urteil: lies }, ctx("ohne-schloss"));
@@ -534,10 +576,11 @@ if (require.main === module) {
         if (verb === "run") await run(o);
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "liste") {
-            const { stationen, fehler } = pruefeStationen(ladeStationen(), kriterienDerKarte());
+            const { stationen, fehler, fehlt } = ladeGeprueft();
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + " · " + st.minuten + " min · " + st.befehl.join(" ") + " · " + abdruck(st));
+            for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
-            console.log(stationen.length + " Stationen · " + new Set(stationen.map((s) => s.kriterium)).size + " Kriterien · Fehler " + fehler.length);
+            console.log(stationen.length + " Stationen · " + new Set(stationen.map((s) => s.kriterium)).size + " Kriterien · fehlt " + fehlt.length + " · Fehler " + fehler.length);
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {

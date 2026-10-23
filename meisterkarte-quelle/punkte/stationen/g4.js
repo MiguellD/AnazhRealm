@@ -144,7 +144,7 @@ const WEG_LAGEN = ["schöpfer", "frieden mit Material", "pfad"];
 const WEG_WERKE = ["Eiche", "Haus", "GT", "Teil"];
 const WEG_SICHTEN = ["Ego", "Third"];
 
-module.exports = [
+const alle = [
     // ───────────────────────────── Studios ─────────────────────────────
     {
         kriterium: "studios.K2",
@@ -575,3 +575,7 @@ module.exports = [
         quelle: "2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte",
     },
 ];
+
+// die fahrbaren Stationen sind die Liste, die Staffeln ohne Werkzeug (befehl: null, grund) stehen daneben in `fehlt`
+module.exports = alle.filter((st) => st.befehl !== null);
+module.exports.fehlt = alle.filter((st) => st.befehl === null);
