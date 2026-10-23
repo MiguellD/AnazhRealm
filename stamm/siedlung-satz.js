@@ -1785,13 +1785,22 @@ class AnazhRealm_siedlung_satz {
     // außerhalb nichts). Segment: Kapsel-Abstand zur Mittellinie; Rechteck: gedrehter Kasten-Abstand. Der Rand
     // fällt über ±rand weich (smoothstep; rand = max(randM, randMinM der Stufe) — die ferne Stufe trägt 2-m-Texel,
     // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen
-    // das Maximum.
+    // das Maximum. DIE DECKENDE FORM (`deckt`, der Grund der Häuser): in ihr liest jede bilineare Probe (Shader und
+    // `_wegeFeldAt`) volle Erde — der Kasten wächst um die Spanne der Probe (je Welt-Achse ein Texel, in seinen Rahmen
+    // gedreht t · (|cos φ| + |sin φ|)) und seinen weichen Rand (½ Texel der Stufe, nie der Feldweg-Boden `randMinM`): der
+    // Übergang liegt ganz vor der Wand, wo die Büschel ohnehin ihre Reichweite halten (`erdbauGrund`).
     _wegeKarteMale(stufe, f) {
         if (f.kanal < 0) return; // eine Fläche ohne Boden-Kanal (der Gras-Anger) bleibt Wiese
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
-        const rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        let rand;
+        if (f.deckt) {
+            if (f.typ !== "kasten") throw new Error(`Wege-Karte: nur ein Kasten deckt (Form ${f.typ})`);
+            rand = t / 2;
+            const w = t * (Math.abs(Math.cos(f.phi || 0)) + Math.abs(Math.sin(f.phi || 0))) + rand;
+            f = { ...f, ex: f.ex + w, ez: f.ez + w };
+        } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1963,9 +1972,11 @@ class AnazhRealm_siedlung_satz {
             for (const f of sd.formen) this._wegeKarteMale(stufe, f);
         }
         // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes, deren Boden der Grund ist (boden 0: der Turm, das Rund,
-        // das Pfahlhaus; der Erdbau `grund`, gelaende-core), malt Kanal 0 mit hartem Rand (ein halber Texel) — der Halm des
-        // Boden-Stoffs liest dort Erde statt Wiese; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden (`erdbauSchnitt`),
-        // dort malt keine Box (Radeon kalt: der Neu-Maler 1 → 17 ms, als jede Box malte)
+        // das Pfahlhaus; der Erdbau `grund`, gelaende-core), malt Kanal 0 DECKEND (`deckt`) — der Halm des Boden-Stoffs liest in
+        // der GANZEN Box Erde statt Wiese; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden (`erdbauSchnitt`),
+        // dort malt keine Box (Radeon kalt: der Neu-Maler 1 → 17 ms, als jede Box malte). Bis 23.10. lag der weiche Rand (±½
+        // Texel) AUF der Wand: im Turm des haus_gotisch (2,2 m) las der Boden 0,1–0,3 m vor der Wand 0,39–0,9 Erde, die Wiese
+        // schien durch (vegetation.K4, Radeon: 7 290 Boden-Pixel)
         const E = this._erdbauLage();
         if (E && E.gruende)
             for (const g of E.gruende) {
@@ -1989,7 +2000,7 @@ class AnazhRealm_siedlung_satz {
                         ez,
                         phi,
                         halb: 0,
-                        rand: S.texelM / 2,
+                        deckt: true,
                     });
                 }
             }

@@ -1837,7 +1837,7 @@ async function kreaturProben(r, T, opts) {
             decke(restore, "_leibPaar", () => () => false);
         }
         if (taeter === "abstand-spieler") {
-            // die Separation und der Weg des Gangs ohne den Spieler (V18.536): ein Nachbar drückt das vordere Tier in ihn
+            // die Separation und der Weg des Gangs ohne den Spieler: ein Nachbar drückt das vordere Tier in ihn
             const ohne = (alt) =>
                 function (...a) {
                     const p = this.state.playerMesh;

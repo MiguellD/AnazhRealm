@@ -480,7 +480,7 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Wasser-Klang (Welle 5 Klang) ###
+    // ### Wasser-Klang ###
     // Das Ohr hört das Wasser über den Hör-Ring (klang:UMWELT.ohr): je Punkt nass (Boden unter dem Spiegel) und
     // Strömung (`_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
     // Pegel — nah hörbar, 5 km fern stumm. Der Ring wird hier einmal ganz gefegt (der Takt fegt ohr.probenJeFrame).
@@ -746,7 +746,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 1) State-Feld existiert (Map)
         // das Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
-        // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
+        // die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         r._drainPendingWaterIso();
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
@@ -834,7 +834,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             // Der EINE Render-Pfad ist das Zell-Oberkanten-Sheet ("chunk-water-cellsheet"); der Debug-Zwilling
-            // „Zell-Iso" ist gefallen (Welle L, W-kD7).
+            // „Zell-Iso" ist gefallen (W-kD7).
             out.sampleMeshUserData = !!sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet";
             // Wasser ist eine FLÄCHE, kein Volumen: Material BackSide (von oben sichtbar, von unten
             // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
@@ -880,7 +880,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     const nz = e1x * e2y - e1y * e2x;
                     const nl = Math.hypot(nx, ny, nz) || 1e-9;
                     const nyn = ny / nl;
-                    // V18.4 W1: nur die Unterseite (ny>0.2) verworfen → undersideTris ≈ 0;
+                    // nur die Unterseite (ny>0.2) verworfen → undersideTris ≈ 0;
                     // Oberseite + Ufer/Fluss-Drops (fast-vertikal) bleiben (top-only reverted).
                     if (nyn > 0.2) undersideTris++;
                     else topsTris++;
@@ -1216,7 +1216,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
 
         // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_koerperBodenUnter`:
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
-        // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
+        // EINE Wasser-Wahrheit am Körper (`_koerperWasser`) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         out.ohneZweiteWahrheit = window.__fehlt(r._creatureWaterContextAt, /_waterLevelAt\(|_isAboveWaterAt\(/);
 
@@ -1600,7 +1600,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
                 }
         }
         out.hoehle = hoehle;
-        // Worker-Snapshot trägt hydroBand mit (V9.91 — Cells-Klassifikations-
+        // Worker-Snapshot trägt hydroBand mit (Cells-Klassifikations-
         // Skip ausserhalb [bottom..top]) → das CELL-MODELL ist tragend
         const wsnap = r._voxelWorkerSnapshotState();
         out.hydroBandPresent = !!wsnap.hydroBand && typeof wsnap.hydroBand.top === "number";
@@ -2196,7 +2196,7 @@ async function checkBandScatterWasserAB(ctx) {
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
 }
 
-// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b, V18.345): der Worker baut den
+// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b): der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
 // je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.

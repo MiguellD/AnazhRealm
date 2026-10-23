@@ -27,7 +27,7 @@ function sha256Hex(buf) {
 }
 
 // ---------------------------------------------------------------------------
-// Kommentar-Stripper (die V18.267-Falle: der Code darf das Wort im KOMMENTAR tragen,
+// Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
 // der CODE darf es nicht — jeder Source-Grep läuft über den gestrippten Body).
 // Strings/Templates bleiben ERHALTEN (die Stempel-Probe sucht "cores.manifest.json",
 // das als String-Literal im Code lebt).

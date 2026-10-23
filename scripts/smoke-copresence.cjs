@@ -1,4 +1,4 @@
-// W18-B (gigant-plan F3; world-portal-w18-plan §5) — End-to-End-Beweis der
+// W18-B — End-to-End-Beweis der
 // KO-PRÄSENZ-INJEKTION: zwei echte Browser, ein echtes WebRTC-Mesh, eine
 // echte single-player Fremd-Welt (worlds/begegnung, null-origin sandboxed,
 // OHNE eigenen Multiplayer-Begriff) — und die beiden SEHEN sich darin.

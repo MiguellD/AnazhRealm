@@ -1733,7 +1733,7 @@ function fadenHuelle(klonBytes) {
 }
 function fadenSeite(bytesQ, huelleQ, sync) {
     const klonBytes = new Function("return " + bytesQ)();
-    const F = (window.__faden = { fenster: "boot", t: {}, geboren: [], hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] } });
+    const F = (window.__faden = { fenster: "boot", t: {}, hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] } });
     Error.stackTraceLimit = 40; // die Kette bis zur Sync-Stelle (V8 hält sonst 10 Rahmen)
     const von = new WeakSet();
     const bytes = new WeakSet();
@@ -1789,7 +1789,6 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         const quelle = `(${huelleQ})(${bytesQ});\n${innen}`;
         const w = new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), opts);
         w.__faden = name;
-        F.geboren.push(name);
         return w;
     };
     W.prototype = Roh.prototype;
@@ -1845,22 +1844,22 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         },
     });
     // die Kopien empfangener Bytes: ein NEUES Array aus ihnen (set in einen bestehenden Puffer ist Verbrauch)
-    const kopie = (src, b) => zu("kopie", rufer(), b);
+    const kopie = (b) => zu("kopie", rufer(), b);
     const da = (x) => !!x && (bytes.has(x) || (ArrayBuffer.isView(x) && bytes.has(x.buffer)));
     const TA = Object.getPrototypeOf(Int8Array).prototype;
     const [sl, abs, af] = [TA.slice, ArrayBuffer.prototype.slice, Array.from];
     TA.slice = function (...a) {
         const r = sl.apply(this, a);
-        if (da(this)) kopie(this, r.byteLength);
+        if (da(this)) kopie(r.byteLength);
         return r;
     };
     ArrayBuffer.prototype.slice = function (...a) {
         const r = abs.apply(this, a);
-        if (da(this)) kopie(this, r.byteLength);
+        if (da(this)) kopie(r.byteLength);
         return r;
     };
     Array.from = function (q, ...a) {
-        if (da(q)) kopie(q, q.byteLength);
+        if (da(q)) kopie(q.byteLength);
         return af.call(this, q, ...a);
     };
     for (const n of [
@@ -1876,7 +1875,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         const K = window[n];
         const P = new Proxy(K, {
             construct(t, a, nt) {
-                if (ArrayBuffer.isView(a[0]) && da(a[0])) kopie(a[0], a[0].byteLength);
+                if (ArrayBuffer.isView(a[0]) && da(a[0])) kopie(a[0].byteLength);
                 return Reflect.construct(t, a, nt === P ? t : nt); // eine Unterklasse behält ihren Prototyp
             },
         });
@@ -1978,10 +1977,9 @@ async function faden(page, fehler, url) {
     const dauer = { boot: await takt(0) };
     await fenster("fahrt");
     dauer.fahrt = await takt(1800);
-    let selbst = null;
     if (SELBSTTEST) {
         await fenster("selbst");
-        selbst = await page.evaluate(async () => {
+        dauer.selbst = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const G = globalThis.__gelaendeCore;
             const t0 = performance.now();
@@ -2016,7 +2014,6 @@ async function faden(page, fehler, url) {
             w.terminate();
             return performance.now() - t0;
         });
-        dauer.selbst = selbst;
     }
     const F = await page.evaluate(() => JSON.parse(JSON.stringify(window.__faden)));
     const mb = (b) => (b / 1e6).toFixed(2);
@@ -2043,7 +2040,6 @@ async function faden(page, fehler, url) {
         );
         for (const [n, o] of teile) if (summe(o)) console.log(`         ${n}: ${top(o)}`);
     }
-    console.log(`  Fäden: ${F.geboren.join(" · ")}`);
     console.log(
         `  Hydrosphären: ${F.hydro.faden} aus dem Faden · ${F.hydro.rot.length} im Haupt-Faden${F.hydro.rot.length ? " — " + F.hydro.rot.join(" | ") : ""}`
     );

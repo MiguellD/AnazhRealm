@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// DIE APPARAT-LINSE — gate:apparat (ULTRAGUSS U1, V18.452)
+// DIE APPARAT-LINSE — gate:apparat
 //
 // Gesetz #0: nach der Fehler-Klasse die LINSE bauen. Rohe `.toString()`-Quelltext-Zitate wacht seit D3d die
 // Quelltext-Wand (gate:source-probes); hier steht der typeof-Ratchet — der Bestand darf nur SINKEN.
@@ -32,14 +32,11 @@ const stammLib = require("./lib/stamm.cjs");
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
 
-// V18.462 — DER typeof-RATCHET (ultraguss U1-Folge, die Voll-Wanderung ist
-// tabellen-getrieben offen): 878 namens-verankerte `typeof … === "function"`-
+// DER typeof-RATCHET (die Voll-Wanderung ist
+// tabellen-getrieben offen): die namens-verankerten `typeof … === "function"`-
 // Existenz-Proben leben im Apparat. Der Bestand darf NUR SINKEN — jede neue
 // Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
 // (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
-// Welle 5 Klang: 878 → 874 (die Proben auf _buildHydroAudioLayer · _tickHydrosphereAudio · _pointSegDist2D ·
-// _tagToFrequency fielen mit ihren Methoden); Integration W5-Klang: 874 → 873 (_playCreatureTaskPing fiel — das Tier
-// antwortet mit seiner Stimme).
 const FROZEN_TYPEOF = 873;
 
 function countTypeof(src) {
@@ -448,7 +445,7 @@ function selftest() {
         if (parameterAnker(datei, q, stammFake).length) fails.push(`Klinge 4 feuert ohne Kopf-Muster: ${datei} ${q}`);
     if (!parameterAnker("probe.cjs", `const r = /${frei[1]}/;`, stammFake).some((x) => /Klinge 4/.test(x)))
         fails.push("Klinge 4: die freie Stelle schweigt auch in fremder Datei");
-    // Klinge 1 (V18.462): der typeof-Ratchet feuert bei Injektion über den Bestand.
+    // Klinge 1: der typeof-Ratchet feuert bei Injektion über den Bestand.
     const injectT = 'typeof r.probe === "function";\n'.repeat(FROZEN_TYPEOF + 1);
     if (!scanRatchet(injectT).errs.some((e) => /typeof-Ratchet/.test(e)))
         fails.push("typeof-Ratchet feuert nicht bei Injektion");

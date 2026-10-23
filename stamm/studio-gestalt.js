@@ -599,7 +599,14 @@ class AnazhRealm_studio_gestalt {
     // Overrides): die Prägung des Orts tritt DAZU, sie ersetzt sie nie (ein geprägter Solitär wuchs sonst als Bestand).
     // Rückgabe: die vereinte Prägung, null ohne jede (ein leeres ov ist keine).
     _foundryGestaltOv(preset, gestalt, ov) {
-        const hat = ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+        let hat = ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+        // Der Same eines Studio-Werks (`__gestalt`, der Übergabe-Kanal) wählt die Gestalt (`_foundryGestaltFor`) und reist als
+        // seed — nie im ov zum Kern.
+        if (hat && "__gestalt" in hat) {
+            hat = Object.assign({}, hat);
+            delete hat.__gestalt;
+            if (!Object.keys(hat).length) hat = null;
+        }
         const T = this._foundryGestalten(preset);
         if (!(T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T)) return hat;
         return hat ? Object.assign({}, hat, AnazhRealm.FREISTAND_OV) : AnazhRealm.FREISTAND_OV;
@@ -609,6 +616,10 @@ class AnazhRealm_studio_gestalt {
     // `Vk` (optional) reicht die Gestalten-Zahl des Kerns durch (der gefühlte Baum fragt synchron, `_baumGestaltTeile`). Die
     // Hülle folgt der Gestalt: wartete sie oder wechselte die Gestalt des Orts, fühlt der Baum neu (`_populateBlockerAABBs`).
     _foundryGestaltFor(entry, preset, Vk) {
+        // DAS WERK EINES STUDIOS trägt seinen Samen im Stempel (`studioOv.__gestalt`, der Übergabe-Kanal): es steht in der
+        // Gestalt, die die Bühne zeigte — vor dem Ort und dem Samen des Setzens.
+        const werk = entry && entry.studioOv && entry.studioOv.__gestalt;
+        if (Number.isInteger(werk) && werk >= 0) return werk;
         const p = entry && entry.position;
         if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);
         const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];

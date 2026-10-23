@@ -62,7 +62,7 @@ async function checkBandV1757HeldSlot(ctx) {
         r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
         out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        // Welle L (K-D15): die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
+        // die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
         out.heldKeinPanzer = armed.defense === base.defense && armed.hpMax === base.hpMax;
 
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
@@ -108,9 +108,9 @@ async function checkBandV1757HeldSlot(ctx) {
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
 }
 
-// V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
+// das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
-// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
 async function checkBandV1761ForgeImplement(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -211,7 +211,7 @@ async function checkBandV1761ForgeImplement(ctx) {
     check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
 }
 
-// V17.62 S3-B (kampf-plan §11.7) — der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
+// der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
 // geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
 // geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
 async function checkBandV1762ForgeMeaningful(ctx) {
@@ -310,9 +310,9 @@ async function checkBandV1762ForgeMeaningful(ctx) {
     );
 }
 
-// V17.63 S4 (kampf-plan §11.7) — Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
+// Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
-// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+// routet nach Rolle. KONSUM (nicht Existenz).
 async function checkBandV1763ForgeArmor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -430,9 +430,9 @@ async function checkBandV1763ForgeArmor(ctx) {
     );
 }
 
-// V17.65 S6 (kampf-plan §11.7, §11.3-Faden 6) — Trank brauen: der Werk-Akt zieht die Zutaten (die
+// Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
-// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
 async function checkBandV1765BrewConsumable(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -554,7 +554,7 @@ async function checkBandV1766FertigenFlow(ctx) {
                 { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
-        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
+        // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
         // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
@@ -772,7 +772,7 @@ async function checkBandV1772Library(ctx) {
         out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
 
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
-        //     Snapshot des Player-States, danach restauriert (V17.66).
+        //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
@@ -942,7 +942,7 @@ async function checkBandV1773HeldMesh(ctx) {
     );
 }
 
-// V17.84 U6 (resonanz-system §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
+// die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
 // Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
 // Form). NUR Custom-Avatare — die Built-in-Seele (human) bleibt neutral (kein Balance-Bruch).
 async function checkBandV1784AvatarFormFit(ctx) {
@@ -1041,9 +1041,9 @@ async function checkBandWelle6DSoul(ctx) {
         if (!C || !C.STAT_FROM_TAGS) return null;
         const out = {};
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
-        // V18.61 Ich-F — die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
+        // die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
 
-        // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
+        // Seele = Bauplan aus Körper-Teilen
         const defs = r.playerSoulDefs;
         // ALTLASTEN-NULL: die Built-in-Def-Menge ist der Mensch; die Tier-Körper
         // leben als koerper_-Baupläne (derselbe bodyParts-Vertrag).
@@ -1084,7 +1084,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.computedStatsHasAll =
             computed &&
             computed.stats &&
-            // V17.51 Kampf Phase A — das Kampf-Trio fließt durch DIESELBE Pipeline.
+            // das Kampf-Trio fließt durch DIESELBE Pipeline.
             [
                 "hpMax",
                 "damage",
@@ -1173,7 +1173,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-        // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
+        // UI im DOM (Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
@@ -1312,7 +1312,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.deathWoundIntensity = 0;
         r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
-        // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
+        // Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
         r.setGameMode("pfad");
         r.state.blueprints.wound_test_bp = {
@@ -1548,7 +1548,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // V17.57 W2-B — ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
         // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
@@ -1635,12 +1635,12 @@ async function checkBandWelle6DSoul(ctx) {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
-        // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
+        // Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
         r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
+        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
         out.hasPhoenixState = "respawnGraceUntil" in r.state.player;
@@ -2142,7 +2142,7 @@ async function checkBandWelle6DSoul(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // V18.62 Ich-H — der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
+        // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
         // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
         // Datenschicht (define_soul + die Brücke lesen sie).
         // Der parallele Ich-Soul-Editor existiert NICHT mehr (in die Werkstatt gewandert)
@@ -2170,7 +2170,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
-        // V18.101 (Test wandert, V9.56-i): dynamisch gegen die def-Länge —
+        // dynamisch gegen die def-Länge —
         // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
             r.state.customSouls.test_clone_a &&
@@ -2311,9 +2311,9 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6dResults) {
         check(
-            // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
+            // STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
-            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            // Die feste Satz-Assertion wandert mit.
             "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
@@ -2383,7 +2383,7 @@ async function checkBandWelle6DSoul(ctx) {
     }
 }
 
-// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+// PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -2458,7 +2458,7 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
+        // E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
         // steht neben der Hotbar + der Tausch-Key ist gebunden.
         out.e8Swap = (() => {
@@ -2817,7 +2817,7 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
@@ -3185,7 +3185,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // Disziplin — die meisten Bauplane sind voll, ein Save trägt nur die echt
         // gebrauchten). Float-tolerant (Math.max/min kann minimal driften).
         if (heldBp) {
-            // RE-FETCH (V18.180-Lehre, V9.82): zwischen W6-W11 wurde forge/strike/
+            // RE-FETCH (Lehre): zwischen W6-W11 wurde forge/strike/
             // repair gerufen — jeder Pfad MAG state.blueprints[heldName] durch
             // Restore/Snapshot-Tanz neu referenzieren. Frische Referenz holen.
             heldBp = r.state.blueprints[heldName];
@@ -3282,7 +3282,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
+// Γ1-LESART-5 Ψ2-NASE Foundation:
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
 // als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {

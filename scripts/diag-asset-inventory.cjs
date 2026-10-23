@@ -25,7 +25,7 @@
 //                ODER ein UNBEKANNTER Emitter ODER
 //                eine unbekannte inventar-Klasse — der Fallback ist bewusst FAIL-CLOSED:
 //                was die Linse nicht erklären kann, ist rot, bis es klassifiziert wird
-//                (die V18.346-Disziplin: die Teilmenge wird über IDENTITÄT klassifiziert,
+//                (die Disziplin: die Teilmenge wird über IDENTITÄT klassifiziert,
 //                nie über das gemessene Signal selbst).
 //
 // HÄLFTE 2 — DIE INVENTUR (H3: requested ⊆ visible|cached): jeder on-demand angefragte
@@ -34,11 +34,11 @@
 // (f.cache trägt den Key — auch ein resolved-leeres/null-Verdikt zählt, das ist eine
 // bewusste Antwort) oder SICHTBAR ATTESTIERT (die Szene/der Impostor-Atlas/das Gras-Memo
 // tragen eine Gestalt dazu). Ein Key, der angefragt wurde und weder geliefert noch
-// resident ist, IST das stille Verhungern (die V18.309-Klasse: pending klemmt, die Queue
+// resident ist, IST das stille Verhungern (die Klasse: pending klemmt, die Queue
 // verhungert, err null). BEWUSSTE LRU-Räumungen (f.lruEvicted, das reine Inventur-Buch
 // am Cache-Chokepoint) sind KEIN Verlust — der Key bleibt re-anfragbar.
 //
-// Erwartung (V18.433+): 0 VERLETZUNGEN · 0 verlorene Keys · 0 hängende pending.
+// Erwartung: 0 VERLETZUNGEN · 0 verlorene Keys · 0 hängende pending.
 // --selftest injiziert NACH der echten Messung (a) drei Fremd-Emitter (Grammatik-Baum-
 // Gruppe + nackter Unbekannter + unbekannte inventar-Klasse) und (b) einen synthetisch
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
@@ -111,7 +111,7 @@ const server = statikServer();
         // zeichnet nie, ihre Senken stünden leer und würden als „leerer Pool" übersprungen. Die Linse legt den Satz
         // selbst (scripts/lib/wiese-sicht.cjs) — jede Senke muss danach als STUDIO-Emitter im Zensus stehen.
         o.wiese = window.__wieseSicht(r);
-        // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert, V18.346):
+        // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert):
         const st = r.state;
         const grassSet = new Set();
         if (st.voxelChunkGrass) for (const m of st.voxelChunkGrass.values()) if (m) grassSet.add(m);
@@ -134,7 +134,7 @@ const server = statikServer();
                 if (!meshKeys.has(g.mesh)) meshKeys.set(g.mesh, []);
                 meshKeys.get(g.mesh).push(String(k));
             }
-        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
+        // die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
         // Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
         if (st.nahWiese)
             for (const a of st.nahWiese.senken.values())
@@ -153,7 +153,7 @@ const server = statikServer();
             for (const [art, s] of st.chunkSaetze)
                 if (s.spec && s.spec.userData && s.spec.userData.streuSatz && streuKeys.has(art))
                     meshKeys.set(s.mesh, streuKeys.get(art));
-        // Welle 6 — der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
+        // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
@@ -163,7 +163,7 @@ const server = statikServer();
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =
             /(^|[#@:_])(baum_|strauch|busch|gras|blume|farn|pilz|kiesel|fels|findling|geroell|basalt|sediment|zacken|kristall|stamm_gefallen|totholz|grown_)/i;
-        // Welle B: der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
+        // der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
         const leafOf = (k) => {
             const i = k.indexOf("#");
             if (i >= 0) return k.slice(i + 1);
@@ -200,7 +200,7 @@ const server = statikServer();
         // QUELLE geklärt statt geraten):
         //   (streu-klein   — die Senken der Nah-Streu sind STUDIO, über ihren Leaf-Key oben geklärt;
         //                    ein streu-klein-Stempel OHNE Key ist unbekannt → Verletzung. deko-fernfeld fiel.)
-        //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
+        //   boden-satz     — _chunkSatz("boden") (der Terrain-Ring als EIN Satz, Stitch-Bänder
         //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
         //   dorf-rauch     — _dorfRauchZeichnen (der Rauch der Siedlungs-Kamine, EIN Satz; nur, wo ein Dorf raucht — ohne
@@ -281,7 +281,7 @@ const server = statikServer();
                 // 2) Welt-Substanz-Identitäten:
                 if ((node.userData && node.userData.isHydrosphere) || waterSet.has(node))
                     return tally("substanz", "wasser");
-                // V18.381 — das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
+                // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
                 if (node.userData && typeof node.userData.hydroKind === "string")
                     return tally("substanz", "wasser (" + node.userData.hydroKind + ")");
@@ -320,10 +320,10 @@ const server = statikServer();
 
         o.zensus = census();
 
-        // ── W — die Nah-Wiese im Zensus (Welle 6): der Ring am Start trägt Büschel, jede Senke mit Soll (die Büschel ihrer
+        // ── W — die Nah-Wiese im Zensus: der Ring am Start trägt Büschel, jede Senke mit Soll (die Büschel ihrer
         // Stufe im Blick der Linse, `__wieseErwartet`) ist nach dem Sicht-Satz belegt, und jede belegte Senke steht als
         // STUDIO-Emitter im Zensus (über ihren Foundry-Leaf-Key) — sonst ist die Wiese leer bewiesen. Ein dünner Ring (der
-        // Waldboden unter der Kronen-Karte, Welle 5) trägt Stufen ohne Büschel im Blick: dort ist leer richtig.
+        // Waldboden unter der Kronen-Karte) trägt Stufen ohne Büschel im Blick: dort ist leer richtig.
         const wieseImZensus = (z) =>
             Object.entries(z.detail.studio)
                 .filter(([k]) => k.indexOf("[nahWiese#") >= 0)

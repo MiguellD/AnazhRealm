@@ -1485,7 +1485,7 @@ function wasserWagen(opts) {
             for (let k = 0; k < (takte || 40); k++) {
                 pm.x = x;
                 pm.z = z;
-                // der Ritt im Sim-Schritt (Welle L fahren: Lage, Wasser, Sitz), danach der Frame-Tick (nur Sicht)
+                // der Ritt im Sim-Schritt (Lage, Wasser, Sitz), danach der Frame-Tick (nur Sicht)
                 r._rittSchritt(0.05);
                 r._tickMountedMovement(0.05);
             }

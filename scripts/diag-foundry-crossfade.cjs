@@ -432,8 +432,8 @@ async function runPartB() {
                 takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
                 max: 500,
             });
-        // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
-        // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
+        // DER STRAUCH (kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
+        // (aLodLevel 2) und das Billboard. Eigener Ort,
         // eigener Sweep.
         const sx = px + 400,
             sz = pz;
@@ -495,8 +495,8 @@ async function runPartB() {
         res.visH = visH;
         res.factor = factor;
         const stageOfKey = (k) => {
-            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
-            // Welle A: der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
+            // der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
+            // der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
             // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — die L0
             // steht auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
             if (/#S$/.test(k)) return null;

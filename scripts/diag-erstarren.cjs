@@ -15,7 +15,7 @@
 //   (b) KEIN HARTES ERSTARREN — nach dem Settle kein einzelner Tick > 2 s
 //       und < 5 % der Ticks > 250 ms (Container-GC-Rauschen erlaubt,
 //       Freeze-Klassen nicht).
-//   (c) DIE MEMBRAN-RECOMPILE-WAND (der V18.469-Fix als stehende Probe):
+//   (c) DIE MEMBRAN-RECOMPILE-WAND:
 //       ein Tor-Material wird GENAU EINMAL gebaut — den 180-m-Sichtring
 //       verlassen + zurückkehren löst KEINEN Neu-Bau aus (vorher: TSL-Bau
 //       + Pipeline-Compile je Wieder-Annäherung + Geometrie-Leck), der
@@ -50,7 +50,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const res = {};
             if (!s.playerMesh) return { error: "kein Spieler" };
 
-            // ── Settle: die Welt plateau-pumpen (V18.273-Lehre) ──
+            // ── Settle: die Welt plateau-pumpen ──
             {
                 res.settleTicks = await window.__weltStehtNach(() => {
                     try {

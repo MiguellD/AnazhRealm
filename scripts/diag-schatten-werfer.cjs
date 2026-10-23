@@ -12,7 +12,7 @@
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
-//   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
+//   K7  der Takt hält die Box (`_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
 //       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
 //       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
 //   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht
@@ -283,13 +283,14 @@ function probe(selbsttest) {
         }
         aus.k7 = { gehalten, neuGelegt, wirft };
     }
-    // K8 — DIE WAHL HÄLT ÜBER DIE STUFEN DER SONNE (Welle C, der Licht-Rand `PASS_WAHL.lichtRandTexel`): dreht das Licht seit
+    // K8 — DIE WAHL HÄLT ÜBER DIE STUFEN DER SONNE (der Licht-Rand `PASS_WAHL.lichtRandTexel`): dreht das Licht seit
     // der Wahl um weniger, als das Gesetz des Halts erlaubt (`_wahlHaelt`: der halbe Licht-Rand über den längsten Licht-Weg),
     // legt jede Kaskade ihre Box neu (die Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden
     // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
     // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft:
     // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
-    // den Licht-Rand); die Grenze des Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
+    // den Licht-Rand) und im Halt des Atmens (`haltM` 0,02 — der Geh-Halt trug ihn); die Grenze des
+    // Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
     // Drehung) · "ohneRand" (S12: `_passTrifft` ohne Licht-Rand) · "ganzerRand" (S13: die Halb-Regel fällt, der Halt reicht
     // bis zum ganzen Rand).
@@ -298,7 +299,7 @@ function probe(selbsttest) {
         const C = r.constructor;
         const PW0 = C.PASS_WAHL;
         const P = Object.getPrototypeOf(r);
-        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
+        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]), haltM: 0.02 }));
         if (art === "untreu")
             r._passLageHaelt = function (a, s, an) {
                 if (s[84] === 0 && s[27] === 1) return true;
@@ -677,7 +678,7 @@ function probe(selbsttest) {
     zwei.userData._sichtHaupt = true;
     map.set("__w7:zwei", zwei);
     const passeAlt = (kamera, nach) => {
-        // DIE ALTE REGEL (bis V18.528): jeder Pass liest das Haupt-Urteil
+        // DIE ALTE REGEL: jeder Pass liest das Haupt-Urteil
         for (const bg of map.values()) if (bg.userData._sichtHaupt !== undefined) bg.visible = bg.userData._sichtHaupt;
         void kamera;
         void nach;
@@ -776,7 +777,7 @@ function probe(selbsttest) {
             bauGeprueft: 0,
         };
         // das Soll: die Zellen, deren Hülle das EINE Gesetz in der Lage des Passes trifft (erst der Bereich, dann seine Zellen);
-        // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
+        // eine Höhlen-Zelle zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
         // prüft gate:hoehlen-sicht (Strahlen gegen den ganzen Boden-Satz), hier zählt die Treue des Abschnitts
         const wahl = (s, L) => {
             const liste = [];
@@ -878,7 +879,7 @@ function probe(selbsttest) {
         r._kaskadenPassen(csm);
     }
 
-    // ── W8: DIE INSTANZ-WAHL JE PASS (Welle 7) — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
+    // ── W8: DIE INSTANZ-WAHL JE PASS — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
     // Frustum schneiden (Schatten-Pass: die Licht-Kapsel gegen die Scheibe der Kaskade) und deren Stufen-Maske vom Auge etwas
     // behält; nach dem Pass zählt sie wieder alle. Gebaute Bäume an bekannten Orten (eine L1, eine L0, ein Zwilling, je über
     // den Produktions-Chokepoint `_archInstanceGroupFor`/`_archGroupAlloc`/`_lodSlotStamp`): je Pass die gezeichnete Menge
@@ -1084,7 +1085,7 @@ function probe(selbsttest) {
         };
         if (abweichung === "zellen")
             r._chunkSatzPass = function (kamera, nach, k, S2) {
-                // die gehaltene Wahl gilt nicht (Welle C: steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
+                // die gehaltene Wahl gilt nicht (steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
                 // Leser urteilte nie, S10 war blind, sobald kein Satz seit dem Haupt-Urteil wuchs: „Zellen falsch 0")
                 for (const sz of this.state.chunkSaetze.values()) for (const a of sz.abschnitte.values()) a.wahl = null;
                 return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
@@ -1184,7 +1185,7 @@ function probe(selbsttest) {
                     res.instanz = Z.mesh.count > 0;
                 }
                 for (const sz of saetze) {
-                    // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
+                    // eine Höhlen-Zelle zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
                     const stempel = sz.hoehle ? sz.hoehle.stempel : 0;
                     const menge = new Set(
                         [...soll.get(sz)].filter((zl) => zl.knoten === undefined || zl.knoten.sicht === stempel)
@@ -1220,7 +1221,7 @@ function probe(selbsttest) {
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. Ein Gefallener liegt in der
-    // Szene (state.leichname, mit Schatten bis er versunken ist — Welle LF kampf Nachbesserung 4): die Probe legt einen hin,
+    // Szene (state.leichname, mit Schatten bis er versunken ist): die Probe legt einen hin,
     // und die Box kennt ihn wie ein lebendes Tier (`_kaskadenWerferOben` liest beide Listen). ──
     {
         const altMax = st.maxCreatures;
@@ -1247,7 +1248,7 @@ function probe(selbsttest) {
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
         ]);
-        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze, Welle 6) trägt seine Bereichs-Hüllen in die Box
+        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze) trägt seine Bereichs-Hüllen in die Box
         // (`_kaskadenHuellen`)
         const satzWerfer = new Set();
         if (st.chunkSaetze)
