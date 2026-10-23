@@ -279,9 +279,7 @@ class AnazhRealm_siedlung_bewohner {
         g.userData.heim = b.heim;
         g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
         g.scale.setScalar(b.groesse);
-        const h0 = this._koerperBodenUnter(b.x, NaN, b.z); // der Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach)
-        const h = Number.isFinite(h0) ? this._bewohnerTritt(b.x, b.z, h0, h0) : 0; // an der Tür auf ihrer Stufe
-        g.position.set(b.x, h + AnazhRealm.PLAYER_FOOT_OFFSET * b.groesse, b.z);
+        this._bewohnerStellen(b, g, b.x, b.z);
         g.rotation.y = b.blick;
         gl.haltungFest = true;
         const teile = {};
@@ -307,6 +305,15 @@ class AnazhRealm_siedlung_bewohner {
         this.state.scene.add(g);
         b.leib = g;
         if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
+    }
+
+    // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
+    // Stufe (`_bewohnerTritt`) — die Sohle PLAYER_FOOT_OFFSET unter dem Ursprung (Lehre 22). Leser: die Geburt, die Ankunft.
+    _bewohnerStellen(b, g, x, z) {
+        const h0 = this._koerperBodenUnter(x, NaN, z);
+        const h = Number.isFinite(h0) ? this._bewohnerTritt(x, z, h0, h0) : 0;
+        g.position.set(x, h + AnazhRealm.PLAYER_FOOT_OFFSET * b.groesse, z);
+        b.grundY = undefined; // der Grund des Schritts liest neu
     }
 
     // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): die
@@ -469,7 +476,9 @@ class AnazhRealm_siedlung_bewohner {
     // DER TAG (mensch.K2): die Uhr der Welt ist das Wort des Spielers — je `BEWOHNER.planH` Stunden (oder nach einem Sprung
     // der Uhr) liest jeder Bewohner seinen Plan (`_bewohnerZiel`, koerper-core `tagesPlan`); wer ein neues Ziel hat, GEHT
     // den Weg des Dorf-Plans (`_bewohnerWeg`, höchstens `wegeJeTakt` neue Wege je Takt) im Tempo seines Leibs
-    // (`_bewohnerSchritt`) auf der Raten-Leiter (`_creatureAnimDiv`), wer drinnen ist, zeichnet nirgends.
+    // (`_bewohnerSchritt`) auf der Raten-Leiter (`_creatureAnimDiv`), wer drinnen ist, zeichnet nirgends. Wer keinem Zuschauer
+    // ging — geboren nach der Abwesenheit, nach einem Sprung der Uhr um `sprungH` —, steht, wo sein Tag ihn sieht
+    // (`_bewohnerAnkunft`, je Takt höchstens `ankunftJeTakt`).
     // Je Leib: jenseits der Nah-Grenze der Glieder-Satz (`_kzLeib`, echte GPU), diesseits der Satz seiner Gestalt
     // (`_bewohnerSatzSchreiben`, neu nur, wenn eine Lage oder Wahl wechselt) — nur die Nah-Wahl lebt als Leib: der
     // Stufen-Schalter (`_gelenkStufe`) und das EINE Gang-Gesetz (`_gaitTick` → `_animateHuman`: Gang, Stand mit Kontrapost).
@@ -487,6 +496,7 @@ class AnazhRealm_siedlung_bewohner {
         const stunde = (((tag % 1) + 1) % 1) * 24;
         let geburten = 0;
         let wege = 0;
+        let ankuenfte = 0;
         for (const S of alle.values()) {
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
@@ -505,6 +515,7 @@ class AnazhRealm_siedlung_bewohner {
                 S.gestalten = this._bewohnerGestalten(S);
                 S.liste = w.value;
                 S.planStunde = null;
+                S.uhrStunde = stunde;
                 this._bewohnerWacheSetzen(S);
             }
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
@@ -516,6 +527,11 @@ class AnazhRealm_siedlung_bewohner {
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
             bewegt.length = 0;
+            // DER SPRUNG DER UHR (mensch.K2): springt sie um sprungH oder mehr (das Wort des Spielers), stellt sich jeder Leib
+            // dorthin, wo sein Tag ihn jetzt sieht (`_bewohnerAnkunft`)
+            const dU = Math.abs(stunde - S.uhrStunde);
+            S.uhrStunde = stunde;
+            if (Math.min(dU, 24 - dU) >= BW.sprungH) for (const b of S.liste) if (b.leib) b.ankunft = true;
             const dS = S.planStunde == null ? 12 : Math.abs(stunde - S.planStunde);
             if (Math.min(dS, 24 - dS) >= BW.planH) {
                 S.planStunde = stunde;
@@ -530,7 +546,8 @@ class AnazhRealm_siedlung_bewohner {
                     if (b.leib === false || geburten >= BW.geburtenJeTakt) continue;
                     const G = S.gestalten[b.gestalt];
                     if (!memo || G.keys.some((k) => !memo.has(k))) continue;
-                    // geboren wird, wo die Uhr ihn sieht: am Ort seines Plans (drinnen an seiner Tür, ungezeichnet)
+                    // geboren wird am Ort seines Plans (drinnen an seiner Tür, ungezeichnet) — und dort steht er, wo die Uhr
+                    // ihn sieht: die Ankunft geht den Tag nach, den keiner sah
                     b.x = b.ziel.x;
                     b.z = b.ziel.z;
                     b.blick = Number.isFinite(b.ziel.blick) ? b.ziel.blick : 0;
@@ -541,9 +558,17 @@ class AnazhRealm_siedlung_bewohner {
                     b.drinnen = b.drinnenSoll;
                     b.leib.userData._drinnen = b.drinnen;
                     b.wegRest = 0;
+                    b.ankunft = true;
                 }
                 const g = b.leib;
                 const u = g.userData;
+                if (b.ankunft && ankuenfte < BW.ankunftJeTakt) {
+                    b.ankunft = false;
+                    ankuenfte++;
+                    this._bewohnerAnkunft(S, b, stunde, echt, p);
+                    b.lageNeu = true;
+                    anders = true;
+                }
                 const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
                 // DER GANG: ein neues Ziel sucht seinen Weg (gedeckelt je Takt), der Weg trägt den Leib im Tempo des Gesetzes
                 if (!b.da && !b.weg && wege < BW.wegeJeTakt) {
@@ -672,15 +697,22 @@ class AnazhRealm_siedlung_bewohner {
         return true;
     }
 
-    // DAS ZIEL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
-    // Hauses und seinen Orten — drinnen ist das Ziel die Tür. Ein neues Ziel verwirft den alten Weg; wer drinnen war und
-    // hinaus soll, tritt aus der Tür (wieder gezeichnet). Liefert, ob sich das Bild ändert.
-    _bewohnerZiel(b, stunde) {
+    // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
+    // Hauses und seinen Orten — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
+    // (`_bewohnerZiel`), die Wende (`_bewohnerWende`).
+    _bewohnerSoll(b, stunde) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
         const soll = KC.tagesPlan(b.same, b.rolle, o.heim, o.werk, stunde, o.platz);
-        const ziel = soll.drinnen ? o.tuer : soll.ort;
+        return { ziel: soll.drinnen ? o.tuer : soll.ort, drinnen: soll.drinnen, akt: soll.akt };
+    }
+
+    // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und
+    // hinaus soll, tritt aus der Tür (wieder gezeichnet). Liefert, ob sich das Bild ändert.
+    _bewohnerZiel(b, stunde) {
+        const soll = this._bewohnerSoll(b, stunde);
+        const ziel = soll.ziel;
         b.akt = soll.akt;
         if (ziel === b.ziel) return false;
         // sein Stand ist der Ort, an dem er steht — wer ohne Weg blieb (`_bewohnerWeg`), geht von hier
@@ -699,6 +731,66 @@ class AnazhRealm_siedlung_bewohner {
             return true;
         }
         return false;
+    }
+
+    // DIE ANKUNFT (mensch.K2 Staffel 2: wer nach der Abwesenheit kommt, findet jeden, wo er ihn gesehen hätte): der Tag ist
+    // f(Same, t), auch für den, den keiner sah — die Liste entsteht nach der Abwesenheit neu, die Uhr sprang. Der Leib steht am
+    // Ziel der Stunde vor `ankunftH` Stunden und spielt die Wenden seines Solls bis jetzt nach (`_bewohnerWende`): je Wende
+    // das Ziel (`_bewohnerZiel`), der Weg (`_bewohnerWeg`) und so viele Sekunden des Gangs (`_bewohnerSchritt`), wie die Uhr
+    // bis zur nächsten Wende trägt (`_bewohnerStundeSek`) — derselbe Gang wie im Takt, nur ohne Zuschauer. Wer ankam, schaut
+    // auf sein Ziel; drinnen gehört er keinem Feld, draußen trägt ihn sein Feld (`_kzLeib`).
+    _bewohnerAnkunft(S, b, stunde, echt, p) {
+        const BW = AnazhRealm.BEWOHNER;
+        const g = b.leib;
+        const sek = this._bewohnerStundeSek();
+        let h = stunde - BW.ankunftH;
+        const s0 = this._bewohnerSoll(b, h);
+        this._bewohnerStellen(b, g, s0.ziel.x, s0.ziel.z);
+        if (Number.isFinite(s0.ziel.blick)) g.rotation.y = s0.ziel.blick;
+        Object.assign(b, { ziel: s0.ziel, akt: s0.akt, drinnenSoll: s0.drinnen, drinnen: s0.drinnen, da: true });
+        Object.assign(b, { weg: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
+        for (let n = 0; n < BW.ankunftWenden && h < stunde; n++) {
+            const w = this._bewohnerWende(b, h, stunde);
+            if (b.weg) this._bewohnerSchritt(b, ((w === null ? stunde : w) - h) * sek);
+            if (w === null) break;
+            h = w;
+            this._bewohnerZiel(b, h);
+            if (!b.da && !b.weg) this._bewohnerWeg(S, b);
+        }
+        if (b.drehen != null) {
+            g.rotation.y = b.drehen;
+            b.drehen = null;
+        }
+        // der Boden am Ende neu (der Schritt fragt ab der Höhe seines letzten Stands — nach einem Weg ohne Zwischenschritte
+        // läge die Frage am Hang unter oder über dem Boden)
+        this._bewohnerStellen(b, g, g.position.x, g.position.z);
+        g.userData._drinnen = b.drinnen;
+        this._leibMatrix(g);
+        if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
+        if (echt && !b.drinnen) this._kzLeib(g, p, true);
+    }
+
+    // DIE NÄCHSTE WENDE des Solls in (von, bis]: die erste Stunde, an der `_bewohnerSoll` ein anderes Ziel nennt — gerastert
+    // auf `wendeH`, dann halbiert bis 1e-4 h (0,015 s am Tag von 60 min). null, wenn keine.
+    _bewohnerWende(b, von, bis) {
+        const z0 = this._bewohnerSoll(b, von).ziel;
+        for (let lo = von; lo < bis; lo += AnazhRealm.BEWOHNER.wendeH) {
+            let hi = Math.min(bis, lo + AnazhRealm.BEWOHNER.wendeH);
+            if (this._bewohnerSoll(b, hi).ziel === z0) continue;
+            while (hi - lo > 1e-4) {
+                const m = (lo + hi) / 2;
+                if (this._bewohnerSoll(b, m).ziel === z0) lo = m;
+                else hi = m;
+            }
+            return hi;
+        }
+        return null;
+    }
+
+    // DIE SEKUNDEN EINER SPIELSTUNDE: der Tag des Spielers (`dayLengthMinutes`, Echtzeit je Zyklus) — der Gang der Uhr
+    // (`tickDayNight`) rückt sie um delta / (Minuten · 60) Tage je Takt.
+    _bewohnerStundeSek() {
+        return ((this.state.dayLengthMinutes || AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES) * 60) / 24;
     }
 
     // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel — die Tür liegt in der Wand: wer aus ihr tritt
@@ -1213,8 +1305,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
 // im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
-// Stunden der Uhr, bis jeder seinen Plan neu liest · wegeJeTakt = neue Wege je Takt · direktM = bis hier geht er frei in
-// gerader Linie, weiter über das Wege-Netz · spurM = seine Spur quer zum Weg · kreuzM = Knoten zweier Wege näher als dies
+// Stunden der Uhr, bis jeder seinen Plan neu liest (0,002 h = 0,3 s am Tag von 60 min: so spät geht er nach seiner Wende los,
+// ≤ 0,5 m hinter der Ankunft) · DIE ANKUNFT (`_bewohnerAnkunft`): ankunftH = so viele Stunden spielt der Leib seinen Tag nach,
+// höchstens ankunftWenden Wenden, die Wende gerastert auf wendeH · ankunftJeTakt = so viele Ankünfte je Takt · sprungH = ein
+// Sprung der Uhr ab hier stellt jeden neu (das Zeitraffer-Ereignis der Linse, 0,1 h, ist keiner) · wegeJeTakt = neue Wege je
+// Takt · direktM = bis hier geht er frei in gerader Linie, weiter über das Wege-Netz · spurM = seine Spur quer zum Weg · kreuzM = Knoten zweier Wege näher als dies
 // kreuzen, naehtM = so weit schließt das Netz eine Lücke · vorM = der Punkt vor der Tür, über den jeder Weg ins Haus und
 // aus ihm geht. DIE WEGE (mensch.K3): kopfM = der Scheitel des Leibs über der Sohle — so hoch reicht die Kapsel, die jeder
 // Stand und jedes Bein gegen das Blocker-Netz fragt (`_bewohnerWand`).
@@ -1232,7 +1327,12 @@ AnazhRealm.BEWOHNER = Object.freeze({
     gangPhasen: 16,
     gangJeTakt: 2,
     platzRandM: 10,
-    planH: 0.01,
+    planH: 0.002,
+    ankunftH: 3,
+    ankunftWenden: 12,
+    wendeH: 0.02,
+    ankunftJeTakt: 8,
+    sprungH: 0.25,
     wegeJeTakt: 2,
     direktM: 30,
     spurM: 0.8,
