@@ -1,8 +1,8 @@
-// diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt (Schöpfer-Wort
-// 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah- Grenze
-// `ANALOG_NAH_M` (64 m). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den
-// Analog-Pfad blind) auf der Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit,
-// welcher Satz zeichnet) und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
+// diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt
+// (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah-
+// Grenze `ANALOG_NAH_M` (64 m). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den Analog-Pfad blind) auf der
+// Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit, welcher Satz zeichnet)
+// und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
 // Klasse · Träger · Abstand · seit wann · warum dort kein Mesh steht). Ein Satz, dessen Mesh schon übernimmt und der
 // ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer. Dazu
 // die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen steht

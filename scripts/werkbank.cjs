@@ -2274,9 +2274,9 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
-                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
+                    // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang
-                    const nahZ = t.zeilen.filter((z) => ((z.welt || {}).exemplar || {}).stufeNah);
+                    const nahZ = t.zeilen.filter((z) => Number.isInteger(((z.welt || {}).exemplar || {}).stufe));
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), {
                         zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
                         w: 640,

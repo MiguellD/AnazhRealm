@@ -104,12 +104,13 @@ const server = statikServer();
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);
-            // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms × Feldgröße,
-            // nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein Sampler, den die Stufe nach
-            // seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten Link der Radeon, GLSL = getActiveUniform je
-            // Programm). compileAsync baut je Stoff nur das GLSL, seine Pipeline (eigene Versprechen-Liste, nie E.neu der Welt) baut
-            // erst der echte Draw — swiftshader linkt je Programm 20–48 s synchron, der linkende Zensus der ganzen Szene riss die
-            // 300-s-Frist (CI 38947879876 · 38946214534); den Link prüft W5, wo das Spiel ihn baut. Auch der verborgene Stoff zählt.
+            // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms
+            // × Feldgröße, nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein
+            // Sampler, den die Stufe nach seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten
+            // Link der Radeon, GLSL = getActiveUniform je Programm). compileAsync baut je Stoff nur das GLSL, seine
+            // Pipeline (eigene Versprechen-Liste, nie E.neu der Welt) baut erst der echte Draw — swiftshader linkt je
+            // Programm 20–48 s synchron, der linkende Zensus der ganzen Szene riss die 300-s-Frist; den Link prüft W5,
+            // wo das Spiel ihn baut. Auch der verborgene Stoff zählt.
             const gl = be.gl;
             o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
             const aktiv = (q) => [...String(q).matchAll(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+(\w+)\s*(?:\[(\d+)\])?/gm)].filter((d) => String(q).split(new RegExp(`\\b${d[1]}\\b`)).length > 2); // prettier-ignore

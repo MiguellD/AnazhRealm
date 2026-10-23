@@ -267,9 +267,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
-        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die
-        // per-Subsystem-Spikes (vorher blind: Render gar nicht gemessen, Hitches
-        // EWMA-weggemittelt). CONSUM: der Fold füllt die Felder, Loop + Overlay lesen sie.
+        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
+        // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
             typeof st.perfSense.renderCalls === "number" &&
             typeof st.perfSense.renderTris === "number" &&

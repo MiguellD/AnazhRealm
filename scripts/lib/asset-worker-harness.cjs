@@ -371,11 +371,10 @@ const DATEN_KANAELE = [
 
 // DER UMSCHLAG OHNE BROWSER (K64-n2): die drei Daten-Kanäle sind reine Daten — DIESELBEN Dateien wie der Worker
 // (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal
-// (`foundryKanal` "get-book") antwortet. Die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber: der Atlas
-// reist neben den drei Kanälen. Gemessen K64-n2: recipes 74 838 und world-params 38 Byte byte-gleich mit dem Worker, ~0,6 s
-// statt eines Browser-Boots — die Statik (gate:studio-vertrag U) fängt im Puls jede Kern-Änderung, die den eingefrorenen
-// Umschlag verlässt (bis K64-n2 fiel sie erst in der vollen Batterie, Gruppe 5 Schritt 37, ohne Namen). `quellen`:
-// { "<datei>": "<quelltext>" } ersetzt eine Datei (der Selbsttest).
+// (`foundryKanal` "get-book") antwortet. Die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber: der
+// Atlas reist neben den drei Kanälen. Gemessen K64-n2: recipes 74 838 und world-params 38 Byte byte-gleich mit dem
+// Worker, ~0,6 s statt eines Browser-Boots — die Statik (gate:studio-vertrag U) fängt im Puls jede Kern-Änderung, die
+// den eingefrorenen Umschlag verlässt. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei (der Selbsttest).
 function umschlagImVm(quellen = {}) {
     const vm = require("vm");
     const absorber = () => {

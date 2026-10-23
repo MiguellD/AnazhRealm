@@ -82,10 +82,9 @@ function sichtLinse(cfg) {
         nach: 0,
     });
     // DAS LICHT JE KASKADE (echte GPU): eine Kaskade rendert nicht jeden Frame — dreht das Licht in einem Frame, in dem
-    // sie ruht, wählt sie erst in ihrem nächsten Pass neu, und der Frame davor trug die Drehung. Je Pass `k<i>` merkt die Linse
-    // die Licht-Richtung ihres letzten Passes; weicht die jetzige ab, ist die Drehung die benannte Ursache dieses Passes
-    // (vorher galt nur die Drehung gegen den Frame davor: Mess-Wiese, Radeon, 1 von 299 Ruhe-Frames „boden wahl:lage k1"
-    // ohne Grund — k1 rendert nach einem Frame mit Drehung, in dem sie ruhte).
+    // sie ruht, wählt sie erst in ihrem nächsten Pass neu, und der Frame davor trug die Drehung. Je Pass `k<i>` merkt
+    // die Linse die Licht-Richtung ihres letzten Passes; weicht die jetzige ab, ist die Drehung die benannte Ursache
+    // dieses Passes.
     const lichtBeiPass = {};
     const lichtJetzt = () => {
         const dl = r.state.directionalLight;
@@ -1055,9 +1054,9 @@ function sichtUrteil(b) {
                     `${JSON.stringify((x && x.legeOhneJe) || {})})`
             );
     }
-    // das atmende Auge (`b.auge`, Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer, unter
-    // dem Halt — das ist keine Änderung: die Linse nennt es weder Kamera noch Blende, und die Kette arbeitet nicht (vorher
-    // verglich die Lage die Blende exakt, 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende")
+    // das atmende Auge (`b.auge`, Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer,
+    // unter dem Halt — das ist keine Änderung: die Linse nennt es weder Kamera noch Blende, und die Kette arbeitet
+    // nicht
     if (b.auge !== undefined) {
         const x = b.auge;
         if (!x || !(x.frames > 0)) v.push("LEER: keine Phase mit atmendem Auge gemessen");
@@ -1077,9 +1076,9 @@ function sichtUrteil(b) {
                 );
         }
     }
-    // der Stand-Bruch (`b.standBruch`, Gegenprüfung 07.10.): jeder Satz zählt je Frame seinen Stand, ohne dass ein Bereich, ein
-    // Anker oder eine Hülle sich ändert — die Linse muss seine Arbeit als Arbeit OHNE Änderung zählen und `stand:ohne` beim
-    // Namen nennen (vorher hieß der eigene Zähler „Inhalt geändert", und die Wand stand grün)
+    // der Stand-Bruch (`b.standBruch`, Gegenprüfung 07.10.): jeder Satz zählt je Frame seinen Stand, ohne dass ein
+    // Bereich, ein Anker oder eine Hülle sich ändert — die Linse muss seine Arbeit als Arbeit OHNE Änderung zählen und
+    // `stand:ohne` beim Namen nennen
     if (b.standBruch !== undefined) {
         const x = b.standBruch;
         const benannt =

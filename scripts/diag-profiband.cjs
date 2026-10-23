@@ -814,7 +814,7 @@ function selbsttest() {
     };
     const wGefallen = wieseAmGesetz(
         w20((o) => {
-            // BÜHNE: der gefallene Messort (bis K55, K16 hob den Boden dort um 83 m) — die Linse muss ihn ROT nennen
+            // BÜHNE: der gefallene Messort — die Linse muss ihn ROT nennen
             o.spieler = [-900, -850];
             o.blick = [o.spieler[0], o.spieler[1] + 10];
         })

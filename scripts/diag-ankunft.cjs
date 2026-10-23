@@ -643,8 +643,7 @@ async function probe(arg) {
                     st._weltbildLuecke = "eine andere Zahl";
                     st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
                 });
-            // (8) Tasten hinter dem Ladeschirm (Gegenprüfung Runde 2: W lief den Spieler vom Ankunfts-Ort, Enter öffnete das
-            // Gespräch dahinter): solange er steht, gehört keine Taste der Welt
+            // (8) Tasten hinter dem Ladeschirm: solange er steht, gehört keine Taste der Welt
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
@@ -949,8 +948,7 @@ async function probe(arg) {
         ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
         m.nachEsc = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
         if (document.activeElement === ci) ci.blur();
-        // Enter auf einem fokussierten Knopf gehört dem Knopf (Gegenprüfung Runde 1: er öffnete zusätzlich den Chat und
-        // nahm ihm den Fokus — die Tastatur-Bedienung brach)
+        // Enter auf einem fokussierten Knopf gehört dem Knopf
         const knopf = document.getElementById("camera-mode-toggle") || document.querySelector("button");
         if (knopf) {
             knopf.focus();
@@ -1039,7 +1037,8 @@ async function probe(arg) {
                 linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
             }
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
-            // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen.
+            // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen. Der Täter beim
+            // Namen: der Stamm (Blocker).
             // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
             // Pflanze — er hält die Kamera wie der Bau (K06: die Kugel der Kamera hielt im Ritt 2 von 496 Proben an Natur ohne
             // Pflanzen-Box, die der Mittelstrahl um weniger als ihren Radius verfehlte; die Linse nannte sie „Stamm")
@@ -1104,7 +1103,9 @@ async function probe(arg) {
                 const fahre = (mitPflanzen) => {
                     let n = 0;
                     let hinaus = 0;
-                    if (!mitPflanzen) ohneStaemme(true);
+                    if (!mitPflanzen) {
+                        ohneStaemme(true);
+                    }
                     for (const L of linien.slice(0, 8)) {
                         let vor = null;
                         for (let s = 0; s <= 30; s += bildM) {
@@ -1122,7 +1123,9 @@ async function probe(arg) {
                         }
                         ruhig();
                     }
-                    if (!mitPflanzen) ohneStaemme(false);
+                    if (!mitPflanzen) {
+                        ohneStaemme(false);
+                    }
                     return { n, hinaus };
                 };
                 const jSoll = fahre(false);
@@ -1549,9 +1552,8 @@ async function probe(arg) {
             m.uebersprungen = +mz[2];
         }
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
-        // DER MITSPIELER (Gegenprüfung Runde 1: der Anker hing am EIGENEN Spieler, Blick und Fenster jedes Peers — etwa
-        // 60 m Versatz): „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei einem
-        // Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
+        // DER MITSPIELER: „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei
+        // einem Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
         {
             const satz = r.parseChatToDsl("baue dorf hier");
             const haeuserVon = async (quelle, wo, gier) => {
@@ -1816,8 +1818,8 @@ async function probe(arg) {
                 },
                 [
                     ["Vorlagen-Maß", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
-                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
-                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
+                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
+                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
                     ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt 3× hinaus"],
                     ["Nadelwand ohne Durchsicht", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],

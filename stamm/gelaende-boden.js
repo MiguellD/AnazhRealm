@@ -648,15 +648,16 @@ class AnazhRealm_gelaende_boden {
     // was sie liest (`_forestDartsFallen`). Bis K69 warf jeder Erdbau die Gedächtnisse der ganzen Welt: der Gang in ein Dorf
     // (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen synchron neu, der längste Takt 880 ms (Null-Renderer,
     // Dorfweg gehend), an der Radeon ein Frame von 3,1 s (`_forestCellDarts › planForestCell`, die Hänger-Linse).
-    _erdbauSetzen(key, splats) {
+    // `nass`: das Urteil, das die Raten des Erwachens schon fällten (`_dorfErwachen`).
+    _erdbauSetzen(key, splats, nass) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
         if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
         const G = globalThis.__gelaendeCore;
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
-        const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
+        const amWasser = nass === undefined ? this._erdbauAmWasser(G.erdbauNormal(splats)) : nass;
         wm.erdbau[key] = splats;
-        this._erdbauWirkt(splats, amWasser);
+        this._erdbauWirkt(splats, amWasser, { erdbauDazu: splats });
         return true;
     }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
@@ -670,16 +671,28 @@ class AnazhRealm_gelaende_boden {
         if (!p || !wm || !wm.erdbau || typeof wm.erdbau !== "object") return false;
         const sein = (q) => q && q.art === "grund" && Math.abs(q.cx - p.x) < 0.05 && Math.abs(q.cz - p.z) < 0.05;
         const weg = [];
+        const ohne = []; // ihre Stellen in der Reihe des Erdbaus (`_erdbauRoh`) vor dem Fall
+        let i = 0;
         for (const k of Object.keys(wm.erdbau)) {
             const liste = wm.erdbau[k];
-            if (!Array.isArray(liste) || !liste.some(sein)) continue;
-            for (const q of liste) if (sein(q)) weg.push(q);
+            if (!Array.isArray(liste)) continue;
+            if (!liste.some(sein)) {
+                i += liste.length;
+                continue;
+            }
+            for (const q of liste) {
+                if (sein(q)) {
+                    weg.push(q);
+                    ohne.push(i);
+                }
+                i++;
+            }
             const rest = liste.filter((q) => !sein(q));
             if (rest.length) wm.erdbau[k] = rest;
             else delete wm.erdbau[k];
         }
         if (!weg.length) return false;
-        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)));
+        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)), { erdbauOhne: ohne });
         return true;
     }
     // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
@@ -689,7 +702,8 @@ class AnazhRealm_gelaende_boden {
     // (Probe-Rand und Glätten: 3 Zellen über die Spanne) einen Kasten trifft, gezeichnet wird nur er neu. Bis S4 fiel der Kreis
     // um den Umkreis-Kreis samt einem Chunk Rand: der Grund des Vorschau-Hauses am Tor (4,1 × 4,9 m) warf beim Boot 16
     // gezeichnete Chunks um den Spieler, verändert hat er einen.
-    _erdbauWirkt(splats, amWasser) {
+    // `delta`: die Änderung für die Fäden (die Splats eines neuen Orts, die Stellen gefallener), ohne sie der ganze Erdbau.
+    _erdbauWirkt(splats, amWasser, delta) {
         const G = globalThis.__gelaendeCore;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
         const R = G.ERDBAU.reichweiteM;
@@ -713,11 +727,22 @@ class AnazhRealm_gelaende_boden {
         const z1 = Math.max(...kaesten.map((k) => k[3]));
         const { span } = this._voxelChunkConfig();
         const rand = [0, 1, 2, 3].map((lod) => 3 * this._voxelChunkConfig(lod).step);
+        // die Kästen je Chunk, den sie in der gröbsten Stufe erreichen (Lehre 25: ein Chunk fragt nur seine — bis stadt-erwachen
+        // fragte jeder Chunk des Umkreises jeden Kasten, der Erdbau nH 300 ~1 200 Chunks × 4 Stufen × ~2 000 Kästen)
+        const mMax = R + Math.max(...rand);
+        const jeChunk = new Map();
+        for (const k of kaesten)
+            for (let a = Math.floor((k[0] - mMax) / span); a <= Math.floor((k[1] + mMax) / span); a++)
+                for (let b = Math.floor((k[2] - mMax) / span); b <= Math.floor((k[3] + mMax) / span); b++) {
+                    const l = jeChunk.get(`${a},${b}`);
+                    if (l) l.push(k);
+                    else jeChunk.set(`${a},${b}`, [k]);
+                }
         // trifft das Gitter des Chunks (a, b) in der Stufe lod die Wirkung eines Splats?
         const trifft = (a, b, lod) => {
             const m = R + rand[lod];
             const [u0, u1, v0, v1] = [a * span - m, (a + 1) * span + m, b * span - m, (b + 1) * span + m];
-            return kaesten.some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
+            return (jeChunk.get(`${a},${b}`) || []).some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
         };
         const ka = Math.floor((x0 - R - rand[3]) / span);
         const kb = Math.floor((x1 + R + rand[3]) / span);
@@ -741,8 +766,10 @@ class AnazhRealm_gelaende_boden {
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
         this._forestDartsFallen(x0, z0, x1, z1);
-        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
-        this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
+        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`) — als
+        // Änderung (`delta`, voxel-worker `applyStateDelta`), nie als Klon der Welt je Haus (Gebot 7; stadt-erwachen: im Zug
+        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt)
+        this._voxelZustandPost({ type: "state-update", delta: delta || { erdbau: this._erdbauRoh() } });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
@@ -764,7 +791,8 @@ class AnazhRealm_gelaende_boden {
     // 2-m-Raster: an jeder nassen Spalte (`_nassAt`) rückt E den Grund in eine andere Sim-Zelle (DIESELBEN Zellen, die der
     // Automat liest — ein Grund, der in seiner Zelle bleibt, ändert kein Wasser), oder eine Sim-Zelle daneben schneidet E ihn
     // eine Zelle tiefer unter den Spiegel (ein Schnitt öffnet dem Wasser einen Weg; eine Schüttung daneben verdrängt keins).
-    _erdbauAmWasser(E) {
+    // `ab`, `n`: nur die Zellen ab der `ab`-ten, höchstens `n` (die Raten des Erwachens, `_dorfErwachen`).
+    _erdbauAmWasser(E, ab = 0, n = Infinity) {
         if (!E) return false;
         const G = globalThis.__gelaendeCore;
         const Z = G.ERDBAU.zelleM;
@@ -778,7 +806,10 @@ class AnazhRealm_gelaende_boden {
             const h1 = G.erdbauY(E, x, z, h0);
             return nurSchnitt ? zelle(h1) < zelle(h0) && h1 < spiegel : zelle(h1) !== zelle(h0);
         };
+        let i = 0;
         for (const key of E.zellen.keys()) {
+            if (i++ < ab) continue;
+            if (i > ab + n) break;
             const a = Math.floor(key / 65536) - 32768;
             const b = (key % 65536) - 32768;
             for (let i = 1; i < Z; i += 2)
@@ -807,8 +838,10 @@ class AnazhRealm_gelaende_boden {
     // Haupt-Thread jeden Kandidaten in 3-ms-Scheiben (Teleport ins Erwachen nH 300: 70 761 Haus-Pläne, 18,7 s bis zum ersten
     // Haus; nH 12: 300, 1,4 s). Je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als
     // Gelände); zwei Rufer desselben Orts teilen EINE Wahl. `legen` false (der Vorlauf, `_dorfBereiten`): ihr Erdbau liegt erst,
-    // wenn der Ort Welt wird (`_ortPlanSetzen`). Rückgabe: Promise des Plans v2, `origin` rückt an seinen Ort.
-    async _ortWahl(plan, origin, legen = true) {
+    // wenn der Ort Welt wird (`_ortPlanSetzen`). `frei`: der Ort, den kein Haus berühren darf — ohne Angabe der Spieler (der
+    // Akt vor ihm), null keiner (die Zelle der Welt: ihr Ort ist eine Funktion von Saat und Gesetz, Lehre 7). Rückgabe: Promise
+    // des Plans v2, `origin` rückt an seinen Ort.
+    async _ortWahl(plan, origin, legen = true, frei) {
         if (plan && plan.version === 2) return plan;
         const key = AnazhRealm._ortSchluessel(plan, origin);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
@@ -816,7 +849,7 @@ class AnazhRealm_gelaende_boden {
             const flug = this._ortWahlFlug || (this._ortWahlFlug = new Map());
             let wahl = flug.get(key);
             if (!wahl) {
-                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }).then(
+                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei).then(
                     (v2) => (ple.set(key, v2), flug.delete(key), v2),
                     (e) => (flug.delete(key), Promise.reject(e))
                 );
@@ -829,7 +862,7 @@ class AnazhRealm_gelaende_boden {
     static _ortSchluessel(plan, origin) {
         return "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
     }
-    async _ortWahlImFaden(plan, origin) {
+    async _ortWahlImFaden(plan, origin, frei) {
         const W = AnazhRealm.ORT_WAHL;
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
@@ -846,7 +879,7 @@ class AnazhRealm_gelaende_boden {
                 );
         }
         for (let ab = 0, wand = -1; ;) {
-            const pm = this.state.playerMesh;
+            const pm = frei === undefined ? this.state.playerMesh && this.state.playerMesh.position : frei;
             const raster = this._ortRaster(plan);
             const r = await this._nebenAuftrag(
                 "ort",
@@ -858,9 +891,7 @@ class AnazhRealm_gelaende_boden {
                     wand,
                     W,
                     M: AnazhRealm.WERK_LAND_M,
-                    spieler: pm
-                        ? { x: pm.position.x, z: pm.position.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN }
-                        : null,
+                    spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
                 },
                 [raster.lx.buffer, raster.lz.buffer]
@@ -882,10 +913,10 @@ class AnazhRealm_gelaende_boden {
                 return r.v2;
             }
             const t0 = performance.now();
-            const frei = this._ortTraegtWirt(r.v2);
+            const traegt = this._ortTraegtWirt(r.v2, pm);
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
-            ab = frei ? r.index : r.index + 1;
-            wand = frei ? r.index : -1;
+            ab = traegt ? r.index : r.index + 1;
+            wand = traegt ? r.index : -1;
         }
     }
     // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts
@@ -921,19 +952,17 @@ class AnazhRealm_gelaende_boden {
         }
         return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius };
     }
-    // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Spieler JETZT (Reichweite +
-    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`) und keins steht in einem Bau (`_bauFrei`, die zweite
-    // Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
-    _ortTraegtWirt(k) {
-        const pm = this.state.playerMesh;
+    // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Ort `p` (der Spieler JETZT beim Akt, Reichweite +
+    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`; null: die Zelle der Welt) und keins steht in einem
+    // Bau (`_bauFrei`, die zweite Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
+    _ortTraegtWirt(k, p) {
         const frei = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         for (const sl of k.slots) {
             const { fp } = AnazhRealm._slotGrundriss(sl);
             if (!fp) continue;
             const wx = k.ort.x + sl.x;
             const wz = k.ort.z + sl.z;
-            if (pm && Math.hypot(pm.position.x - wx, pm.position.z - wz) < Math.hypot(fp.ex, fp.ez) + frei)
-                return false;
+            if (p && Math.hypot(p.x - wx, p.z - wz) < Math.hypot(fp.ex, fp.ez) + frei) return false;
             if (!this._bauFrei(wx, wz, sl.phi || 0, fp, sl.tuer, sl.y)) return false;
         }
         return true;

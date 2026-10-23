@@ -481,9 +481,9 @@ async function WELLE_L() {
                     const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { bodySize: 1 });
                     const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
                     if (j && h) {
-                        // gemessen wird der Stoß des Bisses, nicht seine Trefferquote: bis zu drei Ansprünge aus der Ruhe (ein
-                        // Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen, Nachbesserung 2; vorher
-                        // wackelte die Wand in 2 von 27 Läufen am Fuchs)
+                        // gemessen wird der Stoß des Bisses, nicht seine Trefferquote: bis zu drei Ansprünge aus der
+                        // Ruhe (ein Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen,
+                        // Nachbesserung 2)
                         let dv = null;
                         let ansatz = false;
                         for (let a = 0; a < 3 && dv === null; a++) {
@@ -2477,9 +2477,8 @@ async function WELLE_L() {
             const mitBiss = { spieler: null, tier: null, kitz: null };
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
-            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
-            // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe (vorher in
-            // 1 von 20 Läufen: „jagd beißt ohne Ansprung, Kopf 5,56 m vor dem Leib" — gebissen hatte ein anderes Tier)
+            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt
+            // den Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe
             const btRoh = r._kreaturBissTakt;
             let beisser = null;
             if (typeof btRoh === "function")

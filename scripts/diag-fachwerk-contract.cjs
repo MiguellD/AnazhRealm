@@ -169,7 +169,7 @@ function shellPfad(name, seed, stufe) {
         FC.bakeLOD(st.g, p.col, geoms, 0, true);
         disposeGroup(st.g);
     } else {
-        // ≡ LOD-Sonde: MASS-BUILD → B, Warm-Pfad für Stufe 2, dann fragFuer.
+        // ≡ LOD-Sonde: MASS-BUILD → B, dann fragFuer (der Warm-Pfad lebt in ihm, S8).
         const mass = FC.stapelBau(Object.assign({}, p, { nur: FC.MASSNUR }), FC.LOD1F);
         const bx = new THREE.Box3().setFromObject(mass.g);
         const B = {
@@ -186,11 +186,6 @@ function shellPfad(name, seed, stufe) {
             meshes: [],
         };
         disposeGroup(mass.g);
-        if (stufe >= 2 && !turm) {
-            FC.fragFuer(B, 1);
-            B.frag = null;
-            B.fragStufe = undefined;
-        }
         FC.mischeGeoms(geoms, FC.fragFuer(B, stufe));
         B.frag = null;
         B.fragStufe = undefined;
@@ -715,7 +710,7 @@ function bogenLinse() {
         const KALK = new Set(["putz", "gefach", "lehm"]);
         const decke = (r) => (HOLZ.has(r) ? 0.25 : KALK.has(r) ? 0.85 : 0.45);
         const roh = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
-        // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling (vorher)
+        // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling
         const albedoHaus = (g, farbe) => {
             const proRolle = {};
             let A = 0,

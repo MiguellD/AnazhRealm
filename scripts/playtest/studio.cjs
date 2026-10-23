@@ -353,10 +353,10 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 }
 
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
-// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf (vorher NULL = Part-Pfad, die „alten Kristalle"); die Ausstattung
-// (glutbrunnen · marktstand_dorf · brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der
-// Architektur; das Glut-Genom ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt
-// nie auf das welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
+// brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
+// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
+// welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
 async function checkBandKristallKleid(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {

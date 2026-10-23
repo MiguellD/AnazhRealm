@@ -1466,11 +1466,11 @@ function probe(selbsttest) {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             });
-            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen Atlas-Gruppe)
-            // und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles mehr (gemessen
-            // 05.10.: nur "@global"; 14 auf 386f91c, 4 auf b9bf2bc). Vier Regionen um den Spieler bekommen je eine
-            // Streu-Instanz über den Produktions-Chokepoint `_scatterInstanceAdd` (echter Region-Schlüssel, echte
-            // Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an echten Region-Bundles, nie vakuös.
+            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen
+            // Atlas-Gruppe) und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles
+            // mehr. Vier Regionen um den Spieler bekommen je eine Streu-Instanz über den Produktions-Chokepoint
+            // `_scatterInstanceAdd` (echter Region-Schlüssel, echte Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an
+            // echten Region-Bundles, nie vakuös.
             const regionen = () =>
                 st._regionBundles ? [...st._regionBundles.values()].filter((bg) => bg.userData.cullSphere).length : 0;
             const welt0 = regionen();

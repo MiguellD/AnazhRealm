@@ -97,12 +97,11 @@ const server = statikServer();
             out.coldBefore = cold();
             out.foundryBefore = foundry();
 
-            // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0)
-            // würde KEIN kalter Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie.
-            // Der Takt unter Dauer-Last ist BEIDES, was das Spiel dann trägt: die Schlange des Walds mit dem Boden der
-            // Welt-Substanz (`_dispatchFrameJobs`: prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der
-            // Rewarm — seit K69 wartet die Gestalt eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen
-            // nur des Rewarms ließ 8 von 8 kalt (CI 38759430399, Gruppe 12).
+            // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0) würde KEIN kalter
+            // Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie. Der Takt unter Dauer-Last ist BEIDES,
+            // was das Spiel dann trägt: die Schlange des Walds mit dem Boden der Welt-Substanz (`_dispatchFrameJobs`:
+            // prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der Rewarm — seit K69 wartet die Gestalt
+            // eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen nur des Rewarms ließ 8 von 8 kalt.
             const A = window.AnazhRealm || r.constructor;
             for (let i = 0; i < 400; i++) {
                 r.state._frameOverBudget = true; // Dauer-Last simulieren

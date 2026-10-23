@@ -217,9 +217,8 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
-        // DIE STUFE DES EXEMPLARS (K63-n7; gemessen 15.10., Radeon: der Wagen gt stand in der Blende L0/L1, die Stufe 1 faltet
-        // die Stoffe ihrer Seh-Klasse — Chrom und Glas lasen im Lack, Welt 0,0175 gegen 0,0066): eine Zeile erklärt die Stufen,
-        // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
+        // DIE STUFE DES EXEMPLARS (K63-n7): eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
+        // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
         if (ds && W && zahl(W.Y)) {
             // eine leere Liste ist keine Antwort: der Schuss trug keinen Zug mit Stufe (ein ganzer Satz statt seines Exemplars)
@@ -233,6 +232,10 @@ function tafelUrteil(t, messung) {
                     text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
                 });
         }
+        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`
+        const W0 = z.welt.stufeVon && messung.welt[z.welt.stufeVon];
+        if (W0 && !(Math.abs((e.stufeTon = W && +(W.Y / W0.Y).toFixed(3)) - 1) <= t.stufenToleranz))
+            rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${e.stufeTon}` });
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);

@@ -3,11 +3,11 @@
 // Studio-Vertrag B2c: Baum und Strauch tragen `lod.budget[kind].fernform: "karte"` — jenseits der Nah-Grenze des Wirts
 // IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz) — auch im
 // GESETZTEN Wald (Architektur-Einträge aus `_forestPlantChunk`) jenseits der Mesh-Zone (des geregelten Cull-Radius,
-// 100–150 m; bis 05.10. ein Satz im Welt-March). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein
-// Karten-Ding trägt seine Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits
-// seines L1↔Karte-Bands auf die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu
-// SEINEM Rand im Saum vor `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst
-// `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine Karte dithert am Horizont (die Maske trägt keinen Schwund).
+// 100–150 m). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein Karten-Ding trägt seine
+// Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits seines L1↔Karte-Bands auf
+// die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu SEINEM Rand im Saum vor
+// `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine
+// Karte dithert am Horizont (die Maske trägt keinen Schwund).
 //
 // Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig; headless trägt der Rahmen aus der
 // L1-Geometrie, die Karte steht ohne Bake). Die Linse nennt jeden Täter beim Namen (Art, Distanz, Grund).

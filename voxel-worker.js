@@ -81,8 +81,9 @@ const state = {
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
-    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null
+    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null, und seine Liste (`_erdbauRoh` des Mains)
     erdbau: null,
+    erdbauRoh: null,
     // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
     // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
     felsStoff: null,
@@ -702,7 +703,7 @@ function applyStateSnapshot(snap) {
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
-    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
+    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
     if (snap.fern) state.fern = snap.fern;
@@ -717,6 +718,15 @@ function applyStateDelta(delta) {
     if (delta.voxelEditAppend) {
         if (!Array.isArray(state.voxelEdits)) state.voxelEdits = [];
         state.voxelEdits.push(delta.voxelEditAppend);
+        return;
+    }
+    // DER ERDBAU ALS ÄNDERUNG (stadt-erwachen, `_erdbauWirkt`): die Splats eines neuen Orts hängen an, die Stellen gefallener
+    // (in der Reihe vor dem Fall) fallen — dieselbe Liste wie `_erdbauRoh` im Main, ohne ihren Klon je Haus
+    if (delta.erdbauDazu || delta.erdbauOhne) {
+        const roh = state.erdbauRoh || [];
+        const ohne = new Set(delta.erdbauOhne);
+        state.erdbauRoh = delta.erdbauDazu ? roh.concat(delta.erdbauDazu) : roh.filter((_p, i) => !ohne.has(i));
+        state.erdbau = G.erdbauNormal(state.erdbauRoh);
         return;
     }
     applyStateSnapshot(delta);

@@ -401,12 +401,6 @@ const server = statikServer();
                     const pp = String(k).slice(5).split("|");
                     if (pp.length >= 2) attested.add(pp[0] + "|" + pp[1] + "|1");
                 }
-            if (r._grassStudioGeoByStage)
-                for (const stg of Object.keys(r._grassStudioGeoByStage)) {
-                    const m = r._grassStudioGeoByStage[stg];
-                    // Geometrie ODER das bewusste "leer"-Verdikt attestiert; false = Alt-Pfad (kein Studio).
-                    if (m !== undefined && m !== null && m !== false) attested.add("gras|1|" + stg);
-                }
             res.attested = attested.size;
             const requested = f.requested ? Array.from(f.requested) : [];
             res.requested = requested.length;
@@ -457,8 +451,8 @@ const server = statikServer();
                 st.scene.add(fake4);
                 grassSet.add(fake4); // wie ein Eintrag in st.voxelChunkGrass (der Zensus-Schnappschuss)
                 injected.push(fake4);
-                // DER SIEDLUNGS-POOL (CI 37709343976): ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER
-                // Emitter (rot) — derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
+                // DER SIEDLUNGS-POOL: ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER Emitter (rot) —
+                // derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
                 const fake5 = new THREE.InstancedMesh(geo, mat, 3);
                 fake5.count = 3;
                 fake5.name = "siedlung-zaun";

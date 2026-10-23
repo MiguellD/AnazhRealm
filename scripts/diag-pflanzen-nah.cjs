@@ -416,8 +416,8 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet jede Ecke über
-// ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie (vorher, 210fe8a7: ROT).
+// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet
+// jede Ecke über ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie.
 function partienDerKrone(f, pre, sk) {
     const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
     if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;

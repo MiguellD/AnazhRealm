@@ -162,9 +162,9 @@ function bankJe(lauf) {
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
 // Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode). `bloecke` = [{ zustand:
 // "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in Zeitfolge. DAS
-// RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund- Nachbarn
+// RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-Nachbarn
 // (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so aus Rauschen UND Schalter
-// heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter- Block gegen das
+// heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-Block gegen das
 // Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
 const SCHALTER_MIN_BLOECKE = 2;
 const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
@@ -1291,8 +1291,8 @@ async function selbsttest() {
             /ORT band \(nach\): Sicht third, verlangt ego/
         );
     }
-    // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
-    // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
+    // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) —
+    // nach `beendeBaum` lebt keiner der beiden mehr
     {
         const werkbank = spawn(
             process.execPath,

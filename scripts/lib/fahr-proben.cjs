@@ -1161,7 +1161,7 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
                 );
                 if (!e) return null;
-                // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+                // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest"
                 r._hausHuelleSetzen(e, {
                     stufe: 0,
                     teile: [{ art: "box", c: [0, -0.25, 0], h: [6, 2.75, 0.4], rolle: "fest" }],
@@ -2456,8 +2456,8 @@ function kernTempo(VC) {
     const [v0, v1] = [lauf(c0, 300, 0, 0), lauf(c0, 300, 0, vmax)];
     lauf(cd, 300, 0, 8, 8);
     const drift = +((Math.abs(cd.az - Math.PI / 4) * 180) / Math.PI).toFixed(1);
-    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte Sprung der
-    // Drehrate je Bild ab dem Loslassen, relativ zur Kurve (vorher 1,0 am Loslassen und 0,9 am Ende der Rückkehr)
+    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte
+    // Sprung der Drehrate je Bild ab dem Loslassen, relativ zur Kurve
     const ck = {};
     let [az, rate, knick] = [0, 0, 0];
     for (let i = 0; i < (kern.length ? 0 : 300); i++) {

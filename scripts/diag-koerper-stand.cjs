@@ -923,8 +923,8 @@ async function rollen(n) {
         );
         s.keys.w = false;
         streuJetzt();
-        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0
-        // ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm (vorher 1,4–3,5 cm je Lauf)
+        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
+        // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const P = pm.position;
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
         for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {

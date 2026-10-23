@@ -241,7 +241,7 @@ const SELBST = process.argv.includes("--selftest");
                     const zuege = wos.map((wo, i) => zug("fern" + i, wo));
                     for (const [id, res] of [...f.pending]) f.pending.delete(id) && res([]);
                     await new Promise((res) => setTimeout(res, 0));
-                    // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn (vorher) am Ort
+                    // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn am Ort
                     const meine = r._foundryIngestQueue.map((e) => [e, zuege.findIndex((z, i) => (e.rang ? e.rang === z.rang : e.wo === wos[i]))]).filter(([, i]) => i >= 0); // prettier-ignore
                     meine.forEach(([e, i]) => ((f0) => (e.frei = () => (reihe.push(i), f0())))(e.frei));
                     zug("fern10", pm); // der nahe Leser hängt sich an den letzten Zug

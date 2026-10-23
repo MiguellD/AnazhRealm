@@ -370,8 +370,8 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein Atmen
-    // unter dem halben Halt ist keine Bewegung (vorher exakt verglichen: jeder Frame hieß „Blende", jede Arbeit entschuldigt)
+    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein
+    // Atmen unter dem halben Halt ist keine Bewegung
     if (typeof SICHT.sichtBlendeBewegt !== "function")
         fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
     else {

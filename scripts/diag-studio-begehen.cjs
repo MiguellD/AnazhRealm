@@ -1,5 +1,6 @@
-// diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen). Der Selbsttest des Labors schrieb S1 fest
-// (Demotion verlangte null Solids). Die Linse ruft die ECHTEN Lab-Pfade (buildDorf · promoteB · demoteB · walkUpdate →
+// diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen).
+// Der Selbsttest des Labors schrieb S1 fest (Demotion
+// verlangte null Solids). Die Linse ruft die ECHTEN Lab-Pfade (buildDorf · promoteB · demoteB · walkUpdate →
 // moveAxis/gravity/overlap · Raycaster gegen dorfGroup), nie eine Nachrechnung:
 //   B1  HÜLLE: jedes promovierte Haus trägt 0 Hüllen-Solids, jedes demotierte genau 1 (EIN Lebenszyklus je Haus)
 //   B2  TÜR: aus 2 m vor der Haustür geht der Körper (W, echte Lab-Physik) bis 1 m hinter die Schwelle

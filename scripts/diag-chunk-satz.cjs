@@ -130,9 +130,8 @@ function urteil(z) {
         if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
     }
     // (n) DIE BODEN-STUFEN (K51, K51-2 nach dem Kasten-Abstand): ein Chunk der Stufe L lebt höchstens bis zum Abstand
-    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu fein
-    // (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke, trug den Boden-Satz
-    // der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
+    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu
+    // fein (Haushalt boden 120k samt Fern-Ring); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
     if (z.stufen) {
         const T = z.stufen.tabelle;
         const grenze = (lod) => {
@@ -1333,12 +1332,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
-                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Morphs seiner Nachbarn — ein Nachbar, der den Chunk nicht liest
-                // (weder seine neue noch seine alte Stufe ist gröber als die des Nachbarn), ist ein LEER-Morph. Der Selbsttest
-                // (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau morpht alle acht.
+                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Bitten seiner Nachbarn an die Folge-Schlange (`_morphFolge`,
+                // fahrt-takt) — ein Nachbar, der den Chunk nicht liest (weder seine neue noch seine alte Stufe ist gröber als die
+                // des Nachbarn), ist ein LEER-Morph. Der Selbsttest (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau bittet
+                // alle acht.
                 const folge = { neubau: 0, morphs: 0, leer: 0 };
                 const F0 = r._finalizeVoxelChunkBuild,
-                    G0 = r._applyCrossLodGeomorph;
+                    FS = (s._morphFolge ||= new Map());
                 const lodVon = new Map();
                 for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
                 let ctx = null;
@@ -1351,23 +1351,21 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         if (ohne)
                             for (let dx = -1; dx <= 1; dx++)
                                 for (let dz = -1; dz <= 1; dz++)
-                                    if (dx || dz) this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                                    if (dx || dz) FS.set(cx + dx + "," + (cz + dz), 0);
                         return e;
                     } finally {
                         ctx = null;
                         lodVon.set(key, lod);
                     }
                 };
-                r._applyCrossLodGeomorph = function (x, z) {
-                    if (ctx && (x !== ctx.cx || z !== ctx.cz)) {
-                        const nb = s.voxelChunks.get(x + "," + z);
-                        if (nb && !nb.empty && nb.mesh) {
-                            folge.morphs++;
-                            const nl = nb.lod || 0;
-                            if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
-                        }
+                FS.set = function (k, v) {
+                    const nb = ctx && s.voxelChunks.get(k);
+                    if (nb && !nb.empty && nb.mesh) {
+                        folge.morphs++;
+                        const nl = nb.lod || 0;
+                        if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
                     }
-                    return G0.call(this, x, z);
+                    return Map.prototype.set.call(this, k, v);
                 };
                 try {
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
@@ -1383,6 +1381,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         }
                         for (const weiter = window.__deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
+                            r._tickMorphFolge(Infinity); // die Folge-Schlange wie im Takt
                             await sleep(15);
                             let fertig = true;
                             for (const [key, v] of vor) {
@@ -1419,7 +1418,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 } finally {
                     delete r._stufeGewicht;
                     delete r._finalizeVoxelChunkBuild;
-                    delete r._applyCrossLodGeomorph;
+                    delete FS.set;
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
@@ -1487,9 +1486,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             `Dreiecke (${zs.bruecken} Brücken)` +
             (vn.length ? " — " + vn.join(" · ") : "")
     );
-    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der Fläche vor und
-    // nach dem Wechsel (Befund 14.10. mit der Ring-Kette: ein Wechsel L1 → L0 sprang an der Mess-Wiese sichtbar, p99,9 der
-    // Luma-Änderung 17 gegen 5 im Rauschen); der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
+    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der
+    // Fläche vor und nach dem Wechsel; der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
     const SP = out.sprung || {};
     const fmt = (g) =>
         g
@@ -1510,15 +1508,15 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
     const fo = (g) =>
         g && g.folge
-            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Nachbar-Morphs · ${g.folge.leer} leer`
+            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Folge-Bitten · ${g.folge.leer} leer`
             : "keine Messung";
     check(
-        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau morpht nur Nachbarn, die seine neue oder alte Stufe lesen",
+        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau bittet nur Nachbarn, die seine neue oder alte Stufe lesen",
         !!SP.mit && !!SP.mit.folge && SP.mit.folge.neubau >= 3 && SP.mit.folge.leer === 0,
         fo(SP.mit)
     );
     check(
-        "(p) Selbsttest: die Lawine (jeder Neubau morpht alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
+        "(p) Selbsttest: die Lawine (jeder Neubau bittet alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
         !!SP.ohne && !!SP.ohne.folge && SP.ohne.folge.leer > 0,
         fo(SP.ohne)
     );

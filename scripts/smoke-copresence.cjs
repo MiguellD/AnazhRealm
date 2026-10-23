@@ -23,9 +23,9 @@
 // Voraussetzung: puppeteer als devDependency (`npm install`).
 const { starteBrowser, halteBis, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
 
-// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
-// je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT).
-// die eigenen Ports: COPRESENCE_PORT und COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+// Der Klon, in dem die Linse liegt, und der Port je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der
+// Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT). die eigenen Ports: COPRESENCE_PORT und
+// COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-copresence-room";
 

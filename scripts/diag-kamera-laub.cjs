@@ -1,14 +1,12 @@
 // diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (Leben-Schau 2, 09.10., Befund §6 #5,
-// V1-Lücke „laufen und sehen").
-//
-// Die Linse fährt die echte Welt (headless, Foundry an, Null-Renderer) an die Orte der Schau — die Ankunft (A 27), das Ufer
-// mit dem Eichenhain des Satzes (−872/−1127, A 41–47) und den 30°-Hang (−744/−1356, B 28–31, C 05–12) — und stellt dort an
-// jeder nahen Pflanze den Spieler in acht Richtungen auf: zu Fuß in 3rd, im Ritt (der GT, die Verfolger-Kamera des Kerns)
-// und im Ich-Auge. Je Stellung misst sie die NAH-DECKUNG (scripts/lib/kamera-nah.cjs): den Anteil des Schirms, den eine
-// Fläche näher am Auge deckt als der Nah-Radius der Stellung — 3rd 2,0 m, Ritt 3,0 m (beide höchstens bis einen Saum vor
-// das Ziel: der Stamm vor dem Spieler bleibt), Ich-Auge 0,8 m (nur Laub: der Leib steht an der Rinde) — mit dem Täter beim
-// Namen (Laub · Rinde · Fels · Wagen und das Werk). Urteil: keine Stellung über NAH_DECKUNG_MAX. Die Radien stehen fest in
-// der Linse (Vorher und Nachher unter derselben Bedingung).
+// V1-Lücke „laufen und sehen"). Die Linse fährt die echte Welt (headless, Foundry an, Null-Renderer) an die Orte der
+// Schau — die Ankunft (A 27), das Ufer mit dem Eichenhain des Satzes (−872/−1127, A 41–47) und den 30°-Hang
+// (−744/−1356, B 28–31, C 05–12) — und stellt dort an jeder nahen Pflanze den Spieler in acht Richtungen auf: zu Fuß in
+// 3rd, im Ritt (der GT, die Verfolger-Kamera des Kerns) und im Ich-Auge. Je Stellung misst sie die NAH-DECKUNG
+// (scripts/lib/kamera-nah.cjs): den Anteil des Schirms, den eine Fläche näher am Auge deckt als der Nah-Radius der
+// Stellung — 3rd 2,0 m, Ritt 3,0 m (beide höchstens bis einen Saum vor das Ziel: der Stamm vor dem Spieler bleibt),
+// Ich-Auge 0,8 m (nur Laub: der Leib steht an der Rinde) — mit dem Täter beim Namen (Laub · Rinde · Fels · Wagen und
+// das Werk). Urteil: keine Stellung über NAH_DECKUNG_MAX. Die Radien stehen fest in der Linse.
 //
 // DER EINGESCHMUGGELTE TÄTER (in derselben Welt, nach der Messung): ein Laub-Stoff ohne Durchsicht und ein Fels vor der
 // Linse — die Linse muss beide beim Namen nennen, sonst ist sie vakuös. `--selftest` (ohne Welt): das Urteil über
@@ -42,10 +40,10 @@ const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd e
 const NAH_DECKUNG_MAX = 0.02;
 // Der Schmuggel steigt höchstens so hoch am Stamm hinauf (m), bis das Laub ohne Durchsicht die Linse deckt (die Kronen-Stellung).
 const SCHMUGGEL_HUB_M = 40;
-// Die Orte der Schau (Befund §2): die Ankunft, das Ufer mit dem Hain des Satzes, die Lichtung der Herde (8a) und der
-// 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf). Jeder Ort kommt AUS DER WELT (K16, Orts-Wand):
-// das Ufer ist das Ostufer des nächsten Sees am Messort (`__wasserOrte`), die Lichtung die nächste ebene trockene Stelle
-// (12 m Umkreis, Spanne ≤ 1,5 m), der Hang die nächste Stelle mit 25–35° Neigung (`__weltOrt`, scripts/lib/welt-orte.cjs) —
+// Die Orte der Schau: die Ankunft, das Ufer mit dem Hain des Satzes, die Lichtung der Herde (8a) und der 30°-Hang (2c,
+// 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf). Jeder Ort kommt AUS DER WELT (K16, Orts-Wand): das Ufer ist
+// das Ostufer des nächsten Sees am Messort (`__wasserOrte`), die Lichtung die nächste ebene trockene Stelle (12 m
+// Umkreis, Spanne ≤ 1,5 m), der Hang die nächste Stelle mit 25–35° Neigung (`__weltOrt`, scripts/lib/welt-orte.cjs) —
 // in der alten Welt standen sie als Zahlen (−872/−1127, −789/−1331, −744/−1356), die Landform des Kerns verschob sie.
 const ORTE = [
     { id: "ankunft", bild: "A 27" },
@@ -125,7 +123,7 @@ const quantil = (a, q) => {
     const s = [...a].sort((x, y) => x - y);
     return s[Math.min(s.length - 1, Math.floor(q * s.length))];
 };
-// Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand (gemessen am Kopf d47f4ce9 unter derselben Bedingung)
+// Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
 const SPRUENGE_MAX = 4;
 // K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände und Rinde; Bau-Pixel stehen in der
 // Ausgabe (der offene Tür-Flügel trägt keinen Leib), ebenso die Kugel im Stamm (ab stammDickM): er hält den Arm nie, er wird

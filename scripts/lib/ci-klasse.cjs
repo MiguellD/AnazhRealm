@@ -83,7 +83,7 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
     return bedingt || { klasse: "cpu" };
 }
 
-// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich (gemessen 14.10.) — die EINE Zahl für die Waage und das Verteilen.
+// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich — die EINE Zahl für die Waage und das Verteilen.
 const LAEUFER_PLAETZE = 20;
 // DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
 const GROSS_S = 300;

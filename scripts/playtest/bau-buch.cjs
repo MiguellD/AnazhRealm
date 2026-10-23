@@ -3366,8 +3366,8 @@ async function checkBandM2RollenWahrheit(ctx) {
             rossV.rideable === 1 &&
             r._blueprintResonance(rossV, sigs.vehicle) > r._blueprintResonance(rossV, sigs.soul);
 
-        // (2) useKind: ein Fahrzeug wird PLATZIERT (Befund 7: es rutschte in die Hand) —
-        // und ein Baum wird nicht mehr GETRUNKEN (war useKind=drink via consumable).
+        // (2) useKind: ein Fahrzeug wird PLATZIERT — und ein Baum wird nicht mehr GETRUNKEN (war useKind=drink via
+        // consumable).
         out.vehiclePlace =
             r._blueprintUseKind(blu._t_m2_wagen) === "place" && r._blueprintUseKind(blu.reittier_holzross) === "place";
         // V18.257 — baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
@@ -3387,8 +3387,8 @@ async function checkBandM2RollenWahrheit(ctx) {
         const stuhlV = r._blueprintProductVector(stuhl);
         out.stuhlBleibtBauwerk = stuhlV.rideable === 0 && r.computeBlueprintRole(stuhl) === "architecture";
 
-        // (4) das Auseinanderzieh-Exploit ist TOT (Befund 24): identische Substanz, nur
-        // gespreizt → IDENTISCHER Größen-Faktor (Σ-Substanz-Volumen statt Hüll-Volumen).
+        // (4) das Auseinanderzieh-Exploit ist TOT: identische Substanz, nur gespreizt → IDENTISCHER Größen-Faktor
+        // (Σ-Substanz-Volumen statt Hüll-Volumen).
         const mk = (d) => ({
             parts: [
                 { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
@@ -3397,8 +3397,8 @@ async function checkBandM2RollenWahrheit(ctx) {
         });
         out.exploitTot = Math.abs(r._compoundSizeFactor(mk(0.5)) - r._compoundSizeFactor(mk(10))) < 1e-9;
 
-        // (5) der Klon erbt die SUBSTANZ: ein geklonter Wagen behält seine connections
-        // (Gelenke/Sitz) → die fahrzeug-Rolle emergiert auch am Klon (Befund 7-Kette).
+        // (5) der Klon erbt die SUBSTANZ: ein geklonter Wagen behält seine connections (Gelenke/Sitz) → die
+        // fahrzeug-Rolle emergiert auch am Klon.
         if (blu.__m2_wagenklon) delete blu.__m2_wagenklon;
         r.cloneBlueprint("_t_m2_wagen", "__m2_wagenklon");
         const wk = blu.__m2_wagenklon;
@@ -3542,9 +3542,7 @@ async function checkBandV18164AutoConnect(ctx) {
         const valid = r.validateBlueprintConnections([{ type: "lashing", partA: 0, partB: 1, auto: 1 }], 2);
         out.validReist = valid.length === 1 && valid[0].auto === 1;
 
-        // (8) der GEHEILTE Remap-Riss: Part-Löschen bewahrt anchor + auto der
-        // ÜBRIGEN Verbindungen (vorher strippte der Remap ALLE Zusatz-Felder —
-        // ein Löschen zerstörte die M1-Face-Snap-Anker des ganzen Bauplans).
+        // (8) der GEHEILTE Remap-Riss: Part-Löschen bewahrt anchor + auto der ÜBRIGEN Verbindungen.
         if (blu.__acRm) delete blu.__acRm;
         r.createBlueprint("__acRm", "Remap-Probe");
         r.addPartToBlueprint("__acRm", P("box", "holz", 0, 0.5, 0, 1, 1, 1));

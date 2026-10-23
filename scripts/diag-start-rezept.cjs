@@ -1,5 +1,5 @@
-// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt, holt ihre
-// Browser-Schalter aus scripts/lib/software-gpu.cjs. Rein statisch, kein Browser.
+// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt,
+// holt ihre Browser-Schalter aus scripts/lib/software-gpu.cjs. Rein statisch, kein Browser.
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
 //   W2  das Rezept selbst: Linux trägt die Swapchain-Schalter, Windows trägt keinen Vulkan-/ANGLE-Schalter; die Weiche

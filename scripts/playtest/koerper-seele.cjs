@@ -2039,7 +2039,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
         // DSL-Op define_soul ist im Interpreter
-        const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
+        const ops = (r.dslOps && r.dslOps()) || null;
         out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
         // Fallback: prüfen via dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
@@ -2402,12 +2402,12 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
-        // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
-        // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
-        // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
-        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz
-        // für je ein Probe-Wesen: die Obergrenze, die die Bänder davor füllten, urteilt nie mit.
+        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
+        // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
+        // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
+        // ist sanft). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
+        // seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz für je ein Probe-Wesen: die
+        // Obergrenze, die die Bänder davor füllten, urteilt nie mit.
         const cap4 = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 1;
         out.d4Temperament = (() => {

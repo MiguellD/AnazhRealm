@@ -700,8 +700,8 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
-            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der
+            // Sitzfläche, −π/2)
             out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
@@ -1913,7 +1913,7 @@ async function checkBandKoerperBewegung(ctx) {
                     if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
             if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
+            // das Becken NICHT
             traeger(soleY - 0.25);
             s.isInAir = true;
             probenFrisch();

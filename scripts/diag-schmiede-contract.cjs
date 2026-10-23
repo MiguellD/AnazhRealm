@@ -24,10 +24,10 @@
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
 //
-// PLATTFORM-PROBE (Integration W5, scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8 dieselben Bytes —
-// jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss byte-gleich bleiben;
-// kippt einer, nennt die Probe die Aufrufstelle. Seit S1 Wände driften alle Transzendenten: pow bleibt hart 0,
-// sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
+// PLATTFORM-PROBE (Integration W5, scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8
+// dieselben Bytes — jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss
+// byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Seit S1 Wände driften alle Transzendenten: pow
+// bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const fs = require("fs");
 const path = require("path");

@@ -298,8 +298,8 @@ async function probe(cfg) {
     const csm = st.csmNode;
     const aus = { werfer: [], fern: [], akne: [], echt: [], bilder: [], zaehne: null, bias: null, texel: null };
     rend.setAnimationLoop(null);
-    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor (gemessen 09.10.: zwischen dem LEER und dem LEER2 eines Werfers
-    // wanderte die Sonne von 27° auf 36°, 12 665 Pixel „strömten") — nach jedem Takt steht sie wieder auf der Zeit der Probe.
+    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor — nach jedem Takt steht sie wieder auf der Zeit der
+    // Probe.
     let zeitFest = null;
     const uhrHalten = () => {
         if (zeitFest === null) return;
@@ -637,11 +637,11 @@ async function probe(cfg) {
         st.playerMesh.visible = false;
         st.playerMesh.position.set(bx - 4, boden(bx - 4, bz + 4) + 0.9, bz + 4);
     };
-    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag sie ganz
-    // im Schatten der Bäume (vorher wie nachher 0 px: kein Bias-Urteil möglich). Während einer Messung sieht jede Kaskaden-
-    // Kamera nur die Ebene ISO, und auf ihr liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-
-    // Kamera; im Schatten-Pass ist ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der
-    // Kaskaden bleiben die des Spiels.
+    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag
+    // sie ganz im Schatten der Bäume. Während einer Messung sieht jede Kaskaden-Kamera nur die Ebene ISO, und auf ihr
+    // liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-Kamera; im Schatten-Pass ist
+    // ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der Kaskaden bleiben die
+    // des Spiels.
     const ISO = 30;
     const isoAlt = lichter.map((lw) => lw.shadow.camera.layers.mask);
     const isoAn = () => lichter.forEach((lw) => lw.shadow.camera.layers.set(ISO));

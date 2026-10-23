@@ -125,8 +125,8 @@ function zugVerdict(m) {
         out.push(`zug vorrat: ${vr.key} ${vr.auftraege}× bestellt — Täter _foundryPrefetchLibrary bestellt an _foundryZug vorbei`);
     return out;
 }
-// V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs
-// gemessen.
+// V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
+//
 function rahmenVerdict(m) {
     if (!m || m.gestartet !== true) return ["rahmen start"];
     const out = [];
@@ -315,9 +315,9 @@ function knotenVerdict(m) {
     return out;
 }
 
-// R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte
-// Ring-Suche scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die
-// 8-Strahlen-Suche von cf9a07ba (8 je 4-m-Ring).
+// R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
+// scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
+// cf9a07ba (8 je 4-m-Ring).
 const ALT8 = (R) => 8 * Math.floor(R / 4);
 function sucheVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];

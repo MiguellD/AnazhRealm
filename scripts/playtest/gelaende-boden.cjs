@@ -420,9 +420,8 @@ async function checkBandVoxelTerrainCore(ctx) {
                 T.attribute("color", "vec3"),
                 T.positionWorld,
             ]);
-        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
-        // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
-        // 1,2 m unter dem gezeichneten Boden).
+        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die Mesh-Kante) —
+        // 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
         out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
         out.voxelSurfaceIsBoundary =
@@ -2015,7 +2014,7 @@ async function checkBandTodZensus(ctx) {
 
             // DIE TÄTER (Selbst-Test): der alte Defekt, eingespielt an der Naht, die ihn heute trägt
             if (taeter === "sicht")
-                // der Takt der Gefallenen ohne die Sicht des Leibs (vorher: _tickLeichname trieb nur den Fall)
+                // der Takt der Gefallenen ohne die Sicht des Leibs
                 decke(
                     "_leibSicht",
                     (alt) =>
@@ -2025,7 +2024,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "zeichen")
-                // der Fall ohne das Räumen dessen, was das lebende Tier trug (vorher: erst removeCreature räumte)
+                // der Fall ohne das Räumen dessen, was das lebende Tier trug
                 decke(
                     "_leibZeichenFrei",
                     (alt) =>
@@ -2035,7 +2034,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "last")
-                // der Fall, in dem die Last verfällt (vorher: der Satz ohne Messung — ein Fall ohne Rückgabe sähe niemand)
+                // der Fall, in dem die Last verfällt
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2045,7 +2044,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "raeumen")
-                // die Aura räumt wieder in ihrer eigenen Kopie (vorher: _refreshCreatureTaskAura neben _leibZeichenFrei)
+                // die Aura räumt wieder in ihrer eigenen Kopie
                 decke(
                     "_refreshCreatureTaskAura",
                     (alt) =>
@@ -2062,7 +2061,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "kopie")
-                // die Kopie beim Mitspieler ohne die Sicht des Leibs (vorher: jede Kopie in jeder Ferne die volle Gestalt)
+                // die Kopie beim Mitspieler ohne die Sicht des Leibs
                 decke(
                     "_p2pTickRemoteCreatures",
                     (alt) =>
@@ -2088,8 +2087,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "haltung")
-                // der Fall hält die Haltung nicht fest (vorher: der Stufen-Schalter stellte einen stehend Gefallenen jenseits der
-                // Grenze in die Stand-Pose der Gestalt, NACH seiner Tod-Lage)
+                // der Fall hält die Haltung nicht fest
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2100,7 +2098,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "sprung")
-                // der Fall nimmt die Höhe des Hüpfers mit (vorher: die Wurzel der Tod-Lage stand, wo der Sprung den Leib trug)
+                // der Fall nimmt die Höhe des Hüpfers mit
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2111,7 +2109,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "wesen")
-                // der Leichnam bleibt unter den Wesen (vorher, bis Nachbesserung 3)
+                // der Leichnam bleibt unter den Wesen
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2123,7 +2121,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "stimme")
-                // der letzte Ruf aus dem liegenden Leib (vorher: _tickLeichname rief, wenn er lag)
+                // der letzte Ruf aus dem liegenden Leib
                 decke(
                     "_tickLeichname",
                     (alt) =>
@@ -2598,9 +2596,9 @@ async function checkBandBewegungUnterLast(ctx) {
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`), statt dass der
-            // 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0) — der stehende Wolf
-            // machte den Selbsttest blind (CI 39011585355: 0/4; lokal an der Kreatur-Uhr 109,99 dasselbe, über 40 Uhren 58 %)
+            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`),
+            // statt dass der 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0)
+            // — der stehende Wolf machte den Selbsttest blind
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
             let t = performance.now();

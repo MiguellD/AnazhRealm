@@ -376,11 +376,10 @@ async function verhalten(schaleSrc) {
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
-                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der eine
-                // baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst nach dem
-                // Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen, wartete der Put
-                // und mit ihm der zweite Körper bis nach dem langen Bau (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
-                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Bake eines anderen Fadens).
+                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der
+                // eine baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst
+                // nach dem Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen,
+                // wartete der Put und mit ihm der zweite Körper bis nach dem langen Bau.
                 const H = neu(3, true);
                 const Wk = neu(3, true);
                 const tH0 = performance.now();

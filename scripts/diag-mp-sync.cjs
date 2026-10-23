@@ -51,9 +51,8 @@ const LATENZ_MS = 150;
 // Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
 const LAUF_M = 1.5;
 const LAUF_FRIST_MS = 30000;
-// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
-// das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
-// Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
+// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen
+// sind — das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers.
 const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
@@ -434,7 +433,7 @@ function bericht(p) {
                 window.__mp.eigenBewegtAm = null;
                 window.__mpP = undefined;
             });
-            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m (CI 38683406115)
+            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m
             const halt = await halteBis(pageA, {
                 taste: "w",
                 ziel: (soll) => {
@@ -504,15 +503,15 @@ function bericht(p) {
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
         // (`_lockstepTickPeers`). Der Selbsttest gleich danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein
         // Frame von 1/60 s): (d) muss ROT werden. DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am
-        // Ende und nie einen festen Verzug: der Ort allein war blind (CI 38670118945, die alte Kappe holte den kurzen
-        // Lauf vor dem Urteil fast ein), der feste Verzug las einen Schub vor dem Fenster als Täter (CI 38677065212).
+        // Ende und nie einen festen Verzug: der Ort allein war blind, der feste Verzug las einen Schub vor dem Fenster
+        // als Täter.
         const lsGesetz = await pageB.evaluate(() => {
             const K = window.anazhRealm.constructor;
             return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
         });
-        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL Schritte von A angekommen
-        // sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A sendet und wie belastet der Läufer
-        // ist (CI 38670118945 lief mit 300 ms Wanduhr-Takten; lokal unter Last kam je Takt kein einziger Schritt, K60-N3/mp-4.txt)
+        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL
+        // Schritte von A angekommen sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A
+        // sendet und wie belastet der Läufer ist
         const ZUFLUSS_SOLL = ZUFLUSS_FAKTOR * lsGesetz.aufhol;
         const langeTakte = (an, alteKappe) =>
             pageB.evaluate(

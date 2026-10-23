@@ -1328,17 +1328,54 @@ class AnazhRealm_gelaende_chunks {
         // neue Stufe gröber ist als seine (die Naht folgt dem neuen Netz) oder dessen alte (`altLod`: die alte Naht fällt).
         // Jeder andere behält seinen Morph; bis K51-3 morphte jeder Wechsel alle acht neu (OMEN 1410-boden gehend: die
         // Folge-Neubauten des Stufen-Wechsels, Frame p95 28,7 → 41,6 ms; Radeon je Neubau ~9 Morphs à 1,2–1,5 ms).
+        // Der Chunk selbst morpht sofort (sein erstes Netz); die Folge seiner Nachbarn geht in die Folge-Schlange
+        // (`_tickMorphFolge`), die sein eigener Morph für ihn schließt.
+        if (this.state._morphFolge) this.state._morphFolge.delete(key);
+        this._applyCrossLodGeomorph(cx, cz);
         for (let dx = -1; dx <= 1; dx++)
             for (let dz = -1; dz <= 1; dz++) {
-                if (dx !== 0 || dz !== 0) {
-                    const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                    if (!nb || nb.empty || !nb.mesh) continue;
-                    const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
-                    if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
-                }
-                this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                if (dx === 0 && dz === 0) continue;
+                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                if (!nb || nb.empty || !nb.mesh) continue;
+                const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
+                if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
+                const F = this.state._morphFolge || (this.state._morphFolge = new Map());
+                const nk = `${cx + dx},${cz + dz}`;
+                if (!F.has(nk)) F.set(nk, this._schedFrameNo | 0);
             }
         return entry;
+    }
+
+    // DIE FOLGE DES WECHSELS IM TAKT (fahrt-takt, profiband.K1, Lehre 25): ein Nachbar, den ein Stufen-Wechsel neu morphen
+    // lässt, wartet in der EINEN Folge-Schlange (Chunk → Takt der ersten Bitte) und morpht EINMAL gegen den letzten Stand
+    // seiner Nachbarn — ein Ring-Wechsel baut seine Reihe Chunk für Chunk (je Takt einer), bis fahrt-takt morphte der Nachbar
+    // nach jedem neu (Radeon in Fahrt 20 m/s: 648 von 1 119 Folge-Morphs wiederholten sich binnen 10 Takten, 481 von 762 ms).
+    // Nah zuerst (Ring-Abstand, dann die ältere Bitte), im Takt ohne Chunk-Einbau bis `ms`, mindestens einer; nie verhungert:
+    // eine Bitte, älter als MORPH_FOLGE_FRIST Takte, morpht in jedem Takt. Der Morph liest die Nachbarn, wie sie dann stehen —
+    // byte-gleich mit dem Morph nach jedem Wechsel (der letzte gewinnt, `_applyCrossLodGeomorph` ist ein Zustand der Netze).
+    _tickMorphFolge(ms) {
+        const F = this.state._morphFolge;
+        if (!F || F.size === 0) return 0;
+        const takt = this._schedFrameNo | 0;
+        const p = this.state.lastPlayerVoxelChunk;
+        const reihe = [];
+        for (const [key, seit] of F) {
+            const k = key.indexOf(",");
+            const cx = Number(key.slice(0, k)),
+                cz = Number(key.slice(k + 1));
+            reihe.push({ key, cx, cz, seit, d: p ? Math.max(Math.abs(cx - p.cx), Math.abs(cz - p.cz)) : 0 });
+        }
+        reihe.sort((a, b) => a.d - b.d || a.seit - b.seit || (a.key < b.key ? -1 : 1));
+        const t0 = performance.now();
+        let n = 0;
+        for (const e of reihe) {
+            const faellig = takt - e.seit >= AnazhRealm.MORPH_FOLGE_FRIST;
+            if (!faellig && (ms <= 0 || (n > 0 && performance.now() - t0 >= ms))) continue;
+            F.delete(e.key);
+            this._applyCrossLodGeomorph(e.cx, e.cz);
+            n++;
+        }
+        return n;
     }
 
     // DIE NAHT DES CHUNKS (gehen-takt, Lehre 25): was ein Naht-Morph berühren KANN, steht mit dem Netz fest — die Rand-Vertices
@@ -3250,6 +3287,10 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// DIE FOLGE-SCHLANGE der Nachbar-Morphs (`_tickMorphFolge`, fahrt-takt): je Takt ohne Chunk-Einbau so viele ms (mindestens
+// ein Morph), eine Bitte älter als die Frist (Takte) morpht in jedem Takt.
+AnazhRealm.MORPH_FOLGE_MS = 0.5;
+AnazhRealm.MORPH_FOLGE_FRIST = 6;
 // DAS WACHSTUM ÜBER BUDGET (`_tickFoliageGrowth`, Lehre 13): je WUCHS_DROSSEL_MS wächst EIN Chunk (der nächste) —
 // das Budget drosselt das Tempo, nie die Existenz (dieselbe Garantie wie der Bau über Budget, `_handBauErlaubt`).
 AnazhRealm.WUCHS_DROSSEL_MS = 250;

@@ -41,7 +41,7 @@ const server = statikServer();
 
 // DIE BLICK-WAHL (unter dem Bauch des Tiers, hinter Stämmen):
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
-// meisten vom Objekt geänderten Pixeln trägt Fern- UND Armlängen-Schuss.
+// meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
     const r = window.anazhRealm;
     const THREE_ = window.THREE;
@@ -711,14 +711,12 @@ const SCHUSS_FN = async (kam) => {
             continue;
         }
         const suche = kameraFuer(klasse, o, 0, "fern");
-        // ERST einschwingen, DANN den Blick wählen (Befund 30.09.: die Blick-Wahl vor dem Einschwingen sah eine
-        // halb gebaute Mesh-Zone — danach stand ein frisch gebauter Stamm zwischen Kamera und Wolf).
+        // ERST einschwingen, DANN den Blick wählen.
         const um0 = await umstellen(suche, true);
         console.log(
             `  eingeschwungen am ${klasse}: ${um0.takte} Takte · ungebaut in der Mesh-Zone ${um0.offen}${um0.warum ? " — " + um0.warum : ""}\n      Impostor: ${um0.zensus}`
         );
-        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz (Befund 30.09.: der Arm-Schuss erbte den Fern-Azimut
-        // und stand im Busch vor dem Wolf).
+        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz.
         for (const art of ["fern", "arm"]) {
             const wahl = await page.evaluate(SICHT_FN, Object.assign({ klasse }, kameraFuer(klasse, o, 0, art)));
             console.log(

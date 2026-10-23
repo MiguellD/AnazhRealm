@@ -1062,9 +1062,8 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
-    // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
-    // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
+    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen sind Vertrag. Fehlt der Block im
+    // tragenden Kern, ist das ROT.
     const pflicht = {
         "koerper-core.js": (m) =>
             !!(

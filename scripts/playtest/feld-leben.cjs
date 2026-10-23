@@ -713,8 +713,8 @@ async function checkBandWelle6APolish(ctx) {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
-        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe weichen
-        // (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt (CI 38967779045)
+        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe
+        // weichen (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt
         for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a_haus;
 

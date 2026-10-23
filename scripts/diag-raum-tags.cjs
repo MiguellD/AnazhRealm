@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Die Rechnung prüft je Teil-Paar
-// Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung. Der Schnitt: `computeSpatialTags` merkt sich je Bauplan
-// die Tags und einen SCHLÜSSEL — den Schnappschuss jedes Eingangs der Rechnung (`_raumTagSchluessel`), bei jedem Ruf
-// gebaut und Wert für Wert verglichen; die Rechnung (`_raumTagsRechnen`) läuft nur bei geändertem Schlüssel. Ein
-// Schreiber muss sich nicht melden: der Schlüssel liest den Inhalt. Die Wand:
+// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
+// Der Schnitt: `computeSpatialTags` merkt sich je Bauplan die Tags und einen SCHLÜSSEL — den Schnappschuss jedes Eingangs der
+// Rechnung (`_raumTagSchluessel`), bei jedem Ruf gebaut und Wert für Wert verglichen; die Rechnung (`_raumTagsRechnen`) läuft
+// nur bei geändertem Schlüssel. Ein Schreiber muss sich nicht melden: der Schlüssel liest den Inhalt.
+// Die Wand:
 //   (Q) QUELLE (AST, auch im Selbsttest): der Aufrufbaum der Rechnung liest keinen Zustand außer `state.materials` und kein
 //       Feld der Instanz; jede statische Tabelle, die er liest, schreibt niemand (außer ihrer Definition); kein Leser umgeht
 //       das Gedächtnis (`_raumTagsRechnen` ruft nur `computeSpatialTags`);

@@ -23,25 +23,34 @@
 //       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
-//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie
-//       unter dem Spiegel.
-//   C — DER SATZ NENNT DAS ERGEBNIS: am See je Richtung eine Uferkante, der Blick auf den See, „pflanz mir sechs birken"
-//       (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0
-//       „nichts", die gewünschte nur, wenn alles steht.
-//   E — DAS ERGEBNIS JEDES SETZ-OPS: je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler — „spawne kreaturen 10" an
-//       der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall ohne Bauplan, der Tempel
-//       mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem Grund aus der EINEN Tafel
-//       (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und meldet dann die Häuser,
-//       die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
-//   R — DAS DORF DES NEXUS AM SEERAND: Same 1500797043, der Spieler am Rand des Plans (der Anker bleibt der verlangte Ort),
-//       ein haus_provenzalisch am See; die Häuser bekommen ihre Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll:
-//       0 Invalidierungen, das Wasser bleibt (± 1 %).
-//   D — DER DAMM ÜBERSTEHT DEN RELOAD (eigener Browser-Kontext, frische Welt): der Damm des Studios in der Klamm S6 der
-//       Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 % Gefälle, 20 m Sohle — die Aue der Welt staut nicht), geboren wie im
-//       Spiel; er fasst das Ufer je Seite bis 4 m über dem Spiegel + 1 m. 1200 Takte, gespeichert, neu geladen, 1200 Takte,
-//       abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung). D misst
-//       das Stau-Feld gegen die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält
-//       der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden.
+//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
+//       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
+//   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
+//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl
+//       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
+//   E — DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
+//       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
+//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem
+//       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
+//       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
+//   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
+//       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
+//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
+//   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
+//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
+//       DER ORT TRÄGT EINEN STAU (K37): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
+//       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
+//       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. D misst das Feld gegen
+//       die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über
+//       der Flut, keine Stau-Quelle ohne Raum über ihrem Boden (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37 (Tal
+//       26/−120 der alten Welt): gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
+//       DIE KLAMM DER PRÜFBÜHNE (werk-ufer): die K16-Welt trägt keinen Ort, an dem ein Damm staut — ihr Fluss liegt
+//       in der Aue (Bett 0,8 m, Ufer 10 m hinter der Kante ≤ 0,96 m über dem Spiegel: das Bankvoll-Bett des Tieflands), das
+//       Stau-Fenster (29 m, Rand auf Spiegel + 0,5 m) hebt dort nichts; von 7 668 Fluss-Punkten in 7 km um die Mess-Wiese lag
+//       keiner in einer Engstelle mit ≥ 4 % Gefälle und ≥ 2,5 m Ufer (außer einer Kaskade von 74 %). Am K16-Fluss −884/−623:
+//       gehoben 0, Stau 498 → 497. Der Damm steht darum in der Klamm S6 der Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 %
+//       Gefälle, 20 m Sohle), geboren wie im Spiel, und er fasst das Ufer: je Seite bis 4 m über dem Spiegel + 1 m.
+//       Kopf werk-ufer: gehoben 34, gefüllt 34, Stau 684 → 898 Punkte, Reload 898.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
@@ -2553,7 +2562,7 @@ async function lauf() {
             satzNah: [ORTE.ufer, [ORTE.fluss.x, ORTE.fluss.z]],
             satzFern: [ORTE.seeUfer],
             dorfMs: 30000, // E: so lange darf das Dorf im See brauchen, bis es sich meldet
-            // R: das Dorf des Nexus am Seerand (Gegenprüfung Runde 3) — Same, Ort, das Haus am Rand, Fenster, Takte
+            // R: das Dorf des Nexus am Seerand — Same, Ort, das Haus am Rand, Fenster, Takte
             rand: {
                 seed: 1500797043,
                 ufer: ORTE.seeUfer,
