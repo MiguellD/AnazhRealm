@@ -1085,17 +1085,18 @@ jobs:
               # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
               # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
-              # echten GPU). Dreizehn Proben: geister · geburt · sattel · reload (Q12) · huepfer (Q1, das Sprung-Gesetz)
+              # echten GPU). Die Proben: geister · sattel · reload (Q12) · huepfer (Q1, das Sprung-Gesetz)
               # · wachsen · zufall (Q2, kein Math.random im Kreatur-Leben über window.__codeOf) · gier (Q3, auch Gas ↔
               # Bremse) · jagd (Q3/Q11, Beute-Flucht) · herde (Q11, gleichartig, nie am Blick) · hindernis (Q11, kein
               # Strahl, der EINE Leib) · nacht (Ruhe hält den Leib) · peer (Sicht-Kopie) · nexus (Welle LF: kein Würfel
               # schreibt ein Körper-Gesetz, Ops nur im Gesetz-Band, Nexus-Geburt fern) · temperament (Welle LF: Gattung × Größe,
               # Fluchttier flieht, der Kampf liest dasselbe) · abstand (Welle LF: der persönliche Raum je Leib, nie
-              # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
-              # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
+              # Durchdringung, die Neugier stellt sich an) · jagdkreis (die Riss-Quote je Jagd im Band von MacNulty: ein Wolf,
+              # vier, das Kitz; der Kadaver, Fuchs und Bär; der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
               # gleitet nicht — Schlupf ≤ 0,05, Ratsche K07; ein Fuß an der Grenze seiner Kette hebt ab) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
-              # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
+              # wer läuft, wird ausgewertet) · furcht (Ökologie K3: das Gedächtnis, der Ort, die Aura) · lebensraum (Tiere K4: die
+              # Art wählt der Ort, Gegenprobe in anderer Saat; die Geburt fern, außer Blick, in Gruppen) · durst. --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 
