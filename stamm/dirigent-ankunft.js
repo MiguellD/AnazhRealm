@@ -863,17 +863,19 @@ class AnazhRealm_dirigent_ankunft {
             nah: Math.hypot(p.x - auge.x, p.z - auge.z) + E.nahM,
         });
     }
-    // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin.
-    _imErstenBlick(x, z, r) {
+    // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin. `schirm`: nur der
+    // Bildwinkel selbst, ohne den Rand ERSTER_BLICK.randGrad — was der Schirm JETZT zeigt (der Rang des Dorf-Zugs, `_dorfZug`).
+    _imErstenBlick(x, z, r, schirm) {
         const B = this._ersterBlick();
         if (!B) return true;
         const dx = x - B.ex;
         const dz = z - B.ez;
         const d = Math.hypot(dx, dz);
         const rr = r > 0 ? r : 0;
-        if (d <= B.nah + rr || B.halb >= Math.PI) return true;
+        const halb = schirm ? B.halb - (AnazhRealm.ERSTER_BLICK.randGrad * Math.PI) / 180 : B.halb;
+        if (d <= B.nah + rr || halb >= Math.PI) return true;
         const w = Math.acos(Math.max(-1, Math.min(1, (dx * B.fx + dz * B.fz) / d)));
-        return w - Math.asin(Math.min(1, rr / d)) <= B.halb;
+        return w - Math.asin(Math.min(1, rr / d)) <= halb;
     }
     // Der Schlüssel des Blicks im Rang der Foundry-Schlange (`_foundryAuftragD2`): bis das erste Weltbild steht, trägt ein Ding
     // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.

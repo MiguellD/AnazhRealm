@@ -1646,14 +1646,8 @@ class AnazhRealm_siedlung_ort {
     async _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
-        const reihe = plan.slots.map((_s, i) => i);
-        const q = {
-            plan,
-            origin: { x: origin.x, z: origin.z },
-            idx: 0,
-            reihe,
-            so: { autonomous: !!(so && so.autonomous) },
-        };
+        // DIE EINE REIHE (`_dorfZug`): der Schirm zuerst, darin das nächste — bis siedlung-k5-nah hob der Akt in der Slot-Folge
+        const q = Object.assign(this._dorfZug(plan, origin, null), { so: { autonomous: !!(so && so.autonomous) } });
         let placed = 0;
         let skipped = 0;
         let mx = 0;
@@ -2486,6 +2480,11 @@ class AnazhRealm_siedlung_ort {
     // DER RANG DES ZUGS (siedlung.K5): die Häuser eines Plans heben in der Reihe ihres Abstands zum Spieler (`reihe`, das
     // nächste zuerst, gleich weit die Slot-Folge) — bis K5 in der Slot-Folge des Layouts, die vom Kern des Dorfs nach außen
     // wächst: wer am Rand ankam, sah das Dorf hinten beginnen. `idx` zählt die gehobenen.
+    // DER SCHIRM ZUERST (siedlung-k5-nah, Gebot 7): die Häuser, die der Schirm beim Erwachen zeigt (`_imErstenBlick` ohne
+    // Rand, der Grundriss als Radius), heben vor jedem außer Schirm — in beiden Hälften das nächste zuerst. Bis hier hob der
+    // Abstand allein: Radeon nH 300 (Station dorf, M36) hob das nächste Haus 19,6 m neben dem Spieler bei 81° außer Blick
+    // nach 60 ms, das erste im Schirm erst im fünften Zug-Schritt (über dem Budget je 8 Bilder einer), gezeichnet nach 553 ms.
+    // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe.
     // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
     // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
     // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
@@ -2545,8 +2544,16 @@ class AnazhRealm_siedlung_ort {
     _dorfZug(plan, origin, cellKey, gang) {
         const pm = this.state.playerMesh;
         const p = pm ? pm.position : origin;
-        const d = (s) => (origin.x + s.x - p.x) ** 2 + (origin.z + s.z - p.z) ** 2;
-        const reihe = plan.slots.map((_s, i) => i).sort((a, b) => d(plan.slots[a]) - d(plan.slots[b]) || a - b);
+        const aus = AnazhRealm.ERSTER_BLICK.ausserD2;
+        const rang = plan.slots.map((s) => {
+            const x = origin.x + s.x;
+            const z = origin.z + s.z;
+            const d2 = (x - p.x) ** 2 + (z - p.z) ** 2;
+            if (!pm || !Number.isFinite(d2)) return d2;
+            const { fp } = AnazhRealm._slotGrundriss(s);
+            return this._imErstenBlick(x, z, fp ? Math.hypot(fp.ex, fp.ez) : 0, true) ? d2 : d2 + aus;
+        });
+        const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
