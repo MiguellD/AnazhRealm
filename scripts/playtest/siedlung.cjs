@@ -1333,8 +1333,8 @@ async function checkBandArchetypBank(ctx) {
             // (KIND_SUBSTANCE, parts + connections) trägt die Bank-Probe unverändert.
             {
                 n: "substanz fahrzeug_wagen (KIND_SUBSTANCE)",
-                p: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.parts,
-                c: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.connections,
+                p: r.constructor.KIND_SUBSTANCE.fahrzeug_wagen.parts,
+                c: r.constructor.KIND_SUBSTANCE.fahrzeug_wagen.connections,
                 e: "vehicle",
             },
             { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },

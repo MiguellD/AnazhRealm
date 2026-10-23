@@ -2411,7 +2411,7 @@ function naesseSicht(o) {
         // Umkreis 24 m am Dach-Pool an seiner Mitte (am Boden)
         if (o.dach) {
             const U = r._ensureAtmoUniforms();
-            const arten = (r.constructor.NAESSE || {}).dachArten || [];
+            const arten = r.constructor.NAESSE.dachArten || [];
             const ab = (a) => Math.hypot(a.position.x - p.x, a.position.z - p.z);
             const bauten = st.architectures.filter((a) => {
                 const pr = !a._hausHuelle && a.position && r._foundryPresetForEntry(a);

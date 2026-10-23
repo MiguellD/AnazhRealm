@@ -3476,9 +3476,11 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // Wahl-Scheibe außerhalb der Scheibe beim Rendern; läuft die Scheibe zwischen zwei Karten darüber hinaus, rendert die
 // Kaskade neu (`_kaskadeDeckt`). `pflanzeRandM`: der Wind-Saum um die Kugel einer Pflanzen-Instanz (Krone und Halm wiegen).
 // `haltM` (Welle C): DIE LAGE STEHT, solange jede Ebene des Passes ihre Richtung hält und um höchstens so viel wandert
-// (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
-// ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
-// Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
+// (`_passLageGen`). Bemessen am GEHEN, nicht am Atmen: gehend wandert das Auge 10 cm je Frame (stadt-k1 23.10., Radeon,
+// Bahn Hauptgasse: p10/p50/p90 6,6/10,0/16,6 cm) — mit 2 cm fiel die Lage in jedem Geh-Frame (haupt 659/659, k0 659/659
+// Pässe neu), jeder Satz, die Höhlen-Sicht und jede Instanz-Wahl rechneten jeden Frame neu (3,7 + 1,9 + 1,3 ms je Takt ab
+// p95, Stadt gehend); mit 1 m hält sie über ~5 Geh-Frames. Das Gesetz trägt den Halt in jedem Urteil als Rand (`L.halt`,
+// die Höhlen-Sicht um ihn geweitet — `_hoehlenSicht`), die gehaltene Wahl verliert darum nichts.
 // `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): der Rand einer Perspektive
 // (Bogenmaß) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das
 // 1,5-Fache geweitet; die Wahl hält über eine Drehung bis zur Hälfte (`_wahlHaelt`), dann wählt sie neu.
@@ -3489,7 +3491,7 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([8, 24]),
     pflanzeRandM: 2,
-    haltM: 0.02,
+    haltM: 1,
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
 });
