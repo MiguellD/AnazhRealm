@@ -1695,7 +1695,7 @@ const TAT = process.argv.includes("--tat");
         const v = tatUrteil(befund);
         const { staemme, ernte, ...zeile } = befund;
         console.log("TAT " + JSON.stringify(zeile));
-        console.log(v.length ? "❌ TAT ROT — " + v.join(" | ") : "✅ TAT GRÜN — die Spur hält über Stunde und Reload");
+        console.log(v.length ? "❌ TAT ROT — " + v.join(" | ") : "✅ TAT GRÜN — die Spur hält bis zum Reload");
         process.exit(v.length ? 1 : 0);
     }
     befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
