@@ -1141,11 +1141,11 @@ async function probe(arg) {
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
             _depositLife: (a) => ({ x: a[0], z: a[1] }),
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
-            carveVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
-            fillVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
+            carveVoxel: (a) => ({ x: a[0], z: a[2] }),
+            fillVoxel: (a) => ({ x: a[0], z: a[2] }),
             assignTaskToNearestCreature: (a) => a[0] || null,
         };
-        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxelSphere: () => {}, fillVoxelSphere: () => {} };
+        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxel: () => {}, fillVoxel: () => {} };
         const alt = {};
         for (const nm of Object.keys(ortVon)) {
             alt[nm] = r[nm];
@@ -1307,8 +1307,8 @@ async function probe(arg) {
         const ufer = w0 || P;
         const sy = scan.call(r, ufer.x + 6, ufer.z) ?? 0;
         wm.voxelEdits = (editsAlt || []).concat([
-            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, strength: 48, mode: "carve" },
-            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, strength: 48, mode: "fill" },
+            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, mode: "carve" },
+            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, mode: "fill" },
         ]);
         try {
             for (let i = 0; i < 300; i++) {
@@ -2287,7 +2287,7 @@ async function korpusHaupt() {
             ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
             ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
             ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
-            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxelSphere", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
+            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
             ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
             ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
             ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],

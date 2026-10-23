@@ -1037,8 +1037,6 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 4 Phase 1/2/3 — Materialien + Helix + Werkzeuge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave4(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1546,8 +1544,6 @@ async function checkBandWave4(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 5 B/B P2/A/C + Reflexions-Bugfixes).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave5(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -2628,8 +2624,6 @@ async function checkBandWave5(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves9And10a(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

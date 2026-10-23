@@ -962,6 +962,10 @@ Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
+DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
+der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
+`editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des
+Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und voxel-worker rufen dieselben Funktionen.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die

@@ -97,8 +97,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -990,8 +988,6 @@ async function checkBandCadWorkshop(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
