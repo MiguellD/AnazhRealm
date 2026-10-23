@@ -1,9 +1,5 @@
 // diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen).
-// Befund der Leben-Prüfung (Dorf/Stadt S-S1 … S-S5; gespielt im sichtbaren Fenster): das Fachwerk-Labor baut ein
-// Profi-Dorf, lässt aber niemanden hinein — die promovierten Häuser behalten ihre Ganz-Haus-Hülle (4 von 4 zu, 1,1 m vor
-// der offenen Tür), demotierte Häuser werden Geister (0 Solids); auf der Speichertreppe klemmt der Kopf im Dachboden-Boden
-// (0,000 m Weg); im Keller ist die Decke die Wiesen-Platte; der Fluss liegt unter der Boden-Platte (die Brücke überspannt
-// Gras); jede städtische Antike stürzt ab (`wm is not defined`). Der Selbsttest des Labors schrieb S1 fest (Demotion
+// Der Selbsttest des Labors schrieb S1 fest (Demotion
 // verlangte null Solids). Die Linse ruft die ECHTEN Lab-Pfade (buildDorf · promoteB · demoteB · walkUpdate →
 // moveAxis/gravity/overlap · Raycaster gegen dorfGroup), nie eine Nachrechnung:
 //   B1  HÜLLE: jedes promovierte Haus trägt 0 Hüllen-Solids, jedes demotierte genau 1 (EIN Lebenszyklus je Haus)

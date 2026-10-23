@@ -2039,7 +2039,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
         // DSL-Op define_soul ist im Interpreter
-        const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
+        const ops = (r.dslOps && r.dslOps()) || null;
         out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
         // Fallback: prüfen via dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
