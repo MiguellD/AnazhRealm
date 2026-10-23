@@ -479,6 +479,8 @@ class AnazhRealm_kreatur_leben {
             durationSeconds: meta.durationSeconds || 30,
             label: meta.label || bp.label || blueprintName,
         });
+        // DAS WESEN ERINNERT, WER ES FÜTTERTE (Ökologie K3): die Gabe senkt die Furcht vor dem Spieler (`_kreaturFurchtErinnert`)
+        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
@@ -725,6 +727,9 @@ class AnazhRealm_kreatur_leben {
         // die Kampf-Furcht läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt — auf der Wand-Uhr
         // floh ein Tier je nach Bildrate verschieden lang)
         creature.userData.fearUntil = this.state.creatureAnimationTime + VG.furcht.fearSec * tProf.fleeMul;
+        // DAS WESEN ERINNERT, WER ES SCHLUG (Ökologie K3): der Schlag des Spielers wird eine Erinnerung — das Furcht-Gesetz
+        // liest sie bei jeder Begegnung (`_kreaturFurchtErinnert`), sie reist im Speicherstand (`_serializeCreature`)
+        if (opts.source === "player") this._creatureRemember(creature, "geschlagen", { von: "spieler" });
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
@@ -816,6 +821,10 @@ class AnazhRealm_kreatur_leben {
                 this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
             }
         }
+        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
+        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`)
+        if (creature.position)
+            this._depositEmotion(creature.position.x, creature.position.z, AnazhRealm._furchtGesetz().F.riss);
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });

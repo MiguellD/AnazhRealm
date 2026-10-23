@@ -226,9 +226,11 @@ class AnazhRealm_kreatur_verhalten {
         // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
         // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
         const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-        const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
+        if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
+        // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
+        const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
         const jaeger = this._kreaturJaeger;
-        if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
+        if (!jaeger || !jaeger.length) return wSpieler;
         // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
         // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
@@ -260,27 +262,79 @@ class AnazhRealm_kreatur_verhalten {
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        // DAS WESEN ERINNERT (Ökologie K3, tetrapoda furchtErinnert): wer es schlug, den fürchtet es — die erinnerte Furcht hebt
+        // die Wariness und weitet Witterung und Flucht-Distanz; wer es fütterte, dem nähert es sich (die Furcht sinkt unter 0).
+        // Vorher las kein Verhalten das Gedächtnis (nur Spezialisierung, Prompt und Hof).
+        const FG = AnazhRealm._furchtGesetz();
+        const erinnert = this._kreaturFurchtErinnert(creature);
+        const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
+        const witterung = NAT.noticeRadius * weit;
         von.x = pm.x;
         von.z = pm.z;
-        von.r = NAT.fleeRadius;
+        von.r = NAT.fleeRadius * weit;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
+        if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
-        const menace =
-            (e.chaos || 0) * NAT.menaceFromChaos +
-            (e.sorrow || 0) * NAT.menaceFromSorrow -
-            (e.peace || 0) * NAT.calmFromPeace -
-            (e.joy || 0) * NAT.calmFromJoy;
+        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt)
+        const menace = FG.bedrohung(e, NAT);
         // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
         // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
         // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
         const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-        const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
-        let wariness = (menace * modeMul - boldness) * (fearActive ? 1 : proximity);
+        const proximity = Math.max(0, 1 - dist / witterung);
+        let wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
         if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
         return wariness;
+    }
+
+    // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·
+    // gefüttert; die Einträge schreiben `damageCreature` und `activateCreatureConsumable`, sie reisen im Speicherstand).
+    _kreaturFurchtErinnert(creature) {
+        const FG = AnazhRealm._furchtGesetz();
+        return FG.furchtErinnert(creature.userData && creature.userData.memory, FG.F);
+    }
+
+    // DIE FURCHT DES ORTS (Ökologie K3, tetrapoda furchtOrt): die Beute (ein Pflanzenfresser, diet bis
+    // temperament.gattung.pflanzDiet — der Jäger und der Aasfresser gehen an den Riss) liest den Abdruck der Zellen um sich
+    // (das Emotions-Feld `_emotionOverlayAt`, 3 × 3 Zellen der Kante LIFE_FIELD.cell); die Furcht einer Zelle wiegt bis
+    // ortRadiusZellen Zellen um ihre Mitte, linear zum Rand. Ist sie größer als die Wariness w, ist der Ort die Bedrohung: `von`
+    // ist die Mitte der Zelle, ihr Flucht-Radius der Umkreis. Liefert die Wariness. Ein Riss prägt den Ort
+    // (`_creatureCombatDeath`); vorher trug der Ort Gefühle, die kein Tier las.
+    _kreaturFurchtOrt(creature, NAT, von, w) {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return w;
+        const VG = AnazhRealm._verhaltenGesetz();
+        if (this._kreaturDiet(creature) > VG.temperament.gattung.pflanzDiet) return w;
+        const FG = AnazhRealm._furchtGesetz();
+        const zelle = AnazhRealm.LIFE_FIELD.cell;
+        const R = FG.F.ortRadiusZellen * zelle;
+        const x = creature.position.x,
+            z = creature.position.z;
+        const cx = Math.floor(x / zelle),
+            cz = Math.floor(z / zelle);
+        let best = w,
+            bx = 0,
+            bz = 0;
+        for (let i = -1; i <= 1; i++)
+            for (let j = -1; j <= 1; j++) {
+                const mx = (cx + i + 0.5) * zelle,
+                    mz = (cz + j + 0.5) * zelle;
+                const m = FG.furchtOrt(this._emotionOverlayAt(mx, mz), NAT, FG.F);
+                if (!(m > 0)) continue;
+                const wo = m * Math.max(0, 1 - Math.hypot(x - mx, z - mz) / R);
+                if (wo > best) {
+                    best = wo;
+                    bx = mx;
+                    bz = mz;
+                }
+            }
+        if (best === w) return w;
+        von.x = bx;
+        von.z = bz;
+        von.r = R;
+        return best;
     }
 
     // Jagt dieses Wesen den Spieler? NUR wildes Temperament, NUR im pfad, NUR unverängstigt (Furcht
@@ -3656,6 +3710,36 @@ AnazhRealm._steuerGesetz = function () {
         return k;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
+};
+// DAS FURCHT-GESETZ (tetrapoda FURCHT_GESETZ + bedrohung · furchtErinnert · furchtOrt, Ökologie K3): die EINE Bedrohung eines
+// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts. Fail-closed.
+AnazhRealm._furchtGesetz = function () {
+    if (AnazhRealm._furchtGesetzMemo) return AnazhRealm._furchtGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const F = k && k.FURCHT_GESETZ;
+    if (
+        F &&
+        F.erinnerung &&
+        Number.isFinite(F.erinnerung.geschlagen) &&
+        Number.isFinite(F.erinnerung.gefuettert) &&
+        Number.isFinite(F.deckel) &&
+        Number.isFinite(F.fluchtJeFurcht) &&
+        F.riss &&
+        Number.isFinite(F.ortGewicht) &&
+        Number.isFinite(F.ortRadiusZellen) &&
+        typeof k.bedrohung === "function" &&
+        typeof k.furchtErinnert === "function" &&
+        typeof k.furchtOrt === "function"
+    ) {
+        AnazhRealm._furchtGesetzMemo = Object.freeze({
+            F,
+            bedrohung: k.bedrohung,
+            furchtErinnert: k.furchtErinnert,
+            furchtOrt: k.furchtOrt,
+        });
+        return AnazhRealm._furchtGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;

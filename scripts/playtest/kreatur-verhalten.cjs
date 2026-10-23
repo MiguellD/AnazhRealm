@@ -1,118 +1,9 @@
 "use strict";
 // scripts/playtest/kreatur-verhalten.cjs — der Richter von Kreatur/verhalten (spec/stamm/modul-karte.json): Aufgaben · Scheu · Jagd · Rudel · Kreatur-Takt.
-// 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 5 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
-
-// Aura-reaktive Kreatur: Wariness = Aura-Menace × Natur × Bindung × Modus → neugierig (näher) oder
-// scheu (fort), treibt den wander-Tick; ein Treffer setzt Furcht (Flucht).
-async function checkBandV1758CreatureNature(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh.position;
-        const e = p.emotions;
-        const savedEmo = {};
-        for (const k of Object.keys(e)) savedEmo[k] = e[k];
-        const savedMode = r.getGameMode();
-        const setEmo = (o) => {
-            for (const k of Object.keys(e)) e[k] = o[k] || 0;
-        };
-        const NAT = r.constructor._verhaltenGesetz().furcht;
-        out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
-
-        r.setGameMode("pfad");
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
-        const _capG = r.state.maxCreatures;
-        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-        const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
-        // ALTLASTEN-NULL: die Tiere sind tag-identisch (V17.16-Wand) — die
-        // Natur-Achse diskriminiert jetzt über BINDUNG (bond = Kühnheit) und
-        // FURCHT (Kampf), nicht über gefallene Fantasie-Substanzen.
-        const timid = near("fuchs");
-        const bold = near("baer");
-        bold.userData.bond = 1;
-
-        // (2) sanfte Aura → neugierig (näher); (3) chaotische Aura hebt die Wariness DEUTLICH
-        setEmo({ peace: 0.9 });
-        out.calmIsCurious = r._creatureWariness(bold) <= NAT.curiousThreshold;
-        setEmo({ chaos: 0.9 });
-        const angryTimidW = r._creatureWariness(timid);
-        setEmo({ peace: 0.9 });
-        out.angryScaresTimid = angryTimidW > r._creatureWariness(timid) + 1.0;
-        // die Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)
-        out.auraDrivesReaction = angryTimidW > r._creatureWariness(timid);
-
-        // (4) ein GEBUNDENES Wesen ist weniger scheu als ein ungebundenes (gleiche chaotische Aura)
-        setEmo({ chaos: 0.9 });
-        out.boldLessWaryThanTimid = r._creatureWariness(bold) < r._creatureWariness(timid);
-
-        // (5) Bindung senkt die Scheu (Vertrauen)
-        timid.userData.bond = 0;
-        const unbondW = r._creatureWariness(timid);
-        timid.userData.bond = 1;
-        const bondW = r._creatureWariness(timid);
-        timid.userData.bond = 0;
-        out.bondReducesWariness = bondW < unbondW;
-
-        // (6) frieden dämpft die Bedrohung vs pfad (gleiche chaotische Aura)
-        r.setGameMode("pfad");
-        const pfadW = r._creatureWariness(timid);
-        r.setGameMode("frieden");
-        const friedenW = r._creatureWariness(timid);
-        out.friedenDampsMenace = friedenW < pfadW;
-        r.setGameMode("pfad");
-
-        // (7) fern → neutral (Wariness 0, das Wesen wandert)
-        const far = near("fuchs");
-        far.position.set(pm.x + 999, pm.y, pm.z + 999);
-        out.farIsNeutral = r._creatureWariness(far) === 0;
-
-        // (8)+(9) KONSUM Kampf-Furcht: ein getroffenes (überlebendes) Wesen → fearUntil + sad + flieht
-        // selbst bei SANFTER Aura (die Furcht überschreibt die Ruhe)
-        setEmo({ peace: 0.9 });
-        timid.userData.hp = 9999;
-        const idx = r.state.creatures.indexOf(timid);
-        r.damageCreature(timid, 5, { source: "player" });
-        out.hitSetsFear =
-            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > r.state.creatureAnimationTime;
-        out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
-        out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
-        timid.userData.fearUntil = 0;
-
-        // cleanup
-        for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
-        setEmo(savedEmo);
-        r.setGameMode(savedMode);
-        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
-        return out;
-    });
-    check("V17.58 W3: VERHALTEN.furcht (Gesetz) trägt fleeThreshold", res.furchtGesetz);
-    check(
-        "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
-        res.calmIsCurious
-    );
-    check("V17.58 W3 (NULL): die chaotische Aura hebt die Wariness deutlich über die sanfte", res.angryScaresTimid);
-    check(
-        "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
-        res.auraDrivesReaction
-    );
-    check("V17.58 W3 (NULL): ein GEBUNDENES Wesen ist weniger scheu (bond = Kühnheit)", res.boldLessWaryThanTimid);
-    check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
-    check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
-    check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
-    check(
-        "V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)",
-        res.hitSetsFear && res.hitSetsSad
-    );
-    check(
-        "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
-        res.hitFlees
-    );
-}
 
 async function checkBandWelle6HCreatures(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -3242,6 +3133,6 @@ async function checkBandKreaturKosten(ctx) {
 }
 
 module.exports = {
-    checkBandV1758CreatureNature, checkBandWelle6HCreatures, checkBandWelleV11D3DrinkTask, checkBandPhaseEThreat,
+    checkBandWelle6HCreatures, checkBandWelleV11D3DrinkTask, checkBandPhaseEThreat,
     checkBandTierSeparation, checkBandKreaturKosten,
 };

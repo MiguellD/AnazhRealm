@@ -1771,6 +1771,53 @@
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
     }
 
+    // DAS FURCHT-GESETZ (Oekologie K3, 23.10., additiv — FURCHT_GESETZ wohnt nicht in VERHALTEN, VERHALTEN reist in PRESETS und
+    // der v7-Fingerabdruck bleibt): EINE Furcht eines Wesens aus zwei Gedaechtnissen, gewogen nach EINER Bedrohung.
+    // DIE BEDROHUNG eines Gefuehls (bedrohung): chaos und sorrow schrecken, peace und joy beruhigen — mit den Gewichten von
+    // VERHALTEN.furcht; sie wiegt die Aura des Spielers UND den Abdruck einer Tat am Ort (vorher rechnete der Wirt sie nur fuer
+    // den Spieler, der Ort trug Gefuehle, die kein Tier las). DAS WESEN ERINNERT (furchtErinnert): jede Erinnerung an den
+    // Spieler traegt ihr Gewicht (geschlagen +, gefuettert −; der Schlag wiegt schwerer als die Gabe: Baumeister et al. 2001,
+    // „Bad is stronger than good"), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
+    // weitet Witterung und Flucht-Distanz um fluchtJeFurcht je Einheit (bejagte Bestaende fliehen frueher und weiter, beim
+    // Wapiti um ein Mehrfaches: Stankowich 2008, Biol. Conserv. 141:2159). Gezaehlt wird, was das Gedaechtnis traegt (die Kappe
+    // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
+    // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
+    // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    var FURCHT_GESETZ = Object.freeze({
+        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
+        deckel: 3,
+        fluchtJeFurcht: 1.25,
+        riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
+        ortGewicht: 1,
+        ortRadiusZellen: 1.5,
+    });
+    // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
+    function bedrohung(e, NAT) {
+        return (
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy
+        );
+    }
+    // memory = die Erinnerungen des Wesens [{type, …}] (die Typen geschlagen · gefuettert; jeder andere wiegt 0).
+    function furchtErinnert(memory, F) {
+        if (!memory || !memory.length) return 0;
+        var s = 0;
+        for (var i = 0; i < memory.length; i++) {
+            var g = memory[i] && F.erinnerung[memory[i].type];
+            if (g) s += g;
+        }
+        return s > F.deckel ? F.deckel : s < -F.deckel ? -F.deckel : s;
+    }
+    // gefuehl = der Abdruck einer Zelle (Achsen wie e) oder null. Liefert die Furcht des Orts (≥ 0: ein ruhiger Ort lockt nicht).
+    function furchtOrt(gefuehl, NAT, F) {
+        if (!gefuehl) return 0;
+        var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
+        return m > 0 ? m : 0;
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3190,6 +3237,10 @@
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
+        FURCHT_GESETZ: FURCHT_GESETZ,
+        bedrohung: bedrohung,
+        furchtErinnert: furchtErinnert,
+        furchtOrt: furchtOrt,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

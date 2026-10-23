@@ -647,7 +647,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandV1754PlayerAttack, ctx);
             await timed(BAND.checkBandV1755HarvestEffort, ctx);
             await timed(BAND.checkBandV1755W2Profile, ctx);
-            await timed(BAND.checkBandV1758CreatureNature, ctx);
             await timed(BAND.checkBandV1759CapabilityReadout, ctx);
             await timed(BAND.checkBandV1761ForgeImplement, ctx);
             await timed(BAND.checkBandV1762ForgeMeaningful, ctx);

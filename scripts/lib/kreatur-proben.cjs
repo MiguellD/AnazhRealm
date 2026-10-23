@@ -3,6 +3,9 @@
 // (`node scripts/diag-kreatur-takt.cjs --werkbank <port>`, der Spiel-Loop ruht, Lehre 17). Die Selbsttests spielen den
 // alten Defekt als Täter ein (`taeter`) und erwarten Rot; das Soll trägt `urteil`.
 "use strict";
+// DIE LEBENS-PROBEN (Furcht, Lebensraum) wohnen in der Lebens-Linse scripts/diag-kreatur-leben.cjs (Datei-Decke 4 000): ihr
+// Stück der Seiten-Funktion steht an der Marke LEBEN_BUEHNEN und teilt Bühne und Helfer, ihr Urteil steht in `urteil`
+const LEBEN = require("../diag-kreatur-leben.cjs");
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
 async function kreaturProben(r, T, opts) {
@@ -200,6 +203,12 @@ async function kreaturProben(r, T, opts) {
     };
     const ruhig = (c) => {
         c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+    };
+    // der Spieler ruhig (oder im Gefühl e), je Takt: ein zorniger verschreckt jedes Tier, die Ansteckung im Kreatur-Takt trägt
+    // die Furcht der Beute zu ihm
+    const ruhigSpieler = (e) => {
+        if (s.player.emotions)
+            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
     const kamera = (blickX, blickZ) => {
         const cam = s.camera;
@@ -1988,12 +1997,6 @@ async function kreaturProben(r, T, opts) {
     // der Wolf startet 6 m hinter dem sprintenden Spieler: der Abstand schrumpft, ein Biss trifft ──
     await buehne("jagdkreis", async (restore) => {
         r.setGameMode("pfad");
-        // ein ruhiger Spieler, je Takt (ein zorniger verschreckt den Wolf — seine Wariness schlägt die Jagd; die Ansteckung
-        // der Gefühle im Kreatur-Takt trägt die Furcht der Beute zu ihm)
-        const ruhigSpieler = () => {
-            if (s.player.emotions)
-                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
-        };
         ruhigSpieler();
         // Die alten Wege als Täter: der Gradient des Geruchs-Felds (vier Proben, die vor dem Schnitt die Richtung gaben)
         // und der Jagd-Weg im Schritt-Tempo geradewegs auf das Ziel (kein Platz im Rudel, keine Hetze).
@@ -2164,10 +2167,6 @@ async function kreaturProben(r, T, opts) {
     // 2 × jagd.hetzM stehen, die größte Winkel-Lücke um den Spieler, dazu die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
-        const ruhigSpieler = () => {
-            if (s.player.emotions)
-                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
-        };
         if (taeter === "rudel")
             decke(
                 restore,
@@ -3427,6 +3426,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    /* LEBEN_BUEHNEN */
     return aus;
 }
 
@@ -3877,6 +3877,7 @@ function urteil(name, z) {
                     `Stand-Schlupf ${wo} (${Z.hangGrad}°): ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`
                 );
     }
+    LEBEN.urteil(name, z, soll);
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -3974,4 +3975,9 @@ const TAETER = {
     ],
 };
 
-module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };
+module.exports = {
+    KREATUR_PROBEN_SRC: kreaturProben.toString().replace("/* LEBEN_BUEHNEN */", () => LEBEN.BUEHNEN),
+    PROBEN: [...PROBEN, ...LEBEN.PROBEN],
+    TAETER: Object.assign(TAETER, LEBEN.TAETER),
+    urteil,
+};
