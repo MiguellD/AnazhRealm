@@ -6,6 +6,14 @@
 # beim Neustart mitten in einem Auftrag stand, setzt ihn fort (die Serie überspringt fertige Boots).
 #   bash p3/messplatz.sh &
 H=/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz; S=$H/waechter.lock
+# NACH EINEM NEUSTART (24.10.): eine Sperre, älter als der Systemstart, ist verwaist — ihre PID kann neu vergeben sein und
+# „lebte“ sonst. Das gilt für die Wächter-Sperre und für das GPU-Schloss (der Runner-Hook und gpu-schloss.sh prüfen dasselbe).
+BOOT=$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) ))
+for d in "$S" /c/Users/micha/AppData/Local/Temp/claude/gpu-schloss; do
+  if [ -d "$d" ] && [ "$(stat -c %Y "$d/$( [ "$d" = "$S" ] && echo pid || echo besitzer.txt)" 2>/dev/null || stat -c %Y "$d")" -lt "$BOOT" ]; then
+    echo "$(date '+%F %T') Sperre $d älter als der Systemstart - gelöst" >> $H/dienst.log; rm -rf "$d"
+  fi
+done
 # eine innere Schleife lebt (auch als Waise eines gestorbenen Wächters): jeder Prozess mit p3/messplatz/messplatz.sh in der Zeile
 schleife_lebt() { [ "$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process | Where-Object { [string]$_.CommandLine -match 'messplatz[\\/]messplatz\.sh' }).Count" 2>/dev/null | tr -dc 0-9)" != "0" ]; }
 while schleife_lebt || ! mkdir "$S" 2>/dev/null; do

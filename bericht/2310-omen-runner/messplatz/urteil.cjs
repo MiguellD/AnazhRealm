@@ -3,7 +3,8 @@
 //   node urteil.cjs <out> <zelle,zelle,…> [--md datei] [--json datei]
 // Gehen-Zellen (w-ego, g-third, d-ego, stadt, sturm): werkzeug/auswertung-gehen.cjs, Kern = fps · Frame p95 · CPU-Takt p95 · gpu-bank ·
 // Belegung p95, Δ ≤ max(2σ gepoolt, Auflösung). VERLÄNGERN, wenn der Kern-Richter anschlägt oder eine Kern-Größe in Richtung langsamer
-// zwischen 1σ und 2σ liegt — nur bei n = 2 je Seite. Fahrt: nur volle Fahrten (v50 ≥ 8 m/s) gegeneinander; fehlt einer Seite nach 4+4
+// zwischen 1σ und 2σ liegt — nur bei n = 2 je Seite; den 1σ–2σ-Auslöser tragen nur CPU-Takt p95, gpu-bank und Frame p95 (fps und
+// Belegung hängen an ihnen; mit neun Größen lag bei n = 2 fast jede Zelle zufällig irgendwo zwischen 1σ und 2σ — z7 verlängerte 5 von 5). Fahrt: nur volle Fahrten (v50 ≥ 8 m/s) gegeneinander; fehlt einer Seite nach 4+4
 // eine volle Fahrt, ist die Zelle UNENTSCHIEDEN. Zählungen (Befehle, Dreiecke, VRAM) stehen in der Tabelle, sie urteilen nicht.
 "use strict";
 const fs = require("fs");
@@ -46,6 +47,7 @@ const zaehl = (dir, zelle, suffix) => {
     }
     return r;
 };
+const AUSLOESER = new Set(["Frame p95 ms", "CPU-Takt p95 ms", "GPU je Bild ms (gpu-bank)"]); // der 1σ–2σ-Auslöser der Verlängerung
 const ergebnisse = [];
 for (const zelle of ZL.split(",").filter(Boolean)) {
     if (zelle === "fahrt") {
@@ -67,7 +69,7 @@ for (const zelle of ZL.split(",").filter(Boolean)) {
                 const d = m(xb) - m(xa), s = a.length + b.length > 2 ? sigD(xa, xb) : NaN, ds = richtung * d;
                 const langsam = Number.isFinite(s) ? ds > Math.max(2 * s, aufl) : false;
                 if (langsam && titel !== "Frame p99") { if (Math.min(n.A, n.B) < 4) verlaengern = true; else urteil = "LANGSAMER"; }
-                if (Number.isFinite(s) && ds > s && ds <= 2 * s && Math.min(n.A, n.B) < 4) verlaengern = true;
+                if ((titel === "Frame p95" || titel === "CPU-Takt p95") && Number.isFinite(s) && ds > s && ds <= 2 * s && Math.min(n.A, n.B) < 4) verlaengern = true;
                 zeilen.push({ gang: "volle Fahrt", titel, A: m(xa), B: m(xb), d, zweiSigma: 2 * s, u: langsam ? "LANGSAMER" : "nicht langsamer" });
             }
         ergebnisse.push({ zelle, n, voll: voll.map((x) => x.b), urteil: verlaengern ? "VERLÄNGERN" : urteil, verlaengern, zeilen, zaehl: zaehl(dir, "fahrt", "lauf") });
@@ -84,11 +86,18 @@ for (const zelle of ZL.split(",").filter(Boolean)) {
     }
     const KERN = new Set(["fps", "Frame p95 ms", "CPU-Takt p95 ms", "GPU je Bild ms (gpu-bank)", "Belegung p95 ms"]);
     const kern = j.urteile.filter((x) => KERN.has(x.titel) && x.u !== "–");
+    // OHNE WERTE KEIN URTEIL (z9, 23.10.: alle A-Boots leer, das Instrument bootete die Seite nicht — die Kern-Größen fielen als „–“
+    // heraus, und nichts urteilte LANGSAMER): fehlt einer Seite eine Kern-Größe des Stands, ist die Zelle UNENTSCHIEDEN
+    const steht = j.urteile.filter((x) => KERN.has(x.titel) && x.gang === "steht" && x.titel !== "GPU je Bild ms (gpu-bank)");
+    if (!kern.length || steht.some((x) => !Number.isFinite(x.ma) || !Number.isFinite(x.mb))) {
+        ergebnisse.push({ zelle, n, urteil: "UNENTSCHIEDEN", verlaengern: false, grund: "eine Seite ohne Werte (Instrument bootete nicht?)", zeilen: [] });
+        continue;
+    }
     let langsam = false, verlaengern = false;
     for (const x of kern) {
         const ds = (x.titel === "fps" ? -1 : 1) * x.d;
         if (x.u !== "nicht langsamer") langsam = true;
-        if (Number.isFinite(x.sig) && x.sig > 0 && ds > x.sig && ds <= 2 * x.sig) x.zwischen = true;
+        if (AUSLOESER.has(x.titel) && Number.isFinite(x.sig) && x.sig > 0 && ds > x.sig && ds <= 2 * x.sig) x.zwischen = true;
     }
     const klein = Math.min(n.A, n.B) < 4;
     if (klein && (langsam || kern.some((x) => x.zwischen))) verlaengern = true;
@@ -106,7 +115,22 @@ for (const e of ergebnisse) {
     if (e.voll) md += `| ${e.zelle} | – | volle Fahrten | ${e.voll.join(" ") || "keine"} | | | | | |` + NL;
     md += `| **${e.zelle}** | ${e.n.A}+${e.n.B} | | **Urteil** | | | | | **${e.urteil}** |` + NL;
 }
-const aus = { gesamt, ergebnisse };
+// DAS INSTRUMENT JE BOOT (serie.sh schreibt <boot>-instrument.txt: die Werkbank, die bereit wurde; Vorgabe A, Rückfall die eigene Seite)
+const instrument = {};
+for (const d of ["gehen", "fahrt", "takt", "hieb"]) {
+    const dir = path.join(OUT, d);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+        const mm = f.match(/^(.*-[AB]\d)-instrument\.txt$/);
+        if (mm) instrument[mm[1]] = fs.readFileSync(path.join(dir, f), "utf8").trim();
+    }
+}
+if (Object.keys(instrument).length) {
+    const je = {};
+    for (const [b, s] of Object.entries(instrument)) (je[s] = je[s] || []).push(b);
+    md += NL + "Instrument je Boot: " + Object.entries(je).map(([s, bs]) => s + " (" + bs.sort().join(", ") + ")").join(" · ") + NL;
+}
+const aus = { gesamt, ergebnisse, instrument };
 if (opt("--md")) fs.writeFileSync(opt("--md"), md);
 if (opt("--json")) fs.writeFileSync(opt("--json"), JSON.stringify(aus, null, 1));
 console.log(JSON.stringify({ gesamt, zellen: ergebnisse.map((e) => ({ zelle: e.zelle, n: e.n, urteil: e.urteil })) }));

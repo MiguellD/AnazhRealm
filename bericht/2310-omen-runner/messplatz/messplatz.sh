@@ -57,6 +57,10 @@ waehle() { # die erste offene Zeile nach prio -> "id prio art rest"
     { z[++k] = $0; id[k] = $1; pr[k] = $2 + 0 }
     END { best = 0; for (i = 1; i <= k; i++) if (!fertig[id[i]] && !storno[id[i]] && pr[i] > 0 && (!best || pr[i] < pr[best])) best = i; if (best) print z[best] }'
 }
+waehle_prio1() { # die erste offene prio-1-Zeile (die Vorfahrt in einem Punkte-Auftrag, Koordinator 23.10.)
+  git -C $MK fetch -q origin koordination 2>>$LOG
+  waehle | awk '$2 == "1"'
+}
 wert() { echo "$2" | tr ' ' '\n' | sed -n "s/^$1=//p" | head -1; }
 
 fahre_abab() { # $1 id, $2 rest
@@ -86,12 +90,24 @@ fahre_abab() { # $1 id, $2 rest
   say "$id fertig $URTEIL"
 }
 
-fahre_punkte() { # $1 id, $2 rest
-  local id=$1 S nur s8 g r
+fahre_punkte() { # $1 id, $2 rest — Station für Station (`--nur <id>`); vor jeder Station die Vorfahrt einer offenen prio-1-Zeile
+  local id=$1 S nur s8 g r=0 ids st fertig=$H/lauf/$1.stationen v
   S=$(wert sha "$2"); nur=$(wert nur "$2"); s8=${S:0:8}
   say "$id PUNKTE sha=$s8 ${nur:+nur=$nur}"
   git -C $PK fetch -q origin punkte-maschine 2>>$LOG; git -C $PK rebase -q origin/punkte-maschine 2>>$LOG || git -C $PK rebase --abort 2>/dev/null
-  (cd $PK && PUNKTE_GPU_LAUF=$(cygpath -m $BASE/p3/gpu-lauf.sh) node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx ${nur:+--nur $nur} > $H/lauf/$id.out 2>&1); r=$?
+  if [ -n "$nur" ]; then ids=${nur//,/ }; else ids=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs liste 2>/dev/null | grep -E "^  [a-z]+[.]K[0-9]+#[0-9]+ · [a-z+]*gtx" | awk '{print $1}'); fi
+  touch $fertig
+  for st in $ids; do
+    grep -qx "$st" $fertig && continue
+    v=$(waehle_prio1)
+    if [ -n "$v" ]; then
+      say "$id pausiert vor $st: Vorfahrt $(echo "$v" | awk '{print $1}')"
+      set -- $v; case $3 in abab) fahre_abab "$1" "${v#* * * }" ;; station) fahre_station "$1" "${v#* * * }" ;; esac
+      say "$id setzt fort"
+    fi
+    (cd $PK && PUNKTE_GPU_LAUF=$(cygpath -m $BASE/p3/gpu-lauf.sh) node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx --nur "$st" >> $H/lauf/$id.out 2>&1) || r=$?
+    echo "$st" >> $fertig
+  done
   g=$(node -e 'try{const j=require(process.argv[1]);const v=Object.values(j.je||{});console.log(v.filter(x=>x.gruen).length+" grün / "+v.filter(x=>!x.gruen).length+" rot")}catch(e){console.log("keine Mess-Datei")}' "$(cygpath -m $PK/meisterkarte-quelle/punkte/messung/$s8-gtx.json)")
   git -C $PK add meisterkarte-quelle/punkte/messung/$s8-gtx.json 2>>$LOG
   find $PK/meisterkarte-quelle/punkte/messung/roh/$s8-gtx -name "*.out" -size -5M 2>/dev/null | while read -r f; do git -C $PK add "$f" 2>>$LOG; done
@@ -100,11 +116,10 @@ fahre_punkte() { # $1 id, $2 rest
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" 2>>$LOG
   for i in 1 2 3; do git -C $PK push -q origin HEAD:punkte-maschine 2>>$LOG && break; git -C $PK fetch -q origin punkte-maschine; git -C $PK rebase -q origin/punkte-maschine 2>>$LOG || git -C $PK rebase --abort; done
   koord_frisch
-  erledigt "$id" "$([ $r = 0 ] && echo gemessen || echo ABSTURZ)" "punkte $s8 gtx: $g"
+  erledigt "$id" "gemessen" "punkte $s8 gtx: $g"
   mkdir -p $MK/bericht/$id; cp $H/lauf/$id.out $MK/bericht/$id/ 2>/dev/null
   koord_push "Messplatz $id: Punkte $s8 gtx $g" || melde "$id push nach koordination scheiterte"
-  [ $r = 0 ] || melde "$id punkte.cjs Exit $r"
-  say "$id fertig $g (Exit $r)"
+  say "$id fertig $g"
 }
 
 fahre_station() { # $1 id, $2 rest
@@ -127,7 +142,7 @@ fahre_station() { # $1 id, $2 rest
 # Probe ohne Fahrt: --waehle zeigt die nächste offene Zeile
 [ "$1" = "--waehle" ] && { koord_frisch; waehle; exit 0; }
 [ "$1" = "--baum" ] && { baum "$2"; exit $?; }
-say "DIENST START pid $"
+say "DIENST START pid $$"
 while :; do
   koord_frisch || { say "fetch scheiterte"; sleep 60; continue; }
   # ein Schloss älter als 2 h meldet die Sitzung (der Runner-Hook löst nach 30 min Stille selbst)

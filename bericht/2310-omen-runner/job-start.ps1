@@ -77,6 +77,10 @@ try {
         $wer = if ($b.Count) { $b[0] } else { '' }
         $hpid = ($b | Where-Object { $_ -match '^pid=\d+$' } | Select-Object -First 1)
         if ($wer -like 'ci-runner *') { Loesen $wer 'ein ci-runner haelt es (der Ende-Hook lief nicht)'; continue }
+        # aelter als der Systemstart (24.10.): die pid kann nach dem Neustart neu vergeben sein und "lebte" sonst
+        $start = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+        $bt = $null; try { $bt = (Get-Item "$schloss\besitzer.txt" -ErrorAction Stop).LastWriteTime } catch { }
+        if ($bt -and $bt -lt $start) { Loesen $wer 'aelter als der Systemstart'; continue }
         if ($hpid) {
             $p = [int]($hpid -replace '^pid=', '')
             if (-not (Get-Process -Id $p -ErrorAction SilentlyContinue)) { Loesen $wer "sein Halter pid $p lebt nicht"; continue }

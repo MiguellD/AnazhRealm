@@ -13,7 +13,8 @@ ci_wartet() { tail -n 1 "$GPU_HOOK_LOG" 2>/dev/null | grep -q "wartet auf Schlos
 schloss_erster() { head -n 1 "$GPU_SCHLOSS/besitzer.txt" 2>/dev/null | tr -d '\r'; }
 pid_lebt() { tasklist -FI "PID eq $1" -NH 2>/dev/null | grep -q " $1 "; }
 # ein Halter mit pid, die nicht lebt: nach erneutem Lesen desselben Besitzers geloest
-schloss_verwaist() { local wer p; wer=$(schloss_erster); p=$(grep -m1 "^pid=" "$GPU_SCHLOSS/besitzer.txt" 2>/dev/null | tr -dc 0-9)
+schloss_vor_neustart() { local boot=$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )); [ -f "$GPU_SCHLOSS/besitzer.txt" ] && [ "$(stat -c %Y "$GPU_SCHLOSS/besitzer.txt")" -lt "$boot" ]; }
+schloss_verwaist() { local wer p; wer=$(schloss_erster); if schloss_vor_neustart && [ "$(schloss_erster)" = "$wer" ]; then rm -rf "$GPU_SCHLOSS"; echo "$(date +%T) verwaistes Schloss '$wer' geloest - aelter als der Systemstart" >&2; return 0; fi; p=$(grep -m1 "^pid=" "$GPU_SCHLOSS/besitzer.txt" 2>/dev/null | tr -dc 0-9)
   [ -n "$wer" ] && [ -n "$p" ] && ! pid_lebt "$p" && [ "$(schloss_erster)" = "$wer" ] && { rm -rf "$GPU_SCHLOSS"; echo "$(date +%T) verwaistes Schloss '$wer' geloest - pid $p lebt nicht" >&2; }; return 0; }
 schloss_nehmen() { local n="$1" w=0; mkdir -p "$(dirname "$GPU_SCHLOSS")"
   until ! ci_wartet && mkdir "$GPU_SCHLOSS" 2>/dev/null; do schloss_verwaist; [ $w = 0 ] && echo "$(date +%T) GPU-Schloss haelt '$(schloss_erster)' - warte" >&2; w=1; sleep 15; done

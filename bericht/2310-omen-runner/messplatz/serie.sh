@@ -1,9 +1,12 @@
 #!/bin/bash
 # p3/messplatz/serie.sh — die EINE ABAB-Serie des Messplatz-Dienstes (koordination zug/messplatz.md; aus p3/n2210/zug6/serie-takt.sh):
-# MP_A, MP_B (Bäume), MP_OUT (Roh-Ordner), MP_LOCK (Schloss-Name), ZELLEN, LAEUFE. Instrument = werkbank aus B. Helfer unter werkzeug/.
+# MP_A, MP_B (Bäume), MP_OUT (Roh-Ordner), MP_LOCK (Schloss-Name), ZELLEN, LAEUFE, MP_INS (Instrument: A = Vorgabe, die Werkbank von main (Koordinator 23.10.), B, oder seite =
+# die Werkbank des Baums jedes Boots). Bootet das Instrument eine Seite nicht binnen 3 min (z9: die Werkbank aus B wartete auf
+# `anazhRealm.erwacht`, das A nicht trug), fällt dieser Boot auf die Werkbank seines eigenen Baums zurück — benannt im Log
+# (`INSTRUMENT`). Helfer unter werkzeug/.
 # Je Boot frisch: Schloss, Seiten-Wache (Fingerabdruck vor und nach), Vorfahrt Runner.Worker, Nachtruhe, stopp.ps1, save-server :4312.
 BASE=/c/Users/micha/Desktop/AnazhRealm-OMEN
-A=${MP_A:?}; B=${MP_B:?}; INS=$B; WZ=$BASE/p3/messplatz/werkzeug
+A=${MP_A:?}; B=${MP_B:?}; case ${MP_INS:-A} in B) INS=$B;; *) INS=$A;; esac; WZ=$BASE/p3/messplatz/werkzeug
 OUT=${MP_OUT:?}; LOG=$OUT/fortschritt.log; K14=$BASE/p3/k14; mkdir -p $OUT/stand $OUT/gehen $OUT/fahrt $OUT/blick
 STOPP=$(cygpath -w $WZ/stopp.ps1)
 say() { echo "$(date +%T) $*" | tee -a $LOG; }
@@ -14,13 +17,23 @@ seite() { # $1 Lauf, $2 Baum -> save-server 4312 + FP
   for t in $(seq 1 30); do curl -s -o /dev/null -w "%{http_code}" http://localhost:4312/ 2>/dev/null | grep -q 200 && break; sleep 1; done
   FP=$(node $K14/fingerabdruck.cjs $2 2>>$LOG) || { say "$1 SEITEN-WACHE ROT ($2)"; stopp; schloss_loesen ${MP_LOCK:?}; exit 3; }
 }
+seite_neu() { seite "$(basename $1)-rueckfall" $2; } # nach einem Instrument-Rückfall: frischer Stand und save-server am Baum des Boots
 aufraeumen() { mkdir -p $OUT/stand/$1; mv $2/anazhRealmState.json $2/anazhRealmState.json.bak $2/anazhRealmPerf.json $OUT/stand/$1/ 2>/dev/null; return 0; }
 gpu() { nvidia-smi --query-gpu=temperature.gpu,clocks.gr,clocks.mem,pstate,clocks_throttle_reasons.active --format=csv,noheader 2>/dev/null | tr -d '\n'; }
 smi_an() { nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,temperature.gpu,power.draw,pstate,clocks_throttle_reasons.active,memory.used --format=csv,noheader -l 1 > $1 2>/dev/null & SMI=$!; }
 kurz() { node -e 'for (const f of process.argv.slice(1)) { try { const t = require("fs").readFileSync(f, "utf8"); const j = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)); const e = j.ergebnis || j; process.stdout.write(`${f.replace(/^.*-/, "").replace(".txt", "")}: fps ${e.fps} F95 ${e.frameMs && e.frameMs.p95} C95 ${e.cpuTaktMs && e.cpuTaktMs.p95} k0 ${e.gpuJePassMs && e.gpuJePassMs.k0 ? e.gpuJePassMs.k0.p50 : "-"} | `); } catch (x) { process.stdout.write("LEER | "); } }' "$@"; }
-werkbank_an() { # $1 Datei-Präfix, $2 Ort
-  rm -f $1-werkbank.log; (cd $INS && node scripts/werkbank.cjs start --echt --port 4490 --seite http://localhost:4312 --ort $2 > $1-werkbank.log 2>&1 &)
-  for t in $(seq 1 120); do grep -qE "bereit|FEHLER" $1-werkbank.log 2>/dev/null && break; sleep 5; done
+werkbank_an() { # $1 Datei-Präfix, $2 Ort, $3 Baum des Boots -> setzt W auf das Instrument, das bereit wurde
+  local ins=$INS; [ "${MP_INS:-A}" = seite ] && ins=$3
+  for versuch in 1 2; do
+    rm -f $1-werkbank.log; (cd $ins && node scripts/werkbank.cjs start --echt --port 4490 --seite http://localhost:4312 --ort $2 > $1-werkbank.log 2>&1 &)
+    for t in $(seq 1 36); do grep -qE "bereit|FEHLER" $1-werkbank.log 2>/dev/null && break; sleep 5; done
+    W="node $ins/scripts/werkbank.cjs"
+    grep -q "bereit" $1-werkbank.log 2>/dev/null && { echo "$(git -C $ins log -1 --format=%h)" > $1-instrument.txt; return 0; }
+    [ "$ins" = "$3" ] && break
+    say "$(basename $1) INSTRUMENT $(git -C $ins log -1 --format=%h) bootet die Seite nicht in 3 min - Rückfall auf die Werkbank des eigenen Baums"
+    $W stop > /dev/null 2>&1; stopp; seite_neu $1 $3; ins=$3
+  done
+  say "$(basename $1) WERKBANK NICHT BEREIT"; return 1
 }
 . $BASE/p3/gpu-schloss.sh
 nachtruhe() { while :; do hm=$((10#$(date +%H%M))); if [ $hm -ge 325 ] && [ $hm -lt 415 ]; then sleep 60; else break; fi; done; }
@@ -45,7 +58,7 @@ for Z in ${ZELLEN:-fahrt d-ego w-ego g-third stadt}; do
     say "$NAME start FP=$FP gpu[$(gpu)]"
     P=$D/$NAME; [ $Z = blick ] && P=$D/blick
     smi_an $P-smi.csv
-    werkbank_an $P $ORT
+    werkbank_an $P $ORT $WT
     $W eval "window.__gf = []; r.state.renderer.backend.device.addEventListener('uncapturederror', (e) => window.__gf.push(String((e.error && e.error.message) || e).slice(0, 200))); return 1" > /dev/null 2>&1
     case $Z in d-ego|stadt) ;; *) $W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1;; esac
     $W fenster 1920 1080 > /dev/null 2>&1
