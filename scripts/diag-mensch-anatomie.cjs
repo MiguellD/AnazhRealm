@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-mensch-anatomie.cjs — DIE ANATOMIE-LINSE DES MENSCHEN (Welle 5, „der Mensch nah: Hände, Gesicht, Augen")
+// diag-mensch-anatomie.cjs — DIE ANATOMIE-LINSE DES MENSCHEN („der Mensch nah: Hände, Gesicht, Augen")
 // (npm run gate:mensch-anatomie). Sie misst das GESETZ, aus dem Lab und Welt den Menschen bauen — koerper-core
 // bauMensch + morphAuf mit den Start-Dials (START_PARAMS), three r128 im node-vm wie der Foundry-Worker —, die Arme
 // gerade hängend (Arm-Gelenke auf 0 gedreht), normiert auf die Körperhöhe Hk, gegen die Anthropometrie-Bänder des

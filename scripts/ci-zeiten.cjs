@@ -1,4 +1,4 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CW, Richter 22.10.): je Schritt von check.yml der Median seiner letzten 7 grünen
+// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml der Median seiner letzten 7 grünen
 // Messungen auf integ-probe (derselbe run-Text, je Job-Art), je Gruppe der Median ihrer Job-Dauer → spec/ci/ci-zeiten.json (die
 // Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die Voll-Gruppen je Klasse und je echt-Schritt die Frist
 // timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter grüner Lauf⌉).

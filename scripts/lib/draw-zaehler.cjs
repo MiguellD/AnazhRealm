@@ -1,9 +1,7 @@
-// draw-zaehler.cjs — DER DRAW-ZÄHLER (V18.510): GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
-// Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Befund 02.10.: das HUD (renderer.info) sah die
-// Region-Bundles im Replay nicht (148 dc), die GPU führte 29 943 Befehle aus — 97,5 % davon aus
-// BatchedMeshes, die unter WebGPU je INSTANZ einen drawIndexed ausgeben. Die Zahl hier kommt vom
-// Renderer-Draw selbst (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu
-// aufgenommen (sonst zöge der Replay sie ungesehen).
+// draw-zaehler.cjs — DER DRAW-ZÄHLER: GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
+// Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Die Zahl hier kommt vom Renderer-Draw selbst
+// (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu aufgenommen (sonst zöge der Replay sie
+// ungesehen).
 //
 // DIE TÄTER-KLASSE (W0, Band-Linse): jeder Befehl trägt einen Namen, der den Täter nennt — die Klasse ist die des
 // Stamms (`AnazhRealm#_taeterKlasse`, `AnazhRealm._instanzKlasse`): Instanz-Gruppen als `<familie>:<preset>:L<stufe>`

@@ -599,7 +599,7 @@ animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;ca
         kampf: "fight",
         showcase: "showcase",
     };
-    var B = AnazhHuelle.bruecke({
+    AnazhHuelle.bruecke({
         welt: "koerperstudio",
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {
@@ -617,22 +617,11 @@ animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;ca
         esc: function () {
             return !(typeof play !== "undefined" && play && play.on); /* Esc = Ninja-Park verlassen (exitPlay) */
         },
-    });
-    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE Schöpfer-Bearbeitung über DIESELBE
-       Brücke: die acht numerischen Dials als s, die String-Wahlen (skinTone/hairStyle/hairColor/top/topColor/bottom/
-       bottomColor/shoes/shoeColor) als gestalt — geschieden über typeof aus dem EINEN params-Objekt. Der Knopf ist
-       standalone hidden (nur das Portal enthüllt ihn). */
-    var b = document.getElementById("btnUebergabe");
-    if (!b || !window.parent || window.parent === window) return;
-    b.hidden = false;
-    b.addEventListener("click", function () {
-        var s = {};
-        var gestalt = {};
-        for (var k in params) {
-            if (!Object.prototype.hasOwnProperty.call(params, k)) continue;
-            if (typeof params[k] === "number") s[k] = params[k];
-            else if (typeof params[k] === "string") gestalt[k] = params[k];
-        }
-        B.post({ type: "uebergabe", world: "koerperstudio", kind: "koerper", s: s, gestalt: gestalt });
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): die Dials und Wahlen des Gusses (Saat 0 wie `gussOv`) —
+           die Welt prägt den Avatar damit; der Knopf steht nur im Portal. */
+        werk: function () {
+            return { kind: "koerper", preset: Object.keys(window.__koerperCore.PRESETS)[0], seed: 0, ov: Object.assign({}, params) };
+        },
+        werkOrt: document.getElementById("werkOrt"),
     });
 })();

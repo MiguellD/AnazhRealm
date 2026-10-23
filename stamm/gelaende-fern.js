@@ -67,8 +67,9 @@ class AnazhRealm_gelaende_fern {
         }
         if (s._frameOverBudget && m) return; // der Rebuild wartet auf einen gesunden Frame
         const t0 = performance.now();
-        // Kachel-Atlanten fürs Sicht-Fenster (lazy, deterministisch, einmalig pro Kachel).
-        if (typeof this._ensureHydroTilesAround === "function") this._ensureHydroTilesAround(pm.x, pm.z, outR);
+        // Kachel-Atlanten fürs Sicht-Fenster (lazy, deterministisch, einmalig pro Kachel): fehlt eine, ist sie im Faden
+        // bestellt und das Sheet wartet auf sie (Karte hydro-faden) — ein Bau ohne sie bliebe bis zum nächsten Anker stehen.
+        if (this._ensureHydroTilesAround(pm.x, pm.z, outR)) return;
         const waterLevel = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
         const step = span / 4;
         const pcx = Math.floor(pm.x / span);
@@ -911,7 +912,7 @@ class AnazhRealm_gelaende_fern {
     // Feld-Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
     _fernNass(x, z, law, wl, aus) {
         const h = this.state.hydrosphere;
-        if (!h || !h.ready || this._hydroComputing) {
+        if (!h || !h.ready) {
             aus.y = law;
             aus.spiegel = wl;
             return law < wl;

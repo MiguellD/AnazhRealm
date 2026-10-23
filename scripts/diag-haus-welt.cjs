@@ -93,7 +93,7 @@ const BASIS = {
             'this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 5.5, z: spot.z }, { silent: true });',
         ],
     ],
-    // DER PLATZ IST NUR DIE SCHEIBE (K52): die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
+    // DER PLATZ IST NUR DIE SCHEIBE: die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
     platz: [
         [
             "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
@@ -131,11 +131,11 @@ const BASIS = {
             "                    const zug = null;",
         ],
     ],
-    // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
+    // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS: Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
-    // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
+    // DIE WAND KENNT DEN WEG NICHT: Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
     weg: [['return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;', "return false;"]],
-    // DAS WERK IM STEIN (K52): der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
+    // DAS WERK IM STEIN: der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
     dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [
@@ -1039,7 +1039,7 @@ async function proben(phasen) {
                 ruhig = steht ? ruhig + 1 : 0;
             }
             w8.ruhe = ruhig >= 20;
-            // DER RING (K52): der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
+            // DER RING: der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
             // die Lichtung der Probe ist ab hier der Platz — der gemessene Kreis der Tore + 4 m
             r._genesisPortalRing(pm.position);
             // die Tore räumen, die Nah-Streu wächst durch die Wand nach: ruhen lassen wie zuvor
@@ -1203,7 +1203,7 @@ async function proben(phasen) {
             }
         }
     }
-    // W8 BAU — DER GRUNDRISS JEDES BAUS (K52): an einem trockenen Ort 150 m von der Plattform (60 m von jedem Haus) wächst der
+    // W8 BAU — DER GRUNDRISS JEDES BAUS: an einem trockenen Ort 150 m von der Plattform (60 m von jedem Haus) wächst der
     // Hain und bleibt, dann entsteht dort ein Damm (ein Bau ohne Haus-Zeile — seine Hülle sind Blocker-Boxen): kein Baum
     // bleibt in seinen Boxen (die Räumung der Wurzel), der zweite Hain mitten im Damm wächst nicht in sie und nennt den Bau
     if (P.has("bau")) {
@@ -1254,7 +1254,7 @@ async function proben(phasen) {
     if (P.has("w4")) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
-        // DER WURF IN DEN GRUNDRISS (K10-6): je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
+        // DER WURF IN DEN GRUNDRISS: je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
         // (`_naturSetzen`) — keiner steht. Ohne ihn hing W4 an der Natur, die zufällig im Grundriss wuchs (der Selbsttest
         // „grundriss" sah 1 Busch, nach dem Umzug des Dorfs keinen: blind).
         const wurf = [];
@@ -1276,7 +1276,7 @@ async function proben(phasen) {
         o.w4 = naturImHaus(H);
         o.w4.wurf = H.length * A.FELD_WURF.length;
         for (const e of wurf) if (s.architectures.includes(e)) r.removeArchitecture(e);
-        // W4 WEG (K52): keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
+        // W4 WEG: keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
         // des Drehbuch-Dorfs — die Formen der Wege-Karte, ihr Abstand hier eigens gerechnet (Kapsel um das Segment, gedrehter
         // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
         {

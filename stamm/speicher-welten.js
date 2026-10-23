@@ -799,6 +799,8 @@ class AnazhRealm_speicher_welten {
             // Snapshot und erwacht nie beim Reload.
             creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
             creatureEmotions: this.state.creatureEmotions,
+            // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
+            pfeileStecken: this._pfeileSteckenAbdruck(),
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
@@ -858,18 +860,10 @@ class AnazhRealm_speicher_welten {
             wetterWort: this.state.wetterWort || null,
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
-            // Die Studio-Übergabe überlebt den Reload (sonst still zurück auf die gefrorenen Kern-Presets).
-            // Am Empfänger Taille-gedeckelt (≤ TAILLE_UNKNOWN_FIELD_MAX); der Restore läuft durch DENSELBEN
-            // Validator (_studioUebergabeValidate).
-            studioUebergabe: (() => {
-                const u = this.state.studioUebergabe;
-                return u && typeof u === "object"
-                    ? {
-                          koerper: u.koerper && typeof u.koerper === "object" ? u.koerper : null,
-                          kreatur: u.kreatur && typeof u.kreatur === "object" ? u.kreatur : {},
-                      }
-                    : { koerper: null, kreatur: {} };
-            })(),
+            // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)
+            // überlebt den Reload — sonst still zurück auf die gefrorenen Kern-Presets. Der Restore läuft durch DENSELBEN Prüfer
+            // (`_studioWerkPruefen`, Taille-gedeckelt je Werk).
+            studioOv: JSON.parse(JSON.stringify((this.state.workshop && this.state.workshop.studioOv) || {})),
             // Die vier Perf-Regler reisen im Snapshot (sonst setzt jeder Reload sie still zurück):
             // perfTargetMs · lodRef (Quelle von Subsystem A) · szeneSkala · chunkRingRadius.
             perfTargetMs: Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : 17,

@@ -36,11 +36,9 @@ const server = statikServer();
 
 // ── H-F (W5 Gegenstände) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
 // Studio-Klinge in der Hand des Studio-Menschen, gemessen in WELT-Metern:
-//   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (vorher 0,14: das Langschwert 1,228 m maß 0,17 m — die Hand
-//                       skalierte im Anker-Raum, das Handgelenk misst 0,27 Welt je Studio-Einheit)
+//   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (die Hand skaliert nie im Anker-Raum)
 //   versatz ≤ 0,03 m  — die Griff-Mitte gegen die Hand-Mitte (Schwerpunkt der Haut-Vertices am Handgelenk-Gelenk)
-//   winkel  50–130°   — Griff-Achse gegen den Unterarm: eine Faust greift quer (vorher stand die Klinge mit 0,5 rad Kipp
-//                       den Unterarm hinauf — ein um 160° überstrecktes Handgelenk)
+//   winkel  50–130°   — Griff-Achse gegen den Unterarm: eine Faust greift quer
 const FAUST = { laenge: [0.95, 1.05], versatzM: 0.03, winkel: [50, 130] };
 function faustVerdict(h) {
     if (!h || !Number.isFinite(h.laenge)) return ["probe"];
@@ -400,7 +398,7 @@ function staticLaws(q) {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();

@@ -1532,7 +1532,8 @@ class AnazhRealm_vegetation_wiese {
             const hit = memo.get(memoKey);
             if (hit) return hit;
             const C = AnazhRealm.FOREST.cell;
-            this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C);
+            // fehlt die Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
+            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C)) memo = null;
         }
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
@@ -1789,10 +1790,12 @@ class AnazhRealm_vegetation_wiese {
             const zellen = [];
             for (let b = a; b < Math.min(liste.length, a + N); b++) {
                 const g = liste[b][2];
-                this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C);
+                // fehlt ihre Kachel, ist sie im Faden bestellt (Karte hydro-faden): die Zelle wartet in der Schlange
+                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C)) continue;
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
+            if (!zellen.length) continue;
             this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0]).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {

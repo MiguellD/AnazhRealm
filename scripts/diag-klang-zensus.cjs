@@ -1,61 +1,22 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-klang-zensus.cjs — DIE KLANG-LINSE (npm run gate:klang-zensus, Welle 5 Klang)
-//
-// Die Frage je Ort: WAS hört man dort, und trägt jede klingende Quelle ein GESETZ —
-// oder ist sie ein Stamm-Literal? Und kostet sie nur, solange man sie hört?
-//
-//  (O) DIE ORTE aus dem Gesetz gefunden (Standard-Saat, Null-Renderer): Wiese = der
-//      Messort jenseits jeder Glut · Seeufer = der nächste trockene Punkt, 3–7 m vor stillem
-//      Wasser · Waldinneres = der Punkt höchster Kronen-Deckung der Kronen-Karte (`_kronenStreuAt`: die EINE
-//      Quelle, wo Wald STEHT — das Ohr liest dieselbe; geprüft wird sie am Bestand: die stehenden Bäume ≤ 15 m,
-//      Einträge + Streu-Zellen, gezählt an den Objekten, nie an der Karte) · Dorf = 4 m neben dem nächsten Glut-Bau
-//      (Teile aus Material „glut", Brenn-Fläche > 0).
-//  (Z) DER ZENSUS je Ort (Bühne Mittag · Sonne · Sommer, Tiere halten, die Musik ruht):
-//      jede gestartete Quelle (Oszillator/Puffer/Konstante) mit ihrem ERZEUGER (Datei +
-//      Funktion aus dem Stapel), die Umwelt-Stimmen des Gesetzes (Pegel, an/aus) und der
-//      AUSGANG (Abgriff am Master: Pegel je Oktavband).
-//  (G) GESETZ-HERKUNFT: jede laufende Quelle ist im Gesetzbuch gebaut (klang-core.js im
-//      Stapel) oder ein Wirt-Leser eines benannten klang-Gesetzes (Musik ← klang:GENRES ·
-//      Schritt ← klang:SCHRITT_TIMBRE). Alles andere ist ein STAMM-LITERAL — beim Namen. Dazu STATISCH, unabhängig
-//      von jeder Tour: jede Stelle im Stamm, die eine Quelle baut (Oszillator · Puffer · Konstante), liegt in einem
-//      Wirt-Leser — sonst beim Namen mit Zeile.
-//  (H) HÖRBAR-KOSTEN: jede dauernd laufende Quelle (Schleife, Oszillator ohne Stop) gehört
-//      einer Gesetz-Stimme über der Hörschwelle; Quellen-Zahl = Σ der hörbaren Stimmen.
-//  (S) SOLL-KLANG je Ort (Pegel am Welt-Bus, die Lage am Ohr bei mittlerer Böe):
-//      Wiese: wind ≥ −46 · vogel ≥ −52 · kein Wasser · Glut ≤ Wind · Seeufer: ufer ≥ −32
-//      und ≥ wind + 6 · Wald: laub ≥ −44 und ≥ Wiese.laub + 8, der Bestand trägt den Wald · Dorf: glut ≥ −34.
-//      Dazu der OFFLINE-RENDER des Studio-Graphen (umweltGraph auf OfflineAudioContext):
-//      je Stimme gemessener Pegel = Gesetz-Pegel (±1,5 dB) und Schwerpunkt im Band.
-//  (K) KOSTEN je Takt: die Welt-Abfragen des Klang-Takts (Boden · Wasser · Strömung ·
-//      Fluss-Segmente · Bauten-Lesungen) bleiben gleich, wenn 4000 ferne Bauten und 200
-//      ferne Fluss-Läufe dazukommen — Kosten an Hörbares, nie an die Weltgröße.
-//  (E) EREIGNISSE: Treffer · Wasser strömt · eine Form singt · eine Form verklingt · ein
-//      Tier ruft · ein Ding im Inventar klingt · ein Tier antwortet auf einen Auftrag · ein Tier
-//      steigt eine Stufe — je einmal über den echten Weg ausgelöst: jede Quelle aus dem Gesetzbuch,
-//      keine Verbindung am Master vorbei direkt an den Ausgang. Und still, wo die Welt still ist: der
-//      Wasser-Hauch auf trockenem Land baut keine Quelle.
-//  (L) LAB = WELT: das Klang-Studio (worlds/klang) spielt seine Orte über
-//      __klangCore.umweltGraph, sein Seeufer trägt das Ufer, und jeder Lab-Ort hält
-//      dasselbe SOLL wie der Welt-Ort.
-//  (W) DIE WERKSTATT: der Haupt-Thread des Spiels rechnet keinen Sample (Texturen, Rufe —
-//      klang:umweltSynthese zählt je Thread), weder an einem Ort noch für ein Ereignis;
-//      gerechnet wird in der Klang-Werkstatt (Worker), der Haupt-Thread nimmt auf und spielt.
-//  (A) ARMLÄNGE: zwei Orte aus nächster Nähe — 1 m vor dem Glut-Bau, der nächste trockene
-//      Punkt 3–24 m neben dem Fuß des nächsten Wasserfalls der Region — mit eigenem SOLL (die nahe Quelle trägt den Ort).
-//  (P) DIE SPITZEN-PROBE: die ganze Mischung jedes Welt- und jedes Lab-Ortes offline durch
-//      Welt-Master und Spitzen-Wand (klang:umweltSpitze) — keine Spitze erreicht 0 dBFS.
-//  SELBST-TEST (--selftest, die Linse feuert): ein eingeschmuggelter Drohn-Oszillator
-//  (zwillingDrohne) → G beim Namen · eine stumme Schleife (stummeSchleife) → H · das
-//  Wasser am Seeufer weg → S · ein Glut-Umlauf über ALLE Bauten → K · eine Ereignis-Glocke
-//  aus dem Stamm am Master vorbei (zwillingGlocke) → E · ein Graph ohne Werkstatt am
-//  Seeufer → W · ein Ruf, der im Spiel-Takt rechnet (zwillingRuf) → W · die Glut auf Armlänge
-//  ohne Spitzen-Wand → P · ein Ping-Zwilling im Stamm-Text (zwillingPing) → G Stamm beim Namen · ein Wald-Ort
-//  ohne stehenden Baum → S wald · ein Wasser-Hauch, der den Fußabdruck nicht liest (zwillingHauch) → E wasserTrocken.
-//  Stubs restauriert.
-//  (T) DER KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (unten an `taktSeite`).
-//
-//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt]] [--json <datei>]
+// diag-klang-zensus.cjs — DIE KLANG-LINSE (npm run gate:klang-zensus): was hört man je Ort, trägt jede
+// klingende Quelle ein GESETZ, und kostet sie nur, solange man sie hört?
+//  (O) ORTE aus dem Gesetz (Null-Renderer): Wiese = Messort · Seeufer 3–7 m vor stillem Wasser · Wald = höchste
+//      Deckung der Kronen-Karte `_kronenStreuAt`, geprüft am Bestand ≤ 15 m · Dorf 4 m neben dem nächsten Glut-Bau.
+//  (Z) ZENSUS je Ort (Mittag · Sonne · Sommer, die Musik ruht): jede Quelle mit Erzeuger, Gesetz-Stimmen, Ausgang je Oktavband.
+//  (G) HERKUNFT: gebaut in klang-core.js oder ein Wirt-Leser eines klang-Gesetzes, sonst STAMM-LITERAL beim Namen
+//      (dazu statisch jede Quellen-Stelle im Stamm).
+//  (H) HÖRBAR: jede Dauer-Quelle gehört einer Stimme über der Hörschwelle.
+//  (K) KOSTEN je Takt: die Welt-Abfragen bleiben gleich bei 4000 fernen Bauten und 200 Fluss-Läufen.
+//  (E) EREIGNISSE über den echten Weg: jede Quelle aus dem Gesetzbuch, keine am Master vorbei; still, wo die Welt still ist.
+//  (L) LAB = WELT: worlds/klang spielt seine Orte über umweltGraph mit demselben SOLL.
+//  (W) WERKSTATT: der Haupt-Thread rechnet keinen Sample (klang:umweltSynthese je Thread).
+//  (A) ARMLÄNGE: 1 m vor der Glut, 3–24 m neben dem Wasserfall, eigenes SOLL.
+//  (P) SPITZEN: jede Mischung offline durch Master und Spitzen-Wand — keine Spitze erreicht 0 dBFS.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S11 unten), Stubs restauriert.
+//  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
+//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>]] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -89,6 +50,10 @@ const JSON_AUS = opt("--json");
 
 const server = statikServer({
     root,
+    seiten: {
+        "/__stotter.js":
+            "registerProcessor('stotter', class extends AudioWorkletProcessor { process() { for (const e = Date.now() + 8; Date.now() < e; ); return true; } });",
+    },
     wandle: (p, data) => {
         if (!UEBER) return data;
         const ueber = path.join(UEBER, p);
@@ -204,7 +169,7 @@ function werkzeug() {
         let seeZelle = null;
         for (let rx = -2; rx <= 2; rx++)
             for (let rz = -2; rz <= 2; rz++) {
-                r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0);
+                await window.__weltDa(() => !r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0));
                 const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
                 for (const lake of (h && h.lakes) || []) {
                     if (!lake.cells || lake.cells.length < 16 || !(lake.level > st.waterLevel + 2)) continue;
@@ -1156,9 +1121,11 @@ function drucke(zeilen, offline, kostenErg, lab) {
 // (T) DER KLANG-TAKT IN BEWEGUNG (`--takt [--echt]`, klang.K5): je präsentiertem Bild die Haupt-Faden-ms der Klang-Arbeit
 // (symphonyTick + _schrittKlangTick + _tierRuf, der äußere Aufruf) im echten Spiel, Klang über den Knopf — gehen, Fahrt
 // (GT, Gas und rückwärts im Wechsel), nachts gehen; p95 ≤ TAKT_SOLL_MS je Phase, der Träger der Bilder über dem Soll beim
-// Namen. Die Seite ist isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters). `--echt`: Fenster, echte GPU und Audio-Gerät.
-// `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT.
+// Namen; über den Gang 0 Aussetzer am Ausgang. Die Seite ist isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
+// `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
+// `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT, eine stotternde Stimme → Aussetzer gezählt.
 const TAKT_SOLL_MS = 0.2;
+const MINUTEN = Number(opt("--minuten")) || 0;
 const TAKT_TEILE = [
     "_lofiPlayChord",
     "_lofiPlayMelody",
@@ -1232,7 +1199,20 @@ function taktSeite(m, echt, namen) {
                 .map(([k, v]) => `${k} ${v.toFixed(2)}`),
         };
     };
-    // der Täter des Selbsttests: 300 Rufer im Hör-Radius, und der Takt fragt sie je Bild (statt im Misch-Takt)
+    // der Aussetzer-Zähler am Ausgang (AudioContext.playbackStats), dazu ob es noch der Kontext des ersten Abrufs ist
+    T.audio = () => {
+        const c = st.symphony.ctx,
+            p = c && c.playbackStats;
+        T.ctx = T.ctx || c;
+        return p && { n: p.underrunEvents, still: p.underrunDuration, s: p.totalDuration, gleich: T.ctx === c };
+    };
+    T.uhr = () => (st.symphony.ctx || { currentTime: NaN }).currentTime;
+    // sein Täter: eine Worklet-Stimme rechnet je Render-Quantum (2,7 ms) 8 ms
+    T.stotterer = async () => {
+        await st.symphony.ctx.audioWorklet.addModule("/__stotter.js");
+        new AudioWorkletNode(st.symphony.ctx, "stotter").connect(st.symphony.ctx.destination);
+    };
+    // der Täter des Takts: 300 Rufer im Hör-Radius, und der Takt fragt sie je Bild (statt im Misch-Takt)
     T.taeter = () => {
         for (let i = 0; i < 300; i++)
             st.creatures.push({
@@ -1249,10 +1229,12 @@ function taktSeite(m, echt, namen) {
     return { isoliert: self.crossOriginIsolated, tiere: st.creatures.length };
 }
 // Gehen: W gehalten, je 60 Bilder ein Tipp auf A. Fahrt (`pendeln`): je 120 Bilder Gas (W) und rückwärts (S) im Wechsel —
-// der Motor dreht hoch und runter, der GT bleibt in der Lichtung der Mess-Wiese. Die Taste hält bis zum Bild, nie nach der Uhr.
-async function taktPhase(page, phase, n, pendeln) {
-    await page.evaluate((p) => window.__klangTakt.start(p), phase);
-    for (let i = 0; i < n; i++) {
+// der Motor dreht hoch und runter, der GT bleibt in der Lichtung der Mess-Wiese. Die Taste hält bis zum Bild, nie nach der Uhr;
+// `sek`: die Phase geht, bis der Ausgang so lange spielte (die Uhr des Klangs).
+async function taktPhase(page, phase, n, pendeln, sek = 0) {
+    const uhr = () => page.evaluate(() => window.__klangTakt.uhr());
+    const t0 = await page.evaluate((p) => (window.__klangTakt.start(p), window.__klangTakt.uhr()), phase);
+    for (let i = 0; i < n || (await uhr()) - t0 < sek; i++) {
         const taste = pendeln && Math.floor(i / 2) % 2 ? "s" : "w";
         await halteBis(page, { taste, ziel: (b) => window.__klangTakt.bilder.length >= b, args: [60 * (i + 1)] });
         if (!pendeln) await page.keyboard.press("a", { delay: 70 });
@@ -1269,8 +1251,10 @@ async function takt(page, erg) {
     // bereit: W gehalten, bis der Spieler geht (die Ankunft gibt die Kontrolle frei; im Fenster kalt bis 80 s)
     await halteBis(page, { taste: "w", ziel: () => window.__klangTakt.weg >= 3, frist: 180000 });
     await taktPhase(page, "ein", 5);
+    const audio = () => page.evaluate(() => window.__klangTakt.audio());
+    const a = await audio();
     const ph = (erg.phasen = {});
-    ph.gehen = await taktPhase(page, "gehen", 20);
+    ph.gehen = await taktPhase(page, "gehen", 20, false, MINUTEN * 24);
     // zurück in die Mitte der Lichtung, der GT daneben, aufsitzen
     await page.evaluate(async () => {
         const r = window.anazhRealm,
@@ -1285,15 +1269,26 @@ async function takt(page, erg) {
         await window.__gebautNach(e);
         r.mountArchitecture(e);
     });
-    ph.fahrt = await taktPhase(page, "fahrt", 20, true);
+    ph.fahrt = await taktPhase(page, "fahrt", 20, true, MINUTEN * 18);
     ph.fahrt.sattel = await page.evaluate(() => !!window.anazhRealm.state.symphony.fahrt);
     await page.evaluate(() => {
         const r = window.anazhRealm;
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
     });
-    ph.nacht = await taktPhase(page, "nacht", 20);
+    ph.nacht = await taktPhase(page, "nacht", 20, false, MINUTEN * 18);
+    const b = await audio();
+    const aus =
+        a && b && b.gleich
+            ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) }
+            : null;
+    erg.aussetzer = aus;
+    console.log(
+        `── Aussetzer am Ausgang: ${aus ? `${aus.n} in ${aus.s} s Wiedergabe (${aus.still} s still)` : "ungezählt"}`
+    );
     const rot = (erg.rot = []);
+    if (!aus) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
+    else if (aus.n) rot.push(`T aussetzer: ${aus.n} in ${aus.s} s Wiedergabe`);
     for (const [name, z] of Object.entries(ph)) {
         if (!(z.bilder >= 300 && z.weg >= 10))
             rot.push(`T ${name}: ${z.bilder} Bilder, ${z.weg} m — keine Bewegung gemessen`);
@@ -1306,10 +1301,14 @@ async function takt(page, erg) {
     let feuert = true;
     if (SELBST) {
         await page.evaluate(() => window.__klangTakt.taeter());
+        const s0 = await audio();
+        await page.evaluate(() => window.__klangTakt.stotterer());
         erg.selbst = await taktPhase(page, "selbst", 10);
-        feuert = erg.selbst.p95 > TAKT_SOLL_MS;
+        const s1 = await audio();
+        erg.selbst.aussetzer = s0 && s1 ? s1.n - s0.n : null;
+        feuert = erg.selbst.p95 > TAKT_SOLL_MS && erg.selbst.aussetzer > 0;
         console.log(
-            `${feuert ? "✅" : "❌"} SELBSTTEST: der Takt, der je Bild 300 Rufer fragt, ist ${feuert ? "ROT" : "unbemerkt"} (p95 ${erg.selbst.p95} ms)`
+            `${feuert ? "✅" : "❌"} SELBSTTEST: der Takt, der je Bild 300 Rufer fragt, ist ${erg.selbst.p95 > TAKT_SOLL_MS ? "ROT" : "unbemerkt"} (p95 ${erg.selbst.p95} ms) · die stotternde Stimme zählt ${erg.selbst.aussetzer} Aussetzer`
         );
     }
     for (const t of rot) console.log("   " + t);

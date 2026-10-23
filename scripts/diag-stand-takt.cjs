@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Welle K, Lehre 25, Gebot 7; der Befund steht in der Stand-Linse).
+// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Lehre 25, Gebot 7).
 // Die Wand fährt die Fege-Takte an der Mess-Wiese (Null-Renderer, der Fern-Ring über seinen Haken, die
 // Foundry an — der Produktions-Pfad) und zählt mit der Stand-Linse (scripts/lib/stand-linse.cjs, dieselbe wie `werkbank
 // stand`) je Frame die Blatt-Rufe jedes Fege-Takts:
 //   (R) RUHE — die Welt steht (der Spieler, das Auge, keine Ankunft): 0 Einheiten in jedem Frame der Ruhe;
-//   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie, jeder Takt geht wie vor der
-//       Welle): jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
+//   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie):
+//       jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
 //       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`), und die Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
 //   (X) TÄTER — je Takt, dessen Runde mehrere Gänge braucht (Stufen-Wahl, Streu, Saum), steht in der zweiten Hälfte seiner
 //       Runde eine still verstellte Einheit: die Treue-Phase findet jede;
@@ -729,7 +729,7 @@ const TAT = process.argv.includes("--tat");
                     LD.thresh12 = d12;
                     await window.__weltStehtNach(takt);
                 }
-                // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie, jeder Takt geht wie vor der Welle), so lange,
+                // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie), so lange,
                 // bis JEDER Takt eine volle Runde ging — die Runde nennt der Takt selbst (`_standRuht(name, runde, …)`), gegangen
                 // ist, was er `_standMeldet` (die Arbeit der Wache). `jeFrame(f, gang)` sieht jeden Frame.
                 const ruheRuf = P._standRuht;
@@ -954,7 +954,7 @@ const TAT = process.argv.includes("--tat");
                     aus.gehen.zelleGleich = zelle(p1) === z0;
                     aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
                 }
-                // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
+                // (U) STUFE: aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
                     // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
@@ -1049,7 +1049,7 @@ const TAT = process.argv.includes("--tat");
                     }
                     aus.stufe = U;
                 }
-                // (O) ORT (K69): aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
+                // (O) ORT: aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
                 // der Dorf-Zug das nächste Dorf legt, während der Spieler ins erste geht). Es fällt nur, was er ändern kann: gezählt
                 // die Gedächtnisse FERN von ihm (über `fern` m) vorher und nachher — der Stand des Walds (`_forestDartStand`, an ihm
                 // hängt die Gestalt jedes Orts), die Wald-Zellen (dieselben Objekte im Dart-Gedächtnis), die Chunk-Gedächtnisse
@@ -1202,7 +1202,7 @@ const TAT = process.argv.includes("--tat");
                         }
                         O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
                     }
-                    // DER BAUM IN FRISCHEM WALD (K69): ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
+                    // DER BAUM IN FRISCHEM WALD: ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
                     // `_spawnSettlementErlebnis`) an einem Ort, dessen Wald nie geplant wurde — gezählt die Wald-Zellen, die
                     // sein Setzen SYNCHRON plant (`planForestCell` im Aufrufer), dann die Takte, bis seine Gestalt steht, und
                     // die längste Plan-Arbeit eines Takts (die Schlange des Walds, `_tickWaldPlan`)
@@ -1278,7 +1278,7 @@ const TAT = process.argv.includes("--tat");
                         }
                         O.wald = Wd;
                     }
-                    // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
+                    // DAS HAUS IM SATZ: ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
                     // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
                     // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
@@ -1369,7 +1369,7 @@ const TAT = process.argv.includes("--tat");
                         }
                         O.satzHaus = SH;
                     }
-                    // DER ERDBAU UNTER DEM SPIELER (K69-2): ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
+                    // DER ERDBAU UNTER DEM SPIELER: ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
                     // das Dorf um ihn legt) — die Chunks seines Umkreises werden neu gebaut. Gezählt jeder Chunk-Bau, der in
                     // einem Takt SYNCHRON im Haupt-Faden läuft (`_buildVoxelChunkData`, der Bau ohne Worker), mit der Kette
                     // seiner Rufer und seiner Zeit, und die Takte, bis kein Chunk mehr auf seinen Neubau wartet (der Boden heilt).
@@ -1442,7 +1442,7 @@ const TAT = process.argv.includes("--tat");
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     const span = r._voxelChunkConfig(0).span;
                     const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
-                    // DER WALD AM FREMDEN ORT (K69): jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
+                    // DER WALD AM FREMDEN ORT: jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
                     // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
                     const core = globalThis.__phytoCore;
                     const roh = core.planForestCell;
@@ -1459,7 +1459,7 @@ const TAT = process.argv.includes("--tat");
                             tiefe--;
                         }
                     };
-                    // der Rechner der Schlange ist der Wald-Faden (K60-4): seine Lieferungen (`_waldDartsAn`) plante die
+                    // der Rechner der Schlange ist der Wald-Faden: seine Lieferungen (`_waldDartsAn`) plante die
                     // Schlange — sie zählen wie ihre Zellen im Job
                     const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
                     const anRoh = r._waldDartsAn;
@@ -1523,7 +1523,7 @@ const TAT = process.argv.includes("--tat");
                 L.aus();
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
-                // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
+                // (N) DER NACHSCHUB DES WALDS: wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
                 // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu.
                 {
                     const p = st.playerMesh.position;

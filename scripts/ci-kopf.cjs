@@ -1,4 +1,4 @@
-// ci-kopf.cjs — EIN URTEIL JE KOPF (K61, Richter 22.10.): die volle Batterie und die Echt-Gruppe richten jeden Kopf (SHA) einmal.
+// ci-kopf.cjs — EIN URTEIL JE KOPF: die volle Batterie und die Echt-Gruppe richten jeden Kopf (SHA) einmal.
 // Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`,
 // die Echt-Gruppe grün: `echt=nein`. Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
 // ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
@@ -39,7 +39,7 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
     return u;
 }
 
-// die Läufe, neueste zuerst, OHNE Filter der API (22.10.: gefiltert total_count 0): `nimm` wählt, `seit` endet; eine kurze Seite
+// die Läufe, neueste zuerst, OHNE Filter der API: `nimm` wählt, `seit` endet; eine kurze Seite
 // wird bis 3× neu gefragt — sonst ROT, nie leer.
 async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
     const [out, je, neu] = [[], 100, (x) => new Date(x.created_at) >= seit];
