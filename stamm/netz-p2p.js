@@ -1962,12 +1962,13 @@ class AnazhRealm_netz_p2p {
             entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
             this._renderMeshWorldCatalog();
         }
-        // Avatar-Übergabe des Senders: durch DENSELBEN Validator (_studioUebergabeValidate), als PER-PEER-
-        // Wahrheit (entry.uebergabe, NICHT state.studioUebergabe — jeder Spieler trägt seinen Avatar).
+        // Die Avatar-Prägung des Senders: durch DENSELBEN Prüfer wie der Übergabe-Kanal (_studioWerkPruefen), als PER-PEER-
+        // Wahrheit (entry.uebergabe, NICHT der eigene Prägungs-Speicher — jeder Spieler trägt seinen Avatar).
         // Ändert sie sich, wird der Peer-Avatar neu gegossen (auch bei gleichem soulName).
         let uebergabeChanged = false;
         const uK = msg.uebergabe && msg.uebergabe.koerper;
-        const cleanU = uK ? this._studioUebergabeValidate("koerper", uK) : null;
+        const pU = uK ? this._studioWerkPruefen("koerper", AnazhRealm.KOERPER_HOST_RECIPE, uK) : null;
+        const cleanU = pU && Object.keys(pU).length ? pU : null;
         const prevU = entry.uebergabe ? JSON.stringify(entry.uebergabe) : "";
         const nextU = cleanU ? JSON.stringify(cleanU) : "";
         if (prevU !== nextU) {
@@ -2213,12 +2214,12 @@ class AnazhRealm_netz_p2p {
             bekannt ||
             (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0 ? { bodyParts: entry.bodyParts } : null);
         if (!def) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
-        // Der Peer-Guss FÜHRT die Übergabe des SENDERS (entry.uebergabe.koerper): transient gesetzt, damit der EINE Leser
+        // Der Peer-Guss FÜHRT die Prägung des SENDERS (entry.uebergabe): transient gesetzt, damit der EINE Leser
         // _koerperStudioDials sie wählt; try/finally räumt sie IMMER (kein Leck). Nie null übergeben: der Merge fiele sonst
-        // auf die EIGENE state.studioUebergabe des Betrachters — das leere Objekt ist der Sentinel "Peer ohne Wahl" →
+        // auf den EIGENEN Prägungs-Speicher des Betrachters — das leere Objekt ist der Sentinel "Peer ohne Wahl" →
         // Anker-Default, auf allen Clients gleich. Nur der human-Guss liest das Feld.
         const savedActive = this._activePeerUebergabe;
-        this._activePeerUebergabe = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : {};
+        this._activePeerUebergabe = entry.uebergabe && typeof entry.uebergabe === "object" ? entry.uebergabe : {};
         let group;
         try {
             group = this._leibDerSeele(entry.soulName, def, `peer:${entry.peerId}`);
@@ -2547,11 +2548,11 @@ class AnazhRealm_netz_p2p {
         // öffentlich-harmlos (eine Welt-Bezeichnung, kein Pfad/Zustand).
         const dwell = this._loadPortalDwelling();
         if (dwell) msg.dwell = dwell.label;
-        // Die Avatar-Gestalt des Senders reist additiv im soul-Kanal: koerper.{s,gestalt}, nur wenn
-        // nicht-leer; alte Clients ignorieren das Feld (must-ignore). NUR koerper — die Kreatur-Gestalt
-        // gehört an den Kreatur-Sync-Pfad (ein soul-Feld ohne Konsument wäre ein toter Parallelpfad).
-        const su = this.state.studioUebergabe;
-        if (su && su.koerper && su.koerper.s) msg.uebergabe = { koerper: su.koerper };
+        // Die Avatar-Gestalt des Senders reist additiv im soul-Kanal: koerper = die Prägung des Mensch-Rezepts (Dials und
+        // Wahlen, ohne den Samen), nur wenn nicht-leer; alte Clients ignorieren das Feld (must-ignore). NUR koerper — die
+        // Kreatur-Gestalt gehört an den Kreatur-Sync-Pfad (ein soul-Feld ohne Konsument wäre ein toter Parallelpfad).
+        const su = this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
+        if (su) msg.uebergabe = { koerper: su };
         this.p2pSend(msg);
     }
 

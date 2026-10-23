@@ -2476,9 +2476,9 @@ class AnazhRealm_werkstatt_hud {
         };
         const gStudio = document.createElement("optgroup");
         gStudio.label = "Studio-Wesen";
-        // (1) mensch — die gegebene Identität (koerperstudio); die Studio-Übergabe
-        // (state.studioUebergabe.koerper) ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
-        const ueK = this.state.studioUebergabe && this.state.studioUebergabe.koerper;
+        // (1) mensch — die gegebene Identität (koerperstudio); die Prägung des Mensch-Rezepts (der Übergabe-Kanal, ws.studioOv)
+        // ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
+        const ueK = this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
         addOpt(
             gStudio,
             "human",

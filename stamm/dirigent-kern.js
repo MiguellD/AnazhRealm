@@ -278,11 +278,6 @@ class AnazhRealm {
             // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
             // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
             klangPreset: null,
-            // Studio-Übergabe: die LIVE-Bearbeitung reist aus dem Studio in die Welt (W12-Kanal "uebergabe",
-            // Empfänger _studioUebergabeEmpfang, fail-closed). koerper = {s, gestalt} → Vorrang-Quelle von
-            // _koerperStudioDials; kreatur = je Gattung {s} → gemischt in _tetrapodaStudioDials (geprägt beim
-            // Guss, Bestand bleibt). Persistiert im Snapshot; Linse: gate:studio-uebergabe.
-            studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand

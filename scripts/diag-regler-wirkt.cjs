@@ -127,8 +127,8 @@ async function imStamm(cb) {
         server.close();
     }
     }
-// Im Stamm: je Ofen-Art die Zeilen über die echte Vorschau-Quelle. `taeter`: "ohneOv" (der Ofen verliert den Wert:
-// `_buildHumanGroup` ohne dialsOv — der alte Kanal-Defekt), {bruch: id, wert} (der Mensch-Bäcker wirft bei diesem Wert).
+// Im Stamm: je Ofen-Art die Zeilen über die echte Vorschau-Quelle. `taeter`: "ohneOv" (der Ofen verliert den Wert: der
+// EINE Leser des Prägungs-Speichers `_studioPraegung` liefert nichts), {bruch: id, wert} (der Mensch-Bäcker wirft bei diesem Wert).
 function ofenMessen(page, opts) {
     return page.evaluate(async (o) => {
         const r = window.anazhRealm;
@@ -247,10 +247,7 @@ function ofenMessen(page, opts) {
                         : null;
         // Die Täter (Selbsttest), am echten Ofen eingespielt und danach entfernt.
         const altBaecker = B.koerper;
-        if (o.taeter === "ohneOv")
-            r._buildHumanGroup = function () {
-                return P._buildHumanGroup.call(this);
-            };
+        if (o.taeter === "ohneOv") r._studioPraegung = () => null;
         if (o.taeter && o.taeter.bruch) {
             r.constructor._tierOfenMemo && r.constructor._tierOfenMemo.clear();
             B.koerper = function (core, id, seed, lod, ov) {
@@ -307,7 +304,7 @@ function ofenMessen(page, opts) {
                 aus.zeilen.push(...zeilen);
             }
         } finally {
-            if (Object.prototype.hasOwnProperty.call(r, "_buildHumanGroup")) delete r._buildHumanGroup;
+            if (Object.prototype.hasOwnProperty.call(r, "_studioPraegung")) delete r._studioPraegung;
             B.koerper = altBaecker;
         }
         return aus;
@@ -694,7 +691,7 @@ async function selbsttest() {
         `${bruchOk ? "✅" : "❌"} SELBST-TEST Täter (ein Regler bricht den Bau): ${zB ? name(zB) + " " + (bricht(zB) ? "BRICHT" : zB.wirkt ? "„wirkt“" : "tot") : "fehlt"} — ${zB ? zB.bricht.slice(0, 2).join(" · ") : ""} · andere BRICHT ${andereB.length} · ohne Täter BRICHT ${heil.zeilen.filter(bricht).length}`
     );
     // (d) der Ofen-Kanal (MESHFREI koerper, Q0): heil wirken die Regler über den Host-Ofen der Werkstatt; der Täter
-    // „der Ofen verliert den Wert" (`_buildHumanGroup` ohne dialsOv) macht jeden koerper-Regler tot → NEU TOT gegen die
+    // „der Ofen verliert den Wert" (`_studioPraegung` liefert nichts) macht jeden koerper-Regler tot → NEU TOT gegen die
     // Ratsche; der Täter „der Mensch-Bäcker wirft bei height = max" liefert den Not-Körper → BRICHT, nie „wirkt".
     let oHeil = null,
         oOhne = null,

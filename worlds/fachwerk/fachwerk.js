@@ -1027,5 +1027,19 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
         esc: function () {
             return mode !== "walk"; /* Esc = Pointer-Lock im Begeh-Modus */
         },
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): das Einzelstück der Ausstattung mit seiner Gestalt, sonst
+           das Haus der gewählten Kultur mit Same 1 und den Werten der Haus-Zeilen (die Welt-Gestalt der Kosten-Leiste) — das
+           nächste gesetzte Werk des Rezepts trägt es. */
+        werk: function () {
+            var aus = document.getElementById("pAus") ? document.getElementById("pAus").value : "haus";
+            if (aus !== "haus" && FC.AUSSTATTUNG[aus])
+                return { kind: "ausstattung", preset: aus, seed: 1 + ((SEED >>> 0) % (FC.AUSSTATTUNG[aus].gestalten || 1)), ov: {} };
+            var k = document.getElementById("pK").value;
+            var ov = {};
+            FC.PARAMS_BY_KIND.haus.forEach(function (z) {
+                ov[z.id] = RW[z.id];
+            });
+            return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: 1, ov: ov };
+        },
     });
 })();
