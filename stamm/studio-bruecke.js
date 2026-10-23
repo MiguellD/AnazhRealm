@@ -2436,13 +2436,21 @@ class AnazhRealm_studio_bruecke {
         if (!namen) return (u._trefferGlieder = null);
         const liste = [];
         for (const nm of namen) {
-            const anker = nm.name ? tb.teile && tb.teile[nm.name] : tb.wrap || cr;
+            const anker = this._gliedAnker(cr, nm.name);
             const k = this._gliedKapseln && this._gliedKapseln.get(nm.key);
             if (!anker || !k) continue;
-            liste.push({ anker, a: k.a, b: k.b, r: k.r, zone: tc.trefferZone(nm.name || "wolf") });
+            liste.push({ anker, teil: nm.name, a: k.a, b: k.b, r: k.r, zone: tc.trefferZone(nm.name || "wolf") });
         }
         u._trefferGlieder = liste.length ? liste : null;
         return u._trefferGlieder;
+    }
+
+    // Der Anker eines Glieds der Gestalt: das benannte Teil des Studio-Leibs, die Wurzel ("") die Hülle. Der Treffer
+    // (_kreaturTrefferGlieder) und der steckende Pfeil (_pfeilInsTier) fragen hier; null ohne Studio-Leib oder Teil.
+    _gliedAnker(cr, teil) {
+        const tb = cr && cr.userData && cr.userData._tierBaum;
+        if (!tb) return null;
+        return teil ? (tb.teile && tb.teile[teil]) || null : tb.wrap || cr;
     }
 
     // DIE TREFFER-GLIEDER VORGEBACKEN (Welle L, Lehre 14): die Glied-Liste einer Gattung entstand beim ERSTEN Treffer —
@@ -2484,7 +2492,8 @@ class AnazhRealm_studio_bruecke {
     // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
     // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
     // des Kontakts (der Hebel der Klinge, der Ort im Flug) und `ein`, den Strecken-Parameter, an dem sie in dieses Glied
-    // eintritt (der Strahl des Fadenkreuzes: der Punkt auf der Haut, _pickCreatureAtCrosshair). null = vorbei.
+    // eintritt (der Strahl des Fadenkreuzes: der Punkt auf der Haut, _pickCreatureAtCrosshair), dazu `anker` und `teil` des
+    // Glieds (der Pfeil steckt dort, _pfeilStecken). null = vorbei.
     // `flaeche` (Welle LF, Posten 2): ein Punkt der Haut (das Ziel unter dem Fadenkreuz) gehört dem Glied, auf dessen Fläche er
     // liegt — die Wahl nach |Abstand − Glied-Radius|, nie nach der Tiefe (die dicke Rumpf-Kapsel reicht in den Hals: der Kopf
     // eines Hirschs wäre Bauch).
@@ -2529,7 +2538,7 @@ class AnazhRealm_studio_bruecke {
                 zone = brust ? "brust" : "bauch";
             }
             const ein = lang > 1e-9 ? Math.max(0, st.s - Math.sqrt(Math.max(0, rr * rr - d2)) / lang) : 0;
-            best = { zone, s: st.s, ein };
+            best = { zone, s: st.s, ein, anker: g.anker, teil: g.teil };
         }
         return best;
     }

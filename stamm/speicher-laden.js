@@ -774,6 +774,8 @@ class AnazhRealm_speicher_laden {
     // Pfad-Buckets (defensiver Merge, fremde Keys ignoriert), Welt-Journal (entries + seen mit entryCap),
     // Legacy-Fähigkeiten (restoreAbility mappt drei historische Nexus-Namen auf ihre DSL-Äquivalente).
     _loadStateRestoreMiscState(state) {
+        // halten.K4 — die steckenden Pfeile der Welt ersetzen die der Seite (`_pfeileSteckenLaden`, gedeckelt, endlich)
+        this._pfeileSteckenLaden(state.pfeileStecken);
         // R6 (V18.152) — gewährte Fähigkeiten wiederherstellen, durch die
         // HEUTIGE Wand (Empfänger-Gesetz: auch Restauriertes prüft die
         // Regel-Wand + die Broadcast-Wand; Name id-förmig; bounded).
