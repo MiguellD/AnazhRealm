@@ -371,10 +371,8 @@ class AnazhRealm {
             skyTintTo: null,
             skyTintStrength: 0,
             skyTintTarget: 0,
-            // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
-            // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
-            // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
-            faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
+            // Der Fauna-Lebenszyklus (Ökologie K2): der Takt der Bestands-Bilanz in der Spiel-Zeit (tickFaunaLifecycle).
+            faunaLifecycle: { lastTick: 0 },
             nexusEvolutionQueue: [],
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last

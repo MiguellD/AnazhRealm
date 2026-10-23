@@ -1886,6 +1886,36 @@
         return null;
     }
 
+    // DER BESTAND (Oekologie K2, 23.10., additiv — BESTAND_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): Geburt
+    // und Tod einer Gattung folgen ihrer Nahrung im Revier, nie einem Deckel. DIE NAHRUNG eines Orts (bestandNahrung) ist die
+    // Kost nach der Ernaehrung der Gattung (GATTUNGEN diet: 0 frisst Aesung, 1 Beute, dazwischen beides): Aesung = das Leben
+    // des Felds am Ort (0..1), Beute = der Bestand der Pflanzenfresser im Revier gegen beuteVoll Koepfe (auf 1 geklemmt) — die
+    // Zahl der Jaeger folgt der Zahl der Beute (die numerische Antwort: Messier 1994, Ecology 75:478). DIE KAPAZITAET des
+    // Reviers (revierM um den Spieler, je Zelle des Rasters rasterM) = kopfJeHa × Σ lebensraum (Eignung × Haeufigkeit) ×
+    // Flaeche (ha) × Nahrung — Nahrung × Lebensraum. DIE BILANZ (bestandBilanz) ist logistisch (Verhulst 1838) je taktS der
+    // Spiel-Zeit: unter der Kapazitaet K wirft die Gattung mit geburt × (1 − n/K), darueber stirbt mit tod × (n/K − 1)
+    // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand.
+    var BESTAND_GESETZ = Object.freeze({
+        taktS: 10,
+        revierM: 200,
+        rasterM: 50,
+        kopfJeHa: 2,
+        beuteVoll: 10,
+        geburt: 0.25,
+        tod: 0.2,
+    });
+    function bestandNahrung(diet, aesung, beute) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return (1 - d) * aesung + d * beute;
+    }
+    // n = der Bestand der Gattung, K = ihre Kapazitaet im Revier. Liefert die Chancen je Takt {geburt, tod}.
+    function bestandBilanz(n, K, B) {
+        if (!(K > 0)) return { geburt: 0, tod: n > 0 ? B.tod : 0 };
+        if (n < K) return { geburt: B.geburt * (1 - n / K), tod: 0 };
+        var u = n / K - 1;
+        return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3317,6 +3347,9 @@
         lebensraumWahl: lebensraumWahl,
         DURST_GESETZ: DURST_GESETZ,
         durst: durst,
+        BESTAND_GESETZ: BESTAND_GESETZ,
+        bestandNahrung: bestandNahrung,
+        bestandBilanz: bestandBilanz,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

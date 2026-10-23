@@ -138,6 +138,37 @@ async function lebenBuehnen(
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
+    // ── bestand (Ökologie K2): der echte Lebenszyklus in Sprüngen der Spiel-Zeit (10 s je Takt) an EINEM Ort; voll: ab Takt 180
+    // die Nahrung halbiert (lebendig × ½), halb: von Anfang an, dieselben Würfe ──
+    await buehne("bestand", async (restore) => {
+        if (taeter === "bestand-nahrung") decke(restore, "_kreaturNahrung", () => () => 0.5);
+        const alt = [s.spielZeit, s.faunaLifecycle];
+        restore.push(() => ([s.spielZeit, s.faunaLifecycle] = alt));
+        let halb = false;
+        decke(restore, "worldFieldAt", (wfa) => (x, z) => {
+            const f = wfa.call(r, x, z);
+            return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
+        });
+        const aus = {};
+        for (const lauf of ["voll", "halb"]) {
+            r._faunaStroeme = null;
+            s.faunaLifecycle = { lastTick: s.spielZeit };
+            const n = [];
+            const z = (aus[lauf] = { tode: [0, 0] });
+            for (let k = 0; k < (lauf === "voll" ? 360 : 180); k++) {
+                halb = lauf === "halb" || k >= 180;
+                s.spielZeit += 10;
+                r.tickFaunaLifecycle();
+                z.tode[+(k >= 180)] += s.leichname.length;
+                for (const c of s.leichname.slice()) r.removeCreature(c);
+                n.push(s.creatures.length);
+            }
+            for (const c of s.creatures.slice()) r.removeCreature(c);
+            const mittel = (a, b) => +(n.slice(a, b).reduce((p, q) => p + q, 0) / (b - a)).toFixed(2);
+            Object.assign(z, { bestand: mittel(60, 180), hunger: mittel(300, 360) || null });
+        }
+        return aus;
+    });
     // ── durst (Tiere K4, DURST_GESETZ): drei Hirsche 15–30 m vom Fluss, 1,5 × durstS: ihre Trünke am Wasser ──
     await buehne("durst", async (restore) => {
         if (taeter === "durst") decke(restore, "_kreaturDurstig", () => () => false);
@@ -229,6 +260,18 @@ async function lebenBuehnen(
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
+    if (name === "bestand") {
+        const { voll: V, halb: H } = z;
+        soll(V.bestand >= 4, `das Revier trägt keinen Bestand: ${V.bestand} Tiere (vakuös)`);
+        soll(
+            H.bestand <= 0.7 * V.bestand,
+            `die Geburt folgt der Nahrung nicht: ${H.bestand} Tiere halb gegen ${V.bestand} voll`
+        );
+        soll(
+            V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1,
+            `der Tod folgt der Nahrung nicht: halbiert ${V.hunger} Tiere, ${V.tode[1]} Tode`
+        );
+    }
     if (name === "durst")
         soll(
             z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
@@ -289,9 +332,10 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
-    PROBEN: ["furcht", "lebensraum", "durst"],
+    PROBEN: ["furcht", "lebensraum", "durst", "bestand"],
     TAETER: {
         durst: [["durst", /kein Tier trinkt aus Durst/]],
+        bestand: [["bestand-nahrung", /die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/]],
         lebensraum: [
             ["lebensraum", /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/],
             ["geburt", /vor dem Spieler/],
