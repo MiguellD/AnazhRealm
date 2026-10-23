@@ -3280,14 +3280,14 @@ class AnazhRealm_bild_sicht {
             h.lrStand = stand;
             return L;
         };
-        const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
-        const K = H.kacheln || (H.kacheln = new Map());
-        K.clear();
         const P = S.lage;
         // der Licht-Rand des Passes (`lichtRandTexel`): die Wahl hält über die Stufen der Sonne — ein Werfer, der nach einer
         // Drehung bis zum Rand wirft, wirft schon jetzt (sein Rechteck und seine Nähe um den Rand geweitet)
         const m = P.licht;
-        // die Kachel-Spanne aller Empfänger (i0, j0, i1, j1) und ihre tiefste Tiefe
+        // DIE EMPFÄNGER zuerst: je Empfänger sein Licht-Rechteck, dazu die Spanne aller (Meter quer zum Licht) und ihre
+        // tiefste Tiefe
+        const R = H.empf || (H.empf = []);
+        R.length = 0;
         const E = H.empfSpanne || (H.empfSpanne = new Float64Array(5));
         E[0] = E[1] = Infinity;
         E[2] = E[3] = E[4] = -Infinity;
@@ -3295,22 +3295,12 @@ class AnazhRealm_bild_sicht {
             if (!box) return;
             kn.sicht = st;
             const L = lage(h, box);
-            const tief = L[5];
-            const i0 = Math.floor(L[0] / T),
-                i1 = Math.floor(L[3] / T),
-                j0 = Math.floor(L[1] / T),
-                j1 = Math.floor(L[4] / T);
-            for (let j = j0; j <= j1; j++)
-                for (let i = i0; i <= i1; i++) {
-                    const key = (i + 32768) * 65536 + (j + 32768);
-                    const w = K.get(key);
-                    if (w === undefined || tief > w) K.set(key, tief);
-                }
-            if (i0 < E[0]) E[0] = i0;
-            if (j0 < E[1]) E[1] = j0;
-            if (i1 > E[2]) E[2] = i1;
-            if (j1 > E[3]) E[3] = j1;
-            if (tief > E[4]) E[4] = tief;
+            R.push(L);
+            if (L[0] < E[0]) E[0] = L[0];
+            if (L[1] < E[1]) E[1] = L[1];
+            if (L[3] > E[2]) E[2] = L[3];
+            if (L[4] > E[3]) E[3] = L[4];
+            if (L[5] > E[4]) E[4] = L[5];
         };
         // die Zellen des Hauptbilds: je Bereich EINE Prüfung seiner Hülle (gemerkt an diesem Stempel)
         if (H.sichtHaupt)
@@ -3328,7 +3318,35 @@ class AnazhRealm_bild_sicht {
             if (!bh || !bh.startHuelle || !this._passTrifftBox(P, bh.startHuelle, 0)) continue;
             for (const kn of bh.starts) for (const tor of kn.tore) empfang(kn, tor, tor.box);
         }
-        if (K.size === 0) return;
+        if (R.length === 0) return;
+        // DAS KACHEL-GITTER (stadt-k1): dicht über der Spanne der Empfänger, je Kachel die tiefste Tiefe — bis hier eine Map
+        // je Kachel, und jede Zelle der Kandidaten fragte jede Kachel unter ihrem Licht-Rechteck (Stadt gehend, Radeon: je
+        // Kaskaden-Pass 1,4–2,2 ms, davon Licht-Lagen 0,08 und Urteile 0,3 — der Rest die Fragen an die Map). Die Kacheln
+        // stehen ortsfest (Index floor(u / T)); sprengt die Spanne `HOEHLEN_LICHT_GITTER_MAX`, verdoppelt sich die Kachel —
+        // eine gröbere Kachel trägt die tiefste Tiefe einer größeren Fläche, es wirft eher mehr, nie weniger.
+        let T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
+        let i0, j0, ni, nj;
+        for (;;) {
+            i0 = Math.floor(E[0] / T);
+            j0 = Math.floor(E[1] / T);
+            ni = Math.floor(E[2] / T) - i0 + 1;
+            nj = Math.floor(E[3] / T) - j0 + 1;
+            if (ni * nj <= AnazhRealm.HOEHLEN_LICHT_GITTER_MAX) break;
+            T *= 2;
+        }
+        const i1 = i0 + ni - 1,
+            j1 = j0 + nj - 1;
+        let G = H.gitter;
+        if (!G || G.length < ni * nj) G = H.gitter = new Float64Array(Math.max(ni * nj, G ? 2 * G.length : 256));
+        G.fill(-Infinity, 0, ni * nj);
+        for (let q = 0; q < R.length; q++) {
+            const L = R[q];
+            const tief = L[5];
+            const a0 = Math.floor(L[0] / T) - i0,
+                a1 = Math.floor(L[3] / T) - i0;
+            for (let j = Math.floor(L[1] / T) - j0, jb = Math.floor(L[4] / T) - j0; j <= jb; j++)
+                for (let i = a0, o = j * ni; i <= a1; i++) if (tief > G[o + i]) G[o + i] = tief;
+        }
         // die Werfer-Kandidaten: die Zellen, die das EINE Gesetz der Pass-Wahl in diesem Pass trifft (Box der Kaskade und
         // Licht-Kapsel gegen ihre Scheibe — `_chunkSatzAbschnitt` wählt dieselben)
         for (const b of s.ordnung) {
@@ -3336,10 +3354,10 @@ class AnazhRealm_bild_sicht {
             const L = lage(b, b.huelle);
             if (
                 L[2] - m > E[4] ||
-                Math.floor((L[3] + m) / T) < E[0] ||
-                Math.floor((L[0] - m) / T) > E[2] ||
-                Math.floor((L[4] + m) / T) < E[1] ||
-                Math.floor((L[1] - m) / T) > E[3]
+                Math.floor((L[3] + m) / T) < i0 ||
+                Math.floor((L[0] - m) / T) > i1 ||
+                Math.floor((L[4] + m) / T) < j0 ||
+                Math.floor((L[1] - m) / T) > j1
             )
                 continue;
             for (const kn of b.hoehle.knoten) {
@@ -3347,15 +3365,18 @@ class AnazhRealm_bild_sicht {
                 if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
                 const Z = lage(z, z.huelle);
                 const nah = Z[2] - m;
+                if (nah > E[4]) continue;
+                const a0 = Math.max(i0, Math.floor((Z[0] - m) / T)) - i0,
+                    a1 = Math.min(i1, Math.floor((Z[3] + m) / T)) - i0,
+                    b0 = Math.max(j0, Math.floor((Z[1] - m) / T)) - j0,
+                    b1 = Math.min(j1, Math.floor((Z[4] + m) / T)) - j0;
                 let wirft = false;
-                for (let j = Math.floor((Z[1] - m) / T); j <= Math.floor((Z[4] + m) / T) && !wirft; j++)
-                    for (let i = Math.floor((Z[0] - m) / T); i <= Math.floor((Z[3] + m) / T); i++) {
-                        const w = K.get((i + 32768) * 65536 + (j + 32768));
-                        if (w !== undefined && w >= nah) {
+                for (let j = b0; j <= b1 && !wirft; j++)
+                    for (let i = a0, o = j * ni; i <= a1; i++)
+                        if (G[o + i] >= nah) {
                             wirft = true;
                             break;
                         }
-                    }
                 if (wirft) kn.sicht = st;
             }
         }
@@ -3474,6 +3495,8 @@ AnazhRealm.HOEHLEN_AUGE_M = 0.25;
 // DIE KASKADE der Höhlen-Sicht (`_hoehlenSichtLicht`): die Kante einer ortsfesten Licht-Kachel quer zum Licht (m), die je
 // Kachel die tiefste Empfänger-Tiefe trägt.
 AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
+// Das dichte Kachel-Gitter über der Spanne der Empfänger trägt höchstens so viele Kacheln (dann verdoppelt sich die Kachel).
+AnazhRealm.HOEHLEN_LICHT_GITTER_MAX = 1 << 18;
 
 // FERN_RING (unten) — Fern-Kulisse aus dem EINEN Höhen-Gesetz (`_terrainMacroSurfaceY(x,z,false)`),
 // 3 Ring-Schalen (3 Draw-Calls fix). `winkel`/`reihen` = Segment-Gitter je Schale (192×16: seit die Luft die
