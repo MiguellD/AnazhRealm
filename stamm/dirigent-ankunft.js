@@ -431,10 +431,10 @@ class AnazhRealm_dirigent_ankunft {
         // Light-Target in den Szenengraph hängen, damit sein matrixWorld pro Frame aktualisiert wird —
         // _applyDayNightToScene setzt es auf den Spieler, das Shadow-Frustum folgt ihm.
         scene.add(directionalLight.target);
-        // Schatten-CSM: ZWEI Kaskaden innerhalb der Schatten-Reichweite (maxFar = die EINE Größe aus
-        // `_applyEffectiveShadowRange`, 180–306 m) — Kaskade 0 = Band 0 bis zur `DETAIL_CASCADE`-Kante
-        // (~108 m), Kaskade 1 = der Rest bis maxFar. Gemessen 02.10.: die Band-1-Kante (367 m) lag jenseits jeder
-        // geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
+        // Schatten-CSM: DREI Kaskaden innerhalb der Schatten-Reichweite (maxFar = die EINE Größe aus
+        // `_applyEffectiveShadowRange`, 180–306 m) — die Kontakt-Kaskade bis `SCHATTEN_KASKADE.kontaktM` (15 m, schatten.K1),
+        // dann Band 0 bis zur `DETAIL_CASCADE`-Kante (~108 m), dann der Rest bis maxFar. Gemessen 02.10.: die Band-1-Kante
+        // (367 m) lag jenseits jeder geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
         // den sie alle Werfer ein drittes Mal zeichnete. Die Box jeder Kaskade misst der Host (`_kaskadenPassen`
         // ersetzt das Addon-updateBefore: Frustum-Scheibe im Licht-Raum statt Diagonal-Quadrat), die Werfer wählt
         // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Den Bias setzt jede
@@ -445,12 +445,14 @@ class AnazhRealm_dirigent_ankunft {
                 const bands = AnazhRealm.DETAIL_CASCADE;
                 const span = this._voxelChunkConfig(0).span; // 43.2 m
                 const e0 = (bands[0].maxRing + 0.5) * span; // Band-0-Kante ~108 m
+                // DIE KONTAKT-KASKADE davor (schatten.K1): die ersten `kontaktM` Meter in eigener Karte (`texelM[0]`).
+                const kontakt = AnazhRealm.SCHATTEN_KASKADE.kontaktM;
                 const csm = new THREE.CSMShadowNode(directionalLight, {
-                    cascades: 2,
+                    cascades: 3,
                     maxFar: _shRange * AnazhRealm.SCHATTEN_FERN_FAKTOR, // der Regler fährt es live nach
                     mode: "custom",
                     customSplitsCallback: (cascades, near, far, breaks) => {
-                        breaks.push(Math.min(0.85, e0 / far), 1);
+                        breaks.push(kontakt / far, Math.min(0.85, e0 / far), 1);
                     },
                 });
                 csm.fade = true;

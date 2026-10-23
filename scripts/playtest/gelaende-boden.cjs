@@ -1079,11 +1079,9 @@ async function checkBandWelle993WaterLodSeam(ctx) {
     );
 }
 
-// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
-// (V18.510): Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
-// SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
-// Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
-// einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
+// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 3 Kaskaden INNERHALB der Schatten-Reichweite: bis kontaktM
+// (schatten.K1), bis zur Band-0-Kante, bis maxFar = Reichweite × SCHATTEN_FERN_FAKTOR. Über die ganze geregelte Reichweite (MIN..MAX) und die
+// User-Decke (400 m) trägt jede Kaskade hinter der Kontakt-Kaskade ≥ 10 % der Tiefe. Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
@@ -1110,9 +1108,10 @@ async function checkBandV18130CsmShadow(ctx) {
                 const breaks = [];
                 csm.customSplitsCallback(csm.cascades, 0.5, far, breaks);
                 if (breaks.length !== csm.cascades || breaks[breaks.length - 1] !== 1) kante = false;
-                if (Math.abs(breaks[0] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
-                let prev = 0;
-                for (const b of breaks) {
+                if (Math.abs(breaks[0] - A.SCHATTEN_KASKADE.kontaktM / far) > 1e-9) kante = false;
+                if (Math.abs(breaks[1] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
+                let prev = breaks[0];
+                for (const b of breaks.slice(1)) {
                     minAnteil = Math.min(minAnteil, b - prev);
                     prev = b;
                 }
@@ -1138,16 +1137,16 @@ async function checkBandV18130CsmShadow(ctx) {
     }
     check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
     check(
-        "V18.510 CSM: 2 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
-        res.active && res.cascades === 2 && res.fade && res.isShadowNode
+        "schatten.K1 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 3 && res.fade && res.isShadowNode
     );
     check(
-        "V18.510 CSM: Kaskade 0 endet an der Band-0-Kante, die letzte an maxFar = Reichweite × Faktor",
+        "schatten.K1 CSM: Kaskade 0 endet an kontaktM, Kaskade 1 an der Band-0-Kante, die letzte an maxFar",
         res.active && res.mode === "custom" && res.breaksAreLaw && res.maxFarIstReichweite,
         `breaks=${res.breaks} maxFar=${res.maxFar}`
     );
     check(
-        "V18.510 CSM: jede Kaskade trägt ≥ 10 % der Tiefe über die ganze Reichweite (kein Streifen-Durchgang)",
+        "V18.510 CSM: jede Kaskade hinter der Kontakt-Kaskade trägt ≥ 10 % der Tiefe (kein Streifen-Durchgang)",
         res.active && res.minAnteil >= 0.1,
         `min=${res.minAnteil} breaks=${res.breaks}`
     );
