@@ -1,11 +1,6 @@
 // diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie): ein kleinerer Schirm trägt höchstens
 // gleich viel Welt — je Pass und Täter-Klasse —, und jedes Gesetz liest den Schirm aus der EINEN Quelle (`_schirm`).
 //
-// Die Sprung-Zahl war das Perzentil des Werkbank-Laufs über die TAKTE: die nahe Kaskade rendert jeden zweiten Frame,
-// das Perzentil sprang zwischen den zwei Moden (540p 273 und im nächsten Lauf 176). Und zwei Gesetze lasen den Schirm
-// an der EINEN Quelle vorbei: der Geräte-Seed (innerWidth·dpr, VERKEHRT herum: ab 4 MPix 0,1–0,2 weniger Welt) und das
-// Fell-Gesetz (Canvas-Höhe, Rückfall 1080 und 60°).
-//
 // Die Wand fährt die echte Welt (Null-Renderer, Foundry an; sein Zeichenpuffer ist der Canvas, den der ECHTE
 // resize-Handler setzt):
 //   Q  QUELLE (kommentar-frei): eine Schirm-Größe (Zeichenpuffer · Canvas-Maß · Fenster-Maß · Bildschirm) liest nur die

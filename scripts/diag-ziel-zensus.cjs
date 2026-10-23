@@ -2,8 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-ziel-zensus.cjs — DER ZIEL-ZENSUS ALS WAND (gate:ziel-zensus, Auftrag 0710-1 P2 Familie HOST-VRAM)
 //
-// Jede andere Textur der Post-Kette (Szene, Auflösung, Geschichte, drei Tiefen) hat ihren Leser und lebt mit ihren
-// Formgleichen zugleich. Die Wand hält das (scripts/lib/ziel-zensus.cjs):
+// Jede GPU-Textur des Hosts hat ihren Leser, die Karte der Kaskade trägt keine Farbe (scripts/lib/ziel-zensus.cjs):
 //   (a) ZENSUS — der echte Frame des Spiels (WebGPU auf swiftshader, Holz `kienspan`), n Frames der Bank-Runde: keine
 //       Täter-Klasse fällt (ohne Leser · teilbar · volle Auflösung · Tiefe · Format), jede Textur trägt einen Erzeuger. Am Bach
 //       der Mess-Wiese (`uferStellen`): ein Leser der Szenen-Tiefe zeichnet im Blick, sie MUSS im Fenster gelesen sein.

@@ -1,8 +1,5 @@
 // diag-studio-uebergabe.cjs — STUDIO-ÜBERGABE (Auftrag D): DIE LIVE-BEARBEITUNG REIST IN DIE WELT.
-// Der tiefste gemessene Naht-Riss: KEIN Studio trug die Schöpfer-Bearbeitung in die Welt —
-// die Welt las nur die GEFRORENEN Kern-Presets (get-book); der Welt-Avatar backte IMMER den
-// START_PARAMS-Default (T-Shirt navy · Hose charcoal · Sneaker white), die 5 Tetrapoda-Dials
-// reisten nie. Jetzt posten koerperstudio/tetrapoda additiv {type:"uebergabe"} über die
+// koerperstudio/tetrapoda posten additiv {type:"uebergabe"} über die
 // bestehende W12-Brücke (das settlement/event-Zusatz-Kanal-Muster), der EINE Host-Empfänger
 // (_studioUebergabeEmpfang) validiert fail-closed (kind-Positivliste · Kern-Buch-Clamps ·
 // Kern-Tabellen-Wahlen · Taille-Cap · must-ignore), und die EINEN Leser-Nähte konsumieren:
@@ -45,26 +42,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { warm: {}, s: {}, n: {}, w: {}, r: {}, b: {} };
-        // FNV-1a-Fingerabdruck über die Positions-Arrays (die praegung-welt-Sonde).
-        const fnv = (h, f32) => {
-            const u8 = new Uint8Array(f32.buffer, f32.byteOffset, f32.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
+        const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         // Farb-Sonde: die Pipe trägt Farben als VERTEX-Daten auf geteilten
         // Materialien (Render-Diät) — gelesen wird das color-Attribut (Vertex 0
         // je Mesh; der Mensch-Guss füllt jedes Teil uniform aus m.mat.color).

@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse des Studio-Befunds (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell · Klinge) ein Exemplar im r128-Labor und in der Welt, gemessen mit EINER Rechnung (scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs `albedoAuswerten`): weißes Umgebungslicht, Schuss hell − Schuss dunkel, Metall auf 0 (Basis-Albedo), jeder geschriebene Pixel, geeicht an der 18-%-Karte (0,180 auf beiden Seiten). Je Zeile Labor-Y, Welt-Y (Rec.-709-Luma, linear), das Verhältnis Labor/Welt und die RATSCHE (|ln Verhältnis| des letzten Nachzugs — sie darf nur fallen, solange W5 das FARB-GESETZ in jedem Kern offen hält). SOLL (W5): jede Zeile innerhalb `toleranz`. Je Studio die 18-%-Karte unter dem Labor-Licht (k·L = Belichtung × Leuchtdichte, Soll: Mittelgrau + 1 EV durch die Tonkurve der Labore, `belichtung.kurve`, gerechnet von `kartenEichung` in scripts/lib/licht-linsen.cjs — dieselbe Rechnung eicht die Welt an ihrer Kurve, AnazhRealm.BELICHTUNG) und der Pixel des Labor-Ausgabe-Wegs. Gemessen: Welt `werkbank.cjs albedo --tafel` am Ort, Labor `diag-albedo-tafel.cjs --labor`, Nachzug `--nachziehen welt.json labor.json`; Wand `npm run gate:albedo-tafel`.",
+    "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse ein Exemplar im Labor und in der Welt, EINE Rechnung, Ratsche, Soll und Werkzeuge: scripts/lib/albedo-tafel.cjs; Wand npm run gate:albedo-tafel.",
     "toleranz": 0.1,
     "messRand": 0.04,
     "stufenToleranz": 0.05,
@@ -15,15 +15,15 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-23T00:49:41.062Z",
+            "datum": "2026-10-23T02:42:52.789Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
-            "version": "18.546.69",
-            "sha": "deb906c072f0243944e0f0a239aa14e2152247ed",
+            "version": "18.546.71",
+            "sha": "1dcb844f44d4da6b8815ff8cbd2965687b26e973",
             "quellen": {
                 "phyto-core.js": "c:c89f0e2882149a07",
                 "foundry-core.js": "c:49d6507c8f31cb07",
-                "vehicle-core.js": "c:23c463ef765fc4db",
+                "vehicle-core.js": "c:2af80a391f962951",
                 "porta-core.js": "c:11bc6e763f4f7298",
                 "schmiede-core.js": "c:a8705fc88a089d00",
                 "fachwerk-core.js": "c:99ea7197a2e80342",
@@ -31,75 +31,75 @@
                 "koerper-core.js": "c:0ee2945630337a11",
                 "tetrapoda-core.js": "c:868d243e6143e765",
                 "gelaende-core.js": "c:1da07e646fe2b0ad",
-                "stamm/dirigent-kern.js": "c:0000000000000000",
-                "stamm/dienst.js": "c:0000000000000000",
-                "stamm/daten.js": "c:0000000000000000",
-                "stamm/gelaende-boden.js": "c:0000000000000000",
-                "stamm/gelaende-chunks.js": "c:0000000000000000",
-                "stamm/gelaende-fern.js": "c:0000000000000000",
-                "stamm/gelaende-kollision.js": "c:0000000000000000",
-                "stamm/wasser-hydro.js": "c:0000000000000000",
-                "stamm/wasser-zellen.js": "c:0000000000000000",
-                "stamm/stoff-material.js": "c:0000000000000000",
-                "stamm/stoff-instanz.js": "c:0000000000000000",
-                "stamm/studio-bruecke.js": "c:0000000000000000",
-                "stamm/studio-gestalt.js": "c:0000000000000000",
-                "stamm/bau-vorlagen.js": "c:0000000000000000",
-                "stamm/bau-buch.js": "c:0000000000000000",
-                "stamm/bau-teile.js": "c:0000000000000000",
-                "stamm/siedlung-ort.js": "c:0000000000000000",
-                "stamm/siedlung-bauten.js": "c:0000000000000000",
-                "stamm/siedlung-satz.js": "c:0000000000000000",
-                "stamm/siedlung-bewohner.js": "c:0000000000000000",
-                "stamm/vegetation-wiese.js": "c:0000000000000000",
-                "stamm/vegetation-baum.js": "c:0000000000000000",
-                "stamm/vegetation-streu.js": "c:0000000000000000",
-                "stamm/bild-kosten.js": "c:0000000000000000",
-                "stamm/bild-diaet.js": "c:0000000000000000",
-                "stamm/bild-sicht.js": "c:0000000000000000",
-                "stamm/bild-himmel.js": "c:0000000000000000",
-                "stamm/klang.js": "c:0000000000000000",
-                "stamm/koerper-leib.js": "c:0000000000000000",
-                "stamm/koerper-seele.js": "c:0000000000000000",
-                "stamm/koerper-bewegung.js": "c:0000000000000000",
-                "stamm/koerper-fahrt.js": "c:0000000000000000",
-                "stamm/kreatur-leben.js": "c:0000000000000000",
-                "stamm/kreatur-verhalten.js": "c:0000000000000000",
-                "stamm/kampf.js": "c:0000000000000000",
-                "stamm/netz-p2p.js": "c:0000000000000000",
-                "stamm/netz-identitaet.js": "c:0000000000000000",
-                "stamm/netz-portal.js": "c:0000000000000000",
-                "stamm/feld-leben.js": "c:0000000000000000",
-                "stamm/feld-dsl.js": "c:0000000000000000",
-                "stamm/feld-nexus.js": "c:0000000000000000",
-                "stamm/feld-sprache.js": "c:0000000000000000",
-                "stamm/speicher-welten.js": "c:0000000000000000",
-                "stamm/speicher-laden.js": "c:0000000000000000",
-                "stamm/werkstatt-hud.js": "c:0000000000000000",
-                "stamm/werkstatt-vorschau.js": "c:0000000000000000",
-                "stamm/werkstatt-bauen.js": "c:0000000000000000",
-                "stamm/werkstatt-hof.js": "c:0000000000000000",
-                "stamm/werkstatt-sozial.js": "c:0000000000000000",
-                "stamm/dirigent-regler.js": "c:0000000000000000",
-                "stamm/dirigent-takt.js": "c:0000000000000000",
-                "stamm/dirigent-ankunft.js": "c:0000000000000000"
+                "stamm/dirigent-kern.js": "c:d23c5da97a01a3ad",
+                "stamm/dienst.js": "c:1654ecdfc64b114a",
+                "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
+                "stamm/gelaende-boden.js": "c:b3b7bd046eeb6da8",
+                "stamm/gelaende-chunks.js": "c:90dd25e37491d3fd",
+                "stamm/gelaende-fern.js": "c:e626c7dc77e739ef",
+                "stamm/gelaende-kollision.js": "c:4b4c0a36774cd6d6",
+                "stamm/wasser-hydro.js": "c:306eff603ee0c6d1",
+                "stamm/wasser-zellen.js": "c:728310071798bf57",
+                "stamm/stoff-material.js": "c:18a855d6fb898e32",
+                "stamm/stoff-instanz.js": "c:3f455abd04a489ad",
+                "stamm/studio-bruecke.js": "c:3071d065c47358cf",
+                "stamm/studio-gestalt.js": "c:362de58ac9ea95b5",
+                "stamm/bau-vorlagen.js": "c:834379bf703ce162",
+                "stamm/bau-buch.js": "c:4f39e33d31169f7e",
+                "stamm/bau-teile.js": "c:426d4e4d8e390275",
+                "stamm/siedlung-ort.js": "c:85bb45bf513af1c9",
+                "stamm/siedlung-bauten.js": "c:2bbe72167b1fd2ec",
+                "stamm/siedlung-satz.js": "c:9b9acf471e58627d",
+                "stamm/siedlung-bewohner.js": "c:f818b52b8bb0f366",
+                "stamm/vegetation-wiese.js": "c:a144bd6cb812be9a",
+                "stamm/vegetation-baum.js": "c:50b6a81aa727953e",
+                "stamm/vegetation-streu.js": "c:61cbc2f3ae522329",
+                "stamm/bild-kosten.js": "c:0f591cc52b89e607",
+                "stamm/bild-diaet.js": "c:6c397620cf33128e",
+                "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
+                "stamm/bild-himmel.js": "c:fb261cb7e0ea13ea",
+                "stamm/klang.js": "c:9a43d75030f7c6dd",
+                "stamm/koerper-leib.js": "c:17be9d3ef59a303a",
+                "stamm/koerper-seele.js": "c:8a2d162699b76ab0",
+                "stamm/koerper-bewegung.js": "c:fa1ceeb67432691a",
+                "stamm/koerper-fahrt.js": "c:71735da31f714ae8",
+                "stamm/kreatur-leben.js": "c:1e0aec52bcbda8b3",
+                "stamm/kreatur-verhalten.js": "c:1b1cfbf91348cb48",
+                "stamm/kampf.js": "c:97a9c92482a36732",
+                "stamm/netz-p2p.js": "c:27be3d1ead8c0282",
+                "stamm/netz-identitaet.js": "c:7221ecc965f15f68",
+                "stamm/netz-portal.js": "c:74f8e7cc9861b40e",
+                "stamm/feld-leben.js": "c:2f1917e982d5d895",
+                "stamm/feld-dsl.js": "c:8253ca2f87d06a9a",
+                "stamm/feld-nexus.js": "c:dda45f4b38579dae",
+                "stamm/feld-sprache.js": "c:626a88fb27014bdc",
+                "stamm/speicher-welten.js": "c:e9d9b4f080241901",
+                "stamm/speicher-laden.js": "c:fe2bbca43741a54e",
+                "stamm/werkstatt-hud.js": "c:d4b5046010d3abf1",
+                "stamm/werkstatt-vorschau.js": "c:22ff21053fdd90b7",
+                "stamm/werkstatt-bauen.js": "c:67458633d2c91be0",
+                "stamm/werkstatt-hof.js": "c:067d676a322244b5",
+                "stamm/werkstatt-sozial.js": "c:5050d651d5fa8fe4",
+                "stamm/dirigent-regler.js": "c:54a0feae14ff91e8",
+                "stamm/dirigent-takt.js": "c:2abf029feb82ab1f",
+                "stamm/dirigent-ankunft.js": "c:5b89cefa99d9201b"
             }
         },
         "welt": {
-            "datum": "2026-10-23T00:48:55.330Z",
+            "datum": "2026-10-23T02:41:41.459Z",
             "geraet": "amd rdna-3",
-            "ort": null,
+            "ort": "genesis",
             "spieler": [
                 0,
                 0
             ],
             "echt": true,
-            "version": "18.546.69",
-            "sha": "deb906c072f0243944e0f0a239aa14e2152247ed",
+            "version": "18.546.71",
+            "sha": "1dcb844f44d4da6b8815ff8cbd2965687b26e973",
             "quellen": {
                 "phyto-core.js": "c:c89f0e2882149a07",
                 "foundry-core.js": "c:49d6507c8f31cb07",
-                "vehicle-core.js": "c:23c463ef765fc4db",
+                "vehicle-core.js": "c:2af80a391f962951",
                 "porta-core.js": "c:11bc6e763f4f7298",
                 "schmiede-core.js": "c:a8705fc88a089d00",
                 "fachwerk-core.js": "c:99ea7197a2e80342",
@@ -107,58 +107,58 @@
                 "koerper-core.js": "c:0ee2945630337a11",
                 "tetrapoda-core.js": "c:868d243e6143e765",
                 "gelaende-core.js": "c:1da07e646fe2b0ad",
-                "stamm/dirigent-kern.js": "c:0000000000000000",
-                "stamm/dienst.js": "c:0000000000000000",
-                "stamm/daten.js": "c:0000000000000000",
-                "stamm/gelaende-boden.js": "c:0000000000000000",
-                "stamm/gelaende-chunks.js": "c:0000000000000000",
-                "stamm/gelaende-fern.js": "c:0000000000000000",
-                "stamm/gelaende-kollision.js": "c:0000000000000000",
-                "stamm/wasser-hydro.js": "c:0000000000000000",
-                "stamm/wasser-zellen.js": "c:0000000000000000",
-                "stamm/stoff-material.js": "c:0000000000000000",
-                "stamm/stoff-instanz.js": "c:0000000000000000",
-                "stamm/studio-bruecke.js": "c:0000000000000000",
-                "stamm/studio-gestalt.js": "c:0000000000000000",
-                "stamm/bau-vorlagen.js": "c:0000000000000000",
-                "stamm/bau-buch.js": "c:0000000000000000",
-                "stamm/bau-teile.js": "c:0000000000000000",
-                "stamm/siedlung-ort.js": "c:0000000000000000",
-                "stamm/siedlung-bauten.js": "c:0000000000000000",
-                "stamm/siedlung-satz.js": "c:0000000000000000",
-                "stamm/siedlung-bewohner.js": "c:0000000000000000",
-                "stamm/vegetation-wiese.js": "c:0000000000000000",
-                "stamm/vegetation-baum.js": "c:0000000000000000",
-                "stamm/vegetation-streu.js": "c:0000000000000000",
-                "stamm/bild-kosten.js": "c:0000000000000000",
-                "stamm/bild-diaet.js": "c:0000000000000000",
-                "stamm/bild-sicht.js": "c:0000000000000000",
-                "stamm/bild-himmel.js": "c:0000000000000000",
-                "stamm/klang.js": "c:0000000000000000",
-                "stamm/koerper-leib.js": "c:0000000000000000",
-                "stamm/koerper-seele.js": "c:0000000000000000",
-                "stamm/koerper-bewegung.js": "c:0000000000000000",
-                "stamm/koerper-fahrt.js": "c:0000000000000000",
-                "stamm/kreatur-leben.js": "c:0000000000000000",
-                "stamm/kreatur-verhalten.js": "c:0000000000000000",
-                "stamm/kampf.js": "c:0000000000000000",
-                "stamm/netz-p2p.js": "c:0000000000000000",
-                "stamm/netz-identitaet.js": "c:0000000000000000",
-                "stamm/netz-portal.js": "c:0000000000000000",
-                "stamm/feld-leben.js": "c:0000000000000000",
-                "stamm/feld-dsl.js": "c:0000000000000000",
-                "stamm/feld-nexus.js": "c:0000000000000000",
-                "stamm/feld-sprache.js": "c:0000000000000000",
-                "stamm/speicher-welten.js": "c:0000000000000000",
-                "stamm/speicher-laden.js": "c:0000000000000000",
-                "stamm/werkstatt-hud.js": "c:0000000000000000",
-                "stamm/werkstatt-vorschau.js": "c:0000000000000000",
-                "stamm/werkstatt-bauen.js": "c:0000000000000000",
-                "stamm/werkstatt-hof.js": "c:0000000000000000",
-                "stamm/werkstatt-sozial.js": "c:0000000000000000",
-                "stamm/dirigent-regler.js": "c:0000000000000000",
-                "stamm/dirigent-takt.js": "c:0000000000000000",
-                "stamm/dirigent-ankunft.js": "c:0000000000000000"
+                "stamm/dirigent-kern.js": "c:d23c5da97a01a3ad",
+                "stamm/dienst.js": "c:1654ecdfc64b114a",
+                "stamm/daten.js": "c:ebe2bf4aa1c01ce1",
+                "stamm/gelaende-boden.js": "c:b3b7bd046eeb6da8",
+                "stamm/gelaende-chunks.js": "c:90dd25e37491d3fd",
+                "stamm/gelaende-fern.js": "c:e626c7dc77e739ef",
+                "stamm/gelaende-kollision.js": "c:4b4c0a36774cd6d6",
+                "stamm/wasser-hydro.js": "c:306eff603ee0c6d1",
+                "stamm/wasser-zellen.js": "c:728310071798bf57",
+                "stamm/stoff-material.js": "c:18a855d6fb898e32",
+                "stamm/stoff-instanz.js": "c:3f455abd04a489ad",
+                "stamm/studio-bruecke.js": "c:3071d065c47358cf",
+                "stamm/studio-gestalt.js": "c:362de58ac9ea95b5",
+                "stamm/bau-vorlagen.js": "c:834379bf703ce162",
+                "stamm/bau-buch.js": "c:4f39e33d31169f7e",
+                "stamm/bau-teile.js": "c:426d4e4d8e390275",
+                "stamm/siedlung-ort.js": "c:85bb45bf513af1c9",
+                "stamm/siedlung-bauten.js": "c:2bbe72167b1fd2ec",
+                "stamm/siedlung-satz.js": "c:9b9acf471e58627d",
+                "stamm/siedlung-bewohner.js": "c:f818b52b8bb0f366",
+                "stamm/vegetation-wiese.js": "c:a144bd6cb812be9a",
+                "stamm/vegetation-baum.js": "c:50b6a81aa727953e",
+                "stamm/vegetation-streu.js": "c:61cbc2f3ae522329",
+                "stamm/bild-kosten.js": "c:0f591cc52b89e607",
+                "stamm/bild-diaet.js": "c:6c397620cf33128e",
+                "stamm/bild-sicht.js": "c:5d50d658e4fe1763",
+                "stamm/bild-himmel.js": "c:fb261cb7e0ea13ea",
+                "stamm/klang.js": "c:9a43d75030f7c6dd",
+                "stamm/koerper-leib.js": "c:17be9d3ef59a303a",
+                "stamm/koerper-seele.js": "c:8a2d162699b76ab0",
+                "stamm/koerper-bewegung.js": "c:fa1ceeb67432691a",
+                "stamm/koerper-fahrt.js": "c:71735da31f714ae8",
+                "stamm/kreatur-leben.js": "c:1e0aec52bcbda8b3",
+                "stamm/kreatur-verhalten.js": "c:1b1cfbf91348cb48",
+                "stamm/kampf.js": "c:97a9c92482a36732",
+                "stamm/netz-p2p.js": "c:27be3d1ead8c0282",
+                "stamm/netz-identitaet.js": "c:7221ecc965f15f68",
+                "stamm/netz-portal.js": "c:74f8e7cc9861b40e",
+                "stamm/feld-leben.js": "c:2f1917e982d5d895",
+                "stamm/feld-dsl.js": "c:8253ca2f87d06a9a",
+                "stamm/feld-nexus.js": "c:dda45f4b38579dae",
+                "stamm/feld-sprache.js": "c:626a88fb27014bdc",
+                "stamm/speicher-welten.js": "c:e9d9b4f080241901",
+                "stamm/speicher-laden.js": "c:fe2bbca43741a54e",
+                "stamm/werkstatt-hud.js": "c:d4b5046010d3abf1",
+                "stamm/werkstatt-vorschau.js": "c:22ff21053fdd90b7",
+                "stamm/werkstatt-bauen.js": "c:67458633d2c91be0",
+                "stamm/werkstatt-hof.js": "c:067d676a322244b5",
+                "stamm/werkstatt-sozial.js": "c:5050d651d5fa8fe4",
+                "stamm/dirigent-regler.js": "c:54a0feae14ff91e8",
+                "stamm/dirigent-takt.js": "c:2abf029feb82ab1f",
+                "stamm/dirigent-ankunft.js": "c:5b89cefa99d9201b"
             }
         }
     },
@@ -209,8 +209,8 @@
             "ist": {
                 "labor": {
                     "Y": 0.0893,
-                    "rgb": "0.1065/0.0869/0.0618",
-                    "pixel": 17726
+                    "rgb": "0.1066/0.087/0.0618",
+                    "pixel": 17719
                 },
                 "welt": {
                     "Y": 0.0866,
@@ -276,13 +276,13 @@
             "ist": {
                 "labor": {
                     "Y": 0.1784,
-                    "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 121938
+                    "rgb": "0.1268/0.2072/0.0447",
+                    "pixel": 121979
                 },
                 "welt": {
                     "Y": 0.1679,
-                    "rgb": "0.0906/0.2033/0.0447",
-                    "pixel": 54662,
+                    "rgb": "0.0906/0.2034/0.0447",
+                    "pixel": 54468,
                     "stufen": [
                         0,
                         1
@@ -503,14 +503,14 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.1593,
-                    "rgb": "0.2755/0.1319/0.0887",
-                    "pixel": 160149,
+                    "Y": 0.1592,
+                    "rgb": "0.2758/0.1316/0.0889",
+                    "pixel": 159552,
                     "stufen": [
                         0
                     ]
                 },
-                "verhaeltnis": 0.936
+                "verhaeltnis": 0.9366
             },
             "ratsche": 0.0579
         },
@@ -556,14 +556,14 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.1581,
-                    "rgb": "0.2742/0.1308/0.0871",
-                    "pixel": 162565,
+                    "Y": 0.1579,
+                    "rgb": "0.2745/0.1304/0.0873",
+                    "pixel": 161942,
                     "stufen": [
                         1
                     ]
                 },
-                "verhaeltnis": 0.9336
+                "verhaeltnis": 0.9348
             },
             "ratsche": 0.0586
         },
@@ -609,14 +609,14 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.157,
-                    "rgb": "0.2795/0.1273/0.0907",
-                    "pixel": 188608,
+                    "Y": 0.1568,
+                    "rgb": "0.2798/0.1269/0.0909",
+                    "pixel": 187904,
                     "stufen": [
                         2
                     ]
                 },
-                "verhaeltnis": 0.9401
+                "verhaeltnis": 0.9413
             },
             "ratsche": 0.0516
         },
@@ -624,6 +624,7 @@
             "id": "lack",
             "gruppe": "Metall/Lack",
             "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
+            "pflicht": true,
             "labor": {
                 "studio": "garage",
                 "aktion": {
@@ -671,21 +672,21 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0059,
-                    "rgb": "0.005/0.0058/0.0087",
+                    "Y": 0.0166,
+                    "rgb": "0.0144/0.0166/0.0226",
                     "pixel": 245421
                 },
                 "welt": {
-                    "Y": 0.0058,
-                    "rgb": "0.005/0.0058/0.0087",
+                    "Y": 0.0164,
+                    "rgb": "0.0142/0.0165/0.0224",
                     "pixel": 77839,
                     "stufen": [
                         0
                     ]
                 },
-                "verhaeltnis": 1.0172
+                "verhaeltnis": 1.0122
             },
-            "ratsche": 0.0171
+            "ratsche": 0.0121
         },
         {
             "id": "tor",
@@ -747,7 +748,8 @@
         {
             "id": "haut",
             "gruppe": "Haut/Fell",
-            "titel": "Mensch, die Haut im Ton Mahagoni 0x6a4230 (K57: vorher 0x5f3826) (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
+            "titel": "Mensch, Haut Mahagoni 0x6a4230 — derselbe Mensch beidseits (START_PARAMS + Mahagoni: Labor das Farbfeld Index 6, Welt der Mensch der Zeile)",
+            "pflicht": true,
             "labor": {
                 "studio": "koerperstudio",
                 "stoff": {
@@ -760,10 +762,13 @@
             },
             "welt": {
                 "exemplar": {
-                    "typ": "spieler",
+                    "typ": "mensch",
+                    "wahl": {
+                        "skinTone": "mahagoni"
+                    },
                     "radius": 2
                 },
-                "klasse": "^spieler(:.*)?$",
+                "klasse": "^mensch$",
                 "stoff": {
                     "kind": "^(haut|skin)$"
                 }
@@ -780,28 +785,30 @@
                 "stamm/siedlung-bewohner.js",
                 "stamm/vegetation-baum.js",
                 "stamm/koerper-seele.js",
-                "stamm/koerper-fahrt.js"
+                "stamm/koerper-fahrt.js",
+                "stamm/koerper-leib.js"
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0606,
-                    "rgb": "0.1215/0.0461/0.0249",
-                    "pixel": 74263
+                    "Y": 0.0607,
+                    "rgb": "0.1217/0.0462/0.025",
+                    "pixel": 74470
                 },
                 "welt": {
-                    "Y": 0.0708,
-                    "rgb": "0.1424/0.0537/0.0292",
-                    "pixel": 33208,
+                    "Y": 0.0609,
+                    "rgb": "0.1222/0.0463/0.0251",
+                    "pixel": 29864,
                     "stufen": []
                 },
-                "verhaeltnis": 0.8559
+                "verhaeltnis": 0.9967
             },
-            "ratsche": 0.152
+            "ratsche": 0.0033
         },
         {
             "id": "fell",
             "gruppe": "Haut/Fell",
             "titel": "Wolf, das Fell (Labor: Leib und Strähnen des Wolfs, Rauheit ab 0,85 — ohne Nase, Augen, Krallen, Zähne; Welt: die Fell-Haut)",
+            "pflicht": true,
             "labor": {
                 "studio": "tetrapoda",
                 "aktion": {
@@ -840,18 +847,18 @@
             "ist": {
                 "labor": {
                     "Y": 0.1689,
-                    "rgb": "0.2059/0.1636/0.1123",
-                    "pixel": 152974
+                    "rgb": "0.206/0.1636/0.1123",
+                    "pixel": 152849
                 },
                 "welt": {
-                    "Y": 0.1852,
-                    "rgb": "0.2272/0.1791/0.1214",
-                    "pixel": 45000,
+                    "Y": 0.1848,
+                    "rgb": "0.227/0.1787/0.121",
+                    "pixel": 44563,
                     "stufen": []
                 },
-                "verhaeltnis": 0.912
+                "verhaeltnis": 0.914
             },
-            "ratsche": 0.0905
+            "ratsche": 0.0899
         },
         {
             "id": "klinge",
@@ -911,9 +918,9 @@
             "ist": {
                 "kL": 0.676,
                 "ausgabe": [
-                    168,
-                    173,
-                    166
+                    171,
+                    176,
+                    169
                 ]
             },
             "ratsche": 0.7612
@@ -931,11 +938,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8006,
+                "kL": 0.8012,
                 "ausgabe": [
-                    195,
-                    206,
-                    201
+                    199,
+                    210,
+                    205
                 ]
             },
             "ratsche": 0.9292
@@ -944,16 +951,16 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    172,
-                    160,
-                    148
+                    174,
+                    162,
+                    150
                 ]
             },
             "ratsche": 0.7106
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4813,
+                "kL": 0.4811,
                 "ausgabe": [
                     197,
                     194,
@@ -966,9 +973,9 @@
             "ist": {
                 "kL": 0.699,
                 "ausgabe": [
-                    169,
-                    180,
-                    177
+                    170,
+                    181,
+                    178
                 ]
             },
             "ratsche": 0.7946

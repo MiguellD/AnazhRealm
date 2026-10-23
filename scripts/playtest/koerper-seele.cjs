@@ -1024,8 +1024,6 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1645,7 +1643,7 @@ async function checkBandWelle6DSoul(ctx) {
         // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
-        out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
+        out.hasPhoenixState = "respawnGraceUntil" in r.state.player;
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
         // Setup
@@ -1783,7 +1781,7 @@ async function checkBandWelle6DSoul(ctx) {
     if (wave6d3aResults && !wave6d3aResults.error) {
         // Tod-Behandlung
         check(
-            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt, phoenixUntil ist gefallen",
+            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt",
             wave6d3aResults.hasPhoenixState
         );
         check(

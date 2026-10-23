@@ -1,7 +1,6 @@
-// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Welle 5, Gebot 10): was der ferne Wald im BILD ist. Kein Zähler
-// sah es: Befehle und Dreiecke blieben gleich, nur das Bild log. Die Form-Wahrheit (jedes Karten-Ding jenseits der
-// Mesh-Zone ist seine Karte, kein Satz, kein Pop am Radius) hält `gate:fernwald`; diese Linse misst, was davon im Bild
-// ankommt.
+// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Welle 5, Gebot 10): was der ferne Wald im BILD ist.
+// Die Form-Wahrheit (jedes Karten-Ding jenseits der Mesh-Zone ist seine Karte, kein
+// Satz, kein Pop am Radius) hält `gate:fernwald`; diese Linse misst, was davon im Bild ankommt.
 //
 // Je Blick zwei Aufnahmen aus dem Ausgabe-Pfad (Bühne fest, Spiel-Loop ruht): mit und ohne den GESETZTEN Fernwald —
 // jedes Karten-Ding (`_archKartenPreset`: Baum, Strauch) jenseits der Mesh-Zone, seine Karten-Slots UND

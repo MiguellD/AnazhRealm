@@ -414,8 +414,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HBuildAndPersist(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1211,8 +1209,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureStats(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

@@ -851,7 +851,7 @@ class AnazhRealm_gelaende_chunks {
         if (!this.state.voxelWorker) return;
         const k = this._voxelEditKarte();
         const span = k.span;
-        const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+        const r = globalThis.__gelaendeCore.editReich(ed); // die Reichweite seiner Form, wie die Karte sie legt
         const cx0 = Math.floor((ed.x - r) / span) - 2;
         const cx1 = Math.floor((ed.x + r) / span) + 2;
         const cz0 = Math.floor((ed.z - r) / span) - 2;
@@ -866,7 +866,7 @@ class AnazhRealm_gelaende_chunks {
             this._voxelZustandPost({
                 type: "state-update",
                 delta: {
-                    voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },
+                    voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, mode: ed.mode },
                 },
             });
         } catch (e) {
@@ -1064,7 +1064,7 @@ class AnazhRealm_gelaende_chunks {
         } else {
             // V12.0-perf.b — base-gecachter Sync-Pfad. Statt ~126 ms
             // `_terrainDensityAt`-Grid-Sample wird die worldgen-frozen Basis
-            // gecacht; nur der billige voxelEdit-Delta wird neu aufgelegt.
+            // gecacht; nur die billige Form der Edits wird neu aufgelegt.
             terrainDensity = this._voxelEditedDensityGrid(
                 `${cx},${cz},${lod}`,
                 ox - step,
@@ -2311,7 +2311,7 @@ class AnazhRealm_gelaende_chunks {
         // höher bauen → `_voxelEditsFillTop()` hebt die Grenze; Macro nicht endlich → Voll-Scan.
         // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
         // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
-        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta). Die Makro-Höhe der Garantie
+        // Kollision, bit-identisch zu `_terrainDensityAt` (`_mitEdits` über base == über baseCol). Die Makro-Höhe der Garantie
         // ist die des Kontexts (`surf`, dieselbe `hoehe` derselben Spalte) — bis K60-2 rechnete die Spalte sie zweimal
         // (Radeon kalt 0,7 s bis zum ersten Weltbild, jeder Wald-Dart fragt fünf Spalten).
         const colCtx = this._terrainColumnContext(x, z);
@@ -2346,12 +2346,12 @@ class AnazhRealm_gelaende_chunks {
     // Schritt-Hinweis, der Gradient gibt die Richtung, 2–3× iteriert (collide-and-slide). `ctx` =
     // `_terrainColumnContext(x,z)`: eine vertikale Probe teilt EINEN Spalten-Kontext über alle y.
 
-    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) + Edit-Delta.
+    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) mit den Edits (`_mitEdits`, die Form des Kerns).
     // > 0 solide, ≤ 0 Luft/Wasser. Liest die Edits → ein gecarvter Tunnel ist SOFORT
     // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
     _fieldDensityAt(x, y, z, ctx) {
         const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
-        const d = base + this._voxelEditDeltaAt(x, y, z);
+        const d = this._mitEdits(base, x, y, z);
         // der Keller ist hohl (S4, `erdbauHohl`) — dieselbe Dichte wie `_terrainDensityAt`; ob die Spalte über einem Keller
         // steht, trägt ihr Kontext (`keller`, EINMAL je Spalte gefragt): die Probe des Heiß-Pfads `_voxelSurfaceY` zahlt einen
         // Blick (gemessen: getTerrainHeightAt 1,40 → 2,10 µs, als jede Probe die Lage des Erdbaus fragte)
@@ -2839,8 +2839,8 @@ class AnazhRealm_gelaende_chunks {
         };
     }
 
-    // Höchste Oberkante aller FILL-Edits (y + r): darüber hebt der `_voxelSurfaceY`-Envelope-Skip seine
-    // Grenze. Cache per Identität+Länge des Edit-Arrays (push via `_addVoxelEdit`; Welt-Wechsel/Regen
+    // Höchste Oberkante aller FILL-Edits (gelaende-core `editKrone`): darüber hebt der `_voxelSurfaceY`-Envelope-Skip
+    // seine Grenze. Cache per Identität+Länge des Edit-Arrays (push via `_addVoxelEdit`; Welt-Wechsel/Regen
     // tauscht oder leert es). Keine Fill-Edits → −Infinity.
     _voxelEditsFillTop() {
         const meta = this.state.worldMeta;
@@ -2848,14 +2848,7 @@ class AnazhRealm_gelaende_chunks {
         const len = edits ? edits.length : 0;
         const cache = this._editFillTopCache;
         if (cache && cache.edits === edits && cache.len === len) return cache.top;
-        let topY = -Infinity;
-        for (let i = 0; i < len; i++) {
-            const e = edits[i];
-            if (e && e.mode === "fill") {
-                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
-                if (t > topY) topY = t;
-            }
-        }
+        const topY = globalThis.__gelaendeCore.editKrone(edits);
         this._editFillTopCache = { edits, len, top: topY };
         return topY;
     }
@@ -2978,9 +2971,10 @@ class AnazhRealm_gelaende_chunks {
     }
 
     // ### Voxel-Edits: 3D-Graben + Aufschütten ###
-    // `carveVoxelSphere` schnitzt eine Kugel Luft, `fillVoxelSphere` schüttet eine Kugel Fest — beide
-    // über `_addVoxelEdit`. Der Edit landet in worldMeta.voxelEdits (persistiert), `_terrainDensityAt`
-    // zieht ab/addiert (Loch/Tunnel/Hügel); die betroffenen Chunks werden neu gemesht.
+    // `carveVoxel` nimmt eine Säule heraus, `fillVoxel` vereinigt sie mit dem Boden (die Form des Kerns, gelaende-core
+    // `editForm`: Radius r, halbe Höhe r, oben und unten eben) — beide über `_addVoxelEdit`. Der Edit landet in
+    // worldMeta.voxelEdits (persistiert), `_terrainDensityAt` trägt ihn (Grube/Schacht/Turm); die betroffenen Chunks werden neu
+    // gemesht.
     _addVoxelEdit(x, y, z, r, mode) {
         if (!this.state.worldMeta) return false;
         if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return false;
@@ -2998,10 +2992,13 @@ class AnazhRealm_gelaende_chunks {
         const Y_MAX = ceilY + radius + 8;
         if (y < Y_MIN || y > Y_MAX) return false;
         const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
-        const newEdit = { x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" };
+        const newEdit = { x, y: yClamped, z, r: radius, mode: mode === "fill" ? "fill" : "carve" };
         // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
         // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
+        // DIE REICHWEITE DES EDITS (gelaende-core `editReich`): so weit ändert seine Form die Dichte — jeder Neubau, jede
+        // Wasser-Kappe, jede Weckung unten deckt sie (der Radius allein ließ die Kehle der Vereinigung im Nachbar-Chunk alt).
+        const reich = globalThis.__gelaendeCore.editReich(newEdit);
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
@@ -3011,27 +3008,27 @@ class AnazhRealm_gelaende_chunks {
         // Skirt-Nachbarn behalten ihr Gras.
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
         const { span } = this._voxelChunkConfig();
-        const fcx0 = Math.floor((x - radius) / span);
-        const fcx1 = Math.floor((x + radius) / span);
-        const fcz0 = Math.floor((z - radius) / span);
-        const fcz1 = Math.floor((z + radius) / span);
+        const fcx0 = Math.floor((x - reich) / span);
+        const fcx1 = Math.floor((x + reich) / span);
+        const fcz0 = Math.floor((z - reich) / span);
+        const fcz1 = Math.floor((z + reich) / span);
         for (let fcx = fcx0; fcx <= fcx1; fcx++) {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
-        this._remeshVoxelChunksAround(x, z, radius);
+        this._remeshVoxelChunksAround(x, z, reich);
         // Die direkt berührten FOOTPRINT-Chunks SYNCHRON im Edit-Frame heilen (nicht 1/Frame verteilt) —
         // sonst ~2 Frames sichtbare Abbau-Naht zwischen Nachbarn. Die Skirt-Nachbarn (nur das 1-Zell-Pad
-        // sah die Kugel, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
-        this._syncRebuildEditFootprint(x, z, radius);
+        // sah die Säule, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
+        this._syncRebuildEditFootprint(x, z, reich);
         // NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan
         // muss die FRISCHEN Zellen sehen (ein Fill kann Damm sein, ein Carve ihn öffnen), und der Lazy-Neubau
         // legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
-        this._invalidateWaterCapsAround(x, z, radius);
+        this._invalidateWaterCapsAround(x, z, reich);
         // Gebackene Region-Felder im Footprint dirty markieren (Region-Raster 256 m → 1–2 Regionen).
         // Lazy-Rebake im nächsten Tick; bis dahin gelten die stale Daten.
-        this._invalidateBakedRegionsAround(x, z, radius);
+        this._invalidateBakedRegionsAround(x, z, reich);
         // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
         // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
         if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
@@ -3039,10 +3036,10 @@ class AnazhRealm_gelaende_chunks {
         // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
         {
             const { span } = this._voxelChunkConfig();
-            const minCX = Math.floor((x - radius) / span) - 1;
-            const maxCX = Math.floor((x + radius) / span) + 1;
-            const minCZ = Math.floor((z - radius) / span) - 1;
-            const maxCZ = Math.floor((z + radius) / span) + 1;
+            const minCX = Math.floor((x - reich) / span) - 1;
+            const maxCX = Math.floor((x + reich) / span) + 1;
+            const minCZ = Math.floor((z - reich) / span) - 1;
+            const maxCZ = Math.floor((z + reich) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
         // Persistenz debounced (~1.2 s nach dem letzten Hit): `saveState()` baut den VOLLEN Snapshot +
@@ -3052,11 +3049,11 @@ class AnazhRealm_gelaende_chunks {
         return true;
     }
 
-    carveVoxelSphere(x, y, z, r) {
+    carveVoxel(x, y, z, r) {
         return this._addVoxelEdit(x, y, z, r, "carve");
     }
 
-    fillVoxelSphere(x, y, z, r) {
+    fillVoxel(x, y, z, r) {
         return this._addVoxelEdit(x, y, z, r, "fill");
     }
 
@@ -3110,7 +3107,7 @@ class AnazhRealm_gelaende_chunks {
         return false;
     }
 
-    // Markiert jeden Chunk, den die Schnitz-Kugel berührt (±`skirt` Chunks), als dirty;
+    // Markiert jeden Chunk, den die Reichweite r eines Edits berührt (±`skirt` Chunks), als dirty;
     // `_tickDirtyVoxelChunks` baut sie verteilt (≤1/Frame, nächster zuerst) statt 9 Sync-Rebuilds im
     // selben Frame. Tests drainen per `_drainDirtyVoxelChunks()`. skirt=1 für Density-Edits (Pad+Crop
     // liest 1 Cell in den Nachbarn → sonst Naht); skirt=0 für Architektur (nur Cell-Stempel, keine
@@ -3133,7 +3130,7 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // Heilt die FOOTPRINT-Chunks (skirt=0, die die Kugel wirklich überdeckt) SYNCHRON im Edit-Frame —
+    // Heilt die FOOTPRINT-Chunks (skirt=0, die die Reichweite wirklich überdeckt) SYNCHRON im Edit-Frame —
     // derselbe Pfad wie `_drainDirtyVoxelChunks` (forceSync, dispose-before-build, Wasser-Iso sync).
     // Skirt-Nachbarn bleiben async (Oberfläche unverändert). Billig (~2 ms/Chunk über den Base-
     // Density-Cache) → 2–4 Chunks ≈ sub-Frame.

@@ -127,7 +127,28 @@ async function weltDa(bed) {
     window.__weltDaWartet = null;
     return window.anazhRealm;
 }
-const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa};`;
+// DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
+// Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
+// Index (ein Farb-Regler bewegt die Vertex-Farbe, nie die Lage); „hash/Teile".
+function abdruck(x, alle) {
+    let [h, n] = [0x811c9dc5, 0];
+    const ein = (a) => {
+        const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+        for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 0x01000193);
+    };
+    const geo = (g) => {
+        const at = g && g.attributes;
+        if (!at || !at.position) return;
+        n++;
+        for (const k of alle ? Object.keys(at).sort() : ["position"]) ein(at[k].array || at[k].data.array);
+        if (alle && g.index) ein(g.index.array);
+    };
+    if (x && x.leaves) for (const g of new Set(x.leaves.filter((l) => !l.shadowTwin).map((l) => l.geom))) geo(g);
+    else if (x && x.traverse) x.traverse((o) => geo(o.geometry));
+    else geo(x);
+    return (h >>> 0).toString(16) + "/" + n;
+}
+const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

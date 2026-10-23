@@ -894,7 +894,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const hMax = Math.max(...heights);
         out.heightSpread = Number((hMax - hMin).toFixed(2));
         out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
-
         return out;
     });
 

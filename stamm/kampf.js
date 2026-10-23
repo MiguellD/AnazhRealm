@@ -801,20 +801,29 @@ class AnazhRealm_kampf {
         return null;
     }
 
-    // GRÄBT DIESES GERÄT? (die Maus-Absicht, Welle L Q9): die leere Hand und die Grab-Geräte der Schmiede (Werk-Art
-    // graben · pick: Spaten, Schaufel, Spitzhacke) graben und schütten auf; Klinge, Keil, Wucht und Bogen nie. Ein
-    // Eigenwerk gräbt, wenn es keine Klinge ist (_implementAffordanceLabel — die Form entscheidet); ein Bauwerk nie.
+    // GRÄBT DIESES GERÄT? (die Maus-Absicht, Welle L Q9): die leere Hand gräbt und schüttet auf; ein Werk der Schmiede,
+    // wenn seine Front den Boden öffnet (schmiede oeffnetBoden: ein Blatt hebt ihn, eine Spitze bricht ihn auf — die
+    // Gestalt des Kerns, halten-gesetz; vorher die Werk-Art task.art, eine Fällaxt mit Grab-Blatt grub nie); der Bogen
+    // nie. Ein Eigenwerk gräbt, wenn es keine Klinge ist (_implementAffordanceLabel — die Form entscheidet); ein Bauwerk nie.
     _geraetGraebt(bp) {
         if (!bp) return true;
         if (this._isPlaceableBlueprint(bp)) return false;
-        const gestalt = this._schmiedeGestalt(bp);
-        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (gestalt && sc && sc.REZEPT_ZU_GATTUNG && sc.GATTUNGEN) {
-            const g = sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[gestalt]];
-            const art = g && g.task ? g.task.art : null;
-            return art === "graben" || art === "pick";
+        if (this._schmiedeWerk(bp)) {
+            const km = this._schmiedeKampfMasze(bp);
+            return !!km && globalThis.__schmiedeCore.oeffnetBoden(km.front);
         }
         return this._implementAffordanceLabel(bp) !== "Klinge";
+    }
+
+    // EIN WERK DER SCHMIEDE? (halten-gesetz) — seine Gestalt steht in der Gattungs-Tafel des Kerns: Treffer, Schuss und
+    // das Werk am Stoff urteilt das Gesetzbuch (kampfMasze · trefferUrteil · werkUrteil), nie die Tags oder Teile des
+    // Spenders, den es klont (KIND_POLICY.weapon: geraet_schwert, mit fx.tool geraet_spitzhacke).
+    _schmiedeWerk(bp) {
+        const g = this._schmiedeGestalt(bp);
+        if (!g) return false;
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || !sc.REZEPT_ZU_GATTUNG) AnazhRealm._kernPflichtBruch("schmiede:REZEPT_ZU_GATTUNG");
+        return !!sc.REZEPT_ZU_GATTUNG[g];
     }
 
     // ═══ DIE KAMPF-MASSE DER GATTUNG ═══
@@ -1310,9 +1319,42 @@ class AnazhRealm_kampf {
 
     // Fähigkeits-Profil = FORM-getriebener Trade-off: WUCHT (minePower ∝ Stumpfheit × (dichte+härte),
     // bricht Fels) vs SCHÄRFE (cutPower ∝ spitze Form × härte, schneidet Weiches). Dieselbe Materie
-    // wird Keule oder Klinge — die FORM entscheidet. Die Faust: beides schwach.
-    _implementProfile() {
-        return this._implementProfileForBlueprint(this._heldImplementBlueprint());
+    // wird Keule oder Klinge — die FORM entscheidet. Die Faust: beides schwach. Ein Werk der Schmiede gegen das
+    // Ziel `ziel` (ZIELMAT-Schlüssel): sein Werk am Stoff (_werkProfil).
+    _implementProfile(ziel) {
+        const bp = this._heldImplementBlueprint();
+        return this._schmiedeWerk(bp) ? this._werkProfil(bp, ziel) : this._implementProfileForBlueprint(bp);
+    }
+
+    // DAS WERK AM STOFF (halten-gesetz): die Kraft eines Werks der Schmiede gegen DIESES Ziel ist der Schlag seiner
+    // Gestalt — schmiede werkUrteil: die Energie am Schlagpunkt (Masse × Tempo des Schwungs, _werkSchlagTempo), der Weg
+    // seiner Front und die Antwort des Ziel-Stoffs —, mal Güte und Verschleiß der Führung, auf die Grund-Kraft jedes
+    // Geräts (HARVEST.toolCutBase / toolMineBase, die Kraft der Hand) gelegt: die Schneide schneidet (cut), Bruch und Hub
+    // wuchten (mine). Vorher las der Abbau die Teile des Spenders — zwei Profile für 17 Gestalten (das Langschwert fällte
+    // die Eiche wie die Fällaxt in 1 Hieb und brach den Fels vor der Spitzhacke, 2 gegen 3). Der Bogen schlägt nicht.
+    _werkProfil(bp, ziel) {
+        const H = AnazhRealm.HARVEST;
+        const km = this._schmiedeKampfMasze(bp);
+        if (!km) return { minePower: H.toolMineBase, cutPower: H.toolCutBase };
+        const sc = globalThis.__schmiedeCore;
+        if (typeof sc.werkUrteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:werkUrteil");
+        if (!ziel) throw new Error("WERK: das Ziel trägt keinen Stoff (_architectureResistance · Boden reichen ziel)");
+        const u = sc.werkUrteil(km, { vLat: this._werkSchlagTempo(), ziel });
+        const w = (u.W * this._heldGueteFaktor() * this._wearStatFactor(bp)) / H.werkJProKraft;
+        return u.weg === "schnitt"
+            ? { minePower: H.toolMineBase, cutPower: H.toolCutBase + w }
+            : { minePower: H.toolMineBase + w, cutPower: H.toolCutBase };
+    }
+
+    // DAS TEMPO DES WERK-SCHLAGS am Schlagpunkt: die Winkel-Geschwindigkeit der Strike-Phase des EINEN Schwungs (der
+    // Bogen 2·arcHalf in dauer·strikeFrac, die Dauer ∝ √I) am Hebel des Schlagpunkts (_kampfSchlagpunkt) — dasselbe ω·r,
+    // mit dem der Sweep die Klinge fegt; am Bau schwingt kein Rahmen, der Schlag trägt das Nenn-Tempo.
+    _werkSchlagTempo() {
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const R = this._kampfSchwungRahmen(this._werkRahmen || (this._werkRahmen = {}));
+        return (
+            ((2 * K.arcHalfRad) / Math.max(0.05, this._playerSwingDauer() * K.strikeFrac)) * this._kampfSchlagpunkt(R)
+        );
     }
 
     // V17.57 W2-B — das Profil eines BELIEBIGEN Bauplans (für die UI-Ablesung + das gehaltene Gerät).
@@ -1337,6 +1379,12 @@ class AnazhRealm_kampf {
     // (kein manuelles Markieren mehr). Eine spitze Klinge liest „Klinge" (schneidet), ein stumpfer
     // schwerer Klotz „Brecher" (wuchtet), ausgewogen „Gerät".
     _implementAffordanceLabel(bp) {
+        // ein Werk der Schmiede liest seine Front (schneidet · bricht · hebt), nie die Teile seines Spenders
+        if (this._schmiedeWerk(bp)) {
+            const km = this._schmiedeKampfMasze(bp);
+            const art = km && km.front ? km.front.art : null;
+            return art === "kante" ? "Klinge" : art === "stoss" ? "Brecher" : "Gerät";
+        }
         const prof = this._implementProfileForBlueprint(bp);
         if (prof.cutPower > prof.minePower * 1.3) return "Klinge";
         if (prof.minePower > prof.cutPower * 1.3) return "Brecher";
@@ -1447,22 +1495,26 @@ class AnazhRealm_kampf {
 
     // Widerstand in zwei Kanälen aus härte+dichte (je eigene HARVEST-Gewichte): mineResist gegen Wucht,
     // cutResist gegen Schärfe — das MATERIAL entscheidet, welche Kraft greift (Fels nur Wucht).
+    // `ziel` (halten-gesetz): der Stoff, den ein Werk der Schmiede trifft — die Zeile in schmiede ZIELMAT, gewählt aus den
+    // Stoffen der Teile (schmiede zielStoff: die Eiche Holz vor Laub, der Fels Stein).
     _architectureResistance(entry) {
         const H = AnazhRealm.HARVEST;
         const bp = entry && this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp) return { mineResist: H.resistBase, cutResist: H.cutResistBase };
+        if (!bp) return { mineResist: H.resistBase, cutResist: H.cutResistBase, ziel: null };
         const t = this.computeCompoundTags(bp) || {};
         const mineResist = H.resistBase + (t.härte || 0) * H.resistFromHärte + (t.dichte || 0) * H.resistFromDichte;
         const cutResist =
             H.cutResistBase + (t.härte || 0) * H.cutResistFromHärte + (t.dichte || 0) * H.cutResistFromDichte;
-        return { mineResist, cutResist };
+        const stoffe = {};
+        for (const pt of bp.parts || []) if (pt && pt.material) stoffe[pt.material] = (stoffe[pt.material] || 0) + 1;
+        return { mineResist, cutResist, ziel: globalThis.__schmiedeCore.zielStoff(stoffe, t.härte || 0) };
     }
 
     // Die EINE Tauglichkeit: das Gerät nutzt seinen BESTEN Kanal (max aus Wucht und Schärfe).
     // Tempo (Fortschritt/Hieb), Stamina (invers) und Ertrag (∝ Tauglichkeit) folgen DERSELBEN Zahl.
     _harvestFitnessFromResist(res) {
         const H = AnazhRealm.HARVEST;
-        const prof = this._implementProfile();
+        const prof = this._implementProfile(res.ziel);
         const mineFit = prof.minePower / Math.max(0.1, res.mineResist);
         const cutFit = prof.cutPower / Math.max(0.1, res.cutResist);
         const fit = Math.max(mineFit, cutFit);
@@ -1682,9 +1734,14 @@ class AnazhRealm_kampf {
         // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
         // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
         if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
+            const bodenStoff = this._terrainMaterialAt(target.x, target.z, target.y);
             const digFit = this._harvestFitnessFromResist({
                 mineResist: AnazhRealm.HARVEST.terrainResist,
                 cutResist: AnazhRealm.HARVEST.terrainCutResist,
+                ziel: globalThis.__schmiedeCore.zielStoff(
+                    { [bodenStoff]: 1 },
+                    (((this.state.materials || {})[bodenStoff] || {}).tags || {}).härte || 0
+                ),
             });
             // Stamina ANTEILIG pro Hieb (Σ ≈ Ein-Hieb-Preis): die Mühe der Untauglichkeit ist ZEIT — sonst
             // könnte die Faust kein Loch graben (9 Hiebe × 19 = 173 von 100 Stamina).
@@ -1712,11 +1769,11 @@ class AnazhRealm_kampf {
             }
             dig.progress = 0;
         }
-        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch). carveRadius 3.5 m spannt ~140 Voxel —
-        // eine begehbare Mulde; kleiner wäre eine Nadel.
+        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
+        // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;
         // Graben läuft durch dslRun (source:"human" → p2pBroadcastDsl), damit Mitspieler dieselbe Mulde
-        // sehen; lokal ruft voxel_carve dieselbe carveVoxelSphere. Der DSL-Op ist der EINE Broadcast-Anker
+        // sehen; lokal ruft voxel_carve dieselbe carveVoxel. Der DSL-Op ist der EINE Broadcast-Anker
         // — ein direkter API-Call wäre eine Sync-Lücke.
         this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
         // Der Boden gibt Materie wie harvestArchitecture: Material aus dem Welt-Affinitäts-Feld am Grabe-Ort
@@ -1886,7 +1943,7 @@ class AnazhRealm_kampf {
                 return false;
             }
             this._consumeMouseStamina();
-            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxelSphere). Der Material-Konsum
+            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxel). Der Material-Konsum
             // (matGate oben) bleibt lokal — Inventar-Geste, nicht broadcastbar.
             this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
             if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
@@ -2032,6 +2089,9 @@ AnazhRealm.HARVEST = Object.freeze({
     strikeIntervalSec: 0.2, // Halten → Auto-Hieb-Kadenz (5 Hiebe/s) → kontinuierliches Mahlen
     terrainResist: 2.4, // der Boden-Wucht-Widerstand (W1: konstant; später aus der lokalen Dichte)
     terrainCutResist: 9, // der Boden wird GEWUCHTET, nicht geschnitten (Schärfe greift nicht)
+    // halten-gesetz: die Arbeit am Stoff (J, schmiede werkUrteil), die ein Werk der Schmiede als EINE Einheit Kraft über
+    // die Hand hebt — geeicht am Spieltempo: die Fällaxt fällt die Eiche in zwei Hieben (vorher jedes Gerät in 1–2)
+    werkJProKraft: 16,
 });
 
 // S1 (kampf-plan §11.7) — bis zu dieser Bauplan-Spannweite (m) liest die Werkstatt die

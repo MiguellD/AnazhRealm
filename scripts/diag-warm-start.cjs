@@ -78,15 +78,7 @@ async function jobKalt() {
     ].filter(([cx, cz]) => !st.voxelChunks || !st.voxelChunks.has(cx + "," + cz));
     const posHashOf = (cx, cz) => {
         const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        if (!e || !e.mesh) return null;
-        const a = e.mesh.geometry.attributes.position.array;
-        const u8 = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-        let h = 0x811c9dc5;
-        for (let i = 0; i < u8.length; i++) {
-            h ^= u8[i];
-            h = Math.imul(h, 0x01000193);
-        }
-        return (h >>> 0).toString(16) + ":" + a.length;
+        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;
@@ -164,15 +156,7 @@ async function jobWarm(kaltIn) {
         return { err: "Reload lud eine ANDERE Welt (Seed " + st.worldMeta.seed + " != " + kaltIn.seed + ")" };
     const posHashOf = (cx, cz) => {
         const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        if (!e || !e.mesh) return null;
-        const a = e.mesh.geometry.attributes.position.array;
-        const u8 = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-        let h = 0x811c9dc5;
-        for (let i = 0; i < u8.length; i++) {
-            h ^= u8[i];
-            h = Math.imul(h, 0x01000193);
-        }
-        return (h >>> 0).toString(16) + ":" + a.length;
+        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;

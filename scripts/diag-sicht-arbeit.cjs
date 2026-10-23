@@ -28,7 +28,7 @@
 //       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
 //       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
 //   (C) EIN Gesetz der Lage: die Nah-Wiese prüft ihre Kacheln nur bei neuer Generation (`L.gen`, am Ruf von `_passTrifft`);
-//       die eigene Kamera-Signatur der Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
+//       die eigene Kamera-Signatur der Nah-Wiese ist gefallen (gate:altlasten); (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser, Page-Error — MUSS rot fallen und ihn beim
 // Namen nennen.
@@ -101,7 +101,6 @@ function urteil(b) {
     if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
     else if (!c.wieseLiest)
         v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
-    if (c.zweiteSignatur) v.push("CODE: `_sichtSteht` lebt — eine zweite Kamera-Signatur neben dem Gesetz der Lage");
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
@@ -186,7 +185,7 @@ function selbsttest() {
             geprueft: 40,
             namen: [],
         },
-        code: { wieseLiest: true, zweiteSignatur: false },
+        code: { wieseLiest: true },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -796,7 +795,6 @@ function selbsttest() {
         ],
         ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
-        ["zweite Signatur", (b) => (b.code.zweiteSignatur = true), /CODE: `_sichtSteht` lebt/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     for (const [name, tat, muss] of faelle) {
@@ -1433,7 +1431,6 @@ const server = statikServer();
                 r._nahWieseSicht(cam, Lg);
                 aus.code.wieseLiest = !trifft(Lg) && trifft(Object.assign({}, Lg, { gen: Lg.gen + 1 })) && nw.gen === Lg.gen + 1;
             }
-            aus.code.zweiteSignatur = typeof P._sichtSteht === "function";
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             aus.gruppen = r._instanzWahlGruppen().size;
             const H = s.hoehle;

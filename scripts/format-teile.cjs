@@ -1,7 +1,5 @@
 // format-teile.cjs — DER FORMAT-CHECK IN TEILEN (K14, CI in zwei Stufen).
 //
-// Der Läufer hat vier Kerne, drei standen still.
-//
 // Der Schnitt: dieselbe Prüfung (dasselbe Prettier, dieselbe Konfiguration, dieselben Dateien) auf Teilen, parallel. Eine
 // Datei zerfällt an den Grenzen ihrer Anweisungen — die oberste Ebene, und eine große Klasse (`class AnazhRealm`) an ihren
 // Gliedern; jedes Teil formatiert Prettier in seinem echten Rahmen (Klassen-Glieder in `class AnazhRealm {` … `}`).

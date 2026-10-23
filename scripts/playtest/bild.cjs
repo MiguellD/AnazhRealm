@@ -64,8 +64,6 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
     );
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G3Lebendigkeit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -555,8 +553,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1254,8 +1250,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

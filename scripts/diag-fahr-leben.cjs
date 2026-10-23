@@ -28,11 +28,9 @@
 //   R (Q13 · F-D8) — DIE RÄDER IN DER INSTANZ: der GT fährt (W), bremst voll (S) und lenkt (W + A); je Sim-Schritt die
 //       Rad-Leaves relativ zum Aufbau (Rolle > 1 rad, Einschlag vorn > 0,1 rad, hinten 0) und der Aufstand (Eintauchen
 //       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m).
-//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: das Eindringen der Wagen-Hülle (exportDrive.huelle) in Felsblock-Boxen
-//       und den LEIB eines Bären ≤ 0,05 m. H6 (D2) Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle
-//       (`_kreaturLeib`, die Hülle berührt die Flanke ≤ 0,3 m). H7/H8 (D5) eine 34° gedrehte Haus-Wand (`_hausObb`) und
-//       Mauer aus EINEM Teil (`_blockerComputePartAABB` → obb): die Hülle berührt die echte Wand ≤ 0,3 m, nie die
-//       Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen.
+//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER (H1/H2/H7/H8, der Wagen gegen Fels, Bär und gedrehte Wände bei vmax: gate:
+//       kollision-bild (V)): H6 (D2) Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`). Die
+//       H-Proben räumen die Gasse von fremden Wesen.
 //
 //   K7 (0710-2) die Wand ist ein SPRUNG des Bodens: 0,35 m höherer Boden hält EINEN Schritt, dann steigt der Wagen auf
 //       sein Gesetz (je Schritt ≤ eine Stufe).
@@ -271,8 +269,6 @@ const STATION = {
     laborM: 0.01,
     sprungM: 0.5,
     querM: 0.3,
-    huelleM: 0.05,
-    beruehrtM: 0.3,
     rolleRad: 1,
     lenkRad: 0.1,
     spaltM: 0.03,
@@ -363,28 +359,6 @@ function stationVerdict(s) {
     if (!s.huelleSchub) out.push("huelle-schub keine Probe");
     else if (!(s.huelleSchub.weg <= STATION.schubM))
         out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
-    for (const [k, name] of [
-        ["huelleBlock", "fels"],
-        ["huelleBaer", "baer"],
-    ]) {
-        const h = s[k];
-        if (!h) out.push(`huelle-${name} keine Probe`);
-        else if (!(h.abstand <= STATION.beruehrtM))
-            out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
-        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
-    }
-    // das gedrehte Haus (D5): die Hülle berührt die ECHTE Wand (kleinster Abstand über die Fahrt), nie die Welt-AABB davor
-    // und die gedrehte Teil-Box (D5, die zweite Rolle — Wagen, Fels, Tor, Bauwerk): die Hülle berührt das Teil, nie seine Welt-AABB
-    for (const [k, name, was] of [
-        ["huelleHaus", "haus", "der echten Wand"],
-        ["huelleTeil", "teil", "des Teils"],
-    ]) {
-        const h = s[k];
-        if (!h) out.push(`huelle-${name} keine Probe`);
-        else if (!(h.nah <= STATION.beruehrtM))
-            out.push(`huelle-${name} keine Berührung ${was} (kleinster Abstand ${h.nah.toFixed(2)} m)`);
-        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
-    }
     // L1 DER HANGFUSS (0710-2): nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
     // begrenzt, er fährt weiter.
     const hf = s.hangfuss;
@@ -542,16 +516,7 @@ function stationVerdict(s) {
         out.push(
             `reiter: nach dem Absteigen steht der Wurzel-Knochen ${s.reiterStand.abw.toFixed(3)} m neben seinem Stand (Gier ${(s.reiterStand.gier || 0).toFixed(3)})`
         );
-    // L7/L8 DER STOSS IM SIM-SCHRITT (0710-5)
-    const lw = s.leibWand;
-    if (!lw) out.push("leib-wand keine Probe");
-    else
-        for (const k of ["60", "30", "gemischt"]) {
-            const m = lw[k];
-            if (!m || !(m.n >= 8)) out.push(`leib-wand ${k}: keine Probe`);
-            else if (m.durch > 0)
-                out.push(`leib-wand ${k}: der gestoßene Bär geht ${m.durch}/${m.n} Mal durch die 0,35-m-Wand`);
-        }
+    // L8 DER STOSS IM SIM-SCHRITT (0710-5; der gestoßene Leib vor der Mauer: gate:kollision-bild (V))
     if (!s.lockstep) out.push("lockstep keine Probe");
     else if (s.lockstep.ruhe !== true)
         out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
@@ -1591,12 +1556,8 @@ function quellenAbgriff() {
                 spaltP75: 0.01,
                 spaltMax: 0.05,
             },
-            huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
             huelleHang: { schub: 0.8, eindringen: 0 },
-            huelleBaer: { tief: 0.01, abstand: 0.0 },
-            huelleHaus: { tief: 0.0, abstand: 0.4, nah: 0.02 },
-            huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch", leser: true },
             huelleKonsum: { gleiten: true, kapsel: true, leibWagen: true, leibTier: true },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
@@ -1616,7 +1577,6 @@ function quellenAbgriff() {
                 },
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
-            leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
             lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true },
             reiter: [
                 {
@@ -1752,11 +1712,6 @@ function quellenAbgriff() {
                 "spieler-wagen",
             ],
             [
-                "der gestoßene Bär geht bei 30 fps durch die Wand (Gegenprüfung 0710-5: 9/10)",
-                { leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 9, n: 10 }, gemischt: { durch: 0, n: 10 } } },
-                "leib-wand 30",
-            ],
-            [
                 "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
                 { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
                 "lockstep",
@@ -1857,7 +1812,6 @@ function quellenAbgriff() {
                 "absteigen nicht im Flug",
             ],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
-            ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
             [
                 "die starre Instanz: kein Rad-Leaf (F-D8)",
                 { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } },
@@ -1927,33 +1881,6 @@ function quellenAbgriff() {
                 },
                 "raeder ohne Sattel",
             ],
-            ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
-            [
-                "der Wagen hält an der Welt-AABB des gedrehten Hauses, 1,5 m vor der Wand (D5)",
-                { huelleHaus: { tief: 0, abstand: 1.5, nah: 1.5 } },
-                "huelle-haus keine Berührung",
-            ],
-            [
-                "der Bug in der gedrehten Wand",
-                { huelleHaus: { tief: 0.4, abstand: 0, nah: 0 } },
-                "huelle-haus Eindringen",
-            ],
-            [
-                "der Wagen hält vor der Welt-AABB einer gedrehten Teil-Box, 2,2 m vor dem Teil (D5)",
-                { huelleTeil: { tief: 0, abstand: 2.2, nah: 2.2 } },
-                "huelle-teil keine Berührung",
-            ],
-            [
-                "der Bug in der gedrehten Teil-Box",
-                { huelleTeil: { tief: 0.5, abstand: 0, nah: 0 } },
-                "huelle-teil Eindringen",
-            ],
-            [
-                "der Wagen hält am zweiten Kreis (separation × bodySize), 0,8 m vor dem Leib (D2)",
-                { huelleBaer: { tief: 0, abstand: 0.8 } },
-                "huelle-baer keine Berührung",
-            ],
-            ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
             [
                 "ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)",
@@ -2324,23 +2251,6 @@ function quellenAbgriff() {
         !hat("huelle-konsum"),
         JSON.stringify(S.huelleKonsum || null)
     );
-    const hz = (h, was) =>
-        h
-            ? `Eindringen der Hülle ${h.tief.toFixed(3)} m · Abstand am Ende ${h.abstand.toFixed(3)} m · ${h.vorn.toFixed(1)} m gefahren · ${h.schritte} Schritte`
-            : `keine Probe (${was})`;
-    check(
-        "H1 der GT fährt mit W gegen einen Felsblock: die Hülle hält an den Blocker-Boxen (Eindringen ≤ 0,05 m)",
-        !hat("kern") && !hat("huelle-fels"),
-        hz(S.huelleBlock, "stein_block")
-    );
-    check(
-        "H2 der GT fährt mit W gegen die Flanke eines Bären: die Hülle hält an SEINEM Leib (`_kreaturLeib`, D2 — Eindringen ≤ 0,05 m, Berührung ≤ 0,3 m)",
-        !hat("kern") && !hat("huelle-baer"),
-        hz(S.huelleBaer, "baer") +
-            (S.huelleBaer && S.huelleBaer.leib
-                ? ` · Leib: Radius ${S.huelleBaer.leib.radius.toFixed(2)} m, Achsen ±${S.huelleBaer.leib.halb.toFixed(2)} m (der Kreis vor D2: ${S.huelleBaer.leib.kreis.toFixed(2)} m)`
-                : "")
-    );
     check(
         "H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen)",
         !hat("kern") && !hat("huelle-schub"),
@@ -2352,22 +2262,6 @@ function quellenAbgriff() {
         S.huelleHang
             ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
             : "keine Probe"
-    );
-    const H7 = S.huelleHaus;
-    check(
-        "H7 der GT fährt mit W gegen eine 34° gedrehte Haus-Wand: die Hülle hält an der ECHTEN Wand (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an ihrer Welt-AABB",
-        !hat("kern") && !hat("huelle-haus"),
-        H7
-            ? `kleinster Abstand zur Wand ${H7.nah.toFixed(3)} m · Eindringen ${H7.tief.toFixed(3)} m · am Ende ${H7.abstand.toFixed(3)} m · ${H7.vorn.toFixed(1)} m gefahren · ${H7.schritte} Schritte`
-            : "keine Probe (Haus-Wand)"
-    );
-    const H8 = S.huelleTeil;
-    check(
-        "H8 der GT fährt mit W gegen eine 34° gedrehte Mauer aus EINEM Teil (die Teil-Box jedes Hindernisses — Wagen, Fels, Tor, Bauwerk): die Hülle hält am ECHTEN Teil (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an seiner Welt-AABB",
-        !hat("kern") && !hat("huelle-teil"),
-        H8
-            ? `kleinster Abstand zum Teil ${H8.nah.toFixed(3)} m · Eindringen ${H8.tief.toFixed(3)} m · am Ende ${H8.abstand.toFixed(3)} m · ${H8.vorn.toFixed(1)} m gefahren · ${H8.schritte} Schritte`
-            : "keine Probe (gedrehte Teil-Box)"
     );
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
@@ -2422,14 +2316,6 @@ function quellenAbgriff() {
             (hat("spieler-wagen") || hat("wagen-spieler")
                 ? ` — ${vS.filter((x) => x.startsWith("spieler-wagen") || x.startsWith("wagen-spieler")).join(" · ")}`
                 : "")
-    );
-    const lwz = S.leibWand || {};
-    const lwT = (k) =>
-        lwz[k] ? `${k}: ${lwz[k].durch}/${lwz[k].n} durch (am weitesten ${lwz[k].ueber} m hinter der Wand)` : k + " –";
-    check(
-        "L7 der gestoßene Leib vor dünner Wand (0710-5): 13,7 m/s gegen 0,35 m — bei 60 fps, 30 fps und gemischten Frames geht er nie hindurch",
-        !hat("kern") && !hat("leib-wand"),
-        ["60", "30", "gemischt"].map(lwT).join(" · ")
     );
     check(
         "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle, ein gestoßener Schwimmer nach 20 (auch in der Höhe)",

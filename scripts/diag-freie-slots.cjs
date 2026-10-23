@@ -1,8 +1,8 @@
 // diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
-// Der Schnitt: jede Instanz-Senke ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`),
-// `count` schreibt nur `_instanzZahl`, eine leere Senke ist unsichtbar.
+// Jede Instanz-Senke ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur
+// `_instanzZahl`, eine leere Senke ist unsichtbar.
 //
 // Die Linse fährt die echte Welt (Null-Renderer, Foundry an) durch eine Wander-Sequenz — fort und zurück, mehrere Umzüge —
 // und hält nach jedem Umzug JEDE Instanz-Senke gegen ihre lebenden Instanzen:
