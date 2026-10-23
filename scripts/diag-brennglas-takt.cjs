@@ -477,7 +477,7 @@ async function probe() {
     const st = r.state;
     const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
-    // DAS ORAKEL: der Brennglas-Takt von main V18.536 im Wortlaut — die Schleife über den ganzen Bestand
+    // DAS ORAKEL: der Brennglas-Takt von main V18.536 im Wortlaut — die Schleife über den ganzen Bestand; der Name im Journal ist Datum
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
@@ -539,7 +539,7 @@ async function probe() {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (r.journalAppend)
-                r.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
+                r.journalAppend("loss", AR._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
                     type: t.type,
                     linse: quelle.type,
                 });
