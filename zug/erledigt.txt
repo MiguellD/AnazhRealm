@@ -1,1 +1,2 @@
 z6-punkte gemessen punkte 6579e8f4 gtx: 20 grün / 8 rot
+z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer

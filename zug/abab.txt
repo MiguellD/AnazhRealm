@@ -6,3 +6,4 @@ b0b2d8edf49b69dab985957ac90cd2d710569c74 nicht-langsamer 2210-abab-neukopf
 452972a618d58ba02c65c633b31588fcbda60d9e nicht-langsamer 2310-abab-zug4
 7c6f4b49f6412149a218e42b3bc8b6db742a4039 nicht-langsamer 2310-abab-zug5
 6579e8f409c5234276210ace7e19798e63ad423c nicht-langsamer 2310-abab-zug6
+877d3e04ea99e07f27e71600df4e4564c1378187 LANGSAMER z7-abab
