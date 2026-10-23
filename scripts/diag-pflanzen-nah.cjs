@@ -29,17 +29,17 @@
 //      Werkstatt legt dieselbe Normale (`_kronenNormalenAuf` → kronenNormalen), keine zweite Kronen-Normale im Stamm.
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute).
-//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
+//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht: die Zelle als Karte auf dem Schirm, trilinear,
 //      alphaTest 0,5, das Pixel als Mittel der Halton-Unterproben der zeitlichen Auflösung; Δ-Luma (Laub gegen Himmel)
 //      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX, die
 //      Deckung je λ 1…3 = Stufe 0 ± 0,1 (nah = fern). Konsum-Leser: der Laub-Stoff (`_blattAtlasProbe`).
-//  (H) HÖHEN-ZENSUS je Art (K20): der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
+//  (H) HÖHEN-ZENSUS je Art: der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
 //  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC3 ab Stufe 0, rgba ab
 //      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
 //      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
 //      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
 //      `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest sonst niemand.
-//  (T) TEPPICH — die Halm-Deckung der Wiese (K56): je gelieferte Gras-Stufe (L1, L2) und Gestalt die Vorlage nach dem
+//  (T) TEPPICH — die Halm-Deckung der Wiese: je gelieferte Gras-Stufe (L1, L2) und Gestalt die Vorlage nach dem
 //      Wiesen-Gesetz gekachelt (Raster understory.grassStep, Jitter ±0,34, Drehung, Skala placement.scale.gras ·
 //      0,7…1,4, volle Wiese) und parallel unter TEPPICH_NEIGUNG projiziert (der Boden 4,4 m vor dem Ego-Auge): der Anteil
 //      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
@@ -416,8 +416,8 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet jede Ecke über
-// ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie (vorher, 210fe8a7: ROT).
+// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet
+// jede Ecke über ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie.
 function partienDerKrone(f, pre, sk) {
     const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
     if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;
@@ -595,7 +595,7 @@ function frachtUrteil(R) {
         }
     return v;
 }
-// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20): die Zelle des Atlas als Karte auf dem Schirm
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht: die Zelle des Atlas als Karte auf dem Schirm
 // (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
 // zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
 // Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
@@ -677,7 +677,7 @@ function kornReihe(mips, zBasis) {
         return { lambda, N, zellen };
     };
 }
-// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20): das Kanten-Korn (oben) misst die Deckung, das Bild
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht: das Kanten-Korn (oben) misst die Deckung, das Bild
 // der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
 // Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
 // Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
@@ -816,7 +816,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
     }
     return { v, m };
 }
-// (H) DER HÖHEN-ZENSUS (K20): die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
+// (H) DER HÖHEN-ZENSUS: die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
 // (phyto-core forestTreeSize); der Altbestand sind die herrschenden Bäume (Größe p75 … p98 über die Bestandsdichte).
 // Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
 // H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
@@ -964,7 +964,7 @@ function deckungStufe0(bild) {
 }
 
 
-// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
+// (WI) DER WIND — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
 // Gestalt und seine Leser:
 //   f0   je Baum-Art (L0, Gestalt 1): f0 = kF · D / H² mit D = Stamm-Durchmesser in 1,3 m Welt-Höhe (der Ring des Stamm-
 //        Strangs, gemessen von DIESER Linse) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff rechnet (kF · δ / H, δ aus
@@ -1306,7 +1306,7 @@ function windUrteil(fall, T, skala, deltaMul) {
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
     }
-    // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
+    // (H) an kranken Kopien des Zensus: die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
     // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
     {
         const verzerrt = (T, ky, kxz) =>

@@ -1771,6 +1771,121 @@
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
     }
 
+    // DAS FURCHT-GESETZ (Oekologie K3, 23.10., additiv — FURCHT_GESETZ wohnt nicht in VERHALTEN, VERHALTEN reist in PRESETS und
+    // der v7-Fingerabdruck bleibt): EINE Furcht eines Wesens aus zwei Gedaechtnissen, gewogen nach EINER Bedrohung.
+    // DIE BEDROHUNG eines Gefuehls (bedrohung): chaos und sorrow schrecken, peace und joy beruhigen — mit den Gewichten von
+    // VERHALTEN.furcht; sie wiegt die Aura des Spielers UND den Abdruck einer Tat am Ort (vorher rechnete der Wirt sie nur fuer
+    // den Spieler, der Ort trug Gefuehle, die kein Tier las). DAS WESEN ERINNERT (furchtErinnert): jede Erinnerung an den
+    // Spieler traegt ihr Gewicht (geschlagen +, gefuettert −; der Schlag wiegt schwerer als die Gabe: Baumeister et al. 2001,
+    // „Bad is stronger than good"), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
+    // weitet Witterung und Flucht-Distanz um fluchtJeFurcht je Einheit (bejagte Bestaende fliehen frueher und weiter, beim
+    // Wapiti um ein Mehrfaches: Stankowich 2008, Biol. Conserv. 141:2159). Gezaehlt wird, was das Gedaechtnis traegt (die Kappe
+    // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
+    // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
+    // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    var FURCHT_GESETZ = Object.freeze({
+        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
+        deckel: 3,
+        fluchtJeFurcht: 1.25,
+        riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
+        ortGewicht: 1,
+        ortRadiusZellen: 1.5,
+    });
+    // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
+    function bedrohung(e, NAT) {
+        return (
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy
+        );
+    }
+    // memory = die Erinnerungen des Wesens [{type, …}] (die Typen geschlagen · gefuettert; jeder andere wiegt 0).
+    function furchtErinnert(memory, F) {
+        if (!memory || !memory.length) return 0;
+        var s = 0;
+        for (var i = 0; i < memory.length; i++) {
+            var g = memory[i] && F.erinnerung[memory[i].type];
+            if (g) s += g;
+        }
+        return s > F.deckel ? F.deckel : s < -F.deckel ? -F.deckel : s;
+    }
+    // gefuehl = der Abdruck einer Zelle (Achsen wie e) oder null. Liefert die Furcht des Orts (≥ 0: ein ruhiger Ort lockt nicht).
+    function furchtOrt(gefuehl, NAT, F) {
+        if (!gefuehl) return 0;
+        var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
+        return m > 0 ? m : 0;
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
+    // Jagd beginnt mit der ersten Hetze auf ein Ziel und endet mit dem Riss oder nach dauerS; dann ist der Jaeger erschoepft und
+    // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
+    // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
+    // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    function wundTempo(hpAnteil, J) {
+        var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
+        return Math.pow(a, J.wundExp);
+    }
+
+    // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
+    // Boden-Klasse eines Orts kommt aus dem Gelaende (bodenKlasse): am Fluss, wo sein Rand naeher als flussM liegt, am Hang, wo
+    // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
+    // forestStandDensity): Wald ab waldSd, Waldrand ab randSd, darunter Wiese. Je Gattung ihr Lebensraum (gattung: Klasse →
+    // Eignung) und ihre Haeufigkeit (Beute ist haeufig, der Jaeger selten); lebensraum = Eignung × Haeufigkeit, 0 = die Gattung
+    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982), der Wolf jagt aus dem Wald, der Baer
+    // sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8).
+    var LEBENSRAUM_GESETZ = Object.freeze({
+        flussM: 40,
+        hangTan: 0.36,
+        waldSd: 0.7,
+        randSd: 0.5,
+        gattung: Object.freeze({
+            deer: Object.freeze({ wiese: 1, waldrand: 1 }),
+            fox: Object.freeze({ waldrand: 1, wiese: 0.5 }),
+            wolf: Object.freeze({ wald: 1 }),
+            bear: Object.freeze({ fluss: 1, hang: 1 }),
+        }),
+        haeufigkeit: Object.freeze({ deer: 1, fox: 0.4, wolf: 0.35, bear: 0.25 }),
+    });
+    // flussRandM = der Abstand zum Rand des naechsten Flusses (m, Infinity ohne), hangTan = der Hang (tan), sd = die
+    // Bestandsdichte (0..1). Liefert "fluss" · "hang" · "wald" · "waldrand" · "wiese".
+    function bodenKlasse(flussRandM, hangTan, sd, L) {
+        if (flussRandM <= L.flussM) return "fluss";
+        if (hangTan >= L.hangTan) return "hang";
+        return sd >= L.waldSd ? "wald" : sd >= L.randSd ? "waldrand" : "wiese";
+    }
+    function lebensraum(gattung, klasse, L) {
+        var g = L.gattung[gattung];
+        return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
+    }
+    // DER DURST (Tiere K4, additiv): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr durch durstS; ab 1 sucht das Tier
+    // Wasser im Umkreis VERHALTEN.aufgaben.trinkSuchM und trinkt, dann ist er 0; fand es keines, sucht es nach suchPauseS
+    // wieder (das Rotwild zieht mehrmals am Tag zur Traenke).
+    var DURST_GESETZ = Object.freeze({ durstS: 1200, suchPauseS: 300 });
+    function durst(seitS, D) {
+        return seitS > 0 ? seitS / D.durstS : 0;
+    }
+    // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
+    // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
+    var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
+    function lebensraumWahl(klasse, u, L) {
+        var max = 0,
+            g,
+            i,
+            s;
+        for (i = 0; i < LEBENSRAUM_KLASSEN.length; i++) {
+            s = 0;
+            for (g in L.gattung) s += lebensraum(g, LEBENSRAUM_KLASSEN[i], L);
+            if (s > max) max = s;
+        }
+        var w = u * max;
+        for (g in L.gattung) if ((w -= lebensraum(g, klasse, L)) < 0) return g;
+        return null;
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3190,6 +3305,18 @@
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
+        FURCHT_GESETZ: FURCHT_GESETZ,
+        bedrohung: bedrohung,
+        furchtErinnert: furchtErinnert,
+        furchtOrt: furchtOrt,
+        JAGD_GESETZ: JAGD_GESETZ,
+        wundTempo: wundTempo,
+        LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
+        bodenKlasse: bodenKlasse,
+        lebensraum: lebensraum,
+        lebensraumWahl: lebensraumWahl,
+        DURST_GESETZ: DURST_GESETZ,
+        durst: durst,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

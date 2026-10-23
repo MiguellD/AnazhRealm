@@ -4621,4 +4621,16 @@ AnazhHuelle.bruecke({
     wort: function (w) {
         AnazhHuelle.knopfMitText(document.getElementById("presets"), w, ".presetBtn");
     },
+    // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): das Genre (die Buch-id seines Lab-Namens) mit Tempo und DNA aus
+    // den Regler-Zeilen — der Klang der Welt spielt es.
+    werk: function () {
+        var ov = {};
+        KC.PARAMS_BY_KIND.klang.forEach(function (z) {
+            ov[z.id] = mods[z.id];
+        });
+        var id = Object.keys(KC.PRESETS).find(function (k) {
+            return KC.PRESETS[k].lab === lastPreset;
+        });
+        return id ? { kind: "klang", preset: id, seed: 0, ov: ov } : null;
+    },
 });

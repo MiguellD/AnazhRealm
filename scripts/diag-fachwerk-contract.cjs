@@ -151,7 +151,7 @@ function shellPfad(name, seed, stufe) {
         for (const Lf of fluegelL) {
             const lg = {};
             FC.bakeLOD(Lf, p.col, lg, 0, true);
-            // das Blatt sitzt am Scharnier (K08): das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
+            // das Blatt sitzt am Scharnier: das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
             for (const rk in lg)
                 if (lg[rk] && lg[rk].pos)
                     for (let vi = 0; vi < lg[rk].pos.length; vi += 3) {
@@ -205,8 +205,8 @@ function shellPfad(name, seed, stufe) {
 }
 
 
-// ── DER BOGEN IM VERBAND (K66, Augen-Runde 15.10. am Auto-Dorf −812,7/−819,0: die Bögen der Laube der römischen Kirche
-//    ragten aus 20 m über die Traufe, nah schwebten die Keilsteine lose und verdreht neben den Pfeilerköpfen). Je Bogen —
+// ── DER BOGEN IM VERBAND (K66: kein Bogen ragt über die Traufe, kein Keilstein schwebt lose neben dem Pfeilerkopf). Je
+//    Bogen —
 //    die Marke `keil` an jedem Keilstein (bogenRahmen: Lage, Kurve, Deckel, Pfeiler), `zwickel` an seiner Mauer — in der
 //    Ebene des Bogens (u längs der Wand ab der Bogenmitte, v über dem Kämpfer):
 //    B1 die Öffnung ist frei: keine Ecke eines Keilsteins liegt in der Öffnung unter der Laibung (1 cm);
@@ -539,7 +539,7 @@ function bogenLinse() {
     }
     console.log(`      ↳ ${CASES.length} Fälle gebaut in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 
-    // 1b) KOLLISION == OPTIK IN JEDER FERNE (Welle L): jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
+    // 1b) KOLLISION == OPTIK IN JEDER FERNE: jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
     //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
     //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
     const NUR_WURF = (l) => !!(FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l] && FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l].nurWurf);
@@ -568,7 +568,7 @@ function bogenLinse() {
         check("SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot", huellenBruch(korrupt).length === 1);
     }
     {
-        // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m, vorher −5,65 m)
+        // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m)
         const hm = huellen["marokkanisch-s7-L0"] || [];
         let zMin = Infinity;
         for (let i = 2; i < hm.length; i += 6) zMin = Math.min(zMin, hm[i]);
@@ -692,9 +692,8 @@ function bogenLinse() {
         t2.some((s) => s.includes("objects"))
     );
 
-    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear": bis
-    //     05.10. legte der Bake (`_colFor`) das Paletten-Hex roh in den Vertex, die Welt las es linear — Putz 0,82, Holz
-    //     0,30, ganze Häuser 0,35–0,57 (das weiße Haus mit blassem Fachwerk). Gemessen wird, was die Welt liest: je Kultur
+    // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear" (der Bake `_colFor` legt das
+    //     Paletten-Hex nie roh in den Vertex). Gemessen wird, was die Welt liest: je Kultur
     //     (alle 32, Stufe 1 — die Flächen-Stufe, die das Auge am längsten sieht) die flächengewichtete lineare Albedo der
     //     Vertex-Farbe × Stoff-Farbe, je Rolle und gesamt, gegen das Band der Natur (diag-albedo-zensus): Holz-Klasse
     //     (holz · stamm · blockholz · lattung · boden) ≤ 0,25 · Kalk und Lehm (putz · gefach · lehm) ≤ 0,85 · jeder andere
@@ -710,7 +709,7 @@ function bogenLinse() {
         const KALK = new Set(["putz", "gefach", "lehm"]);
         const decke = (r) => (HOLZ.has(r) ? 0.25 : KALK.has(r) ? 0.85 : 0.45);
         const roh = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
-        // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling (vorher)
+        // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling
         const albedoHaus = (g, farbe) => {
             const proRolle = {};
             let A = 0,
@@ -809,7 +808,7 @@ function bogenLinse() {
     );
     // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
-    // Die Wandlaterne (K66-2) trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
+    // Die Wandlaterne trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
     for (const rz of ["laterne", "wandlaterne"]) {
         const L = FC.PRESETS[rz] && FC.PRESETS[rz].fx && FC.PRESETS[rz].fx.licht;
         let kopf = 0;
@@ -985,7 +984,7 @@ function bogenLinse() {
     await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
     globalThis.__fachwerkCore = FC;
 
-    // 12) DER BOGEN IM VERBAND (K66)
+    // 12) DER BOGEN IM VERBAND
     bogenLinse();
 
     if (errs.length) {

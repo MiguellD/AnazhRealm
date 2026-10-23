@@ -3,7 +3,7 @@
 // Drei Prüfungen (a–b statisch, d der eine Browser-Beweis):
 //   (a) `spec/pack/v0/CONTRACT.md` existiert + trägt die Pflicht-Abschnitte (v0-Ist-Kanon ·
 //       v1-Schema · must-ignore · Ship-Hook · Ü1/Ü2-Chokepoint).
-//   (b) Absenz: keine Labor-Shell reist in den Platten-Stempel (K42); die Stempel-Formel beweist gate:fluss.
+//   (b) Absenz: keine Labor-Shell reist in den Platten-Stempel; die Stempel-Formel beweist gate:fluss.
 //   (d) Browser: EIN Preset (eiche, lod 2) live minten → Artefakt zurücklesen → byte-gleich
 //       zum Live-Reply (sha256 je Puffer, UNABHÄNGIG vor der b64-Kodierung gerechnet) + der
 //       Hook VERHALTENS-bewiesen (false → null trotz ready-Worker; weg → Meshes).
@@ -171,7 +171,7 @@ async function main() {
     }
 
     // (b) DER BOOT ALS LAUF (B3a, `bootLauf`): Geburt, Laden, Konsum-Wand und Stempel am Lauf der echten Klasse, nie am
-    // Text ihres Rumpfs — keine Labor-Datei im Faden und im Stempel (K42); den Ship-Hook beweist (d).
+    // Text ihres Rumpfs — keine Labor-Datei im Faden und im Stempel; den Ship-Hook beweist (d).
     const lauf = await bootLauf(fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"));
     check(lauf.geburt === "buch", `Boot: der Faden kommt synchron mit der Geburt und heißt „buch" (${lauf.geburt || lauf.fehler})`);
     const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore

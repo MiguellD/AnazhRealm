@@ -3134,11 +3134,139 @@
     // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
     // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
     const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35 };
+    // ── DAS RANG-GESETZ (siedlung.K2, additiv): die Größen der Welt folgen dem Rang (Zipf, Exponent 1). Je Stufe L ein Raster
+    // aus `zellen` × `zellen` Welt-Zellen; sein Sieger (die Dorf-Zelle mit dem höchsten Rang-Schlüssel) trägt die Stadt der
+    // Stufe — der Sieger des groben Rasters siegt auch in seinem feinen, er steigt auf. Die Größe der Stufe ist Pareto(α = 1)
+    // auf [nH, 4·nH): mit der Rasterseite × 2 je Stufe (Dichte / 4) gilt N(≥ s) ∝ 1/s über alle Stufen (`siedlungsGroesse`).
+    // Das Dorf (Stufe 0) bleibt nHMin … nHMin+nHSpan−1, byte-gleich. Ein Ort steht nur, wo kein höherer, der steht, in
+    // Reichweite liegt (`reichM`: kern + jeWurzel·√nH m um den Anker — der Rang verdrängt, `siedlungsZelle`); bis K2 würfelte
+    // jede Zelle 8–17 Häuser, die Welt trug nur Dörfer. Ohne Zahl nimmt eine Epoche die Größe ihrer Klasse (`GROESSE_N`,
+    // EPOCHEN.groesse → nZiel im DORF). ──
+    SIEDLUNG.rang = [
+        { zellen: 8, nH: 24 },
+        { zellen: 16, nH: 96 },
+    ];
+    SIEDLUNG.reichM = { kern: 30, jeWurzel: 22 };
+    // je Größen-Klasse des DORF die Häuserzahl, die eine Epoche ohne Zahl verlangt (jede liegt in ihrer Klasse, gate:settlement Z)
+    var GROESSE_N = { weiler: 6, dorf: 12, markt: 21, stadt: 36, grossstadt: 90, metropole: 220 };
+    // DIE STADTMAUER (siedlung.K2): die Maße, die das Labor (`worlds/fachwerk` buildDorf) und die Welt (`_stlMauerBuild`) aus der
+    // Mauer des Plans (`dorfLayout`: Segmente, Türme, Tore) bauen — die Wand mit ihrer Krone (y = die Mitte über dem Fuß), der
+    // Turm mit seinem Dach; die Stoffe stein und ziegel in den Farben von DEFCOL
+    var STADTMAUER = {
+        wand: { hoch: 5.6, dick: 1.6, ueber: 0.6 },
+        krone: { y: 5.9, hoch: 0.7, dick: 2.0 },
+        turm: { breit: 3.6, hoch: 8.4 },
+        dach: { y: 9.1, breit: 4.2, hoch: 1.5 },
+    };
+    // der Rang-Schlüssel einer Zelle aus ihrem Hash (fmix32, eine Bijektion: zwei Hashes tragen nie denselben Schlüssel)
+    function rangSchluessel(h) {
+        var x = h >>> 0;
+        x = Math.imul(x ^ (x >>> 16), 0x85ebca6b) >>> 0;
+        x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0;
+        return (x ^ (x >>> 16)) >>> 0;
+    }
+    // DIE EINE GRÖSSE einer Siedlung aus ihrem Zell-Hash h und ihrer Stufe (die Auto-Zelle, das Start-Dorf, der Akt ohne Zahl)
+    function siedlungsGroesse(S, h, stufe) {
+        var L = stufe | 0;
+        if (L <= 0) return S.nHMin + ((h >>> 24) % S.nHSpan);
+        var u = (rangSchluessel((h ^ 0x9e3779b9) >>> 0) >>> 8) / 16777216;
+        return Math.floor(S.rang[L - 1].nH / (1 - 0.75 * u));
+    }
+    // die Reichweite eines Orts mit nH Häusern um seinen Anker (m)
+    function siedlungsReich(S, nH) {
+        return S.reichM.kern + S.reichM.jeWurzel * Math.sqrt(nH);
+    }
+    // DIE EPOCHEN-LEGENDE einer Siedlung aus ihrem Samen: jede dritte trägt eine Epoche der Tafel (DP.epoche fixiert Region und
+    // Zeit), die übrigen würfelt der Same (undefined). Bis siedlung.K2 rechnete sie der Wirt (`_siedlungEpoche`), byte-gleich.
+    function siedlungsEpoche(seed) {
+        var namen = Object.keys(EPOCHEN);
+        var h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
+        h = (h ^ (h >>> 16)) >>> 0;
+        if (h % 3 !== 0) return undefined;
+        return namen[(h >>> 4) % namen.length];
+    }
+    // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` reicht der Wirt (FNV-1a über „<Welt-Same>:dorf:cx,cz"), der Kern
+    // entscheidet Existenz (1 von `rarity`), Anker (die Zell-Mitte ± ¼ Zelle aus den Bits >>>8 und >>>16), Stufe, Größe, Reichweite
+    // und die Verdrängung. `memo` (eine Map je Welt-Same) hält Orte, Sieger und Urteile. Rückgabe {seed, nH, stufe, x, z, reichM}
+    // oder null (kein Dorf, verdrängt).
+    function siedlungsZelle(S, cx, cz, zellHash, memo) {
+        var M = memo || new Map();
+        var ort = function (x, z) {
+            var k = "o" + x + "," + z;
+            if (M.has(k)) return M.get(k);
+            var h = zellHash(x, z) >>> 0;
+            var o = null;
+            if (h % S.rarity === 0) {
+                var jx = (((h >>> 8) & 0xff) / 255 - 0.5) * S.cellM * 0.5;
+                var jz = (((h >>> 16) & 0xff) / 255 - 0.5) * S.cellM * 0.5;
+                o = { cx: x, cz: z, h: h, rang: rangSchluessel(h), x: (x + 0.5) * S.cellM + jx, z: (z + 0.5) * S.cellM + jz };
+            }
+            M.set(k, o);
+            return o;
+        };
+        var sieger = function (L, bx, bz) {
+            var k = "s" + L + ":" + bx + "," + bz;
+            if (M.has(k)) return M.get(k);
+            var n = S.rang[L - 1].zellen;
+            var best = null;
+            for (var i = 0; i < n; i++)
+                for (var j = 0; j < n; j++) {
+                    var o = ort(bx * n + i, bz * n + j);
+                    if (o && (!best || o.rang > best.rang)) best = o;
+                }
+            M.set(k, best);
+            return best;
+        };
+        var stufeVon = function (o) {
+            var k = "t" + o.cx + "," + o.cz;
+            if (M.has(k)) return M.get(k);
+            var st = 0;
+            for (var L = S.rang.length; L >= 1 && !st; L--) {
+                var n = S.rang[L - 1].zellen;
+                if (sieger(L, Math.floor(o.cx / n), Math.floor(o.cz / n)) === o) st = L;
+            }
+            M.set(k, st);
+            return st;
+        };
+        var groesse = function (o) {
+            return siedlungsGroesse(S, o.h, stufeVon(o));
+        };
+        var hoeher = function (w, o) {
+            var a = stufeVon(w);
+            var b = stufeVon(o);
+            return a > b || (a === b && w.rang > o.rang);
+        };
+        // der Ort steht, wenn kein höherer, der steht, in Reichweite liegt (der Rang steigt in jeder Frage: die Kette endet)
+        var steht = function (o) {
+            var k = "l" + o.cx + "," + o.cz;
+            if (M.has(k)) return M.get(k);
+            var so = stufeVon(o);
+            var ro = siedlungsReich(S, groesse(o));
+            var ja = true;
+            for (var L = S.rang.length; L >= Math.max(1, so) && ja; L--) {
+                var n = S.rang[L - 1].zellen;
+                var B = n * S.cellM;
+                var D = ro + siedlungsReich(S, 4 * S.rang[L - 1].nH);
+                for (var bx = Math.floor((o.x - D) / B); bx <= Math.floor((o.x + D) / B) && ja; bx++)
+                    for (var bz = Math.floor((o.z - D) / B); bz <= Math.floor((o.z + D) / B) && ja; bz++) {
+                        var w = sieger(L, bx, bz);
+                        if (!w || w === o || stufeVon(w) !== L || !hoeher(w, o)) continue;
+                        if (Math.hypot(w.x - o.x, w.z - o.z) < ro + siedlungsReich(S, groesse(w)) && steht(w)) ja = false;
+                    }
+            }
+            M.set(k, ja);
+            return ja;
+        };
+        var o = ort(cx, cz);
+        if (!o || !steht(o)) return null;
+        var nH = groesse(o);
+        return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const nZiel=Math.max(4,Math.min(500,DP.nH||24));                                          // ZIEL-GESETZ: der Regler IST die Stadt
   const leg=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;
+  const nZiel=Math.max(4,Math.min(500,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   let region,jahr,spanne;
   if(leg){ region=leg.region; jahr=leg.jahr+(((rnd()-0.5)*50)|0); spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
@@ -5865,7 +5993,7 @@
         dp = dp && typeof dp === "object" ? dp : {};
         var plan = DORF({
             seed: isFinite(dp.seed) ? Number(dp.seed) : 1,
-            nH: isFinite(dp.nH) ? Number(dp.nH) : 18,
+            nH: isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
             epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
         });
@@ -5950,13 +6078,26 @@
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
-            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
-            // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
-            // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
-            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; es wacht
-            // das Golden von gate:settlement Teil N, das den ganzen Export einfriert). Einen Siedlungs-Fluss plant das
+            // + Hof-Bäume (Architektur-Spawns) + Laternen, die Mauer der Stadt (`_stlMauerBuild`,
+            // siedlung.K2: bis dahin aus dem Export gestrichen, die Stadt der Welt stand ohne sie) und
+            // der Graph der Gassen (nV/nE/zyklen, der Leser gate:settlement Z). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
+            mauer: lay.mauer
+                ? {
+                      R: lay.mauer.R,
+                      segs: lay.mauer.segs.map(function (s) {
+                          return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 };
+                      }),
+                      towers: lay.mauer.towers.map(function (t) {
+                          return { x: t.x, z: t.z };
+                      }),
+                      gates: lay.mauer.gates.map(function (g) {
+                          return { x: g.x, z: g.z, th: g.th };
+                      }),
+                  }
+                : null,
+            graph: { nV: lay.graph.nV, nE: lay.graph.nE, zyklen: lay.graph.zyklen },
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
@@ -6677,6 +6818,13 @@
         ORTSNAME: ORTSNAME,
         DORF_NORM: DORF_NORM,
         SIEDLUNG: SIEDLUNG,
+        // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
+        siedlungsZelle: siedlungsZelle,
+        siedlungsGroesse: siedlungsGroesse,
+        siedlungsReich: siedlungsReich,
+        siedlungsEpoche: siedlungsEpoche,
+        GROESSE_N: GROESSE_N,
+        STADTMAUER: STADTMAUER,
         EPOCHEN: EPOCHEN,
         REGION_HIST: REGION_HIST,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)

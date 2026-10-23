@@ -15,9 +15,9 @@ const { starteBrowser, ROOT, startProc, eigenePorte, waitFor } = require("./lib/
 const path = require("path");
 const fs = require("fs");
 
-// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
-// je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
-// die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+// Der Klon, in dem die Linse liegt, und der Port je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server
+// ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT). die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des
+// Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
@@ -65,7 +65,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
   if (window.__anazhRole === "server") {
     // SERVER-Zweig — autoritative Rechnung: eine laufende Summe über ALLE
     // Verbindungen. Ein Relay broadcastet nur; diese Summe beweist Compute.
-    // F2 (V18.126) — die Welt ist migrations-kooperativ: snapshot() exportiert
+    // F2 — die Welt ist migrations-kooperativ: snapshot() exportiert
     // die Summe, restore() stellt sie im frischen Kontext des Nachfolgers her.
     note("jscompute-server-start");
     if (typeof WebSocketServer !== "function") { note("jscompute-server-no-wss"); return; }
@@ -219,7 +219,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             const r = window.anazhRealm;
             r.setGameMode && r.setGameMode("schöpfer"); // Bau-Gates frei
             // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
-            // das alte über `_disposeSoulGroup` (Integration V18.536)
+            // das alte über `_disposeSoulGroup`
             const phantom = new window.THREE.Group();
             // BÜHNE: ein Phantom-Objekt ohne Boden (Entsorgungs-Mechanik)
             phantom.position.set(44, 6, -44);
@@ -707,7 +707,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             true
         );
 
-        // F2 (G3, V18.126) — Host-Migration MIT Zustand. Der Host pollt den
+        // F2 (G3) — Host-Migration MIT Zustand. Der Host pollt den
         // kooperativen Snapshot (5-s-Timer; der Test stößt ihn deterministisch
         // an) und annonciert ihn als subworld-state an die Gäste. B (Gast)
         // muss die Mitgift {total:12} gecacht haben, BEVOR A geht.
