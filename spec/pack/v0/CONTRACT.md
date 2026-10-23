@@ -204,17 +204,17 @@ foundry-r184 baut der Faden auf three r184 mit abgeschaltetem Farb-Management �
 die Übersetzung in die r184-Welt lebt NUR am Empfangs-/Anwendungs-Chokepoint des Hosts, NIE im
 Pack und NIE verstreut (die zwei DOKUMENTIERTEN Migrations-Regeln, keine Tuning-Knöpfe):
 
-**Ü1 — LICHT (`AnazhRealm.LEGACY_LICHT = Math.PI`):** die three.js-r155-Regel
-(useLegacyLights→physisch: Legacy hatte keine 1/π-BRDF-Normierung — physikalische Lichter sind
-bei GLEICHER Zahl ~π-dunkler). Die numerisch aus dem r128-Studio kopierten Intensitäten werden
-an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
+**Ü1 — LICHT IN WELT-EINHEITEN (foundry-r184):** die three.js-r155-Regel (useLegacyLights→physisch: Legacy hatte keine
+1/π-BRDF-Normierung — physikalische Lichter sind bei GLEICHER Zahl ~π-dunkler) gilt EINMAL, an der Quelle: jedes
+Licht-Datum trägt Welt-Einheiten, die Welt rechnet nichts um (die Konstante `LEGACY_LICHT` fiel). Das r128-Labor teilt an
+seiner Kante durch π (es rechnet ohne Normierung):
 
-| Anker (Stamm)                           | Anwendung                                                        |
-| --------------------------------------- | ---------------------------------------------------------------- |
-| `AnazhRealm.LEGACY_LICHT` (§26-Statics) | die EINE Konstante (Math.PI), kein Tuning-Knopf                  |
-| `_dayNightApplyDirectionalLight`        | Sonne/KEY · FILL · RIM · BACK (je `base × LEGACY_LICHT × a.lum`) |
-| `_dayNightApplyAmbient`                 | der Hemi-Tag-Term (`0.45 × LEGACY_LICHT × sunHeight`)            |
-| (S2 die Karte backt in der Welt)         | der Impostor-Atlas backt im Welt-Renderer (`_karteWeltBacken`) aus denselben Stoffen, die die Welt zeichnet — die Welt-Lichtkette gilt nativ, kein Bake-Rig |
+| Anker                                     | Datum (Welt-Einheiten)                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `AnazhRealm.KEY_BASE` (Stamm)             | das Schlüssellicht der Sonne (2,6 × π), `_atmoE0` · `_dayNightApplyDirectionalLight` |
+| fachwerk `LICHT_GESETZ` (feuer · laterne) | die Bestrahlung in 1 m (`staerke`), gelesen von `_leuchtStaerke`        |
+| porta `GLUT_GESETZ` (i0 · iOpen)          | die Glut des wachen Tors (`glutIntensity`)                                |
+| (S2 die Karte backt in der Welt)          | der Impostor-Atlas backt im Welt-Renderer (`_karteWeltBacken`) aus denselben Stoffen, die die Welt zeichnet — die Welt-Lichtkette gilt nativ, kein Bake-Rig |
 
 **Ü2 — FARBE (raw-als-linear):** der Bau-Faden liest Hex-Farben ALS LINEAR (r128 kannte kein Farb-Management, r184
 schaltet es im Faden ab, `_foundryEngine`; das FARB-GESETZ rechnet jeder Kern selbst) — treue Studio-Werte reisen
@@ -226,6 +226,6 @@ deshalb als ROHE lineare Zahlen und werden roh=linear gelesen (nie als sRGB-Hex 
 | `_foundryBuildGroup`        | `m.mat.color` (Zweit-Kern-Meshes) ist LINEAR → füllt das color-Attribut roh; die kind-Default-Füllfarben sind lineare Literale               |
 | `_foundryIngestWorldParams` | die Studio-HEX-Anker (ground/sky) werden EINMAL am Ingest via `THREE.Color` nach linear gewandelt (sRGB-Hex → linear), nie per Hex weitergereicht |
 
-**Regel:** eine NEUE r128-Quelle (weiterer Kern, weiteres Lab) erbt Ü1/Ü2 automatisch, solange
-sie durch DIESELBEN Chokepoints fließt (`_foundryBuildGroup`/`_foundryTreeMaterial` für Gestalt,
-die Licht-Anwendungen für das Rig) — ein eigener Übersetzungs-Pfad daneben ist die Drift-Klasse.
+**Regel:** eine NEUE r128-Quelle (weiterer Kern, weiteres Lab) erbt Ü2 automatisch, solange sie durch DIESELBEN
+Chokepoints fließt (`_foundryBuildGroup`/`_foundryTreeMaterial`); ihre Licht-Daten tragen Welt-Einheiten (Ü1), die
+Übersetzung lebt im r128-Labor — ein eigener Übersetzungs-Pfad in der Welt ist die Drift-Klasse.

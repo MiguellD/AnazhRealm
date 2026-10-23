@@ -1638,8 +1638,8 @@ class AnazhRealm_stoff_material {
 
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
     // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
-    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
-    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
+    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`, in Welt-Einheiten) — und r184s BRDF
+    // (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
     // der Quelle (eine Flamme ist keine Punkt-Singularität: r184s nacktes 1/d² legte die Steine am Bett auf das Zehnfache ihrer
     // Glut, und das Licht des Auges lag mit 1/d an der Wand weiß), weit draußen fällt das Feuer mit 1/d² (bis K11b mit dem
     // Legacy-Abfall des r128-Labors (1 − d/R)^abfall: in 4 m noch 31 % — der Boden glühte über mehrere Meter), und an der

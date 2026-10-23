@@ -174,3 +174,9 @@ Re-Mint: 124 von 124). Die Fels-Rezepte trugen EINE Kollisions-Hülle je Art (`f
 Gestalt 1..V die Hülle ihrer LOD-0-Gestalt im Vorlagen-Raum `[x0, x1, y1, z0, z1]` (+5 %), der Welt-Blocker liest die
 Zeile seiner Gestalt in der Welt-Skala (`gate:kollision-bild`: Felsturm 16,46 → 0,05 m über dem Bild). Genau 12 Felder
 (je Fels-Rezept `huelle` fort, `huellen` neu), der Rest byte-gleich; die Gestalt liest die Hülle nie.
+
+**Vertrags-Akt foundry-r184 (22.10.2026, begründet — EINE Licht-Eichung):** nur `recipes.json` (+ Manifest); jede
+Mesh-Golden, world-params und render-config byte-gleich. Das Licht-Datum der Kerne steht in Welt-Einheiten (physisch, r184),
+der Faktor `LEGACY_LICHT` fällt, das r128-Labor teilt durch π. Genau 3 Felder `fx.licht.staerke`: feuerstelle 1 → π,
+laterne 19 → 19 π (beide bit-gleich zur alten Welt-Stärke), wandlaterne 2,667 → 8,38 (die Milli-Rundung des Wand-Gesetzes
+rundet jetzt in Welt-Einheiten: die Welt sah 2,667 · π = 8,3786, relativ +1,64e-4); der Rest byte-gleich.

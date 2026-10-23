@@ -650,11 +650,12 @@ mit abgeschaltetem Farb-Management — die Gesetzbücher sprechen Farbe roh. Wo 
 (nicht das Portal — dort läuft das Original), gelten DREI dokumentierte
 Übersetzungs-Regeln (three.js-Migrationspfad, KEINE Tuning-Knöpfe):
 
-- **Ü1 — LICHT-INTENSITÄTEN × π** (r155, useLegacyLights→physisch: Legacy
-  hatte keine 1/π-BRDF-Normierung). Jeder aus einem Studio übernommene
-  Licht-Intensitätswert wird mit `AnazhRealm.LEGACY_LICHT` (= Math.PI)
-  multipliziert. Gilt für JEDE Domäne (Wald-Rig heute; Fahrzeug-Scheinwerfer/
-  Emissive morgen).
+- **Ü1 — LICHT IN WELT-EINHEITEN** (r155, useLegacyLights→physisch: Legacy
+  hatte keine 1/π-BRDF-Normierung). Jedes Licht-Datum eines Gesetzbuchs
+  (fachwerk `LICHT_GESETZ`, porta `GLUT_GESETZ`, das Schlüssellicht
+  `KEY_BASE`) trägt Welt-Einheiten — die Zahl des r128-Labors × π; die Welt
+  rechnet nichts um, das r128-Labor teilt an seiner Kante durch π. Gilt für
+  JEDE Domäne (Fahrzeug-Scheinwerfer/Emissive morgen).
 - **Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR.** r128 las Hex ohne Eingangs-
   Konvertierung; die treue Übersetzung setzt Studio-Farbwerte per
   `setRGB(raw)` (linear), NIE per `setHex` (das sRGB→linear wandeln und

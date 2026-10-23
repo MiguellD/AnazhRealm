@@ -1323,7 +1323,7 @@ const server = statikServer();
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
-            // dann der Himmel am Auge und die Stärke seines Platzes im Licht-Pool (`_augenLeuchte`, in der Zahl des Labors × LEGACY_LICHT) gegen
+            // dann der Himmel am Auge und die Stärke seines Platzes im Licht-Pool (`_augenLeuchte`, Welt-Einheiten) gegen
             // sein Gesetz (AUGEN_LICHT, die Belichtung des Takts); (l) unter freiem Himmel jedes Licht der Szene, wie r184 es
             // sammelt (sichtbar, in den Ebenen der Kamera)
             {
@@ -1367,7 +1367,7 @@ const server = statikServer();
                     return {
                         auge: p.map((v) => +v.toFixed(1)),
                         h: Number.isFinite(h) ? +h.toFixed(3) : null,
-                        I: !imPool ? null : au ? +(au.L.staerke * r.constructor.LEGACY_LICHT).toFixed(3) : 0,
+                        I: !imPool ? null : au ? +au.L.staerke.toFixed(3) : 0,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         abfall: A ? A.abfall : null,
                         kern: A ? A.kernM : null,

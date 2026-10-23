@@ -931,7 +931,7 @@ function validateManifest(m) {
             "B6 — VERHALTEN",
             "must-ignore",
             "fail-closed",
-            "Ü1 — LICHT-INTENSITÄTEN × π",
+            "Ü1 — LICHT IN WELT-EINHEITEN",
             "Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR",
         ].every((s) => doc.includes(s))
     );

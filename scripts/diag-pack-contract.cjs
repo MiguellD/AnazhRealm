@@ -171,7 +171,7 @@ async function main() {
             "bruecke_1",
             "SHA-256",
             "__anazhLiveBake",
-            "LEGACY_LICHT",
+            "KEY_BASE",
             "cv",
         ])
             check(md.includes(marker), `CONTRACT.md trägt den Anker „${marker}"`);

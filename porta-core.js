@@ -1145,8 +1145,8 @@
         color: 0xffd9a0,
         dist: 14,
         decay: 2,
-        i0: 0.3,
-        iOpen: 3.4,
+        i0: 0.3 * Math.PI, // Welt-Einheiten (physisch, r184): die Zahl des r128-Labors × π, das Labor teilt durch π
+        iOpen: 3.4 * Math.PI,
         pulseBase: 0.8,
         pulseAmp: 0.28,
         ySpring: 0.55,

@@ -3866,7 +3866,8 @@
     // der Lichtfarbe, K11b: `lichtFarbe` rechnet sie über den Planck-Ort in lineares sRGB; bis K11b trug das Datum die
     // Glut-Palette 0xff7a35 als Lichtfarbe, die Welt las sie linear (1, 0,195, 0,036) und der Boden glühte lava-rot), der
     // Lichtstrom `staerke` × `zeit` (der Zeitplan je Tageszeit; fehlt er, brennt die Quelle immer) als Bestrahlung in 1 m
-    // in der Zahl des Labors, `reichweiteM`, `abfall` und `kernM` des Punktlichts (K11b, `lichtAbfall`: 1/d^abfall mit dem
+    // in Welt-Einheiten (physisch, r184 — die Zahl des r128-Labors × π; das Labor rechnet ohne 1/π-Normierung und teilt
+    // durch π), `reichweiteM`, `abfall` und `kernM` des Punktlichts (K11b, `lichtAbfall`: 1/d^abfall mit dem
     // Kern der Quelle — eine Flamme ist keine Punkt-Singularität — und weichem Saum an der Reichweite), `flacker` das Atmen
     // der Flamme (relativ, zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des Licht-Mittelpunkts über dem
     // Boden. `feuer` ist das Herdfeuer (ein Holzfeuer, 1 800–2 000 K: die gelben Flammen tragen das Licht, 2 000 K; der
@@ -3889,9 +3890,9 @@
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        feuer: { kelvin: 2000, staerke: Math.PI, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, staerke: 19 * Math.PI, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:

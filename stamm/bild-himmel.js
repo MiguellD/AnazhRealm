@@ -1303,10 +1303,10 @@ class AnazhRealm_bild_himmel {
         return Math.max(0.001, (y - wl) / 1000);
     }
 
-    // E0 — DIE SONNE ÜBER DER ATMOSPHÄRE in Welt-Einheiten: das Schlüssellicht (KEY_BASE, r128 → r184 über LEGACY_LICHT)
-    // × die Tages-Intensität des Tints (Wetter, Aura). Das Richtlicht trägt E0 · Durchlass, die Tafeln den Himmel in E0.
+    // E0 — DIE SONNE ÜBER DER ATMOSPHÄRE in Welt-Einheiten: das Schlüssellicht (KEY_BASE) × die Tages-Intensität des Tints
+    // (Wetter, Aura). Das Richtlicht trägt E0 · Durchlass, die Tafeln den Himmel in E0.
     _atmoE0(tint) {
-        return Math.max(0, AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (tint ? tint.lightIntensity : 1));
+        return Math.max(0, AnazhRealm.KEY_BASE * (tint ? tint.lightIntensity : 1));
     }
 
     // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (`ATMO_GESETZ.nacht.himmel`, Welt-Einheiten) im
@@ -2079,7 +2079,7 @@ class AnazhRealm_bild_himmel {
                 a.col.g * tint.lightColor.g * tint.lightMul,
                 a.col.b * tint.lightColor.b * tint.lightMul
             );
-            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity;
+            dl.intensity = AnazhRealm.KEY_BASE * a.lum * tint.lightIntensity;
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·sein Durchlass; `atm.col`
@@ -2152,7 +2152,7 @@ class AnazhRealm_bild_himmel {
         st._belichtungSteht = true;
     }
 
-    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
+    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE`) × (ihr
     // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
     // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
     // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
@@ -2166,7 +2166,7 @@ class AnazhRealm_bild_himmel {
         const M = this._atmoMedium(R.betaKlar(G));
         const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
         const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
-        return (this._belichtungA = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
+        return (this._belichtungA = AnazhRealm.KEY_BASE * (s.lum * l + himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
@@ -2176,8 +2176,8 @@ class AnazhRealm_bild_himmel {
     // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
     // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes, fachwerk `lichtAbfall`).
     // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
-    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
-    // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
+    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in Welt-Einheiten wie jede Quelle. Unter dem
+    // Himmel ist es aus (`_augenLeuchte` null).
     _dayNightApplyAugenLicht() {
         const st = this.state;
         const cam = st.camera;
@@ -2207,7 +2207,7 @@ class AnazhRealm_bild_himmel {
                 masse: 1,
                 phase: 0,
             });
-        q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
+        q.L.staerke = I;
     }
 
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
@@ -3024,13 +3024,10 @@ AnazhRealm.ATMO_LUT = Object.freeze({
 // (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
 // die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
 AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
-// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
-AnazhRealm.KEY_BASE = 2.6;
-// r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
-// 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
-// r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
-// die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
-AnazhRealm.LEGACY_LICHT = Math.PI;
+// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht, in Welt-Einheiten (physisch, r184): das
+// Schlüssellicht des Studios 2,6 × π — das r128-Labor rechnet ohne 1/π-BRDF-Normierung (Mittag ≈ 2,6·π·0,913). Ziel
+// key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
+AnazhRealm.KEY_BASE = 2.6 * Math.PI;
 // DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
 // Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` die Leuchtdichte der 18-%-Karte nach der
 // Belichtung, die DIESE Kurve auf Mittelgrau + 1 EV legt (`npm run look-lens` rechnet sie aus der Kurve nach). Neutral gibt

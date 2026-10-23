@@ -1528,7 +1528,7 @@ class AnazhRealm {
     // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis (die Laternen der Pläne), das wache Tor; neu gewählt je `wahlS`
     // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
     // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
-    // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
+    // Datum (Welt-Einheiten) × Masse (die Fläche der Glut) × Flackern auf der
     // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
     // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
@@ -1644,11 +1644,12 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
-    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum (Welt-Einheiten, die Bestrahlung in 1 m; den Abfall rechnet der
+    // Stoff nach dem Gesetz, fachwerk `lichtAbfall`) × Flackern × Zeitplan × Masse.
     _leuchtStaerke(q, t) {
         const L = q.L;
         const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
-        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+        return Math.max(0, L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
     }
 
     // DER SICHTKEGEL der Licht-Wahl (K10 × K11): das Frustum der Kamera des Bildes, je Wahl aus ihren Matrizen.
@@ -1723,13 +1724,6 @@ class AnazhRealm {
         const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
         const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
         return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
-    }
-
-    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
-    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall rechnet der Stoff nach dem Gesetz (fachwerk
-    // `lichtAbfall` in `_lichtPoolTerm`: 1/d^abfall mit Kern und Saum, K11b) — in 1 m trifft er die Stärke des Datums.
-    _laborLichtStaerke(I) {
-        return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)

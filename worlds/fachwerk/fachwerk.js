@@ -592,7 +592,7 @@ function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1
     gm.emissive=gm.emissive||new THREE.Color(0); if(lat) gm.emissive.setRGB(..._LATF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=lat; } }
 const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const fire=new THREE.PointLight(0xffffff,_FEU.staerke,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)
+const fire=new THREE.PointLight(0xffffff,_FEU.staerke/Math.PI,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)
 
 // ════════════════ Subsystem-UI (einmal angelegt) ════════════════
 const ORDER=['fundament','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
@@ -952,7 +952,7 @@ function walkUpdate(dt){
 let last=performance.now();
 function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(mode==='walk')walkUpdate(dt);
-  fire.intensity=_FEU_LAB*_FEU.staerke*_feuerZeit*(1+_FEU.flacker.amp*FC.lichtFlackern(_FEU,now/1000,0));   // die Flamme atmet in 6–10 Hz (LICHT_GESETZ.feuer.flacker, dasselbe Gesetz wie die Welt)
+  fire.intensity=_FEU_LAB*_FEU.staerke/Math.PI*_feuerZeit*(1+_FEU.flacker.amp*FC.lichtFlackern(_FEU,now/1000,0));   // die Flamme atmet in 6–10 Hz (LICHT_GESETZ.feuer.flacker, dasselbe Gesetz wie die Welt)
   { const nw=performance.now();
   for(let k=dorfBlend.length-1;k>=0;k--){ const B3=dorfBlend[k], f=Math.min(1,(nw-B3.t0)/240);
     B3.m.material.opacity=f; if(f>=1){ B3.m.material.dispose(); B3.m.material=B3.shared; dorfBlend.splice(k,1); } }

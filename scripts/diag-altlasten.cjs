@@ -21,6 +21,7 @@ const { scanWarteWand } = require("./lib/welt-boot.cjs");
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
+    { token: "LEGACY_LICHT", fiel: "foundry-r184 — jedes Licht-Datum in Welt-Einheiten, das Labor teilt durch π" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
     { token: "preDeathSoul", fiel: "W1a — kein Gestalt-Tausch beim Tod" },
     { token: "phoenixUntil", fiel: "W1a — respawnGraceUntil trägt" },
