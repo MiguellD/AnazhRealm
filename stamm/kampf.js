@@ -112,9 +112,11 @@ class AnazhRealm_kampf {
 
     // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
     // (der ganze Leib, halten.K2) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // Der Halt ist ein FENSTER [_hitStopAb, _hitStopUntil): eine Zeit vor dem Treffer steht nie darin (eine Probe auf eigener
+    // Uhr nach einem echten Treffer fror sonst bis zu dessen Ende, auf der Uhr des Spiels gleich).
     _hitStopFactor(nowSec) {
         const p = this.state.player;
-        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
+        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil && !(nowSec < p._hitStopAb) ? 0 : 1;
     }
 
     // DIE REICHWEITE DER KLINGE ab dem Schultergelenk: der gestreckte Arm bis zur Hand-Mitte und das Gerät vor der Hand —
@@ -736,7 +738,10 @@ class AnazhRealm_kampf {
         const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
         const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
         const p = this.state.player;
-        if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+        if (p) {
+            p._hitStopAb = nowSec;
+            p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+        }
         this.state._landImpactPending = Math.max(
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e

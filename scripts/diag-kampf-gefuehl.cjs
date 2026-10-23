@@ -820,7 +820,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             for (let k = 1; k <= 20; k++) r._tickKampfSchwung(5000 + k * 0.02);
             o.checks.cSchwungFriert = !!p._swing && p._swing.t === 0;
             p._swing = null;
-            // (C2) der GANZE Leib steht (halten.K2, am echten Konsumenten): mitten im Strike gleitet das Ziel
+            // (C2) der GANZE Leib steht (halten.K2): mitten im Strike gleitet das Ziel
             if (!pm.userData.rig) r.applyPlayerSoul("human");
             const mesh = s.playerMesh;
             if (!mesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
@@ -854,9 +854,9 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.simSteps = steps1 + steps2;
             o.simDelta = s._fixedSimTime - simT0;
             o.checks.cSimLaeuftWeiter = o.simSteps >= 2 && o.simDelta > 0;
-            // (C4) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder
+            // (C4) Gegenprobe: vor dem Treffer läuft die Anzeige-Uhr (der Halt ist ein Fenster ab ihm)
             s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
-            p._hitStopUntil = 0;
+            p._hitStopAb = 8000;
             o.checks.cGegenprobeLaeuft = gehe(7000, 30) > 0 && o.handM[1] > 0.001;
             // (S1) SELBST-TEST: _hitStopFactor ≡ 1 gestubbt → trotz Hit-Stop läuft die Uhr
             const savedFactor = r._hitStopFactor;
@@ -1047,7 +1047,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.cSimLaeuftWeiter,
             `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
         );
-        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: ohne Hit-Stop laufen Gang und Hand wieder");
+        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand");
         check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)");
         check(
             c.s1LinseFeuert,
