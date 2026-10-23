@@ -235,7 +235,7 @@ function ortVerdikt(m) {
     if (!(m.quellenGasse >= GASSE_SOLL))
         fehl.push(`Dorf-Licht der Gasse nachts ${m.quellenGasse} sichtbare Quellen (Soll ≥ ${GASSE_SOLL})`);
     // der Pool trägt jede sichtbare Quelle der Gasse, bis er voll ist (LICHT_POOL.plaetze) — ≥ 1 ließ 4 sichtbare Köpfe mit
-    // einem einzigen hellen durch, die Klasse „1 von 6 Laternen im Bild hell“ (97d2606a)
+    // einem einzigen hellen durch, die Klasse „1 von 6 Laternen im Bild hell“
     const poolSoll = Math.min(m.quellenGasse || 0, m.poolPlaetze || 0);
     if (!(m.poolGasse >= 1 && m.poolGasse >= poolSoll))
         fehl.push(`Licht-Pool der Gasse nachts ${m.poolGasse} Quellen des Orts (Soll ≥ ${Math.max(1, poolSoll)})`);
@@ -243,7 +243,7 @@ function ortVerdikt(m) {
 }
 const GT_SOLL_M = 60;
 
-// DAS DORF-LICHT DER GASSE (K10 × Pflicht-OFFEN C, 13.10.: „≥ 4 sichtbare Quellen im Nachtbild der Gasse — nie 0 = 0") — rein:
+// DAS DORF-LICHT DER GASSE (K10: ≥ 4 sichtbare Quellen im Nachtbild der Gasse) — rein:
 // quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
 // je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
 // Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
@@ -494,7 +494,7 @@ async function gtDorfweg(v2, anker, sek) {
     return res;
 }
 
-// DIE WÜRFE DES FELDS WEICHEN DEM ORT (K10-6): jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
+// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
 // des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
@@ -1259,7 +1259,7 @@ const FIXTURES = [
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
-        // DAS LICHT DER WANDLATERNE (K66-2): die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
+        // DAS LICHT DER WANDLATERNE: die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
         // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne und reist als Datum ihres Rezepts
         const wandGesetz = LWd
             ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
@@ -1340,7 +1340,7 @@ const FIXTURES = [
                     ]),
                 })
             );
-            // DIE DICHTE GASSE (K66-2): derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
+            // DIE DICHTE GASSE: derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
             // Wandlaterne 0,9 m von ihrem Stand weg hängt an keiner Wand
             const plG = FC.exportSettlement({ seed: 7, nH: 16 });
             const ohneWand = dorfLicht(Object.assign({}, plG, { laternen: plG.laternen.filter((l) => !l.wand) }));
@@ -1441,7 +1441,7 @@ const FIXTURES = [
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        // Die Buchhaltung (K66-2): der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
+        // Die Buchhaltung: der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
         // mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) — sonst nichts.
         const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
         const alle1 = r.state.architectures.slice(mid2, after);
@@ -1460,7 +1460,7 @@ const FIXTURES = [
         const off = (list, o) => list.map((e) => [e[0], e[1] - o.x, e[2] - o.z, e[3], e[4]]);
         res.offsetsDeterministic =
             r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(alle1), o1));
-        // Slot-Anker == Plan-Slot (K10): JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
+        // Slot-Anker == Plan-Slot: JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
         // steht auf dem Boden des Plans v2 (y = slot.y + 0,5, `_ortWahl` — derselbe Plan am selben Anker). Die Welt rückt
         // kein Haus: die Ersatz-Orte und die hMax-Suche fielen mit dem Erdbau des Orts.
         const v2 = await r._ortWahl(plan, o1);
@@ -1545,7 +1545,7 @@ const FIXTURES = [
             ? erlebnis(Object.assign({}, v2, { trees: [], staende: [], fences: [], felder: [] }), "__probe2")
             : null;
         // DORF-IN-TERRAIN — der Footprint reist als entry.fundament (der Grundriss der Wände und des Erdbaus eines Altstands);
-        // das Podest fiel mit dem Erdbau (K10): keine Fundament-Box, kein Sockel-Pool.
+        // das Podest fiel mit dem Erdbau: keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
         // 3) fail-closed: ein Slot mit unbekannter Kultur faellt (kein Spawn, kein Crash).
         const fake = JSON.parse(JSON.stringify(plan));
@@ -1707,8 +1707,7 @@ const FIXTURES = [
             const archAfter = r.state.architectures.length;
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
-            // DORF-ERLEBNIS — die Siedlung hebt jetzt auch BRUNNEN (brunnen_dorf)
-            // und HOF-BÄUME (SCHICHT-VOLLENDUNG 18.07.: Studio-Bäume der
+            // DORF-ERLEBNIS — die Siedlung hebt auch BRUNNEN (brunnen_dorf) und HOF-BÄUME (Studio-Bäume der
             // trees-Schicht): das Band wandert mit dem Gesetz.
             res.c.allHaus = r.state.architectures
                 .slice(archBefore)
@@ -2047,7 +2046,7 @@ const FIXTURES = [
         return res;
     });
 
-    // ===== TEIL O: DER ORT AUF DEM GELÄNDE (K10) — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
+    // ===== TEIL O: DER ORT AUF DEM GELÄNDE — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
     // Der Akt `spawnSettlement` an einem Hang (Gefälle 0,12–0,25 über 16 m, fern der Orte der Teile B und C); gemessen wird,
     // was die Welt trägt: die Häuser (Eintrag: Ort, Gier, Boden y − 0,5), der Grund unter und vor ihnen (`getTerrainHeightAt`,
     // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (Einträge der Studio-Gestalt laterne) und der
@@ -2288,9 +2287,9 @@ const FIXTURES = [
                     // Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
                     res.laternenWelt = laternen.length;
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
-                    // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
+                    // der Zwilling: ein Licht ohne Leib (ein Laternen-Leser mit Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
-                    // DIE LATERNE VOR DER WAND (K66): je Laterne der
+                    // DIE LATERNE VOR DER WAND: je Laterne der
                     // Zelle der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
                     // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
                     const LGl = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
@@ -2312,7 +2311,7 @@ const FIXTURES = [
                             lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
                         }
                     res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
-                    // DIE LATERNE NEBEN DER FAHRBAHN (K66):
+                    // DIE LATERNE NEBEN DER FAHRBAHN:
                     // je Laterne der Zelle der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
                     // `_wegeFormAbstand`; der Tritt einer Ausstattung ist ein Segment ohne Länge und zählt nicht) — Soll: der Tritt des Rezepts
                     const AR = r.constructor;
@@ -2333,17 +2332,17 @@ const FIXTURES = [
                                             lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, q.x, q.z));
                             }
                     res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
-                    // DIE STUFE VOR DER TÜR IST WEG (K66): je Haus der Punkt 0,8 m
+                    // DIE STUFE VOR DER TÜR IST WEG: je Haus der Punkt 0,8 m
                     // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
                     // die Wiese über `_pfadFeldAt` und die Natur-Wand lesen) — Grundriss gegen Natur gilt auch für Treppe und Vorplatz
                     let vpOk = 0;
                     let vpN = 0;
                     const vpFehl = [];
-                    // und (K66) vom Eingang
+                    // und vom Eingang
                     // (fachwerk `eingangVon`, beim Hof-Haus das Tor) bis zur Gasse liegt keine Lücke: auf der Achse der Tür je 0,25 m
                     // bis vorplatzM + gasseM — wer nach einem Punkt ohne Fläche wieder auf eine Fläche tritt, hat Wiese vor der Tür
                     const OG = window.__fachwerkCore.ORT_GESETZ;
-                    // und (K66) die
+                    // und die
                     // Wiese liest das GEMALTE Feld (`_pfadFeldAt` → `_wegeFeldAt`: die Bytes der Wege-Karte, weich um ±randM) — zwei Formen, die sich
                     // nur berühren, tragen an der Naht je 0,5: auf der Achse der Tür bis in die Gasse (die erste Weg-Form, die kein
                     // Kasten ist) hält das Feld ≥ 0,9 (die Wiese ≤ 17 % ihrer Dichte). Die Karte zieht dafür an den Ort und zurück.
@@ -2391,7 +2390,7 @@ const FIXTURES = [
                                     tief = t;
                                     break;
                                 }
-                            // und (K66) in der
+                            // und in der
                             // ganzen Breite der Stufe (fachwerk `vorplatzFlaeche`: Türbreite samt Saum) — der Maler fällt an der
                             // Kante einer Form auf 0,5, die Wiese stand dort mit der Hälfte ihrer Dichte auf der Platte
                             const exS = window.__fachwerkCore.vorplatzFlaeche(sl).ex;
@@ -2420,7 +2419,7 @@ const FIXTURES = [
                         });
                     if (P.ort && pmW) r._tickWegeKarte(pmW.position);
                     res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
-                    // DIE WAND DER TERRASSE (K66), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
+                    // DIE WAND DER TERRASSE, gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
                     // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
                     // Himmel, steiler als der Schutt-Kandidat (23°), den der Erdbau um > 0,25 m hebt oder senkt und der auf keiner
                     // Fläche des Erdbaus liegt (`erdbauFlaeche`); Wiese ist er, wo sein Fels-Stoff (die Steile über rockLo … rockHi

@@ -997,11 +997,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
-        // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
-        // `_bodenSichtAt` (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
-        // zeigt oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben (gemessen 01.10.: Spawn-Chunk
-        // Median 45 cm, 8 % ≤ 5 cm; Mess-Wiese ±0,22 m) — Gras und Streu darauf steckten im Boden.
-        // DIE NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
+        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
+        // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
+        // oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben — Gras und Streu darauf steckten im Boden. DIE
+        // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
         {
             const cfg = r._voxelChunkConfig(0);
             const lpc = r.state.lastPlayerVoxelChunk;
@@ -1150,8 +1149,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
         out.riseAboveNeutral = riseKonv > neutral;
         out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
-        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht. Die Bühne
-        // ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie mit (CI 38993175603).
+        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht.
+        // Die Bühne ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie
+        // mit.
         {
             const s = r.state,
                 pm = s.playerMesh,
@@ -1966,8 +1966,8 @@ async function checkBandLookPhysik(ctx) {
     );
 }
 
-// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
-// Planet aus Math.random, MeshBasic, Tag wie Nacht voll sichtbar). Jetzt sind die Wandelsterne die hellsten PUNKTE des Sternfelds,
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag (D3b): kein Planet aus Math.random am Mittagshimmel; die
+// Wandelsterne sind die hellsten PUNKTE des Sternfelds,
 // die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
@@ -2088,8 +2088,8 @@ async function checkBandHimmelTag(ctx) {
     );
 }
 
-// Die Schatten-Wand — eingefaltet aus gate:schatten-takt (D3b): Befund 04.10. beide CSM-Kaskaden renderten JEDEN Frame
-// (updateShadow ~9,5 ms CPU) — r184 liest `shadow.needsUpdate || shadow.autoUpdate` je Licht (`ShadowNode.updateBefore`), nie
+// Die Schatten-Wand — eingefaltet aus gate:schatten-takt (D3b): r184 liest `shadow.needsUpdate || shadow.autoUpdate`
+// je Licht (`ShadowNode.updateBefore`), nie
 // `renderer.shadowMap.needsUpdate`. `_loopShadowUpdate` fährt je Kaskade den echten Leser; JE FRAME HÖCHSTENS EINE KASKADE
 // (1410-3), nur die bewegte Kamera lässt die nahe jeden Frame folgen. Der ECHTE `_loopShadowUpdate` gegen Schein-Kaskaden:
 // T1 autoUpdate aus · T2/T3 der Takt je Regler-Intervall · T4 Sonnen-Sprung · T5 ohne CSM · T6 `_schattenAlleNeu` · T7 Gang;

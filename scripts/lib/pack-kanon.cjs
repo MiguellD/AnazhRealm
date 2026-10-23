@@ -35,8 +35,8 @@ const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
-// Foundry-Brücke). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n")). Die
+// Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
 // Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
 // Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
 function computeStamp(root, lies) {

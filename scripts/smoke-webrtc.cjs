@@ -15,9 +15,9 @@ const { starteBrowser, ROOT, startProc, eigenePorte, waitFor } = require("./lib/
 const path = require("path");
 const fs = require("fs");
 
-// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
-// je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
-// die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+// Der Klon, in dem die Linse liegt, und der Port je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server
+// ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT). die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des
+// Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.

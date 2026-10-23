@@ -53,11 +53,12 @@ async function blickProbe(opts) {
     let r = null,
         st = null,
         stand = null;
-    // DIE BEREITSCHAFT ZÄHLT FENSTER, NIE EINTRÄGE (D8-n2): seit D8-n1 lebt das Tor ohne sein Ziel — die Registry trägt den Eintrag,
-    // bevor sein Fenster steht (`_tickPortalMembranes`). Die Bereitschaft zählte die Einträge (`size >= 3`): 8 ohne Mesh, die Probe
-    // startete mit 0 Fenstern (CI 38771709172, swiftshader: binnen 1,5 s kein neuer Scan), und B2, B3, HS, BS waren auf der leeren
-    // Menge grün. Bereit ist der Ring, wenn jedes Tor, dessen Ziel eine Zeile hat, sein Fenster trägt (der 1-Hz-Scan baut es) und
-    // mindestens drei Fenster stehen; ein Tor ohne Ziel (Web-Portal, Welt ohne Panorama) lebt ohne Fenster und wartet nicht.
+    // DIE BEREITSCHAFT ZÄHLT FENSTER, NIE EINTRÄGE (D8-n2): seit D8-n1 lebt das Tor ohne sein Ziel — die Registry trägt
+    // den Eintrag, bevor sein Fenster steht (`_tickPortalMembranes`). Die Bereitschaft zählte die Einträge (`size >=
+    // 3`): 8 ohne Mesh, die Probe startete mit 0 Fenstern, und B2, B3, HS, BS waren auf der leeren Menge grün. Bereit
+    // ist der Ring, wenn jedes Tor, dessen Ziel eine Zeile hat, sein Fenster trägt (der 1-Hz-Scan baut es) und
+    // mindestens drei Fenster stehen; ein Tor ohne Ziel (Web-Portal, Welt ohne Panorama) lebt ohne Fenster und wartet
+    // nicht.
     const fensterStand = () => {
         const Z = r._torZielAtlas;
         const tore = [...r._portalMembranes.values()];
@@ -382,8 +383,8 @@ async function blickStufe(check) {
             b.im.membran > 0 && b.im.membran < b.membranen,
             `${b.im.membran} von ${b.membranen} Membranen`
         );
-        // KEIN URTEIL AUF DER LEEREN MENGE (D8-n2): B2, B3, HS und BS waren mit 0 Fenstern grün (CI 38771709172) — jedes Urteil
-        // hier verlangt die Fenster, die es richtet
+        // KEIN URTEIL AUF DER LEEREN MENGE (D8-n2): B2, B3, HS und BS waren mit 0 Fenstern grün — jedes Urteil hier
+        // verlangt die Fenster, die es richtet
         check(
             "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran zeichnet",
             b.membranen >= 3 && b.weg.membran === 0,
@@ -423,8 +424,8 @@ async function blickStufe(check) {
             b.hell.n > 200 && hellRot(b.hell, b.hell.milch),
             hellZeile(b.hell, b.hell.milch)
         );
-        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
-        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
+        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm (ein kaltes kostet auf swiftshader Minuten); HMS:
+        // derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
         check(
             "HM die Maske zeichnet ohne kaltes Programm",
             b.hell.kalt.M === 0,

@@ -86,12 +86,12 @@ function quellBefunde(src) {
 }
 
 // ── M: das Urteil über die Zensus-Reihe (rein, Node) ──────────────────────────────────────────────────────────────────
-// reihe = die gespiegelte Folge groß → klein → groß (1280×720 · 960×540 · 640×360 · 960×540 · 1280×720), je Größe
-// { groesse, proben: [{ "<klasse>|<pass>": { cmd, tris } }, …] }. Zwei Dinge bewegen die Welt ohne den Schirm: Zufälliges
-// (Partikel — der Dorf-Rauch atmet bei fester Größe 23–26 Befehle) und langsames Wachsen (der Wasser-Satz kroch über eine
-// Reihe 2124 → 2152 Dreiecke; gemessen 06.10.). Darum urteilt die Wand über SPANNEN und KLAMMERN: eine Größe trägt die
-// Proben beider Durchgänge, und VERKEHRT ist eine Klasse erst, wenn JEDE Probe im kleineren Fenster über JEDER im
-// größeren liegt — eine Drift hebt die spätere Klammer mit und wird nie als Schirm-Gesetz gelesen (sie steht als DRIFT im
+// reihe = die gespiegelte Folge groß → klein → groß (1280×720 · 960×540 · 640×360 · 960×540 · 1280×720), je Größe {
+// groesse, proben: [{ "<klasse>|<pass>": { cmd, tris } }, …] }. Zwei Dinge bewegen die Welt ohne den Schirm: Zufälliges
+// (Partikel — der Dorf-Rauch atmet bei fester Größe 23–26 Befehle) und langsames Wachsen (der Wasser-Satz kroch über
+// eine Reihe 2124 → 2152 Dreiecke). Darum urteilt die Wand über SPANNEN und KLAMMERN: eine Größe trägt die Proben
+// beider Durchgänge, und VERKEHRT ist eine Klasse erst, wenn JEDE Probe im kleineren Fenster über JEDER im größeren
+// liegt — eine Drift hebt die spätere Klammer mit und wird nie als Schirm-Gesetz gelesen (sie steht als DRIFT im
 // Bericht, wenn die beiden Enden der Reihe sich nicht treffen).
 function monotonieBefunde(reihe) {
     const b = [];
@@ -161,8 +161,7 @@ async function welt() {
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
         if (!(f && f.ready)) return { fatal: "Foundry nicht bereit" };
-        // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest — die Tageszeit lief in der langen
-        // Einschwing-Schleife davon und zog Feuerstelle und Zacken mit, gemessen 06.10.).
+        // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
             st._frameOverBudget = false;
             st.timeOfDay = 0.5;
@@ -340,7 +339,7 @@ async function welt() {
     };
 
     const messung = await reihe();
-    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c, vorher am Stamm-TEXT)
+    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c)
     const quelleLiest = await page.evaluate(() => {
         const r = window.anazhRealm,
             ren = r.state.renderer,

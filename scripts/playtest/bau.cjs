@@ -1579,8 +1579,7 @@ async function checkBandPsi0Winkel(ctx) {
     });
     // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
-    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
-    // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das Gemüt kommt aus Gattung und Größe).
     check(
         `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
         res.role.max <= 0.94 && res.role.warn <= 7

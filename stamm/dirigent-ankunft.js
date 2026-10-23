@@ -551,7 +551,8 @@ class AnazhRealm_dirigent_ankunft {
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
-        this.generateNewWorld();
+        // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
+        await this.generateNewWorld();
 
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,
@@ -1327,8 +1328,15 @@ function _bootAnazhRealm() {
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
     }
+    // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
+    // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
+    const erwachen = Promise.resolve(anazhRealm.init());
+    anazhRealm.erwacht = erwachen.then(
+        () => true,
+        () => false
+    );
     // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
-    Promise.resolve(anazhRealm.init()).catch((e) => {
+    erwachen.catch((e) => {
         anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
         throw e;
     });

@@ -1,4 +1,4 @@
-// ci-klasse.cjs — DIE KLASSE EINES CI-SCHRITTS (K61): braucht er einen Echt-Renderer? Der run-Text wird über package.json bis
+// ci-klasse.cjs — DIE KLASSE EINES CI-SCHRITTS: braucht er einen Echt-Renderer? Der run-Text wird über package.json bis
 // auf die Befehle aufgelöst, jedes `node <datei>` samt seinen lokalen `require` nach dem Rezept an der Weiche durchsucht
 // (welt-boot `starteBrowser({ art })`): ein Echt-Rezept (GPU_REZEPTE) ohne Bedingung macht ihn `gpu`; im Zweig
 // (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
@@ -83,7 +83,7 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
     return bedingt || { klasse: "cpu" };
 }
 
-// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich (gemessen 14.10.) — die EINE Zahl für die Waage und das Verteilen.
+// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich — die EINE Zahl für die Waage und das Verteilen.
 const LAEUFER_PLAETZE = 20;
 // DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
 const GROSS_S = 300;

@@ -1157,8 +1157,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.hopeTriggersSunnyHappy =
             hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
-        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
-        // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
+        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere — jedes Tier trägt den Hauch, und sein
+        // Charakter-Tempo LIEST ihn (im Band).
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.peace = 0.9;
         // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
@@ -2129,7 +2129,7 @@ async function checkBandV18143Comments(ctx) {
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · onopen-Batch · das fremde Wort bleibt Text — XSS-Wand)",
+        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
         res.handlerWired && res.xssWall
     );
 }
@@ -2181,7 +2181,7 @@ async function checkBandM5HudPolitur(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) der RESIZE-Sprung ist tot: 1-px-Drag an der EINGEKLAPPTEN Konsole
-        // (105 px) bleibt bei ~105 (GEMESSEN vorher: +75 auf die harte 180er-Min).
+        // (105 px) bleibt bei ~105 (nie die harte 180er-Min).
         const consoleEl = document.getElementById("console");
         const handle = consoleEl && consoleEl.querySelector(".resize-handle");
         if (consoleEl && handle) {

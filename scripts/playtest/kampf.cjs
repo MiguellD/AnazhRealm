@@ -602,8 +602,8 @@ async function checkBandM6ErnteSpawn(ctx) {
         let baum = null;
         let clampSpawn = null;
         try {
-            // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor;
-            // end-to-end: die Faust erntet den Baum (vorher loot = {}).
+            // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor; end-to-end: die Faust erntet den
+            // Baum.
             const fitProbe = r._harvestFitnessFromResist({ mineResist: 3.0, cutResist: 3.0 });
             out.sockel = fitProbe.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9;
             r.setGameMode("frieden");

@@ -31,9 +31,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
     let pageErr = null;
     page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; console.log("[PAGE-ERROR]", pageErr); });
-    // DER TÄTER BEIM NAMEN (CI 37588394666: „Takt (Idle-Frame 13)" riss die Frist von 300 s und nannte nur den Aufruf):
-    // jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer, BEVOR er kompiliert — die
-    // Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der Schlüssel-Warmup nennt seine Schlüssel selbst.
+    // DER TÄTER BEIM NAMEN: jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer,
+    // BEVOR er kompiliert — die Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der
+    // Schlüssel-Warmup nennt seine Schlüssel selbst.
     page.on("console", (m) => { const t = m.text(); if (t.startsWith("[Linse]")) console.log(`  ${t.slice(0, 600)} — im Aufruf „${laufenderRuf}"`); });
     // DAS HOLZ DER LINSE: sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
     // selbst „kienspan" vor (Ring 2, keine Schatten, kein Fern-Wasser; die Auto-Wahl erkennt es nur unter WebGPU, der
@@ -53,9 +53,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(AUSGABE_INSTALL);
 
-    // JEDER AUFRUF HAT EINEN NAMEN (CI 37122984563: die Linse riss nach 860 s die Protokoll-Frist und sagte nicht, in
-    // welchem Aufruf). `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen Compiles), und der
-    // Crash-Pfad nennt den Aufruf, der die Frist riss.
+    // JEDER AUFRUF HAT EINEN NAMEN. `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen
+    // Compiles), und der Crash-Pfad nennt den Aufruf, der die Frist riss.
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     const LANG_MS = 20000;
@@ -197,7 +196,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
-        // DAS BAU-BUCH (CI 37643706020: „Bauten 147 → 146" ohne Täter): die beiden Schreiber der Bau-Menge (`spawnArchitecture`
+        // DAS BAU-BUCH: die beiden Schreiber der Bau-Menge (`spawnArchitecture`
         // legt an, `removeArchitecture` nimmt weg; `state.architectures` schreibt sonst nur das Laden) buchen ab der Bühne
         // je Wirkung Art, Typ und die Spiel-Rahmen des Stapels — eine Drift der Bauten trägt ihren Täter beim Namen.
         window.__bauBuch = [];
@@ -224,8 +223,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return v;
             };
         }
-        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ← dslEval ←
-        // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
+        // DIE PROGRAMM-WACHE: die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
         // jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr des Wetter-Zugs,
         // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht Quelle und
         // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide.
@@ -234,12 +232,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
-        // DER SCHLÜSSEL-WARMUP (CI 37077860950 · 37122984563): auf swiftshader kostet EIN schwerer Erst-Compile
-        // 50–90 s, und ein Aufruf trägt die Summe seiner neuen Programme — der erste volle Frame trug 265 (WebGL2),
-        // eine 16er-Scheibe noch mehrere. Ein Programm folgt aus Objekt-Art · Stoff · Attribut-Satz; je Aufruf
-        // rendert die Linse die Objekte EINES noch kalten Schlüssels allein (Hauptbild UND Kaskaden, derselbe
-        // `_loopRender`) und hört nach dem ersten Schlüssel auf, der kompiliert hat (oder nach 8 s): kein Aufruf
-        // trägt mehr als EINEN kompilierenden Schlüssel, gleich wie groß die Welt oder wie langsam das Holz ist.
+        // DER SCHLÜSSEL-WARMUP: auf swiftshader kostet EIN schwerer Erst-Compile 50–90 s, und ein Aufruf trägt die
+        // Summe seiner neuen Programme — der erste volle Frame trug 265 (WebGL2), eine 16er-Scheibe noch mehrere. Ein
+        // Programm folgt aus Objekt-Art · Stoff · Attribut-Satz; je Aufruf rendert die Linse die Objekte EINES noch
+        // kalten Schlüssels allein (Hauptbild UND Kaskaden, derselbe `_loopRender`) und hört nach dem ersten Schlüssel
+        // auf, der kompiliert hat (oder nach 8 s): kein Aufruf trägt mehr als EINEN kompilierenden Schlüssel, gleich
+        // wie groß die Welt oder wie langsam das Holz ist.
         const schluessel = (o) => {
             const ms = Array.isArray(o.material) ? o.material : [o.material];
             const g = o.geometry;
@@ -355,15 +353,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         return { backend };
     });
     // Warmup: erst die kalten Schlüssel (je Aufruf höchstens einer, der kompiliert), dann Frames — JE FRAME ein
-    // Takt-Aufruf, der Schlüssel-Warmup für alles, was der Takt hereinstreamte, und ein Bild-Aufruf (Node treibt,
-    // Node hält die Frist; CI 36681658740). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter, bis 8 Frames in Folge
-    // NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler landen im Warmup, echter Churn
-    // kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
-    // DIE ERST-ZEICHNUNG (`_configureRenderer`): eine erste Zeichnung kompiliert ihre Pipeline ASYNCHRON — der
-    // Compile läuft im GPU-Prozess weiter, und der nächste Aufruf, der präsentiert, trüge alle offenen zusammen (CI auf
-    // c307587b: 21 Warmup-Aufrufe in 11 s, dann „Bild (Ruhe-Frame 1)" über 300 s). Nach jedem kompilierenden Aufruf wartet
-    // Node in kurzen Abfragen (reines JS, kein GPU-Ruf), bis keine Pipeline mehr offen ist: jeder Aufruf trägt weiter
-    // höchstens die Compiles seines EINEN Schlüssels.
+    // Takt-Aufruf, der Schlüssel-Warmup für alles, was der Takt hereinstreamte, und ein Bild-Aufruf (Node treibt, Node
+    // hält die Frist). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter, bis 8 Frames in Folge NICHTS kompilieren
+    // (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler landen im Warmup, echter Churn kompiliert JEDEN Frame und
+    // fällt im Idle-Fenster rot. DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): eine erste Zeichnung kompiliert
+    // ihre Pipeline ASYNCHRON — der Compile läuft im GPU-Prozess weiter, und der nächste Aufruf, der präsentiert, trüge
+    // alle offenen zusammen (CI auf c307587b: 21 Warmup-Aufrufe in 11 s, dann „Bild (Ruhe-Frame 1)" über 300 s). Nach
+    // jedem kompilierenden Aufruf wartet Node in kurzen Abfragen (reines JS, kein GPU-Ruf), bis keine Pipeline mehr
+    // offen ist: jeder Aufruf trägt weiter höchstens die Compiles seines EINEN Schlüssels.
     const abwarten = async (wo) => {
         const t0 = Date.now();
         laufenderRuf = `Pipelines abwarten (${wo})`;
@@ -397,10 +394,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     };
     // DAS BAU-BUDGET DER ERST-ZEICHNUNG IM WARMUP: im Spiel baut sie je Render-Aufruf einen Stoff (AnazhRealm.ERST_BAU_MS)
     // und verschiebt den Rest — ein Bundle mit N ungebauten Bürgern nimmt N-mal neu auf. Im Warmup der Linse tropften so die
-    // Bauten, die der Schlüssel-Warmup nicht deckt (bauSatz, creature, dorf-rauch — auf dem Vendor-Weg ebenso Nachzügler),
-    // über viele Bilder, und jeder späte Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor (lokal
-    // 37-245 s je Aufruf, CI 37674425050 636 s Lauf und eine Bühnen-Drift; derselbe Code auf dem Vendor-Weg: alle Nachzügler
-    // in Warmup-Frame 0/1, längster Aufruf 9 s). Der Warmup baut darum ohne Budget (alles im ersten vollen Bild, wie der
+    // Bauten, die der Schlüssel-Warmup nicht deckt (bauSatz, creature, dorf-rauch), über viele Bilder, und jeder späte
+    // Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor. Der Warmup baut darum ohne Budget
+    // (alles im ersten vollen Bild, wie der
     // Vendor); vor der Ruhe gilt wieder das Budget des Spiels — Ruhe und Leerlauf messen das Spiel.
     if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = window.anazhRealm.constructor; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
     if (!setup.err) {
@@ -449,8 +445,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
 
     // CHECK A — REINES IDLE: nach Warmup N Idle-Frames; KEINE Pipeline darf neu kompilieren. Je Frame kurze,
-    // benannte Aufrufe (dieselbe Klasse wie der Warmup-Bruch CI 36681658740: 16 Frames in einem evaluate sprengen
-    // auf langsamem Holz die Protokoll-Frist). Der Schlüssel-Warmup im Frame zählt mit: ein Wiederholungs-Compile
+    // benannte Aufrufe (16 Frames in einem evaluate sprengen auf langsamem Holz die Protokoll-Frist). Der
+    // Schlüssel-Warmup im Frame zählt mit: ein Wiederholungs-Compile
     // dort ist derselbe Churn (ein Stoff verlor seine Identität).
     const stand = () => ruf("Zähler", () => ({ tot: window.__cnt(), wdh: window.__cc.wdh }));
     const a0 = await stand();

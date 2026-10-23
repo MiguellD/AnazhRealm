@@ -2386,7 +2386,7 @@ async function checkBandWelle6DSoul(ctx) {
 // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
@@ -2400,12 +2400,12 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
-        // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
-        // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
-        // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
-        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz
-        // für je ein Probe-Wesen: die Obergrenze, die die Bänder davor füllten, urteilt nie mit.
+        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
+        // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
+        // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
+        // ist sanft). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
+        // seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz für je ein Probe-Wesen: die
+        // Obergrenze, die die Bänder davor füllten, urteilt nie mit.
         const cap4 = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 1;
         out.d4Temperament = (() => {
@@ -2543,8 +2543,8 @@ async function checkBandPhasenBF(ctx) {
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
         // Gebaut wird das Sheet eines Meeres-Chunks dreimal: ruhig (Wogen), unter voller Strömung (Fluss) und als See.
-        out.a4MouthWave = (() => {
-            const key = window.__wasserChunk("meer");
+        out.a4MouthWave = await (async () => {
+            const key = await window.__wasserChunk("meer");
             if (!key) return false;
             const [cx, cz] = key.split(",").map(Number);
             const wctx = r._mainWaterSheetCtx(cx, cz, r.state.voxelChunks.get(key));
@@ -2663,7 +2663,7 @@ async function checkBandPhasenBF(ctx) {
         // B6: DACH-GATE des Wasser-Re-Mesh — es entscheidet die SICHTBARE Spalten-Dach-Änderung, nicht
         // Brutto-moved (ein stationärer Fluss re-meshte sonst jeden Frame). Behavioral: erster Call true ·
         // unverändert false · sichtbare Änderung true · danach false; + KONSUM (Welt-Tick ruft es).
-        out.b6RoofGate = (() => {
+        out.b6RoofGate = await (async () => {
             const key = "__fp_test__";
             const saved = r.state.voxelChunks.get(key);
             try {
@@ -2688,7 +2688,7 @@ async function checkBandPhasenBF(ctx) {
                 const fourth = r._caRoofChanged(a, dim, dimY);
                 const dachNachDritt = e._caDachNeu[0];
                 // KONSUM: der Welt-Tick eines bewegten See-Chunks fragt das Dach-Gate (der Stub macht moved > 0,5)
-                const wk = window.__wasserChunk("see");
+                const wk = await window.__wasserChunk("see");
                 const we = wk && r.state.voxelChunks.get(wk);
                 let tickRuft = false;
                 if (we) {

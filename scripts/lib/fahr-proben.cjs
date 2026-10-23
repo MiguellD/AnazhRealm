@@ -176,7 +176,7 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
-    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
+    // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
     // welt-boot `__weltStehtNach`; bis D3d: der Ring der Chunks 80 Frames ruhig). Die Orte der Stationen kommen aus der Welt und
     // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
     // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
@@ -340,8 +340,8 @@ async function probeLeben(expected) {
             r._foundry = fo;
         }
         r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
-        // Welt (welt-orte `hang`, K55-2 — bis dahin ±48 m um die Mess-Wiese, die flache Aue trug keinen): das Gefälle über ±3 m
+        // (2) Am Hang ohne Taste: der GT steht bergauf (er rollt nicht zurück und dreht sich nicht). Der Hang kommt aus
+        // der Welt (welt-orte `hang`, K55-2): das Gefälle über ±3 m
         // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
         const grad = (t) => (Math.atan(t) * 180) / Math.PI;
         const hangOrt = window.__weltOrt("hang", {
@@ -708,8 +708,7 @@ async function probeLeben(expected) {
             : null;
         S.klippeOrt = kl;
         // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
-        // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
-        // AUF dem Wagen und schoben ihn 3,3 m in den Hang: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
+        // und die Welt streut dort neu ein (Spawn-Affinität: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
         // Vor dem Aufsitzen läuft die Welt 60 Frames, dann räumt die Probe, was auf dem Anlauf bis 8 m über die Kante blockt.
         let geraeumt = 0;
         const bahnFrei = (k) => (wagen) => {
@@ -738,7 +737,7 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
-        // DER FAHRER DER LINIE (K55-5): W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
+        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
         // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
         // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
         // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
@@ -794,8 +793,8 @@ async function probeLeben(expected) {
                 weg(g2);
             }
             bahnWache = klippenBahn(kl);
-            // S4 ABSTEIGEN IM FLUG (Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen nicht ab — wer im Flug
-            // ausstieg, ließ ihn bis zum Reload in der Luft hängen): dieselbe Klippe, W bis der Wagen `STATION.flugM` über dem
+            // S4 ABSTEIGEN IM FLUG (`dismountArchitecture` stellt den Wagen ab): dieselbe Klippe, W bis der Wagen
+            // `STATION.flugM` über dem
             // Boden fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
             // Sprung > 0,5 m je Sim-Schritt.
             const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
@@ -1368,8 +1367,8 @@ async function probeLeben(expected) {
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
                 r.assignCreatureTask(c, "wait");
-                // Der Bär steht still (sein Hirn wählte Flucht oder Wandern mit Math.random — 07.10. kippte L5 so von
-                // 7,99 → 6,07 auf 7,92 → 3,70 m/s): ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
+                // Der Bär steht still (kein Hirn wählt mit Math.random): ein Steuer-Gesetz, dessen Schritt das Tempo nullt;
+                // nur der Stoß bewegt ihn.
                 const A = Object.getPrototypeOf(r).constructor;
                 if (!A.__steuerRoh) {
                     A.__steuerRoh = A._steuerGesetz;
@@ -1574,7 +1573,7 @@ async function probeLeben(expected) {
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
-                    // DER GLEICHE START (K70-N1): beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
+                    // DER GLEICHE START: beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
                     // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit.
                     let ruhe = 0;
                     let stand = null;
@@ -1703,7 +1702,7 @@ async function probeLeben(expected) {
         // aus der Welt (`__wasserOrte`), gesucht um seine tiefste Stelle.
         {
             let ort = null;
-            const seeO = window.__wasserOrte({ mess: mo }).see;
+            const seeO = (await window.__wasserOrte({ mess: mo })).see;
             const mitte = seeO ? [seeO.x, seeO.z] : null;
             for (let ring = 0; mitte && ring <= 120 && !ort; ring++)
                 for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
@@ -2153,8 +2152,8 @@ function kernTempo(VC) {
     const [v0, v1] = [lauf(c0, 300, 0, 0), lauf(c0, 300, 0, vmax)];
     lauf(cd, 300, 0, 8, 8);
     const drift = +((Math.abs(cd.az - Math.PI / 4) * 180) / Math.PI).toFixed(1);
-    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte Sprung der
-    // Drehrate je Bild ab dem Loslassen, relativ zur Kurve (vorher 1,0 am Loslassen und 0,9 am Ende der Rückkehr)
+    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte
+    // Sprung der Drehrate je Bild ab dem Loslassen, relativ zur Kurve
     const ck = {};
     let [az, rate, knick] = [0, 0, 0];
     for (let i = 0; i < (kern.length ? 0 : 300); i++) {

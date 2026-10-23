@@ -1567,8 +1567,6 @@ async function checkBandPhiArchipel(ctx) {
         // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
         // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
         // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
-        // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
-        // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
         // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
         const keinOp = (op) => !r.dslEffects[op];

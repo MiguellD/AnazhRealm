@@ -325,9 +325,8 @@ function uhrHalten() {
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
-// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt nur Takte
-// ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973
-// Takte). Sonst bricht der Schuss LAUT beim Täter.
+// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
+// nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -539,7 +538,7 @@ function erstRuhe(frame, opt, wer) {
                 v0 = E.verschoben,
                 w0 = E.wartetN;
             frame();
-            // DER GEGENDRUCK DER GPU (K60-N3): der nächste Frame kommt erst, wenn das Gerät diesen abgegeben hat. Eine Pause
+            // DER GEGENDRUCK DER GPU: der nächste Frame kommt erst, wenn das Gerät diesen abgegeben hat. Eine Pause
             // von 0 ms schob Frames schneller in den GPU-Prozess, als swiftshader sie rastert — die Rückmeldung jedes
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
@@ -751,7 +750,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         const weltTakte =
             window.__buehneUhr && !(opt && opt.satz === "messung") ? await window.__weltStehtWarten() : null;
-        // DIE BLICK-WAHL (K32) vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
+        // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
         const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
@@ -975,7 +974,7 @@ function wetterSelbsttest() {
     return v;
 }
 
-// DAS URTEIL DER HIMMELS-WACHE (rein, Node; Leben-Schau 2, 09.10.: „Uhr und Wetter gehören dem Spieler"). `g` = ein getakteter
+// DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
 // takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
 // ROT, beim Namen:

@@ -41,7 +41,7 @@
 //       L3–L5 DER STOSS aus 9 m Anlauf gegen Fels, geparkten GT und Bären: das EINE Impuls-Gesetz — am Fels Rückprall,
 //          der Gegner bekommt seinen Impuls nach Masse, ein Stoß-Ereignis (Kamera, Klang).
 //
-//   F (K12) — DIE FAHR-BAHN, im zweiten Boot derselben Linse: der Platz an jedem Tor des Genesis-Rings und am
+//   F — DIE FAHR-BAHN, im zweiten Boot derselben Linse: der Platz an jedem Tor des Genesis-Rings und am
 //       Vorschau-GT, rückwärts aus dem Stand, die Befreiung nach dem Stoß, die Natur-Wand um den Wagen, Tacho, Stimme
 //       und Tasten — die Zeilen FK…F7 stehen am Block `BAHN`.
 //
@@ -227,8 +227,7 @@ function kernProbe(VC) {
             `Boden +0,35 m: Höhe je Schritt ${ys.map((y) => y.toFixed(3)).join(" · ")} (Stufe ${stufe7.toFixed(3)} m)`,
         ]);
     }
-    // K6 — DIE VERWINDUNG (Gegenprüfung 07.10.: M3 an (102, 60) — auf verwundenem Boden lagen zwei diagonale Räder des
-    // Teile-Wagens 0,229 m im Boden): bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
+    // K6 — DIE VERWINDUNG: bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
     // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
     // Federweg trägt, hebt die Verwindung den Wagen nicht.
     const Pv = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
@@ -276,7 +275,7 @@ const STATION = {
     sattelRad: 0.01,
     standM: 0.05,
     // S4: die Flug-Höhe der Station (Räder über dem Grund), ab der abgestiegen wird — 10× die Stand-Toleranz: ein Wagen, der in
-    // der Luft hängen bliebe, steht dort sichtbar über ihr. Die Landform (K16) trägt an der Wiese einen Hang von 3,7 m: der Wagen
+    // der Luft hängen bliebe, steht dort sichtbar über ihr. Die Landform trägt an der Wiese einen Hang von 3,7 m: der Wagen
     // fliegt 87 Takte, höchstens 0,69 m über dem Grund (die 1 m davor fand nur die 8,5-m-Klippe der alten Welt).
     flugM: 0.5,
     // L (0710-2, die Orte der Leben-Schau): eine Rad-Stufe des GT (FAHR.schritt.stufeRad · radR ≈ 0,17 m) ist das Maß
@@ -1048,7 +1047,7 @@ async function probeBahn(B) {
                 return true;
             };
         }
-        // DER ORT, AN DEM DAS GESETZ ZÄHLT (K16): ein Kiefern-Stamm auf dem Wunsch-Ort der Vorschau (`_portalVorschauOrt`) —
+        // DER ORT, AN DEM DAS GESETZ ZÄHLT: ein Kiefern-Stamm auf dem Wunsch-Ort der Vorschau (`_portalVorschauOrt`) —
         // ohne Platz-Gesetz steht der Wagen in ihm. Die Welt allein trägt dort nicht immer ein Hindernis: am Flussnetz-Gelände
         // ist der Wunsch-Ort am Garage-Tor frei (3°, keine Wand, kein Blocker), und der Schmuggel fiel vakuös grün.
         const torG = st.architectures.find((a) => a && a.type === "welt_garage" && a.position);
@@ -1087,7 +1086,7 @@ async function probeBahn(B) {
         out.log.push("initSymphony: " + (e && e.message));
     }
     const Q = window.__fahrQuellen || [];
-    // DIE STELLE AUS DER WELT (K16): die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
+    // DIE STELLE AUS DER WELT: die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
     // sie am Hang, und der Wagen glitt quer am Ziel vorbei (kein Stoß). Die Station sucht in Ringen um die Stelle der Schau
     // den nächsten trockenen Anlauf (2 m zurück, 10 m voraus) mit Stufe ≤ 0,08 m je m und Quergefälle ≤ 0,05 m je m.
     const stossOrt = (() => {
@@ -1904,7 +1903,7 @@ function quellenAbgriff() {
             );
         }
         {
-            // F — DIE FAHR-BAHN (K12): jedes Urteil nennt seinen eingeschmuggelten Täter
+            // F — DIE FAHR-BAHN: jedes Urteil nennt seinen eingeschmuggelten Täter
             const gutP = {
                 da: true,
                 neigung: 8,
@@ -2357,7 +2356,7 @@ function quellenAbgriff() {
             : `Wasser ${swm.tiefe} m tief · vor dem Stoß ${swm.vorher} m, beim Gleiten tiefstens ${swm.tiefste} m gegen die Linie (${swm.gleitet} Frames gleitend)`
     );
     {
-        // ════ F — DIE FAHR-BAHN (K12) ════
+        // ════ F — DIE FAHR-BAHN ════
         console.log("=== F — DIE FAHR-BAHN (K12): Platz an jedem Tor, rückwärts, Befreiung, Tacho, Stimme, Tasten ===");
         const fkRows = bahnKernRueck(globalThis.__vehicleCore);
         const fk = bahnKernVerdict(fkRows);

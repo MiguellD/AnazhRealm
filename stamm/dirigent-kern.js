@@ -82,7 +82,6 @@ class AnazhRealm {
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
-            _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
             _chunkIdbHits: 0,
             _chunkIdbHitByKey: null,
             _pfeile: null,

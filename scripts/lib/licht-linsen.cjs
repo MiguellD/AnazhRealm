@@ -249,11 +249,9 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
-            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufe`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
-            // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
-            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): die Welt wählt die Stufe n ihres Exemplars von einem Auge
-            // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
-            // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von
+            // einem Auge in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach
+            // ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
             const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
             if (nahe.length > 1) throw new Error(`stufe: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
             for (const x of nahe) {
@@ -606,9 +604,8 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    // DIE STUFEN DES SCHUSSES (K63-n7; gemessen 15.10., Radeon: der Wagen gt des Lacks stand 11,3 m vor dem Spieler,
-                    // in der Blende L0/L1 — die Stufe 1 faltet die Stoffe ihrer Seh-Klasse, Chrom und Glas lasen im Lack, 0,0175
-                    // gegen 0,0066): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
+                    // DIE STUFEN DES SCHUSSES (K63-n7): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz
+                    // die Gruppen des Exemplars)
                     const stufen = new Set();
                     for (const m of sel) {
                         const sk = /:L(\d+)$/.exec(kl.get(m) || "");
@@ -686,11 +683,10 @@ function albedoSicht(opts) {
     })();
 }
 
-// DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
-// Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
-// und Renders am Stück lassen kein Versprechen reifen (gemessen 15.10., Radeon, frische Welt: die Licht-Bilanz las E 0 statt 9,51,
-// die Welt-Seite der Albedo-Tafel jede Zeile stumm und die Karte null). Die Linse schaltet ihren Frame, bis nichts mehr baut —
-// dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
+// DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre
+// Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und
+// zeichnet nichts, und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr
+// baut — dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
     // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
@@ -1086,11 +1082,8 @@ function nahFernSicht(opts) {
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
             return aus.slice(0, opts.jeKlasse || 4);
         };
-        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
-        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden. Bis K53 lasen sie 0,9 und 0,7: die Zahlen der Geburt
-        // (`forestGeburt`), die das Dach bis K16 als Deckung las; seit K16 ist die Deckung der gepflanzte Bestand (phyto-core
-        // `forestKronenDeckung`, Matérn-II gesättigt bei 0,18) — die Linse fand keinen Wald-Ort mehr. Gemessen 14.10. in 2 km um die
-        // Mess-Wiese: Deckung p50 0,176 · max 0,178 an V18.545 (main 9fb869a5), 0,175 · 0,178 am Kopf — der Wald ging nicht verloren.
+        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese
+        // die der offensten — je Klasse 30 m auseinander, keine Stelle in beiden.
         const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
         const wald = waehle(dichte);
         const orte = wald
@@ -1812,8 +1805,8 @@ function laubGegenlicht(opts) {
                 sc.traverse((o) => {
                     if (o.isLight) lichter.push([o, o.intensity]);
                 });
-                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
-                // jedes Programms — gemessen 15.10.: A 0,002–0,06 statt der Tafel 0,16), die übrigen Lichter und der Himmel still
+                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselte die
+                // Licht-Signatur jedes Programms), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
                 let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
                 const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);

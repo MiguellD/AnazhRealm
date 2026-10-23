@@ -1441,9 +1441,9 @@ async function checkBandWelle6XAudit(ctx) {
                 Array.isArray(dslOut.program[1]) &&
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
-            // Das Dorf trägt Ort UND Blick des Sprechers (Gegenprüfung Runde 1: der Anker hing am Blick jedes Peers):
-            // der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und sein Bildwinkel (> 0) — „vor dem Blick" legt
-            // `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9 misst die Häuser vor dem Spieler).
+            // Das Dorf trägt Ort UND Blick des Sprechers: der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und
+            // sein Bildwinkel (> 0) — „vor dem Blick" legt `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9
+            // misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
             r.state.yaw = Math.PI / 2;
             const dslOut2 = r.parseChatToDsl("baue dorf hier");
@@ -1957,7 +1957,7 @@ async function checkBandWGGelenke(ctx) {
             }
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
-        // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
+        // (c) GELENK-PROBE: Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
         return out;
     });

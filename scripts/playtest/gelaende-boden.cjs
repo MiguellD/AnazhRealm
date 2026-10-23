@@ -734,7 +734,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Eine Voxel-Welt baut keine Heightfield-Chunks und keine heightData (groundHeightField null,
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
-    const voxelP5c1Results = await safeEvaluate(page, () => {
+    const voxelP5c1Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -742,7 +742,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden
         // keine Heightfield-Chunks: `chunkMap` abwesend oder leer
         out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
         out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
@@ -759,14 +759,14 @@ async function checkBandVoxelTerrainCore(ctx) {
         // ist gelöscht.
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true });
         // „abwesend ODER leer": kein Heightfield-Chunk gebaut.
         out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true });
         return out;
     });
 
@@ -1029,14 +1029,14 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
         out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
         // Ein Wasser-Chunk am Wasser-Ort des Gesetzes (`__wasserChunk`: die Heimat trägt seit K16 keinen See).
-        window.__wasserChunk("see");
+        await window.__wasserChunk("see");
         // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
@@ -1177,7 +1177,7 @@ async function checkBandV18132FerneSeen(ctx) {
             return JSON.stringify(v);
         };
         const before = fp();
-        r._ensureHydroTilesAround(-2048, 0, 10); // Kachel WEST (-1,0)
+        await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
@@ -1541,7 +1541,7 @@ async function checkBandGammaGenese(ctx) {
         return [0, 1, 2].reduce((sum, i) => sum + (c5[i] - c0[i]) * (w[i] - c0[i]), 0);
     });
     check(`Γ1-Lesart-4 die Feuchte zieht die Boden-Farbe zur feuchten Erde (Zug ${zugNass})`, zugNass > 0);
-    // Γ4 (K16) — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
+    // Γ4 — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
     // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
     // der Ebene (Relief-Minimum).
@@ -2109,7 +2109,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "wesen")
-                // der Leichnam bleibt unter den Wesen (vorher, bis Nachbesserung 3)
+                // der Leichnam bleibt unter den Wesen
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2146,7 +2146,7 @@ async function checkBandTodZensus(ctx) {
             for (let k = 0; k < 60 && !(tB.userData._hopH > 0.3 && !(tB.userData._hopV > 0)); k++) takt(); // im Scheitel
             hop = tB.userData._hopH || 0;
             o.hopBeimTod = +hop.toFixed(3);
-            // DIE LAST FÄLLT ZURÜCK (K13): das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
+            // DIE LAST FÄLLT ZURÜCK: das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
             // Inventar des Spielers legt, und die Einträge im Journal
             const holz = () =>
                 (s.player.inventory || []).reduce(
@@ -2175,7 +2175,7 @@ async function checkBandTodZensus(ctx) {
                         }
                     }
             );
-            // EINE RÄUM-METHODE (K13), Konsum am Ruf: der Fall räumt über _leibZeichenFrei
+            // EINE RÄUM-METHODE, Konsum am Ruf: der Fall räumt über _leibZeichenFrei
             let raeumt = 0;
             decke("_leibZeichenFrei", (alt) => function (...a) { raeumt++; return alt.apply(this, a); });
             const lastSoll = ALLE.reduce(
@@ -2456,7 +2456,7 @@ async function checkBandTodZensus(ctx) {
 
 // Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
-// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause (K21): nach 10 s ohne Takt springt kein Wolf weiter
+// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast(ctx) {
     const { page, check } = ctx;
@@ -2485,7 +2485,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const nearSpot = findLand(-40, 40, 0);
         // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
         const farSpot = findLand(560, 720, 500);
-        // kein Ersatz-Ort (K16): findet die Suche kein Land, bricht die Probe laut
+        // kein Ersatz-Ort: findet die Suche kein Land, bricht die Probe laut
         if (!nearSpot || !farSpot) throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
     
         const resetSim = (spot) => {
@@ -2595,9 +2595,9 @@ async function checkBandBewegungUnterLast(ctx) {
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`), statt dass der
-            // 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0) — der stehende Wolf
-            // machte den Selbsttest blind (CI 39011585355: 0/4; lokal an der Kreatur-Uhr 109,99 dasselbe, über 40 Uhren 58 %)
+            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`),
+            // statt dass der 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0)
+            // — der stehende Wolf machte den Selbsttest blind
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
             let t = performance.now();

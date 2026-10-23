@@ -1007,12 +1007,11 @@ function validateManifest(m) {
         ohneGestalten.join(", ")
     );
 
-    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und Budget
-    // jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
-    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Befund K64-n1: porta-core trug gate[2].tris 12 500, eingefroren
-    // 15 000 — rot erst in der vollen Batterie (gate:asset-contract, Gruppe 5 Schritt 37, „divergiert" ohne Namen), jeder
-    // spätere Schritt der Gruppe übersprungen. Hier antwortet DERSELBE Kanal der Brücke im Node-vm (kanalImVm, dieselben
-    // Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract bleibt der Beweis im Browser.
+    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und
+    // Budget jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
+    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Hier antwortet DERSELBE Kanal der Brücke im Node-vm
+    // (umschlagImVm, dieselben Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract
+    // bleibt der Beweis im Browser.
     const umschlagBefunde = (quellen) => {
         const u = kanalImVm(quellen)({ type: "get-book" });
         const out = [];
@@ -1063,9 +1062,8 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // DIE PFLICHT JE KERN: die Gefühls-Blöcke der Wellen
-    // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
-    // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
+    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen sind Vertrag. Fehlt der Block im
+    // tragenden Kern, ist das ROT.
     const pflicht = {
         "koerper-core.js": (m) =>
             !!(

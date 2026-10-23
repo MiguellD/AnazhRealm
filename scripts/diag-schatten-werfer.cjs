@@ -36,9 +36,8 @@
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
-//   W7  die Sätze je Pass: jeder Pass
-//       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
-//       die Höhlen-Sicht des Passes sie erreicht), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
+//   W7  die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
+//       die Höhlen-Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
 //       des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem
 //       Blick (der Hang wirft)
 //   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
@@ -154,9 +153,7 @@ function probe(selbsttest) {
     };
     // DIE EMPFÄNGER (K1): Boden-Punkte im Blick, aus dem Dichte-Feld (`_voxelSurfaceY`) — unabhängig von der Box-Rechnung.
     // Empfänger ist nur, was ein schatten-lesendes Mesh zeichnet: ein Punkt über einem Bereich des Boden-Satzes. Jenseits
-    // zeichnet der Fern-Ring (receiveShadow false) — gemessen 05.10.: ein Hügel 296 m weit (z 273, der Boden-Satz endet bei
-    // 222) lag 1 m über der nahen Ebene; bis zum Waldboden hatten die Hüllen der Klein-Streu-Bundles (Region-Kugel
-    // R·√½ + 140 m) das Band zufällig darüber gehoben.
+    // zeichnet der Fern-Ring (receiveShadow false).
     // Welche Kaskade ein Punkt liest, entscheidet der Addon-Shader (CSMShadowNode._setupFade, abgeschrieben): je Kaskade
     // [x, y] = `_cascades[i]` (die Uniform des Addons), Mitte = (x+y)/2, Kante = die nähere Grenze, margin = 0,25·Kante²,
     // csmX = x − margin/2, csmY = y + margin/2 (die letzte Kaskade: y); gelesen wird, wo csmX ≤ L ≤ csmY.
@@ -1267,9 +1264,8 @@ function probe(selbsttest) {
         if (tot && tot.parent) r.removeCreature(tot);
     }
 
-    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer. Befund 15.10. (Radeon, Genesis/Wiese Third,
-    // Zerlegung je Kaskaden-Render): r184 projizierte je Render 39–72 Nicht-Werfer (Frustum-Test, Fassade, Liste,
-    // Sortierung), die die Schatten-Funktion danach verwarf — die Kaskaden-Kamera sah die Ebene der Welt. Der Wurf IST die
+    // ── W10 DIE WURF-EBENE: die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden
+    // Nicht-Werfer, den die Schatten-Funktion danach verwirft). Der Wurf IST die
     // Ebene SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein
     // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
     // der Szene: gesehen ⇔ wirft. ──
@@ -1468,11 +1464,11 @@ function probe(selbsttest) {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             });
-            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen Atlas-Gruppe)
-            // und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles mehr (gemessen
-            // 05.10.: nur "@global"; 14 auf 386f91c, 4 auf b9bf2bc). Vier Regionen um den Spieler bekommen je eine
-            // Streu-Instanz über den Produktions-Chokepoint `_scatterInstanceAdd` (echter Region-Schlüssel, echte
-            // Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an echten Region-Bundles, nie vakuös.
+            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen
+            // Atlas-Gruppe) und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles
+            // mehr. Vier Regionen um den Spieler bekommen je eine Streu-Instanz über den Produktions-Chokepoint
+            // `_scatterInstanceAdd` (echter Region-Schlüssel, echte Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an
+            // echten Region-Bundles, nie vakuös.
             const regionen = () =>
                 st._regionBundles ? [...st._regionBundles.values()].filter((bg) => bg.userData.cullSphere).length : 0;
             const welt0 = regionen();

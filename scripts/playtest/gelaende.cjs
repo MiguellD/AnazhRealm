@@ -35,7 +35,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 Array.isArray(snap.worldMeta.voxelEdits) &&
                 snap.worldMeta.voxelEdits.length >= 1
             );
-            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits (bis K23 verdrängte ein FIFO-Deckel ab 257).
+            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits.
             r.state.worldMeta.voxelEdits = [];
             for (let i = 0; i < 270; i++) r.carveVoxel(i * 3, base, i * 3, 3);
             out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
@@ -1429,7 +1429,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const wl = r.state.waterLevel;
         let carveX = null;
         let carveZ = null;
-        let carveMacro = null;
         for (let cx = -4; cx <= 4 && carveX === null; cx++) {
             for (let cz = -4; cz <= 4 && carveX === null; cz++) {
                 if (cx === testCx && cz === testCz) continue;
@@ -1456,7 +1455,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 ) {
                     carveX = x;
                     carveZ = z;
-                    carveMacro = m;
                 }
             }
         }
@@ -1630,15 +1628,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `diff=${res.cellAfterRemoveAbove}`
         );
     }
-    // Kein isolierter Flach-Spot im Ring = „unmessbar = bestanden“ (nicht jeder Ring hat einen);
-    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot.
-    check(
-        "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
-        true,
-        res.carveSpotFound
-            ? `macroY=${res.carveMacro || "?"}`
-            : "kein isolierter Flach-Spot im Ring — Test übersprungen"
-    );
+    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot (nicht jeder Ring hat einen)
     if (res.carveSpotFound) {
         // Phantom-Schutz (heilige Invariante): ein Carve OHNE Wasser-Quelle in Reichweite bleibt TROCKEN,
         // jede Tiefe; nur nahe einer echten Quelle füllt sich die Mulde reaktiv. Der Spot oben ist via
@@ -2046,8 +2036,8 @@ async function checkBandV17118WorkerEngaged(ctx) {
             workerSpawned: !!r.state.voxelWorker,
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
-            // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
-            // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
+            // Worker, die Flut-Saat reist mit dem Auftrag). Gegenprobe: forceSync (die Test-Naht) baut synchron — der
+            // Zähler sieht ihn.
             spielerNeubau: (() => {
                 const pm = r.state.playerMesh && r.state.playerMesh.position;
                 const span = r._voxelChunkConfig().span;

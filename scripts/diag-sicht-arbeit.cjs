@@ -335,7 +335,7 @@ function selbsttest() {
     }
     if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
         fehler.push("ungesehene Bytes stehen nicht beim Namen");
-    // das Neulegen (K71) klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
+    // das Neulegen klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
     // die Bytes des Frames zählen dort nie als ungesehen
     {
         const lk = (g) => SICHT.sichtBytesKlasse({ bytes: 100, legeGrund: { [g]: 480 }, inhalt: {} }, "legeGrund");
@@ -346,8 +346,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
     }
     // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
-    // Linse jeden Ruhe-Frame — Radeon 07.10.: 299 von 299), ein Schritt über den Halt und eine Drehung über den halben
-    // Dreh-Rand sind es
+    // Linse jeden Ruhe-Frame), ein Schritt über den Halt und eine Drehung über den halben Dreh-Rand sind es
     const mat = (yawGrad, x, y, z) => {
         const w = (yawGrad * Math.PI) / 180;
         const c = Math.cos(w),
@@ -369,8 +368,8 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein Atmen
-    // unter dem halben Halt ist keine Bewegung (vorher exakt verglichen: jeder Frame hieß „Blende", jede Arbeit entschuldigt)
+    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`): das Auge der Maske ist ein Ort der Lage — sein
+    // Atmen unter dem halben Halt ist keine Bewegung
     const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
     for (const [name, b, soll] of [
         ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
@@ -428,7 +427,7 @@ function selbsttest() {
         if (n !== soll) fehler.push(`Arbeit ohne Änderung „${name}": ${n} statt ${soll}`);
         console.log(`  ${n === soll ? "✅" : "❌"} Selbsttest Arbeit ohne Änderung „${name}" → ${n}`);
     }
-    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`, Gegenprüfung 07.10.): je Bild die Bereiche (Identität und
+    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`): je Bild die Bereiche (Identität und
     // Hülle), der Anker, die offene Ordnung, Geometrie und Überhang — der Stand und der Verdichten-Zähler belegen nichts
     const A = {},
         B = {},

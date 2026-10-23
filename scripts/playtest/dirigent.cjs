@@ -267,9 +267,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
-        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die
-        // per-Subsystem-Spikes (vorher blind: Render gar nicht gemessen, Hitches
-        // EWMA-weggemittelt). CONSUM: der Fold füllt die Felder, Loop + Overlay lesen sie.
+        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
+        // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
             typeof st.perfSense.renderCalls === "number" &&
             typeof st.perfSense.renderTris === "number" &&
@@ -1344,9 +1343,8 @@ async function checkBandPerfPanel(ctx) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): Schöpfer-Trace 14.07. — die render-gebundene
-// Maschine hielt das deferrable-Budget ≤ 0, `break` ließ die Substanz-Queues monoton wachsen (Heap +1,6 MB/s, Wasser mit
-// Schwimm-Physik ohne Oberfläche). Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): ein Budget ≤ 0 lässt die Substanz-Queues
+// nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden(ctx) {
     const { page, check } = ctx;
@@ -1380,7 +1378,7 @@ async function checkBandExistenzBoden(ctx) {
         let sondeLief = false;
         r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
         res.bodenIstBoden = sondeLief === false;
-        // (d) DER DAUER-STROM (K40): gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
         const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
         const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
         const altStrom = r._tickVoxelChunkStreaming;
@@ -1458,7 +1456,7 @@ async function checkBandGodray(ctx) {
     );
 }
 
-// Die EINE Szenen-Skala (K50) + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
 // einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
@@ -1710,8 +1708,7 @@ async function checkBandReglerSim(ctx) {
                 const s6NachPuls = st.foliageRadius;
                 o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
                 o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
-                // DIESELBE Wand trägt den Architektur-Radius (04.10.: er folgte dem PID Frame für Frame, 100↔150 m,
-                // Rand-Bauten im Cull/Rewarm-Kreis — die großen Bundles nahmen je Frame neu auf).
+                // DIESELBE Wand trägt den Architektur-Radius (er folgt dem PID nie Frame für Frame).
                 const s6ArchNachPuls = st.architectureCullingRadius;
                 o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
                 o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;

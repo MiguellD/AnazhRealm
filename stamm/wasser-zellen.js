@@ -576,8 +576,9 @@ class AnazhRealm_wasser_zellen {
     // und Stau-Felder bauen faul aus den Zellen, die dieser Bau gleich ablegt. Befunde: nach dem Reload stand der Damm
     // −937/−1064 im fließenden Fluss (3 574 nasse Punkte davor, 1 557 danach — die Frage las die geladenen Zellen, beim Reload
     // keine); danach weckte ein Haus am Seerand den Automaten (die Frage las das Gesetz samt Rand-Füllung, die Zellen fluten
-    // den Rand nur, wo er mit der Quelle verbunden ist).
-    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
+    // den Rand nur, wo er mit der Quelle verbunden ist). `fest` (optional) sammelt die Zellen, die der Stempel fest machte — die
+    // Zellen des Fadens samt dieser Liste sind die des Chunks (`_buildVoxelChunkDataFromWorkerMesh`, das Wasser-Sheet).
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0, fest = null) {
         if (lod === 0) this._stauFeldVorlaeufig(ox, oz);
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
         const { dim, dimY, step } = this._voxelChunkConfig(lod);
@@ -612,6 +613,7 @@ class AnazhRealm_wasser_zellen {
                             }
                             const idx = i + baseK + baseJ;
                             if (cells[idx] === STATE.WATER) nass = true;
+                            if (fest && cells[idx] !== STATE.SOLID) fest.push(idx);
                             cells[idx] = STATE.SOLID;
                         }
                     }
@@ -926,14 +928,17 @@ class AnazhRealm_wasser_zellen {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
         this._disposeVoxelChunkWaterIso(key);
-        const positions = data.positions;
+        // die Arrays des Fadens SIND die Attribute (Lehre 24, Karte hydro-faden): übernommen, nie kopiert — der Sync-Bau
+        // liefert Zahlen-Listen, die erst hier ihr Typ-Array bekommen
+        const f32 = (a) => (a instanceof Float32Array ? a : new Float32Array(a));
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(data.aFlow, 2));
-        geom.setAttribute("aWave", new THREE.Float32BufferAttribute(data.aWave, 1));
-        geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(data.aDepth, 1));
-        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(data.aSlope, 1));
-        geom.setIndex(Array.from(data.indices));
+        geom.setAttribute("position", new THREE.BufferAttribute(f32(data.positions), 3));
+        geom.setAttribute("aFlow", new THREE.BufferAttribute(f32(data.aFlow), 2));
+        geom.setAttribute("aWave", new THREE.BufferAttribute(f32(data.aWave), 1));
+        geom.setAttribute("aDepth", new THREE.BufferAttribute(f32(data.aDepth), 1));
+        geom.setAttribute("aSlope", new THREE.BufferAttribute(f32(data.aSlope), 1));
+        const ix = data.indices;
+        geom.setIndex(new THREE.BufferAttribute(ix instanceof Uint32Array ? ix : new Uint32Array(ix), 1));
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
             this._queueGeometryDispose(geom);

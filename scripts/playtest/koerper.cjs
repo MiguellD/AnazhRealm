@@ -698,8 +698,8 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
-            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der
+            // Sitzfläche, −π/2)
             out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
@@ -744,7 +744,7 @@ async function checkBandM3RittVollendet(ctx) {
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
@@ -796,7 +796,7 @@ async function checkBandWFFluss(ctx) {
         // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
         // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
         // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
-        const o = window.__wasserOrt("see");
+        const o = await window.__wasserOrt("see");
         const boot = (mat) => {
             const bp = mkBoat(mat);
             r.state.blueprints[bp.name] = bp;
@@ -1307,16 +1307,11 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
-        // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
-        // Das Gang-Gesetz misst die Geschwindigkeit aus dem WEG des Leibs:
-        // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
-        // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
-        // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
-        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
-        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
-        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
-        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
+        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die Lab-Mathe legt das Leben in die
+        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG
+        // des Leibs: der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine Blickrichtung (Blick +x,
+        // Lauf +x — wie gate:tier-gang), gewertet wird die zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg)
+        // faltet und schwingt nicht. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;
@@ -1914,7 +1909,7 @@ async function checkBandKoerperBewegung(ctx) {
                     if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
             if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
+            // das Becken NICHT
             traeger(soleY - 0.25);
             s.isInAir = true;
             probenFrisch();

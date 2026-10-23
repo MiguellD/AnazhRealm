@@ -643,8 +643,7 @@ async function probe(arg) {
                     st._weltbildLuecke = "eine andere Zahl";
                     st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
                 });
-            // (8) Tasten hinter dem Ladeschirm (Gegenprüfung Runde 2: W lief den Spieler vom Ankunfts-Ort, Enter öffnete das
-            // Gespräch dahinter): solange er steht, gehört keine Taste der Welt
+            // (8) Tasten hinter dem Ladeschirm: solange er steht, gehört keine Taste der Welt
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
@@ -949,8 +948,7 @@ async function probe(arg) {
         ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
         m.nachEsc = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
         if (document.activeElement === ci) ci.blur();
-        // Enter auf einem fokussierten Knopf gehört dem Knopf (Gegenprüfung Runde 1: er öffnete zusätzlich den Chat und
-        // nahm ihm den Fokus — die Tastatur-Bedienung brach)
+        // Enter auf einem fokussierten Knopf gehört dem Knopf
         const knopf = document.getElementById("camera-mode-toggle") || document.querySelector("button");
         if (knopf) {
             knopf.focus();
@@ -1554,9 +1552,8 @@ async function probe(arg) {
             m.uebersprungen = +mz[2];
         }
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
-        // DER MITSPIELER (Gegenprüfung Runde 1: der Anker hing am EIGENEN Spieler, Blick und Fenster jedes Peers — etwa
-        // 60 m Versatz): „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei einem
-        // Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
+        // DER MITSPIELER: „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei
+        // einem Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
         {
             const satz = r.parseChatToDsl("baue dorf hier");
             const haeuserVon = async (quelle, wo, gier) => {

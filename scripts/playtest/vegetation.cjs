@@ -45,8 +45,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
-        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
-        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
+        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es
+        // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
@@ -593,7 +593,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
-        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
+        // nicht für jede Höhe (≈ 1 % der Höhen läge 1 ulp über D → „stein").
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;
@@ -692,8 +692,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
         }
 
-        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
-        // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+        // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
         const a1 = r._eisenAderAt(123.7, 456.3);
         const a2 = r._eisenAderAt(123.7, 456.3);
         out.deterministic = Math.abs(a1 - a2) < 1e-10;
@@ -816,7 +815,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
 
         // (G2) Determinismus: gleiche seed → gleiche parts
         const p1 = r._growTreeBlueprint("eiche", "seed-a");
