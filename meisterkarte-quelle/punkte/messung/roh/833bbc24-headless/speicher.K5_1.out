@@ -1,0 +1,23 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs
+  [T] 0 Tod idb · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+  [T] 1 Tod zufall · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":1966,"e":21,"b":0,"l":21} · Alter 4.234 s · 
+  [T] 2 Tod fest · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":3010,"e":33,"b":0,"l":33} · Alter 3.343 s · 
+  [T] 3 Tod zufall · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":15664,"e":332,"b":11,"l":332} · Alter 0.001 s · 
+  [T] 4 Tod platz · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":18439,"e":371,"b":12,"l":371} · Alter 1.002 s · 
+  [T] 5 Tod zufall · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":23676,"e":462,"b":15,"l":462} · Alter 4.94 s · 
+  [T] 6 Tod zeiger · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":25465,"e":486,"b":15,"l":486} · Alter 1.635 s · 
+  [T] 7 Tod zufall · geladen {"w":"6a8ac37a-1c6f-44fb-b17c-06ae6c7b9dee","x":0,"z":27370,"e":513,"b":16,"l":513} · Alter 4.846 s · 
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server) ===
+  ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)
+  ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4)
+  ✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {"von":0,"nach":2,"bauten":4,"bewegt":4,"geerdet":0,"dhP50":37.2,"dhMax":37.39,"spieler":-1.39})
+  ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null)
+  ✅ (W) Werke auf der Lichtung nach dem Reload 2/2
+  ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
+  ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
+  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 4.94 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 542 Löcher
+  ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
+
+9/9 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.
