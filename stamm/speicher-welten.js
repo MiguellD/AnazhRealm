@@ -1242,8 +1242,9 @@ class AnazhRealm_speicher_welten {
         return true;
     }
 
-    // Die Antwort des Fadens auf eine Sicherung: fest → Bestand, Index (lastPlayed), Aktiv-Zeiger (nie in der Sperre des
-    // Welt-Wechsels); gescheitert → laut, und die nächste trägt das ganze Abbild.
+    // Die Antwort des Fadens auf eine Sicherung: fest → Bestand, Index (lastPlayed; nie in der Sperre des Welt-Wechsels);
+    // gescheitert → laut, und die nächste trägt das ganze Abbild. Den Aktiv-Zeiger schreibt allein saveState im Moment der
+    // Sicherung — eine Antwort im Flug überschriebe den Zeiger, den danach eine Tür setzte.
     _speicherQuittung(r, id, at, G) {
         if (!r.ok) {
             if (this._speicherGrund === G) this._speicherGrund = null;
@@ -1256,7 +1257,6 @@ class AnazhRealm_speicher_welten {
         if (this._weltWechselSperre) return;
         const wm = this.state.worldMeta || {};
         this.worldsIndexUpsert({ worldId: id, slug: wm.slug || "", bornAt: wm.bornAt || at, lastPlayed: at });
-        if (this.activeWorldGet() !== id) this.activeWorldSet(id);
     }
 
     // Eine Welt der Platte (die Rettungs-Kette des Fadens) → der Zustand oder null. Die Bytes kommen per Transfer.

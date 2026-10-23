@@ -296,6 +296,11 @@ async function jSeite(schein) {
             z.cur = null;
         }
     };
+    // der Zeiger-Zwilling: die Antwort des Fadens setzt den Aktiv-Zeiger noch einmal
+    if (schein === "taeter") {
+        const q = r._speicherQuittung.bind(r);
+        r._speicherQuittung = (x, i, ...a) => (q(x, i, ...a), r.activeWorldSet(i));
+    }
     if (schein === "abbild") {
         const sich = r._speicherSichern.bind(r);
         r._speicherSichern = (...a) => (JSON.stringify(r.buildStateSnapshot()), sich(...a));
@@ -357,7 +362,7 @@ async function jSeite(schein) {
         e.position.x += 2;
         e.rotationY = 0.7;
         const m = r._speicherMelden;
-        if (schein === "stueck") r._speicherMelden = (d, x, art) => (x === e ? undefined : m.call(r, d, x, art));
+        if (schein === "taeter") r._speicherMelden = (d, x, art) => (x === e ? undefined : m.call(r, d, x, art));
         r._blockerBewegt(e);
         r._speicherMelden = m;
     });
@@ -378,6 +383,12 @@ async function jSeite(schein) {
     await runde("nach der Verdichtung", () => {
         for (let i = 0; i < 40; i++) r.removeArchitecture(bloecke.pop());
     });
+    // (d) DER ZEIGER: eine Sicherung im Flug überschreibt nie den Zeiger, den danach eine Tür setzt (daneben legen + aktiv)
+    r.saveState();
+    r.activeWorldSet("zeiger-probe");
+    await r._speicherRuf("still");
+    const zeiger = r.activeWorldGet();
+    r.activeWorldSet(id);
     // (c) DER TOD MITTEN IM SCHREIBEN
     const gut = z.saves[z.saves.length - 1].soll;
     const S0 = r._speicher;
@@ -392,7 +403,7 @@ async function jSeite(schein) {
     await runde("nach dem Tod", () => {});
     c.alles = runden[runden.length - 1].gleich;
     c.abbild = z.saves.slice(c.nTod).reduce((s, x) => s + x.abbild, 0);
-    return { runden, verdichtet, c, bauplaene: S(voll({ journal: true }).blueprints).length };
+    return { runden, verdichtet, c, zeiger, bauplaene: S(voll({ journal: true }).blueprints).length };
 }
 // die Domänen der Welt als EIN Wort: Edits, Bauten (Steinblöcke), Inventar, Lage — vor und nach dem Neuladen
 async function jFakten() {
@@ -720,10 +731,10 @@ const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").ma
         out = { __err: (e && e.message) || String(e) };
     }
     await browser.close();
-    const [j, jAbbild, jStueck] = [
+    const [j, jAbbild, jTaeter] = [
         await journalProbe(),
         SELBSTTEST && (await journalProbe("abbild")),
-        SELBSTTEST && (await journalProbe("stueck")),
+        SELBSTTEST && (await journalProbe("taeter")),
     ];
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
@@ -798,6 +809,10 @@ const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").ma
             pass: !j.fehler && j.c.ganz && j.c.alles,
         },
         {
+            name: `(J d) eine Sicherung im Flug lässt den Zeiger der Tür: ${j.zeiger}${j.zeiger === "zeiger-probe" ? "" : " — Täter: _speicherQuittung (stamm/speicher-welten.js) setzt den Aktiv-Zeiger"}${jFehl(j)}`,
+            pass: !j.fehler && j.zeiger === "zeiger-probe",
+        },
+        {
             name: "(K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)",
             pass: out.kGesetzt === true && out.kFrischBlockiert === true,
         },
@@ -848,8 +863,12 @@ const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").ma
                 pass: !jAbbild.fehler && !jA(jAbbild),
             },
             {
-                name: `(J b) SELBSTTEST: ein verlorenes Bauten-Stück wird ROT beim Namen (${jStueck.fehler ? jStueck.fehler : jFalsch(jStueck).join(", ") || "blind"})`,
-                pass: !jStueck.fehler && jFalsch(jStueck).some((f) => /^Bauten bewegt: \$\.architectures/.test(f)),
+                name: `(J b) SELBSTTEST: ein verlorenes Bauten-Stück wird ROT beim Namen (${jTaeter.fehler ? jTaeter.fehler : jFalsch(jTaeter).join(", ") || "blind"})`,
+                pass: !jTaeter.fehler && jFalsch(jTaeter).some((f) => /^Bauten bewegt: \$\.architectures/.test(f)),
+            },
+            {
+                name: `(J d) SELBSTTEST: der Zeiger-Zwilling in der Quittung wird ROT (Zeiger ${jTaeter.zeiger})`,
+                pass: !jTaeter.fehler && jTaeter.zeiger !== "zeiger-probe",
             },
             {
                 name: `(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${out.w.selbst}/${out.w.gesetzt})`,
