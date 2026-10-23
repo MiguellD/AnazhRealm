@@ -464,7 +464,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // 1. Methoden existieren
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
@@ -1188,6 +1187,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
+
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
             const modeBar = document.getElementById("workshop-mode-bar");

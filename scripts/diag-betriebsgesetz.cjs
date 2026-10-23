@@ -74,7 +74,7 @@ function archivBefund(dateien) {
 //    aus EINEM Diff (`git diff -U0`): je Datei hinzu − weg in ATOMEN (Wort oder Satzzeichen) —
 //    Pressen zahlt nichts (f1-rest e93134f4..ada41e38: Zeilen −2, Atome +879); dazu Dateien neu − weg.
 //    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
-const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
+const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 function git(args) {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
@@ -106,15 +106,15 @@ const taeterVon = (je) =>
         .join("");
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
 // ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
-// sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
-// erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
+// nach einem Force-Push dessen Merge-Basis mit HEAD, sonst der letzte Commit): der Integrator merget eine Karte oder
+// spult integ-probe auf ihren Kopf vor — dann geht der erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
 // Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
 // Vorlauf von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
 function wachstumsStaende(zweig, kopfRev) {
     if (zweig === "main") return [];
     if (zweig === "integ-probe") {
         const vorher = process.env.WACHSTUM_VORHER;
-        const grund = vorher && !/^0+$/.test(vorher) ? vorher : "HEAD~1";
+        const grund = vorher && !/^0+$/.test(vorher) ? git(["merge-base", vorher, "HEAD"]).trim() : "HEAD~1";
         return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`]];
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
@@ -288,7 +288,7 @@ function stripperBefund(dateien) {
     return out;
 }
 
-// 6b) DIE DECKE JE DATEI (PFLICHT-OFFEN D(3), D3b 17.10.): keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
+// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
 //     lebt nach Domäne (scripts/playtest/<domaene>.cjs, `stamm-umzug --richter`), eine Linse teilt am selben Tag; ROT beim Namen.
 const DATEI_DECKE = 4000;
 const dateiDeckeBefund = (dateien) =>
@@ -434,7 +434,7 @@ function main() {
         errs.push("champion.md trägt das Pflicht-Output-Format (Pflicht-OFFEN Rest) nicht mehr");
 
     // 5) ARCHIV-WAND (Lehre 15: git ist das Archiv, kein Doppel-Archiv im Baum): keine verfolgte Datei, die .gitignore
-    // ausschließt — am 14.10. lagen 201 Mess-Rohdateien (217 MB) unter artifacts/ im Baum, per `git add -f` aus Übergaben.
+    // ausschließt.
     let ignoriertVerfolgt = null;
     try {
         ignoriertVerfolgt = execSync("git ls-files -ci --exclude-standard", { cwd: root, encoding: "utf8" })

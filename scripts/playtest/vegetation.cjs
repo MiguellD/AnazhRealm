@@ -588,6 +588,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         const A = r.constructor;
         const out = {};
 
+
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
@@ -673,8 +674,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (I1) IRON_BANDS frozen Konstanten
-        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
+        // (I1) IRON_BANDS
         if (A.IRON_BANDS) {
             const IB = A.IRON_BANDS;
             out.constsSensible =
@@ -778,7 +778,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
     check(
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true

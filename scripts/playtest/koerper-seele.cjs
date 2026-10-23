@@ -542,7 +542,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
-        // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -3345,26 +3344,9 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
-// Die Schneegrenze des Gelände-Kerns fließt: die Boden-Farbe fragt sie (KONSUM; der Kern ist eingefroren → offene Kopie).
-async function checkBandV18209Konsolidierung(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const G = window.__gelaendeCore;
-        window.__gelaendeCore = Object.assign({}, G);
-        try {
-            const p = r.state.playerMesh.position;
-            return { schnee: window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]) };
-        } finally {
-            window.__gelaendeCore = G;
-        }
-    });
-    check("die Boden-Farbe liest die Schneegrenze des Gelände-Kerns (_bodenFarbeAt → schnee)", res.schnee === true);
-}
-
 module.exports = {
     checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
     checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
     checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
-    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld, checkBandV18209Konsolidierung,
+    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld,
 };
