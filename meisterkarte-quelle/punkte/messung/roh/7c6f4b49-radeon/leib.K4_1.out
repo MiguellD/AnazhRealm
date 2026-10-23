@@ -1,0 +1,14 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-kamera-laub.cjs --teile gang --bild
+gpu-lauf: Schloss punkte-radeon nach 0 s
+[linse-gpu] amd/rdna-3
+[welt-boot] FEHLER klasse: diag-kamera-laub.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
+=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel 0.25 m): Mess-Wiese -280.4/-1045.6 ===
+  der Arm ohne Kollision: null Bilder mit Täter
+  ❌ K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände und Rinde, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Kollision — Täter: Gang: nicht gemessen
+  Zeiten (ms): {} · Lauf 2.6 s
+[welt-boot] ROT — 1 Fehler der Welt:
+  · klasse: diag-kamera-laub.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
+
+--- stderr ---
+
+❌ ROT — 1 Verletzung(en).

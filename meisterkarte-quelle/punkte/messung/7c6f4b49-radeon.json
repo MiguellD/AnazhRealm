@@ -1,0 +1,273 @@
+{
+ "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
+ "geraet": "radeon",
+ "zeit": "2026-10-23T09:21:24.123Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 3132 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 113.5–290.6 ms (1 m 3, 3 m 2)",
+   "exit": 0,
+   "minuten": 14.17,
+   "zeit": "2026-10-23T07:45:40.400Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7601
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "zahl": "kein Begleit-JSON mit Klassen (Exit 1)",
+   "exit": 1,
+   "minuten": 1.07,
+   "grund": "ROT: kein Begleit-JSON mit Klassen (Exit 1)",
+   "zeit": "2026-10-23T07:59:50.405Z",
+   "abdruck": "65c00f3112cb",
+   "port": 7602
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "zahl": "über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.92,
+   "grund": "ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "zeit": "2026-10-23T08:00:54.870Z",
+   "abdruck": "1c2538e83974",
+   "port": 7605
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.773",
+   "exit": 0,
+   "minuten": 1.96,
+   "zeit": "2026-10-23T08:01:50.227Z",
+   "abdruck": "e03a045fab93",
+   "port": 7607
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 108.8 fps",
+   "exit": 0,
+   "minuten": 1.16,
+   "zeit": "2026-10-23T08:03:47.709Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7615
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59213 px; ohne freies Auge haus_skandinavisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_provenzalisch undefined/undefined haupt",
+   "exit": 1,
+   "minuten": 2.27,
+   "grund": "ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59213 px; ohne freies Auge haus_skandinavisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_provenzalisch undefined/undefined haupt",
+   "zeit": "2026-10-23T08:04:57.532Z",
+   "abdruck": "de6fdcda1f02",
+   "port": 7616
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.86,
+   "zeit": "2026-10-23T08:07:13.569Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7617
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.28,
+   "zeit": "2026-10-23T08:08:05.451Z",
+   "abdruck": "bbee11502f53",
+   "port": 7618
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.28,
+   "zeit": "2026-10-23T08:09:21.983Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7619
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0178 nyquist 0.0941 (Arm 0.408), 1 m glatt 0.0259 nyquist 0.0823 (Arm 0.909), 2 m glatt 0.0089 nyquist 0.0976 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 4.75,
+   "grund": "ROT: boden 0.5 m glatt 0.0178 nyquist 0.0941 (Arm 0.408), 1 m glatt 0.0259 nyquist 0.0823 (Arm 0.909), 2 m glatt 0.0089 nyquist 0.0976 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "zeit": "2026-10-23T08:10:39.006Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7620
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.5,
+   "zeit": "2026-10-23T08:15:24.054Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7621
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.37° Arm +18.2 % bei 15.06 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 1.12,
+   "zeit": "2026-10-23T08:16:53.903Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7631
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Drift Kamera ≤ 107.8° neben dem Fahrtvektor (Schlupf bis 59.5°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 1.87,
+   "grund": "ROT: Drift Kamera ≤ 107.8° neben dem Fahrtvektor (Schlupf bis 59.5°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "zeit": "2026-10-23T08:18:01.117Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7632
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.3/3.1/4.9°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.75,
+   "zeit": "2026-10-23T08:19:53.376Z",
+   "abdruck": "ab61dce55516",
+   "port": 7633
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.2/3.5/5.7°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.79,
+   "zeit": "2026-10-23T08:21:38.503Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7634
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 32649.5 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1805.1 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 5.08,
+   "grund": "ROT: nH 12 erstes Haus nach 32649.5 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1805.1 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T08:23:25.856Z",
+   "abdruck": "d2f68243ff0a",
+   "port": 7636
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 32842.9 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1698.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 5.1,
+   "grund": "ROT: nH 12 erstes Haus nach 32842.9 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1698.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T08:28:30.708Z",
+   "abdruck": "9575bc09cb5b",
+   "port": 7637
+  },
+  "leib.K1#1": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 43.7 · third/gehen 40.2 · ego/wechsel 23.8 · third/wechsel 24.3",
+   "exit": 0,
+   "minuten": 1.91,
+   "zeit": "2026-10-23T08:33:36.860Z",
+   "abdruck": "8746d55fc31a",
+   "port": 7638
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 48.9 · third/gehen 43 · ego/springen 30.6 · third/springen 26.7 · ego/einsteigen 31.2 · third/einsteigen 25.6 · ego/hieb 25.5 · third/hieb 43.6",
+   "exit": 0,
+   "minuten": 4.94,
+   "zeit": "2026-10-23T08:35:31.359Z",
+   "abdruck": "156d9c781ed5",
+   "port": 7639
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "keine Gang-Zeile — Täter: Gang: nicht gemessen",
+   "exit": 1,
+   "minuten": 0.07,
+   "grund": "ROT: keine Gang-Zeile — Täter: Gang: nicht gemessen",
+   "zeit": "2026-10-23T08:40:27.893Z",
+   "abdruck": "e7db3df33f65",
+   "port": 7640
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "p95 ms third/hieb 35.9 · ego/hieb 27.6 · Hit-Stop 1/1 Bilder (Third/Ego)",
+   "exit": 0,
+   "minuten": 1.71,
+   "grund": "ROT: p95 ms third/hieb 35.9 · ego/hieb 27.6 · Hit-Stop 1/1 Bilder (Third/Ego)",
+   "zeit": "2026-10-23T08:40:32.007Z",
+   "abdruck": "c54dc6fdd0a1",
+   "port": 7644
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 234.3 · 209.3 · 209.2 · 209.1 ms; Hänger 1/1/1/1)",
+   "exit": 0,
+   "minuten": 12.14,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234.3 · 209.3 · 209.2 · 209.1 ms; Hänger 1/1/1/1)",
+   "zeit": "2026-10-23T08:42:14.794Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7650
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.87 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 119.3 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.46,
+   "zeit": "2026-10-23T08:54:23.120Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7651
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "erde 334 Hz (n 19) · stein 2415 Hz (n 18) · glut 1907 Hz (n 18) — kleinster Abstand 508 Hz",
+   "exit": 0,
+   "minuten": 0.95,
+   "zeit": "2026-10-23T08:55:50.743Z",
+   "abdruck": "762071c99dce",
+   "port": 7652
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.1 · fahrt 0.1 · nacht 0.09 ms · Aussetzer ungezählt (null)",
+   "exit": 1,
+   "minuten": 4.6,
+   "grund": "ROT: Klang-Takt p95 gehen 0.1 · fahrt 0.1 · nacht 0.09 ms · Aussetzer ungezählt (null)",
+   "zeit": "2026-10-23T08:56:47.998Z",
+   "abdruck": "0d29cd7648e5",
+   "port": 7654
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "zahl": "20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 11.14,
+   "grund": "ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt",
+   "zeit": "2026-10-23T09:01:24.198Z",
+   "abdruck": "1553478965c6",
+   "port": 7655
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "zahl": "20 Tode: Alter max 999 s · 0 korrupt · 1 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 8.86,
+   "grund": "ROT: 20 Tode: Alter max 999 s · 0 korrupt · 1 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "zeit": "2026-10-23T09:12:32.457Z",
+   "abdruck": "b764bd64e0fd",
+   "port": 7656
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Bild p95 0 / p99 0 ms (8666 Bilder, 96 Rufe); je Ruf p50 8.8 / p95 12.2 / max 13.4 ms",
+   "exit": 0,
+   "minuten": 10.62,
+   "zeit": "2026-10-23T09:21:24.123Z",
+   "abdruck": "21efeaae5f6c",
+   "port": 7657
+  }
+ }
+}
