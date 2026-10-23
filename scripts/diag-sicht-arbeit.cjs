@@ -335,7 +335,7 @@ function selbsttest() {
     }
     if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
         fehler.push("ungesehene Bytes stehen nicht beim Namen");
-    // das Neulegen (K71) klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
+    // das Neulegen klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
     // die Bytes des Frames zählen dort nie als ungesehen
     {
         const lk = (g) => SICHT.sichtBytesKlasse({ bytes: 100, legeGrund: { [g]: 480 }, inhalt: {} }, "legeGrund");

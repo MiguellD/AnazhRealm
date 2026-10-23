@@ -8,7 +8,7 @@
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
-//   DIE STALL-AKTE   (K67) ein Hänger der Seite steht mit Täter im Log (unten); `--selbsttest` (gate:welt-boot) beweist es
+//   DIE STALL-AKTE ein Hänger der Seite steht mit Täter im Log (unten); `--selbsttest` (gate:welt-boot) beweist es
 // Die Wand: gate:altlasten DIE BOOT-WAND — ein Start außerhalb dieser Datei ist ROT, die Liste der noch eigenen Starts
 // darf nur schrumpfen.
 "use strict";
@@ -222,7 +222,7 @@ const REZEPTE = {
     linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
-// DIE KLASSE DER CI (K61): diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
+// DIE KLASSE DER CI: diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
 // eines, das nie zeichnet, in jeder Gruppe (browser.close).
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
@@ -286,7 +286,7 @@ function fehlerSammler(page) {
     return page;
 }
 
-// ── DIE STALL-AKTE (K67): ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
+// ── DIE STALL-AKTE: ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
 // Haupt-Thread lebt; die STEMPEL gehen hinaus, bevor ein Aufruf blockiert; Debugger.pause liefert den Stapel einer JS-Schleife
 // (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
 const AKTE_SEITEN = new Set();

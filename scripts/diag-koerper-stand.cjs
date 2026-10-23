@@ -495,7 +495,7 @@ async function proben(mitWiese, umfang) {
                 c.position.z = sz;
             });
             o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10, traeger };
-            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
+            // ── K4c DIE FUGE: die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
             // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der
             // Kapsel — die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche:
             // an ihrem Rand, der Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers
@@ -710,7 +710,7 @@ async function proben(mitWiese, umfang) {
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
     s.playerVel = savedVel;
-    // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
+    // ── K7 WIESE UND STREU AM CHUNK-RAND: Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
     // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln im Umkreis 120 m, deren Chunks
     // einer Stufe sind (der Nah-Ring liegt ganz in LOD 0, die Stufen-Kette K51 trägt L1 und L2 in den Umkreis; der Streifen ist
@@ -1051,7 +1051,7 @@ function urteil(o) {
     if (!o.k6leser || !(o.k6leser.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
     // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
-    // −278/−1038 (K55) trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
+    // −278/−1038 trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
     // nicht unabhängig je Büschel: dort lag das Verhältnis 1,12 ± 0,044, und die Erwartung aus den Faktoren des Lesers selbst
     // (Σp je Kandidat, Stufe 0/1/2 einzeln) 1,07 — Streifen über und unter 1 je Stufe, keine Naht. Der Täter der Klasse (K21:
     // der Leser liest nur die Karte des Eigners) fiel auf 0,08.

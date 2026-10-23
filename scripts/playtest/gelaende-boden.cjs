@@ -1541,7 +1541,7 @@ async function checkBandGammaGenese(ctx) {
         return [0, 1, 2].reduce((sum, i) => sum + (c5[i] - c0[i]) * (w[i] - c0[i]), 0);
     });
     check(`Γ1-Lesart-4 die Feuchte zieht die Boden-Farbe zur feuchten Erde (Zug ${zugNass})`, zugNass > 0);
-    // Γ4 (K16) — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
+    // Γ4 — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
     // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
     // der Ebene (Relief-Minimum).
@@ -2146,7 +2146,7 @@ async function checkBandTodZensus(ctx) {
             for (let k = 0; k < 60 && !(tB.userData._hopH > 0.3 && !(tB.userData._hopV > 0)); k++) takt(); // im Scheitel
             hop = tB.userData._hopH || 0;
             o.hopBeimTod = +hop.toFixed(3);
-            // DIE LAST FÄLLT ZURÜCK (K13): das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
+            // DIE LAST FÄLLT ZURÜCK: das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
             // Inventar des Spielers legt, und die Einträge im Journal
             const holz = () =>
                 (s.player.inventory || []).reduce(
@@ -2175,7 +2175,7 @@ async function checkBandTodZensus(ctx) {
                         }
                     }
             );
-            // EINE RÄUM-METHODE (K13), Konsum am Ruf: der Fall räumt über _leibZeichenFrei
+            // EINE RÄUM-METHODE, Konsum am Ruf: der Fall räumt über _leibZeichenFrei
             let raeumt = 0;
             decke("_leibZeichenFrei", (alt) => function (...a) { raeumt++; return alt.apply(this, a); });
             const lastSoll = ALLE.reduce(
@@ -2456,7 +2456,7 @@ async function checkBandTodZensus(ctx) {
 
 // Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
-// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause (K21): nach 10 s ohne Takt springt kein Wolf weiter
+// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast(ctx) {
     const { page, check } = ctx;
@@ -2485,7 +2485,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const nearSpot = findLand(-40, 40, 0);
         // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
         const farSpot = findLand(560, 720, 500);
-        // kein Ersatz-Ort (K16): findet die Suche kein Land, bricht die Probe laut
+        // kein Ersatz-Ort: findet die Suche kein Land, bricht die Probe laut
         if (!nearSpot || !farSpot) throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
     
         const resetSim = (spot) => {

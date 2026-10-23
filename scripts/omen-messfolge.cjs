@@ -1220,7 +1220,7 @@ async function selbsttest() {
             wachenUrteil("band", anWiese, anWiese, g, true),
             /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
         );
-        // DER LESER DER BAND-LINSE (K26): jede
+        // DER LESER DER BAND-LINSE: jede
         // Rot-Zeile der Linse ist ein Befund der Folge — außer die Basis-Seite A des ABAB trägt sie (derselbe Schlüssel, B nicht
         // über A hinaus, A am selben Ort, Gerät und in derselben Sicht).
         const { haushalt } = BAND.ladeSpec("genesis");

@@ -6,7 +6,7 @@
 //
 // Dieselbe Sonde läuft auf JEDEM Stand (die APIs sind geguardet) → das Bild-PAAR
 // vorher↔nachher entsteht, indem man sie in einem Worktree des Mesh-Stands
-// (z. B. d7ca0a1f) und auf HEAD fährt:
+//  und auf HEAD fährt:
 //
 //   node scripts/diag-beweis-e.cjs --tag analog [--out DIR] [--ohne-wiese] [--klassen baum,haus] [--proto-min 40]
 //   (im Worktree)  node scripts/diag-beweis-e.cjs --tag mesh --out <HEAD>/artifacts/beweis-e

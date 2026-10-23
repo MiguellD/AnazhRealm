@@ -555,7 +555,7 @@ async function probe(K) {
     };
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
-    // DIE SPALTEN AUS DER WELT (K55-2): das Gesetz der Spalte, in der ein Leib steht, lebt in scripts/lib/welt-orte.cjs
+    // DIE SPALTEN AUS DER WELT: das Gesetz der Spalte, in der ein Leib steht, lebt in scripts/lib/welt-orte.cjs
     // (`hoehle`): von der Oberkante abwärts Fels ≥ `fels`, dann Luft ≥ `luft`, dann ein Grund aus Fels; im Umkreis R
     // ein GRUND (K16, das Flussnetz-Gelände: seine Höhlen sind Gänge 16 m unter dem Boden, oft schmaler als der Wagen —
     // ein Körper halb in der Wand steht in keiner Höhle, am Gang −885,5/−1240,5 standen zwei Räder des GT im Fels, er

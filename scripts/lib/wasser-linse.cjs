@@ -1952,7 +1952,7 @@ async function wasserQuelle(opts) {
             const k0 = P[0].x + "," + P[0].z;
             if (ursprung.has(k0)) continue;
             ursprung.add(k0);
-            // DER TEIL (K61): `teil {k, n}` misst nur die Quellen, deren Ursprung in Teil k fällt — der Schlüssel ist der Ort
+            // DER TEIL: `teil {k, n}` misst nur die Quellen, deren Ursprung in Teil k fällt — der Schlüssel ist der Ort
             // des Ursprungs (nie die Reihenfolge der Kacheln), jede Quelle fällt in genau einen Teil
             if (o.teil && window.__wasserQuellTeil(P[0], o.teil.n) !== o.teil.k) continue;
             const fl = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z) || 1;
@@ -2029,7 +2029,7 @@ async function wasserQuelle(opts) {
                     r._waterLevelAt(x, z, uf);
                     seeNah = uf.see > r._voxelSurfaceY(x, z) + 0.05;
                 }
-            // IM KANAL (K16): der Ursprung liegt im Kanal eines BREITEREN Flusses (bis zu dessen Krone, nie auf dem eigenen
+            // IM KANAL: der Ursprung liegt im Kanal eines BREITEREN Flusses (bis zu dessen Krone, nie auf dem eigenen
             // Lauf) — sein Wasser ist das Wasser des breiteren (gespeist). Es darf dessen Spiegel nie heben: BUCKEL ist das
             // Körper-Wasser am Ursprung über dem höchsten Spiegel der deckenden Segmente. Gedeckt heißt wie in
             // `_hydroRiverAt`: der Abstand zum SEGMENT bis zu seiner Krone, Breite und Spiegel längs des Segments.
@@ -2066,7 +2066,7 @@ async function wasserQuelle(opts) {
                         beispiele.push(["buckel", R(P[0].x, 0), R(P[0].z, 0), R(hub)]);
                 }
             }
-            // ZULAUF (K16): das Netz des Gelände-Gesetzes ist eins für die ganze Welt, die Kachel schneidet es — ein Lauf, der
+            // ZULAUF: das Netz des Gelände-Gesetzes ist eins für die ganze Welt, die Kachel schneidet es — ein Lauf, der
             // am Rand seiner Kachel beginnt (bis eine Zelle innen), trägt das Wasser seines Oberlaufs jenseits des Rands.
             const randAbstand = Math.min(
                 P[0].x - h.originX,
@@ -2158,7 +2158,7 @@ async function wasserQuelle(opts) {
         tiefeMax: R(tiefen0.length ? Math.max(...tiefen0) : 0),
         beispiele,
         alle: o.alle ? alle : undefined,
-        // die Teile (K61) fügt `quellTeileVereinen` zusammen: die Rohwerte je Quelle, der Teil und die gemessenen Kacheln
+        // die Teile fügt `quellTeileVereinen` zusammen: die Rohwerte je Quelle, der Teil und die gemessenen Kacheln
         // (aus dem Ursprung jeder Region, das Urteil verlangt `QUELL_KACHELN`)
         breiten0: o.teil ? breiten0 : undefined,
         tiefen0: o.teil ? tiefen0 : undefined,
@@ -2172,13 +2172,13 @@ async function wasserQuelle(opts) {
 // Sees, die Küste mit der Kachel der Küsten-Suche. Eine Kachel verschwindet nie (sie ist ein Fenster des Gesetzes über dem Seed).
 const QUELL_KACHELN = ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5", "0,5", "0,6", "1,6"];
 
-// Der Teil einer Quelle (K61): aus dem Ort ihres Ursprungs, je Teil-Zahl n fest — der Seiten-Kontext ruft ihn, Node prüft ihn.
+// Der Teil einer Quelle: aus dem Ort ihres Ursprungs, je Teil-Zahl n fest — der Seiten-Kontext ruft ihn, Node prüft ihn.
 function wasserQuellTeil(p, n) {
     const h = (Math.imul(Math.round(p.x * 4), 73856093) ^ Math.imul(Math.round(p.z * 4), 19349663)) >>> 0;
     return h % n;
 }
 
-// DIE TEILE ZUSAMMEN (K61): die Quell-Probe in n Seiten nebeneinander (je Seite ein Teil, `teil {k, n}`) urteilt über
+// DIE TEILE ZUSAMMEN: die Quell-Probe in n Seiten nebeneinander (je Seite ein Teil, `teil {k, n}`) urteilt über
 // dieselben Quellen wie EIN Lauf — die Zähler summiert, Breite und Tiefe am Ursprung aus den Rohwerten, die Kacheln in jedem
 // Teil dieselben (sonst Abbruch beim Namen: ein Teil sähe andere Quellen), jeder Teil k = 0..n−1 genau einmal (sonst fielen
 // die Quellen eines Teils still aus der Summe).
@@ -2813,7 +2813,7 @@ function wasserMutation(opts) {
     })();
 }
 
-// ── DIE ORTE DES WASSERS AUS DER WELT (K16) ── nie als Literale der Proben: gesucht am Gesetz nächst der
+// ── DIE ORTE DES WASSERS AUS DER WELT ── nie als Literale der Proben: gesucht am Gesetz nächst der
 // Mess-Wiese (`mess`): der See (die nächste benannte Senke des Gelände-Gesetzes, deren Kachel einen See über dem Meer trägt,
 // tiefste Stelle ≥ 3 m), sein Ostufer (von der tiefsten Stelle nach +x die erste trockene Spalte, 4 m landein — der Weg
 // des Körpers läuft längs x), der Fluss (der nächste Lauf-Punkt 2–14 m breit), der Bach (die Quelle des nächsten Laufs
@@ -2945,7 +2945,7 @@ async function wasserOrte(opts) {
                 if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
             }
     }
-    // die TASCHE (K16): Atlas-Land mit Boden unter dem Meer liegt nur jenseits des 3×3-Rands (am Rand füllt der Atlas die
+    // die TASCHE: Atlas-Land mit Boden unter dem Meer liegt nur jenseits des 3×3-Rands (am Rand füllt der Atlas die
     // Spalte selbst bis zum Spiegel) — dort zeichnet das Sheet den Küsten-Aquifer, und dort misst die Probe K12. Je Land-Zelle
     // ohne Wasser im 3×3 und mit Meer in 6 Zellen 8 × 8 Proben; die Zelle mit den meisten Proben unter dem Meer (gleich viele:
     // die nähere), dort die tiefste. Die Landform trägt sie selten.

@@ -141,7 +141,7 @@ if (require.main === module) (async () => {
         // löschen). Null-Renderer: kein Band liest ein Pixel; den LOOK messen die Bild-Sonden (ausgabe-aufnahme).
         // `__codeOf` (Code ohne Kommentare, der EINE Stripper) und `__dokuOf` (ungestrippt) trägt der Welt-Boot in jede Seite.
         if (!realRenderer) window.__anazhHeadlessNullRenderer = true;
-        // DER SETZ-ORT (K16): ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
+        // DER SETZ-ORT: ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
         // `name` auf den Boden der nächsten Stelle um den Spieler, die die Natur-Wand freigibt (`_naturWand`: die Lichtung
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
         // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
@@ -161,7 +161,7 @@ if (require.main === module) (async () => {
                 }
             return null;
         };
-        // DER WASSER-ORT (K16): jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
+        // DER WASSER-ORT: jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
         // ihn setzt — die Heimat-Kachel trägt keinen (die Seen sind die Senken des Flussnetzes, ≤ 1 je km²; das Meer liegt
         // jenseits des Kontinents). „see“: die nächste benannte Senke (gelaende-core `benannteSeen`), deren Kachel einen
         // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
@@ -206,7 +206,7 @@ if (require.main === module) (async () => {
                 // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
                 // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst — so, wie die Wasser-Zellen
                 // sie sehen: je 1,8-m-Zelle das Mittel der Dichte an ihren acht Ecken (`_buildVoxelChunkWaterCells`, das
-                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel (K16), bleibt die Decke 16 m unter
+                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel, bleibt die Decke 16 m unter
                 // dem Boden; die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
                 const cfgH = r._voxelChunkConfig(0);
                 const S = cfgH.step;
@@ -310,7 +310,7 @@ if (require.main === module) (async () => {
             if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
             return r.state.voxelChunks.has(key) ? key : null;
         };
-        // DER STOFF-ZEUGE (K22): jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
+        // DER STOFF-ZEUGE: jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
         // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
         // eine Konstante, nie eine Fenster-Variable; der Spion reicht an `log` durch und kehrt eigen-treu zurück.
         window.__stoffZeuge = (r) => {

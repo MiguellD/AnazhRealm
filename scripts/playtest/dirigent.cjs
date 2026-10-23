@@ -1378,7 +1378,7 @@ async function checkBandExistenzBoden(ctx) {
         let sondeLief = false;
         r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
         res.bodenIstBoden = sondeLief === false;
-        // (d) DER DAUER-STROM (K40): gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
         const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
         const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
         const altStrom = r._tickVoxelChunkStreaming;
@@ -1456,7 +1456,7 @@ async function checkBandGodray(ctx) {
     );
 }
 
-// Die EINE Szenen-Skala (K50) + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
 // einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der

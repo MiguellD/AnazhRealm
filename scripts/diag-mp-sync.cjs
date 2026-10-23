@@ -12,10 +12,10 @@
 //                 scheitert (signaling-server aus), heilte nie. Probe: Server beim Aufbau 3 s aus, dann an; Rejoin
 //                 ≤ 31 s (Backoff-Deckel 30 s + Jitter). Täter, wenn ROT: der Rejoin liest eine Absicht, die die Tür
 //                 nie setzte.
-//   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
+//   (c) GRABEN    das Chat-Graben reist: A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
 //                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
 //                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
-//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen (K60): B sieht A
+//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen: B sieht A
 //                 an dessen Ort, und JEDER Takt hält das Gesetz (`taktBruch`): er verbraucht bis zur Kappe der Wanduhr
 //                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
 //                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
@@ -142,7 +142,7 @@ function installiere(alteTuer) {
     // DIE WAHRHEIT DES ZEICHEN-MOMENTS: `_p2pUpdatePeer` zeichnet den Ort, den der Ghost am Ende des VORIGEN Takts setzte
     // (`_lockstepTickPeers` läuft in `p2pTick` NACH dem Zeichnen) bzw. den Snap von vor P2P_SNAP_INTERP_DELAY_MS (120 ms).
     // Geurteilt wird darum gegen die Quellen in DIESEM Moment — der Ghost, der Snap-Puffer, der zuletzt empfangene Ort —,
-    // nie gegen den Ghost nach dem Takt (8a2f91e5 und be09baf4: 1–2 Takte ROT, als A aus dem Erst-Spawn 0/0 loslief).
+    // nie gegen den Ghost nach dem Takt.
     const zeichne = r._p2pUpdatePeer;
     r._p2pUpdatePeer = function (entry, t, dt) {
         const res = zeichne.call(this, entry, t, dt);
@@ -499,7 +499,7 @@ function bericht(p) {
         if (!process.env.CI && l0.latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
 
-        // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // ── (d) LANGE TAKTE: B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
         // (`_lockstepTickPeers`). Der Selbsttest gleich danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein
         // Frame von 1/60 s): (d) muss ROT werden. DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am
@@ -638,7 +638,7 @@ function bericht(p) {
         );
         await sleep(1500);
 
-        // ── (c) DAS CHAT-GRABEN REIST (K23) ──
+        // ── (c) DAS CHAT-GRABEN REIST ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
         // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
         // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxel/fillVoxel)

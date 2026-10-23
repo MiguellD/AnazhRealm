@@ -102,7 +102,7 @@ function urteil(z) {
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
-    // (n) DER EINE SATZ-STOFF (K43-2): je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
+    // (n) DER EINE SATZ-STOFF: je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
     const sst = z.satzStoff;
     if (sst) {
         if (sst.zwillinge.length)
@@ -119,7 +119,7 @@ function urteil(z) {
                 `SATZ-STOFF: ${sst.untreu.length} Gruppen tragen nicht die Regler ihres Stoffs — ${sst.untreu.slice(0, 4).join(", ")}`
             );
     }
-    // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
+    // (m) DIE VERTEX-FORM: der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
     // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, 6 MB des Boden-Satzes)
     const SOLL = { normal: "nint8x4", color: "float16x4" };
     for (const f of z.vertexForm || [])
@@ -641,7 +641,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                             mb: +(a.array.byteLength / 1048576).toFixed(2),
                         });
                     }
-                // (n) DIE BODEN-STUFEN (K51): je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
+                // (n) DIE BODEN-STUFEN: je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
                 // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
                 // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
                 const BS = r.constructor.BODEN_STUFEN;
@@ -861,7 +861,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     const dst = geo.attributes[a].array;
                     const is = geo.attributes[a].itemSize;
                     if (fa.form) {
-                        // gepackt (K44): der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
+                        // gepackt: der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
                         if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
                         const soll = new dst.constructor(b.vAnzahl * 4);
                         r.constructor._satzPacke(
@@ -1049,7 +1049,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const st = ++satz.hoehle.stempel;
                 for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
             };
-            // die Kapazität ERZWUNGEN klein (K51): der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
+            // die Kapazität ERZWUNGEN klein: der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
             // Ring-Kaskaden brauchen mehr, gleich wie gross der Ring gerade ist (der Druck hing am Inhalt: mit den Boden-Stufen
             // reichte der Start-Index für beide Ring-Kaskaden, 0× gewachsen)
             const bodenS = s.chunkSaetze.get("boden");
@@ -1127,7 +1127,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 cam.updateMatrixWorld(true);
                 return o;
             };
-            // EINE Vor-Drehung ohne Wertung (K51): die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
+            // EINE Vor-Drehung ohne Wertung: die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
             // Umlegen), das die alte Regel danach geschenkt bekam — beide Regeln messen aus demselben gewachsenen Stand
             // (5 MB Umlegen, im zweiten 0)
             drehen(36);
@@ -1295,7 +1295,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             res.wurfAlt = wurfProbe(false);
             return res;
         });
-        // (o) DER STUFEN-SPRUNG (K51-2): das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
+        // (o) DER STUFEN-SPRUNG: das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
         // gezeichnete Fläche (Lage + (Ziel − Lage) · `_morphFaktor`, die Boden-Karte des Stoffs) vor dem Wechsel gegen die des
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
         // (die Ring-Kette K51 morphte nur die Naht) springt.
@@ -1332,7 +1332,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
-                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Bitten seiner Nachbarn an die Folge-Schlange (`_morphFolge`,
+                // (p) DIE FOLGE DES WECHSELS: je Neubau die Bitten seiner Nachbarn an die Folge-Schlange (`_morphFolge`,
                 // fahrt-takt) — ein Nachbar, der den Chunk nicht liest (weder seine neue noch seine alte Stufe ist gröber als die
                 // des Nachbarn), ist ein LEER-Morph. Der Selbsttest (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau bittet
                 // alle acht.
@@ -1486,7 +1486,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             `Dreiecke (${zs.bruecken} Brücken)` +
             (vn.length ? " — " + vn.join(" · ") : "")
     );
-    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der
+    // (o) DER STUFEN-SPRUNG: der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der
     // Fläche vor und nach dem Wechsel; der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
     const SP = out.sprung || {};
     const fmt = (g) =>
@@ -1504,7 +1504,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.p90 > STUFEN_SPRUNG_M,
         fmt(SP.ohne)
     );
-    // (p) DIE FOLGE DES WECHSELS (K51-4): ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
+    // (p) DIE FOLGE DES WECHSELS: ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
     // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
     const fo = (g) =>
         g && g.folge

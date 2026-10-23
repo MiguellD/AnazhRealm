@@ -151,7 +151,7 @@ function shellPfad(name, seed, stufe) {
         for (const Lf of fluegelL) {
             const lg = {};
             FC.bakeLOD(Lf, p.col, lg, 0, true);
-            // das Blatt sitzt am Scharnier (K08): das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
+            // das Blatt sitzt am Scharnier: das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
             for (const rk in lg)
                 if (lg[rk] && lg[rk].pos)
                     for (let vi = 0; vi < lg[rk].pos.length; vi += 3) {
@@ -808,7 +808,7 @@ function bogenLinse() {
     );
     // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
-    // Die Wandlaterne (K66-2) trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
+    // Die Wandlaterne trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
     for (const rz of ["laterne", "wandlaterne"]) {
         const L = FC.PRESETS[rz] && FC.PRESETS[rz].fx && FC.PRESETS[rz].fx.licht;
         let kopf = 0;
@@ -984,7 +984,7 @@ function bogenLinse() {
     await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
     globalThis.__fachwerkCore = FC;
 
-    // 12) DER BOGEN IM VERBAND (K66)
+    // 12) DER BOGEN IM VERBAND
     bogenLinse();
 
     if (errs.length) {

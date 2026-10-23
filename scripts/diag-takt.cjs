@@ -17,7 +17,7 @@
 //   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und Uhr
 //       der Späteren, bis der Worker ihn fertig hat (sonst lief der Wiederholer ab, und der dritte Ablauf macht die Zelle
 //       gescheitert); je FADEN, auch im Werk-Helfer (`w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (`_foundryUhren`)
-//   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
+//   T9  DIE KAPPEN DES LADE-TAKTS: unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (Stück und ms, keine eigene Uhr) — bis zur EINEN Frist
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name „buch"), nie als
@@ -50,7 +50,7 @@ const SELBST = process.argv.includes("--selftest");
             if (!((tags.brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN))
                 return { fehler: typ + " ist nicht brennbar" };
             // 300 brennbare Bauten weit vom Brennglas bei (2000, 2000), alle `silent` (die Lage exakt); das Brennglas ist ein Bauplan,
-            // der wirklich bündelt (durchsichtige Teile → Brennpunkte; eine Eiche trägt seit 773ed3a2 keinen, T1/T2 waren vakuös).
+            // der wirklich bündelt.
             const bauten = [];
             for (let i = 0; i < 300; i++) {
                 const x = 400 + (i % 20) * 9,
@@ -267,7 +267,7 @@ const SELBST = process.argv.includes("--selftest");
                     beiAblauf();
                 });
             };
-            // DER HELFER-FADEN (K60): ein bereiter Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der Nummer (`rw1_2`);
+            // DER HELFER-FADEN: ein bereiter Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der Nummer (`rw1_2`);
             // die Pumpe legt die vier Aufträge abwechselnd in Werk und Helfer, je Faden gilt dieselbe Reihe. Die Uhr liest die
             // Nummer am ENDE — die Lesart vom Anfang (`/^\D+/`) machte aus `rw1_4` NaN, seine Uhr lief ab dem Anmelden.
             const t8 = await (async () => {

@@ -30,7 +30,7 @@ const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
 const NUR = ARG.indexOf("--nur") >= 0 ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
 
-// DAS SOLL (gemessen am Kopf des Akts, 7 Rezepte): Wurf-IoU min 0,864 (geisttor: der dünne Monolith-Rahmen und die Hölzer der
+// DAS SOLL: Wurf-IoU min 0,864 (geisttor: der dünne Monolith-Rahmen und die Hölzer der
 // Tür unter tiefer Sonne) · Median der Rezepte 0,958 → je Rezept ≥ 0,85, Median ≥ 0,92 (das Maß der Haus-Linse). Innen p95
 // 5,8–9,1 cm (die Hülle des Geflechts über den Lücken der Stränge, die Kästen gedrehter Steine — kathedrale 8,9 —, der
 // Fern-Strang der Ruine über ihren fehlenden Steinen — 9,1) → ≤ 10 cm; der Tiefen-Bias der nahen Kaskade trägt 5–13 cm.
@@ -279,7 +279,7 @@ function deckung(umbauListe, aufblaehen, nurIds) {
     return zeilen;
 }
 
-// ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
+// ── F: DIE FERNE STUFE — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
 // Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
 // Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
 // DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third. Gemessen an Genesis Third (werkbank

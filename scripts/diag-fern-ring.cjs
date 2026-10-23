@@ -17,7 +17,7 @@
 //   (6) SICHT-BESITZ — mit bereitem Ring weitet die
 //       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die Luft misst gate:luft-tiefe:echt im Bild;
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
-//   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
+//   (9) DIE NAHT — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
 //       Gesetz (Bias ≤ 0,15 m, p95 ≤ √(Sehne² + Abweichung des Chunks²) + 0,1 m: die Sehne des Rings und das Gitter des Chunks
 //       sind unabhängige Fehler — die Summe hielt an der Stufe-2-Kante (K51, Abweichung 1,39 m) das 2-m-Tauchen nicht mehr
@@ -27,9 +27,9 @@
 //       senkrechte Strahl ein gezeichnetes Deck (gemorpht, mit Stich-Band), an jeder Kante in Voxel-Kanten der Stufe, innen
 //       und außen. Selbsttests: das alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch, die alte Zellen-Regel
 //       zeigt Löcher.
-//   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
+//   (10) DIE FERN-FARBE OHNE STREIFEN — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
-//   (11) DAS DACH IST DER BESTAND (K16) — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
+//   (11) DAS DACH IST DER BESTAND — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
 //       Generator auf 192 × 192 m um den Spieler stehen lässt (0,8–1,25); Selbsttest: die Geburt als Deckung fällt rot.
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
@@ -226,7 +226,7 @@ const server = statikServer();
                 if (c > 0 && fl.spiegel === fl.spiegel) expY += (fl.spiegel - expY) * c;
             }
             if (row === 0) expY -= F.saumDrop;
-            // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
+            // Im Gebauten taucht der Ring nicht mehr: er trägt dort das volle Gesetz und verwirft sein Fragment (die
             // Masken-Karte, Band 9).
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
@@ -262,7 +262,7 @@ const server = statikServer();
         // EINE Naht (`_fernRingWasserNeu`). Der Hub liest die Wind-Zeile des Gesetzes (Konsum: ein anderer Wind im Gesetz
         // ändert ihn im Verhältnis). Selbsttest: die alte Regel (Spiegel − wasserDrop) MUSS rot fallen.
         {
-            // DER SPIEGEL DER PROBE AUS DER WELT (K16): trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
+            // DER SPIEGEL DER PROBE AUS DER WELT: trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
             // über dem Spiegel — die Probe war leer), hebt die Probe den Spiegel auf das 10-%-Quantil seiner Höhen (die Regel ist
             // eine Funktion des Spiegels) und legt danach jeden so genässten Punkt mit dem alten Spiegel zurück.
             const wl0 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
@@ -562,7 +562,7 @@ const server = statikServer();
         } catch (e8b) {
             res.einErr = String((e8b && e8b.message) || e8b);
         }
-        // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff (K16) =====
+        // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff =====
         // Der Bestand steht still (2 s ohne neuen Chunk), dann baut der Ring SYNCHRON neu (kein await: kein Chunk kommt
         // dazwischen) und die Linse misst, was gezeichnet wird: je Kante zwischen gebautem und freiem Chunk alle 3 m die Höhe
         // des Rings 0,3 m draußen gegen die des Chunks 0,3 m drinnen (Strahl von oben auf die Meshes), im Gebauten auf einem
@@ -622,7 +622,7 @@ const server = statikServer();
             const pos9 = r.state.playerMesh.position;
             r._tickFernRing(pos9);
             await pumpe(pos9, (f) => f.cursor >= f.totalVerts, 120000);
-            // DIE DECK-WACHE SCHWINGT EIN (K16): der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
+            // DIE DECK-WACHE SCHWINGT EIN: der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
             // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
             // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
             {

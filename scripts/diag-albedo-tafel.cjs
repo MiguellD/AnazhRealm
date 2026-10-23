@@ -158,7 +158,7 @@ async function messeLabor({ echt, nur, tafel }) {
     return out;
 }
 
-// ── Die Labor-Seite der Laub-Licht-Linse (K19) ──────────────────────────────────────────────────────────────────────────
+// ── Die Labor-Seite der Laub-Licht-Linse ──────────────────────────────────────────────────────────────────────────
 // `--laub [eiche,birke] [--welt w.json] [--echt]`: je Art die Vorlage im Phytogenesis-Labor, der Key allein hinter bzw. vor
 // der Krone (`__laborLaub`); mit `--welt` (die Ausgabe von `werkbank licht --laub --datei`) das Urteil der EINEN Linse
 // (`laubLichtUrteil`: Welt ≥ 1,3, Labor = Welt nur unter der Sonne ± 10 %).
@@ -364,7 +364,7 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
-    // S6t — DER TON DER STUFE (S8, Radeon 22.10.): Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
+    // S6t — DER TON DER STUFE: Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
     const m6t = messungZumTest(T0);
     m6t.welt["haus-l2"].Y = 0.1892;
     t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));

@@ -1264,7 +1264,7 @@ function probe(selbsttest) {
         if (tot && tot.parent) r.removeCreature(tot);
     }
 
-    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden
+    // ── W10 DIE WURF-EBENE: die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden
     // Nicht-Werfer, den die Schatten-Funktion danach verwirft). Der Wurf IST die
     // Ebene SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein
     // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten

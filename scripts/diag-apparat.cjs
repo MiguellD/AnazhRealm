@@ -89,7 +89,7 @@ function scanAnker(playtestSrc, stammSrc) {
     return { entries, errs };
 }
 
-// KLINGE 3 (K38-N2) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
+// KLINGE 3 — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
 // die Liste festnagelt (im Regex `_x\(a, b\)\s*\{`, als Text "    _x(a, b) {"), bricht bei jedem neuen Parameter, obwohl das
 // geprüfte Gesetz steht. Der Name wandert mit: im Regex `_x\([^)]*\)`, im Text `stammLib.kopf(text, "_x")`. Die Klinge
 // liest JEDE Linse
@@ -181,7 +181,7 @@ function scanParameterAnker(dateien, stammSrc) {
     return { n: dateien.length, errs };
 }
 
-// KLINGE 5 (K60-N5) — DIE TASTE NACH DER WANDUHR: eine Linse hält eine Taste über einen Zeitgeber statt bis zu
+// KLINGE 5 — DIE TASTE NACH DER WANDUHR: eine Linse hält eine Taste über einen Zeitgeber statt bis zu
 // ihrem Ereignis (auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs). Gehalten
 // ist eine Taste,
 // die gedrückt (`keyboard.down`, `KeyboardEvent("keydown")`) und später DIESELBE losgelassen wird; dazwischen steht kein

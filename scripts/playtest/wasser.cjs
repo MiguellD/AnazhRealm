@@ -12,7 +12,7 @@ async function checkBandHydrosphere(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Die Kachel-Erosion ist gefallen (K16) ###
+    // ### Die Kachel-Erosion ist gefallen ###
     // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
     // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.
     const erosionTot = await safeEvaluate(page, () => {
@@ -1094,7 +1094,7 @@ async function checkBandV17117FarWater(ctx) {
         // (selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt), Hochland ohne Wasser des Gesetzes im
         // Fußabdruck + 64 m (die Fluss-Zelle des Index 32 m + die Ecke eines Segments): das Makro über Meer + 30 m und
         // kein Spiegel über dem Meer (`_atlasWaterLevelAt` als Existenz-Probe) — die Kacheln um die Heimat tragen das
-        // Flussnetz auch im Hochland (K16), und ein Chunk am Fluss trägt zu Recht Wasser.
+        // Flussnetz auch im Hochland, und ein Chunk am Fluss trägt zu Recht Wasser.
         const trocken = (ox, oz) => {
             for (let x = ox - 64; x <= ox + span + 64; x += 8)
                 for (let z = oz - 64; z <= oz + span + 64; z += 8)
@@ -1501,7 +1501,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const s = r.state;
         const out = {};
 
-        // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer) —
+        // (G1) DIE SCHNEEGRENZE ist Gesetz: die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer) —
         // KONSUM am Aufruf (der Kern ist eingefroren → offene Kopie)
         const G = window.__gelaendeCore;
         window.__gelaendeCore = Object.assign({}, G);
@@ -2210,7 +2210,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
         const px = s.playerMesh.position.x,
             pz = s.playerMesh.position.z;
         const O = (await window.__wasserOrte({ mess: [px, pz] }));
-        // DAS NÄCHSTE WASSER (K16): See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
+        // DAS NÄCHSTE WASSER: See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
         // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
         const kand = [];
         if (O && O.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });

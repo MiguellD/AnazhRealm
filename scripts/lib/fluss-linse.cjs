@@ -1,4 +1,4 @@
-// fluss-linse.cjs — DIE FLUSS-LINSE (V18.511): was der Foundry-Kanal den HAUPT-Thread kostet. Die Linse hängt sich an
+// fluss-linse.cjs — DIE FLUSS-LINSE: was der Foundry-Kanal den HAUPT-Thread kostet. Die Linse hängt sich an
 // den Worker-Kanal und misst je Antwort: Bytes, die Entpack-Zeit im Haupt-Thread (Chromium deserialisiert beim ersten
 // `ev.data`-Zugriff), die Worker-Arbeit (FIFO: Antwort minus max(Senden, vorige Antwort)), das Warten, den Gruppen-Bau
 // und den Ingest-Takt. Die Platte lebt seit der Transport-Schale im Worker — ihre Haupt-Thread-Namen hält

@@ -19,8 +19,7 @@
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
-// je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten
-// (Integration Welle L: an ad134ca7 1 von 7 Läufen rot, nach dem Fahr-Merge 5 von 9).
+// je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
 const ORT = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort;
 const PORT = Number(process.env.ANALOG_NAH_PORT || 4477);
 const SELBST = process.argv.includes("--selftest");
@@ -123,7 +122,6 @@ function urteil(z) {
             r.state.postProcessingFailed = true;
             await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
-            // (B5, GTX: S2 false, die Reihe leer, an 4d5f1c0c im Selbsttest, an ab97f0a8 im Lauf)
             await window.__weltDa(() => !(!r.state.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";

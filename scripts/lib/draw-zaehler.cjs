@@ -1,4 +1,4 @@
-// draw-zaehler.cjs — DER DRAW-ZÄHLER (V18.510): GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
+// draw-zaehler.cjs — DER DRAW-ZÄHLER: GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
 // Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Die Zahl hier kommt vom Renderer-Draw selbst
 // (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu aufgenommen (sonst zöge der Replay sie
 // ungesehen).

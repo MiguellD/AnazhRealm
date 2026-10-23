@@ -176,7 +176,7 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
-    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
+    // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
     // welt-boot `__weltStehtNach`; bis D3d: der Ring der Chunks 80 Frames ruhig). Die Orte der Stationen kommen aus der Welt und
     // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
     // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
@@ -737,7 +737,7 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
-        // DER FAHRER DER LINIE (K55-5): W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
+        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
         // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
         // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
         // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
@@ -1573,7 +1573,7 @@ async function probeLeben(expected) {
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
-                    // DER GLEICHE START (K70-N1): beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
+                    // DER GLEICHE START: beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
                     // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit.
                     let ruhe = 0;
                     let stand = null;

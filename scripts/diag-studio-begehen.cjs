@@ -11,10 +11,10 @@
 //       Austritt steht der Körper (PH) unter der sichtbaren Decke (der Speicherlauf dreigeschossiger Häuser trat unter der
 //       Schräge aus: Kopfraum 1,2 m)
 //   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
-//   B5  WELTGRUND (K10): das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
+//   B5  WELTGRUND: das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
 //       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
 //       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
-//       (B5 FLUSS bis K10) fiel mit seiner Klasse; das Wasser ist das der Welt.
+//  fiel mit seiner Klasse; das Wasser ist das der Welt.
 //   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser) — nur im echten Lauf
 //   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
 //   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
@@ -279,7 +279,7 @@ function proben(inj) {
         const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
         if (hit && istBodenPlatte(hit.object)) b4.platteDecke++;
     }
-    // ── B5 WELTGRUND (K10): der Plan v2 im Labor, die Höhen-Spanne der Häuser, der Fuß auf dem Bild ──
+    // ── B5 WELTGRUND: der Plan v2 im Labor, die Höhen-Spanne der Häuser, der Fuß auf dem Bild ──
     const b5 = {
         v2: 0,
         slots: 0,

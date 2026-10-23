@@ -2,7 +2,7 @@
 // der Selbsttest des Urteils (ohne Welt), dann die Werkbank im Software-Holz (swiftshader, kienspan) an der Mess-Wiese:
 // `albedo --nah-fern` schießt je Ort im Chunk-Quadrat den Boden-Satz und den Fern-Ring orthogonal aus 420 m über 132 m
 // und urteilt beide Leser gegen das Gesetz an der Stelle (`_fernRingTeile`) — ROT beim Namen, wenn einer außerhalb
-// seines Bands liegt (main 2c8deda9 an der echten GPU: der Boden-Satz +60 … +144 %), zu wenige Orte, ein Schuss leer
+// seines Bands liegt, zu wenige Orte, ein Schuss leer
 // bleibt oder die Karte der Fern-Krone nicht steht.
 //
 //   node scripts/diag-nah-fern.cjs [--port 4596]
