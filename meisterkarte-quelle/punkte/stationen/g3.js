@@ -149,9 +149,9 @@ const ARM = ["0.5", "1", "2"];
 
 // DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1): die Welt-Seite wie diag-albedo-tafel neuMessen, aber auf der echten GPU
 // (`werkbank start --echt`, am Ort der gespeicherten Messung, 10 s Ruhe, `albedo --tafel`), danach die Labor-Seite
-// `diag-albedo-tafel.cjs --labor --echt` je Studio (Port {PORT}+2). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor, das
-// reale Band der Zeile (`band` + `bandQuelle` der Tafel; für Fels, Rinde und Laub muss es im Band der Karte liegen, das hier
-// fest steht: `plan.karte`) und beide Seiten darin; dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
+// `diag-albedo-tafel.cjs --labor --echt` je Studio (Port {PORT}+2). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor und
+// beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum trägt kein Band, und eine
+// Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
 // `{ adapter, welt: { echt, geraet, eichung }, labor: { echt, geraet, eichung }, zeilen: [{ id, L, W, v, band, quelle, inBand }],
 // eichung: { soll, rand, welt, labor }, fehler }`. Exit 1 nur, wenn eine Seite nichts misst; das Urteil fällt die Station.
 // eslint-disable-next-line max-lines-per-function
@@ -223,17 +223,16 @@ async function albedoTafelEcht(plan) {
         };
         for (const z of t.zeilen) {
             const l = L[z.id] && L[z.id].Y, y = W[z.id] && W[z.id].Y;
-            const b = Array.isArray(z.band) && z.band.length === 2 && z.bandQuelle ? z.band : null;
-            const pin = plan.karte[z.id] || null;
-            const bandOk = !!b && (!pin || (b[0] >= pin[0] && b[1] <= pin[1]));
+            const e = plan.baender[z.id] || null;
+            const b = e && e.slice(0, 2);
+            const bandOk = !!e;
             aus.zeilen.push({
                 id: z.id,
                 L: l > 0 ? l : null,
                 W: y > 0 ? y : null,
                 v: l > 0 && y > 0 ? +(y / l).toFixed(4) : null,
                 band: b,
-                karte: pin,
-                quelle: z.bandQuelle || null,
+                quelle: e && e[2],
                 bandOk,
                 inBand: bandOk && l > 0 && y > 0 && [l, y].every((x) => x >= b[0] && x <= b[1]),
             });
@@ -244,12 +243,28 @@ async function albedoTafelEcht(plan) {
     console.log(aus.fehler ? "ALBEDO-TAFEL ROT: " + aus.fehler : "ALBEDO-TAFEL " + aus.zeilen.length + " Zeilen beider Seiten");
     process.exit(aus.fehler ? 1 : 0);
 }
-// Das reale Band der Karte (src/g3.js material, aaaa: „Fels 0,10–0,30, Rinde 0,07–0,12, Laub/Gras 0,15–0,26“): das Band der
-// Tafel-Zeile muss darin liegen; die übrigen Zeilen tragen ihr Band mit externer Referenz in der Tafel selbst.
+// DAS REALE BAND je Zeile der Tafel (lineare Albedo-Luminanz, bei Metallen F0): Fels, Rinde und Laub wörtlich aus dem aaaa der
+// Karte (src/g3.js material), die Dielektrika aus Frostbite (die Referenz der Karte unter „beste“), die Metalle aus dem Band der
+// Natur des Spiels (scripts/diag-gegenstand-stoff.cjs BAND, PBR-Tafeln).
+const DIEL = [0.0123, 0.871, "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"];
+const BAENDER = {
+    rinde: [0.07, 0.12, "Karte material (aaaa): Rinde 0,07–0,12"],
+    laub: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26"],
+    fels: [0.1, 0.3, "Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],
+    boden: DIEL,
+    haus: DIEL,
+    "haus-l1": DIEL,
+    "haus-l2": DIEL,
+    lack: DIEL,
+    haut: DIEL,
+    fell: DIEL,
+    tor: [0.25, 0.95, "Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)"],
+    klinge: [0.3, 0.95, "blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)"],
+};
 const ALBEDO_TAFEL_ECHT = [
     "node",
     "-e",
-    "(" + albedoTafelEcht.toString() + ")(" + JSON.stringify({ name: "material.K1", karte: { fels: [0.1, 0.3], rinde: [0.07, 0.12], laub: [0.15, 0.26] } }) + ")",
+    "(" + albedoTafelEcht.toString() + ")(" + JSON.stringify({ name: "material.K1", baender: BAENDER }) + ")",
     "{AUS}",
 ];
 const ALBEDO_PFAD = [
@@ -517,8 +532,8 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
-        // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1, jede trägt ein reales Band mit Quelle und liegt beidseits
-        // darin, die Seiten auf der Karte (nie ein Ersatz-Renderer).
+        // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
+        // Seiten auf der Karte (nie ein Ersatz-Renderer).
         befehl: ALBEDO_TAFEL_ECHT,
         env: envDer,
         gpu: true,
