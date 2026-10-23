@@ -801,8 +801,7 @@ const S0_NAH_INSTALL = () => {
 // DAS URTEIL ÜBER DIE GESTALT DER FEUERSTELLE (K10-6 Nachbesserung 2): wartet die Linse auf die Feuerstelle, nennt sie, was
 // fehlt, beim Namen — fiel sie aus der Welt, steht der Rufer von `removeArchitecture` (die Wache, `__s0Wache`) im Urteil, und
 // die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das Buch, die Schlange,
-// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt. Befund (CI 38660872064, voll 11/18): „die
-// Feuerstelle wächst" 158 s lang, ohne Täter — lokal und in jedem anderen Lauf stand sie nach 1–3 s.
+// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt.
 const S0_GESTALT_INSTALL = () => {
     const r = window.anazhRealm;
     const weg = Object.getPrototypeOf(r).removeArchitecture;
@@ -923,9 +922,7 @@ const S0_STOFF = (() => {
 // DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
 // „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung (die IBL jedes Stoffs, ihre
 // Lesung `_himmelsIrradianz`) die Bestrahlung des Himmels, der jetzt gilt: den Himmel des Orts, den die Belichtung und das Wasser
-// synchron lesen (`_himmelsBestrahlung`, S7). Bis K10 malte `_dayNightApplySkybox` die Umgebung VOR der Luft-Farbe
-// (`_dayNightApplyHemiUndLuft`), und die Raten-Drossel hielt den Sprung 6 s: die Nacht der Gasse trug die Bestrahlung 2,07 des
-// Tag-Himmels (Radeon, Bild 0,179 gegen 0,204 am Tag). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
+// synchron lesen (`_himmelsBestrahlung`, S7). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
 // auf die CPU (`state._skyEnvLesung`) — die Probe misst darum im Bild-Lauf (der Null-Renderer malt keinen Himmel, Lehre 16): sie
 // wartet auf die Lesung, die der Sprung angestoßen hat; malt der Maler nicht, bleibt die Lesung der vorigen Stunde stehen.
 // Morgen als Ausgang (frisch gemalt), dann Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel).

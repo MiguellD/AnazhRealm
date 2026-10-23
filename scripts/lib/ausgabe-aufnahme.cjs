@@ -328,7 +328,7 @@ function uhrHalten() {
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
 // `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt nur Takte
 // ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973
-// Takte). Sonst bricht der Schuss LAUT beim Täter. Bis K-WANDUHR trug die Bühne eine eigene Schleife (der Zwilling des Einschwingens).
+// Takte). Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;

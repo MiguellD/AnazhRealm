@@ -3,6 +3,8 @@
     "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse ein Exemplar im Labor und in der Welt, EINE Rechnung, Ratsche, Soll und Werkzeuge: scripts/lib/albedo-tafel.cjs; Wand npm run gate:albedo-tafel.",
     "toleranz": 0.1,
     "messRand": 0.04,
+    "stufenToleranz": 0.05,
+    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs)",
     "karte": {
         "albedo": 0.18,
         "eichRand": 0.003
@@ -13,18 +15,18 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-23T02:36:23.538Z",
+            "datum": "2026-10-23T00:49:41.062Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
             "version": "18.546.69",
-            "sha": "5f5dd4100e98739bff40bd508c5981c756ba3cc1",
+            "sha": "deb906c072f0243944e0f0a239aa14e2152247ed",
             "quellen": {
                 "phyto-core.js": "c:c89f0e2882149a07",
                 "foundry-core.js": "c:49d6507c8f31cb07",
-                "vehicle-core.js": "c:2af80a391f962951",
+                "vehicle-core.js": "c:23c463ef765fc4db",
                 "porta-core.js": "c:11bc6e763f4f7298",
                 "schmiede-core.js": "c:a8705fc88a089d00",
-                "fachwerk-core.js": "c:75dca456aa34c5db",
+                "fachwerk-core.js": "c:99ea7197a2e80342",
                 "klang-core.js": "c:2064255c9841dd19",
                 "koerper-core.js": "c:0ee2945630337a11",
                 "tetrapoda-core.js": "c:868d243e6143e765",
@@ -84,23 +86,23 @@
             }
         },
         "welt": {
-            "datum": "2026-10-23T02:35:20.746Z",
+            "datum": "2026-10-23T00:48:55.330Z",
             "geraet": "amd rdna-3",
-            "ort": "genesis",
+            "ort": null,
             "spieler": [
                 0,
                 0
             ],
             "echt": true,
             "version": "18.546.69",
-            "sha": "5f5dd4100e98739bff40bd508c5981c756ba3cc1",
+            "sha": "deb906c072f0243944e0f0a239aa14e2152247ed",
             "quellen": {
                 "phyto-core.js": "c:c89f0e2882149a07",
                 "foundry-core.js": "c:49d6507c8f31cb07",
-                "vehicle-core.js": "c:2af80a391f962951",
+                "vehicle-core.js": "c:23c463ef765fc4db",
                 "porta-core.js": "c:11bc6e763f4f7298",
                 "schmiede-core.js": "c:a8705fc88a089d00",
-                "fachwerk-core.js": "c:75dca456aa34c5db",
+                "fachwerk-core.js": "c:99ea7197a2e80342",
                 "klang-core.js": "c:2064255c9841dd19",
                 "koerper-core.js": "c:0ee2945630337a11",
                 "tetrapoda-core.js": "c:868d243e6143e765",
@@ -207,8 +209,8 @@
             "ist": {
                 "labor": {
                     "Y": 0.0893,
-                    "rgb": "0.1066/0.087/0.0618",
-                    "pixel": 17730
+                    "rgb": "0.1065/0.0869/0.0618",
+                    "pixel": 17726
                 },
                 "welt": {
                     "Y": 0.0866,
@@ -275,12 +277,12 @@
                 "labor": {
                     "Y": 0.1784,
                     "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 122028
+                    "pixel": 121938
                 },
                 "welt": {
                     "Y": 0.1679,
-                    "rgb": "0.0906/0.2034/0.0447",
-                    "pixel": 54468,
+                    "rgb": "0.0906/0.2033/0.0447",
+                    "pixel": 54662,
                     "stufen": [
                         0,
                         1
@@ -471,14 +473,15 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "haus_alemannisch",
-                    "radius": 9
+                    "radius": 9,
+                    "stufe": 0
                 },
                 "klasse": "^(bauSatz|f:alemannisch:L[01])$",
                 "stoff": {
                     "seh": "stoff"
                 },
                 "stufen": [
-                    1
+                    0
                 ]
             },
             "quellen": [
@@ -500,16 +503,122 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.1579,
-                    "rgb": "0.2745/0.1304/0.0873",
-                    "pixel": 161942,
+                    "Y": 0.1593,
+                    "rgb": "0.2755/0.1319/0.0887",
+                    "pixel": 160149,
+                    "stufen": [
+                        0
+                    ]
+                },
+                "verhaeltnis": 0.936
+            },
+            "ratsche": 0.0579
+        },
+        {
+            "id": "haus-l1",
+            "gruppe": "Haus",
+            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
+            "labor": {
+                "studio": "fachwerk"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_alemannisch",
+                    "radius": 9,
+                    "stufe": 1
+                },
+                "klasse": "^(bauSatz|f:alemannisch:L1)$",
+                "stoff": {
+                    "seh": "stoff"
+                },
+                "stufen": [
+                    1
+                ],
+                "stufeVon": "haus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": {
+                "labor": {
+                    "Y": 0.1476,
+                    "rgb": "0.2801/0.1156/0.075",
+                    "pixel": 407007
+                },
+                "welt": {
+                    "Y": 0.1581,
+                    "rgb": "0.2742/0.1308/0.0871",
+                    "pixel": 162565,
                     "stufen": [
                         1
                     ]
                 },
-                "verhaeltnis": 0.9443
+                "verhaeltnis": 0.9336
             },
-            "ratsche": 0.0573
+            "ratsche": 0.0586
+        },
+        {
+            "id": "haus-l2",
+            "gruppe": "Haus",
+            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
+            "labor": {
+                "studio": "fachwerk"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_alemannisch",
+                    "radius": 9,
+                    "stufe": 2
+                },
+                "klasse": "^(bauSatz|f:alemannisch:L2)$",
+                "stoff": {
+                    "seh": "stoff"
+                },
+                "stufen": [
+                    2
+                ],
+                "stufeVon": "haus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": {
+                "labor": {
+                    "Y": 0.1476,
+                    "rgb": "0.2801/0.1156/0.075",
+                    "pixel": 407007
+                },
+                "welt": {
+                    "Y": 0.157,
+                    "rgb": "0.2795/0.1273/0.0907",
+                    "pixel": 188608,
+                    "stufen": [
+                        2
+                    ]
+                },
+                "verhaeltnis": 0.9401
+            },
+            "ratsche": 0.0516
         },
         {
             "id": "lack",
@@ -537,7 +646,7 @@
                     "radius": 4,
                     "nah": 0,
                     "seed": 7,
-                    "stufeNah": true
+                    "stufe": 0
                 },
                 "klasse": "^f:gt:L0$",
                 "stoff": {
@@ -563,21 +672,21 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0166,
-                    "rgb": "0.0144/0.0166/0.0226",
+                    "Y": 0.0059,
+                    "rgb": "0.005/0.0058/0.0087",
                     "pixel": 245421
                 },
                 "welt": {
-                    "Y": 0.0164,
-                    "rgb": "0.0142/0.0165/0.0224",
+                    "Y": 0.0058,
+                    "rgb": "0.005/0.0058/0.0087",
                     "pixel": 77839,
                     "stufen": [
                         0
                     ]
                 },
-                "verhaeltnis": 1.0122
+                "verhaeltnis": 1.0172
             },
-            "ratsche": 0.0121
+            "ratsche": 0.0171
         },
         {
             "id": "tor",
@@ -681,19 +790,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0607,
-                    "rgb": "0.1217/0.0462/0.025",
-                    "pixel": 74418
+                    "Y": 0.0606,
+                    "rgb": "0.1215/0.0461/0.0249",
+                    "pixel": 74263
                 },
                 "welt": {
-                    "Y": 0.0609,
-                    "rgb": "0.1222/0.0463/0.0251",
-                    "pixel": 29864,
+                    "Y": 0.0708,
+                    "rgb": "0.1424/0.0537/0.0292",
+                    "pixel": 33208,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9967
+                "verhaeltnis": 0.8559
             },
-            "ratsche": 0.0033
+            "ratsche": 0.152
         },
         {
             "id": "fell",
@@ -737,19 +846,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1691,
-                    "rgb": "0.2062/0.1638/0.1124",
-                    "pixel": 152769
+                    "Y": 0.1689,
+                    "rgb": "0.2059/0.1636/0.1123",
+                    "pixel": 152974
                 },
                 "welt": {
-                    "Y": 0.1847,
-                    "rgb": "0.2269/0.1786/0.1209",
-                    "pixel": 44532,
+                    "Y": 0.1852,
+                    "rgb": "0.2272/0.1791/0.1214",
+                    "pixel": 45000,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9155
+                "verhaeltnis": 0.912
             },
-            "ratsche": 0.0883
+            "ratsche": 0.0905
         },
         {
             "id": "klinge",
@@ -809,9 +918,9 @@
             "ist": {
                 "kL": 0.676,
                 "ausgabe": [
-                    170,
-                    175,
-                    168
+                    168,
+                    173,
+                    166
                 ]
             },
             "ratsche": 0.7612
@@ -829,11 +938,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8012,
+                "kL": 0.8006,
                 "ausgabe": [
-                    193,
-                    204,
-                    199
+                    195,
+                    206,
+                    201
                 ]
             },
             "ratsche": 0.9292
@@ -842,16 +951,16 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    173,
-                    161,
-                    149
+                    172,
+                    160,
+                    148
                 ]
             },
             "ratsche": 0.7106
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4802,
+                "kL": 0.4813,
                 "ausgabe": [
                     197,
                     194,

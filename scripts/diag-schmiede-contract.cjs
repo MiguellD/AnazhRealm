@@ -26,8 +26,7 @@
 //
 // PLATTFORM-PROBE (Integration W5, scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8
 // dieselben Bytes — jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss
-// byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Befund: unter Node 24 geprägt, unter Node 22
-// (CI) rot — die Säbel-Klinge hing an pow(e, 0,7) im Querschnitt. Seit S1 Wände driften alle Transzendenten: pow
+// byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Seit S1 Wände driften alle Transzendenten: pow
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const fs = require("fs");
