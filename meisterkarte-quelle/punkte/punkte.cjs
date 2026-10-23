@@ -4,6 +4,7 @@
 //
 //   node punkte.cjs run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700]
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
+//        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
 //   node punkte.cjs buchen --kopf <sha>
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste        die registrierten Stationen, geprüft gegen src/gN.js
@@ -301,6 +302,26 @@ function baumAmSha(repo, geraet, sha) {
     return baum;
 }
 
+// die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; eine tote pid gilt als verwaist, gelöst wird beim Prozess-Ende
+async function baumSperre(repo, geraet) {
+    const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
+    const lebt = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
+    for (let gemeldet = false; ; ) {
+        try {
+            fs.mkdirSync(sperre);
+            fs.writeFileSync(path.join(sperre, "pid"), String(process.pid));
+            process.on("exit", () => fs.rmSync(sperre, { recursive: true, force: true }));
+            return;
+        } catch (e) {
+            if (e.code !== "EEXIST") throw e;
+            const pid = Number((fs.existsSync(path.join(sperre, "pid")) && fs.readFileSync(path.join(sperre, "pid"), "utf8")) || 0);
+            if (pid && !lebt(pid)) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
+            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; }
+            await new Promise((r) => setTimeout(r, 30000));
+        }
+    }
+}
+
 const messDatei = (sha, geraet, mdir = path.join(DIR, "messung")) => path.join(mdir, sha.slice(0, 8) + "-" + geraet + ".json");
 
 async function run(opt) {
@@ -313,11 +334,28 @@ async function run(opt) {
     const ports = new Map();
     let p = Number(opt.portBasis || 7700);
     for (const st of stationen) { if (p === TABU_PORT) p++; ports.set(schluessel(st), p++); }
-    const meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
+    let meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
     if (nur) for (const id of nur) if (!meine.some((st) => schluessel(st) === id)) throw new Error("--nur " + id + ": keine Station auf " + opt.geraet);
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
     const repo = spielRepo();
     const sha = voll(repo, opt.sha);
+    // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
+    if (opt.offen) {
+        const frisch = frischUrteil(ladeMessungen(), (s) =>
+            weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)));
+        meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
+        if (!meine.length) {
+            console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
+            return null;
+        }
+    }
+    if (opt.trocken) {
+        console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
+            meine.reduce((s, st) => s + (st.minuten || 0), 0) + " min: " + meine.map(schluessel).join(" "));
+        return null;
+    }
+    // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
+    await baumSperre(repo, opt.geraet);
     const baum = baumAmSha(repo, opt.geraet, sha);
     const datei = messDatei(sha, opt.geraet);
     const rohDir = path.join(DIR, "messung", "roh", sha.slice(0, 8) + "-" + opt.geraet);
@@ -346,7 +384,9 @@ async function run(opt) {
 
 // ───────────────────────────────── Buchung ─────────────────────────────────
 // messungen: Liste {sha, geraet, je}; geaendert(messSha) → Liste der Dateien bis zum Kopf (wirft, wenn unbekannt)
-function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = []) {
+// die jüngste frische Messung je Station und Gerät (Abdruck gleich, Pfad seit der Messung in Welt-Bytes unberührt) — das EINE
+// Frische-Urteil für die Buchung und für `run --offen`
+function frischUrteil(messungen, geaendert, hilfe = hilfeText()) {
     const diffCache = new Map();
     const diff = (sha) => {
         if (!diffCache.has(sha)) {
@@ -354,8 +394,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         }
         return diffCache.get(sha);
     };
-    // die jüngste frische Messung je Station und Gerät
-    const stand = (st, g) => {
+    return (st, g) => {
         const id = schluessel(st);
         const ab = abdruck(st, hilfe);
         let alt = 0, fremd = 0, unbekannt = 0, taeter = [];
@@ -374,6 +413,10 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         if (frisch.length) return frisch[0];
         return { gruen: false, ungemessen: true, grund: alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
     };
+}
+
+function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = []) {
+    const stand = frischUrteil(messungen, geaendert, hilfe);
     const je = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
@@ -634,7 +677,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700] · buchen --kopf <sha> · liste · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--port-basis 7700] · buchen --kopf <sha> · liste · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {
