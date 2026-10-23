@@ -1254,6 +1254,15 @@ class AnazhRealm_koerper_fahrt {
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
+    // DIE HAFTUNG AM WAGEN (feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): der Boden-Faktor des Reibkreises im
+    // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
+    // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
+    // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
+    _fahrHaft() {
+        const n = this.state.naesse;
+        return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -1276,7 +1285,12 @@ class AnazhRealm_koerper_fahrt {
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
+                vc.fahrKraefte(
+                    fz,
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft() },
+                    entry._fahrSatz,
+                    dt
+                );
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {

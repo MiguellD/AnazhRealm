@@ -108,7 +108,7 @@ async function probeLeben(expected) {
         }
         if (z.spur && z.ent && z.ent._fahr) {
             const q = z.ent._fahr;
-            z.spur.push({ e, dt, x: q.x, z: q.z, yaw: q.yaw, y: q.y, luft: q.luft, kontakt: z.kontakt });
+            z.spur.push({ e, dt, x: q.x, z: q.z, yaw: q.yaw, y: q.y, luft: q.luft, v: q.vlong, kontakt: z.kontakt });
         }
     };
     // Der EINE Kontakt-Löser: was er in diesem Sim-Schritt der Fahrt nahm (Lage oder Geschwindigkeit ≠ v·dt), ist kein
@@ -144,10 +144,8 @@ async function probeLeben(expected) {
         const ws = r._atlasWaterLevelAt(a, b, hh(a, b)); // der Spiegel des Gesetzes (wie gate:vehicle-drive)
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
-    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x — und EBEN: die
-    // Mess-Wiese war eben, seit K16 liegt sie am Hang (quer 0,31 m je m, die Strecke von damals 0,21 m Stufe je 2 m). Der
-    // nächste Ring (32 m, bis 512 m) mit einer Strecke, deren Stufe ≤ 0,16 m je 2 m und deren Quergefälle ≤ 0,05 m je m
-    // ist, darin die kleinste Stufe.
+    // Die Strecke: trocken, eben, Fahrt in +x — der nächste Ring um die Mess-Wiese (32 m, bis 512 m) mit Stufe ≤ 0,16 m je 2 m
+    // und Quergefälle ≤ 0,05 m je m, darin die kleinste Stufe.
     const mo = expected.messort;
     let start = null;
     for (let ring = 0; ring <= 16 && !start; ring++)
@@ -176,10 +174,7 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
-    // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
-    // welt-boot `__weltStehtNach`; bis D3d: der Ring der Chunks 80 Frames ruhig). Die Orte der Stationen kommen aus der Welt und
-    // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
-    // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
+    // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (welt-boot `__weltStehtNach`).
     const ankommen = async (x, zz) => {
         st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
@@ -263,6 +258,68 @@ async function probeLeben(expected) {
             stufe,
         };
     };
+    // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
+    // des Stoffs), Grip (Verzögerung der Vollbremsung in Sim-Schritten). Gehalten wird der VORGÄNGER; `stern` liest das Wort.
+    const kette = async (K) => {
+        const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
+        await ankommen(start.x, start.z);
+        const wetter = (wort, s) => {
+            r._setWeather(wort, "human");
+            st.weatherTransition = null; // der Übergang des Bilds läuft auf der Wanduhr
+            r._naesseTakt(s);
+        };
+        const bremse = async () => {
+            const e = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
+            if (!e || !e._fahr) return {};
+            tasten(true);
+            for (let i = 0; i < K.anlauf; i++) frame(i);
+            let [t, v] = [0, e._fahr.vlong];
+            const v0 = v;
+            [z.spur, z.ent] = [[], e];
+            tasten(false);
+            st.keys.s = true;
+            for (let n = 0; n < K.bremsMax && e._fahr.vlong > bV; n++) frame(n);
+            for (const q of z.spur) {
+                if (!q.e.brake || !(q.v > bV)) break;
+                [t, v] = [t + q.dt, q.v];
+            }
+            [z.spur, z.ent, st.keys.s] = [null, null, false];
+            weg(e);
+            return { verz: t > 0 ? (v0 - v) / t : 0 };
+        };
+        const lage = async (name, wort, halt) => {
+            wetter("sunny", 1e6);
+            const los = halt && halt();
+            wetter(wort, K.sprungS);
+            const m = { regen: r._weatherFieldFor(st.weather).rain, naesse: st.naesse, stoff: r._ensureAtmoUniforms().naesse.value };
+            out[name] = Object.assign(m, await bremse());
+            if (los) los();
+        };
+        const halte = (k, fn) => () => ((r[k] = fn), () => delete r[k]);
+        const fest = halte("_naesseTakt", () => st.naesse);
+        await lage("trocken", "sunny");
+        await lage("sturm", "stormy");
+        await lage("festRegen", "stormy", halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny")));
+        await lage("festNaesse", "stormy", fest);
+        if (P0._fahrHaft)
+            await lage("stern", "stormy", () => {
+                const los = fest();
+                r._fahrHaft = () => (r._weatherIsWet() ? r.constructor.NAESSE.haft : 1);
+                return () => los() && delete r._fahrHaft;
+            });
+        wetter("sunny", 1e6);
+        r._wetterFreigeben("human");
+        return out;
+    };
+    if (expected.nurKette) {
+        try {
+            res.kette = await kette(expected.kette);
+        } catch (e) {
+            res.err = String((e && e.stack) || e);
+        }
+        aufraeumen();
+        return res;
+    }
     try {
         // (1) Der GT geradeaus, W gehalten (Fahrt +x).
         const gt = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -340,8 +397,7 @@ async function probeLeben(expected) {
             r._foundry = fo;
         }
         r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (er rollt nicht zurück und dreht sich nicht). Der Hang kommt aus
-        // der Welt (welt-orte `hang`, K55-2): das Gefälle über ±3 m
+        // (2) Am Hang ohne Taste: der GT steht bergauf. Der Hang aus der Welt (welt-orte `hang`): das Gefälle über ±3 m
         // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
         const grad = (t) => (Math.atan(t) * 180) / Math.PI;
         const hangOrt = window.__weltOrt("hang", {
@@ -487,7 +543,7 @@ async function probeLeben(expected) {
 
         // ═══ S — DIE STATIONEN (Q13) ═══
         const S = (res.stationen = { kern: !!(VC && typeof VC.fahrSchritt === "function") });
-        // R — DIE RÄDER IN DER INSTANZ (Q13 F-D8): dieselbe Gerade; W (1,5 s), dann S (Vollbremsung, 1 s), dann W + A. Je
+        // R — DIE RÄDER IN DER INSTANZ: dieselbe Gerade; W (1,5 s), dann S (Vollbremsung, 1 s), dann W + A. Je
         // Sim-Schritt die Rad-Leaves (`lf.rad`) RELATIV zum Aufbau (dreht, lenkt das Rad?) und der Aufstand (Naben-Mitte − radR
         // gegen den Boden); ohne Rad-Leaves die Rad-Punkte der Aufbau-Matrix (fAx/rAx × ±Spur/2).
         const gR = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -553,7 +609,6 @@ async function probeLeben(expected) {
                         const key = rd.ecke;
                         const e = Rel.elements;
                         const yAchse = [e[4], e[5], e[6]];
-                        const xAchse = [e[0], e[1], e[2]];
                         if (!relStart.has(key)) relStart.set(key, yAchse);
                         const y0 = relStart.get(key);
                         const c =
@@ -563,11 +618,10 @@ async function probeLeben(expected) {
                         if (phase === "a") {
                             // Gier der Nabe im Aufbau: die Achse z des Rades (die Drehachse) gegen die Quer-Achse z des Aufbaus
                             const zA = [e[8], e[9], e[10]];
-                            const gier = Math.abs(Math.atan2(zA[0], Math.abs(zA[2]))) * (rd.dreh ? 1 : 1);
+                            const gier = Math.abs(Math.atan2(zA[0], Math.abs(zA[2])));
                             if (rd.front) lenk = Math.max(lenk, gier);
                             else lenkHinten = Math.max(lenkHinten, gier);
                         }
-                        void xAchse;
                     }
                 } else {
                     for (const ax of [hu.fAx, hu.rAx])
@@ -707,9 +761,8 @@ async function probeLeben(expected) {
             ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
             : null;
         S.klippeOrt = kl;
-        // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
-        // und die Welt streut dort neu ein (Spawn-Affinität: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
-        // Vor dem Aufsitzen läuft die Welt 60 Frames, dann räumt die Probe, was auf dem Anlauf bis 8 m über die Kante blockt.
+        // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt einen Remesh seines Chunks an, die Welt
+        // streut dort neu ein; vor dem Aufsitzen läuft sie 60 Frames, dann räumt die Probe, was auf dem Anlauf blockt.
         let geraeumt = 0;
         const bahnFrei = (k) => (wagen) => {
             for (let i = 0; i < 60; i++) frame(i);
@@ -737,10 +790,8 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
-        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
-        // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
-        // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
-        // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
+        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die Linie
+        // (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück.
         let gierVor = null;
         const halteLinie = (g, k) => {
             for (const t of ["w", "a", "s", "d", "shift", " "]) st.keys[t] = false;
@@ -793,10 +844,8 @@ async function probeLeben(expected) {
                 weg(g2);
             }
             bahnWache = klippenBahn(kl);
-            // S4 ABSTEIGEN IM FLUG (`dismountArchitecture` stellt den Wagen ab): dieselbe Klippe, W bis der Wagen
-            // `STATION.flugM` über dem
-            // Boden fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
-            // Sprung > 0,5 m je Sim-Schritt.
+            // S4 ABSTEIGEN IM FLUG: dieselbe Klippe, W bis der Wagen `STATION.flugM` über dem Boden fliegt, dann absteigen; 240
+            // Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-Sprung > 0,5 m je Sim-Schritt.
             const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g4) {
                 tasten(true, false);
@@ -857,9 +906,7 @@ async function probeLeben(expected) {
             bahnWache = null;
         }
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
-        // kommt aus der Welt (welt-orte `querhang`, K55-2 — bis dahin ± 160 m um die Mess-Wiese, die flache Aue trug keinen):
-        // die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H) — seit die Stamm-Hülle eines Studio-Baums im
-        // Weltmaß steht (Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
+        // aus der Welt (welt-orte `querhang`), die Fahrt-Linie frei von Bauten und Stämmen (wie die Gasse von H).
         const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
         const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
@@ -892,7 +939,7 @@ async function probeLeben(expected) {
             bahnWache = null;
         }
 
-        // ═══ H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5) ═══ Auf einer freien, trockenen, flachen Gasse (kein fremder Blocker in
+        // ═══ H — DIE HÜLLE ALS KÖRPER ═══ Auf einer freien, trockenen, flachen Gasse (kein fremder Blocker in
         // ±2,5 m auf 16 m) steht 9 m vor dem Wagen ein Hindernis; der GT fährt mit W hinein. Gemessen: das EINDRINGEN der
         // Wagen-Hülle (exportDrive.huelle, 0,1-m-Raster) in die Blocker-Boxen eines Felsblocks (`stein_block`) und den Leib
         // eines Bären, und der kleinste Abstand am Ende (sonst wäre 0 Eindringen vakuös).
@@ -1040,7 +1087,7 @@ async function probeLeben(expected) {
                         return out;
                     };
                     const ent = { _fahr: { y: 0, steig: 0, wank: 0 }, _rideYaw: 0 };
-                    // zehn Schritte nacheinander (der Schub je Schritt ist auf eine Rad-Stufe begrenzt, 0710-2): der Kasten
+                    // zehn Schritte nacheinander (der Schub je Schritt ist auf eine Rad-Stufe begrenzt): der Kasten
                     // drückt die Hülle Schritt um Schritt an die Wand, und keiner schiebt sie hinein
                     let x = 0;
                     let schub = 0;
@@ -1058,7 +1105,7 @@ async function probeLeben(expected) {
             }
         }
 
-        // ═══ L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2, sichtbar gefahren) ═══
+        // ═══ L — DIE ORTE DER LEBEN-SCHAU ═══
         // An GENAU den Orten der Leben-Schau, mit ihrem Tempo und ihrer Gier, durch den echten Sim-Schritt. Je Sim-Schritt:
         // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands) über der Höhe des Wagens,
         // solange er nicht fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.
@@ -1367,8 +1414,7 @@ async function probeLeben(expected) {
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
                 r.assignCreatureTask(c, "wait");
-                // Der Bär steht still (kein Hirn wählt mit Math.random): ein Steuer-Gesetz, dessen Schritt das Tempo nullt;
-                // nur der Stoß bewegt ihn.
+                // Der Bär steht still: ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
                 const A = Object.getPrototypeOf(r).constructor;
                 if (!A.__steuerRoh) {
                     A.__steuerRoh = A._steuerGesetz;
@@ -1390,7 +1436,7 @@ async function probeLeben(expected) {
                 r.removeCreature(c);
             },
         });
-        // L6 SPIELER UND WAGEN (0710-4): (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
+        // L6 SPIELER UND WAGEN: (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
         // die Fahrt in den Wagen (er prallt ab, statt in die Box zu drücken), die Handbremse hält den Wagen (sie nimmt den
         // Stoß eines Menschen auf), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s, rutscht auf den
         // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
@@ -1762,7 +1808,7 @@ async function probeLeben(expected) {
                         m.tiefe = +(ort.spiegel - hh(ort.x, ort.z)).toFixed(2);
                         S.schwimmer = m;
                         r.removeCreature(f);
-                        // DER SCHWIMMER IM LOCKSTEP (L8, 0710-5-Nachschnitt): derselbe Stoß bei 60 fps und bei gemischten Frames,
+                        // DER SCHWIMMER IM LOCKSTEP (L8): derselbe Stoß bei 60 fps und bei gemischten Frames,
                         // die Lage 20 Sim-Schritte danach — x, z UND y (im Wasser setzte der Frame-Takt die Höhe, mit seinen Wellen)
                         const schwimmLauf = (muster) => {
                             const g = r.spawnCreatureAt(ort.x, ort.spiegel, ort.z, "calm", "fuchs", {
@@ -1821,7 +1867,7 @@ async function probeLeben(expected) {
                         : "kein See in der Welt (`__wasserOrte`)",
                 };
         }
-        // L9 DER REITER IM WAGEN (0710-4 Klasse 4): je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
+        // L9 DER REITER IM WAGEN: je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
         // quer zur Fahrt (die Maus ist nicht der Wagen), einschwingen — dann die HAUT des Reiters: jede Ecke jedes sichtbaren
         // Meshes der Nah-Gestalt über ihre Knochen. Gemessen über der Rad-Ebene (Ursprung − 0,5): die Oberkante gegen die
         // Dachlinie des Kerns (huelle.yRoof), die Unterseite der Oberschenkel gegen die Sitzfläche (der Sitz-Anker), das
@@ -2079,6 +2125,7 @@ async function probeLeben(expected) {
             S.spalt.rand = hh(kante.x, kante.z);
             S.spalt.grund = kante.grund;
         }
+        res.kette = await kette(expected.kette); // W (feld.K1) zuletzt
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
