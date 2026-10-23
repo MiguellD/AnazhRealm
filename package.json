@@ -129,7 +129,7 @@
         "gate:asset-inventory": "node scripts/diag-asset-inventory.cjs --selftest",
         "gate:season-meadow": "node scripts/diag-season-meadow.cjs --selftest && node scripts/diag-season-meadow.cjs",
         "gate:s4-impostor-workshop": "node scripts/diag-s4-impostor-workshop.cjs",
-        "gate:nervensystem": "node scripts/diag-nervensystem.cjs",
+        "gate:nervensystem": "node scripts/diag-nervensystem.cjs --selftest && node scripts/diag-nervensystem.cjs",
         "gate:nervensystem-vehicle": "node scripts/diag-nervensystem-vehicle.cjs --selftest && node scripts/diag-nervensystem-vehicle.cjs",
         "gate:nervensystem-porta": "node scripts/diag-nervensystem-porta.cjs --selftest && node scripts/diag-nervensystem-porta.cjs",
         "gate:nervensystem-schmiede": "node scripts/diag-nervensystem-schmiede.cjs --selftest && node scripts/diag-nervensystem-schmiede.cjs",

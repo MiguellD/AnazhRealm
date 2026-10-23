@@ -6192,6 +6192,45 @@
                 text-align: right;
                 color: var(--ink-on-dark, #e8d4a8);
             }
+            /* die Kosten-Leiste der Hülle (studios.K5): je Stufe die Dreiecke gegen die Budget-Zeile, im Messing der Werkstatt */
+            #workshop-recipe-panel .h-kosten-kopf {
+                display: flex;
+                gap: 6px;
+                font: 10px "JetBrains Mono", monospace;
+                color: var(--ink-on-dark, #e8d4a8);
+            }
+            #workshop-recipe-panel .h-kosten-bahn {
+                position: relative;
+                height: 4px;
+                margin: 2px 0 5px;
+                background: rgba(138, 106, 54, 0.28);
+                border-radius: 2px;
+                overflow: hidden;
+            }
+            #workshop-recipe-panel .h-kosten-balken {
+                position: absolute;
+                inset: 0 auto 0 0;
+                background: #7fae5a;
+            }
+            #workshop-recipe-panel .h-kosten-zeile.warn .h-kosten-balken {
+                background: #d8a640;
+            }
+            #workshop-recipe-panel .h-kosten-zeile.fail .h-kosten-balken {
+                background: #c8573c;
+            }
+            #workshop-recipe-panel .h-kosten-band {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: var(--ink-on-dark, #e8d4a8);
+            }
+            #workshop-recipe-panel .h-kosten > .h-gruppe,
+            #workshop-recipe-panel .h-kosten-quelle {
+                font-size: 9px;
+                letter-spacing: 0.06em;
+                color: var(--ink-on-dark-soft, #cdbf9a);
+            }
             .workshop-recipe-btns {
                 display: flex;
                 gap: 6px;
