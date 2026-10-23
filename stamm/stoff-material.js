@@ -1243,7 +1243,7 @@ class AnazhRealm_stoff_material {
         // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
         // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
         // voll sonnen-lit, ACES wüsche die Krone teal/weiß.
-        let _mikroAo = null; // die Kavität des Mikro-Reliefs (`_mikroKavitaet`), sie liegt auf der Himmels-Sicht
+        let _mikroH = null; // die Höhe des Mikro-Reliefs (`_mikroStoff`: Kavität auf der Himmels-Sicht, Korn in der Albedo)
         if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
@@ -1298,7 +1298,7 @@ class AnazhRealm_stoff_material {
                             .mul(_flatGate);
                         const _mk = this._mikroRelief(_Tn, _wp);
                         _baseN = _baseN.add(_mk.neigung.mul(_lod));
-                        _mikroAo = this._mikroKavitaet(_Tn, _mk.hoehe.mul(_lod));
+                        _mikroH = _mk.hoehe.mul(_lod);
                     }
                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView): die geflattete Welt-Normale
                     // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
@@ -1328,7 +1328,7 @@ class AnazhRealm_stoff_material {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
-            if (_mikroAo) mat.aoNode = mat.aoNode ? mat.aoNode.mul(_mikroAo) : _mikroAo;
+            if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
@@ -1853,8 +1853,8 @@ class AnazhRealm_stoff_material {
     // Versatz im Zell-Raum trennt die Gitter der Oktaven (Perlin ist 0 auf jedem Gitterpunkt). `n` (Welt, Einheit): ohne sie die
     // Ebene (x, z) des Bodens mit seinen festen Oktaven (Klumpen `freq`, Kiesel `freq2`), mit ihr die Fläche in jeder Lage
     // (dreiplanar nach |n|⁴, in ihre Tangential-Ebene gelegt). Rückgabe { neigung (Welt, kippt die Normale gegen den Gradienten),
-    // hoehe (die Höhe der Oktaven am Schirm, mittelfrei in −1 … 1) } — die Höhe trägt die KAVITÄT (`_mikroKavitaet`): im Schatten
-    // sieht das Auge das Relief nur als Verdeckung des Himmels-Lichts, nie über die Normale.
+    // hoehe (die Höhe der Oktaven am Schirm, mittelfrei in −1 … 1) } — die Höhe trägt KAVITÄT und KORN (`_mikroStoff`): unter der
+    // Mittags-Sonne kippt die Normale das Licht nur zweiter Ordnung (cos), im Schatten sieht das Auge nur das Himmels-Licht.
     _mikroRelief(T, wp, n) {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ra = this._rauschAtlas();
@@ -1862,11 +1862,13 @@ class AnazhRealm_stoff_material {
         const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM)).negate();
         const fr = T.fract(L);
         const L0 = L.sub(fr);
+        // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie
+        // liegt am Pixel, wo das Auge das Korn sieht; gleiche Höhe je Oktave wäre β 2 und legte sie in die gröbste)
         const oktaven = [
             [T.exp2(L0), fr, 1],
-            [T.exp2(L0.sub(1.0)), T.float(1.0), 1],
-            [T.exp2(L0.sub(2.0)), T.float(1.0).sub(fr), 1],
-        ].map(([f, w]) => [f, w.mul(-B.mikro), w.mul(0.5)]);
+            [T.exp2(L0.sub(1.0)), T.float(1.0), B.mikroHoehe],
+            [T.exp2(L0.sub(2.0)), T.float(1.0).sub(fr), B.mikroHoehe * B.mikroHoehe],
+        ].map(([f, w, h]) => [f, w.mul(-B.mikro), w.mul(0.6 * h)]);
         if (!n)
             oktaven.push(
                 [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
@@ -1898,14 +1900,20 @@ class AnazhRealm_stoff_material {
         return { neigung: g.sub(n.mul(n.dot(g))), hoehe: gx.z.mul(w.x).add(gy.z.mul(w.y)).add(gz.z.mul(w.z)) };
     }
 
-    // DIE KAVITÄT des Mikro-Reliefs (aoNode: r184 multipliziert sie in das indirekte Licht, diffus und Glanz): die Mulde
-    // verdeckt ihren Himmel, die Erhebung sieht ihn — mittelfrei um 1 (`kavitaet` × Höhe), so bleibt die Albedo der Fläche im
-    // Mittel dieselbe (K53: was der Pixel nicht trägt, ist kein Mittel-Versatz).
-    _mikroKavitaet(T, hoehe) {
-        return T.float(1.0).add(hoehe.mul(AnazhRealm.TERRAIN_BUMP.kavitaet));
+    // DER STOFF des Mikro-Reliefs: die Höhe der Oktaven am Schirm trägt die KAVITÄT (aoNode: r184 multipliziert sie in das
+    // indirekte Licht, diffus und Glanz — die Mulde verdeckt ihren Himmel) und das KORN (colorNode: die Albedo der Mulde dunkler,
+    // der Erhebung heller — sie trägt auch das Sonnen-Licht). Beide mittelfrei um 1 (`kavitaet`, `korn` × Höhe), so bleibt die
+    // Albedo der Fläche im Mittel dieselbe (K53: was der Pixel nicht trägt, ist kein Mittel-Versatz); die Alpha des Stoffs bleibt
+    // (Lehre 26: der Schattenpass liest colorNode.a). Ohne colorNode trägt die Stoff-Farbe (r184 multipliziert die Vertex-Farbe danach).
+    _mikroStoff(T, mat, hoehe) {
+        const B = AnazhRealm.TERRAIN_BUMP;
+        const ao = T.float(1.0).add(hoehe.mul(B.kavitaet)).max(0.0);
+        mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
+        const c = T.vec4(mat.colorNode || T.materialColor);
+        mat.colorNode = T.vec4(c.rgb.mul(T.float(1.0).add(hoehe.mul(B.korn)).max(0.0)), c.a);
     }
 
-    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode und aoNode des Stoffs: die
+    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode, aoNode und Korn des Stoffs: die
     // Geometrie-Normale × Seite (Lehre 26, nie `normalWorld`) — facettiert (`flach`) die Normale der Facette aus den Ableitungen
     // der Welt-Lage, zum Auge gewandt —, in ihrer Tangential-Ebene gekippt, fern mit dem Bump des Bodens ausgeblendet
     // (lodNear … lodFar), mal `staerke` (Knoten oder Zahl), in Sicht-Lage (normalNode ist VIEW-space).
@@ -1919,7 +1927,7 @@ class AnazhRealm_stoff_material {
         const k = nah.mul(staerke == null ? 1.0 : staerke);
         const m = this._mikroRelief(T, wp, n);
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(m.neigung.mul(k))));
-        mat.aoNode = this._mikroKavitaet(T, m.hoehe.mul(k));
+        this._mikroStoff(T, mat, m.hoehe.mul(k));
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
