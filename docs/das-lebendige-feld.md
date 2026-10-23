@@ -132,6 +132,11 @@ schreibt, wer liest, welche Zahl) sind am Stamm vom 16.10. nachgelesen, nicht nu
 - **`_depositEmotion(x,z,emotionMap)`** — prägt die Tat-Emotion am Ort ein (6 Achsen,
   gekappt auf `EMOTION_FIELD.max` 0.8, schnellerer Decay als Leben). Schreiber:
   `_feelAction`, die DSL-Op `deposit_emotion`, die Pflege der KI (`_aiTendPlayer`).
+- **`_tatSchreiben(tat,x,z,…)`** (feld.K4) — die Tat am Lebendigen (ein Baum fällt, eine Pflanze wird gepflückt) ist ein
+  Schreib-Akt der Welt in `worldMeta.taten` und reist mit jedem Save und Reload. `auraAt` senkt lebendig um ihre Narbe
+  (`_narbeAt`, Tiefe je Klasse in `TAT_NARBE`), die linear in Welt-Stunden heilt (`_weltStunde`: Tag und Uhr), Dauer =
+  Stunden der Klasse / frozen lebendig des Orts; bis dahin lässt die Nah-Streu das Gepflückte weg und trägt den Stumpf, der
+  Wald pflanzt den gefällten Baum nicht neu.
 - **Disziplin (V17.27-Lehre):** NUR INTENTIONALE Akte schreiben (die Geburt, die Geste) —
   NIE die FOLGEN des Feldes (ambiente Fauna liest lebendig → spawnt; würde sie auch
   schreiben, gäbe es positives Feedback-Runaway). Sättigung (`max`-Cap) → das Leben

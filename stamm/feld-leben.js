@@ -1653,6 +1653,8 @@ class AnazhRealm_feld_leben {
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat (min(., 1), nie
         // überschreiben); leerer Overlay → lebendig == frozen. at_field_need + FIELD_TO_EMOTION lesen es mit.
         const overlay = this._lifeOverlayAt(x, z);
+        // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
+        const narbe = this._narbeAt(x, z);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
@@ -1665,7 +1667,7 @@ class AnazhRealm_feld_leben {
             }
         }
         return {
-            lebendig: overlay > 0 ? Math.min(1, f.lebendig + overlay) : f.lebendig,
+            lebendig: overlay > 0 || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
             dichte: f.dichte,
             glut: f.glut,
             magieleitung: f.magieleitung,
@@ -1836,6 +1838,87 @@ class AnazhRealm_feld_leben {
         if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
         this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+    }
+
+    // === DIE TAT BLEIBT (feld.K4): das Gedächtnis der Taten — die EINE Quelle von Narbe, Ernte und Fällung ===
+    // Jede Tat am Lebendigen (ein Baum fällt, eine Pflanze der Nah-Streu wird gepflückt) ist ein SCHREIB-AKT der Welt: sie liegt
+    // in `worldMeta.taten` ({ tat, x, z, h, … }, `h` die Welt-Stunde) und reist mit jedem Save und Reload (der Speicher trägt
+    // das worldMeta). Aus ihr folgt alles: die NARBE im Feld (`auraAt` senkt lebendig um `_narbeAt`), die fehlende Pflanze
+    // (`_geerntetIn`), der Stumpf und der Wald, der den Baum nicht neu pflanzt (`_tatAm`). Sie heilt in SPIELZEIT, linear über
+    // ihre Dauer: die Stunden ihrer Klasse (`TAT_NARBE`) durch das frozen lebendig des Orts — der Nachwuchs folgt dem Feld, gleich
+    // für jeden Peer und jeden Reload; geheilt fällt sie (`_tickScatterRegrow`). Bis feld.K4 lebte die Ernte im Session-Gedächtnis
+    // (FORAGE.regrowMs, 300 s Wanduhr), das Fällen schrieb nichts ins Feld (Mess-Wiese, Null-Renderer, main f7dd313c: 8 Bäume
+    // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
+
+    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt — ihr Tag (`worldMeta.tag`, `_uhrSetzen` zählt ihn) und die Uhr.
+    _weltStunde() {
+        const st = this.state;
+        return 24 * (((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0));
+    }
+
+    // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
+    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende, die nächste Sicherung trägt sie.
+    _tatSchreiben(tat, x, z, mehr) {
+        const wm = this.state.worldMeta;
+        if (!Array.isArray(wm.taten)) wm.taten = [];
+        const r2 = (v, k) => Math.round(v * k) / k;
+        const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(), 1e4) }, mehr);
+        this._weltRegt(); // der Weckruf vor jedem Schreiben
+        wm.taten.push(a);
+        this._tatGen = (this._tatGen | 0) + 1;
+        const ende = a.h + this._tatIndex().dauer.get(a);
+        if (!(this._nachwuchsFaellig <= ende)) this._nachwuchsFaellig = ende;
+        if (tat === "faellen") this._nahStreuTat(a);
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        return a;
+    }
+
+    // Der Index der Taten (ein Cache der EINEN Liste, neu bei jeder Änderung und jeder geladenen Welt): je 16-m-Zelle des Felds
+    // ihre Taten, je Nah-Streu-Kachel die gepflückten Kennungen, je Tat ihre Dauer in Stunden.
+    _tatIndex() {
+        const L = this.state.worldMeta && this.state.worldMeta.taten;
+        const n = Array.isArray(L) ? L.length : 0;
+        const I = this._tatIdx;
+        if (I && I.L === L && I.n === n && I.gen === this._tatGen) return I;
+        const N = AnazhRealm.TAT_NARBE;
+        const J = { L, n, gen: this._tatGen, je: new Map(), kachel: new Map(), dauer: new Map() };
+        for (let i = 0; i < n; i++) {
+            const a = L[i];
+            if (!a || !N[a.tat] || !Number.isFinite(a.x + a.z + a.h)) continue;
+            J.dauer.set(a, N[a.tat].stunden / Math.max(N.lebMin, this.worldFieldAt(a.x, a.z).lebendig));
+            const k = this._lifeCellKey(a.x, a.z);
+            if (!J.je.has(k)) J.je.set(k, []);
+            J.je.get(k).push(a);
+            if (a.tat === "ernten" && typeof a.kachel === "string") {
+                if (!J.kachel.has(a.kachel)) J.kachel.set(a.kachel, new Set());
+                J.kachel.get(a.kachel).add(a.id);
+            }
+        }
+        return (this._tatIdx = J);
+    }
+
+    // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über ihre Dauer), gekappt.
+    _narbeAt(x, z) {
+        const I = this._tatIndex();
+        const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
+        if (!je) return 0;
+        const N = AnazhRealm.TAT_NARBE;
+        const h = this._weltStunde();
+        let s = 0;
+        for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.dauer.get(a)));
+        return Math.min(N.max, s);
+    }
+
+    // Die gepflückten Kennungen einer Nah-Streu-Kachel (leer, wenn keine) — die Kachel lässt sie weg.
+    _geerntetIn(kachel) {
+        return this._tatIndex().kachel.get(kachel) || AnazhRealm.TAT_LEER;
+    }
+
+    // Liegt eine Tat der Klasse `tat` binnen `r` m um (x,z)? (Der Wald fragt, ob hier ein Baum fiel.)
+    _tatAm(tat, x, z, r = 0.5) {
+        const I = this._tatIndex();
+        const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
+        return !!je && je.some((a) => a.tat === tat && Math.hypot(a.x - x, a.z - z) <= r);
     }
 
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
@@ -2277,6 +2360,17 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     trickle: 0.05, // pro Trickle-Deposit (klein — ein Garten wird gepflegt, nicht geflutet)
     trickleEverySec: 3, // jede tendende Kreatur träufelt höchstens alle 3 s
 });
+
+// TAT_NARBE — die Narbe je Tat-Klasse (feld.K4, `_tatSchreiben`): `tiefe` senkt lebendig in der 16-m-Zelle der Tat, `stunden`
+// ist ihre Dauer in Welt-Stunden bei lebendig 1 (die Dauer = stunden / max(lebMin, frozen lebendig): wo das Feld lebt, heilt
+// es schneller). Ein Baum hält die Lichtung Spieltage, eine gepflückte Pflanze Stunden; `max` kappt die Narbe einer Zelle.
+AnazhRealm.TAT_NARBE = Object.freeze({
+    faellen: Object.freeze({ tiefe: 0.12, stunden: 48 }),
+    ernten: Object.freeze({ tiefe: 0.01, stunden: 3 }),
+    max: 0.6,
+    lebMin: 0.1,
+});
+AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geerntetIn`)
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben

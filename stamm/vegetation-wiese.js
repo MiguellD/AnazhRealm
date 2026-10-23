@@ -489,22 +489,22 @@ class AnazhRealm_vegetation_wiese {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (!core || typeof core.bodenGewicht !== "function")
             throw new Error("_nahStreuKachel: das Boden-Gesetz (__phytoCore.bodenGewicht) fehlt");
-        // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, bleibt sie leer (und liest kein Wasser).
-        if (!this._wildnisTraegt((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel))
-            return { items: [], chunks: new Map(), wasser: [] };
-        const seedInt = this._forestSeedInt();
-        const last = this._effectiveFoliageDensity();
-        const Z = NS.zelle;
-        const n = Math.round(NS.kachel / Z);
         const K = NS.kachel;
+        // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, trägt sie nur die Stümpfe der Taten.
+        if (!this._wildnisTraegt((tx + 0.5) * K, (tz + 0.5) * K))
+            return { items: this._tatStuempfe(tx, tz, arten), chunks: new Map(), wasser: [] };
         // jede Pflanze steht in der Kachel (Zell-Mitte ± halbe Zelle): ihr Boden sind die Karten dieses Rechtecks
         const chunks = this._bodenSichtChunks(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
         if (!chunks) return null; // der Boden steht noch nicht — die Kachel wartet
+        const items = this._tatStuempfe(tx, tz, arten);
+        const seedInt = this._forestSeedInt();
+        const last = this._effectiveFoliageDensity();
+        const Z = NS.zelle;
+        const n = Math.round(K / Z);
         const boden = (px, pz) => {
             const v = this._bodenSichtAt(px, pz);
             return v === null ? NaN : v;
         };
-        const items = [];
         const licht = this._bodenLichtFeld(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
         for (let gj = tz * n; gj < tz * n + n; gj++) {
             for (let gi = tx * n; gi < tx * n + n; gi++) {
@@ -803,7 +803,6 @@ class AnazhRealm_vegetation_wiese {
             gefallen++;
         }
         wunsch.sort((a, b) => a.d - b.d);
-        const geerntet = st.scatterHarvested;
         let gebaut = 0;
         ns.offen = 0;
         for (const w of wunsch) {
@@ -840,11 +839,11 @@ class AnazhRealm_vegetation_wiese {
             // fehlende Gruppe fragt im selben Lauf an (die Anfragen reisen parallel, nah zuerst).
             const gruppen = new Map();
             const fehlend = new Set();
-            const ernte = geerntet ? geerntet.get(w.key) : null;
+            const ernte = this._geerntetIn(w.key); // die Tat bleibt (feld.K4): das Gepflückte fehlt bis zu seiner Heilung
             let bereit = true;
             for (const it of k.items) {
                 if (it.ordnung >= anteile[it.art]) continue;
-                if (ernte && ernte.has(it.id)) continue;
+                if (ernte.has(it.id)) continue;
                 const art = arten[it.art];
                 const v = this._foundryVariantFor(it.same, art.id);
                 const stufe = this._foundryDeclaredStage(art.id, it.nah ? 0 : 2);
@@ -1017,9 +1016,8 @@ class AnazhRealm_vegetation_wiese {
     // ===== FORAGING: die Nah-Streu ist pflückbar =====
     // Kein Parallel-System: der PICK prüft die Pflanzen der Senken (die Daten, die der Satz zeichnet: je Block die
     // Matrizen — die Sonde trägt Geometrie und Stoff der Senke, die Pflanze ihre Matrix) und nennt die Ernte-Identität
-    // `gi|gj|art|i` der nächsten getroffenen Pflanze, die ERNTE nimmt die Pflanze in allen Teilen aus ihren Blöcken und merkt
-    // sie in `state.scatterHarvested` (Kachel → Identität → Zeit; der Kachel-Bau lässt sie weg), der REGROW-Tick lässt sie
-    // nach FORAGE.regrowMs nachwachsen (die Kachel baut neu).
+    // `gi|gj|art|i` der nächsten getroffenen Pflanze, die ERNTE nimmt die Pflanze in allen Teilen aus ihren Blöcken und
+    // schreibt sie als Tat der Welt (`_tatSchreiben`, feld.K4; der Kachel-Bau lässt sie weg), geheilt wächst sie nach.
     _pickScatterAtCrosshair() {
         const ns = this.state.nahStreu;
         if (!ns || ns.senken.size === 0) return null;
@@ -1061,21 +1059,11 @@ class AnazhRealm_vegetation_wiese {
         const a = ns ? ns.senken.get(pick.senke) : null;
         if (!a || !a.ernte) return false;
         const kachel = ns.kacheln.get(pick.key);
-        if (!kachel || !kachel.items.some((it) => it.id === pick.id)) return false;
-        // Session-Gedächtnis: Kachel → Identität → Ernte-Zeit (der Kachel-Bau + der Regrow-Tick lesen es). NICHT
-        // persistiert (Flora wächst nach).
-        if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
-        let jeKachel = this.state.scatterHarvested.get(pick.key);
-        if (jeKachel && jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
-        this._weltRegt(); // die Ernte ändert die Kachel: die Nah-Streu baut sie neu (der Weckruf vor jedem Schreiben)
-        if (!jeKachel) {
-            jeKachel = new Map();
-            this.state.scatterHarvested.set(pick.key, jeKachel);
-        }
-        const t = performance.now();
-        jeKachel.set(pick.id, t);
-        // der Nachwuchs schläft bis zur ersten fälligen Ernte (`_tickScatterRegrow`, feld.K3)
-        this._nachwuchsFaellig = Math.min(this._nachwuchsFaellig ?? Infinity, t + AnazhRealm.FORAGE.regrowMs);
+        const it = kachel ? kachel.items.find((x) => x.id === pick.id) : null;
+        if (!it || this._geerntetIn(pick.key).has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
+        // DIE TAT BLEIBT (feld.K4): die Ernte ist ein Schreib-Akt der Welt (`_tatSchreiben`) — die Kachel lässt die Pflanze
+        // weg, bis ihre Narbe heilt (in Spielzeit, nach dem Leben des Orts), über jeden Save und Reload.
+        this._tatSchreiben("ernten", it.x, it.z, { kachel: pick.key, id: pick.id });
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
         // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
         for (const sk of kachel.senken) {
@@ -1095,30 +1083,77 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Der Regrow-Tick: abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand fällt, der
-    // Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder. DIE RUHE IST DER FIXPUNKT (feld.K3): er schläft bis
-    // zur ersten fälligen Ernte (`_nachwuchsFaellig`, die Ernte setzt sie), nie im 10-s-Takt der Wanduhr über das Gedächtnis
-    // (bis feld.K3: in 60 s Ruhe nach einer Ernte ging er sie bei jedem Blick auf die Uhr durch).
-    _tickScatterRegrow(now) {
-        if (!(now >= this._nachwuchsFaellig)) return;
-        const sh = this.state.scatterHarvested;
-        const ttl = AnazhRealm.FORAGE.regrowMs;
-        const ns = this.state.nahStreu;
+    // DER NACHWUCHS (feld.K4): geheilte Taten fallen aus dem Gedächtnis der Welt (`worldMeta.taten`), ihre Kachel baut neu
+    // (`_nahStreuTat`: die Pflanze steht wieder, der Stumpf vergeht). `stunde` ist die Welt-Stunde (der Takt reicht
+    // `_weltStunde`). DIE RUHE IST DER FIXPUNKT (feld.K3): er schläft bis zur ersten fälligen Heilung (`_nachwuchsFaellig`, die
+    // Tat setzt sie); eine geladene Welt (eine neue Liste) weckt ihn einmal. Eine Tat ohne Klasse heilt sofort.
+    _tickScatterRegrow(stunde) {
+        const wm = this.state.worldMeta;
+        const L = wm && wm.taten;
+        if (L !== this._tatListe) {
+            this._tatListe = L;
+            this._nachwuchsFaellig = -Infinity;
+        }
+        if (!(stunde >= this._nachwuchsFaellig)) return;
+        const I = this._tatIndex();
         let naechste = Infinity;
-        for (const [key, jeKachel] of sh || []) {
-            const alt = [];
-            for (const [id, t] of jeKachel) {
-                if (now - t >= ttl) alt.push(id);
-                else if (t + ttl < naechste) naechste = t + ttl;
-            }
-            if (!alt.length) continue;
-            this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
-            for (const id of alt) jeKachel.delete(id);
-            if (jeKachel.size === 0) sh.delete(key);
-            const k = ns ? ns.kacheln.get(key) : null;
-            if (k) k.zustand = null;
+        const geheilt = [];
+        for (const a of L || []) {
+            const ende = a && I.dauer.has(a) ? a.h + I.dauer.get(a) : -Infinity;
+            if (stunde < ende) naechste = Math.min(naechste, ende);
+            else geheilt.push(a);
         }
         this._nachwuchsFaellig = naechste;
+        if (!geheilt.length) return;
+        this._weltRegt(); // die Flora wächst nach (der Weckruf vor jedem Schreiben)
+        for (const a of geheilt) L.splice(L.indexOf(a), 1);
+        this._tatGen = (this._tatGen | 0) + 1;
+        for (const a of geheilt) if (a) this._nahStreuTat(a);
+    }
+
+    // Die Kachel einer Tat baut neu: der Stumpf eines Fällens tritt ein oder vergeht (die Kachel fällt, ihr Neubau liest die
+    // Taten, `_tatStuempfe`), die geheilte Ernte kehrt zurück (ihr Zustand fällt).
+    _nahStreuTat(a) {
+        const ns = this.state.nahStreu;
+        const K = AnazhRealm.NAH_STREU.kachel;
+        const key = typeof a.kachel === "string" ? a.kachel : `${Math.floor(a.x / K)},${Math.floor(a.z / K)}`;
+        const k = ns ? ns.kacheln.get(key) : null;
+        if (!k) return;
+        if (a.tat !== "faellen") return void (k.zustand = null);
+        this._nahStreuKachelEntsorgen(k);
+        ns.kacheln.delete(key);
+    }
+
+    // DIE STÜMPFE DER TAT (feld.K4): wo ein Baum fiel, steht sein Stumpf — die Studio-Art `stumpf` des Boden-Gesetzes am Ort
+    // der Tat, in der Größe des Baums (in den Grenzen ihrer Skala), bis die Narbe heilt; Kennung `tat|x|z`, pflückbar wie jede
+    // Pflanze der Nah-Streu. Die Kachel liegt in EINER 16-m-Zelle des Felds (4 m teilt 16).
+    _tatStuempfe(tx, tz, arten) {
+        const K = AnazhRealm.NAH_STREU.kachel;
+        const I = this._tatIndex();
+        const sa = I.n ? arten.findIndex((A) => A.id === "stumpf") : -1;
+        const je = sa < 0 ? null : I.je.get(this._lifeCellKey((tx + 0.5) * K, (tz + 0.5) * K));
+        const out = [];
+        for (const a of je || []) {
+            if (a.tat !== "faellen" || Math.floor(a.x / K) !== tx || Math.floor(a.z / K) !== tz) continue;
+            const y = this._bodenSichtAt(a.x, a.z);
+            if (y === null) continue;
+            const same = Math.round(a.x * 977 + a.z * 131) >>> 0;
+            const sk = arten[sa].zeile.skala;
+            const s = Math.min(sk[1], Math.max(sk[0], a.s || 1));
+            const it = {
+                art: sa,
+                id: `tat|${a.x}|${a.z}`,
+                x: a.x,
+                y,
+                z: a.z,
+                rot: (same % 628) / 100,
+                s,
+                same,
+                ordnung: 0,
+            };
+            this._naturSetzen(null, it, null, () => out.push(it));
+        }
+        return out;
     }
 
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
@@ -1847,8 +1882,7 @@ AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 
 AnazhRealm.FORAGE = Object.freeze({
-    reach: 6, // m — Pflueck-Reichweite
-    regrowMs: 300000, // 5 min — die Flora kehrt zurueck
+    reach: 6, // m — Pflueck-Reichweite (das Nachwachsen ist die Heilung der Tat, `TAT_NARBE`)
 });
 
 // Material-Strata: ab dieser Tiefe (m) unter der Oberfläche dominiert stein, auch wenn eine andere

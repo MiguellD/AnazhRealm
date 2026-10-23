@@ -248,7 +248,6 @@ async function auditStateAndMethods() {
                 "visitedRegions", // Set lazy-init im Explore-Tick
                 "lastExploreFelt", // Map lazy-init im Explore-Tick
                 "voxelChunkGrassLod", // Map lazy-init im LOD-Build
-                "scatterHarvested", // Map lazy-init beim ersten Scatter-Harvest
                 "grantedCapabilities", // Set lazy-init bei Capability-Grant
                 // Library/Feed-State (alle: `state.X || fallback` / `if (X)`-Gates)
                 "feedSort",
