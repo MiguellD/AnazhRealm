@@ -58,12 +58,12 @@ function echtForm(doc) {
         []
             .concat(E["runs-on"] || [])
             .sort()
-            .join(" + ") !== "omen-gpu + self-hosted" ||
+            .join(" + ") !== "echt-gpu + self-hosted" ||
         env.CI_KLASSE !== "gpu" ||
         env.LINSE_GPU !== "karte"
     )
         v.push(
-            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + omen-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
+            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + echt-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
         );
     if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
         v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
@@ -1025,7 +1025,7 @@ function selbsttest() {
         return (d.jobs.echt = {
             needs: KOPF_JOB,
             if: ECHT_WENN,
-            "runs-on": ["self-hosted", "omen-gpu"],
+            "runs-on": ["self-hosted", "echt-gpu"],
             "timeout-minutes": 30,
             env,
             steps: prep().concat([schritt]),
