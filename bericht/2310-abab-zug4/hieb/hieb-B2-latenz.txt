@@ -1,0 +1,2 @@
+ego/hieb {"n":30,"fehlt":0,"p50":10.3,"p95":31,"max":35.5,"eingabe":0.3,"hoerer":1.7,"kette":9.8,"kurve":0,"takte":2,"halt":1}
+LATENZ ROT (Bild 8.6 ms) ego/hieb Verben hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb, Hit-Stop 1 Bilder
