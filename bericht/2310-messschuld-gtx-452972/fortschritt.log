@@ -1,0 +1,10 @@
+06:47:54 M39 START Kopf 452972a6[0]
+06:51:14 m39-b1 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3831 Frames, 6013 Takte; Frame p50/p95/p99/max 16.6/25.1/33.3/83.3 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.35 · Chunks 90 · Wetter sunny · Proben
+06:54:56 m39-b2 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3812 Frames, 6141 Takte; Frame p50/p95/p99/max 16.6/25.1/25.3/75 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.54 · Chunks 56 · Wetter sunny · Proben j
+06:58:36 m39-b3 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3863 Frames, 6016 Takte; Frame p50/p95/p99/max 16.6/25.1/25.5/83.4 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.6 · Chunks 90 · Wetter sunny · Proben 
+07:02:17 m39-b4 haenger EXIT=0 HÄNGER-LINSE: 0 Frames > 100 ms in 60 s (3783 Frames, 5811 Takte; Frame p50/p95/p99/max 16.6/25.1/29.1/83.2 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0 Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.46 · Chunks 90 · Wetter sunny · Proben
+07:02:32 M39 ENDE
+M39 EXIT=0
+07:02:33 M37 START Kopf 452972a6[0]
+07:13:41 M37 ENDE EXIT=0 ERGEBNIS {"tode":20,"alterMax":1.508,"ueber10":0,"halbe":0,"korrupt":0,"erwachen":[{"z":1,"erwachen":{"key":"-1,0","nH":11,"d":131,"x":-119.71764705882353,"z":79.56078431372549,"gangAktiv":true},"tod":"idb","alterS":1.085},{"z":2,"erwachen":{"key":"-1,0","nH":11,"d":125,"x":-119.71764705882353,"z":79.56078431372549,"gangAktiv":true},"tod":"erwachen-hart","alterS":0.214,"dorfGeladen":{"reserviert":false,"haeuser":19},"dorfNach10s":{"reserviert":false,"haeuser":19}},{"z":3,"tod":"erwachen-idb","al
+M37 EXIT=0
