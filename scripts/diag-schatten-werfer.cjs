@@ -292,7 +292,7 @@ function probe(selbsttest) {
     // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
     // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft:
     // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
-    // den Licht-Rand) und im Halt des Atmens (`haltM` 0,02 — der Geh-Halt trägt 2 m Rand, S12 sah kein Loch); die Grenze des
+    // den Licht-Rand) und im Halt des Atmens (`haltM` 0,02 — der Geh-Halt trug ihn); die Grenze des
     // Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
     // Drehung) · "ohneRand" (S12: `_passTrifft` ohne Licht-Rand) · "ganzerRand" (S13: die Halb-Regel fällt, der Halt reicht

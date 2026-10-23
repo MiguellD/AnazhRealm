@@ -633,7 +633,7 @@ function haengerTabelle(a) {
 // F95 33,5 ms): je Name seine Zeit ab p95 über jeden Pfad (je Ast einmal gezählt), ROT über der Schwelle je Takt — ein Posten, der
 // in JEDEM Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
 // In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
-// Im Gang (`bahn`, Messort stadt, Radeon 23.10.) die Wahl der Pässe: sie ruht im Stand (Welle C) und kostet gehend jeden Takt.
+// Im Gang (`bahn`) die Wahl der Pässe: sie hält über den Geh-Halt (`PASS_WAHL.haltM`).
 const POSTEN_JE_WEG = {
     fahrt: ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"],
     bahn: ["_chunkSatzPass", "_hoehlenSicht", "_instanzWahlPass"],

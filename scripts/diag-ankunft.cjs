@@ -589,7 +589,7 @@ async function probe(arg) {
             const ohneStart = Object.assign({}, wmD.settlementCells || {});
             delete ohneStart.start;
             const gMD = r._genesisMitte();
-            const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
+            const nearD = r.constructor.AUTO_SETTLEMENT.nearM;
             const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
             const kanal = r._autoSettlementChannelLive();
             if (amOrt && kanal) fallMit("dorfFaellig", dorfAn, [wmD, { settlementCells: ohneStart }], [r, { _autoSettlementStartHopeless: false }]);

@@ -122,7 +122,7 @@ function sichtLinse(cfg) {
         schuld.clear();
         const ss = r.state.chunkSaetze;
         if (!ss) return;
-        const V = (r.constructor.CHUNK_SATZ_ABSCHNITT || {}).verschnitt || 0;
+        const V = r.constructor.CHUNK_SATZ_ABSCHNITT.verschnitt;
         for (const s of ss.values()) {
             const fam = familie(s);
             let belegt = 0;
@@ -557,7 +557,7 @@ function sichtLinse(cfg) {
                         o.mitBox = true;
                         if (!(a.sig[85] > 0)) rand = false;
                     }
-                if (o.mitBox && rand) o.lichtRand = r.constructor.PASS_WAHL.lichtRandTexel || 0;
+                if (o.mitBox && rand) o.lichtRand = r.constructor.PASS_WAHL.lichtRandTexel;
             }
             z = neu();
             return o;

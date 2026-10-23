@@ -431,128 +431,124 @@ function selbsttest() {
     }
     // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`, Gegenprüfung 07.10.): je Bild die Bereiche (Identität und
     // Hülle), der Anker, die offene Ordnung, Geometrie und Überhang — der Stand und der Verdichten-Zähler belegen nichts
-    if (typeof SICHT.sichtSatzInhalt !== "function")
-        fehler.push("LINSE: `sichtSatzInhalt` fehlt — der Inhalt hat keine Belege");
-    else {
-        const A = {},
-            B = {},
-            C = {};
-        const H = (y) => Float64Array.from([0, y, 0, 16, y + 2, 16]);
-        const bild = (o) =>
-            Object.assign(
-                {
-                    stand: 10,
-                    verdichtet: 0,
-                    anker: "-57,-54",
-                    schmutzig: false,
-                    geom: "g1",
-                    vKap: 4096,
-                    iKap: 9000,
-                    ueber: false,
-                    bloecke: new Map([
-                        ["a", { b: A, h: H(60) }],
-                        ["b", { b: B, h: H(62) }],
-                    ]),
-                },
-                o
-            );
-        const mit = (m) => new Map([...bild({}).bloecke, ...m]);
-        const satzFaelle = [
-            ["Stand-Bruch (Stand +1, nichts sonst)", bild({}), bild({ stand: 11 }), false, null, { stand: 1 }],
-            [
-                "ein Bereich kam",
-                bild({}),
-                bild({ stand: 12, bloecke: mit([["c", { b: C, h: H(61) }]]) }),
-                false,
-                "aenderung",
-                {},
-            ],
-            [
-                "ein Bereich wurde neu gebaut",
-                bild({}),
-                bild({ stand: 12, bloecke: mit([["b", { b: C, h: H(62) }]]) }),
-                false,
-                "aenderung",
-                {},
-            ],
-            [
-                "ein Bereich ging",
-                bild({}),
-                bild({ stand: 11, bloecke: new Map([["a", { b: A, h: H(60) }]]) }),
-                false,
-                "aenderung",
-                {},
-            ],
-            ["der Anker zog um", bild({}), bild({ stand: 11, anker: "-58,-54" }), false, "aenderung", {}],
-            [
-                "ein Geomorph legt eine neue Hülle",
-                bild({}),
-                bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(59.5) }]]) }),
-                false,
-                "aenderung",
-                {},
-            ],
-            [
-                "ein Geomorph ohne neue Hülle",
-                bild({}),
-                bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(60) }]]) }),
-                false,
-                null,
-                { stand: 1 },
-            ],
-            ["die offene Ordnung läuft", bild({ schmutzig: true }), bild({ stand: 11 }), true, "folge", {}],
-            [
-                "eine Ordnung ohne offenen Grund",
-                bild({ schmutzig: true }),
-                bild({ stand: 11 }),
-                false,
-                null,
-                { stand: 1 },
-            ],
-            [
-                "das Verdichten nach dem Überhang",
-                bild({ ueber: true }),
-                bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
-                false,
-                "folge",
-                {},
-            ],
-            [
-                "ein Verdichten-Zähler ohne Tausch",
-                bild({ ueber: true }),
-                bild({ verdichtet: 1 }),
-                false,
-                null,
-                { verdichtet: 1 },
-            ],
-            [
-                "ein Verdichten ohne Überhang",
-                bild({}),
-                bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
-                false,
-                null,
-                { verdichtet: 1 },
-            ],
-        ];
-        for (const [name, vor, jetzt, offen, grund, ohne] of satzFaelle) {
-            const e = SICHT.sichtSatzInhalt(vor, jetzt, offen);
-            const ok =
-                e.grund === grund &&
-                (e.ohne.stand || 0) === (ohne.stand || 0) &&
-                (e.ohne.verdichtet || 0) === (ohne.verdichtet || 0);
-            if (!ok) fehler.push(`Satz-Inhalt „${name}": grund ${e.grund}, ohne ${JSON.stringify(e.ohne)}`);
-            console.log(
-                `  ${ok ? "✅" : "❌"} Selbsttest Satz-Inhalt „${name}" → ${e.grund || "kein Grund"}` +
-                    (e.ohne.stand || e.ohne.verdichtet ? ` (ohne Ursache: ${JSON.stringify(e.ohne)})` : "")
-            );
-        }
-        // die Ordnung bleibt offen, solange der Satz schmutzig ist (ein Austritt nach dem Render, geordnet im nächsten)
-        const o1 = SICHT.sichtSatzInhalt(
-            bild({}),
-            bild({ schmutzig: true, bloecke: mit([["c", { b: C, h: H(61) }]]) })
+    const A = {},
+        B = {},
+        C = {};
+    const H = (y) => Float64Array.from([0, y, 0, 16, y + 2, 16]);
+    const bild = (o) =>
+        Object.assign(
+            {
+                stand: 10,
+                verdichtet: 0,
+                anker: "-57,-54",
+                schmutzig: false,
+                geom: "g1",
+                vKap: 4096,
+                iKap: 9000,
+                ueber: false,
+                bloecke: new Map([
+                    ["a", { b: A, h: H(60) }],
+                    ["b", { b: B, h: H(62) }],
+                ]),
+            },
+            o
         );
-        if (!o1.offen) fehler.push("Satz-Inhalt: ein Eintritt mit offener Ordnung lässt sie nicht offen");
+    const mit = (m) => new Map([...bild({}).bloecke, ...m]);
+    const satzFaelle = [
+        ["Stand-Bruch (Stand +1, nichts sonst)", bild({}), bild({ stand: 11 }), false, null, { stand: 1 }],
+        [
+            "ein Bereich kam",
+            bild({}),
+            bild({ stand: 12, bloecke: mit([["c", { b: C, h: H(61) }]]) }),
+            false,
+            "aenderung",
+            {},
+        ],
+        [
+            "ein Bereich wurde neu gebaut",
+            bild({}),
+            bild({ stand: 12, bloecke: mit([["b", { b: C, h: H(62) }]]) }),
+            false,
+            "aenderung",
+            {},
+        ],
+        [
+            "ein Bereich ging",
+            bild({}),
+            bild({ stand: 11, bloecke: new Map([["a", { b: A, h: H(60) }]]) }),
+            false,
+            "aenderung",
+            {},
+        ],
+        ["der Anker zog um", bild({}), bild({ stand: 11, anker: "-58,-54" }), false, "aenderung", {}],
+        [
+            "ein Geomorph legt eine neue Hülle",
+            bild({}),
+            bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(59.5) }]]) }),
+            false,
+            "aenderung",
+            {},
+        ],
+        [
+            "ein Geomorph ohne neue Hülle",
+            bild({}),
+            bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(60) }]]) }),
+            false,
+            null,
+            { stand: 1 },
+        ],
+        ["die offene Ordnung läuft", bild({ schmutzig: true }), bild({ stand: 11 }), true, "folge", {}],
+        [
+            "eine Ordnung ohne offenen Grund",
+            bild({ schmutzig: true }),
+            bild({ stand: 11 }),
+            false,
+            null,
+            { stand: 1 },
+        ],
+        [
+            "das Verdichten nach dem Überhang",
+            bild({ ueber: true }),
+            bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
+            false,
+            "folge",
+            {},
+        ],
+        [
+            "ein Verdichten-Zähler ohne Tausch",
+            bild({ ueber: true }),
+            bild({ verdichtet: 1 }),
+            false,
+            null,
+            { verdichtet: 1 },
+        ],
+        [
+            "ein Verdichten ohne Überhang",
+            bild({}),
+            bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
+            false,
+            null,
+            { verdichtet: 1 },
+        ],
+    ];
+    for (const [name, vor, jetzt, offen, grund, ohne] of satzFaelle) {
+        const e = SICHT.sichtSatzInhalt(vor, jetzt, offen);
+        const ok =
+            e.grund === grund &&
+            (e.ohne.stand || 0) === (ohne.stand || 0) &&
+            (e.ohne.verdichtet || 0) === (ohne.verdichtet || 0);
+        if (!ok) fehler.push(`Satz-Inhalt „${name}": grund ${e.grund}, ohne ${JSON.stringify(e.ohne)}`);
+        console.log(
+            `  ${ok ? "✅" : "❌"} Selbsttest Satz-Inhalt „${name}" → ${e.grund || "kein Grund"}` +
+                (e.ohne.stand || e.ohne.verdichtet ? ` (ohne Ursache: ${JSON.stringify(e.ohne)})` : "")
+        );
     }
+    // die Ordnung bleibt offen, solange der Satz schmutzig ist (ein Austritt nach dem Render, geordnet im nächsten)
+    const o1 = SICHT.sichtSatzInhalt(
+        bild({}),
+        bild({ schmutzig: true, bloecke: mit([["c", { b: C, h: H(61) }]]) })
+    );
+    if (!o1.offen) fehler.push("Satz-Inhalt: ein Eintritt mit offener Ordnung lässt sie nicht offen");
     // DER TÄTER DER GEGENPRÜFUNG, Frame für Frame durch dieselbe Phase und dasselbe Urteil wie im Lauf: in der eingefrorenen
     // Welt zählt jeder Satz je Frame seinen Stand (15 072 Prüfungen je Frame, 5 von 5 Frames, kein Byte) — die Frames tragen,
     // was die Linse sah: die Zähler des Spiels als Inhalt (die Basis-Linse des Zwischenstands entschuldigte damit alles) und
