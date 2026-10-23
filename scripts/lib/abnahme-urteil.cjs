@@ -1325,27 +1325,25 @@ const MASS_RECHNER = {
             anteil: px / flaeche(me),
         };
     },
-    // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante über die Rand-Pixel ihrer Teil-Klassen gemittelt): wie gerade der
-    // Umriss der Krone gegen das Außen läuft; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten Kante.
+    // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante je Teil-Klasse über ihre Rand-Pixel): wie gerade der Umriss der
+    // Krone gegen das Außen läuft; die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten urteilt (LOD H1: das Mittel 0,1862
+    // verbarg die Karte L2 0,2635), ein Raster (zweiton > 0) senkt die Kohärenz ohne Gestalt und bricht das Maß.
     kante(ma) {
         const me = ma.messung;
         const f = bildMessungFehler(me);
         if (f) return { fehler: f };
-        let s = 0,
-            nr = 0,
-            arg = null;
+        let arg = null;
         const px = pixelSumme(me);
         for (const [n, k] of Object.entries(me.klassen)) {
             if (k.kr == null) return { fehler: `die Messung ohne Kante (${n}) — vor K68-n2 gemessen` };
-            if (k.kante == null) continue;
-            s += k.kante * k.kr;
-            nr += k.kr;
-            if (k.pixel >= 0.05 * px && (!arg || k.kante > arg[1])) arg = [n, k.kante, k.kr];
+            if (k.kante == null || !(k.pixel >= 0.05 * px)) continue;
+            if (k.zweiton > 0) return { fehler: `${n} trägt Raster (zweiton ${k.zweiton}) — die Kante ist kein Umriss` };
+            if (!arg || k.kante > arg[1]) arg = [n, k.kante, k.kr];
         }
-        if (!nr) return { fehler: "die Klasse zeigt keinen Rand gegen das Außen" };
+        if (!arg) return { fehler: "die Klasse zeigt keinen Rand gegen das Außen" };
         return {
-            ist: +(s / nr).toFixed(4),
-            taeter: arg ? `${arg[0]} (kante ${arg[1]} über ${arg[2]} Rand-Pixel)` : null,
+            ist: arg[1],
+            taeter: `${arg[0]} (kante ${arg[1]} über ${arg[2]} Rand-Pixel)`,
             anteil: px / flaeche(me),
         };
     },
@@ -2209,6 +2207,11 @@ function sollTafelSelbsttest(tafel, q) {
         rauschen: { anteil: 0 },
         klassen: Object.fromEntries(namen.map(([n, l]) => [n, { pixel: 400, luma: l }])),
     });
+    // KANTE: die schlechteste Stufe urteilt (LOD H1) — das Mittel verbirgt die gerade Karte nicht, ein Raster bricht das Maß
+    const kme = (k) => MASS_RECHNER.kante({ messung: Object.assign(stufeMe([]), { klassen: k }) });
+    const kk = (kante, zweiton = 0) => ({ kante, kr: 1000, pixel: 3000, zweiton });
+    if (kme({ a: kk(0.16), b: kk(0.17), k: kk(0.26) }).ist !== 0.26) v.push("Maß kante: das Mittel verbirgt die gerade Karte");
+    if (!kme({ a: kk(0.12, 0.02) }).fehler) v.push("Maß kante: eine Klasse mit Raster liest als Umriss");
     // MILCHWEISS: ein unbunt-heller Fleck liest 1 (auch ohne Ausbrand), ein bunter 0, Mittelgrau unter der 18-%-Karte 0; die
     // Stufen des Kerns: eine Stufe ohne Schuss lässt das Maß offen, ein Schuss mit den Toren in fremder Stufe ist ein Bruch
     // `zielTon`: das Bild ohne Film (D8) — die Membran zeigt nur ihr Ziel; ein weißer Fleck über einem weißen Ziel ist keine Milch
