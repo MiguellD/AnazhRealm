@@ -22,3 +22,13 @@ GTX 1060, `--echt` 1920×1080, Regler voll, Messplatz-Dienst (zug/messplatz.md).
 Instrument je Boot: f7dd313c5 (fahrt-A3, fahrt-A4, fahrt-B3, fahrt-B4)
 
 Roh: `bericht/z9-abab/`.
+
+## BERICHTIGUNG (OMEN-Sitzung, 23.10.)
+Das Urteil „nicht-langsamer“ oben ist FALSCH, richtig ist **UNENTSCHIEDEN**.
+- **Was fehlte:** Alle A-Boots der Gehen-Zellen sind leer. Die Werkbank aus B (a2b28770) wartet in `welt-boot.cjs` auf `anazhRealm.erwacht`, das A (f7dd313c) nicht trägt. Darum wurde sie an A nie bereit, und jeder Befehl scheiterte mit ECONNREFUSED.
+- **Warum der Richter es übersah:** `p3/messplatz/urteil.cjs` ließ die leeren Kern-Größen („–“) fallen, statt UNENTSCHIEDEN zu urteilen.
+- **Behoben:**
+  - Fehlt einer Seite eine Kern-Größe des Stands, ist die Zelle jetzt UNENTSCHIEDEN.
+  - Das Instrument ist nun die Werkbank von main, mit Rückfall je Boot auf die eigene Seite.
+- **Neu gemessen:** Der Kandidat läuft als `z9c-abab` (B = 13c95713).
+- **Zeile:** `zug/abab.txt` trägt dafür `<a2b28770…> UNENTSCHIEDEN z9-abab-berichtigt`.
