@@ -1,0 +1,29 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --eigen --port 7724 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte\meisterkarte-quelle\punkte\messung\roh\13c95713-radeon\ferne.K2_1.json
+gpu-lauf: warte auf Vorfahrt: der echt-Job (Runner.Worker) läuft (0 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (51 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (116 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (180 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (244 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (310 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (378 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (442 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (507 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (573 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (635 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (699 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (764 s)
+gpu-lauf: warte auf ci-runner 40012057944/1 echt (826 s)
+gpu-lauf: warte auf Vorfahrt: der echt-Job (Runner.Worker) läuft (0 s)
+gpu-lauf: warte auf siedlung-k5-nah-spike 2026-10-23T21:48:30+02:00 pid=7276 (62 s)
+gpu-lauf: warte auf siedlung-k5-nah-spike 2026-10-23T21:48:30+02:00 pid=7276 (127 s)
+gpu-lauf: Schloss punkte-radeon nach 1059 s
+SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT
+[linse-gpu] amd/rdna-3
+[seite] 2026-10-23T19:50:54.568Z navigiert http://127.0.0.1:7723/index.html
+WERKBANK bereit: Steuer 127.0.0.1:7724 · Seite :7723
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.88° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 29.33° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 10.67° von der In-Streuung > 10°
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN (offen: FARBTON)
