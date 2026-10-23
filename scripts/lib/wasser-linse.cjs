@@ -660,8 +660,9 @@ function wasserStrom(ort, hoehe) {
 // über den Weg des Grabe-Hiebs (DSL `voxel_carve`, r 3,5 m), dann Takt um Takt, bis der Automat ruht (höchstens `o.takte`).
 // Je Takt über ±9 m je 0,5 m das GEZEICHNETE Wasser > 10 cm über dem gezeichneten Boden (`_bodenSichtAt`) gegen den Spiegel
 // des Gesetzes (`_atlasWaterLevelAt`, jenseits der Krone `_hydroSpiegelQuer`): `doppelt`, `ueber` (> 10 cm darüber), in Ruhe
-// `abseits` (> 10 cm darunter, wo der Spiegel über dem Boden des Gesetzes liegt); die Nah-Wiese ganz außerhalb 10 m (Kugel,
-// zwei Zellen des Sheets, eine Zelle seines Netzes: Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
+// `abseits` (> 10 cm darunter, wo der Spiegel über dem Boden des Gesetzes liegt); die Nah-Wiese ganz außerhalb des
+// Hiebs (die Säule r 3,5 und eine Zelle über ihre Wand, dort trägt die Ecke ihren Abstand, gelaende-core `editForm`; zwei
+// Zellen des Sheets, eine Zelle seines Netzes: r + 4 Zellen; Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
 function wasserGraben(opts) {
     return (async () => {
         const o = opts || {};
@@ -669,6 +670,8 @@ function wasserGraben(opts) {
         const st = r.state;
         const span = r._voxelChunkConfig(0).span;
         const K = r.constructor.NAH_WIESE.kachel;
+        const HIEB = 3.5; // das Maß des Grabe-Hiebs
+        const AUSSEN = HIEB + 4 * r._voxelChunkConfig(0).step;
         const f2 = (v) => Math.round(v * 100) / 100;
         const { p: a, vor: b } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
         if (!a || !b) return { fehler: "kein Fluss am Ort" };
@@ -719,7 +722,7 @@ function wasserGraben(opts) {
             await window.__weltStehtNach(() => r._gameLoopTick(performance.now()), 600); // die Welt steht, die Wiese mit
             const aussen = (key) => {
                 const [tx, tz] = key.split(",").map(Number);
-                return Math.hypot(Math.max(tx * K - px, 0, px - (tx + 1) * K), Math.max(tz * K - pz, 0, pz - (tz + 1) * K)) > 10;
+                return Math.hypot(Math.max(tx * K - px, 0, px - (tx + 1) * K), Math.max(tz * K - pz, 0, pz - (tz + 1) * K)) > AUSSEN;
             };
             const g = { abstand, ort: [f2(px), f2(pz)], sheets: 0, sheetMs: 0, caMs: 0, wieseFaelle: 0, ruhe: -1 };
             Object.assign(g, { bueschel: [Infinity, -Infinity], doppelt: 0, ueber: 0, ueberM: 0 });
@@ -735,7 +738,7 @@ function wasserGraben(opts) {
             huelle("_nahWieseKachelFaellt", (ms, [key]) => aussen(key) && g.wieseFaelle++);
             g.vor = messen(px, pz).nass;
             try {
-                r.dslRun(["voxel_carve", px, r._voxelSurfaceY(px, pz), pz, 3.5], { source: "human" });
+                r.dslRun(["voxel_carve", px, r._voxelSurfaceY(px, pz), pz, HIEB], { source: "human" });
                 for (let t = 0; t < (o.takte || 900) && g.ruhe < 0; t++) {
                     r._gameLoopTick(performance.now());
                     const m = messen(px, pz);
@@ -1266,8 +1269,7 @@ function wasserRegen(opts) {
 // tiefem Boden — See, Fluss, Rand-Spiegel) und über der eine FEST-Zelle steht (die Decke). Ihr Boden (`_fieldSurfaceBelow`)
 // ist der Grund eines Körpers in der Höhle: die EINE Wasser-Wahrheit am Körper darf dort kein Wasser lesen (Chokepoint), der
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
-// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert). Bis 8f09227d las der Körper den
-// Spiegel des Gesetzes ohne Decke: im Höhlen-Boden unter dem See der Mess-Wiese 393 von 400 Proben „nass".
+// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert).
 function wasserHoehle(opts) {
     return (async () => {
         const o = opts || {};

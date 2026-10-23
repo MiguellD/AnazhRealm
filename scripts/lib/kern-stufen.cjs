@@ -1,6 +1,4 @@
-// kern-stufen.cjs — DIE STUFEN-WAHRHEIT DER KERNE als EINE Erwartung der Nervensystem-Linsen (K64). Befund: vier Linsen
-// (nervensystem porta · fachwerk · schmiede · vehicle) schrieben die Stufen-Listen fremder Kerne als Literale ab („gate
-// [0,1,3] UNANGETASTET") — die Stufe 2 der Tore (K64) machte drei von ihnen rot, ohne dass der Merge am Ingest brach. Der
+// kern-stufen.cjs — DIE STUFEN-WAHRHEIT DER KERNE als EINE Erwartung der Nervensystem-Linsen (K64). Der
 // Merge ist treu, wenn jede Art des Live-Buchs die Liste trägt, die ihr Kern deklariert: die Erwartung liest die Kerne in
 // der Seite (dieselben Dateien, die der Foundry-Worker lädt; die Namensräume aus cores.manifest.json), nie eine Abschrift.
 "use strict";

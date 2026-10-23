@@ -1,8 +1,5 @@
 // diag-p2p-gestalt.cjs — P2P-GESTALT: DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
-// Der benannte V18.477-Offen-Punkt: die Studio-Übergabe (state.studioUebergabe) war LOKALE
-// Wahrheit — ein Mitspieler baute den fremden Avatar aus SEINEM eigenen _koerperStudioDials,
-// die vom Sender gewählte Gestalt (Kleider/Haut/Haar) reiste nie übers Mesh. Jetzt trägt der
-// soul-Kanal (_p2pBroadcastSoul) die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)
+// Der soul-Kanal (_p2pBroadcastSoul) trägt die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)
 // validiert sie durch DENSELBEN Validator (_studioUebergabeValidate — EINE Quelle) und legt
 // sie als PER-PEER-Wahrheit (entry.uebergabe) ab; der Peer-Guss (_p2pApplyPeerSoul) führt sie
 // transient über _activePeerUebergabe in den EINEN Leser _koerperStudioDials (try/finally räumt
@@ -50,26 +47,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             });
             return set;
         };
-        const fnv = (h, arr) => {
-            const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h >>> 0;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            if (!g) return "0/0";
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
+        const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const lin = (hx) => {
             const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
             return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)]

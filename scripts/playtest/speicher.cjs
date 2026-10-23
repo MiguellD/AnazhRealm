@@ -146,7 +146,7 @@ async function checkBandRing8(ctx) {
             const echt = r.state.worldMeta;
             r.state.worldMeta = Object.assign({}, echt, {
                 macro: { massivC: { x: 1, z: 2 } },
-                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
                 genesisPortalRing: true,
                 portalPreviewFachwerk: true,

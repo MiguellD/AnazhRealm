@@ -10,7 +10,7 @@
 //   Z (Ziel, D8): das Fenster wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
 //     Welt (die Datei, die das Studio in seiner Welt backt, `worlds/tor-ziele.json`, gate:studio-huelle H5) mit dem SHA-Stempel
 //     ihrer Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
-//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
+//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel; die Methoden trägt gate:altlasten).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
 //     Fallback), und die Uniforms atmen (time folgt der Bild-Uhr `_bildZeit`).
@@ -19,9 +19,7 @@
 //     seitlich am Pfosten vorbei feuert NICHT.
 //   O (das Tor ohne Ziel, D8-n1): ein Web-Portal (signierte Adresse, keine Welt auf diesem Boden) und ein Tor auf eine Welt, die der
 //     Export nicht kennt, LEBEN — Eintrag in der Registry, Hindurchgehen feuert, das Licht des Tors brennt, nur das Fenster
-//     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. Vorher (eaa3773a) hing der Eintrag am Ziel: kein
-//     Hindurchgehen, keine Flügel, kein Licht.
-//   B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
+//     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
 //     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken. Gezählt wird,
 //     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
 //       B1 aus der Ring-Mitte nach −x zeichnen Membranen (nicht vakuös), die im Rücken nicht alle
@@ -165,18 +163,14 @@ async function blickProbe(opts) {
 }
 
 // H (K64-n1, die Hellen Tafeln; D8 das Tor als Fenster): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der
-// AUSGABE-Pfad die Pixel jeder Membran. Bis D8 stand die Öffnung milchig-weiß (der Nebel-Kasten, der Anzeige-Wert der Shell); seit
-// D8 zeigt sie das Panorama der Ziel-Welt durch den Film. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
+// AUSGABE-Pfad die Pixel jeder Membran. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
 //   A    die Welt, wie sie die Membran zeigt: der Ausgabe-Pfad der Welt (TRAA, Tonung, Belichtung aus dem Licht), gezeichnet
 //        werden nur die gemessenen Bürger — Membran und Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
 //        Schatten (`_membranBauFor`): ihr Pixel hängt an keinem anderen Bürger. Die ganze Welt im Bild baute auf swiftshader jedes
 //        Programm im Blick, das die Bühne neu lichtet, und jedes, das während H ankam (CI Lauf 38674187005: A 10 kalt 113 s,
 //        M 6 kalt 227 s). Die Lichter bleiben (kein Programm wechselt seinen Licht-Schlüssel).
 //   M    die Maske OHNE Programm (K64-n3): dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
-//        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). Bis K64-n3 malte M die Membranen magenta: EIN kaltes
-//        Programm, in der CI 195 s von 233 s des Gates (Lauf 38670064375); A gegen A wiederholt weicht kein Pixel ab (die Uhr
-//        steht, TRAA ist bei gleicher Lage gleich), die Differenz-Maske deckt sich mit der magenta (swiftshader: 7 876 von 8 014
-//        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
+//        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
 // DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
@@ -539,9 +533,6 @@ async function blickStufe(check) {
         // ── N (Absenz, D8): kein Nebel-Kasten, kein Nebel-Gesetz, kein Host-Panorama ──
         res.n = {
             gesetz: mu.fog === undefined && globalThis.__portaCore.NEBEL_GESETZ === undefined,
-            methoden: ["_nebelMaterialFor", "_nebelGraph", "_torPanorama", "_torPanoMal"].filter(
-                (m) => typeof r[m] === "function"
-            ),
         };
 
         // ── M: Membran-Bau + Atem ──
@@ -761,11 +752,6 @@ async function blickStufe(check) {
         );
     if (out.n) {
         check("N: kein Nebel-Gesetz am Tor (mu.fog, NEBEL_GESETZ fielen)", out.n.gesetz === true);
-        check(
-            "N: keine Methode des Nebel-Kastens und des Host-Panoramas",
-            out.n.methoden.length === 0,
-            out.n.methoden.join(" · ")
-        );
         check(
             "N: kein Nebel-Kasten an der Membran, keiner in der Szene",
             out.n.keinKasten === true && out.n.keinNebelInSzene === true

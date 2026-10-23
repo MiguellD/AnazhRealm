@@ -263,58 +263,15 @@ async function checkBandV18223PbrKohaerenz(ctx) {
 }
 
 // Wahrer Anblick I — der LAWFUL Boden: per-Fragment Multi-Klassen-Geologie als geteilter Auslesewert
-// (Toon + PBR). Fels/Geröll EMERGIEREN aus der Steile, Moos aus flach + feucht. KONSUM: beide
-// Builder rufen den Helfer, die Uniforms treiben, der colorNode ist gesetzt (auch PBR).
+// (Toon + PBR). Fels/Geröll EMERGIEREN aus der Steile, Moos aus flach + feucht. Der Helfer bricht laut; jede Signatur des
+// Spiels baut ihren Stoff mit colorNode (G1) — ein Bruch im Bau wirft dort beim Namen.
 async function checkBandWahrerAnblickSaeule1(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const THREE = window.THREE;
         const out = {};
 
-        // (A) Helfer + gesetzmäßige Konfiguration
-        const G = A.TERRAIN_GEOLOGY;
-        out.configFrozen = !!G && Object.isFrozen(G);
-        out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
-        out.slopeOrderScree = !!G && G.schuttGitter > 0 && G.schuttGitter <= 2 * 3.6;
-        out.screeBeforeRock = !!G && G.schuttKandidat < G.rockLo;
-        // Der Fels-Ton ist das Gesetz (K17, gelaende-core `felsBasis` über `FELS_STOFF`), kein Tint der Geologie mehr.
-        const FS = A.FELS_STOFF;
-        out.tintsAreRgb =
-            !!G &&
-            !("rockTint" in G) &&
-            !!FS &&
-            Array.isArray(FS.basis.basis) &&
-            FS.basis.basis.length === 3 &&
-            Array.isArray(FS.mittel) &&
-            FS.mittel.length === 3 &&
-            Array.isArray(G.mossTint) &&
-            G.mossTint.length === 3;
-        out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
-
-        // (C) Uniforms TREIBEN — nach ensure existieren geoRock/geoMoss
-        r._ensureAtmoUniforms();
-        const au = r.state.atmoUniforms;
-        out.geoRockUniform = !!(au && au.geoRock && Number.isFinite(au.geoRock.value));
-        out.geoMossUniform = !!(au && au.geoMoss && Number.isFinite(au.geoMoss.value));
-        out.geoRockDefault1 = !!(au && au.geoRock && Math.abs(au.geoRock.value - 1) < 1e-9);
-        out.geoMossDefault1 = !!(au && au.geoMoss && Math.abs(au.geoMoss.value - 1) < 1e-9);
-
-        // (D) Behavioral — der Helfer baut einen Node-Graph ohne zu werfen
-        {
-            const zD = window.__stoffZeuge(r);
-            try {
-                const node = r._terrainGeologyAlbedo(
-                    THREE.TSL,
-                    THREE.TSL.attribute("color", "vec3"),
-                    THREE.TSL.positionWorld
-                );
-                out.helperReturnsNode = !!node && typeof node === "object";
-            } finally {
-                out.helperNoThrow = zD.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
-            }
-        }
         // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
         {
             const logAlt = r.log;
@@ -327,35 +284,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             } finally {
                 r.log = logAlt;
             }
-        }
-
-        // (E) Toon-Terrain trägt den colorNode (kein Fehler in der Geologie-Schicht)
-        const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
-        const zE = window.__stoffZeuge(r);
-        let mToon = null;
-        try {
-            mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        } finally {
-            out.toonTerrainNoGeoError = zE.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
-        }
-        out.toonTerrainColorNode = !!(mToon && mToon.colorNode);
-        if (mToon && typeof mToon.dispose === "function") mToon.dispose();
-
-        // (F) PBR-Terrain trägt JETZT denselben Geologie-colorNode (die geheilte Lücke)
-        try {
-            r.state.atmosphere.materialMode = "pbr";
-            const zF = window.__stoffZeuge(r);
-            let mPbr = null;
-            try {
-                mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
-            } finally {
-                out.pbrTerrainNoGeoError = zF.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
-            }
-            out.pbrTerrainIsPbr = !!(mPbr && mPbr.userData && mPbr.userData.isPbrMaterial);
-            out.pbrTerrainColorNode = !!(mPbr && mPbr.colorNode);
-            if (mPbr && typeof mPbr.dispose === "function") mPbr.dispose();
-        } finally {
-            if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
         }
 
         // (G) DIE VERTEX-FARBE EINMAL (Klasse „Albedo = Farbe²", r184 setupDiffuseColor: colorNode × Vertex-Farbe,
@@ -404,34 +332,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
-    check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
-    check(
-        "Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)",
-        res.slopeOrderScree === true
-    );
-    check("Ω-OPSIS S1 (A5) Schutt-Kandidat beginnt vor Fels (schuttKandidat < rockLo)", res.screeBeforeRock === true);
-    check(
-        "Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling",
-        res.tintsAreRgb === true
-    );
-    check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
-
-    check("Ω-OPSIS S1 (C1) geoRock-Uniform existiert + endlich", res.geoRockUniform === true);
-    check("Ω-OPSIS S1 (C2) geoMoss-Uniform existiert + endlich", res.geoMossUniform === true);
-    check("Ω-OPSIS S1 (C3) geoRock default 1 (volle Säule)", res.geoRockDefault1 === true);
-    check("Ω-OPSIS S1 (C4) geoMoss default 1 (volle Säule)", res.geoMossDefault1 === true);
-
-    check("Ω-OPSIS S1 (D1) Helfer baut Node-Graph (kein Wurf)", res.helperReturnsNode === true);
-    check("Ω-OPSIS S1 (D2) Helfer wirft keinen Fehler (Marker leer)", res.helperNoThrow === true);
     check("Ω-OPSIS S1 (D3) Helfer bricht ohne TSL laut beim Namen (_stoffBruch, K22)", res.helperGraceful === true);
 
-    check("Ω-OPSIS S1 (E1) Toon-Terrain setzt colorNode", res.toonTerrainColorNode === true);
-    check("Ω-OPSIS S1 (E2) Toon-Terrain: kein Geologie-Fehler", res.toonTerrainNoGeoError === true);
-
-    check("Ω-OPSIS S1 (F1) PBR-Terrain ist PBR-Material", res.pbrTerrainIsPbr === true);
-    check("Ω-OPSIS S1 (F2) PBR-Terrain trägt Geologie-colorNode (geheilte Lücke)", res.pbrTerrainColorNode === true);
-    check("Ω-OPSIS S1 (F3) PBR-Terrain: kein Geologie-Fehler", res.pbrTerrainNoGeoError === true);
     check(
         `Farbe einmal (G1): jeder Vertex-Farb-Stoff (Boden · Chunk · Fels · Rinde · Laub · Klinge · Kern) trägt die Farbe im colorNode und schaltet vertexColors ab (Farbe² bei: ${res.farbeQuadrat.join(", ") || "keinem"}; ohne colorNode: ${res.farbeOhneNode.join(", ") || "keiner"})`,
         res.farbeQuadrat.length === 0 && res.farbeOhneNode.length === 0

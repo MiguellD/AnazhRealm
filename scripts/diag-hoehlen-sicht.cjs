@@ -25,7 +25,7 @@
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu;
-//   (i) HIMMELS-LICHT — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
+//   (i) HIMMELS-LICHT — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` trägt
 //       `aHimmel`, gelaende-core `himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell.
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
@@ -312,7 +312,7 @@ function urteil(b) {
     const hl = b.himmel;
     if (!c.himmelLiest)
         v.push(
-            "CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` = `aHimmel`) — das Himmels-Licht liegt " +
+            "CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` trägt `aHimmel`) — das Himmels-Licht liegt " +
                 "auf jeder Höhlen-Wand"
         );
     if (!hl || !(hl.hoehle > 0))
@@ -1449,9 +1449,9 @@ const server = statikServer();
                     kh.components === "w" &&
                     kh.node.getAttributeName() === "aNormalZiel" &&
                     kh.node.nodeType === "vec4" &&
-                    r._getVoxelChunkMaterial().aoNode === kh &&
-                    m1.aoNode === kh &&
-                    m0.aoNode !== kh;
+                    haelt(r._getVoxelChunkMaterial().aoNode, kh) &&
+                    haelt(m1.aoNode, kh) &&
+                    !haelt(m0.aoNode, kh);
                 aus.code.normaleHoehle = haelt(m1.normalNode, kh) && !haelt(m0.normalNode, kh);
                 // der Boden reicht dem Pool seine Himmels-Sicht, jeder Himmels-Ersatz hängt im gebauten Term; im selben Ruf: der
                 // Pool ruft die EINE BRDF, und die Bedingung jedes Zweigs (`select`) liest normalView/positionView (r184 baut

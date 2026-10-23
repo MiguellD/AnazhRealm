@@ -602,15 +602,16 @@ class AnazhRealm_gelaende_boden {
     // was sie liest (`_forestDartsFallen`). Bis K69 warf jeder Erdbau die Gedächtnisse der ganzen Welt: der Gang in ein Dorf
     // (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen synchron neu, der längste Takt 880 ms (Null-Renderer,
     // Dorfweg gehend), an der Radeon ein Frame von 3,1 s (`_forestCellDarts › planForestCell`, die Hänger-Linse).
-    _erdbauSetzen(key, splats) {
+    // `nass`: das Urteil, das die Raten des Erwachens schon fällten (`_dorfErwachen`).
+    _erdbauSetzen(key, splats, nass) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
         if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
         const G = globalThis.__gelaendeCore;
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
-        const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
+        const amWasser = nass === undefined ? this._erdbauAmWasser(G.erdbauNormal(splats)) : nass;
         wm.erdbau[key] = splats;
-        this._erdbauWirkt(splats, amWasser);
+        this._erdbauWirkt(splats, amWasser, { erdbauDazu: splats });
         return true;
     }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
@@ -624,16 +625,28 @@ class AnazhRealm_gelaende_boden {
         if (!p || !wm || !wm.erdbau || typeof wm.erdbau !== "object") return false;
         const sein = (q) => q && q.art === "grund" && Math.abs(q.cx - p.x) < 0.05 && Math.abs(q.cz - p.z) < 0.05;
         const weg = [];
+        const ohne = []; // ihre Stellen in der Reihe des Erdbaus (`_erdbauRoh`) vor dem Fall
+        let i = 0;
         for (const k of Object.keys(wm.erdbau)) {
             const liste = wm.erdbau[k];
-            if (!Array.isArray(liste) || !liste.some(sein)) continue;
-            for (const q of liste) if (sein(q)) weg.push(q);
+            if (!Array.isArray(liste)) continue;
+            if (!liste.some(sein)) {
+                i += liste.length;
+                continue;
+            }
+            for (const q of liste) {
+                if (sein(q)) {
+                    weg.push(q);
+                    ohne.push(i);
+                }
+                i++;
+            }
             const rest = liste.filter((q) => !sein(q));
             if (rest.length) wm.erdbau[k] = rest;
             else delete wm.erdbau[k];
         }
         if (!weg.length) return false;
-        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)));
+        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)), { erdbauOhne: ohne });
         return true;
     }
     // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
@@ -643,7 +656,8 @@ class AnazhRealm_gelaende_boden {
     // (Probe-Rand und Glätten: 3 Zellen über die Spanne) einen Kasten trifft, gezeichnet wird nur er neu. Bis S4 fiel der Kreis
     // um den Umkreis-Kreis samt einem Chunk Rand: der Grund des Vorschau-Hauses am Tor (4,1 × 4,9 m) warf beim Boot 16
     // gezeichnete Chunks um den Spieler, verändert hat er einen.
-    _erdbauWirkt(splats, amWasser) {
+    // `delta`: die Änderung für die Fäden (die Splats eines neuen Orts, die Stellen gefallener), ohne sie der ganze Erdbau.
+    _erdbauWirkt(splats, amWasser, delta) {
         const G = globalThis.__gelaendeCore;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
         const R = G.ERDBAU.reichweiteM;
@@ -667,11 +681,22 @@ class AnazhRealm_gelaende_boden {
         const z1 = Math.max(...kaesten.map((k) => k[3]));
         const { span } = this._voxelChunkConfig();
         const rand = [0, 1, 2, 3].map((lod) => 3 * this._voxelChunkConfig(lod).step);
+        // die Kästen je Chunk, den sie in der gröbsten Stufe erreichen (Lehre 25: ein Chunk fragt nur seine — bis stadt-erwachen
+        // fragte jeder Chunk des Umkreises jeden Kasten, der Erdbau nH 300 ~1 200 Chunks × 4 Stufen × ~2 000 Kästen)
+        const mMax = R + Math.max(...rand);
+        const jeChunk = new Map();
+        for (const k of kaesten)
+            for (let a = Math.floor((k[0] - mMax) / span); a <= Math.floor((k[1] + mMax) / span); a++)
+                for (let b = Math.floor((k[2] - mMax) / span); b <= Math.floor((k[3] + mMax) / span); b++) {
+                    const l = jeChunk.get(`${a},${b}`);
+                    if (l) l.push(k);
+                    else jeChunk.set(`${a},${b}`, [k]);
+                }
         // trifft das Gitter des Chunks (a, b) in der Stufe lod die Wirkung eines Splats?
         const trifft = (a, b, lod) => {
             const m = R + rand[lod];
             const [u0, u1, v0, v1] = [a * span - m, (a + 1) * span + m, b * span - m, (b + 1) * span + m];
-            return kaesten.some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
+            return (jeChunk.get(`${a},${b}`) || []).some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
         };
         const ka = Math.floor((x0 - R - rand[3]) / span);
         const kb = Math.floor((x1 + R + rand[3]) / span);
@@ -695,8 +720,10 @@ class AnazhRealm_gelaende_boden {
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
         this._forestDartsFallen(x0, z0, x1, z1);
-        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
-        this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
+        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`) — als
+        // Änderung (`delta`, voxel-worker `applyStateDelta`), nie als Klon der Welt je Haus (Gebot 7; stadt-erwachen: im Zug
+        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt)
+        this._voxelZustandPost({ type: "state-update", delta: delta || { erdbau: this._erdbauRoh() } });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
@@ -718,7 +745,8 @@ class AnazhRealm_gelaende_boden {
     // 2-m-Raster: an jeder nassen Spalte (`_nassAt`) rückt E den Grund in eine andere Sim-Zelle (DIESELBEN Zellen, die der
     // Automat liest — ein Grund, der in seiner Zelle bleibt, ändert kein Wasser), oder eine Sim-Zelle daneben schneidet E ihn
     // eine Zelle tiefer unter den Spiegel (ein Schnitt öffnet dem Wasser einen Weg; eine Schüttung daneben verdrängt keins).
-    _erdbauAmWasser(E) {
+    // `ab`, `n`: nur die Zellen ab der `ab`-ten, höchstens `n` (die Raten des Erwachens, `_dorfErwachen`).
+    _erdbauAmWasser(E, ab = 0, n = Infinity) {
         if (!E) return false;
         const G = globalThis.__gelaendeCore;
         const Z = G.ERDBAU.zelleM;
@@ -732,7 +760,10 @@ class AnazhRealm_gelaende_boden {
             const h1 = G.erdbauY(E, x, z, h0);
             return nurSchnitt ? zelle(h1) < zelle(h0) && h1 < spiegel : zelle(h1) !== zelle(h0);
         };
+        let i = 0;
         for (const key of E.zellen.keys()) {
+            if (i++ < ab) continue;
+            if (i > ab + n) break;
             const a = Math.floor(key / 65536) - 32768;
             const b = (key % 65536) - 32768;
             for (let i = 1; i < Z; i += 2)
@@ -761,8 +792,10 @@ class AnazhRealm_gelaende_boden {
     // Haupt-Thread jeden Kandidaten in 3-ms-Scheiben (Teleport ins Erwachen nH 300: 70 761 Haus-Pläne, 18,7 s bis zum ersten
     // Haus; nH 12: 300, 1,4 s). Je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als
     // Gelände); zwei Rufer desselben Orts teilen EINE Wahl. `legen` false (der Vorlauf, `_dorfBereiten`): ihr Erdbau liegt erst,
-    // wenn der Ort Welt wird (`_ortPlanSetzen`). Rückgabe: Promise des Plans v2, `origin` rückt an seinen Ort.
-    async _ortWahl(plan, origin, legen = true) {
+    // wenn der Ort Welt wird (`_ortPlanSetzen`). `frei`: der Ort, den kein Haus berühren darf — ohne Angabe der Spieler (der
+    // Akt vor ihm), null keiner (die Zelle der Welt: ihr Ort ist eine Funktion von Saat und Gesetz, Lehre 7). Rückgabe: Promise
+    // des Plans v2, `origin` rückt an seinen Ort.
+    async _ortWahl(plan, origin, legen = true, frei) {
         if (plan && plan.version === 2) return plan;
         const key = AnazhRealm._ortSchluessel(plan, origin);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
@@ -770,7 +803,7 @@ class AnazhRealm_gelaende_boden {
             const flug = this._ortWahlFlug || (this._ortWahlFlug = new Map());
             let wahl = flug.get(key);
             if (!wahl) {
-                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }).then(
+                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei).then(
                     (v2) => (ple.set(key, v2), flug.delete(key), v2),
                     (e) => (flug.delete(key), Promise.reject(e))
                 );
@@ -783,7 +816,7 @@ class AnazhRealm_gelaende_boden {
     static _ortSchluessel(plan, origin) {
         return "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
     }
-    async _ortWahlImFaden(plan, origin) {
+    async _ortWahlImFaden(plan, origin, frei) {
         const W = AnazhRealm.ORT_WAHL;
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
@@ -791,7 +824,7 @@ class AnazhRealm_gelaende_boden {
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt (die Kachel reist vor dem Auftrag)
         this._ensureHydroTilesAround(origin.x, origin.z, reich + W.ringe * W.schrittM);
         for (let ab = 0, wand = -1; ;) {
-            const pm = this.state.playerMesh;
+            const pm = frei === undefined ? this.state.playerMesh && this.state.playerMesh.position : frei;
             const raster = this._ortRaster(plan);
             const r = await this._nebenAuftrag(
                 "ort",
@@ -803,9 +836,7 @@ class AnazhRealm_gelaende_boden {
                     wand,
                     W,
                     M: AnazhRealm.WERK_LAND_M,
-                    spieler: pm
-                        ? { x: pm.position.x, z: pm.position.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN }
-                        : null,
+                    spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
                 },
                 [raster.lx.buffer, raster.lz.buffer]
@@ -827,10 +858,10 @@ class AnazhRealm_gelaende_boden {
                 return r.v2;
             }
             const t0 = performance.now();
-            const frei = this._ortTraegtWirt(r.v2);
+            const traegt = this._ortTraegtWirt(r.v2, pm);
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
-            ab = frei ? r.index : r.index + 1;
-            wand = frei ? r.index : -1;
+            ab = traegt ? r.index : r.index + 1;
+            wand = traegt ? r.index : -1;
         }
     }
     // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts
@@ -866,19 +897,17 @@ class AnazhRealm_gelaende_boden {
         }
         return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius };
     }
-    // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Spieler JETZT (Reichweite +
-    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`) und keins steht in einem Bau (`_bauFrei`, die zweite
-    // Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
-    _ortTraegtWirt(k) {
-        const pm = this.state.playerMesh;
+    // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Ort `p` (der Spieler JETZT beim Akt, Reichweite +
+    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`; null: die Zelle der Welt) und keins steht in einem
+    // Bau (`_bauFrei`, die zweite Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
+    _ortTraegtWirt(k, p) {
         const frei = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         for (const sl of k.slots) {
             const { fp } = AnazhRealm._slotGrundriss(sl);
             if (!fp) continue;
             const wx = k.ort.x + sl.x;
             const wz = k.ort.z + sl.z;
-            if (pm && Math.hypot(pm.position.x - wx, pm.position.z - wz) < Math.hypot(fp.ex, fp.ez) + frei)
-                return false;
+            if (p && Math.hypot(p.x - wx, p.z - wz) < Math.hypot(fp.ex, fp.ez) + frei) return false;
             if (!this._bauFrei(wx, wz, sl.phi || 0, fp, sl.tuer, sl.y)) return false;
         }
         return true;
@@ -966,8 +995,8 @@ class AnazhRealm_gelaende_boden {
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
     // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
     // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
-    // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur das
-    // Kugel-Delta drauf. MUSS bit-identisch im Worker (`terrainColumnContext`).
+    // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur ihre
+    // Form drauf (gelaende-core `editsImGitter`). MUSS bit-identisch im Worker (`terrainColumnContext`).
     _terrainColumnContext(x, z) {
         return this._terrainColumnContextIn(x, z, {});
     }
@@ -1074,15 +1103,14 @@ class AnazhRealm_gelaende_boden {
         return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContextIn(x, z, s));
     }
 
-    // Volle Terrain-Dichte = Basis + voxelEdit-Delta für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`,
-    // direkte Aufrufer); der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht + Delta).
+    // Volle Terrain-Dichte = Basis mit den Edits für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`, direkte Aufrufer); der
+    // Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht, dieselbe Form je Ecke).
     _terrainDensityAt(x, y, z) {
-        // Die Edit-Deltas leben in `_voxelEditDeltaAt`, damit der feld-native Kollisions-Pfad
-        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
-        // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
-        // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
+        // Die Edits liest `_mitEdits`, damit der feld-native Kollisions-Pfad (`_fieldDensityAt`) DIESELBE Edit-Wahrheit
+        // liest; die Form ist das Gesetz des Kerns (gelaende-core `mitEdits`, `editsImGitter` — Punkt, Gitter und Worker
+        // rufen es; gate:worker-dichte Teil H: Main = Worker = Gesetz, LOD 0–3, mit Edits über dem Band).
         // DER KELLER IST HOHL (S4, gelaende-core `erdbauHohl`): das Feld trägt den Raum des Hauses, das Gitter des Netzes nicht
-        const d = this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        const d = this._mitEdits(this._terrainBaseDensityAt(x, y, z), x, y, z);
         const K = this._kellerLage(x, z);
         return K ? globalThis.__gelaendeCore.erdbauHohl(K, x, y, z, d) : d;
     }
@@ -1093,8 +1121,8 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
-    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Kugel
-    // samt einem Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in
+    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Reichweite
+    // samt einem Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = gelaende-core `editReich`), in
     // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits
     // zu summieren, und die Summe bleibt Bit für Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk
     // eine Generation aus EINEM steigenden Zähler (nie wiederholt) — der Stale-Filter der Worker-Antworten
@@ -1119,10 +1147,10 @@ class AnazhRealm_gelaende_boden {
             while (k.n < edits.length) {
                 const ed = edits[k.n++];
                 if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-                const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+                const r = globalThis.__gelaendeCore.editReich(ed);
                 this._editGenZaehler = (this._editGenZaehler || 0) + 1;
                 const g = this._editGenZaehler;
-                // Der Kasten der Kugel in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
+                // Der Kasten seiner Reichweite in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
                 const kax = Math.floor((ed.x - r) / span);
                 const kbx = Math.floor((ed.x + r) / span);
                 const kaz = Math.floor((ed.z - r) / span);
@@ -1189,41 +1217,21 @@ class AnazhRealm_gelaende_boden {
         return `${this.state.voxelWorkerStateGen}|${g}`;
     }
 
-    // Voxel-Edit-Deltas (EINE Quelle): jede Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf
-    // (fill). Edits leben in worldMeta.voxelEdits (persistiert) und gelten ZULETZT — der Spieler-Wille
-    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits, deren Kasten den Chunk der Probe
-    // berührt (der Kern der Karte).
-    _voxelEditDeltaAt(x, y, z) {
+    // Die Dichte über der Basis `basis` an (x, y, z) mit den Edits (EINE Quelle): sie leben in worldMeta.voxelEdits
+    // (persistiert) und gelten ZULETZT — der Spieler-Wille überschreibt Terrain UND Hydrosphäre-Sculpting. Gefragt werden nur
+    // die Edits, deren Reichweite den Chunk der Probe berührt (der Kern der Karte); die Form ist das Gesetz des Kerns
+    // (gelaende-core `mitEdits`: die Säule `editForm`, Graben und Aufschütten, mode-lose Alt-Edits graben).
+    _mitEdits(basis, x, y, z) {
         const meta = this.state.worldMeta;
-        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return 0;
+        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
         const k = this._voxelEditKarte();
         const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
-        if (!edits) return 0;
-        let d = 0;
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const dx = x - ed.x;
-            const dy = y - ed.y;
-            const dz = z - ed.z;
-            const dist2 = dx * dx + dy * dy + dz * dz;
-            const r = ed.r;
-            if (dist2 < r * r) {
-                const fall = 1 - Math.sqrt(dist2) / r;
-                const amt = fall * (ed.strength || 48);
-                // `fill` addiert Dichte (Boden aufschütten), `carve` (Default,
-                // auch mode-lose Alt-Edits) zieht ab.
-                if (ed.mode === "fill") d += amt;
-                else d -= amt;
-            }
-        }
-        return d;
+        return globalThis.__gelaendeCore.mitEdits(basis, x, y, z, edits);
     }
 
     // Base-gecachter Density-Grid-Pfad: (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu
     // `_voxelSampleDensityGrid`, aber das teure Basis-Grid wird pro Chunk+LOD gecacht; der Edit-Rebuild
-    // legt nur die Kugel-Deltas auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
-    // Bit-identisch zu `_terrainDensityAt` (base + Σ edit-delta).
+    // legt nur die Form der Edits auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
     _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
@@ -1235,51 +1243,32 @@ class AnazhRealm_gelaende_boden {
             const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
             // V18.321 — der Spalten-Hoist: colVoxel = die per-Voxel-Hälfte (liest den 2D-Kontext).
             const colVoxel = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
-            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample, colVoxel);
+            baseGrid = this._voxelSampleDensityGrid(
+                gox,
+                goy,
+                goz,
+                dimX,
+                dimY,
+                dimZ,
+                step,
+                baseSample,
+                colVoxel,
+                true,
+                AnazhRealm.KEINE_EDITS
+            );
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
         // Die Edits des Gitter-Kastens (die Karte, `_voxelEditsImKasten`; der Worker fragt denselben Kasten).
         const edits = this._voxelEditsImKasten(gox, gox + dimX * step, goz, goz + dimZ * step);
         if (!edits.length) return baseGrid; // Basis IST das Grid (read-only)
-        // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
-        // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
-        const out = new Float32Array(baseGrid);
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const r = ed.r;
-            const r2 = r * r;
-            const strength = ed.strength || 48;
-            const isFill = ed.mode === "fill";
-            // Grid-Index-Bounding-Box der Kugel (clamp auf [0, N-1]).
-            const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
-            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
-            const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
-            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
-            const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
-            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
-            for (let k = k0; k <= k1; k++) {
-                const wz = goz + k * step;
-                const dz = wz - ed.z;
-                for (let j = j0; j <= j1; j++) {
-                    const wy = goy + j * step;
-                    const dy = wy - ed.y;
-                    for (let i = i0; i <= i1; i++) {
-                        const wx = gox + i * step;
-                        const dx = wx - ed.x;
-                        const dist2 = dx * dx + dy * dy + dz * dz;
-                        if (dist2 < r2) {
-                            const fall = 1 - Math.sqrt(dist2) / r;
-                            const amt = fall * strength;
-                            const idx = i + j * Nx + k * Nx * Ny;
-                            if (isFill) out[idx] += amt;
-                            else out[idx] -= amt;
-                        }
-                    }
-                }
-            }
-        }
-        return out;
+        // Die Edits auf eine Kopie legen, deren Band ihre Reichweite deckt (dort die wahre Basis statt ±1 — die Kappe der Form
+        // braucht sie), je Ecke das Gesetz des Kerns (`bandUmEdits`, `editsImGitter`); der Basis-Cache bleibt edit-frei.
+        const G = globalThis.__gelaendeCore;
+        const basis = new Float32Array(baseGrid);
+        const col = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
+        const spalte = (x, z) => this._terrainColumnContext(x, z);
+        G.bandUmEdits(basis, gox, goy, goz, Nx, Ny, Nz, step, edits, this.state.terrainBaseHeight || 0, spalte, col);
+        return G.editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits);
     }
 
     // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
@@ -1743,21 +1732,19 @@ class AnazhRealm_gelaende_boden {
     // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
     // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
     // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true) {
+    // `reich`: die Edits, deren Reichweite das Band deckt (gelaende-core `bandUmEdits`) — Default die des Kastens; der
+    // Basis-Cache (`_voxelEditedDensityGrid`) bleibt edit-frei, seine Kopie trägt sie.
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true, reich = undefined) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
-        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über `surf + Roughness`
-        // garantiert Luft, unter base−40 (Höhlen-Band endet base−28) garantiert Fels → −1/+1 statt sample(),
-        // bit-identische Geometrie, ~60–70 % weniger Calls; Edits (strength 48) dominieren das ±1.
-        // MUSS bit-identisch im Worker (`computeDensityGrid`).
+        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über dem Band garantiert Luft, unter
+        // ihm garantiert Fels → −1/+1 statt sample(), bit-identische Geometrie, ~60–70 % weniger Calls. Das Band ist EIN
+        // Gesetz des Kerns (`bandOben`/`bandUnten`); wo ein Edit seine Fläche hinlegt, deckt es seine Reichweite
+        // (`bandUmEdits`). Der Worker (`computeDensityGrid`) liest dasselbe Gesetz.
+        const G = globalThis.__gelaendeCore;
         const base = this.state.terrainBaseHeight || 0;
-        const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
-        // Der Band-Top-Margin MUSS den Gradient-eps von `_voxelGradientNormals` (1.5 Zellen) decken — ein
-        // Gipfel-Vertex sampelt +eps nach oben, das muss im echt gesampelten Band liegen (sonst kippt die
-        // Gipfel-Normale). eps 1.5 + Puffer → 4 Zellen.
-        const topMargin = 4 * step;
         // Spalten-Hoist: mit `colVoxel` wird `_terrainColumnContext` EINMAL pro Spalte gerechnet und deckt
         // Band-Grenzen (`ctx.surf`) UND per-Voxel-Auswertung (`colVoxel(...,ctx)` == sample, byte-identisch).
         // Ohne `colVoxel` (Edit-/Sonder-Sampler) der direkte Pfad. MUSS bit-identisch im Worker.
@@ -1767,10 +1754,8 @@ class AnazhRealm_gelaende_boden {
                 const wx = ox + i * step;
                 const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
                 const surf = !boden ? 0 : ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
-                const bandTopJ = boden ? Math.floor((surf + ROUGH + topMargin - oy) / step) + 1 : Ny;
-                // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels. Er MUSS surf folgen — in einer
-                // Tiefsee-Rinne (~−75 m) füllte ein fixes base−40 die Wassersäule fälschlich als Fels.
-                const bandBotJ = boden ? Math.floor((Math.min(surf, base) - 40 - oy) / step) : -1;
+                const bandTopJ = boden ? G.bandOben(surf, oy, step) : Ny;
+                const bandBotJ = boden ? G.bandUnten(surf, base, oy, step) : -1;
                 const colBase = i + k * Nx * Ny;
                 for (let j = 0; j < Ny; j++) {
                     const idx = colBase + j * Nx;
@@ -1780,6 +1765,21 @@ class AnazhRealm_gelaende_boden {
                 }
             }
         }
+        if (boden)
+            G.bandUmEdits(
+                density,
+                ox,
+                oy,
+                oz,
+                Nx,
+                Ny,
+                Nz,
+                step,
+                reich === undefined ? this._voxelEditsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step) : reich,
+                base,
+                (x, z) => this._terrainColumnContext(x, z),
+                colVoxel || ((x, y, z) => sample(x, y, z))
+            );
         return density;
     }
 

@@ -22,7 +22,8 @@
 //                                                           Maße je Klasse (abnahme-urteil `klassenMasse`) im Begleit-JSON;
 //                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
 //                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
-//                                                           den Spieler-Leib im Bild
+//                                                           den Spieler-Leib im Bild; `--arm <m>` stellt die Kamera <m> vor
+//                                                           die Fläche, die der Ego-Blick des Spielers trifft (material.K2)
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -1173,6 +1174,29 @@ async function starte() {
                 const c = h.clone().addScaledVector(fw, Number(k.gesicht));
                 gpos = [c.x, c.y, c.z, h.x, h.y, h.z];
             }
+            // DIE ARMLÄNGE (material.K2, `--arm <m>`): der Ego-Blick des Spielers (das Rig `_loopCamera`) trifft seine erste Fläche
+            // durch die Pflanzen (`_fieldRaycast`) oder dahinter, was die Tiefe der Bildmitte zeigt (der Fels in seiner Hülle); die
+            // Kamera steht <m> vor ihr auf demselben Strahl
+            const mitte = ({ tiefe, tw, th, ivp: I }) => {
+                const z = tiefe[(th >> 1) * tw + (tw >> 1)];
+                const P = [0, 1, 2].map((j) => (I[j + 8] * z + I[j + 12]) / (I[11] * z + I[15]));
+                return z < 0.99999 ? new window.THREE.Vector3(...P) : null;
+            };
+            if (k.arm != null) {
+                const cam = r.state.camera;
+                if (r.state.cameraMode !== "first") throw new Error("--arm: der Spieler steht nicht in Ego (--sicht ego)");
+                for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
+                const a = cam.position.clone(),
+                    d = cam.getWorldDirection(new window.THREE.Vector3()),
+                    e = a.clone().addScaledVector(d, 40);
+                const t = r._fieldRaycast(a.x, a.y, a.z, e.x, e.y, e.z, { durchPflanzen: true });
+                if (!t.hit) throw new Error("--arm: der Ego-Blick trifft in 40 m keine Fläche");
+                await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung" }); // nur die Tiefe
+                const P = mitte(await window.__spiegelDaten());
+                const hit = P && P.distanceTo(a) > a.distanceTo(t) ? P : new window.THREE.Vector3(t.x, t.y, t.z);
+                const c = hit.clone().addScaledVector(d, -Number(k.arm));
+                gpos = [c.x, c.y, c.z, hit.x, hit.y, hit.z];
+            }
             const px = gpos ? gpos[0] : Number(k.px),
                 pz = gpos ? gpos[2] : Number(k.pz),
                 lx = gpos ? gpos[3] : Number(k.lx),
@@ -1733,6 +1757,8 @@ async function starte() {
                         klassen,
                         abstand,
                         gesicht,
+                        // die Armlänge, wie die Tiefe der Bildmitte sie misst
+                        arm: k.arm == null ? undefined : { soll: +k.arm, ist: +(mitte(spiegel) || cam.position).distanceTo(cam.position).toFixed(3) },
                         maske: cv2.toDataURL("image/png"),
                     };
                 } finally {
@@ -2274,9 +2300,9 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
-                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
+                    // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang
-                    const nahZ = t.zeilen.filter((z) => ((z.welt || {}).exemplar || {}).stufeNah);
+                    const nahZ = t.zeilen.filter((z) => Number.isInteger(((z.welt || {}).exemplar || {}).stufe));
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), {
                         zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
                         w: 640,
@@ -3117,6 +3143,7 @@ async function starte() {
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
+            arm: opt("--arm"),
             ist: opt("--ist"),
             fov: opt("--fov"),
         });

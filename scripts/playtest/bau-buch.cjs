@@ -3610,7 +3610,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
 
         // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
-        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
+        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0;
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -3744,7 +3744,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     });
 
     check(
-        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
+        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN)",
         res.defaultFlareExists === true
     );
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);

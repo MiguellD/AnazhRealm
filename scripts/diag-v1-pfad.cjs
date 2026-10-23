@@ -116,8 +116,7 @@ function zugVerdict(m) {
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
     // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
-    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
-    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag.
     const vr = m.vorrat;
     if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
     else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
@@ -126,7 +125,6 @@ function zugVerdict(m) {
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
-// Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
 function rahmenVerdict(m) {
     if (!m || m.gestartet !== true) return ["rahmen start"];
     const out = [];
@@ -317,7 +315,7 @@ function knotenVerdict(m) {
 
 // R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
 // scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
-// cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
+// cf9a07ba (8 je 4-m-Ring).
 const ALT8 = (R) => 8 * Math.floor(R / 4);
 function sucheVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
@@ -869,7 +867,7 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
     return null;
 }
 // Ein Satz: gültig (JSON, das Programm läuft ohne Absage) · Absicht (das Soll) · Bruch. Ein Negativ-Satz nur ohne versuchte
-// Tat — auch eine, die `dslEval` abweist, ist ROT (20.10.: „bring mir einen kaffee“ → spawn_creature kaffee_machine).
+// Tat — auch eine, die `dslEval` abweist, ist ROT.
 function korpusSatzUrteil(e, soll) {
     const a = e.antwort || {};
     const json = !!e.antwort && !a.error && !a.fallbackUsed;
@@ -1143,11 +1141,11 @@ async function probe(arg) {
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
             _depositLife: (a) => ({ x: a[0], z: a[1] }),
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
-            carveVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
-            fillVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
+            carveVoxel: (a) => ({ x: a[0], z: a[2] }),
+            fillVoxel: (a) => ({ x: a[0], z: a[2] }),
             assignTaskToNearestCreature: (a) => a[0] || null,
         };
-        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxelSphere: () => {}, fillVoxelSphere: () => {} };
+        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxel: () => {}, fillVoxel: () => {} };
         const alt = {};
         for (const nm of Object.keys(ortVon)) {
             alt[nm] = r[nm];
@@ -1309,8 +1307,8 @@ async function probe(arg) {
         const ufer = w0 || P;
         const sy = scan.call(r, ufer.x + 6, ufer.z) ?? 0;
         wm.voxelEdits = (editsAlt || []).concat([
-            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, strength: 48, mode: "carve" },
-            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, strength: 48, mode: "fill" },
+            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, mode: "carve" },
+            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, mode: "fill" },
         ]);
         try {
             for (let i = 0; i < 300; i++) {
@@ -2289,7 +2287,7 @@ async function korpusHaupt() {
             ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
             ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
             ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
-            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxelSphere", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
+            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
             ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
             ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
             ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],

@@ -2,10 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-ego-schatten.cjs — DIE EGO-SCHATTEN-WAND (gate:ego-schatten, 0910-5)
 //
-// Befund (Gegenprüfung 0710-12): in der Ego-Sicht, dem Standard-Blick (`cameraMode: "first"`), warf der Spieler KEINEN
-// Schatten. `_applyEgoSicht` blendete Kopf und Haut mit `visible = false` aus — und nahm damit den Wurf. Der Schnitt:
-// EIN Ebenen-Schalter. Im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf SHADOW_TWIN_LAYER; die
-// Kaskaden sehen ihn ganz, das Auge nie (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz).
+// In der Ego-Sicht wirft der Spieler: im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf SHADOW_TWIN_LAYER;
+// die Kaskaden sehen ihn ganz, das Auge nie (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz).
 //
 // Die Linse fährt den ECHTEN Renderer (swiftshader, kienspan) an einer eigenen Bühne: der ECHTE Leib des Spielers
 // (`state.playerMesh`, der Mensch aus dem Ofen) in BEIDEN Stufen, die er trägt (je Lauf `grob` vor dem Bild, `fein` nach
