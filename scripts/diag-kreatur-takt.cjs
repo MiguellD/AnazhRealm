@@ -22,7 +22,7 @@ const opt = (k, d) => {
 };
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
-// DIE FESTE RAMPE (K16-Q): der Querhang misst auch an der Rampe der Prüfbühne (Station S2, ihre Spec) — die Welt wählt
+// DIE FESTE RAMPE: der Querhang misst auch an der Rampe der Prüfbühne (Station S2) — die Welt wählt
 // ihren Hang nach ihrem Bestand (im K16-Gelände 22,2° in der CI, lokal 22,2° oder 25,5°), die Rampe steht fest
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = (() => {
