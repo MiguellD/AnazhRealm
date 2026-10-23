@@ -1,7 +1,7 @@
 {
  "sha": "f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4",
  "geraet": "radeon",
- "zeit": "2026-10-23T16:21:57.398Z",
+ "zeit": "2026-10-23T18:27:35.445Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -275,6 +275,24 @@
    "zeit": "2026-10-23T16:21:57.398Z",
    "abdruck": "1f4b3b5822c2",
    "port": 7763
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 27.03,
+   "zeit": "2026-10-23T18:00:33.804Z",
+   "abdruck": "7d958f1a0783",
+   "port": 8227
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 3.91,
+   "zeit": "2026-10-23T18:27:35.445Z",
+   "abdruck": "03c706724ee9",
+   "port": 8228
   }
  }
 }
