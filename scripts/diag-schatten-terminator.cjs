@@ -10,7 +10,6 @@
 // SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot.
 //   node scripts/diag-schatten-terminator.cjs [--selftest] [--port 4609]
 "use strict";
-const path = require("path");
 
 // Die Sonne am Terminator der Rampe: 22° aus Azimut 45° (N·L −0,002; main dort 11,7 % fleckig gegen 0,2 % ohne Schatten, bei
 // 20° / N·L −0,034 2,2 % — die zweite Sonne fährt der Werkplatz mit SONNEN=2, die CI die schärfste)
@@ -116,35 +115,15 @@ if (require.main === module) {
     console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: das Terminator-Urteil nennt die Hang-Akne beim Namen");
     if (f.length) process.exit(1);
     if (process.argv.includes("--selftest")) process.exit(0);
-    const { spawn, spawnSync } = require("child_process");
     const i = process.argv.indexOf("--port");
     const PORT = Number(i >= 0 ? process.argv[i + 1] : process.env.SCHATTEN_TERMINATOR_PORT || 4609);
-    const WB = path.join(__dirname, "werkbank.cjs");
-    const env = Object.assign({}, process.env, { WERKBANK_PORT: String(PORT) });
-    const rufe = (args, ms) => spawnSync(process.execPath, [WB, ...args], { env, encoding: "utf8", timeout: ms || 300000 });
     (async () => {
         const t0 = Date.now();
-        const kind = spawn(process.execPath, [WB, "start", "--port", String(PORT), "--holz", "voll"], {
-            env,
-            stdio: ["ignore", "pipe", "pipe"],
-        });
-        let log = "";
-        const bereit = new Promise((res, rej) => {
-            const frist = setTimeout(() => rej(new Error("die Werkbank stand nach 180 s nicht bereit")), 180000);
-            const lies = (d) => {
-                log += d;
-                if (/WERKBANK bereit/.test(log)) {
-                    clearTimeout(frist);
-                    res();
-                }
-            };
-            kind.stdout.on("data", lies);
-            kind.stderr.on("data", lies);
-            kind.on("exit", (c) => rej(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
-        });
+        const tor = require("./lib/welt-boot.cjs").werkbankTor(PORT, ["--holz", "voll"]);
+        const rufe = tor.rufe;
         let code = 1;
         try {
-            await bereit;
+            await tor.bereit;
             console.log(`  Start: ${((Date.now() - t0) / 1000).toFixed(0)} s`);
             for (const a of [["umstellen", "--ort", "buehne", "--pose", "ost"], ["umstellen", "0", "120"]]) {
                 const tu = Date.now();
@@ -172,13 +151,10 @@ if (require.main === module) {
             console.log(b.length ? "❌ ROT — die Hang-Akne am Terminator" : "✅ GRÜN — der Terminator der Rampe ohne Akne");
             code = b.length ? 1 : 0;
         } catch (e) {
-            console.log("❌ diag-schatten-terminator: " + e.message + "\n" + log.split("\n").slice(-15).join("\n"));
+            console.log("❌ diag-schatten-terminator: " + e.message + "\n" + tor.log.split("\n").slice(-15).join("\n"));
             code = 1;
         } finally {
-            rufe(["stop"], 30000);
-            try {
-                kind.kill();
-            } catch (_e) {}
+            tor.stop();
             console.log(`diag-schatten-terminator: ${((Date.now() - t0) / 1000).toFixed(0)} s`);
         }
         process.exit(code);
