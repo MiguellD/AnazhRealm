@@ -1474,6 +1474,11 @@ jobs:
         env:
             CI_KLASSE: gpu
             LINSE_GPU: karte
+        # bash für jeden Schritt: Windows PowerShell fährt auf dem Läufer keine Skript-Dateien (Richtlinie Restricted, Lauf
+        # 39935664101), die Standard-Shell eines run-Schritts wäre dort powershell
+        defaults:
+            run:
+                shell: bash
         steps:
             - uses: actions/checkout@v4
 
