@@ -1019,8 +1019,9 @@ class AnazhRealm_feld_dsl {
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
             // am EINEN Chokepoint spawnArchitecture — mit Preset-Stempel (_studioStampFor), geerdet, nie im
-            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum.
-            spawn_studio: ([what, positionNode, count, seed], ctx) => {
+            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
+            // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt.
+            spawn_studio: ([what, positionNode, count, seed, ov], ctx) => {
                 const name = this._studioBlueprintForWord(what == null ? "" : String(what));
                 if (!name) {
                     ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
@@ -1030,7 +1031,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
-                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
+                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov);
                 ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
             },
             spawn_island: ([positionNode, height, seed, size], ctx) => {
@@ -1952,12 +1953,31 @@ class AnazhRealm_feld_dsl {
         return y;
     }
 
-    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
-        const stamp = this._studioStampFor(name);
+    // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler
+    // setzt nichts (der Grund `regler`, das Log nennt ihn und die Regler der Art). Ein Same null ist keiner (Lehre 17).
+    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov) {
+        const befund = {};
+        const stamp = this._studioStampFor(name, ov, befund);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
+        if (befund.geklemmt && befund.geklemmt.length)
+            ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
+        if (stamp === false) {
+            ctx.log.push({ event: "studio_regler_abgelehnt", kind: name, regler: befund.fremd, kennt: befund.kennt });
+            this._setzErgebnis(
+                ctx,
+                "spawn_studio",
+                n,
+                0,
+                { regler: n },
+                this._werkLabel(name),
+                natur ? "gewachsen" : "gebaut"
+            );
+            return 0;
+        }
         const grundriss = !natur && !!this._grundrissGesetz(name);
-        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
+        const baseSeed =
+            seed != null && Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
         const wurf = this._samenStrom(baseSeed);
         let spawned = 0;
         const weicht = {};

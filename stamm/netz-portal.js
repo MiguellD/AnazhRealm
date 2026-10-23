@@ -1191,20 +1191,12 @@ class AnazhRealm_netz_portal {
                     ? core.PARAMS_BY_KIND.koerper
                     : null;
             if (!rows || !core.START_PARAMS) return null; // kaltes Kern-Buch → fail-closed
-            const s = {};
-            let nS = 0;
-            const sIn = msg.s;
-            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
-                // Dial-Positivliste = die B4-PARAMS-Zeilen des Buchs; je Zeile
-                // Finite-Wache + Clamp auf [min, max]. Fremde/NaN-Schlüssel: must-ignore.
-                for (const row of rows) {
-                    if (!row || typeof row.id !== "string") continue;
-                    const v = Number(sIn[row.id]);
-                    if (!Number.isFinite(v)) continue;
-                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
-                    nS++;
-                }
-            }
+            // Dial-Positivliste = die B4-PARAMS-Zeilen des Buchs, die EINE Klemme (`_reglerKlemme`); Fremdes fällt (must-ignore).
+            const s = this._reglerKlemme(
+                rows,
+                msg.s && typeof msg.s === "object" && !Array.isArray(msg.s) ? msg.s : {}
+            ).werte;
+            const nS = Object.keys(s).length;
             // Gestalt-Positivliste AUS DEM BUCH: die nicht-numerischen
             // START_PARAMS-Schlüssel SIND die Gestalt-Wahlen (skinTone/hairStyle/
             // hairColor/top/topColor/bottom/bottomColor/shoes/shoeColor).
@@ -1254,19 +1246,11 @@ class AnazhRealm_netz_portal {
             const gatt = typeof msg.gattung === "string" ? msg.gattung : "";
             // Gattungs-Positivliste = die GATTUNGEN-Tabelle des Buchs (kein Literal).
             if (!rows || !core.GATTUNGEN || !Object.prototype.hasOwnProperty.call(core.GATTUNGEN, gatt)) return null;
-            const s = {};
-            let nS = 0;
-            const sIn = msg.s;
-            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
-                for (const row of rows) {
-                    if (!row || typeof row.id !== "string") continue;
-                    const v = Number(sIn[row.id]);
-                    if (!Number.isFinite(v)) continue;
-                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
-                    nS++;
-                }
-            }
-            if (!nS) return null;
+            const s = this._reglerKlemme(
+                rows,
+                msg.s && typeof msg.s === "object" && !Array.isArray(msg.s) ? msg.s : {}
+            ).werte;
+            if (!Object.keys(s).length) return null;
             return { gattung: gatt, s };
         }
         return null; // unbekannter kind: must-ignore (fail-closed)
