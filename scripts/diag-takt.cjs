@@ -127,7 +127,7 @@ const SELBST = process.argv.includes("--selftest");
                 return true;
             };
             const ganzesFenster = function (d2) {
-                // die V18.512-Klasse: die Schwelle gilt das GANZE Fenster
+                // die Klasse: die Schwelle gilt das GANZE Fenster
                 const D = Number.isFinite(d2) ? d2 : 0;
                 const j = performance.now();
                 if (this._weltBakeFenster === undefined || j - this._weltBakeFenster > 1000) {

@@ -1,7 +1,7 @@
 // AnazhRealm — Strict-Audit-Suite
 //
 // Generische Audit-Tests die Bug-Klassen abdecken, die in V8.13-V8.22 mehrfach
-// durchgerutscht sind. Drei Schichten (V18.274 — die vierte ist entfernt):
+// durchgerutscht sind. Drei Schichten (die vierte ist entfernt):
 //
 //   1. State-Field-Audit: scan source für this.state.X.Y.Z reads, prüft gegen
 //      live state-Initialisierung nach Init(). Fängt typos wie
@@ -15,7 +15,7 @@
 //      nur in DEFAULT_*-Konstanten oder state-init existieren, nicht hardcoded
 //      in mehreren Pfaden. Fängt Hardcoded-Refs.
 //
-//   (entfernt V18.274) Public-Method-Smoke-Test — „jede public Methode blind
+//   (entfernt) Public-Method-Smoke-Test — „jede public Methode blind
 //      ohne Args aufrufen": Prämisse unsound für diesen Codebase (Worldgen/
 //      Avatar/Worker-Methoden exekutieren beim Blind-Call schwere async-Arbeit →
 //      Event-Loop-Hunger/Page-Overload, in JEDER Variante flacky) + fand nur
@@ -202,7 +202,7 @@ async function auditStateAndMethods() {
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
                 "_cameraDesiredY",
-                // ABSCHIEDS-WELLE (Drift-Nachlese, V18.272-Disziplin — jedes Feld am
+                // ABSCHIEDS-WELLE (Drift-Nachlese, Disziplin — jedes Feld am
                 // Lese-Ort geprüft): drei pre-existierende, undefined-SICHERE Felder:
                 // foliageBlades = Opt-out-Toggle, der eine Leser prüft `!== false`
                 // (undefined == an, wie die Schwestern-Toggles).
@@ -217,7 +217,7 @@ async function auditStateAndMethods() {
                 "_frameChunksBuilt",
                 // Lazy-set State-Felder (werden bei Bedarf gesetzt, default
                 // via `state.X || fallback`-Pattern als undefined akzeptiert).
-                // Echte Bugs wären HIER nicht — Schöpfer-Reflexion V8.22:
+                // Echte Bugs wären HIER nicht — Schöpfer-Reflexion:
                 // diese Felder sind alle defensiv gelesen.
                 "lastCreatureProactiveSpeech",
                 "inventoryHoverLast",
@@ -264,7 +264,7 @@ async function auditStateAndMethods() {
                 "ichStage",
                 "capabilityProposals",
                 "blueprintEditHistory",
-                // Lebendiges Feld (V17.27-Overlays — alle lazy-init mit `if (!state.X)`)
+                // Lebendiges Feld (Overlays — alle lazy-init mit `if (!state.X)`)
                 "lifeField",
                 "emotionField",
                 "wohlBaseline",
@@ -352,7 +352,7 @@ async function auditStateAndMethods() {
 // ============================================================
 // 5. Atmosphäre-Hardcode-Audit
 // ============================================================
-// Heilt eine V8.24-Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
+// Heilt eine Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
 // Klang) sind durchsetzt von Hardcode-Wunden wenn der Schreiber Werte aus
 // dem Kopf nimmt statt aus state.beobachten. Dieser Audit pattern-matcht
 // gegen drei Hardcode-Klassen INNERHALB einer Methode die mit `[ATMOSPHERE]`-

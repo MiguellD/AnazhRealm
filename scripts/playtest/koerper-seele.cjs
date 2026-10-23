@@ -110,7 +110,7 @@ async function checkBandV1757HeldSlot(ctx) {
 
 // das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
-// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
 async function checkBandV1761ForgeImplement(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -312,7 +312,7 @@ async function checkBandV1762ForgeMeaningful(ctx) {
 
 // Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
-// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+// routet nach Rolle. KONSUM (nicht Existenz).
 async function checkBandV1763ForgeArmor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -432,7 +432,7 @@ async function checkBandV1763ForgeArmor(ctx) {
 
 // Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
-// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
 async function checkBandV1765BrewConsumable(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -772,7 +772,7 @@ async function checkBandV1772Library(ctx) {
         out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
 
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
-        //     Snapshot des Player-States, danach restauriert (V17.66).
+        //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
@@ -1024,7 +1024,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-// Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
+// Band-Funktion (Soul/Stats/Equipment/Avatar-Editor).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1175,7 +1175,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-        // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
+        // UI im DOM (Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
@@ -1642,7 +1642,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
+        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
         out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
@@ -2315,7 +2315,7 @@ async function checkBandWelle6DSoul(ctx) {
         check(
             // STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
-            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            // Die feste Satz-Assertion wandert mit.
             "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
@@ -2385,7 +2385,7 @@ async function checkBandWelle6DSoul(ctx) {
     }
 }
 
-// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+// PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2819,7 +2819,7 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
@@ -3187,7 +3187,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // Disziplin — die meisten Bauplane sind voll, ein Save trägt nur die echt
         // gebrauchten). Float-tolerant (Math.max/min kann minimal driften).
         if (heldBp) {
-            // RE-FETCH (V18.180-Lehre, V9.82): zwischen W6-W11 wurde forge/strike/
+            // RE-FETCH (Lehre): zwischen W6-W11 wurde forge/strike/
             // repair gerufen — jeder Pfad MAG state.blueprints[heldName] durch
             // Restore/Snapshot-Tanz neu referenzieren. Frische Referenz holen.
             heldBp = r.state.blueprints[heldName];
@@ -3284,7 +3284,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
+// Γ1-LESART-5 Ψ2-NASE Foundation:
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
 // als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {

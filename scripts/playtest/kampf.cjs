@@ -250,7 +250,7 @@ async function checkBandV1755W2Profile(ctx) {
 
 // die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
-// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz, V17.31): die Werkstatt-Rollen-Zeile rendert es.
+// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
 async function checkBandV1759CapabilityReadout(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -300,7 +300,7 @@ async function checkBandV1759CapabilityReadout(ctx) {
             (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
         );
 
-        // KONSUM (DOM, V17.31): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
+        // KONSUM (DOM): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
         const panel = document.createElement("div");
         r._specRenderHeader(panel, blu.__cap_maul);
         const chips = Array.prototype.slice
@@ -534,7 +534,7 @@ async function checkBandV1786WorkshopCoherence(ctx) {
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             if (!panel) return null;
-            // V18.44 Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
+            // Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
             // (die .spec-role-chip zeigt NUR die Rolle; die Affordanzen sind separate .spec-cap-chips).
             const header = panel.querySelector(".spec-header");
             const roleChipEl = header && header.querySelector(".spec-role-chip");

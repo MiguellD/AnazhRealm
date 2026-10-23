@@ -115,7 +115,7 @@ async function checkBandWEFrequenzband(ctx) {
         out.glimmenOrdnung = pGlut.glimmen > pStein.glimmen + 0.3 && pQuarz.glimmen > pStein.glimmen + 0.2;
         out.tiefeOrdnung = pStein.micro > pHolz.micro && pEisen.micro >= pHolz.micro;
         // (2) die Tags REISEN in beide Part-Builder (Spiegel-Disziplin) und
-        // WIRKEN behavioral (V17.31, kein Existenz-Test): das HISM-Leaf eines
+        // WIRKEN behavioral (kein Existenz-Test): das HISM-Leaf eines
         // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
         const mGlut = r._archLeafMaterial({ material: "glut", shape: "box", size: { x: 1, y: 1, z: 1 } });
         const mStein = r._archLeafMaterial({ material: "stein", shape: "box", size: { x: 1, y: 1, z: 1 } });
@@ -293,7 +293,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
 
-        // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
+        // (C) Uniforms TREIBEN — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
         const au = r.state.atmoUniforms;
         out.geoRockUniform = !!(au && au.geoRock && Number.isFinite(au.geoRock.value));

@@ -1,4 +1,4 @@
-// DIE FERN-WASSER-LINSE (V18.381, `npm run gate:fern-wasser`) — beweist headless die Atlas-
+// DIE FERN-WASSER-LINSE (`npm run gate:fern-wasser`) — beweist headless die Atlas-
 // Kulisse jenseits des Voxel-Chunk-Rings: (1) sie BAUT (Quads > 0 in einer Wasser-Welt),
 // (2) der VOLLE Material-Vertrag (5 Attribute — WebGPU crasht sonst), (3) jede Quad-Zelle
 // ist ATLAS-NASS + liegt AUSSERHALB des Rings (kein Doppel-Wasser überm echten Sheet),

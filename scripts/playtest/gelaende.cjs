@@ -26,7 +26,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             const dAfter = r._terrainDensityAt(0, base - 33, 0);
             out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
             out.editStored = r.state.worldMeta.voxelEdits.length === 1;
-            // Ein fester Punkt wird zu Luft (echtes Loch). V14.7: SURF-RELATIV das
+            // Ein fester Punkt wird zu Luft (echtes Loch). SURF-RELATIV das
             // Fenster knapp unter der Oberfläche scannen (dort ist Dichte klein-positiv),
             // statt absolut base+20..base-30 (das lag in der hohen V14.7-Welt tief solid).
             let solidToAir = false;
@@ -399,7 +399,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
             out.editIsFillMode =
                 r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
-            // Ein Luft-Punkt wird durch das Füllen zu festem Grund. V14.7: SURF-RELATIV
+            // Ein Luft-Punkt wird durch das Füllen zu festem Grund. SURF-RELATIV
             // knapp ÜBER der Oberfläche scannen (dort ist die Dichte klein-negativ/Luft),
             // statt absolut base+35..base-25 (das lag in der hohen V14.7-Welt tief solid).
             let airToSolid = false;
@@ -779,7 +779,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
         out.assignClearsSelection = r.state.inventorySelected === null;
 
-        // V18.57 Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
+        // Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
         // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
         // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
         const sp = r._selfProfile();
@@ -1706,7 +1706,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
         res.t3DcConstants
     );
-    // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
+    // T4: der Wasser-Automat-Kern — Wasser fliesst (Option A).
     check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
@@ -2000,7 +2000,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
                 if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
             }
             out.cellMismatches = cellMismatches;
-            // V9.91 Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
+            // Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
             // Differenz von <100 Cells bei ~71k Cells = < 0.15%).
             out.cellsNearMatch = cellMismatches < len * 0.01;
         } else {
@@ -2121,7 +2121,7 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
-// PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
+// PHASE A — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
 async function checkBandPhaseAFundament(ctx) {

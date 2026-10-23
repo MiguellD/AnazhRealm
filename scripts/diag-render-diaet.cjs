@@ -1,11 +1,11 @@
-// diag-render-diaet.cjs — V18.475 DIE RENDER-DIÄT (Schöpfer-Trace 14.07.: 1733 dc /
-// ~72 ms CPU-Submit; die Schwester-Hälfte der V18.474-Fern-Diät).
+// diag-render-diaet.cjs — DIE RENDER-DIÄT (Schöpfer-Trace 14.07.: 1733 dc /
+// ~72 ms CPU-Submit; die Schwester-Hälfte der Fern-Diät).
 //
 // DER BEFUND: `_archLeafMaterial` baute je Part-FARBE ein EIGENES MeshStandardNode-
 // Material → jede Farbe zersplitterte in eine eigene Material-Familie (WebGPU-Pipeline; bis V18.509 auch
 // einen eigenen Batch = Draw-Call).
 // DIE HEILUNG: EIN geteiltes Material je TAG-SIGNATUR (`_sharedFoliageMaterial`,
-// das bewiesene V18.288-Muster); die Part-Farbe reist als INSTANZ-Farbe über den
+// das bewiesene Muster); die Part-Farbe reist als INSTANZ-Farbe über den
 // bestehenden Tint-Kanal (leaf.tint → `_archSlotColor` → setColorAt — EINE Naht,
 // die Engine multipliziert instanceColor auf den colorNode). AUSNAHME
 // (fail-closed): GLÜHENDE Substanz (das Emissiv im PBR-Bau konsumiert opts.color —

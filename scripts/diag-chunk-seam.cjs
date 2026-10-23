@@ -859,9 +859,9 @@ const server = statikServer();
         console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
-    // G0 (goldstandard-mesh-plan) — `--gate`: das echte Naht-Gate. Es schützt gegen den
+    // G0 — `--gate`: das echte Naht-Gate. Es schützt gegen den
     // VAKUÖSEN Pass (0 Cross-LOD-Paare = die Messung lief gar nicht → grün ohne Beweis;
-    // die V18.370-Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
+    // die Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.

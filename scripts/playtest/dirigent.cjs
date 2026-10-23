@@ -92,7 +92,7 @@ function checkRing1Grok(ctx) {
     );
 }
 
-// V17.78 Welle 2 Schritt 2 — die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
+// die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
 // polierscheibe RAUS (die Werkstatt trägt jetzt die Präzision, V17.76/.77). hände bleibt die domain-
 // neutrale Baseline; die Op-Klassen-Abdeckung + der Crafting-Pfad bleiben intakt (kein Material verwaist).
 async function checkBandV1778LadderCut(ctx) {
@@ -721,7 +721,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
-        // (A1b) gen-Default für FRESH ist 9 (V18.216 KARST + Büsche)
+        // (A1b) gen-Default für FRESH ist 9 (KARST + Büsche)
         const newMeta = r._generateFreshWorldMeta("test-v18214");
         out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 9;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
@@ -777,7 +777,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             const sm0 = r.getGameMode();
             try {
                 r.setGameMode("pfad");
-                // ECHTE Leiber (Welle LF): die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
+                // ECHTE Leiber: die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
                 // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
                 // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
                 const savedC = r.state.creatures;
@@ -930,7 +930,7 @@ async function checkBandV18210Verdrahtung(ctx) {
                 r.state.creatures = [jaeger, beute];
                 jaeger.userData.nextHuntStrikeAt = -Infinity;
                 const struck = r._tickCreatureScentStrike(jaeger);
-                // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
+                // DER BISS IST DER ANSPRUNG (Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
                 // der feste Sim-Schritt der Leiber), bis das Maul am Leib schnappt (höchstens 1,5 s; die Beute steht still)
                 for (let k = 0; struck && k < 90; k++) {
                     const A0 = jaeger.userData._verhaltenAktion;
@@ -1091,7 +1091,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
 }
 
-// DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
+// DAS RAUSCH-GESETZ (der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
 // Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 76 Ladungen des Atlas im Graph — 7 Raum-

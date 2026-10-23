@@ -71,7 +71,7 @@
 //                                                           20 m/s auf der Geraden (Sicht-Wechsel alle 4 s), Exit 1 bei
 //                                                           einem Fahrt-Posten > 0,5 ms je Takt ab p95
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten] [--sim s]
-//                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
+//                                                           DIE STAND-LINSE: was die Fege-Takte (Ring, Stufen-
 //                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
 //                                                           arbeiten — Einheiten, Zeit je Takt, Welt-Matrizen je Frame —
 //                                                           im echten Loop, Folge B A A B (A = die Wache gebrochen;

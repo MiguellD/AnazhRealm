@@ -84,9 +84,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- a) Tag-Nacht-Zyklus
-        // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
+        // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
-        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; V8.48: der Morgen um 0,32 steigt und knickt nicht)
+        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; der Morgen um 0,32 steigt und knickt nicht)
         const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
         r._luftBeta = () => klar;
         try {
@@ -331,7 +331,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         }
         out.affinityPicksDichteInDichteField = dichteWins > 20;
 
-        // --- Vision 2 (Welle 5 Klang): die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
+        // --- Vision 2: die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
         // (Grundton ∝ Körperlänge^−0,9): das kleine Wesen ruft höher als das große.
         const rufKern = AnazhRealm._umweltGesetz().kern;
         const kleinF0 = rufKern.tierRufPuffer({ laengeM: 0.7, stimmung: "freude", saat: 1 }).f0;
@@ -360,7 +360,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
-        // aus früheren _feelAction-Bands rein, V9.56-i).
+        // aus früheren _feelAction-Bands rein).
         if (r.state.emotionField) r.state.emotionField.clear();
         // Der Look-Default `auraTintStrength` macht den Feld/Emotion-Tint subtil → Margen-Tests würden
         // flaky. Die Proben prüfen den MECHANISMUS bei VOLLER Stärke (1.0: große, deterministische Marge);
@@ -368,7 +368,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         r._applyDayNightToScene();
-        // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
+        // Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
         const skyU = r.state.skyboxUniforms.himmelTint;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
@@ -447,7 +447,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // BÜHNE: zurück an den Ursprung der Testzelle
         r.state.playerMesh.position.x = 0;
 
-        // --- Vision 8: Stern-Feld folgt Tageszeit (V18.530: die Dämmerung setzt die GRENZGRÖSSE — mittags ist kein
+        // --- Vision 8: Stern-Feld folgt Tageszeit (die Dämmerung setzt die GRENZGRÖSSE — mittags ist kein
         // Punkt heller als sie, auch kein Wandelstern; um Mitternacht leuchten alle bis +6).
         const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.grenze;
         out.starIntensityExists = !!starU;
@@ -586,7 +586,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const mE = atmoU.mondE.value;
         out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
-        // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
+        // EIN Himmel: am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
         // 18-%-Karte am Anker (Mittelgrau + 1 EV unter der Zenit-Sonne, `_belichtungAnker`), nachts am Deckel.
         // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
@@ -819,12 +819,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
         out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
         out.aerialOutputError = _aerBrueche[0] || null;
-        // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
+        // Welt-Wasser — das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
         out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
-        // --- Atmosphäre-Persistenz --- (V18.530: der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
+        // --- Atmosphäre-Persistenz --- (der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
         const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
         r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
@@ -1436,7 +1436,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
-        // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
+        // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
         r.state.player.hp = 50;
         r.state.player.hpMax = 100;
         r.state.player.stamina = 75;
@@ -1700,7 +1700,7 @@ async function checkBandV18164WarumLicht(ctx) {
         out.baumMicro =
             !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
 
-        // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): der Snapshot trägt microStrength, der Restore liest sie.
+        // (5) der GEHEILTE M7-Persistenz-Riss (Klasse): der Snapshot trägt microStrength, der Restore liest sie.
         const au = r._ensureAtmoUniforms();
         const snap = r.buildStateSnapshot();
         out.persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
@@ -1765,7 +1765,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         out.buschParts = buschParts;
         out.buschIsRich = buschParts >= 8 || buschParts === 0;
 
-        // (V) die Luft koppelt ans Wetter (V18.530): EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
+        // (V) die Luft koppelt ans Wetter: EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
         // gemessen am Konsum — Regen trübt die Sicht, Sturm mehr; die Luft-Uniforms tragen sie.
         const WF = r.constructor.WEATHER_FIELD;
         out.hazeNearWeather =
@@ -1790,7 +1790,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     );
 }
 
-// Der Schatten-Takt (V18.524; ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
+// Der Schatten-Takt (ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
 // Leser (shadow.autoUpdate/needsUpdate) — die nahe Kaskade im Regler-Intervall (≤ SCHATTEN_TAKT.nahMax), die ferne
 // im fernFaktor-Takt. Das Intervall ist eine Regelkreis-Stellgröße.
 async function checkBandV18264ShadowCache(ctx) {
@@ -1925,7 +1925,7 @@ async function checkBandWetterVektor(ctx) {
 
 // Look-Physik — eingefaltet aus look-lens (D3b): Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
 // von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
-// grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft (V18.530), die Tonkurve der EINEN
+// grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
 async function checkBandLookPhysik(ctx) {
     const { page, check } = ctx;
@@ -1982,7 +1982,7 @@ async function checkBandLookPhysik(ctx) {
     );
 }
 
-// Himmelskörper-Tag (V18.530) — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
 // Planet aus Math.random, MeshBasic, Tag wie Nacht voll sichtbar). Jetzt sind die Wandelsterne die hellsten PUNKTE des Sternfelds,
 // die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
@@ -2196,7 +2196,7 @@ async function checkBandSchattenTakt(ctx) {
             r._schattenAlleNeu();
             aus.t6 = k6.every((l) => l.shadow.needsUpdate === true);
             aus.ohneKarte = window.__fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
-            // S1 — der alte Schreiber (V18.264: nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
+            // S1 — der alte Schreiber (nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
             const k7 = [kaskade(), kaskade()];
             st.csmNode = { lights: k7 };
             r._loopShadowUpdate = function () {};

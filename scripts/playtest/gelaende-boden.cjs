@@ -420,7 +420,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 T.attribute("color", "vec3"),
                 T.positionWorld,
             ]);
-        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
+        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
         // 1,2 m unter dem gezeichneten Boden).
         const sy = r._voxelSurfaceY(12, -8);
@@ -567,7 +567,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         }
         out.lod23Builds = lod23Builds;
 
-        // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+        // die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
         // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
         // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
         const b = (rr) => r._detailBand(rr);
@@ -592,7 +592,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             BS.halt > 0 &&
             BS.vorlauf > 0;
         out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-        // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+        // die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
         // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
         out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
         r.updateCreatures(0.016);
@@ -761,7 +761,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
-        // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
+        // „abwesend ODER leer": kein Heightfield-Chunk gebaut.
         out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
@@ -1081,7 +1081,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
 }
 
 // SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
-// (V18.510): Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
+// Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
 // SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
 // Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
 // einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
@@ -1183,7 +1183,7 @@ async function checkBandV18132FerneSeen(ctx) {
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
         out.homeIdentical = fp() === before;
-        // hydroBand deckt JEDEN Spiegel (V9.77: das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
+        // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
         // Zell-Bau ließ jede Fluss-Zelle über dem Band AIR (Heimat 344 von 549 Segmenten ohne gezeichnetes Wasser).
         let maxSpiegel = -Infinity;
@@ -1200,7 +1200,7 @@ async function checkBandV18132FerneSeen(ctx) {
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
-        // KONSUM (V17.31): jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
+        // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
         // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
         const K = (m, a, schatten) => {
             if (schatten) r._hydroRiverAt = () => null;
@@ -1281,7 +1281,7 @@ async function checkBandV18150Ride(ctx) {
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
             };
-            // Welle L (Q5): die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
+            // die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
             // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,
             // Steigung ≤ 20 %). An (96, 60) stand der Wagen in einer Mulde (der Rand 2 m hoch auf 3 m) — ein Hindernis ist
             // ein anderes Band (gate:fahr-leben H).
@@ -1334,7 +1334,7 @@ async function checkBandV18150Ride(ctx) {
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
-            // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
+            // ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
             for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
             r.state.keys.w = true;
@@ -1498,7 +1498,7 @@ async function checkBandGammaGenese(ctx) {
                 if (typeof f !== "function") return true;
                 return !window.__fehlt(f, /Math\.random/);
             });
-            // (7) genVersion REIST im Snapshot (V8.59-Klasse: was der Save
+            // (7) genVersion REIST im Snapshot (Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
             const snap = r.buildStateSnapshot();
             out.snapGen = snap && snap.worldMeta ? snap.worldMeta.genVersion : null;
@@ -1628,7 +1628,7 @@ async function checkBandGammaGenese(ctx) {
     check("Γ1 genVersion reist im Welt-Snapshot (V8.59-Klasse)", res.snapGen === 2);
 }
 
-// V18.199 — Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
+// Γ-M LICHEN: grüne
 // Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen(ctx) {
@@ -1839,7 +1839,7 @@ async function checkBandSeamNormal(ctx) {
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
-// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b, Welle LF kampf Nachbesserung 4): ein Leichnam behielt 90 s die Darstellung
+// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b): ein Leichnam behielt 90 s die Darstellung
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
@@ -2534,7 +2534,7 @@ async function checkBandBewegungUnterLast(ctx) {
                 }
                 const p = simPos();
                 if (p.y < minY) minY = p.y;
-                // Körper-Mitte im Soliden = geclippt (die V18.329-Disziplin: _fieldSolid,
+                // Körper-Mitte im Soliden = geclippt (die Disziplin: _fieldSolid,
                 // NICHT getTerrainHeightAt — letzteres lügt am Überhang).
                 if (r._fieldSolid(p.x, p.y + 0.9, p.z)) clipTicks++;
                 if (s._frameOverBudget) overBudgetSeen = true;

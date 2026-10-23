@@ -255,7 +255,7 @@ async function checkBandCadWorkshop(ctx) {
             // --- Phase 2: UI-Elemente ---
             out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
             const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
-            // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+            // connect ist 4. Modus dazugekommen
             out.fourModeButtons = modeBtns.length === 4;
             out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
 
@@ -440,7 +440,7 @@ async function checkBandCadWorkshop(ctx) {
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
             // die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
-            // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit (V9.56-i).
+            // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit.
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
             // die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
             // breiten-brechenden .resize-bl (der die left/right-Symmetrie zerstörte). Heilung statt
@@ -514,7 +514,7 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
-    // ### V18.45 — DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM, V17.31) ###
+    // ### V18.45 — DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
     const omniResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -744,7 +744,7 @@ async function checkBandCadWorkshop(ctx) {
             // Popover hat 8 Type-Buttons + 1 Cancel
             if (popover) {
                 const buttons = popover.querySelectorAll("button");
-                // W-G (V18.177): +„weitere…"-Toggle (Progressive Disclosure) → 13
+                // W-G: +„weitere…"-Toggle (Progressive Disclosure) → 13
                 // (3 primary + 5 hidden + 3 Anker + 1 weitere-Toggle + 1 cancel).
                 out.popoverHasButtons = buttons.length === 13;
             }
@@ -1261,7 +1261,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const UM = r.constructor._umweltGesetz().UMWELT;
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
         out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
-        // Welle 5 Klang — der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
+        // der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
         out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
@@ -1464,9 +1464,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.germanName = !!joyName && joyName.textContent === "Freude";
         out.rowHasWirkungTooltip = !!joyRow && /wärmt/i.test(joyRow.getAttribute("title") || "");
 
-        // (b) Das FP-Feedback lebt als WORT — W-C(g)/R-009 (V18.169): das WORT lebt
+        // (b) Das FP-Feedback lebt als WORT — W-C(g)/R-009: das WORT lebt
         // IN der Statusbar (#status-emotion). Die FP-Vignette (Bildschirmrand-Ring) FIEL
-        // (V18.364, Schöpfer „doppelt + wirkt nicht real"). Test wandert mit (V9.56-i).
+        // (Schöpfer „doppelt + wirkt nicht real"). Test wandert mit.
         const lab = document.getElementById("status-emotion");
         out.vignetteGone = !document.getElementById("emotion-vignette");
         out.labelInDom = !!lab && !document.getElementById("emotion-label") && !!lab.closest("#statusbar");
@@ -1844,7 +1844,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
         // der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
-        // mit (V9.56-i): die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
+        // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
         out.feedWired = !!(window.anazhRealm && window.anazhRealm._chatFeedWired);
 
@@ -2254,7 +2254,7 @@ async function checkBandM5HudPolitur(ctx) {
         p.boosts = savedBoosts;
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
-        // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
+        // Cap-Gotcha: den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
         const _saveMaxM5 = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
@@ -2441,7 +2441,7 @@ async function checkBandWCIchWahrheit(ctx) {
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand, V17.31).
+        // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand).
         out.formatter =
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&

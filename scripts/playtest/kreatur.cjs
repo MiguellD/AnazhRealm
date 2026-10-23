@@ -304,7 +304,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
-        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
+        // Die Klinge zielt durchs Fadenkreuz (K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
         r.setCameraMode("first");
         r._loopCamera(performance.now() / 1000);
         {
@@ -608,7 +608,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.listHasBuildClass = !!buildRow;
         out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
 
-        // 18. UI (V18.48 Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
+        // 18. UI (Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
         // (statt des globalen #creature-build-select, der der NÄCHSTEN Kreatur befahl).
         const buildSelect = listEl && listEl.querySelector(".creature-row .creature-order-select");
         out.uiBuildSelectExists = !!buildSelect;
@@ -849,7 +849,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
         // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
-        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (Welle 5 Klang: seine Stimme, genau einmal)
+        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (seine Stimme, genau einmal)
         const rufVor = r.state.symphony.tierRufe || 0;
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
@@ -1320,7 +1320,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
         for (const row of rows) {
-            // V18.51 Hof-E (V9.56-i) — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
+            // Hof-E — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
             const main = row.querySelector(".creature-row-main");
             const t = (main && main.title) || "";
             if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
@@ -1928,7 +1928,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (V18.531, Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// DER HÜPFER LANDET (Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf

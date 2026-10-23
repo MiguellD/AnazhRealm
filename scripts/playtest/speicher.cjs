@@ -386,7 +386,7 @@ async function checkBandRing8(ctx) {
         if (!r) return null;
         const out = {};
         // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
-        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list (V9.56-i).
+        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list.
         out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
         out.newWorldBtnInDom = !!document.getElementById("world-new");
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
@@ -745,7 +745,7 @@ async function checkBandRing9to10(ctx) {
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
         out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
         out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
-        // Bib (V18.71): der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
+        // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
         // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
         out.lineageDivInDom = !!document.getElementById("world-lineage");
@@ -1635,7 +1635,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
         out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
         r._disposePortalOverlay();
-        // trusted → mit allow-same-origin + allow-pointer-lock (V18.384: die
+        // trusted → mit allow-same-origin + allow-pointer-lock (die
         // begehbare Welt fängt den Zeiger; sandboxed bleibt OHNE beides).
         r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
         out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
@@ -2203,7 +2203,7 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND (V18.151): wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
+// DIE QUOTA-WAND: wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
 // in IndexedDB (der Rundlauf, der Spiegel und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
@@ -2254,7 +2254,7 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
-// R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
+// R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {

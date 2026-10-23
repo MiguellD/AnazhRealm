@@ -481,7 +481,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        // ALTLASTEN-NULL (V9.56-i): die Seelen-Menge sind die VIER ehrlichen
+        // ALTLASTEN-NULL: die Seelen-Menge sind die VIER ehrlichen
         // Tiere (Hirsch·Wolf·Fuchs·Bär) — sprite/geist/glutwesen sind gefallen.
         out.threeSouls =
             souls &&
@@ -551,7 +551,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._renderCreatureListUI();
         const list = document.getElementById("creature-list");
         out.listRendersRows = list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
-        // V18.46 Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
+        // Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
         // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
         out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
         out.hasFolgeInline = !!(list && list.querySelector('[data-task="follow_player"]'));
@@ -563,8 +563,8 @@ async function checkBandWelle6HCreatures(ctx) {
             firstRow.querySelector(".creature-name") &&
             firstRow.querySelector(".creature-soul") &&
             firstRow.querySelector(".creature-task");
-        // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
-        // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
+        // Hof-D0 — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
+        // KONSUM: er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
@@ -584,9 +584,9 @@ async function checkBandWelle6HCreatures(ctx) {
         const firstMain = firstRow && firstRow.querySelector(".creature-row-main");
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
-        // Hof-D (hof-plan §D.1/§G.5) — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
+        // Hof-D — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
-        // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
+        // Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
         // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
         const stageSpec = document.getElementById("hof-stage-spec");
@@ -610,7 +610,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".spec-sheet").length === 1;
         r._toggleHofFocus(firstProf.id); // wieder zu → Fokus zurück auf das erste Wesen (kein Leck)
         out.focusToggleClears = r.state.hofFocusId === null;
-        // V18.51 Hof-E (hof-plan §D/§G.7) — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
+        // Hof-E — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
         out.hasOrchesterZone = !!document.querySelector(".hof-orchester");
         out.hasPartiturZone = !!document.querySelector(".hof-partitur");
         out.partiturHoldsLaws = !!(
@@ -618,7 +618,7 @@ async function checkBandWelle6HCreatures(ctx) {
             document.querySelector(".hof-partitur #status-abilities")
         );
         out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
-        // V18.51 Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat).
+        // Hof-F — die Sektions-Leiste (Gruppen-Dirigat).
         const secHost = document.getElementById("hof-sections");
         out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
         const alleChip = secHost && secHost.querySelector(".hof-section-chip");
@@ -653,7 +653,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
         r.clearCreatures();
         r._renderCreatureListUI();
-        // V18.51 Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
+        // Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
         out.emptyShowsOnboarding = !!(list && list.querySelector(".hof-empty"));
         // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
         // UI Run-Button): brauchen Kreaturen-Population.
@@ -915,7 +915,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
         out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
 
-        // V18.48 Hof-C: der inline „Auftrag ▾"-Select pro Wesen trägt Sammle (+ Baue) — die globalen
+        // Hof-C: der inline „Auftrag ▾"-Select pro Wesen trägt Sammle (+ Baue) — die globalen
         // Dropdowns sind aufgelöst (sie befahlen der NÄCHSTEN Kreatur; jetzt befiehlt man DEM Wesen).
         const orderSel = list && list.querySelector(".creature-row .creature-order-select");
         out.hasGatherSelect = !!orderSel;
@@ -1267,7 +1267,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
         out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
 
-        // S2 (kampf-plan §11.2) — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
+        // S2 — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
         // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
         // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
@@ -1406,7 +1406,7 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         const STEP = 6;
         for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
             for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
+                // das Wasser, wie der Körper es trägt (das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
                 if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
             }
         }
@@ -1511,16 +1511,16 @@ async function checkBandPhaseEThreat(ctx) {
             pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
-            // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
+            // W-D/M-F1 — die Spieler-Klemme schiebt frische Spawns auf
             // ≥3 m; dieser Test prüft den BISS, nicht den Spawn-Ort → die Kreatur
-            // rückt explizit in die Weite ihres Ansprungs (V9.56-i; Welle LF kampf:
+            // rückt explizit in die Weite ihres Ansprungs (Welle LF kampf:
             // der Biss ist der Ansprung, 1,2 m reicht jeder Größe), ihm zugewandt.
             if (wolf) {
                 wolf.position.set(pm.x + 1.2, pm.y, pm.z);
                 wolf.rotation.set(0, -Math.PI / 2, 0);
                 wolf.userData._steuer = null;
             }
-            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
+            // DER BISS IST DER ANSPRUNG (Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
             // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
             // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
             // (die EINE Frage des Spiels, _kreaturAnsprungOffen: die Landung gehört zum Sprung — K13)
@@ -1764,7 +1764,7 @@ async function checkBandTierSeparation(ctx) {
         }
         o.b1PathSmall = pathSmall;
         o.b1PathBig = pathBig;
-        // Das Tempo ist m/s aus dem Gang-Gesetz (Welle L, Q3): die Tempo-Einheit tempo·√(g·L) wächst mit der Hüft-
+        // Das Tempo ist m/s aus dem Gang-Gesetz (Q3): die Tempo-Einheit tempo·√(g·L) wächst mit der Hüft-
         // Höhe — ein Gigant läuft in m/s schneller als ein Kitz. Die Stat-Achse zeigt sich im Weg JE EINHEIT seiner Größe
         // (Froude-gleich): das Kitz flink, der Gigant träge relativ zu seinem Leib.
         const ST = window.__tetrapodaCore;
@@ -2122,7 +2122,7 @@ async function checkBandKreaturKosten(ctx) {
         // ── (B) NEUTRALE STANCE: mid-step posieren → jenseits der Grenze einfrieren ──
         const probeS = probes.voll;
         const roles = r._motionRolesForSoul(probeS.userData.soul);
-        // Gehen heißt WEG (Welle 5, das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
+        // Gehen heißt WEG (das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
         // Probe läuft 20 Takte mit 1,6 m/s (ein einzelner Ruf ohne Weg steht).
         const schreite = (pr) => {
             const g0 = pr.userData._tierBaum._gang;

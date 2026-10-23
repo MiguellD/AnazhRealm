@@ -26,7 +26,7 @@
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
 //     der gezeichneten Instanz geprüft). Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
 //     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
+//     Framerate) und um die Plattform, nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
 //     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los.

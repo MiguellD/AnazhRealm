@@ -79,7 +79,7 @@ async function WELLE_L() {
         });
         return orig.juice.apply(this, a);
     };
-    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs, Welle LF)
+    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs)
     r._beginPlayerSwing = function (...a) {
         const ok = orig.swing.apply(this, a);
         if (ok) zaehl.schwung++;
@@ -596,7 +596,7 @@ async function WELLE_L() {
         r.setGameMode("pfad");
         p.hp = 1e9;
         p.respawnGraceUntil = -Infinity;
-        // Die Gegenwehr ist der Ansprung (Welle LF kampf, Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
+        // Die Gegenwehr ist der Ansprung (Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
         // steht auf dem Boden) — gezählt wird, was das Maul am Leib schnappt.
         const gegenwehrAn = (c) => {
             const g0 = zaehl.gegenwehr;
@@ -1267,7 +1267,7 @@ async function WELLE_L() {
             });
             w.c.s3 = w.z.s3 < 0;
         }
-        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (Welle LF: er fällt, die
+        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (er fällt, die
         // Ballistik hebt ihn) — gemessen der Winkel zwischen Pfeil und Fadenkreuz-Punkt von der Kamera aus, wenn der Pfeil die
         // Weite des Punkts erreicht
         if (rec) {
@@ -1786,7 +1786,7 @@ async function WELLE_L() {
                 r.setCameraMode("first");
                 r._loopCamera(T);
             }
-            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (Welle LF: _kampfKlingenKontakt —
+            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (_kampfKlingenKontakt —
             // Klinge B → T und das Tier), auf älteren Ständen der Glied-Test der Gestalt (Strecke a → b)
             const naht = "_kampfKlingenKontakt";
             const gtRoh = r[naht];

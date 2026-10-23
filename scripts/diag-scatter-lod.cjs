@@ -1,4 +1,4 @@
-// diag-scatter-lod.cjs — V18.464 DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
+// diag-scatter-lod.cjs — DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
 // Beweist im echten Boot (foundry-ON, Null-Renderer), dass die Scatter-Stufen
 // NICHT mehr auf der Bau-Zeit-Distanz eingefroren sind:
 //
@@ -107,7 +107,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): die Probe MUSS eine
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
-        // BY DESIGN dem Region-Lifecycle (V18.464-B2; seit der Keying-Welle trägt
+        // BY DESIGN dem Region-Lifecycle (seit der Keying-Welle trägt
         // JEDE Stufe der Boden-Schichten den Region-Key).
         const map = r.state.scatterRegions;
         const b2Privat = (c) =>
@@ -190,7 +190,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
-        // ── D (V18.485 — DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
+        // ── D (DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
         //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
         //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
         //     leert sich und wird ge-reapt (die EINE Reap-Frage); der Ursprungs-

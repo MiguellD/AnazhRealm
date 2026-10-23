@@ -234,7 +234,7 @@ const server = statikServer();
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
                 // Selbst-Test F2a: das Gesetz der Klip-Schleife auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten` liest es
                 // je Ruf) → fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
-                // Kontakt-Lösers (Welle L: Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
+                // Kontakt-Lösers (Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
                 const k0 = AR.SLIDE_CLIP_PLANES;
                 AR.SLIDE_CLIP_PLANES = 0;
                 let stopped;

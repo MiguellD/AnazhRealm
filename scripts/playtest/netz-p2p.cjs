@@ -38,7 +38,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 
         // (4) DSL-Op voxel_carve schnitzt echt — der Edit landet in
         // worldMeta.voxelEdits. Frieden-Modus damit Edit-Gate
-        // (V9.17) den Fill-Pfad nicht abweist.
+        // den Fill-Pfad nicht abweist.
         const oldMode = r.getGameMode();
         r.setGameMode("frieden");
         if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
@@ -1260,7 +1260,7 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
         r.setGameMode("schöpfer"); // Gates frei
-        // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
+        // Das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste Phantom
         // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
         // („group.traverse is not a function") und riss 21 Folgetests mit.
         const phantomBei = (x, y, z) => {
@@ -2920,7 +2920,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             ];
             r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
             // die Linien sind Werkstatt-Werkzeug: der Test bestellt
-            // sie wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+            // sie wie der Werkstatt-Viewer (der Test wandert mit).
             const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
             const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
             out.connHasLine = conn.some((c) => c.isLine);
@@ -3060,9 +3060,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             }
         }
 
-        // W-C(f)/R-008 (V18.169) — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
+        // W-C(f)/R-008 — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
         // <details>-Summary, kein toter Verweis-Hint; #player-equip trägt höchstens
-        // die Schnell-Trünke (Gebrauch). Test wandert mit (V9.56-i).
+        // die Schnell-Trünke (Gebrauch). Test wandert mit.
         r.renderPlayerEquipUI();
         const eq = document.getElementById("player-equip");
         out.equipHint =

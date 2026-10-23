@@ -242,9 +242,9 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (THREE && THREE.Color && pm) {
-            // V18.369 — Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
+            // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
-            // (deterministisch, V18.236-Muster), dann den Default (0) wiederherstellen.
+            // (deterministisch), dann den Default (0) wiederherstellen.
             const _origAuraK1732 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
             if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
             for (const k of Object.keys(e)) e[k] = 0;
@@ -617,7 +617,7 @@ async function checkBandV1750Klammer(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
+// Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6APolish(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -660,7 +660,7 @@ async function checkBandWelle6APolish(ctx) {
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
         out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0);
 
-        // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
+        // temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
@@ -685,7 +685,7 @@ async function checkBandWelle6APolish(ctx) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
             r.state.playerMesh.position.set(archX, topY + 50, archZ);
-            // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
+            // Cache invalidieren vor frischem Compute.
             delete r.state._groundedCachedAt;
             out.isGroundedHighInSky = r.isPlayerGrounded();
             // Positiv-Test: die visuelle Top-BBox ist nicht 1:1 die Kollision (Dekor-Spitzen ragen über die
@@ -807,7 +807,7 @@ async function checkBandWelle6APolish(ctx) {
             ? `mesh=${!!_entryA3.mesh} instanced=${!!_entryA3.instanced} keys=${Object.keys(_entryA3).slice(0, 10).join("/")}`
             : "null";
         let flatBlueprintNotSteep = false;
-        // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
+        // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
@@ -1102,18 +1102,18 @@ async function checkBandWelle6APolish(ctx) {
             ],
             connections: [{ type: "masonry", partA: 0, partB: 1 }],
         };
-        // Build und auf THREE.Line prüfen — V18.153: die Linien sind ein
+        // Build und auf THREE.Line prüfen — die Linien sind ein
         // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
-        // wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+        // wie der Werkstatt-Viewer (der Test wandert mit).
         const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
-        // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
+        // eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
         let connLineCount = 0;
         let connMarkerCount = 0;
         let lineColor = null;
         built.traverse((node) => {
-            // W-G (V18.177, V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
+            // W-G (V18.177): die ACHSEN-GEISTER (isJointAxis — Linien +
             // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
             // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
             if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
@@ -1126,7 +1126,7 @@ async function checkBandWelle6APolish(ctx) {
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
-        // V18.153 — OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
+        // OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
         // keine Linien/Marker über gespawnten Gefährten/Portalen.
         let worldLines = 0;
         const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
@@ -1263,7 +1263,7 @@ async function checkBandWelle6APolish(ctx) {
     }
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
+// Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6GHylomorphism(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1369,7 +1369,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.newTreeTakte++;
             if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
         }
-        // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
+        // instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
         // DETERMINISMUS-BOGEN P3 — Baum-Kollision ist feld-nativ via blockerAABBs
@@ -1503,7 +1503,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
             (r42bSkirt.duplicates || 0) >= 200
         );
-        // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
+        // Insel-Höhen-Amplitude skaliert mit `height`.
         const r42bIslandAmp = await page.evaluate(() => {
             const r = window.anazhRealm;
             const noise = { noise2D: () => 0.5 };
@@ -1518,7 +1518,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
             r42bIslandAmp.ratio > 1.5
         );
-        // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
+        // DSL spawn_island akzeptiert 5. `size`-Argument.
         const r42bDsl = await page.evaluate(() => {
             const r = window.anazhRealm;
             const before = r.state.floatingIslands.length;
@@ -1622,7 +1622,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V9.39 — der Voxel-Populator ist die lebende Schicht.
+        // der Voxel-Populator ist die lebende Schicht.
         const bps = r.state.blueprints || {};
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
@@ -1811,7 +1811,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // verschiebt den Spawn-Ort (Winner-take-all) und kann Bäume verdrängen; bewusste Shifts ziehen
         // die Baseline nach (felsturm: eisen-Mast → dichte 1.8, resoniert 1.2).
         const AFF_BASELINE = {
-            // V18.259 — die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
+            // die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
             // baum_eiche = Basis + Art-Variation (lebendig +0.05); baum_kiefer = Basis +
             // (brennbar +0.1, resoniert +0.05). Die statische Kugel-Baum-Baseline ist tot.
             baum_eiche: { lebendig: 1.45, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
@@ -1846,7 +1846,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             check(`V17.18: Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
         }
-        // V17.18 — der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
+        // der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
         // Relais): sichert die neue Funktion ab (geht sie verloren, war's eine
         // Regression). Gegenprobe: felsbogen (stein, nicht leitfähig) ist es NICHT.
         const bc = wave6gP2Results.archBroadcasting || {};
@@ -1917,12 +1917,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
         window.__withNoFoundry(() => {
             const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
             out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-            // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
+            // felsbogen ist instanced (kein eb.mesh); „gerendert"
             // = instanced ODER klassischer Mesh.
             out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
             out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
             out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
-            // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+            // der Felsbogen rendert in der stein-Material-Farbe
             // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
             // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
             if (eb) {
@@ -1983,7 +1983,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 const key = `${cx},${cz}`;
                 if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
                 fresh.add(key);
-                // V9.96 — der Test-Pfad braucht synchrone Spawns (er
+                // der Test-Pfad braucht synchrone Spawns (er
                 // misst gleich danach state.architectures); im echten
                 // Streaming geht das durch die Per-Frame-Queue.
                 r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
@@ -2097,7 +2097,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const inv = r.state.player.inventory;
         // Inventar tief snapshotten — der Grabe-Test darf den
         // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
-        // prüfen „Inventar initial leer"). V8.97-Disziplin.
+        // prüfen „Inventar initial leer"). Disziplin.
         const invSnapshot = inv.map((s) => (s ? { ...s } : null));
         const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
         const ok = r.tryMouseBreak();
@@ -2171,9 +2171,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
     }
 }
 
-// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv-plan §4.A):
+// Γ3 FELD-CHARAKTER FOUNDATION:
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
-// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
+// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
 async function checkBandV18203Gamma3FeldCharakter(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {

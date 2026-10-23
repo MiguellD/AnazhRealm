@@ -1562,9 +1562,9 @@ const FIXTURES = [
         // 4) Der Chat-Konsument "dorf" existiert in der System-Befehls-Tabelle.
         res.chatDorf = r.chatSystemPatterns.some((p) => p.example && p.example.indexOf("dorf") === 0);
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
-        // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
+        // der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
-        // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
+        // derselbe Strom für den Chat-Satz „baue dorf hier" (vorher würfelte Math.random den Dorf-Samen)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
         res.gammaHier =
             !!baueHier &&
@@ -1573,7 +1573,7 @@ const FIXTURES = [
         res.gammaStream =
             ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
             window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
-        // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
+        // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft: das Dorf
         // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).
         try {
             const SG = r.constructor._siedlungGesetz();
@@ -1586,7 +1586,7 @@ const FIXTURES = [
             for (let k = 0; k < 600 && !cell; k++) {
                 await new Promise((rs) => setTimeout(rs, 100));
                 const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
-                // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort> (Welle L), auf älteren Ständen d:<Same>
+                // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort>, auf älteren Ständen d:<Same>
                 for (const key of Object.keys(sc))
                     if (key === "d:" + (same >>> 0) || key.indexOf("d:" + (same >>> 0) + "@") === 0) cell = sc[key];
             }
@@ -1658,7 +1658,7 @@ const FIXTURES = [
                 typeof wm.settlementCells[key] === "object" &&
                 isFinite(wm.settlementCells[key].seed)
             );
-            // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
+            // EXISTENZ VOR FRAMERATE (Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
             // drosselTakte-ten Takt.
             // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
@@ -1734,7 +1734,7 @@ const FIXTURES = [
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
             res.c.idempotent = again === null && r.state.architectures.length === archAfter;
-            // C5 — DER GENESIS-PORTAL-RING (V18.486, Schöpfer: „beim ersten spawn
+            // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
             // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
             // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
             // Kreis R 11 m; doppelt idempotent
@@ -1776,7 +1776,7 @@ const FIXTURES = [
             } catch (e5) {
                 res.c.ring.err = (e5 && e5.message) || String(e5);
             }
-            // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT (Welle L, Leben-Prüfung S-W1): zwei Siedlungen mit DEMSELBEN Samen an
+            // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT (Leben-Prüfung S-W1): zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
             try {
                 const orig = r._stlWegeBuild;

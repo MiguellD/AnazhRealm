@@ -1838,7 +1838,7 @@ async function kreaturProben(r, T, opts) {
             decke(restore, "_leibKontakte", () => function () {});
         }
         if (taeter === "abstand-spieler")
-            // die Separation ohne den Spieler (V18.536): nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
+            // die Separation ohne den Spieler: nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
             decke(
                 restore,
                 "_applyCreatureSeparation",

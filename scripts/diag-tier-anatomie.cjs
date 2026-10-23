@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen")
+// diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE (Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen")
 // (npm run gate:tier-anatomie). Sie misst die GEBACKENE Gestalt — denselben Bäcker, den Worker und Wirt rufen
 // (foundry-core BAKERS_BY_KIND.kreatur, three r128 im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
 // normiert auf den Widerrist W, gegen das SOLL des Gesetzbuchs (tetrapoda-core ANATOMIE_SOLL, die Natur-Bänder je Art):

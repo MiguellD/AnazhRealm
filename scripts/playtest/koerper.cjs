@@ -7,7 +7,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
-// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
+// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz).
 async function checkBandV1764ForgeAvatar(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -137,9 +137,9 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        // ALTLASTEN-NULL (V9.56-i) + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
+        // ALTLASTEN-NULL + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
         // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
-        // ist ALT_DOPPEL (V18.480) und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
+        // ist ALT_DOPPEL und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
         const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
         out.dropdownHasBuiltinSouls =
             ring5SoulVals.includes("human") &&
@@ -402,7 +402,7 @@ async function checkBandRing5Soul(ctx) {
             ring5Results.phoenixHasWingsAndTail
         );
         check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
-        // V18.331/.347 — die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
+        // die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
         // body-frei, feld-native; es gibt keinen rigid body, der dem Soul-Group folgt).
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5 (NULL): Chat 'werde hirsch' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
@@ -738,7 +738,7 @@ async function checkBandM3RittVollendet(ctx) {
     );
 }
 
-// W-F Fluss (Welle L, Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
+// W-F Fluss (Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
 // steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
 // geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
 // Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
@@ -751,7 +751,7 @@ async function checkBandWFFluss(ctx) {
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
-        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (global) — dort gab der
         // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
         out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
         const hW = r._hydroFor(0, 0);
@@ -1058,9 +1058,9 @@ async function checkBandV18196ManaSymmetry(ctx) {
     );
 }
 
-// MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
+// MANA-KONSUMENTEN FOUNDATION.
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
-// KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
+// KEIN DSL-Op.
 async function checkBandV18201ManaKonsum(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -1149,7 +1149,7 @@ async function checkBandV18201ManaKonsum(ctx) {
     );
 }
 
-// AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// AVATAR-GRÖSSE-SPEED-TRADE: größere
 // Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
 async function checkBandV18206SpeedTrade(ctx) {
     const { page, check } = ctx;
@@ -1312,7 +1312,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         }
         // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
         // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
-        // Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG des Leibs:
+        // Das Gang-Gesetz misst die Geschwindigkeit aus dem WEG des Leibs:
         // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
         // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
         // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
@@ -1358,7 +1358,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         );
         // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
         // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
-        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
+        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — Klasse).
         out.fernExists = false;
         out.fernMeshN = -1;
         out.fernFar = false;
@@ -1457,7 +1457,7 @@ async function checkBandTierFern(ctx) {
         };
     
         // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
-        // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
+        // sichtbaren geskinnten Haut (der Leib ist EINE Haut über den Gelenk-Baum).
         let zTris = 0,
             zBones = 0;
         const sichtbar = (node) => {
@@ -1599,7 +1599,7 @@ async function checkBandTierFern(ctx) {
         };
         const saveRandom = Math.random;
         // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
-        // bewegt, behält seinen Gelenk-Baum, Welle LF)
+        // bewegt, behält seinen Gelenk-Baum)
         let landWinkel = 0;
         for (let q = 0; q < 24; q++) {
             const a = (q / 24) * Math.PI * 2;
@@ -1621,7 +1621,7 @@ async function checkBandTierFern(ctx) {
             if (!cw) return null;
             cw.position.x = pm.x + Math.cos(landWinkel) * 1.4 * fern;
             cw.position.z = pm.z + Math.sin(landWinkel) * 1.4 * fern;
-            // Die Ruhe trägt nur ein Tier, das STEHT (Welle LF, der ferne Gang: wer läuft, behält seinen Schritt) —
+            // Die Ruhe trägt nur ein Tier, das STEHT (der ferne Gang: wer läuft, behält seinen Schritt) —
             // der Wolf wartet, sonst wanderte er aus dem Fern-Regime in die feine Stufe.
             r.assignCreatureTask(cw, "wait", {}, { silent: true });
             if (cw.userData.task) cw.userData.task.since = 0;

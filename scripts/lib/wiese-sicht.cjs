@@ -1,4 +1,4 @@
-// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6).
+// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN.
 //
 // Die Nah-Wiese legt ihre Senken (`nahWiese:L<stufe>:<v>:<teil>`, jede ein oberster Knoten der Szene) je Frame im
 // Haupt-Pass neu: `_passSicht` → `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit

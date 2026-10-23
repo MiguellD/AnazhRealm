@@ -1,4 +1,4 @@
-// diag-idle-gpu-churn.cjs — DIE STEHENDE LINSE gegen die V18.322-Fehlerklasse (Gesetz #0):
+// diag-idle-gpu-churn.cjs — DIE STEHENDE LINSE gegen die Fehlerklasse (Gesetz #0):
 // „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im Steady-State". Der Bug, der 50+
 // Versionen überlebte (scene.environment-Identitäts-Churn → Recompile-Cascade = der Idle-Freeze),
 // war für das Gate STRUKTURELL unsichtbar: der Null-Renderer stubt den GPU-Pfad UND
@@ -136,7 +136,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (s.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
         // WIEDERHOLUNG vs. ERST-COMPILE (Befund CI 36718459377): auf dem langsamen Runner erreichte der Warmup nie
         // Ruhe — die streamende Welt brachte neue Objekte, deren ERST-Compiles zählte Check B als Env-Churn (6 Stacks,
-        // alle _renderObjectDirect). Die V18.322-Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
+        // alle _renderObjectDirect). Die Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
         // Quelltext, derselbe Zustand) noch einmal, weil ein Cache-Schlüssel seine Identität verliert. Darum trägt
         // jeder Compile seinen Fingerabdruck; `wdh` zählt die schon gesehenen.
         window.__cc = { gpuPipeline: 0, glLink: 0, wdh: 0 };
@@ -271,7 +271,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             window.__ccObjekt = o;
             try { return roRoh.apply(this, arguments); } finally { window.__ccObjekt = vor; }
         };
-        // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`) baut je Render-Aufruf höchstens EINEN Stoff (die übrigen
+        // DIE ERST-ZEICHNUNG (`_configureRenderer`) baut je Render-Aufruf höchstens EINEN Stoff (die übrigen
         // verschiebt sie in den nächsten Aufruf) und zeichnet ein Objekt ab dem Bild, in dem seine Pipeline steht. Ein
         // Schlüssel, dessen eines Bild noch verschob oder auf eine Pipeline wartete, ist nicht warm: seine verschobenen
         // Bauten kompilierten sonst im Leerlauf — gemessen am Zweig welle-k-haenger in 3 von 3 CI-Läufen (a20e1444,
@@ -368,7 +368,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Node hält die Frist; CI 36681658740). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter, bis 8 Frames in Folge
     // NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler landen im Warmup, echter Churn
     // kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
-    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): eine erste Zeichnung kompiliert ihre Pipeline ASYNCHRON — der
+    // DIE ERST-ZEICHNUNG (`_configureRenderer`): eine erste Zeichnung kompiliert ihre Pipeline ASYNCHRON — der
     // Compile läuft im GPU-Prozess weiter, und der nächste Aufruf, der präsentiert, trüge alle offenen zusammen (CI auf
     // c307587b: 21 Warmup-Aufrufe in 11 s, dann „Bild (Ruhe-Frame 1)" über 300 s). Nach jedem kompilierenden Aufruf wartet
     // Node in kurzen Abfragen (reines JS, kein GPU-Ruf), bis keine Pipeline mehr offen ist: jeder Aufruf trägt weiter
@@ -467,10 +467,10 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     const a1 = await stand();
     const idle = { gesamt: a1.tot - a0.tot, wdh: a1.wdh - a0.wdh };
 
-    // CHECK B — ENV-REGENERIERUNG (die scharfe V18.322-Wand): die Himmelsfarbe wechselt (wie die
+    // CHECK B — ENV-REGENERIERUNG: die Himmelsfarbe wechselt (wie die
     // Tag-Nacht-Uhr es im Stehen tut) → die Env regeneriert. Eine KORREKTE Implementierung nutzt
     // das Target wieder (stabile Identität → 0 Recompiles); der alte Churn rekompilierte ~270/Regen.
-    // SELBSTTEST (--selbsttest-churn): die V18.322-Klasse künstlich zurück — jede Regenerierung eine NEUE
+    // SELBSTTEST (--selbsttest-churn): die Klasse künstlich zurück — jede Regenerierung eine NEUE
     // Env-Identität. Die Linse MUSS dann rot werden (sonst wäre sie blind).
     if (process.argv.includes("--selbsttest-churn")) await ruf("Selbsttest-Schalter", () => (window.__selbsttestChurn = true));
     const regen = { gesamt: 0, wdh: 0, spur: [] };

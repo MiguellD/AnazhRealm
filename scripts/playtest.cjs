@@ -549,7 +549,7 @@ if (require.main === module) (async () => {
                 }
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
-            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request, V18.132).
+            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).
             r.state.voxelWorker = _warmupSavedWorker;
             return {
                 foundryWarmMs: foundryReadyMs,

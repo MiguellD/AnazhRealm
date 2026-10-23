@@ -124,10 +124,10 @@ async function checkBandW4LofiPad(ctx) {
                 !!sym.lofi.melodyGain &&
                 // die Lead-Stimme sitzt über dem Pad.
                 sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
+                // die Groove-Schicht + Noise-Puffer.
                 !!sym.lofi.grooveGain &&
                 !!sym.lofi.noiseBuffer &&
-                // V8.93 Phase 4 — die Bass-Schicht.
+                // die Bass-Schicht.
                 !!sym.lofi.bassGain &&
                 sym.lofi.degree === 0 &&
                 typeof sym.lofi.rngState === "number";

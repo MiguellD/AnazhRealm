@@ -1037,7 +1037,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-// Band-Funktion (Welle 4 Phase 1/2/3 — Materialien + Helix + Werkzeuge).
+// Band-Funktion (Materialien + Helix + Werkzeuge).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave4(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -2326,7 +2326,7 @@ async function checkBandWave5(ctx) {
         const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
-        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter, V17.78)
+        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter)
         r.state.blueprints["schmiede-hammer"] = {
             name: "schmiede-hammer",
             label: "Mein Schmiede-Hammer",
@@ -2628,7 +2628,7 @@ async function checkBandWave5(ctx) {
     }
 }
 
-// Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
+// Band-Funktion (Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus + Präzision-Stat-Multiplikator).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves9And10a(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -2907,7 +2907,7 @@ async function checkBandWaves9And10a(ctx) {
                 !!roleChip9b &&
                 roleChip9b.textContent.includes("Bauwerk") &&
                 roleChip9b.classList.contains("role-emergent");
-            // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
+            // Apply schmiede-hammer auf eisen-Part (Domain-Op aus der Op-Bibliothek leihen)
             if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
@@ -2992,7 +2992,7 @@ async function checkBandWaves9And10a(ctx) {
             out.allHaveRole = stationNames.every(
                 (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
             );
-            // S7-B (V17.67) — die bediente Domäne EMERGIERT jetzt aus der Substanz
+            // S7-B — die bediente Domäne EMERGIERT jetzt aus der Substanz
             // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
             out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
             out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
@@ -3733,7 +3733,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
             out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9);
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
-            // V18.317/.347 — Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
+            // Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
             r.state.architectures = r.state.architectures || [];
             r.state.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             const snap = r.buildStateSnapshot();

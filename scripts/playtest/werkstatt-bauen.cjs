@@ -5,9 +5,9 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
+// die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
-// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States (V17.66).
+// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -74,7 +74,7 @@ async function checkBandV1774UseByRole(ctx) {
 
         // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
         // der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
-        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
+        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit.
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
         r.renderPlayerEquipUI();
@@ -203,7 +203,7 @@ async function checkBandV1774UseByRole(ctx) {
     );
 }
 
-// V17.76 Welle 2 (Schritt 1) — die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
+// die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
 // Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
 // Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
 async function checkBandV1776WorkshopPrecision(ctx) {
@@ -303,7 +303,7 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
         out.rangeVisible = softP < meisterP - 0.1;
         delete r.state.blueprints["_softws"];
-        // KONSUM — V18.44: der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
+        // KONSUM — der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
         const panel = document.createElement("div");
         r._specRenderBody(panel, meister);
         const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
@@ -408,7 +408,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
         delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
-        // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
+        // Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
         out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
         // Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
@@ -538,7 +538,7 @@ async function checkBandV1790Recalibration(ctx) {
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
         out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
 
-        // (6) UI-Befund (b) — V17.91: Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // (6) UI-Befund (b) — Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
         for (const sheet of document.styleSheets) {
@@ -1332,7 +1332,7 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+        // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
         out.logbookSectionExists = !!document.getElementById("logbook-section");
         out.logbookToggleExists = !!document.getElementById("logbook-toggle");
         const consoleLog = document.getElementById("console-log-section");

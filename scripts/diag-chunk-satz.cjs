@@ -945,7 +945,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     res.konsum = { opfer: opfer.key, vor, ab, auf };
                 }
             }
-            // (i) WACHSEN (Welle 6): ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
+            // (i) WACHSEN: ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
@@ -1044,7 +1044,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 ring = ortho(4000);
             res.neu = { messung: {}, wachse: {} };
             res.neu.messung.ruhe = phase(eng, 5);
-            // der Druck braucht die volle Last: seit der Höhlen-Sicht (Welle 7) tragen die Ring-Kaskaden nur, was ein Empfänger
+            // der Druck braucht die volle Last: seit der Höhlen-Sicht tragen die Ring-Kaskaden nur, was ein Empfänger
             // braucht, und der Index reichte — am Exemplar zeichnet hier jede Höhlen-Zelle (die Methode des Stamms bleibt)
             r._hoehlenSicht = function (satz) {
                 const st = ++satz.hoehle.stempel;

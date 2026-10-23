@@ -1,4 +1,4 @@
-// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Welle 5, Gebot 10): was der ferne Wald im BILD ist.
+// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Gebot 10): was der ferne Wald im BILD ist.
 // Befund 05.10. (Blick-Tour 10-panorama-45m): jenseits der Mesh-Zone standen glatte, gestreifte, einfarbig hellgrüne
 // Ellipsoide — der Kegel-und-Lappen-Satz der gesetzten Bäume im Welt-March. Kein Zähler sah es: Befehle und Dreiecke
 // blieben gleich, nur das Bild log. Die Form-Wahrheit (jedes Karten-Ding jenseits der Mesh-Zone ist seine Karte, kein

@@ -1,5 +1,5 @@
 // diag-p2p-gestalt.cjs — P2P-GESTALT: DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
-// Der benannte V18.477-Offen-Punkt: die Studio-Übergabe (state.studioUebergabe) war LOKALE
+// Der benannte Offen-Punkt: die Studio-Übergabe (state.studioUebergabe) war LOKALE
 // Wahrheit — ein Mitspieler baute den fremden Avatar aus SEINEM eigenen _koerperStudioDials,
 // die vom Sender gewählte Gestalt (Kleider/Haut/Haar) reiste nie übers Mesh. Jetzt trägt der
 // soul-Kanal (_p2pBroadcastSoul) die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)

@@ -2,7 +2,7 @@
 // Die funktionalen Portal-Blueprints (welt_portal/strom/terrain/garage/portale + seit W-A4c
 // welt_schmiede) behalten IDENTITAET + FUNKTION (Name · role portal · portalMeta · Tags ·
 // blockerAABBs · E-Trigger), aber ihre RENDER-GESTALT kommt vom porta-Kern (studioGestalt-
-// DATEN-Zeile, gelesen im EINEN Entry-Resolver `_foundryPresetForEntry`). W-A4c/V9.56-i: die
+// DATEN-Zeile, gelesen im EINEN Entry-Resolver `_foundryPresetForEntry`). W-A4c: die
 // LISTE zieht die Linse DYNAMISCH aus dem lebenden Zustand (jeder Portal-Bauplan mit studioGestalt) —
 // ein neues Gestalt-Portal waechst von selbst hinein; die ANKER bleiben hart (Drift laut).
 // Die Linse prueft mit ehrlichen Zahlen:

@@ -432,7 +432,7 @@ async function runPartB() {
                 takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
                 max: 500,
             });
-        // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
+        // DER STRAUCH (kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
         // eigener Sweep.
         const sx = px + 400,

@@ -259,7 +259,7 @@ function check(name, ok) {
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
-            // r.constructor.KIND_SUBSTANCE, die dokumentierte V18.259-Falle).
+            // r.constructor.KIND_SUBSTANCE, die dokumentierte Falle).
             out.blueprintBuilds = safe(() => {
                 const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
                 const names = ["esse", "welt_portal", "ruestung_brustpanzer"];
@@ -326,7 +326,7 @@ function check(name, ok) {
         check("getTerrainHeightAt(0,0) endlich", R.terrainHeightFinite === true);
         const av = R.avatar || {};
         check("AVATAR baut (_buildHumanGroup ohne Crash)", av.ok === true && !av.__err);
-        // PIPE-VOLLENDUNG (V18.459): der Mensch ist ein Pipe-Asset — je (Gelenk ×
+        // PIPE-VOLLENDUNG: der Mensch ist ein Pipe-Asset — je (Gelenk ×
         // Klasse) GEMERGT (~29 Meshes statt 227, voll gelenkig). Untergrenze 10 =
         // die Struktur-Wand (Gelenke × Klassen), Obergrenze 120 = kein Rückfall
         // in den ungemergten Baum.

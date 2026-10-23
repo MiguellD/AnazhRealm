@@ -1,4 +1,4 @@
-// diag-boot-foliage-ring.cjs — V18.414-BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
+// diag-boot-foliage-ring.cjs — BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
 // Schöpfer-Befund: „es wird ein riesiger ferner Ring mit Billboards bepflückt, statt erst den ersten
 // Chunk zu beenden und DANN zu erweitern." WURZEL (gemessen): `foliageRadius` raste per perf-headroom
 // (leere Boot-Frames) auf MAX (240 m), während der gebaute Terrain-Ring erst 1 Chunk (43 m) war → die

@@ -1,4 +1,4 @@
-// diag-charakter-achsen.cjs — V18.466 DIE CHARAKTER-ACHSEN DER STUDIOS (Konsum-Beweis).
+// diag-charakter-achsen.cjs — DIE CHARAKTER-ACHSEN DER STUDIOS (Konsum-Beweis).
 // Der Schöpfer-Befund („schau die studios an, du wirst sehen was noch fehlt"):
 // die Studios tragen ORTHOGONALE Design-Sprachen — Schmiede-TRADITIONEN
 // (Frank/Nihon/Pars/Urvolk/Brut), Garage-KULTUREN (cavallo/toro/stern/vorsprung/
