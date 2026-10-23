@@ -122,6 +122,13 @@ const BASIS = {
             "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
         ],
     ],
+    // W9: der Schnappschuss lässt den Gang offen — nach dem Reload fehlen Brunnen und Stände
+    gangschluss: [
+        [
+            "        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;",
+            "        void 0;",
+        ],
+    ],
     // W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
     ausstattung: [["/fachwerk-core.js", "        lay.brunnen = neu;\n        return aus;", "        return aus;"]],
     // W9: der Wege-Rebuild nach dem Reload reiht die offenen Slots nicht ein
@@ -165,7 +172,11 @@ const BASIS = {
     ],
     // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
     kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
-    tierbau: [['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"]],
+    // W10: der Bau räumt den Wurf des Felds nicht — am Deckel der Tiere (`maxCreatures` 6: die CI stand voll, die Saat fiel)
+    tierbau: [
+        ['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"],
+        ["            maxCreatures: 20,", "            maxCreatures: 6,"],
+    ],
     wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
     stab: [
         [
@@ -378,10 +389,20 @@ async function proben(phasen) {
         const base = e.position.y - 0.5;
         // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
         const fu = e.fundament;
-        // die Saat: ein Wurf des Felds mitten in der Box, der Bau räumt erneut
+        // die Saat: ein Wurf des Felds genau in der Mitte der Box (`precise`: die Spieler-Klemme schob ihn 3 m, aus einer
+        // schmalen Box hinaus), der Bau räumt erneut; am Deckel `maxCreatures` weicht der fernste Leib — sonst sagt die Welt
+        // „obergrenze", und die Probe zählt keinen
         const sp = welt(e, fu.ox || 0, fu.oz || 0);
-        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z);
-        h.saat = !!saat && (saat.userData.feldWurf = true) && r._grundrissRaeumen(e) >= 0;
+        const weit = (c) => Math.hypot(c.position.x - sp.x, c.position.z - sp.z);
+        for (let k = 0; k < 64 && s.creatures.length >= s.maxCreatures; k++)
+            r.removeCreature(s.creatures.reduce((m, c) => (weit(c) > weit(m) ? c : m)));
+        let nein = "kein Leib";
+        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z, undefined, null, {
+            precise: true,
+            absage: (g) => (nein = g),
+        });
+        if (saat) saat.userData.feldWurf = true;
+        h.saat = saat ? r._grundrissRaeumen(e) >= 0 : nein;
         h.tiere = s.creatures
             .map((c) => [c, lokal(e, c.position.x, c.position.z)])
             .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
@@ -1794,12 +1815,16 @@ async function proben(phasen) {
         for (let k = 0; k < 1200 && q && r._autoSettlementQueue === q && q.idx < 3; k++) await pumpe(1);
         const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
+            // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`, wie `saveState`) — ohne ihn
+            // entschied die Uhr: speicherte die Welt vor dem dritten Haus, stand die Ausstattung, sonst Brunnen 0/1, Stände 0/2
+            r._dorfGangSchliessen();
             r._autoSettlementQueue = null;
             r._stlWegeKeys.delete(q.cellKey);
         }
         // der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
         const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
         for (let k = 0; k < 1200 && (zugLebt() || !zellen().start); k++) await pumpe(1);
+        const zugOffen = !!zugLebt();
         window.__anazhAutoSettlement = takt;
         const an = (x, z, typ) => (e) =>
             e !== sperre &&
@@ -1838,6 +1863,7 @@ async function proben(phasen) {
             slots: slots.length,
             haeuser,
             reload,
+            zugOffen,
             ausstattung,
             verblasst: !!verblasst,
             ms: Math.round(performance.now() - t0),
@@ -1878,7 +1904,9 @@ function urteil(o) {
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const tier = hs.filter((h) => h.tiere && h.tiere.length);
-        if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
+        const ohneSaat = hs.filter((h) => h.saat !== true);
+        if (ohneSaat.length)
+            f.push(`W10 Saat blind: ${ohneSaat.map((h) => h.typ + " " + (h.fehler || h.saat)).join(" · ")}`);
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
@@ -2113,7 +2141,8 @@ function urteil(o) {
                 `W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen ${[wa.start, wa.gruende, wa.gesperrt, wa.reload, wa.verblasst]}`
             );
         else if (wa.ohne.length) f.push(`W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne})`);
-        if (wa.gesperrt && wa.haeuser < wa.slots - 1)
+        if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt nach 1200 Takten");
+        else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
         if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
             f.push("W9 Ausstattung: blind — kein Brunnen, keine Laterne");
@@ -2243,7 +2272,8 @@ function zeile(o) {
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
                 waise: ["grund", "W9 Waise"],
-                ausstattung: ["grund", "W9 Zug"],
+                ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
+                gangschluss: ["grund", "W9 Ausstattung"],
                 zugreload: ["grund", "W9 Waise", "W9 Zug"],
                 verblassen: ["grund", "W9 Waise"],
             };
@@ -2268,9 +2298,10 @@ function zeile(o) {
                 const soll = { [inj]: selbst[i].soll };
                 const { o, pf } = selbstErg[i];
                 const f = urteil(o);
-                const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
+                const trifft = (x) => f.find((y) => x.split("|").some((a) => y.startsWith(a)));
+                const fehlt = soll[inj].filter((x) => !trifft(x));
                 const ok = pf.length === 0 && fehlt.length === 0;
-                const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
+                const beleg = soll[inj].map((x) => trifft(x) || `${x}: grün (blind!)`).join(" | ");
                 console.log(
                     `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
                 );

@@ -2549,6 +2549,12 @@ class AnazhRealm_siedlung_ort {
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => d(plan.slots[a]) - d(plan.slots[b]) || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
+    // DAS DORF IST NIE HALB (stadt-erwachen): der Gang seines Erlebnisses (`_dorfErlebnis`, Raten je Takt) schließt vor jedem
+    // Schnappschuss — nach dem Laden baut die Zelle nur ihre Wege neu, nie Laterne, Brunnen und Hof-Baum. Leser: `saveState`
+    // und der Reload von gate:haus-welt W9 (EIN Reload, nie ein Zwilling).
+    _dorfGangSchliessen() {
+        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;
+    }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
     // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
     // DER GENESIS-ORT VOR JEDEM BUDGET (Existenz vor Framerate, Lehre 13): der Ring der Kern-Portale (einmalig je Welt,
