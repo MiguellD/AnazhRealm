@@ -2608,12 +2608,14 @@ class AnazhRealm_siedlung_ort {
         // EXISTENZ VOR FRAMERATE (Lehre 13, Leben-Prüfung N-D9): das Frame-Budget drosselt das TEMPO des Dorf-Akts, nie
         // seine Existenz — über dem Budget trägt jeder A.drosselTakte-te Takt EINEN Slot bzw. EINEN Akt. Vorher kehrte der
         // Takt über dem Budget um (60 von 60 Proben): auf jedem Gerät über dem Sollwert entstand das Start-Dorf nie.
+        // DAS ERSTE HAUS IST EXISTENZ (stadt-erwachen-2): bis ein Zug sein erstes Haus hob (`idx` 0: sein Grund und das nächste
+        // Haus), drosselt das Budget ihn nicht — an der Radeon (Dorf, über dem Budget) trug er sonst je 8 Bilder einen Schritt
+        const q = this._autoSettlementQueue;
         const ueber = !!st._frameOverBudget;
-        if (ueber) {
+        if (ueber && !(q && q.plan && q.idx === 0)) {
             this._dorfDrossel = (this._dorfDrossel || 0) + 1;
             if (this._dorfDrossel % A.drosselTakte !== 0) return;
         }
-        const q = this._autoSettlementQueue;
         if (q && q.plan) {
             this._dorfZugSchritt(q, ueber);
             if (!q.gang && q.idx >= q.plan.slots.length) {
