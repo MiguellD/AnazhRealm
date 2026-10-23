@@ -19,7 +19,7 @@
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
-// der Station gleicht und deren Pfad zwischen Mess-SHA und Kopf unberührt ist (git diff --name-only). 1 = jede
+// der Station gleicht und deren Pfad zwischen Mess-SHA und Kopf in Welt-Bytes unberührt ist (weltDateien). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN; ungemessen ist 0.
 "use strict";
@@ -412,6 +412,41 @@ function ladeMessungen(mdir = path.join(DIR, "messung")) {
     return fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)).map((f) => JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")));
 }
 
+// R6 urteilt über WELT-Bytes: Mess-Werkzeug (scripts/, spec/, .github/, docs/, artifacts/, *.md) und reine Versions-Stempel
+// (?v=, "version", VERSION) sind kein Weltwechsel — 23.10.: jede Versions-Stufe stempelt index.html und die Worker neu, und die
+// Buchung am nächsten Kopf warf darum jede Station mit index.html im Pfad weg, obwohl kein Spiel-Byte anders war. Das Werkzeug
+// selbst trägt der Abdruck der Station (Befehl, Urteil, Pfad, Hilfen).
+const WERKZEUG_PFAD = /^(scripts|spec|\.github|docs|artifacts)\/|\.md$/;
+const VERSIONS_STEMPEL = [
+    [/\?v=[0-9A-Za-z._-]+/g, "?v="],
+    [/("version"\s*:\s*")[^"]*"/g, '$1"'],
+    [/(VERSION\s*=\s*["'`])[^"'`]*(["'`])/g, "$1$2"],
+];
+const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx, e), z);
+// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Welt-Bytes sich änderten
+function weltDateien(namen, diffText) {
+    const je = new Map();
+    let cur = null;
+    for (const z of String(diffText).split("\n")) {
+        const m = /^diff --git a\/(.+?) b\//.exec(z);
+        if (m) {
+            cur = { weg: [], neu: [], bin: false };
+            je.set(m[1], cur);
+            continue;
+        }
+        if (!cur || z.startsWith("+++ ") || z.startsWith("--- ")) continue;
+        if (/^Binary files /.test(z)) cur.bin = true;
+        else if (z[0] === "-") cur.weg.push(ohneStempel(z.slice(1)));
+        else if (z[0] === "+") cur.neu.push(ohneStempel(z.slice(1)));
+    }
+    return String(namen).split("\n").filter(Boolean).filter((f) => {
+        if (WERKZEUG_PFAD.test(f)) return false;
+        const d = je.get(f);
+        if (!d || d.bin) return true;
+        return d.weg.sort().join("\n") !== d.neu.sort().join("\n");
+    });
+}
+
 function buchenCli(opt) {
     if (!opt.kopf) throw new Error("--kopf fehlt");
     const { stationen, fehler, fehlt } = ladeGeprueft();
@@ -419,7 +454,8 @@ function buchenCli(opt) {
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
-        git(["diff", "--name-only", sha, kopfVoll], repo).split("\n").filter(Boolean), hilfeText(), fehlt);
+        weltDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
+        hilfeText(), fehlt);
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
@@ -457,6 +493,19 @@ async function selbsttest() {
     const echt = ladeGeprueft();
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
+    // (1b) R6 liest Welt-Bytes: Werkzeug und Versions-Stempel fallen, echter Code bleibt, Binär bleibt
+    {
+        const namen = "index.html\nscripts/lib/welt-boot.cjs\nstamm/kampf.js\ngelaende-core.js\nbild.png\nREADME.md";
+        const dt = [
+            "diff --git a/index.html b/index.html", "--- a/index.html", "+++ b/index.html", "@@ -1 +1 @@",
+            '-<script src="phyto-core.js?v=18.546.73" defer></script>', '+<script src="phyto-core.js?v=18.546.74" defer></script>',
+            "diff --git a/stamm/kampf.js b/stamm/kampf.js", "--- a/stamm/kampf.js", "+++ b/stamm/kampf.js", "@@ -9 +9 @@", "-x = 1;", "+x = 2;",
+            "diff --git a/gelaende-core.js b/gelaende-core.js", "@@ -1 +1 @@", '-importScripts("a.js?v=1.2");', '+importScripts("a.js?v=1.3");', "+neu();",
+            "diff --git a/bild.png b/bild.png", "Binary files a/bild.png and b/bild.png differ",
+        ].join("\n");
+        const w = weltDateien(namen, dt).join(",");
+        pruef("R6 Welt-Bytes: Stempel und Werkzeug fallen, Code und Binär bleiben", w === "stamm/kampf.js,gelaende-core.js,bild.png", w);
+    }
     // (2) jede Format-Verletzung beim Namen
     const st0 = { kriterium: "gelaende.K4", staffel: 1, geraet: "headless", befehl: ["node", "-e", "0"], gpu: false, minuten: 1,
         urteil: () => ({ gruen: true, zahl: "x" }), pfad: ["stamm/wasser-*.js"], quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort" };
