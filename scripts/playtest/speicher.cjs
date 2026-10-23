@@ -122,8 +122,6 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -584,8 +582,6 @@ async function checkBandRing8(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1172,8 +1168,6 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

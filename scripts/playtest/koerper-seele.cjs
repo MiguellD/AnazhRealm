@@ -1024,8 +1024,6 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;

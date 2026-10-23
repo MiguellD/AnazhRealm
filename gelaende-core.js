@@ -1750,15 +1750,15 @@
 
     // DIE FORM DES EDITS (F2a „hoch bauen", Karte editform-kern): jeder Edit des Spielers (Graben, Aufschütten, hoch bauen) ist
     // die SÄULE seines Maßes r — Radius r, halbe Höhe r, die Kanten gerundet (`kanteM`, höchstens r/2), oben und unten eben:
-    // Aufschütten vereinigt sie mit dem Boden, Graben nimmt sie heraus (weiches Maximum/Minimum, die Kehle `rundM`), in
-    // Setz-Reihenfolge, in jeder Höhe und Tiefe gleich. Gerechnet wird in Metern auf der GEKAPPTEN Dichte n = clamp(Basis,
-    // ±tiefeM) gegen das Abstandsfeld s der Säule (positiv innen); `tiefeM` über zwei 1,8-m-Zellen legt den Knick der
-    // Vereinigung jenseits der Kanten um die Fläche. EBEN, weil der Boden ein 1,8-m-Gitter ist: die Kuppe einer Kugel trug das
-    // Netz 0,14–1,1 m unter dem Gesetz, eine Ebene trägt es genau — wer baut, steht auf dem, was er sieht. Bis editform-kern
-    // legte jeder Edit an vier Stellen (Stamm und voxel-worker, je Punkt und Gitter) einen additiven Kegel der Stärke 48 auf die
-    // Basis: h m über dem Boden blieb von ihm r · (1 − h/48), ein Turm wurde je Schuss schmaler (10 Edits r 3,5 hoben 24,5 m,
-    // Hub 3,26 → 1,90 m). Leser: der Punkt (`mitEdits`) und das Gitter (`editsImGitter`) in Stamm und Worker; die Reichweite
-    // (`editReich`) die Edit-Karte, die Weckung um einen Edit und die Wache des Fern-Rings.
+    // Aufschütten vereinigt sie mit dem Boden, Graben nimmt sie heraus, in Setz-Reihenfolge, in jeder Höhe und Tiefe gleich.
+    // Gerechnet wird in Metern auf der GEKAPPTEN Dichte n = clamp(Basis, ±tiefeM) gegen das Abstandsfeld s der Säule (positiv
+    // innen). Die Kehle (`rundM`) ist RUND und KOMPAKT: sie wirkt nur, wo der Boden UND die Säule näher als rundM liegen
+    // (Vereinigung n > −rundM, Graben n < rundM, je s > −rundM); jenseits trägt jede Ecke die harte Form max(n, s) bzw.
+    // min(n, −s), und wo sie den Boden wählt, bleibt er byte-alt (ein weiches Polynom wirkt überall, wo n ≈ ∓s, und rückt das
+    // Netz bis 11 m um eine Grube r 3,5: die Wiese daneben fällt, gate:wasser-leben G5). EBEN, weil der Boden ein 1,8-m-Gitter ist: die
+    // Kuppe einer Kugel trug das Netz 0,14–1,1 m unter dem Gesetz, eine Ebene trägt es genau — wer baut, steht auf dem, was er
+    // sieht. Leser: der Punkt (`mitEdits`) und das Gitter (`editsImGitter`) in Stamm und Worker; die Reichweite (`editReich`)
+    // die Edit-Karte, die Weckung um einen Edit und die Wache des Fern-Rings.
     const EDIT_FORM = Object.freeze({ tiefeM: 4, rundM: 1, kanteM: 0.5 });
     function editForm(n, ed, dx, dy, dz) {
         if (!(ed.r > 0)) return n; // ein Edit ohne Maß (Alt-Daten) ändert nichts
@@ -1767,17 +1767,13 @@
         const qx = Math.sqrt(dx * dx + dz * dz) - ed.r + c;
         const qy = Math.abs(dy) - ed.r + c;
         const s = c - Math.min(Math.max(qx, qy), 0) - Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2);
-        if (ed.mode === "fill") {
-            const h = Math.max(k - Math.abs(n - s), 0) / k;
-            return Math.max(n, s) + h * h * k * 0.25;
-        }
-        const h = Math.max(k - Math.abs(n + s), 0) / k;
-        return Math.min(n, -s) - h * h * k * 0.25;
+        if (ed.mode === "fill") return n > -k && s > -k ? Math.hypot(k + n, k + s) - k : Math.max(n, s);
+        return n < k && s > -k ? k - Math.hypot(k - n, k + s) : Math.min(n, -s);
     }
-    // so weit ändert ein Edit die Dichte: jenseits liegt seine Säule (die Ecke im Abstand r·√2) um mehr als tiefeM + rundM unter
-    // der gekappten Dichte
+    // so weit ändert ein Edit die Dichte: jenseits liegt seine Säule (die Ecke im Abstand r·√2) um mehr als tiefeM unter der
+    // gekappten Dichte (die Kehle wirkt nur näher als rundM < tiefeM)
     function editReich(ed) {
-        return (Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1) * Math.SQRT2 + EDIT_FORM.tiefeM + EDIT_FORM.rundM;
+        return (Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1) * Math.SQRT2 + EDIT_FORM.tiefeM;
     }
     function editKappe(basis) {
         const K = EDIT_FORM.tiefeM;
