@@ -1,0 +1,3 @@
+eval "window.anazhRealm.constructor.VERSION"
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/skripte/m43-stufen.js)"
+albedo --tafel --ordner C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/m43-tafel --datei C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/m43-albedo-welt.json

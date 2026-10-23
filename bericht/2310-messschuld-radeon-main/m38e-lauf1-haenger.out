@@ -1,0 +1,23 @@
+gpu-lauf: warte auf lod-saum 2026-10-23T07:36:24+02:00 (25 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:36:24+02:00 (90 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:36:24+02:00 (156 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:39:34+02:00 (32 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:39:34+02:00 (96 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:39:34+02:00 (159 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:39:34+02:00 (223 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:44:14+02:00 (7 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:44:14+02:00 (70 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:44:14+02:00 (135 s)
+gpu-lauf: Schloss messbahn nach 633 s
+FEHLER ProtocolError: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+    at <instance_members_initializer> (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:103:14)
+    at new Callback (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:107:16)
+    at CallbackRegistry.create (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:25:26)
+    at Connection._rawSend (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:108:26)
+    at CdpCDPSession.send (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\CdpSession.js:74:33)
+    at #evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:363:50)
+    at ExecutionContext.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:277:36)
+    at IsolatedWorld.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:105:30)
+    at CdpFrame.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:362:43)
+    at CdpFrame.<anonymous> (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\util\decorators.js:109:27)
+m38e EXIT=1

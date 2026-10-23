@@ -1,0 +1,9 @@
+gpu-lauf: warte auf lod-saum 2026-10-23T07:23:03+02:00 (80 s)
+gpu-lauf: Schloss messbahn nach 44 s
+bedient: VERSION = "18.546.72"
+start: WERKBANK bereit: Steuer 127.0.0.1:7972 · Seite :7971
+schritt 1 EXIT=0: eval "window.anazhRealm.constructor.VERSION" |  "ms": 2 } 
+schritt 2 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/skr |  "ms": 8 } 
+schritt 3 EXIT=1: albedo --tafel --ordner C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-rad | C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\m43-albedo-welt.json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\m43-tafel 
+ende m43
+m43 EXIT=0

@@ -1,0 +1,15 @@
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (23 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (89 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (155 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (219 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (284 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:10:04+02:00 (350 s)
+gpu-lauf: Schloss messbahn nach 372 s
+boot 12319 ms, Version 18.546.72
+vorbereitung {"zelle":"-2,-2","nH":16,"site":[-421.9,-334.6],"stand":[-280.9,-222.7],"nearM":260,"kandidaten":37}
+07:17:13.641 __GANG__ {"t":1792739833643,"bild":2006,"schluessel":null}
+07:17:13.693 __SAVESTART__ lebt=true
+07:17:13.735 __GANGENDE__ 8
+07:17:13.746 __SAVEENDE__ ms=53.8
+ERGEBNIS {"modus":"erwachen","zeile":{"modus":"erwachen","bootMs":12319,"version":"18.546.72","vorbereitung":{"zelle":"-2,-2","nH":16,"site":[-421.9,-334.6],"stand":[-280.9,-222.7],"nearM":260,"kandidaten":37},"gang":{"t":1792739833643,"bild":2006,"schluessel":null},"reserviert":["start","-2,-2"],"zustand":{"x":-280860,"z":-222716,"b":0,"e":0,"sc":2,"ok":2,"sck":"-2,-2;start","w":"4e8d1871-3b38-47e0-8435-75b4fedf0ea2"}},"bilder":10451,"saveRufe":20,"saveMs":{"p50":11.4,"p95":15.1,"max":51.2},"saveGangMs":[51.20000000298023],"jeBildSpeicher":{"bilderMit":20,"p95":0,"p99":0,"max":51.2,"mittel":0.0263},"jeBildProbe":{"bilderMit":10,"p95":0,"p99":0,"max":0.1,"mittel":0.0001},"probeRufe":22,"probeMs":{"p50":0,"p95":0.1,"max":0.1},"jeBildErwachen":{"bilder":300,"p95":0,"max":51.2}}
+m38e EXIT=0

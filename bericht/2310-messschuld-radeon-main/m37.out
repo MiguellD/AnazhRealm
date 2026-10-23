@@ -1,0 +1,61 @@
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (21 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (86 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (151 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (216 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (281 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (348 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:18:55+02:00 (415 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (57 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (123 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (189 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (257 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (324 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (388 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (454 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:25:58+02:00 (520 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (61 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (125 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (189 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (254 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (320 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (386 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:34:43+02:00 (454 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (9 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (75 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (140 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (206 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (270 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (337 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (403 s)
+gpu-lauf: Schloss messbahn nach 1853 s
+z0 idb v=18.546.72 boot=12686 geladen={"x":0,"z":0,"b":0,"e":0,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=undefined verloren=undefined dorfHalb=false   
+z1 zufall v=18.546.72 boot=9522 geladen={"x":47,"z":11811,"b":0,"e":6,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.464 verloren=0 dorfHalb=false   
+z2 fest v=18.546.72 boot=7953 geladen={"x":47,"z":21984,"b":4,"e":11,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.631 verloren=0 dorfHalb=false   
+07:51:39.065 __GANG__ {"t":1792741899064,"bild":65,"schluessel":null}
+z3 erwachen-mitten v=18.546.72 boot=7694 geladen={"x":47,"z":38986,"b":13,"e":20,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.002 verloren=0 dorfHalb=false erw={"zelle":"-2,1","nH":12,"site":[-392.5,434.8],"stand":[-265.7,307],"nearM":260,"kandidaten":37} gang={"t":1792741899064,"bild":65,"schluessel":null,"node":1792741899065}  
+z4 platz v=18.546.72 boot=8959 geladen={"x":47,"z":38986,"b":13,"e":20,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.37 verloren=0 dorfHalb=false   
+z5 zufall v=18.546.72 boot=9183 geladen={"x":317,"z":52078,"b":20,"e":27,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.47 verloren=0 dorfHalb=false   
+07:52:49.406 __GANG__ {"t":1792741969406,"bild":63,"schluessel":null}
+07:52:49.430 __SAVESTART__ lebt=true
+07:52:49.453 __GANGENDE__ 7
+07:52:49.468 __SAVEENDE__ ms=37.9
+z6 erwachen-idb v=18.546.72 boot=9534 geladen={"x":30,"z":72642,"b":22,"e":38,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.147 verloren=0 dorfHalb=false erw={"zelle":"-1,2","nH":13,"site":[-117.7,591.6],"stand":[-77.9,416],"nearM":260,"kandidaten":37} gang={"t":1792741969406,"bild":63,"schluessel":null,"node":1792741969407}  
+z7 zufall v=18.546.72 boot=9705 geladen={"x":30,"z":72642,"b":22,"e":38,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=3.238 verloren=0 dorfHalb=false   
+z8 fest v=18.546.72 boot=9579 geladen={"x":30,"z":86111,"b":25,"e":45,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.271 verloren=0 dorfHalb=false   
+z9 zufall v=18.546.72 boot=10288 geladen={"x":149,"z":93835,"b":25,"e":49,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=null verloren=0 dorfHalb=false   
+z10 platz v=18.546.72 boot=9484 geladen={"x":870,"z":99890,"b":25,"e":53,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.08 verloren=0 dorfHalb=false   
+07:54:35.256 __GANG__ {"t":1792742075258,"bild":57,"schluessel":null}
+z11 erwachen-mitten v=18.546.72 boot=9082 geladen={"x":870,"z":109936,"b":25,"e":58,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.359 verloren=0 dorfHalb=false erw={"zelle":"-1,2","nH":13,"site":[-117.7,591.6],"stand":[-74.7,416.8],"nearM":260,"kandidaten":37} gang={"t":1792742075258,"bild":57,"schluessel":null,"node":1792742075256}  
+z12 idb v=18.546.72 boot=11268 geladen={"x":870,"z":109936,"b":25,"e":58,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=2.91 verloren=0 dorfHalb=false   
+z13 zufall v=18.546.72 boot=8164 geladen={"x":709,"z":123313,"b":25,"e":65,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.483 verloren=0 dorfHalb=false   
+07:55:40.249 __GANG__ {"t":1792742140248,"bild":63,"schluessel":null}
+07:55:40.277 __SAVESTART__ lebt=true
+07:55:40.298 __GANGENDE__ 8
+z14 erwachen-platz v=18.546.72 boot=8403 geladen={"x":709,"z":136584,"b":25,"e":72,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.069 verloren=0 dorfHalb=false erw={"zelle":"-1,2","nH":13,"site":[-117.7,591.6],"stand":[-72.4,417.4],"nearM":260,"kandidaten":37} gang={"t":1792742140248,"bild":63,"schluessel":null,"node":1792742140249}  
+z15 zufall v=18.546.72 boot=8247 geladen={"x":709,"z":136584,"b":25,"e":72,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=2.141 verloren=0 dorfHalb=false   
+z16 platz v=18.546.72 boot=8807 geladen={"x":709,"z":145005,"b":25,"e":76,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0 verloren=0 dorfHalb=false   
+z17 zufall v=18.546.72 boot=8780 geladen={"x":709,"z":151581,"b":25,"e":79,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=1.453 verloren=0 dorfHalb=false   
+z18 idb v=18.546.72 boot=8347 geladen={"x":709,"z":166669,"b":33,"e":87,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.978 verloren=0 dorfHalb=false   
+z19 zufall v=18.546.72 boot=8221 geladen={"x":709,"z":179291,"b":40,"e":94,"sc":1,"ok":1,"sck":"start","w":"e5bddd9b-1e94-49d8-8b4c-59e57a005a36"} alter=0.515 verloren=0 dorfHalb=false   
+ERGEBNIS {"tode":20,"todArten":{"idb":3,"zufall":8,"fest":2,"erwachen-mitten":2,"platz":3,"erwachen-idb":1,"erwachen-platz":1},"verfehlt":[],"alterMax":999,"ueber10":1,"halbe":1,"dorfHalb":[],"korrupt":0,"saveRufe":325,"saveMs":{"p50":7.3,"p95":12,"max":17.7},"saveGangMs":[],"bilder":19972,"ricRufe":64,"ricMs":{"p50":10.5,"p95":15.4,"max":22.8},"jeBildSpeicher":{"bilderMit":181,"p95":0,"p99":0,"max":18.1,"mittel":0.0844},"jeBildProbe":{"bilderMit":58,"p95":0,"p99":0,"max":0.5,"mittel":0.0005},"probeRufe":84,"probeMs":{"p50":0.1,"p95":0.3,"max":0.5},"jeBildErwachen":null,"todZeiten":[1792741838910,1792741861374,1792741887490,1792741899065,1792741924746,1792741955446,1792741969560,1792741994937,1792742015415,1792742037821,1792742061405,1792742075256,1792742103354,1792742127754,1792742140313,1792742158940,1792742178354,1792742204499,1792742227976,1792742256644]}
+m37 EXIT=0

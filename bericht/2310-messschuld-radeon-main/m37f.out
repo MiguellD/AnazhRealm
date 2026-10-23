@@ -1,0 +1,36 @@
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (16 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (83 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (150 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (218 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (286 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (353 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (419 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:03:56+02:00 (486 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (35 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (101 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (166 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (233 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (300 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (368 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (434 s)
+gpu-lauf: warte auf punkte-radeon 2026-10-23T11:12:33+02:00 (500 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T11:21:25+02:00 (35 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T11:22:40+02:00 (25 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T11:22:40+02:00 (93 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T11:22:40+02:00 (158 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T11:22:40+02:00 (222 s)
+gpu-lauf: Schloss messbahn nach 1363 s
+09:27:23.386 __GANG__ {"t":1792747643385,"bild":165,"schluessel":null}
+09:27:23.405 __SAVESTART__ lebt=true
+09:27:23.444 __GANGENDE__ 8
+09:27:23.459 __SAVEENDE__ ms=53.1
+z0 erwachen-fest v=18.546.72 boot=12310 geladen={"x":0,"z":0,"b":0,"e":0,"sc":1,"ok":1,"sck":"start","w":"fad411b8-b94f-4d81-80c5-60fd0f8c4958","haeuser":19} alter=undefined verloren=undefined dorfHalb=false erw={"zelle":"-2,-2","nH":16,"site":[-421.9,-334.6],"stand":[-280.9,-222.7],"nearM":260,"kandidaten":37} gang={"t":1792747643385,"bild":165,"schluessel":null,"node":1792747643388}  
+z1 zufall v=18.546.72 boot=7863 geladen={"x":-281231,"z":-223011,"b":0,"e":0,"sc":2,"ok":2,"sck":"-2,-2;start","w":"fad411b8-b94f-4d81-80c5-60fd0f8c4958","haeuser":39} alter=0.002 verloren=0 dorfHalb=false   
+09:27:59.319 __GANG__ {"t":1792747679318,"bild":108,"schluessel":null}
+09:27:59.371 __SAVESTART__ lebt=true
+09:27:59.409 __GANGENDE__ 8
+09:27:59.435 __SAVEENDE__ ms=63.5
+z2 erwachen-fest v=18.546.72 boot=8693 geladen={"x":-281231,"z":-209771,"b":7,"e":7,"sc":2,"ok":2,"sck":"-2,-2;start","w":"fad411b8-b94f-4d81-80c5-60fd0f8c4958","haeuser":39} alter=0.307 verloren=0 dorfHalb=false erw={"zelle":"-3,-1","nH":16,"site":[-660.3,-141.3],"stand":[-483.2,-173.3],"nearM":260,"kandidaten":36} gang={"t":1792747679318,"bild":108,"schluessel":null,"node":1792747679319}  
+z3 zufall v=18.546.72 boot=9200 geladen={"x":-483209,"z":-173292,"b":7,"e":7,"sc":3,"ok":3,"sck":"-2,-2;-3,-1;start","w":"fad411b8-b94f-4d81-80c5-60fd0f8c4958","haeuser":62} alter=0.003 verloren=0 dorfHalb=false   
+ERGEBNIS {"tode":4,"todArten":{"erwachen-fest":2,"zufall":2},"verfehlt":[],"alterMax":0.307,"ueber10":0,"halbe":0,"dorfHalb":[],"korrupt":0,"saveRufe":57,"saveMs":{"p50":11.6,"p95":23.7,"max":33.6},"saveGangMs":[],"bilder":6158,"ricRufe":16,"ricMs":{"p50":22.4,"p95":38.9,"max":38.9},"jeBildSpeicher":{"bilderMit":30,"p95":0,"p99":0,"max":33.6,"mittel":0.0867},"jeBildProbe":{"bilderMit":13,"p95":0,"p99":0,"max":0.3,"mittel":0.0003},"probeRufe":21,"probeMs":{"p50":0.1,"p95":0.2,"max":0.3},"jeBildErwachen":null,"todZeiten":[1792747643715,1792747667304,1792747679808,1792747699956]}
+m37f EXIT=0
