@@ -341,7 +341,7 @@ init();
         if (b) b.click();
         return !!b;
     }
-    var B = AnazhHuelle.bruecke({
+    AnazhHuelle.bruecke({
         welt: "tetrapoda",
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {
@@ -353,22 +353,16 @@ init();
             if (GATTUNG[w]) clickBtn('#presets button[data-p="' + GATTUNG[w] + '"]');
             else if (EMOTION[w]) clickBtn('#emotions button[data-e="' + EMOTION[w] + '"]');
         },
-    });
-    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE Schöpfer-Bearbeitung über DIESELBE
-       Brücke: gattung = die zuletzt gewählte Gattung (Regler-Feintuning löscht die active-Klasse, die Wahl bleibt
-       gemerkt), s = die fünf allometrischen Dials aus T (dieselbe Quelle wie deriveParams). Der Knopf ist standalone
-       hidden (nur das Portal enthüllt ihn). */
-    var b = document.getElementById("btnUebergabe");
-    if (!b || !window.parent || window.parent === window) return;
-    b.hidden = false;
-    b.addEventListener("click", function () {
-        var gattung = gattungAktiv;
-        B.post({
-            type: "uebergabe",
-            world: "tetrapoda",
-            kind: "kreatur",
-            gattung: gattung,
-            s: { size: T.size, neck: T.neck, leg: T.leg, diet: T.diet, build: T.build },
-        });
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): die zuletzt gewählte Gattung (Regler-Feintuning löscht die
+           active-Klasse, die Wahl bleibt gemerkt) mit den Dials ihrer Regler-Zeilen aus T (Saat 0 wie der Guss) — künftige
+           Spawns der Gattung tragen sie; der Knopf steht nur im Portal. */
+        werk: function () {
+            var ov = {};
+            __tetrapodaCore.PARAMS_BY_KIND.kreatur.forEach(function (z) {
+                ov[z.id] = T[z.id];
+            });
+            return { kind: "kreatur", preset: gattungAktiv, seed: 0, ov: ov };
+        },
+        werkOrt: document.getElementById("werkOrt"),
     });
 })();

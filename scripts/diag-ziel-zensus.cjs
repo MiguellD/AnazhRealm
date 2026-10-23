@@ -293,8 +293,7 @@ function rundungProbe() {
         const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, faktor: A && A.toArray(), gleich: !!(A && U && U.value === A) };
         if (!A) return Object.assign(aus, { einFrame: true, verbrauch: 0, zurueck: 0 });
         // DREI BILDER EINES FRAMES (W9): vorher, Ausgleich ×2 und zurück zeichnet die Post-Kette über EINEN Szenen-Pass (r184 rendert
-        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn). Bis W9 drei Schüsse zu je 33
-        // Frames: dazwischen änderte die Welt das Bild ohne Regungs-Stempel (CI integ cbc222cc: vorher 107,8, zurück +2,25).
+        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn).
         window.__buehne();
         await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe und die Geschichte der zeitlichen Auflösung
         const db = rend.getDrawingBufferSize(new window.THREE.Vector2()),

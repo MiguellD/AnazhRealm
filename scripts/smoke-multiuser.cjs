@@ -57,7 +57,7 @@ async function run() {
     wsB.send(JSON.stringify({ type: "pos", x: 10, y: 20, z: 30, yaw: 1.5 }));
     await sync();
 
-    // Ring 11 V2: DSL-AST-Broadcast. A sendet voxel_carve → B sollte
+    // DSL-AST-Broadcast. A sendet voxel_carve → B sollte
     // dasselbe Programm zugestellt bekommen, mit peerId-Stempel des Servers.
     const sampleDsl = ["voxel_carve", 4.2, -3.5, 6, 2.5];
     wsA.send(JSON.stringify({ type: "dsl", program: sampleDsl }));
@@ -68,7 +68,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
     await sync();
 
-    // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
+    // Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
     // mit dem peerId-Stempel des Servers.
     wsA.send(
         JSON.stringify({
@@ -156,12 +156,12 @@ async function run() {
     wsA.send(JSON.stringify({ type: "portal-invite", label: "ohne worldId" }));
     await sync();
 
-    // M8 (V18.161) — das Makro-Fenster: der Broker antwortet dem Anfrager
+    // M8 — das Makro-Fenster: der Broker antwortet dem Anfrager
     // mit der Knoten-Gesamtzahl (Räume + Peers), kein Broadcast.
     wsA.send(JSON.stringify({ type: "stats" }));
     await sync();
 
-    // Φ4 (V18.189) — Anwesenheits-Schicht: ein dritter WS joint die
+    // Φ4 — Anwesenheits-Schicht: ein dritter WS joint die
     // Bubble `test-room:r0_0` (eine Region-Bubble derselben Welt), dann
     // fragt A world-presence: der Broker liefert {regions: [{region:"",
     // peers:2}, {region:"r0_0", peers:1}]} (oder gleichwertige Reihenfolge).

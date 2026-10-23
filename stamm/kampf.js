@@ -89,7 +89,7 @@ class AnazhRealm_kampf {
     }
 
     // Der Schwung-Tick (im ewigen Loop, NACH der fixen Sim): läuft auf der ANZEIGE-
-    // Uhr — der Hit-Stop pausiert Gang + Schwung, die FIXE SIM läuft IMMER weiter.
+    // Uhr — der Hit-Stop hält den ganzen Leib und den Schwung an, die FIXE SIM läuft IMMER weiter.
     // In der Strike-Phase fegt der Kapsel-Sweep entlang der Klinge.
     _tickKampfSchwung(currentTime) {
         const p = this.state.player;
@@ -111,10 +111,12 @@ class AnazhRealm_kampf {
     }
 
     // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
-    // (Gang-Phase) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // (der ganze Leib, halten.K2) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // Der Halt ist ein FENSTER [_hitStopAb, _hitStopUntil): eine Zeit vor dem Treffer steht nie darin (eine Probe auf eigener
+    // Uhr nach einem echten Treffer fror sonst bis zu dessen Ende, auf der Uhr des Spiels gleich).
     _hitStopFactor(nowSec) {
         const p = this.state.player;
-        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
+        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil && !(nowSec < p._hitStopAb) ? 0 : 1;
     }
 
     // DIE REICHWEITE DER KLINGE ab dem Schultergelenk: der gestreckte Arm bis zur Hand-Mitte und das Gerät vor der Hand —
@@ -736,7 +738,11 @@ class AnazhRealm_kampf {
         const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
         const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
         const p = this.state.player;
-        if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+        if (p) {
+            p._hitStopAb = nowSec;
+            p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+            p._stoss = Math.max(p._stoss || 0, e); // (4) das Rumble des Treffers (`_rumbleTakt`)
+        }
         this.state._landImpactPending = Math.max(
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e
@@ -859,7 +865,7 @@ class AnazhRealm_kampf {
         const p = this.state.player;
         const d = p && p._bogenDraw;
         if (!d) return;
-        if (!this.state.isPointerLocked || !this._heldBogenRecipe()) {
+        if (!this.state.verbTafel.gehalten.break || !this._heldBogenRecipe()) {
             p._bogenDraw = null;
             this._bogenHudZeige(null);
             return;
@@ -1599,10 +1605,11 @@ class AnazhRealm_kampf {
     // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
     // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
     _tickHarvest() {
-        const p = this.state.player;
-        if (!p || !p.breakHeld) return;
-        if (!this.state.isPointerLocked || this.state.inventoryOpen || this._uiSchubladeOffen()) {
-            p.breakHeld = false;
+        const [p, g] = [this.state.player, this.state.verbTafel.gehalten];
+        if (!p || !g.break) return;
+        // gehalten über die Verb-Tafel (Maus oder Pad); ein verlorener Zeiger löst es an der Tasten-Wand (`_alleTastenLos`)
+        if (this.state.inventoryOpen || this._uiSchubladeOffen()) {
+            g.break = false;
             return;
         }
         const now = performance.now() / 1000;

@@ -1,4 +1,4 @@
-// haenger-linse.cjs — DIE HÄNGER-LINSE (Welle K): jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
+// haenger-linse.cjs — DIE HÄNGER-LINSE: jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
 // Die Hitch-Telemetrie (gate:hitch-telemetrie) zählt je SEKUNDE, nie je Hänger — diese Linse sagt, WER den Frame trug.
 //
 // Ein Hänger ist ein Abstand zweier GERENDERTER Frames über der Schwelle (dieselbe Größe wie `werkbank lauf` frameMs,
@@ -696,7 +696,7 @@ function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_PO
 }
 // Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
 function linseWerten(roh, spur, b) {
-    // ohne `--posten` urteilt die Fahrt ihre Posten (der Vorgabe-Wert): ein leeres [] schwieg sie still grün (integ 93588264)
+    // ohne `--posten` urteilt der Weg seine Posten (der Vorgabe-Wert, `POSTEN_JE_WEG`): ein leeres [] schwieg sie still grün
     if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
     const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });

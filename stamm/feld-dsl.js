@@ -1228,6 +1228,14 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
                     return;
                 }
+                // der gereiste Stempel trägt nur, was der Kern seiner Art ausweist (`_ovVertrag`) — sonst fällt der Bau benannt
+                const bruch = this._ovVertrag(name, studioOv);
+                if (bruch) {
+                    ctx.log.push({ event: "studio_ov_vertrag", name, grund: bruch });
+                    absage(bruch === "buch" ? "buch" : "vertrag");
+                    ergebnis(0);
+                    return;
+                }
                 const ziel = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1241,9 +1249,8 @@ class AnazhRealm_feld_dsl {
                 const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
-                // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
-                // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
-                if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
+                // PRÄGUNG-WELT — der Stempel (im Vertrag, oben) geht an den Sanitize-Chokepoint (spawnArchitecture: Taille-Wand).
+                if (studioOv) opts.studioOv = studioOv;
                 // Ein Werk mit geteilter id steht, wo der Sender es gesetzt hat; sonst wählt das Programm den Ort — er trägt das
                 // ganze Fundament (`_werkOrtSuchen`, nach der Spieler-Klemme der Wurzel), keiner → benannt.
                 const ort = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
@@ -1290,10 +1297,18 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`, {
-                        name: result.name,
-                        parts: valid.parts.length,
-                    });
+                    // ein Name aus fremder Hand (Mitspieler, Werk-Code) geht nie in den Text der Erinnerung — sie liest die KI
+                    const fremd = /^(remote:|teilen)/.test(String(ctx.source));
+                    this.journalAppend(
+                        "growth",
+                        fremd
+                            ? "Ein Bauplan kam von außen."
+                            : AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`,
+                        {
+                            name: result.name,
+                            parts: valid.parts.length,
+                        }
+                    );
                     // Einen EIGENEN Bauplan erschaffen feuert Stolz (joy + hope) ∝ Komplexität, gefärbt von der
                     // Substanz — NUR die Mensch-Geste (nicht Nexus/LLM/remote).
                     if (ctx && ctx.source === "human") this._feelAction("create", { blueprint: result.name });

@@ -618,9 +618,8 @@ class AnazhRealm_klang {
         if (!fz) return;
         if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
         const S = AnazhRealm._fahrSchrittGesetz().S;
-        const FT = AnazhRealm.FAHR_TASTEN;
-        const keys = this.state.keys;
-        const gas = keys[FT.gas.tasten[0]] || (keys[FT.bremse.tasten[0]] && fz.vlong <= S.bremsV) ? 1 : 0;
+        const T = this.state.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
+        const gas = Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0);
         const vmax = e._fahrSatz.vmax;
         s.fahrt.stimme.anwenden(
             { v: fz.vlong, vmax, rueckVmax: vmax * S.rueckVmax, gas, luft: !!fz.luft },
@@ -1186,17 +1185,30 @@ class AnazhRealm_klang {
         // Die Welt-Klang-Wahl führt: state.klangPreset (in der Werkstatt gesetzt, persistiert) wählt das
         // Genre; ohne Wahl oder bei Nicht-klang-Rezept → das Host-Rezept.
         const chosen = this.state && typeof this.state.klangPreset === "string" ? this.state.klangPreset : null;
+        // DIE PRÄGUNG DES GENRES (ws.studioOv, der EINE Übergabe-Kanal und die Werkstatt-Regler): Tempo und DNA über das Genre,
+        // die Skala aus dem Gesetz des Kerns (scaleFor(darkness) + SCALES) — ohne Prägung das Genre selbst (byte-alt).
+        const gepraegt = (k, id) => {
+            const p = this._studioPraegung(id);
+            if (!p || !k) return k;
+            const dna = Object.assign({}, k.dna);
+            for (const a in dna) if (typeof p[a] === "number") dna[a] = p[a];
+            const scaleName = AnazhRealm.Gesetz("klang:scaleFor")(dna.darkness);
+            const scale = AnazhRealm.Gesetz("klang:SCALES")[scaleName].slice();
+            return Object.assign({}, k, { bpm: typeof p.bpm === "number" ? p.bpm : k.bpm, dna, scaleName, scale });
+        };
         if (f && f.recipes) {
             const cRec = chosen ? f.recipes[chosen] : null;
-            const rec = cRec && cRec.kind === "klang" ? cRec : f.recipes[AnazhRealm.KLANG_HOST_RECIPE];
+            const id = cRec && cRec.kind === "klang" ? chosen : AnazhRealm.KLANG_HOST_RECIPE;
+            const rec = f.recipes[id];
             const k = rec && rec.fx && rec.fx.klang;
-            if (k && typeof k === "object") return k;
+            if (k && typeof k === "object") return gepraegt(k, id);
         }
         // Kaltes Buch (Worker aus/Boot-Fenster): die Wahl löst direkt gegen die GENRES-Tafel des
         // klang-Gesetzbuchs auf — dieselbe Quelle, aus der die Rezepte stammen (scaleFor(darkness) + SCALES).
-        return (
-            (chosen ? this._klangGenreAusKern(chosen) : null) || this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE)
-        );
+        const kalt = chosen ? this._klangGenreAusKern(chosen) : null;
+        return kalt
+            ? gepraegt(kalt, chosen)
+            : gepraegt(this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE), AnazhRealm.KLANG_HOST_RECIPE);
     }
 
     // Genre-Leser des klang-Gesetzbuchs (kalte-Buch-Brücke von _klangStudioPreset): Rezept-Id →

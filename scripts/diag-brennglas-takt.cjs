@@ -21,7 +21,7 @@
 //   (A) ARBEIT: der Brennglas-Takt fasst je Takt höchstens die Betroffenen an — die warmen Einträge und, wenn die Sonne durch ein
 //       Glas scheint, die Plätze in Reichweite der Gläser;
 //   (N) DIE NÄHE: Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
-//       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
+//       über ihr Verzeichnis und kosten die Nähe — eine
 //       ferne Menge derselben Namen (300–3 000 je Name) greift kein Takt an (WELTGRÖSSE rot ab dem ersten Griff je Ruf, gezählt
 //       an ihrem Platz und ihrer Zellen-Marke, nie an der Uhr), die Gegenprobe (das Orakel) greift jeden ihres Namens (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
@@ -477,7 +477,7 @@ async function probe() {
     const st = r.state;
     const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
-    // DAS ORAKEL: der Brennglas-Takt von main V18.536 (76c9624d) im Wortlaut — die Schleife über den ganzen Bestand
+    // DAS ORAKEL: der Brennglas-Takt von main V18.536 im Wortlaut — die Schleife über den ganzen Bestand
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
@@ -1062,7 +1062,7 @@ async function probe() {
         });
         st.playerMesh.position.set(echt.x, echt.y, echt.z);
     }
-    // (N) DIE NÄHE (K54): die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
+    // (N) DIE NÄHE: die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
     // nächste Affordanz (der Portal-Takt je Frame) — urteilen wie die Schleife über ihr Verzeichnis (das ORAKEL, der Takt von main
     // 9fb869a5 im Wortlaut) und kosten die NÄHE: eine ferne Menge derselben Namen (Strahler, Masten, …) ändert ihre Zeit nicht.
     aus.naehe = window.__naeheProbe(r, st, AR, P, setze, stelle, ox - 700, oz);
@@ -1236,8 +1236,8 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         tor: w[5] != null,
         strahler: w[6].filter((k) => /^radiating/.test(k)).length,
     };
-    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilte unter Last falsch, CI 39471460860: die
-    // Gegenprobe „balancieren" 0,0117 → 0,0253 ms, BLIND): jeder Griff eines Takts an einen Eintrag der fernen Menge — sein
+    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilt unter Last falsch): jeder Griff eines
+    // Takts an einen Eintrag der fernen Menge — sein
     // Platz (`position`) oder die Marke der Zellen-Frage (`_blockerFrage`) — zählt; ein Ruf nach einem Ruf zum Anwärmen.
     let griffe = 0;
     const arbeit = (T) => {

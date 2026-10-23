@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7 — jede Zahl zuerst ROT am Vorher, die
+// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Klassen Q6 + Q7 — jede Zahl zuerst ROT am Vorher, die
 // Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
@@ -49,7 +49,7 @@ const SCHWELLE = {
     grabenBauten: 300, // Sheet-Bauten bis zur Ruhe (F3; Bau-Ereignisse, nie Takte — die warten auf den Worker; Basis 2353–2609)
 };
 
-// B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
+// B6 HASH: das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
 // ±π beliebig ungenau (swiftshader rechnet sin genau und sieht nichts). Die Absenz über den EINEN Helfer (stammLib.fehlt: das Glied
 // am Namen, Kommentare fallen, ein fehlender Stoff wirft) nennt die Zeile; `quelle` ein Text statt des Stamms (Selbsttest).
 const hashSin = (quelle) => (stammLib.fehlt("_ensureHydroSurfaceMaterial", /\bsin\s*\(/, quelle) ? null : stammLib.fehlt.wo);
@@ -121,7 +121,7 @@ function urteil(b) {
     }
     if (b.quelle) {
         const q = b.quelle;
-        // F5 KACHELN (K61): die Probe misst genau ihre Kacheln (`QUELL_KACHELN`) — eine fehlende ist ein Schrumpfen, nie grün
+        // F5 KACHELN: die Probe misst genau ihre Kacheln (`QUELL_KACHELN`) — eine fehlende ist ein Schrumpfen, nie grün
         const gemessen = Array.isArray(q.kacheln) ? q.kacheln : [];
         const fehlen = QUELL_KACHELN.filter((k) => gemessen.indexOf(k) < 0);
         const fremd = gemessen.filter((k) => QUELL_KACHELN.indexOf(k) < 0);
@@ -777,7 +777,7 @@ function selbsttest() {
         ["G LEER", (b) => (b.graben.graeben[1].nass = 378)],
         ["G: kein Fluss", (b) => (b.graben = { fehler: "kein Fluss am Ort" })],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
-        // DIE TEILE (K61): die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
+        // DIE TEILE: die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
         // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
         [
             "F5: die Teile der Quell-Probe sehen verschiedene Kacheln",
@@ -825,7 +825,7 @@ function selbsttest() {
         console.log("  ❌ der grüne Befund fällt rot:", g);
         rot++;
     } else console.log("  ✅ der grüne Befund bleibt grün");
-    // die Teile zusammen urteilen wie das Ganze (K61): der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
+    // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
     {
         const q = gut.quelle;
         const halb = (k) => (k === "huelle0" || k === "regionen" || k === "kacheln" ? q[k] : null);
@@ -874,7 +874,7 @@ function selbsttest() {
 if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
-// DIE TEILE DER QUELL-PROBE (K61): so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die
+// DIE TEILE DER QUELL-PROBE: so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die
 // Seite der Wand rechnet daneben ihre übrigen Proben); 1 = alles in einer Seite. Jeder Teil k ≥ 1 in einem EIGENEN Kontext:
 // die Welt laden, der Strom ans Ufer der Orte der Wand (EINE Quelle der Orte für jede Seite), dann die Quellen seines Teils in
 // den Kacheln der Probe (`QUELL_KACHELN`, jede Seite stellt sie selbst her).

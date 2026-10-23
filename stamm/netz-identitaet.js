@@ -597,6 +597,132 @@ class AnazhRealm_netz_identitaet {
         return ok ? "valid" : "forged";
     }
 
+    // ### Teilen in EINER Geste: Signatur → Code → spawn_blueprint ###
+    // DAS PROGRAMM EINES REISENDEN WERKS (EIN Weg, Gebot 4): was zum Mitspieler geht (`confirmBuild` → P2P) und was ein Code
+    // trägt (`teileWerk`) ist DASSELBE DSL-Programm — spawn_blueprint (Slot 3 Same, 6 Stempel oder null, 7 Drehung), ein
+    // EIGENER Bauplan als define_blueprint davor (sonst kennt der Empfänger ihn nicht). Was das Buch jedem Empfänger selbst
+    // registriert (`_foundryAutoSpecies`, fahrzeug_gt), reist nie als Teile — bis hier schickte der Bau eines Studio-Wagens die
+    // Donor-Teile mit (Code > 4 KB), und define_blueprint überschrieb beim Mitspieler den Bauplan seines Buchs.
+    _werkProgramm(name, posNode, seed, archId, stamp, dreh) {
+        const spawn = ["spawn_blueprint", name, posNode, seed, archId, stamp || null, dreh];
+        const bp = this.state.blueprints[name];
+        return this._werkEigen(bp) ? ["chain", ["define_blueprint", name, bp.parts], spawn] : spawn;
+    }
+
+    _werkEigen(bp) {
+        return !!bp && !bp.builtIn && !bp._foundryAutoSpecies && Array.isArray(bp.parts);
+    }
+
+    _werkKanon(programm) {
+        return JSON.stringify({ v: 1, programm });
+    }
+
+    // Versiegelt ein reisendes Programm mit dem Vibe-Pass → EIN Code (`WERK_CODE.praefix` + base64url der Hülle
+    // { v, programm, autor, sig }). Die Signatur deckt v + programm. { ok, code } | { ok:false, grund }.
+    async _werkCode(programm) {
+        const sig = await this._vibeSign(this._werkKanon(programm));
+        if (!sig) return { ok: false, grund: "sign_failed" };
+        const huelle = JSON.stringify({ v: 1, programm, autor: this.state.vibePass.publicKeyHex, sig });
+        const code = AnazhRealm.WERK_CODE.praefix + this._vibeBytesToB64u(new TextEncoder().encode(huelle));
+        return code.length <= AnazhRealm.WERK_CODE.max ? { ok: true, code } : { ok: false, grund: "gross" };
+    }
+
+    // DIE GESTE DES SENDERS: das Werk der Werkstatt — Bauplan, Same der Vorschau (`_werkSame`), Stempel (`_studioStampFor`) —
+    // als reisendes Programm ohne Ort und Id (der Empfänger stellt es an SEINE Pose), versiegelt durch die EINE souveräne Geste.
+    async teileWerk(name, opts) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, grund: "unbekannt" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, grund: "no_vibepass" };
+        const was = {
+            what: `Werk „${this._werkLabel(name)}" teilen`,
+            value: "deine Signatur bürgt dafür",
+            whom: "jeden mit dem Code",
+        };
+        if (!this._sovereignGesture("sign_manifest", was, opts)) return { ok: false, grund: "cancelled" };
+        const seed = this._werkSame(bp, name, null);
+        return this._werkCode(this._werkProgramm(name, null, seed, null, this._studioStampFor(name), 0));
+    }
+
+    // DIE GESTE DES EMPFÄNGERS: ein Code (Chat) → dasselbe Werk an der eigenen Pose. Jede Wand fällt LAUT und beim Namen
+    // (`WERK_CODE.grund`, fail-closed — nichts wird geschrieben, bevor alle tragen): das Programm ist genau spawn_blueprint, ein
+    // eigener Bauplan als define_blueprint davor (op:<verb> für jedes andere), der Name folgt dem Muster der Baupläne (keine
+    // Schrift aus fremder Hand), die Teile dem Bau-Vertrag (`validateBlueprintParts`), der Stempel dem Vertrag des Kerns
+    // (`_ovVertrag`), die Signatur dem Autor (ed25519). Fremde Felder der Hülle trägt Vertrag v1.2 als must-ignore: benannt, nie
+    // gelesen. Ein Name, den die Welt schon eigen trägt, kommt umbenannt (nie überschrieben). { ok, id, name, autor, fremd }.
+    async empfangeWerk(code, opts = {}) {
+        const W = AnazhRealm.WERK_CODE;
+        const ab = (grund) => {
+            this._spielerSagt(`Geteiltes Werk abgewiesen: ${W.grund[grund.split(":")[0]]} (${grund}).`);
+            return { ok: false, grund };
+        };
+        if (typeof code !== "string" || !code.startsWith(W.praefix)) return ab("kein_code");
+        if (code.length > W.max) return ab("gross");
+        let h = null;
+        try {
+            const bytes = this._vibeB64uToBytes(code.slice(W.praefix.length));
+            h = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+        } catch (_e) {
+            return ab("kaputt");
+        }
+        if (!h || typeof h !== "object" || Array.isArray(h)) return ab("kaputt");
+        if (h.v !== 1) return ab("version");
+        const p = h.programm;
+        const kette = Array.isArray(p) && p[0] === "chain";
+        const [def, spawn] = kette ? [p[1], p[2]] : [null, p];
+        const verb = (n, soll) =>
+            Array.isArray(n) && n[0] === soll
+                ? null
+                : "op:" +
+                  String(Array.isArray(n) ? n[0] : "form")
+                      .replace(/[^\w-]/g, "?")
+                      .slice(0, 32);
+        const bruch =
+            kette && p.length !== 3
+                ? "op:chain"
+                : (def && verb(def, "define_blueprint")) || verb(spawn, "spawn_blueprint");
+        if (bruch) return ab(bruch);
+        if (spawn.length > 7 || spawn[2] != null || spawn[4] != null || (def && def.length !== 3)) return ab("form");
+        const name = spawn[1];
+        if (typeof name !== "string" || !/^[a-z0-9_-]{1,40}$/i.test(name) || (def && def[1] !== name))
+            return ab("name");
+        if (!Number.isInteger(spawn[3]) || spawn[3] < 0 || spawn[3] > 0xffffffff) return ab("same");
+        if (spawn[6] != null && !Number.isFinite(spawn[6])) return ab("drehung");
+        const eigen = this.state.blueprints[name];
+        if (def) {
+            if (eigen && !this._werkEigen(eigen)) return ab("builtin:" + name);
+            const teile = this.validateBlueprintParts(def[2]);
+            if (!teile.ok)
+                return ab(
+                    "teile:" +
+                        String(teile.reason)
+                            .replace(/[^\w:-]/g, "?")
+                            .slice(0, 48)
+                );
+        } else if (!eigen) return ab("unbekannt:" + name);
+        const vertrag = this._ovVertrag(name, spawn[5]);
+        if (vertrag) return ab(vertrag);
+        if (typeof h.autor !== "string" || typeof h.sig !== "string") return ab("unsigniert");
+        if (!(await this._vibeVerify(this._werkKanon(p), h.sig, h.autor))) return ab("signatur");
+        let ziel = name;
+        for (let n = 1; def && this.state.blueprints[ziel]; n++) ziel = `${name.slice(0, 30)}-geteilt${n > 1 ? n : ""}`;
+        const s = spawn.slice();
+        [s[1], s[2]] = [ziel, opts.pos || ["at_player_forward", W.abstand]];
+        const lauf = this.dslRun(def ? ["chain", ["define_blueprint", ziel, def[2]], s] : s, { source: "teilen" });
+        const steht = lauf.log.find((e) => e.event === "spawned_blueprint" && e.id != null);
+        if (!steht) return ab("steht_nicht:" + ziel);
+        const fremd = Object.keys(h)
+            .filter((k) => !["v", "programm", "autor", "sig"].includes(k))
+            .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
+        if (fremd.length)
+            this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
+        this.journalAppend("witness", `Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`, {
+            name: ziel,
+        });
+        this._spielerSagt(`Geteiltes Werk steht: ${this._werkLabel(ziel)} (von ${this._vibeFingerprint(h.autor)}).`);
+        return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
+    }
+
     // ### Welt-Manifest-Signatur ###
     // Spiegelt die Bauplan-Signatur: der Spieler versiegelt eine Welt mit SEINEM Vibe-Pass (kein
     // Projekt-Schlüssel, keine zentrale Autorität). Spieler-global in state.signedWorlds + localStorage
@@ -2090,3 +2216,30 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
+// DER WERK-CODE (Teilen in EINER Geste): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des Empfängers und je
+// Wand der Satz des Spielers (`empfangeWerk` nennt jede Absage beim Namen — der Schlüssel ist der Kopf des Grunds).
+AnazhRealm.WERK_CODE = Object.freeze({
+    praefix: "anazh-werk:",
+    max: 4096,
+    abstand: 12,
+    grund: Object.freeze({
+        kein_code: "das ist kein Werk-Code",
+        gross: "der Code ist größer als 4 KB",
+        kaputt: "der Code ist beschädigt",
+        version: "der Code spricht eine fremde Version",
+        op: "der Code trägt ein Verb, das ein geteiltes Werk nie trägt",
+        form: "das Programm hat nicht die Form eines Werks",
+        name: "der Name ist kein Bauplan-Name",
+        same: "der Same ist keine ganze Zahl",
+        drehung: "die Drehung ist keine Zahl",
+        unbekannt: "diese Welt kennt den Bauplan nicht",
+        builtin: "ein fremder Bauplan überschreibt keinen der Welt",
+        teile: "ein Teil steht nicht im Bau-Vertrag",
+        regler: "der Stempel trägt einen Regler, den das Studio nicht ausweist",
+        band: "ein Regler liegt außerhalb seines Bands",
+        buch: "das Studio-Buch ist noch nicht geladen",
+        unsigniert: "der Code ist nicht signiert",
+        signatur: "die Signatur passt nicht zum Werk",
+        steht_nicht: "das Werk fand an deiner Pose keinen Grund",
+    }),
+});

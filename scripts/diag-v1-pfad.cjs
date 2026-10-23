@@ -2509,9 +2509,9 @@ async function feindHaupt(quelle) {
                 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");',
                 "p.renderer.render(p.scene, p.camera);",
             ],
-            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
+            // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
+            // der Rest der Klasse beim Vorher: der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             [
                 "_dslRulePos",
                 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
@@ -2528,14 +2528,14 @@ async function feindHaupt(quelle) {
                 "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");',
             ],
-            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
+            // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             [
                 "_heldFoundryGroup",
                 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {",
             ],
         ]);
-        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
+        // die Klasse der festen Stellen-Zahl: ein Renderer weniger über die Bühne bleibt grün
         const weniger = wand(
             stammLib.ersetze(
                 quelle,
@@ -2874,7 +2874,7 @@ async function feindHaupt(quelle) {
                 v.join(" · ")
             );
         }
-        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand (c52089c7) der Täter beim Namen.
+        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const kGesund = (name) => {
             const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
             return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };
