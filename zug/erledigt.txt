@@ -2,3 +2,4 @@ z6-punkte gemessen punkte 6579e8f4 gtx: 20 grün / 8 rot
 z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
 z9-abab nicht-langsamer abab a2b28770 gegen f7dd313c: w-ego 2+2 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer · fahrt 4+4 nicht-langsamer
 z9-abab-berichtigt UNENTSCHIEDEN die Zeile 'nicht-langsamer' von z9-abab ist falsch: alle A-Boots leer (das Instrument aus B bootete A nicht), der Richter liess leere Kern-Groessen fallen statt UNENTSCHIEDEN zu urteilen (behoben)
+z9c-abab nicht-langsamer abab 13c95713 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
