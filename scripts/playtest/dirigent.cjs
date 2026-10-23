@@ -8,7 +8,7 @@ const SK = require("../lib/shader-kosten.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-// V9.52 Sub-Welle a — die Basis-Invarianten direkt nach dem `finalState`-Greifen.
+// die Basis-Invarianten direkt nach dem `finalState`-Greifen.
 // Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
 function checkInitialState(ctx) {
     const { check, finalState } = ctx;
@@ -92,7 +92,7 @@ function checkRing1Grok(ctx) {
     );
 }
 
-// V17.78 Welle 2 Schritt 2 — die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
+// die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
 // polierscheibe RAUS (die Werkstatt trägt jetzt die Präzision, V17.76/.77). hände bleibt die domain-
 // neutrale Baseline; die Op-Klassen-Abdeckung + der Crafting-Pfad bleiben intakt (kein Material verwaist).
 async function checkBandV1778LadderCut(ctx) {
@@ -102,7 +102,7 @@ async function checkBandV1778LadderCut(ctx) {
         const out = {};
         const tools = r.state.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
-        // V17.88 — nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
+        // nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
         // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
         out.keptPresent =
             !!tools["hände"] &&
@@ -267,9 +267,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
-        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die
-        // per-Subsystem-Spikes (vorher blind: Render gar nicht gemessen, Hitches
-        // EWMA-weggemittelt). CONSUM: der Fold füllt die Felder, Loop + Overlay lesen sie.
+        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
+        // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
             typeof st.perfSense.renderCalls === "number" &&
             typeof st.perfSense.renderTris === "number" &&
@@ -721,7 +720,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
-        // (A1b) gen-Default für FRESH ist 9 (V18.216 KARST + Büsche)
+        // (A1b) gen-Default für FRESH ist 9 (KARST + Büsche)
         const newMeta = r._generateFreshWorldMeta("test-v18214");
         out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 9;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
@@ -741,7 +740,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         out.a1ManyVariants = keys.size >= NVar;
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
-        // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
+        // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
@@ -777,7 +776,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             const sm0 = r.getGameMode();
             try {
                 r.setGameMode("pfad");
-                // ECHTE Leiber (Welle LF): die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
+                // ECHTE Leiber: die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
                 // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
                 // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
                 const savedC = r.state.creatures;
@@ -926,7 +925,7 @@ async function checkBandV18210Verdrahtung(ctx) {
                 r.state.creatures = [jaeger, beute];
                 jaeger.userData.nextHuntStrikeAt = -Infinity;
                 const struck = r._tickCreatureScentStrike(jaeger);
-                // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
+                // DER BISS IST DER ANSPRUNG (Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
                 // der feste Sim-Schritt der Leiber), bis das Maul am Leib schnappt (höchstens 1,5 s; die Beute steht still)
                 for (let k = 0; struck && k < 90; k++) {
                     const A0 = jaeger.userData._verhaltenAktion;
@@ -954,7 +953,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A4: MANA-KONSUMENT γ ==============
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode();
-        // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
+        // saubere Test-Hygiene: state vorher
         // SCHNAPPEN (Stat-Felder + tools-Liste), nachher EXAKT restaurieren.
         const savedManaA4 = r.state.player.mana;
         const savedManaMaxA4 = r.state.player.manaMax;
@@ -1017,7 +1016,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a4Error = String(e && (e.message || e));
         } finally {
             r.setGameMode(sm);
-            // V18.210 (Audit-Heilung #5) — exakt restaurieren, damit
+            // exakt restaurieren, damit
             // nachfolgende Bands den Spieler frisch sehen (sonst leaken
             // ritueller-stab im Werkzeug-Inventar + Stat-Drift).
             r.state.player.mana = savedManaA4;
@@ -1085,7 +1084,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
 }
 
-// DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
+// DAS RAUSCH-GESETZ (der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
 // Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 70 Ladungen des Atlas im Graph — 7 Raum-
@@ -1219,16 +1218,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
             const fr = [];
             for (const [count, k] of seq)
                 for (let i = 0; i < count; i++)
-                    fr.push({
-                        dt: DT,
-                        yaw: 0,
-                        w: !!k.w,
-                        a: !!k.a,
-                        s: !!k.s,
-                        d: !!k.d,
-                        shift: !!k.shift,
-                        space: !!k.space,
-                    });
+                    fr.push({ dt: DT, yaw: 0, vor: (k.w ? 1 : 0) - (k.s ? 1 : 0), quer: k.d ? -1 : 0, sprint: false, sprung: !!k.space });
             return fr;
         };
         const sy = r.getTerrainHeightAt(0, 0);
@@ -1347,9 +1337,8 @@ async function checkBandPerfPanel(ctx) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): Schöpfer-Trace 14.07. — die render-gebundene
-// Maschine hielt das deferrable-Budget ≤ 0, `break` ließ die Substanz-Queues monoton wachsen (Heap +1,6 MB/s, Wasser mit
-// Schwimm-Physik ohne Oberfläche). Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): ein Budget ≤ 0 lässt die Substanz-Queues
+// nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden(ctx) {
     const { page, check } = ctx;
@@ -1383,7 +1372,7 @@ async function checkBandExistenzBoden(ctx) {
         let sondeLief = false;
         r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
         res.bodenIstBoden = sondeLief === false;
-        // (d) DER DAUER-STROM (K40): gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
         const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
         const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
         const altStrom = r._tickVoxelChunkStreaming;
@@ -1461,7 +1450,7 @@ async function checkBandGodray(ctx) {
     );
 }
 
-// Die EINE Szenen-Skala (K50) + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
 // einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
@@ -1713,8 +1702,7 @@ async function checkBandReglerSim(ctx) {
                 const s6NachPuls = st.foliageRadius;
                 o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
                 o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
-                // DIESELBE Wand trägt den Architektur-Radius (04.10.: er folgte dem PID Frame für Frame, 100↔150 m,
-                // Rand-Bauten im Cull/Rewarm-Kreis — die großen Bundles nahmen je Frame neu auf).
+                // DIESELBE Wand trägt den Architektur-Radius (er folgt dem PID nie Frame für Frame).
                 const s6ArchNachPuls = st.architectureCullingRadius;
                 o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
                 o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;

@@ -1,8 +1,8 @@
-// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6).
+// wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN.
 //
 // Die Nah-Wiese legt ihre Senken (`nahWiese:L<stufe>:<v>:<teil>`, jede ein oberster Knoten der Szene) je Frame im
 // Haupt-Pass neu: `_passSicht` → `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
-// anzahl 0, und eine Prüfung „dicht nach 7 Umzügen" wäre leer bewiesen (Gegenprüfung W6, ROT 2). Die Linse stellt die
+// anzahl 0, und eine Prüfung „dicht nach 7 Umzügen" wäre leer bewiesen. Die Linse stellt die
 // Voraussetzung HER, statt auf den Weltzustand zu hoffen: eine Linsen-Kamera am Ring-Mittelpunkt (die Spiel-Kamera,
 // um die `_tickNahWiese` die Kacheln legt), 1,7 m über dem Boden, 90° Blick auf den nächsten Büschel jenseits 2 m —
 // dann EIN Aufruf des echten Sicht-Satzes. `himmel` blickt senkrecht nach oben (der Selbsttest: kein Büschel im Blick,
@@ -76,7 +76,7 @@ function installWieseSicht() {
         o.erwartet = window.__wieseErwartet(r, kam, S.frustum);
         return o;
     };
-    // DAS SOLL JE SENKE (Integration W5 × W6): wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
+    // DAS SOLL JE SENKE: wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
     // Büschels im Frustum der Linsen-Kamera (die Sicht-Kugel des Büschels umschließt ihren Fuß: jeder solche Büschel
     // trifft), das Rand-Band dünnt wie im Satz (Würfel-Ordnung gegen den Anteil), die Stufe nur, wo sie ohne Hysterese
     // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2). Ein dünner Ring (der Waldboden unter der

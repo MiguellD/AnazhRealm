@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Befund (OMEN 0710-6, V18.535-ABAB, verworfene Boots): die Bühne
-// hielt das Wetter (gate:wetter-wache), aber keinen anderen Zug — im Boot 4B setzte der Nexus mitten im Lauf ein Dorf (die
-// Gier sprang), in anderen Boots kamen Tiere at_player, Größen- und Tempo-Würfel, die Tageszeit. Jeder solche Zug ist ein
-// Welt-Akt der DSL, und alle laufen durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung
-// (`_messHalt`, dieselbe eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`)
-// und nennt ihn beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie
-// es ist. Die Wand (Null-Renderer, eine echte Welt):
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
+// durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung (`_messHalt`, dieselbe
+// eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`) und nennt ihn
+// beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie es ist.
+// Die Wand (Null-Renderer, eine echte Welt):
 //   (H) HALT: unter der Bühne versucht jeder Weg des Spiels die Welt zu ändern — Nexus (`_loopNexusUpdate`: Dorf far_player,
 //       Tiere at_player, Größen- und Tempo-Würfel, Tageszeit, Lauf-Tempo, Himmel), Emotion (`updatePlayerEmotions`, chaos →
 //       Tempo-Würfel), Gesetz (`_tickWorldRules`), Mensch, Mitspieler (DSL-Quelle `remote:`), ein verzögertes Programm

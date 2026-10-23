@@ -478,9 +478,7 @@ async function probe(K) {
         else if (oben > obenTol)
             funde.push({ art: "blocker", wer, ort, mass: oben, wo: "oben", bild: bildTxt, box: boxTxt });
         // (U) das Bild im Körper-Band gegen die Boxen (feste Werke). DIE PASSAGE des Tors (|x| < rimAx im Vorlagen-Raum) ist
-        // nach dem Gesetz frei — dort öffnen sich die Flügel vor dem Körper (TUER_GESETZ); gemessen 10.10.: die einzigen
-        // Punkte des Tor-Bilds ohne Box lagen dort (x ≈ 0, 0,1–2,0 m, die Fuge der geschlossenen Flügel), 1,27–1,49 m neben
-        // dem Pfosten.
+        // nach dem Gesetz frei — dort öffnen sich die Flügel vor dem Körper (TUER_GESETZ).
         const torG = kind === "gate" ? r._torGesetzFor(e) : null;
         const passage = torG && torG.mu ? torG.mu.rimAx : 0;
         let neben = 0,

@@ -211,12 +211,12 @@ async function driveImpostor(page) {
     });
 }
 
-// DIE RUHE VOR TEIL C (S2b-n2, CI 39023416317): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
+// DIE RUHE VOR TEIL C (S2b-n2): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
 // Teil A bestellte, legt bei ihrer Ankunft ihre Zelle in ihm an (`_foundryZug` → `nach` → `_foundryEnsureImpostorRecord`). Ab
 // der neunten wächst er, das rgba8-Ziel wächst leer und die Probe-Karten backen nie nach (der Null-Renderer der Welt backt
 // nicht): die Wand sah 0 px, je nachdem, wie viele Lieferungen der Läufer noch trug (Zelle der Eiche in A: Schicht 0 rot,
-// Schicht 10 grün). Jede Probe leiht der Welt den echten Renderer: was sie noch baut, landet im Probe-Atlas (OMEN 21.10.: 5
-// fremde Karten). Teil C beginnt, wenn die Welt steht (A9) — Selbsttest: eine wartende Karte hält die Ruhe.
+// Schicht 10 grün). Jede Probe leiht der Welt den echten Renderer: was sie noch baut, landet im Probe-Atlas. Teil C
+// beginnt, wenn die Welt steht (A9) — Selbsttest: eine wartende Karte hält die Ruhe.
 async function weltRuht(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
@@ -383,7 +383,7 @@ async function kleberProbe(page, fmtWunsch) {
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
-            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
+            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt)
             const vorlagen = () =>
                 (mesh.__renderObjekte || [])
                     .flatMap((ro) => ro.getNodeBuilderState().bindings.flatMap((g) => g.bindings))

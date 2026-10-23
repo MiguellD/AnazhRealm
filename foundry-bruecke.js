@@ -707,7 +707,25 @@ const foundryKanal = (() => {
         try {
             if (typeof PARAMS_BY_KIND === "object") __mergeParamsMap(PARAMS_BY_KIND);
         } catch (_e5) {}
-        return { book, paramsByKind };
+        // B7 (studios.K5) — DIE WIRTS-ZEILE EINER ART REIST IM BUCH: jeder Zweit-Kern mit `KIND_POLICY` traegt je Art seine
+        // Zeile bei (Bauplan-Praefix + Substanz), disjunkt first-wins wie das Buch, die Kern-id als Herkunft (`kern`). Der
+        // Wirt prueft und vereint am EINEN Ingest (`_kindPolicyVereinen`, fail-closed laut) — eine neue Art braucht keine Zeile
+        // im Wirt. Ohne Block (die acht Gesetzbuecher des Spiels): {}. Eine nicht klonbare Zeile reist ohne Praefix (der Wirt
+        // nennt sie).
+        const kindPolicy = {};
+        for (const zk of __zweitKerne()) {
+            const KPk = zk.kern.KIND_POLICY;
+            if (!KPk || typeof KPk !== "object") continue;
+            for (const kind of Object.keys(KPk)) {
+                if (kindPolicy[kind]) continue;
+                let z = { kern: zk.id };
+                try {
+                    z = Object.assign(JSON.parse(JSON.stringify(KPk[kind])), z);
+                } catch (_e6) {}
+                kindPolicy[kind] = z;
+            }
+        }
+        return { book, paramsByKind, kindPolicy };
     }
     // SYNERGIE-WELLE — DER EINE UMSCHLAG: das komplette Studio-Buch (Rezepte +
     // Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Reply — der
@@ -722,6 +740,7 @@ const foundryKanal = (() => {
                     reqId: msg && msg.reqId,
                     book: bp.book,
                     paramsByKind: bp.paramsByKind,
+                    kindPolicy: bp.kindPolicy,
                     worldParams: __worldParamsPayload(),
                     renderConfig: __renderConfigPayload(),
                     // SPIEGEL-ZENSUS 17.07. — das Siedlungs-Existenz-Gesetz

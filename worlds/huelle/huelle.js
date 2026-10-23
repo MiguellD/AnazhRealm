@@ -13,10 +13,13 @@
  *                              `schritt(fn)` macht aus jeder Tat (Preset, Kultur, Würfel) EINEN Rückgängig-Schritt.
  *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
  *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
- *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt.
+ *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
+ *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`).
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
+ *                              DER EINE ÜBERGABE-KANAL: `werk(kind, preset, seed, ov)` schickt das Werk des Studios in die
+ *                              Welt, der Knopf „In der Welt ansehen" (opt.werk) schickt es und kehrt heim.
  *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
  *                              ihrem eigenen Renderer, EINE CPU-Faltung für jede Engine — das Labor liest es selbst
  *                              (textur), die Brücke exportiert es (daten; unter r184 WebGPU ein Versprechen);
@@ -585,6 +588,10 @@
             messen: function (obj, s) {
                 zeigen(s == null ? stufen[0] : s, zaehle(obj));
             },
+            // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer }) — die Welt-Werkstatt zählt das Werk der Foundry
+            setzen: function (s, c) {
+                zeigen(s, c);
+            },
             // die Welt-Gestalt neu messen (entprellt, eine Stufe je Leerlauf — der Regler-Zug bleibt frei)
             neu: function () {
                 if (!opt.bauen) return;
@@ -846,7 +853,9 @@
     //      scene, kamera | ort, verbergen } oder { bild(ctx, w, h) } (die flache Welt), auch als Versprechen — DER EXPORT DES
     //      ZIEL-BILDS (D8): fragt die Heimat `{ type: "panorama-bitte" }`, rendert die Hülle das Panorama der Welt (`panorama`
     //      bzw. `panoramaBild`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-Texel, übertragen);
-    //      eine Welt ohne panorama() antwortet laut mit `fehler`
+    //      eine Welt ohne panorama() antwortet laut mit `fehler` · werk() → { kind, preset, seed, ov } das Werk der Bühne (Art und
+    //      Rezept des Kerns, der Same des Baus, die Werte seiner Regler-Zeilen aus PARAMS_BY_KIND, beim Körper dazu die Wahlen)
+    //      oder null (die Bühne trägt kein Werk des Vertrags) · werkOrt das Element, das den Knopf trägt (sonst schwebt er)
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
@@ -866,14 +875,32 @@
             }
             if (opt.wort) opt.wort(programm[0].toLowerCase().trim(), programm.slice(1));
         }
+        // DER EINE ÜBERGABE-KANAL (pipeline.K1): das Werk reist als EINE Nachricht, die Welt schreibt es in ihren Prägungs-
+        // Speicher (`_studioUebergabeEmpfang`) — kein Studio postet eine Übergabe selbst (gate:studio-uebergabe).
+        function werk(kind, preset, seed, ov) {
+            post({ type: "uebergabe", world: opt.welt, kind: kind, preset: preset, seed: seed, ov: ov || {} });
+        }
         var B = {
             post: post,
             wirke: wirke,
+            werk: werk,
             ereignis: function (text) {
                 post({ type: "event", text: String(text) });
             },
         };
         if (!eltern) return B;
+        if (opt.werk && doc && doc.body) {
+            var knopf = el("button", "h-werk" + (opt.werkOrt ? "" : " h-werk-frei"), "In der Welt ansehen");
+            knopf.type = "button";
+            knopf.title = "Das Werk der Bühne reist in die Welt: das nächste gesetzte Werk dieser Art trägt es";
+            knopf.addEventListener("click", function () {
+                var w = opt.werk();
+                if (!w) return toast("Diese Bühne trägt kein Werk des Vertrags — ihre Regler sind keine Zeilen des Kerns");
+                werk(w.kind, w.preset, w.seed, w.ov);
+                post({ type: "exit", world: opt.welt });
+            });
+            (opt.werkOrt || doc.body).appendChild(knopf);
+        }
         wurzel.addEventListener("message", function (ev) {
             if (ev.source !== eltern) return;
             var m = ev.data;

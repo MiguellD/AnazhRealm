@@ -165,7 +165,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 : null;
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
-            // Welle L (V-k5): near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
+            // near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
             // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
             // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
             const pm0 = r.state.playerMesh.position;
@@ -353,10 +353,10 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 }
 
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
-// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf (vorher NULL = Part-Pfad, die „alten Kristalle"); die Ausstattung
-// (glutbrunnen · marktstand_dorf · brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der
-// Architektur; das Glut-Genom ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt
-// nie auf das welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
+// brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
+// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
+// welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
 async function checkBandKristallKleid(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
@@ -440,7 +440,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
         // Baum-Namen UND einen nicht-foundry Leaf (numerischer Index / `grown_…`-Grammatik-Bauplan).
-        // Welle B: ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
+        // ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
         const leafOf = (k) => { const i = k.indexOf("#"); if (i >= 0) return k.slice(i + 1); return /^(f:|fimp:)/.test(k) ? k : ""; };
         const isFoundry = (k) => k.startsWith("fscatter:") || /^(f:|fimp:)/.test(leafOf(k));
         const isTreeName = (k) => /(^|[#@:_])baum_[a-z]+/.test(k) || /grown_baum_/.test(k);
@@ -498,7 +498,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 } catch (_e) {}
                 if (i % 15 === 0) await sleep(15);
             }
-            // DIE WARTENDEN REGIONEN (V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
             // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
             // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
             // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —
@@ -507,8 +507,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
                 const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
-                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
-                // — der Streamer lief noch nie — als „keine wartet")
+                // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                 await window
                     .__gebautNach("die Streu um den Spieler und der Vorrat", {
@@ -582,7 +581,7 @@ async function checkBandLeistungsVertrag(ctx) {
             // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
                 // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
-                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // Karte) und jede Region der Karte, die noch wartet
                 // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
                 const ringWartet = () => {
                     const liste = [];
@@ -600,7 +599,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
                 // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
                 // keine wachsende Siedlung). Ein Bau dauert 0,1–25 s; zwei ruhige Batches sind ein Takt-Maß, keine Uhr — am
-                // langsamen CI-Läufer (integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
+                // langsamen CI-Läufer
                 // lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal mit 3 s späteren Worker-Antworten
                 // 88 Mints, 80 → 168. K10-6: der eigene Zähler (Foundry allein) sah den Dorf-Zug nicht — die Ort-Wahl des
                 // Start-Dorfs rechnete in 3 von 3 Läufen noch beim Fenster-Start (18–19 Scheiben), landete im Fenster oder

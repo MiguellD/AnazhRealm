@@ -44,14 +44,11 @@ const BAND = require("./lib/band-urteil.cjs");
 const N_FRAMES = 4;
 const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
-// gemessen 06.10. (kienspan, 64×48): 0,14 % mittlere Änderung über das ganze Bild, sie sitzt um die Sonne.
+// sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
-// Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von r184s
-// Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN anders.
-// Gemessen 07.10. (kienspan, Leinwand 320×240): Abbild gegen r184 2,5 (das 2×2-Maximum — die Hälfte der Pixel liest den
-// Grund eine Leinwand-Zeile weiter; bei 1080p ist die Zeile 4,5× feiner), Rausch-Boden 0, ohne Grund 37, der vec4-Weg
-// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L las das 2×2-Maximum 6,0
-// daneben; das waagrechte Paar (die Zeile ganz) 0.
+// Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von
+// r184s Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN
+// anders. Mit dem Wasser der Welle L las das 2×2-Maximum 6,0 daneben; das waagrechte Paar (die Zeile ganz) 0.
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
@@ -189,7 +186,7 @@ function urteil(z) {
         v.push(
             `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
         );
-    // (a) DER ERZWUNGENE BRUCH (K22): der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
+    // (a) DER ERZWUNGENE BRUCH: der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
     // (`_loopRender` → `_stoffBruch`, ERROR „STOFF: die Post-Kette …" mit der Ursache) — GENAU EINMAL; still (0) ist rot,
     // ein zweiter ist rot. Bis zur Nachbesserung 2 zählte die Konsolen-Wand ihn als fremd (die CI voll 6/11 rot).
     const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
