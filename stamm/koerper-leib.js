@@ -928,6 +928,13 @@ class AnazhRealm_koerper_leib {
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
         if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, w, gait.ik);
+        // DIE KOPF-ZUWENDUNG (mensch.K5, koerper-core BEGEGNUNG_GESETZ): die Gier des Blicks (`r._kopfGier`, rad gegen den Leib —
+        // ihr Schreiber ist der Bewohner-Takt) teilen Hals (halsAnteil) und Kopf, additiv über jeder Pose
+        if (r._kopfGier) {
+            const hals = window.__koerperCore.BEGEGNUNG_GESETZ.halsAnteil;
+            add(r.neck, "y", r._kopfGier * hals);
+            add(r.head, "y", r._kopfGier * (1 - hals));
+        }
         // V18.491.85 — Augen-Welle außerhalb MOTION_RIG_MAP (irisSpeed/blinkRate).
         this._animateHumanoidAugen(r, t, emotions);
     }

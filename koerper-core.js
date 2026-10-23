@@ -1445,6 +1445,39 @@
         return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
     }
 
+    // ── DIE BEGEGNUNG (Meisterkarte mensch.K5, rein additiv; ohne Modell) — der Mensch, dem der Spieler begegnet. Auf blickM
+    //    wendet er ihm den Kopf zu: Hals (halsAnteil) und Kopf teilen sich die Gier bis kopfGierMax, sie folgt mit der
+    //    Zeitkonstante kopfTau (nach 0,5 s steht sie zu 1 − e^(−0,5/kopfTau)). Wer geht, weicht ihm aus: sein Weg hält den
+    //    ABSTAND `begegnungAbstand` zur Mitte des Spielers, nie Kapsel an Kapsel. DAS GEDÄCHTNIS je Mensch (der Wirt hält es,
+    //    solange die Welt läuft, auch über die Abwesenheit): wie oft er dem Spieler friedlich begegnete (vertraut — jede
+    //    Begegnung nimmt dem persönlichen Raum raumM den Anteil vertrautSchritt, bis vertrautMin) und wann er Gewalt in
+    //    seiner Nähe sah (gewaltS, die Uhr des Wirts in Sekunden; Gewalt = der Spieler im Kampf auf gewaltM). Die Furcht ist
+    //    1 im Moment der Gewalt und verblasst mit der Halbwertszeit vergessenS (Shadows of Doubt: das Gedächtnis verblasst);
+    //    sie gibt dem Abstand furchtM, über fliehAb flieht er im Tempo fliehTempo × gang in sein Haus. ──
+    var BEGEGNUNG_GESETZ = Object.freeze({
+        blickM: 3,
+        kopfGierMax: 1.25,
+        halsAnteil: 0.4,
+        kopfTau: 0.1,
+        raumM: 1.5,
+        vertrautSchritt: 0.15,
+        vertrautMin: 0.6,
+        gewaltM: 15,
+        furchtM: 6,
+        vergessenS: 300,
+        fliehAb: 0.5,
+        fliehTempo: 1.6,
+    });
+    // DER ABSTAND aus dem Gedächtnis ({ vertraut, gewaltS } oder null) zur Uhr jetztS: { abstand (m), furcht [0, 1], flieht }
+    function begegnungAbstand(gedaechtnis, jetztS) {
+        var G = BEGEGNUNG_GESETZ;
+        var g = gedaechtnis || {};
+        var seit = Number(jetztS) - Number(g.gewaltS);
+        var furcht = seit >= 0 ? Math.pow(0.5, seit / G.vergessenS) : 0;
+        var raum = G.raumM * Math.max(G.vertrautMin, 1 - G.vertrautSchritt * (Number(g.vertraut) || 0));
+        return { abstand: raum + (G.furchtM - raum) * furcht, furcht: furcht, flieht: furcht >= G.fliehAb };
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
@@ -1484,6 +1517,9 @@
         TAGES_GESETZ: TAGES_GESETZ,
         berufVon: berufVon,
         tagesPlan: tagesPlan,
+        // mensch.K5 — DIE BEGEGNUNG (VERHALTEN): Kopf-Zuwendung, Ausweichen, das Gedächtnis lenkt den Abstand (Leser: _tickBewohner)
+        BEGEGNUNG_GESETZ: BEGEGNUNG_GESETZ,
+        begegnungAbstand: begegnungAbstand,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
