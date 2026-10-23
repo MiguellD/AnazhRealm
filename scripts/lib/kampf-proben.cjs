@@ -2026,7 +2026,7 @@ async function WELLE_L() {
                 }
                 if (!strecke || !p._swing) return { traf: false };
                 // der Treffer-Takt: die Anzeige-Uhr steht, die Pose dieses Takts wird gelegt, die Ich-Kamera folgt
-                p._hitStopUntil = Infinity;
+                p._hitStopUntil = T + 1;
                 r.animatePlayerSoul(T);
                 r._loopCamera(T);
                 s.camera.updateMatrixWorld(true);

@@ -89,7 +89,7 @@ class AnazhRealm_kampf {
     }
 
     // Der Schwung-Tick (im ewigen Loop, NACH der fixen Sim): läuft auf der ANZEIGE-
-    // Uhr — der Hit-Stop pausiert Gang + Schwung, die FIXE SIM läuft IMMER weiter.
+    // Uhr — der Hit-Stop hält den ganzen Leib und den Schwung an, die FIXE SIM läuft IMMER weiter.
     // In der Strike-Phase fegt der Kapsel-Sweep entlang der Klinge.
     _tickKampfSchwung(currentTime) {
         const p = this.state.player;
@@ -111,7 +111,7 @@ class AnazhRealm_kampf {
     }
 
     // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
-    // (Gang-Phase) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // (der ganze Leib, halten.K2) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
     _hitStopFactor(nowSec) {
         const p = this.state.player;
         return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
