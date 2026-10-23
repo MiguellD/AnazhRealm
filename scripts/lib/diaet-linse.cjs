@@ -125,7 +125,7 @@ function diaetZaehler() {
             imGang--;
         }
     });
-    // DER FREMDE VERWEIS (E-Diät, 19.10.): ein Verweis auf ein festes Objekt (Schatten-Bias · Radius · Kaskaden des Lichts)
+    // DER FREMDE VERWEIS (E-Diät): ein Verweis auf ein festes Objekt (Schatten-Bias · Radius · Kaskaden des Lichts)
     // speist eine GETEILTE Uniform — EIN Wert je Render-Abschnitt; der Objekt-Gang stellte ihn je Objekt (Fremd).
     const fremd = (n) =>
         n.isMaterialReferenceNode !== true &&

@@ -366,9 +366,7 @@ async function s0Probe(page, station, schein) {
                 if (amFeuer.length < 1) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
-                        : typeof r._leuchtTakt !== "function"
-                          ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
-                          : "der Licht-Takt setzt keinen Platz an die Glut";
+                        : "der Licht-Takt setzt keinen Platz an die Glut";
                     out.befunde.push(
                         `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
@@ -640,7 +638,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 };
             }
             out.basis = basis;
-            out.erbgut = typeof r._erbgut === "function" ? r._erbgut().terme.map((t) => t.art) : ["wildnis(alt)"];
+            out.erbgut = r._erbgut().terme.map((t) => t.art);
             return out;
         },
         welt,
@@ -663,7 +661,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // 12.10. hielt nur die Protokoll-Grenze von 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur
 // Versuche). Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
 // auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
-// Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
+// Warte-Takten (24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
 // die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
 // DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Feuerkreis liest nur Boden, Feuer,
 // Pool und Ausgabe — der Schuss zeichnet über den Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) aus der
@@ -1084,7 +1082,7 @@ async function lichtLauf() {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
-                async (json, rest) => {
+                async (json) => {
                     await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
@@ -1120,7 +1118,7 @@ async function lichtLauf() {
         ]) {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
-                    async (st, gestalt, rest) => {
+                    async (st, gestalt) => {
                         const r = window.anazhRealm;
                         const s = r.state;
                                                 s.renderer.setAnimationLoop(null);

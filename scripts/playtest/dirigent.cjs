@@ -956,8 +956,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
 
         // ============== A4: MANA-KONSUMENT γ ==============
-        // (A4a) Konstante existiert
-        out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode();
         // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
@@ -1081,7 +1079,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     );
 
     // A4 — Mana-Konsument
-    check("V18.210-A4a TOOL_OP_MANA_COST Konstante existiert", res.a4ManaCostConst === true);
     check("V18.210-A4d BEHAVIORAL: ritueller-stab (phaseChange) zieht Mana", res.a4ManaWasDrained === true);
     check("V18.210-A4d2 BEHAVIORAL: ritueller-stab lässt Stamina unberührt", res.a4StaminaUntouched === true);
     check(
@@ -1668,7 +1665,7 @@ async function checkBandReglerSim(ctx) {
                 const pStark = prof({ vendor: "nvidia", architecture: "ampere" }, 24, 32, 1, 1920, 1080);
                 const pSchwach = prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
                 const pMittel = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 1440, 765);
-                // DER SCHIRM IST KEIN SEED (06.10., gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
+                // DER SCHIRM IST KEIN SEED (gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
                 // 4 MPix 0,1–0,2 ab — ein größerer Schirm startete mit weniger Welt. Dasselbe Gerät auf 4K: derselbe Seed.
                 const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
                 o.s5 = { pStark, pSchwach, pMittel, pMittelGross };

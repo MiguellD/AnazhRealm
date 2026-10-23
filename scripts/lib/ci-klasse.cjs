@@ -1,14 +1,8 @@
-// ci-klasse.cjs — DIE KLASSE EINES CI-SCHRITTS (K61 CI-Diät): braucht er einen Echt-Renderer?
-//
-// Die volle Batterie trennt ihre Gruppen in CPU und GPU (check.yml `matrix.klasse`): eine GPU-Gruppe ist die Arbeit eines
-// GPU-Läufers (später der eigene Läufer am Messplatz), eine CPU-Gruppe läuft auf jedem Läufer. Die Klasse eines Schritts liest
-// diese Datei aus seinen Skripten: der run-Text wird über package.json bis auf die Befehle aufgelöst, jedes `node <datei>`
-// samt seinen lokalen `require` (scripts/lib …) nach dem Browser-Rezept durchsucht, das es an die EINE Weiche gibt
-// (scripts/lib/welt-boot.cjs `starteBrowser({ art })`). Ein Echt-Rezept (GPU_REZEPTE dort: linse · webgl · echt) ohne
-// Bedingung macht den Schritt `gpu`; steht es nur in einem Zweig (`art: X ? "linse" : "null"`), entscheidet der Befehl:
-// ist X ein Schalter (`argv.includes("--bild")`) oder eine Variable (`process.env.REAL_RENDERER === "1"`), die der Befehl
-// setzt, ist er `gpu`, sonst `cpu`; was so nicht zu lesen ist, bleibt `bedingt`. Der Richter ist die Laufzeit: in einer
-// CPU-Gruppe meldet die Weiche jedes Echt-Rezept ROT beim Namen (CI_KLASSE).
+// ci-klasse.cjs — DIE KLASSE EINES CI-SCHRITTS (K61): braucht er einen Echt-Renderer? Der run-Text wird über package.json bis
+// auf die Befehle aufgelöst, jedes `node <datei>` samt seinen lokalen `require` nach dem Rezept an der Weiche durchsucht
+// (welt-boot `starteBrowser({ art })`): ein Echt-Rezept (GPU_REZEPTE) ohne Bedingung macht ihn `gpu`; im Zweig
+// (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
+// ist die Laufzeit: die Weiche nennt ein Echt-Rezept in einer CPU-Gruppe ROT und eines, das nie zeichnet.
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -57,10 +51,11 @@ function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
         // jeder Zweig ein Echt-Rezept (`ECHT ? "echt" : "linse"`) ist so fest wie keiner
         const zweige = [...m[1].matchAll(/["']([\w-]+)["']/g)].map((x) => x[1]);
         if (!/\?/.test(m[1]) || zweige.every((z) => GPU_REZEPTE.includes(z))) return { klasse: "gpu", wo };
-        // der Zweig `X ? <Echt-Rezepte> : "null"`: der Befehl entscheidet X
-        const an = /:\s*["'](null|standard)["']\s*\)?\s*$/.test(m[1]) ? bedingungIm(t, m[1], befehl) : null;
-        if (an === true) return { klasse: "gpu", wo: wo + " — der Befehl setzt die Bedingung" };
-        if (an === false) continue;
+        // der Zweig `X ? <Echt> : "null"` (oder `X ? "null" : <Echt>`): der Befehl entscheidet X
+        const dann = /\?\s*["'](null|standard)["']\s*:/.test(m[1]);
+        const an = dann || /:\s*["'](null|standard)["']\s*\)?\s*$/.test(m[1]) ? bedingungIm(t, m[1], befehl) : null;
+        if (an !== null && an !== dann) return { klasse: "gpu", wo: wo + " — der Befehl entscheidet die Bedingung" };
+        if (an !== null) continue;
         bedingt = bedingt || { klasse: "bedingt", wo };
     }
     for (const m of t.matchAll(/require\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)/g)) {
@@ -88,11 +83,9 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
     return bedingt || { klasse: "cpu" };
 }
 
-// DIE LÄUFER-PLÄTZE des Kontos: GitHub fährt hier höchstens 20 Jobs zugleich (gemessen über alle Läufe des 14.10.: 20 um
-// 20:01:04Z, als 38628488866 und 38628426005 zusammen 32 Jobs trugen — die übrigen warteten bis 344 s). Die EINE Zahl für
-// die Waage (gate:ci-deckung (T) PLÄTZE) und das Verteilen (scripts/ci-zeiten.cjs --verteilen).
+// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich (gemessen 14.10.) — die EINE Zahl für die Waage und das Verteilen.
 const LAEUFER_PLAETZE = 20;
-// DER GROSSE SCHRITT (CW, 16.10.): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
+// DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
 const GROSS_S = 300;
 
 module.exports = { GPU_REZEPTE, GROSS_S, LAEUFER_PLAETZE, befehle, klasseDerDatei, klasseDesLaufs };

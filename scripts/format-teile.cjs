@@ -1,4 +1,4 @@
-// format-teile.cjs — DER FORMAT-CHECK IN TEILEN (K14, CI in zwei Stufen, 11.10.).
+// format-teile.cjs — DER FORMAT-CHECK IN TEILEN (K14, CI in zwei Stufen).
 //
 // Befund: `prettier --check` trug den Puls nicht — 133 s Median auf dem CI-Läufer (Läufe 38092890885 · 38092154993 ·
 // 38091744489 · 38039127248 · 38039048896), lokal 151 s, davon der Stamm (damals EINE Datei, 5,7 MB) ~96 %: Prettier formatiert

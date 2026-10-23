@@ -360,7 +360,6 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 async function checkBandKristallKleid(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
@@ -472,7 +471,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
     );
 }
 
-// Der Leistungs-Vertrag — eingefaltet aus gate:leistungs-vertrag (D3b, Profi-Doktrin Welle 5, 18.07.): die erkämpften Leistungs-
+// Der Leistungs-Vertrag — eingefaltet aus gate:leistungs-vertrag (D3b, Profi-Doktrin Welle 5): die erkämpften Leistungs-
 // Invarianten stehen als VERTRAG. V1 Stand-Churn null (Welt gesettelt, Spieler steht → 0 Gruppen-Mints) · V2 der Ingest-Takt (echte
 // Request-Ergebnisse resolven nie synchron, ≤ 3 je Frame in Ankunfts-Reihenfolge, über Budget 1, headless sofort) · V3 die Gruppen
 // klettern im Stand nicht · V4 der Trace trägt bundleDeckung + ingestTakt + gruppenChurn · V5 das Szene-Live-Set < 700 MB;
@@ -499,7 +498,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 } catch (_e) {}
                 if (i % 15 === 0) await sleep(15);
             }
-            // DIE WARTENDEN REGIONEN (06.10., V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // DIE WARTENDEN REGIONEN (V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
             // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
             // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
             // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —
@@ -554,7 +553,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 };
             r._foundryBuildImpostorFlat = nullKarte(_oKF);
             r._foundryEnsureImpostorRecord = nullKarte(_oKR);
-            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund, 14.10.): die Physical-Klasse des Klarlacks lebt in der
+            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund): die Physical-Klasse des Klarlacks lebt in der
             // Node-Bibliothek des Renderers (`_foundryTreeMaterial`), der Null-Renderer trägt keine — kam eine Lieferung mit
             // Haut im gelüfteten Fenster, brach der Stoff laut („STOFF: die Gruppe der Foundry-Lieferung"). Er baut mit der
             // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
@@ -601,7 +600,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
                 // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
                 // keine wachsende Siedlung). Ein Bau dauert 0,1–25 s; zwei ruhige Batches sind ein Takt-Maß, keine Uhr — am
-                // langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
+                // langsamen CI-Läufer (integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
                 // lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal mit 3 s späteren Worker-Antworten
                 // 88 Mints, 80 → 168. K10-6: der eigene Zähler (Foundry allein) sah den Dorf-Zug nicht — die Ort-Wahl des
                 // Start-Dorfs rechnete in 3 von 3 Läufen noch beim Fenster-Start (18–19 Scheiben), landete im Fenster oder
@@ -633,7 +632,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 o.baut = baut();
                 o.weltOffen = offen();
             }
-            // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
+            // GOLD 4 — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
             // gesettelten kleinen Welt — keine künftige Welle darf das Live-Set
             // still zurück in die GB-Klasse wachsen lassen (die 819-MB-Messung

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // gate:weltgrenze — KEIN WELT-ZUSTAND REIST ÜBER EINE WELTGRENZE.
 //
-// Die Gegenprüfung Runde 2 (10.10.) fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
+// Die Gegenprüfung Runde 2 fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
 // Welt, die ohne Erbgut geladen wurde, behielt das Erbgut, den Anker, die Edits, die Dorf-Zellen und die Stempel der
 // Welt davor — über das Welt-Tor „Ersetzen" wurde eine Wildnis-Welt still als Insel gezeichnet und mit dem Erbgut der
 // Prüfbühne gespeichert. Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A
@@ -222,7 +222,7 @@ function seitenPruefer() {
             r._portalPreviewFertig = Object.assign(Object.create(null), { fachwerk: true });
             r._autoSettlementRejected = new Set([T]);
             r._autoSettlementStartHopeless = true;
-            r._autoSettlementQueue = { plan: { slots: [], name: T }, origin: { x: 0, z: 0 }, idx: 0, cellKey: T };
+            r._autoSettlementQueue = r._dorfZug({ slots: [], name: T }, { x: 0, z: 0 }, T);
             r._stlWegeKeys = new Set([T]);
             // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
             // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände

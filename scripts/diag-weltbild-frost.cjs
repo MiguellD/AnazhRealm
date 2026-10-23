@@ -280,7 +280,7 @@ function pruefRaum(echt) {
             for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {
                 const r = window.anazhRealm;
                 const st = r && r.state;
-                // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm (GTX 16.10.); headless
+                // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
                 if (
                     st &&
@@ -828,7 +828,6 @@ function pruefRaum(echt) {
             const r = window.anazhRealm,
                 S = [...(r.state.chunkSaetze || new Map()).values()];
             if (!auf) delete r._chunkSatzVerdichten;
-            else if (typeof r._chunkSatzVerdichten !== "function") return ["_chunkSatzVerdichten fehlt"];
             else
                 [window.__frostFenster, r._chunkSatzVerdichten] = [
                     new Map(S.map((s) => [s, s.verdichtet || 0])),

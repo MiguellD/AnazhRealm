@@ -1,6 +1,6 @@
 "use strict";
 /* global process, console, __dirname, Buffer, TextEncoder, TextDecoder, URL */
-// scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung, plan 13.10. §3).
+// scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung).
 //
 // Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
 // Dateien unter stamm/ (ein Stand vor der Zerlegung 14.10.: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
@@ -12,7 +12,7 @@
 //   stamm/<kern>.js     Kopf + `class AnazhRealm {` + die erste Zone (Konstruktor) + `}` + die Naht-Funktion `_stammZonen`
 //   stamm/<modul>.js    `class AnazhRealm_<modul> {` + die Zone `ATLAS · Modul[/teil]` + `}` + ihr Naht-Ruf, dahinter ihre
 //                       Außen-Anweisungen (`AnazhRealm.X = …`) ab ihrem Außen-Marker; Datei-Name = Modul[-teil]
-// Die LAGE (Zerlegung 13.10., ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
+// Die LAGE (ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
 // Die Leerzeile vor jedem Marker trägt die Umkehrung; S verlangt sie (sonst wirft S).
 //
 //   node scripts/lib/stamm.cjs --selftest     beweist Umkehrung, Ordnung, Layout-Weiche, 5-MB-Wand, Kanon, ort, liefere
@@ -97,7 +97,6 @@ function marker(t) {
     }
     return out;
 }
-const istMarker = (z) => MARKER_RX.test(z) || DOMAENE_RX.test(z);
 
 // S(text) → [{ pfad, text, klasse? }] in Lade-Ordnung. Wirft bei jedem Text, den die Umkehrung nicht trüge.
 function schneide(t) {
@@ -1036,7 +1035,6 @@ module.exports = {
     KARTE,
     sha,
     marker,
-    istMarker,
     pfadVon,
     klasseVon,
     karteVon,

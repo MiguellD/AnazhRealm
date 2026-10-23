@@ -20,12 +20,12 @@ const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const errs = [];
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && typeof r._workshopFoundryPreviewGroup === "function");
+        await window.__weltDa((r) => r.state);
     });
 
     const out = await page.evaluate(async () => {

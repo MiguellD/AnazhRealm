@@ -125,13 +125,6 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // 10. Phase 5: createDynamicAbility/codeParser sind weg
-        out.dynamicCodeMethodsRemoved =
-            typeof r.createDynamicAbility === "undefined" &&
-            typeof r.codeParser === "undefined" &&
-            typeof r.developAdvancedPhysics === "undefined" &&
-            typeof r.developAdvancedRenderer === "undefined";
-
         // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
@@ -195,10 +188,6 @@ async function checkBandRing2Extended(ctx) {
         check(
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
-        );
-        check(
-            "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
-            phase3Results.dynamicCodeMethodsRemoved
         );
         check(
             "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
@@ -479,7 +468,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // 1. Methoden existieren
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
@@ -1205,9 +1193,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            // Methoden
-            // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
-            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
@@ -1336,8 +1321,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
-
-            // Methode existiert
 
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");

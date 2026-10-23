@@ -970,30 +970,102 @@ class AnazhRealm_gelaende_fern {
         if (fr.wasserTiefe === tiefe) return 0;
         fr.wasserTiefe = tiefe;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const dirty = [false, false, false];
+        const bewegt = [[], [], []];
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
         for (let g = 0; g < bis; g++) {
             if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             this._fernRingSetzVertex(fr, p, wl);
-            dirty[p.s] = true;
+            bewegt[p.s].push(p.li);
             n++;
         }
-        this._fernRingHoch(fr, dirty);
+        this._fernRingHoch(fr, bewegt);
         return n;
     }
 
-    // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je bewegte Schale Lage, Farben und die Normalen (das Licht braucht sie)
-    // — über das VOLLE Index-Muster der Schale (`fr.geos`; die Teile der Schale 0 teilen dieselben Attribute).
-    _fernRingHoch(fr, dirty) {
+    // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je Schale die bewegten Punkte (`bewegt[s]`, lokale Indizes) — Lage, Farben
+    // und die Normalen (das Licht braucht sie) NUR an den Ecken der Dreiecke um einen bewegten Punkt (`_fernRingNormalen`).
+    _fernRingHoch(fr, bewegt) {
         for (let s = 0; s < fr.geos.length; s++) {
-            if (!dirty[s]) continue;
+            if (!bewegt[s] || !bewegt[s].length) continue;
             const geo = fr.geos[s];
             geo.attributes.position.needsUpdate = true;
             AnazhRealm._fernRingAttributeHoch(geo);
-            geo.computeVertexNormals();
+            AnazhRealm._fernRingNormalen(geo, bewegt[s]);
         }
+    }
+
+    // DIE NORMALEN DER BEWEGTEN PUNKTE (fahrt-takt, Lehre 25: der Takt kostet, was ihn betrifft): die Normale einer Ecke ist die
+    // Summe der Flächen-Kreuze ihrer Dreiecke, normiert — dieselbe Rechnung wie three `computeVertexNormals` (je Dreieck in Index-
+    // Folge (C − B) × (A − B), je Schritt in Float32 abgelegt, × 1/Länge): byte-gleich, aber nur für die Ecken, deren Dreiecke einen
+    // bewegten Punkt tragen. Die Dreiecke je Ecke stehen mit dem Index-Muster der Schale fest (einmal je Index). Bis fahrt-takt
+    // rechnete jedes Einhängen einer Scheibe (512 Punkte) und jede bewegte Saum-Ecke die GANZE Schale nach (GT-Fahrt 20 m/s an der
+    // Radeon an der Mess-Wiese: computeVertexNormals 4,75 ms je Takt ab p95).
+    static _fernRingNormalen(geo, bewegt) {
+        const idx = geo.index.array,
+            P = geo.attributes.position.array,
+            nA = geo.attributes.normal;
+        const nV = geo.attributes.position.count;
+        let ad = geo.userData.fernEcken;
+        if (!ad || ad.idx !== idx) {
+            // je Ecke ihre Dreiecke (Index-Start), aufsteigend; eine Ecke, die ein Dreieck zweimal trägt, zählt es einmal (wie
+            // three: die drei Ecken lesen vor dem Schreiben)
+            const zahl = new Int32Array(nV + 1);
+            const jede = (f) => {
+                for (let t = 0; t < idx.length; t += 3) {
+                    const a = idx[t],
+                        b = idx[t + 1],
+                        c = idx[t + 2];
+                    f(a, t);
+                    if (b !== a) f(b, t);
+                    if (c !== a && c !== b) f(c, t);
+                }
+            };
+            jede((v) => zahl[v + 1]++);
+            for (let v = 0; v < nV; v++) zahl[v + 1] += zahl[v];
+            const tri = new Int32Array(zahl[nV]),
+                fuell = zahl.slice(0, nV);
+            jede((v, t) => (tri[fuell[v]++] = t));
+            ad = geo.userData.fernEcken = { idx, von: zahl, tri, mark: new Uint8Array(nV), liste: new Int32Array(nV) };
+        }
+        const { von, tri, mark, liste } = ad;
+        let n = 0;
+        for (const v of bewegt)
+            for (let q = von[v]; q < von[v + 1]; q++)
+                for (let k = 0; k < 3; k++) {
+                    const u = idx[tri[q] + k];
+                    if (!mark[u]) ((mark[u] = 1), (liste[n++] = u));
+                }
+        const N = nA.array,
+            f = Math.fround;
+        for (let m = 0; m < n; m++) {
+            const u = liste[m];
+            mark[u] = 0;
+            let x = 0,
+                y = 0,
+                z = 0;
+            for (let q = von[u]; q < von[u + 1]; q++) {
+                const t = tri[q],
+                    a = idx[t] * 3,
+                    b = idx[t + 1] * 3,
+                    c = idx[t + 2] * 3;
+                const lx = P[c] - P[b],
+                    ly = P[c + 1] - P[b + 1],
+                    lz = P[c + 2] - P[b + 2];
+                const mx = P[a] - P[b],
+                    my = P[a + 1] - P[b + 1],
+                    mz = P[a + 2] - P[b + 2];
+                x = f(x + (ly * mz - lz * my));
+                y = f(y + (lz * mx - lx * mz));
+                z = f(z + (lx * my - ly * mx));
+            }
+            const s = 1 / (Math.sqrt(x * x + y * y + z * z) || 1);
+            N[u * 3] = x * s;
+            N[u * 3 + 1] = y * s;
+            N[u * 3 + 2] = z * s;
+        }
+        nA.needsUpdate = true;
     }
 
     // Die Teile in die drei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung), aNass = der Anteil
@@ -1211,7 +1283,7 @@ class AnazhRealm_gelaende_fern {
     _fernRingEinhaengen(fr) {
         if (!fr.einhaengen.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const dirty = [false, false, false];
+        const bewegt = [[], [], []];
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
         while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
@@ -1229,12 +1301,12 @@ class AnazhRealm_gelaende_fern {
                 if (v === v) fr.vollY[von + k] = v;
                 const p = this._fernRingPunkt(fr, von + k);
                 this._fernRingSetzVertex(fr, p, wl);
-                dirty[p.s] = true;
+                bewegt[p.s].push(p.li);
             }
             fr.cursor = von + n;
             done += n;
         }
-        this._fernRingHoch(fr, dirty);
+        this._fernRingHoch(fr, bewegt);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
@@ -1294,7 +1366,7 @@ class AnazhRealm_gelaende_fern {
         // DAS GESETZ DES SAUMS kommt aus dem Fern-Faden (B2, `fr.law` · `fr.vollY`, einmal je Anker): die Wache rechnet keine
         // Höhe, sie fragt nur, ob die Naht den Punkt jetzt anders legt.
         const pos = fr.geos[0].attributes.position;
-        let neu = false;
+        const bewegt = [];
         let feldMessungen = 0;
         let offen = false;
         for (let n = 0; n < 128; n++) {
@@ -1310,13 +1382,12 @@ class AnazhRealm_gelaende_fern {
             }
             if (Math.fround(this._fernRingY(fr, p, wl)) !== pos.getY(p.li)) {
                 this._fernRingSetzVertex(fr, p, wl);
-                neu = true;
+                bewegt.push(p.li);
             }
             fr.deckCursor++;
         }
-        this._standMeldet("deckWache", 128, neu, offen);
-        if (!neu) return;
-        this._fernRingHoch(fr, [true]);
+        this._standMeldet("deckWache", 128, bewegt.length > 0, offen);
+        this._fernRingHoch(fr, [bewegt]);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_gelaende_fern]);

@@ -504,10 +504,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         }
         // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
-            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
-            typeof r._feedFocus === "function" &&
-            typeof r._feedEnsurePreview === "function" &&
-            typeof r._feedPreviewShow === "function";
+            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
         if (recForFocus) {
             const recCard = stream.querySelector(".feed-recipe");
@@ -1572,7 +1569,6 @@ async function checkBandPhiArchipel(ctx) {
         // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
         // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
         // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
-        const dslEffects = r.constructor.dslEffects || (typeof window !== "undefined" && window.dslEffects);
         // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
         // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;

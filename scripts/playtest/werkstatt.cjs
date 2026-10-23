@@ -672,7 +672,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Methoden existieren
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
@@ -844,7 +843,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methoden existieren
 
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1288,9 +1286,12 @@ async function checkBandEarlyRingsAndUi(ctx) {
             mixNass.regen.db >= UM.hoerschwelleDb &&
             mixTrocken.regen.db === -Infinity;
 
-        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar)
+        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar) — ein Misch-Takt sind vier Bilder
+        // (Lage · Mischung · Graph · Tier-Rufe, `_umweltKlangTick`)
         s.umwelt.letzteMischung = -Infinity;
-        r.symphonyTick();
+        s.umwelt.folge = 0;
+        s.umwelt.mix = null;
+        for (let i = 0; i < 4; i++) r.symphonyTick();
         out.taktMischt = !!s.umwelt.lage && !!s.umwelt.mix && Array.isArray(r._klangZensus().stimmen);
 
         // (d) Der Tier-Ruf zählt jeden Ruf (die Stimme folgt dem Körper)
@@ -2132,7 +2133,7 @@ async function checkBandV18143Comments(ctx) {
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
+        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · onopen-Batch · das fremde Wort bleibt Text — XSS-Wand)",
         res.handlerWired && res.xssWall
     );
 }

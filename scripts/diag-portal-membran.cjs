@@ -22,7 +22,7 @@
 //     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. Vorher (eaa3773a) hing der Eintrag am Ziel: kein
 //     Hindurchgehen, keine Flügel, kein Licht.
 //   B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
-//     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken (Spike der Prüfbühne 10.10.). Gezählt wird,
+//     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken. Gezählt wird,
 //     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
 //       B1 aus der Ring-Mitte nach −x zeichnen Membranen (nicht vakuös), die im Rücken nicht alle
 //       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran zeichnet — Täter beim Namen (Gestalt, Abstand)
@@ -458,14 +458,14 @@ async function blickStufe(check) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false, warm: false };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;

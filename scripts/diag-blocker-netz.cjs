@@ -1,24 +1,19 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-blocker-netz.cjs — DER STRAHL FRAGT SEINE NACHBARSCHAFT (0710-7). Befund (OMEN 0710-6, V18.535, CPU-Profil an der
-// Mess-Wiese): `_segmentAABB` trug 8,3–8,9 % der Selbst-Zeit, `_fieldRaycast` weitere 6,5–7 % — die Decken-Probe der Ego-Kamera
-// (`_loopCamera` → `_ceilingHeadroom`, ein 4,5-m-Strahl je Frame) prüfte jede Blocker-Box im 80-m-Umkreis: gezählt 22 758
-// Slabs je Strahl (419 Bauten, davon 15 570 Boxen Haselbüsche), keine Box berührte das Segment. Der Schnitt: die Nachbarschaft
-// der Blocker (`_blockerNetz`, Zellen über die Hülle jedes Eintrags, gestempelt am Bestand), der Strahl fragt nur die Zellen
+// diag-blocker-netz.cjs — DER STRAHL FRAGT SEINE NACHBARSCHAFT: die Nachbarschaft der Blocker (`_blockerNetz`, Zellen über die Hülle jedes Eintrags, gestempelt am Bestand), der Strahl fragt nur die Zellen
 // seines Segments und je Box ihre Hülle vor dem Slab. Die Wand (Null-Renderer, eine echte Welt mit Dorf, Bäumen und Bauten):
 //   (T) TREUE: jeder Strahl trifft byte-gleich wie die Schleife über den ganzen Bestand (das Orakel unten — Treffer, t, Punkt,
 //       Normale, auch -0), über kurze, lange (> 80 m, der Nah-Cull), senkrechte, achsparallele und Strahlen aus einer Box — in
 //       fünf Runden, zwischen ihnen ändert sich der Bestand (Abriss, Kappe, eine gedrehte und neu gestempelte Hülle, ein neues
 //       Array, neue Bäume);
-//   (A) ARBEIT: ein Strahl ruft `_segmentAABB` genau für die Boxen, deren Hülle die seines Segments berührt (im Nah-Cull) —
-//       vorher für jede Box im 80-m-Umkreis;
+//   (A) ARBEIT: ein Strahl ruft `_segmentAABB` genau für die Boxen, deren Hülle die seines Segments berührt (im Nah-Cull);
 //   (L) DER LÖSER (`_stepCharacterStructures`, Kapsel des Spielers und Hülle des Wagens): je Runde Körper an, in und zwischen
 //       den Boxen lösen byte-gleich wie die Schleife über den Bestand (Position, Auflage, Wand-Kontakt, Schübe der Hülle), und
-//       er löst keinen Eintrag, dessen Hülle der Körper an seiner Stelle nicht erreicht (vorher jede Box im 60-m-Umkreis);
+//       er löst keinen Eintrag, dessen Hülle der Körper an seiner Stelle nicht erreicht;
 //   (N) DIE NÄHE DES TIER-LEIBS (`_kreaturHuellenKontakt`): je Runde baut ein echtes Tier an, zwischen und fern der Boxen seine
 //       Nähe-Liste — dieselbe Menge in derselben Ordnung wie die Schleife über den Bestand, auch für einen Beweger (ein
 //       Eintrag, dessen Position nach dem Eintritt wandert, wie das gerittene Werk), und die Frage fasst nur die Plätze um das
-//       Tier an (vorher den ganzen Bestand je Neubau);
+//       Tier an;
 //   (K) KONSISTENZ: das Netz ist der Bestand — jeder Eintrag mit Boxen steht in den Zellen seiner Hülle, jeder Eintrag in der
 //       Zelle seines Platzes, keine Zelle trägt einen Eintrag außerhalb, die Ordnung des Bestands steigt mit dem Array;
 //   (Q) KONSUM am Ruf: `_fieldRaycast` fragt das Netz, der Tier-Leib die Plätze (`_blockerUmPlatz`), keine Schleife über den
@@ -579,8 +574,7 @@ async function probe() {
             R.proben++;
             R.liste += soll.length;
             R.bestand += st.architectures.length;
-            if (typeof r._blockerUmPlatz === "function") R.kandidaten += r._blockerUmPlatz(x, z, 8 + 1e-6, []).length;
-            else R.kandidaten += st.architectures.length;
+            R.kandidaten += r._blockerUmPlatz(x, z, 8 + 1e-6, []).length;
             if (beweger && soll.includes(beweger)) R.bewegerDrin++;
             const gleich = soll.length === ist.length && soll.every((e, k) => e === ist[k]);
             if (!gleich) {
@@ -601,8 +595,6 @@ async function probe() {
     // DIE KONSISTENZ des Netzes gegen den Bestand
     const konsistenz = () => {
         const f = [];
-        if (typeof r._blockerNetz !== "function")
-            return ["das Spiel kennt keine Nachbarschaft der Blocker (`_blockerNetz`)"];
         const N = r._blockerNetz();
         const im = new Set();
         let seq = -Infinity;
@@ -867,7 +859,7 @@ function urteil(S, pageErrors) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const pageErrors = [];

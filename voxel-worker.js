@@ -235,6 +235,10 @@ self.onmessage = function (e) {
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
             waldAuftraege.push(msg);
             waldWecken();
+        } else if (msg.type === "ort-wahl") {
+            // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
+            // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
+            self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -247,6 +251,109 @@ self.onmessage = function (e) {
         });
     }
 };
+
+// DIE ORT-WAHL IM FADEN (siedlung.K5, K10): der Auftrag des Wirts (`_ortWahl`) — der Export `plan`, der Wunsch `origin`,
+// die Ringe `W` (ORT_WAHL), `M` (WERK_LAND_M), der Spieler `spieler` {x, z, frei} und je Slot das Raster seines Fundaments
+// (`raster`: plan-lokal je Slot die Punkte lx, lz des Wirts-Rasters `_fundamentRaster` im Schritt grob und in dem der Wand,
+// `grobN`/`wandN` Punkte je Slot, `radius` die Reichweite des Grundrisses, NaN ohne). Ab dem Kandidaten `ab` rechnet der
+// Faden je Ort der Ringe den Plan v2 (fachwerk `ortPlan`, dieselbe Gelände-Funktion: gelaende-core `hoehe` am Zustand samt
+// dem Erdbau früherer Orte, das Wasser des Gesetzes `atlasWaterLevelAt`) und urteilt, ob er jedes Haus trägt (`ortTraegt`).
+// Das Welt-Wasser des Plans (ctx.wasserAt: Haus und Brücken-Etikett) ist DASSELBE Urteil `ortNass` über dem Boden vor dem Plan:
+// bis K5 kannte es nur den Spiegel über dem ungeformten Boden, nie den Fluss — sein Kanal liegt unter dem Spiegel, sein Damm
+// darüber —, der Plan stellte Häuser in Kanal und Damm, und erst `ortTraegt` warf den Ort (nH 300: jeder der 231 Kandidaten,
+// 8–48 Häuser und 4–22 Laternen in der Gestalt des Gewässers, der Faden rechnete 8–19 s). Ein Ort, an dem das Wasser ein Haus
+// nimmt (fachwerk `ortImWasser`), trägt den Plan nie ganz: er fällt, bevor sein Plan entsteht. Rückgabe { index (−1: kein Ort,
+// der Wunsch), v2, wand, abstandM, kandidaten (die Pläne der Ringe), ms }. Billige Urteile zuerst (Lehre 25): der Faden gibt den
+// Ort nach dem groben Raster, der Wirt urteilt die Bauten, und erst sein Sieger (`msg.wand`: sein Index) zahlt das Raster der
+// Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
+// Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
+function ortWahl(msg) {
+    if (!self.__fachwerkCore)
+        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    const FC = self.__fachwerkCore;
+    const { plan, origin, W } = msg;
+    const t0 = self.performance.now();
+    const ctx = G.ortCtx(state, (x, z) => ortNass(msg, null, x, z));
+    let i = 0;
+    let kandidaten = 0;
+    for (let ring = 0; ring <= W.ringe; ring++) {
+        const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
+        for (let j = 0; j < n; j++, i++) {
+            if (i < msg.ab) continue;
+            const a = (2 * Math.PI * j) / n;
+            const o = { x: origin.x + Math.cos(a) * ring * W.schrittM, z: origin.z + Math.sin(a) * ring * W.schrittM };
+            const aus = (k, wand) => ({
+                index: i,
+                v2: k,
+                wand,
+                abstandM: ring * W.schrittM,
+                kandidaten,
+                ms: self.performance.now() - t0,
+            });
+            if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            const k = FC.ortPlan(plan, o, ctx);
+            kandidaten++;
+            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
+            if (i === msg.wand) {
+                if (ortTraegt(msg, k, false)) return aus(k, true);
+            } else if (ortTraegt(msg, k, true)) return aus(k, false);
+        }
+    }
+    return {
+        index: -1,
+        v2: FC.ortPlan(plan, origin, ctx),
+        abstandM: null,
+        kandidaten,
+        ms: self.performance.now() - t0,
+    };
+}
+// TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports? Jeder Punkt des Fundament-Rasters (`grob` im Schritt ORT_WAHL.grobM, sonst
+// im Raster der Wand, 0,5 m) und jede Laterne liegt mit dem Boden, den der Erdbau des Plans baut, mindestens `M` über dem
+// Wasser des Gesetzes an dieser Höhe — das Urteil der Wand (`_fundamentLand`) über dem Boden des Plans —, die Gestalt des
+// Gewässers (`gewaesserForm`: Damm, Kanal, See-Becken) verschiebt ihn um höchstens `bodenTolM`, und kein Haus berührt den
+// Spieler. Die Bauten (`_bauFrei`) urteilt der Wirt am Sieger.
+function ortTraegt(msg, k, grob) {
+    const plan = msg.plan;
+    if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
+    const E = G.erdbauNormal(k.erdbau);
+    const nass = (x, z) => ortNass(msg, E, x, z);
+    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+    const R = msg.raster;
+    const sp = msg.spieler;
+    let p = 0;
+    for (let si = 0; si < k.slots.length; si++) {
+        const sl = k.slots[si];
+        const nG = R.grobN[si];
+        const nW = R.wandN[si];
+        const p0 = p;
+        p += nG + nW;
+        if (!(R.radius[si] >= 0)) continue;
+        const wx = k.ort.x + sl.x;
+        const wz = k.ort.z + sl.z;
+        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return false;
+        const ry = sl.phi || 0;
+        const c = Math.cos(ry);
+        const sn = Math.sin(ry);
+        const von = grob ? p0 : p0 + nG;
+        const bis = grob ? p0 + nG : p0 + nG + nW;
+        for (let q = von; q < bis; q++) {
+            const lx = R.lx[q];
+            const lz = R.lz[q];
+            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return false;
+        }
+    }
+    return true;
+}
+// DAS WASSER DES ORTS an (x, z): der Boden (gelaende-core `hoehe` samt dem Erdbau früherer Orte, darauf der Erdbau `E` des
+// Plans, null: der Boden vor dem Plan) verschiebt die Gestalt des Gewässers (`gewaesserForm`) um mehr als `bodenTolM`, oder er
+// liegt weniger als `M` über dem Wasser des Gesetzes. Leser: das Welt-Wasser des Plans (`ortWahl`) und `ortTraegt`.
+function ortNass(msg, E, x, z) {
+    const h0 = G.hoehe(state, x, z, true);
+    const he = E ? G.erdbauY(E, x, z, h0) : h0;
+    const h = gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    if (Math.abs(h - he) > msg.W.bodenTolM) return true;
+    return h < atlasWaterLevelAt(x, z, h) + msg.M;
+}
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,
 // alle Aufträge im Flug); hier wartet jeder Auftrag, und der Faden rechnet je Takt EINEN — den mit dem kleinsten `rang` (der
@@ -644,23 +751,23 @@ function terrainBaseDensityCol(x, y, z, ctx) {
             d -= hallCarve * caveEnv * 72;
         }
     }
-    if (ctx.hydroActive) {
-        // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
-        // See-Becken danach.
-        const kn = ctx.hydroCarve;
-        if (kn) {
-            const dL = kn.L - y;
-            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-            const dP = kn.P - y;
-            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-        }
-        const lk = ctx.lake;
-        if (lk) {
-            const flatD = lk.bedY - y;
-            d = d * (1 - lk.w) + flatD * lk.w;
-        }
+    if (ctx.hydroActive) d = gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+    return d;
+}
+// DIE GESTALT DES GEWÄSSERS (Mirror von `_gewaesserForm`): der Fluss-Kanal kn — das weiche Maximum aus Gelände und Damm, davon
+// das weiche Minimum mit dem Kanal —, danach das See-Becken lk. Leser: die Dichte und die Ort-Wahl (`ortTraegt`).
+function gewaesserForm(d, y, kn, lk) {
+    if (kn) {
+        const dL = kn.L - y;
+        let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+        const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+        const dP = kn.P - y;
+        hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+        d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+    }
+    if (lk) {
+        const flatD = lk.bedY - y;
+        d = d * (1 - lk.w) + flatD * lk.w;
     }
     return d;
 }

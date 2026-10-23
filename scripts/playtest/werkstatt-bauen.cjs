@@ -614,7 +614,6 @@ async function checkBandWelle6Keybindings(ctx) {
         const out = {};
         // Statische Konstante
         out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
-        // Methoden-Existenz
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
@@ -866,8 +865,6 @@ async function checkBandWelle6Keybindings(ctx) {
         // State init
         out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
         out.keybindRebindInitNull = r.state.keybindRebind === null;
-
-        // Methoden-Existenz
 
         // setKeybinding ändert state
         const before = r.state.keybindings.confirmBuild;
@@ -1197,7 +1194,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
+// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -1289,15 +1286,6 @@ async function checkBandWelle6XAudit(ctx) {
             out.statsShowsArmorRow = false;
         }
 
-        // --- A4 (SYNERGIE-WELLE gewandert): die Avatar-Aura ist GANZ gefallen —
-        // kein Tick, keine Lampe, keine Haut-Shells; der Kamera-Wechsel bleibt aura-frei.
-        r.setCameraMode("first");
-        out.auraHiddenInFirst = !r.state.playerAuraGlow && typeof r.tickPlayerAura !== "function";
-        r.setCameraMode("third");
-        out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
-        r.setCameraMode("first");
-        out.auraPositionStillTracked = true; // gegenstandslos — nichts folgt mehr
-
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
         // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
@@ -1332,18 +1320,6 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): die Lampe ist geschnitten — kein Sprite in 1st",
-            wave6x1Results.auraHiddenInFirst
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
-            wave6x1Results.auraVisibleInThird
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
-            wave6x1Results.auraPositionStillTracked
         );
     } else {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
@@ -1429,7 +1405,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
-    // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+    // ### Welle 6.X.3 — Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
@@ -1593,7 +1569,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 — Identity (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 — Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;

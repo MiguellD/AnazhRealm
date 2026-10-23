@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md, 21.07.).
+// gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
 //   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
@@ -26,7 +26,7 @@ function eintraege(text) {
     return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
 }
 
-// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
+// 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
 const LISTE_MAX_ZEILEN = 40;
 function logbuchBefund(text) {
     const zeilen = text.split("\n");
@@ -68,13 +68,13 @@ function archivBefund(dateien) {
     ];
 }
 
-// 6) WACHSTUMS-WAND (V1 15.10.) + DIE DECKE (PFLICHT-OFFEN D, Schöpfer 16.10.): scripts/ wächst nie — Inhalt und Dateien
+// 6) WACHSTUMS-WAND + DIE DECKE (PFLICHT-OFFEN D): scripts/ wächst nie — Inhalt und Dateien
 //    sinken oder stehen, eine neue Linse zahlt mit gestrichenen; scripts/ + spec/ zusammen höchstens um die Hälfte des
 //    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige),
-//    aus EINEM Diff (`git diff -U0`): je Datei hinzu − weg in ATOMEN (Wort oder Satzzeichen, K-DECKE-INHALT 20.10.) —
+//    aus EINEM Diff (`git diff -U0`): je Datei hinzu − weg in ATOMEN (Wort oder Satzzeichen) —
 //    Pressen zahlt nichts (f1-rest e93134f4..ada41e38: Zeilen −2, Atome +879); dazu Dateien neu − weg.
 //    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
-const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
+const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 function git(args) {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
@@ -106,15 +106,15 @@ const taeterVon = (je) =>
         .join("");
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
 // ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
-// sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
-// erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
+// nach einem Force-Push dessen Merge-Basis mit HEAD, sonst der letzte Commit): der Integrator merget eine Karte oder
+// spult integ-probe auf ihren Kopf vor — dann geht der erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
 // Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
 // Vorlauf von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
 function wachstumsStaende(zweig, kopfRev) {
     if (zweig === "main") return [];
     if (zweig === "integ-probe") {
         const vorher = process.env.WACHSTUM_VORHER;
-        const grund = vorher && !/^0+$/.test(vorher) ? vorher : "HEAD~1";
+        const grund = vorher && !/^0+$/.test(vorher) ? git(["merge-base", vorher, "HEAD"]).trim() : "HEAD~1";
         return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`]];
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
@@ -135,9 +135,9 @@ function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter 
     ];
 }
 
-// 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.; K1 Doku-Wahrheit 16.10.): ein Dokument nennt nur, was der Baum trägt, und die
+// 7) ZITAT-WAND (V1 Prüf-Diät N1): ein Dokument nennt nur, was der Baum trägt, und die
 //    EINE Karte docs/README.md nennt jedes Dokument. Die Diät strich gate:tier-gang und gate:weltgrenze, während
-//    docs/studio-vertrag.md sie weiter als Beweis nannte; die Wurzel-README schickte nach dem Stamm-Schnitt (14.10.) zur
+//    docs/studio-vertrag.md sie weiter als Beweis nannte; die Wurzel-README schickte nach dem Stamm-Schnitt zur
 //    toten Monolith-Datei. ROT je Fund beim Namen: a) ein gate:<name>, das package.json nicht trägt · b) ein Pfad, den kein
 //    verfolgter Pfad trägt (ab Wurzel oder Ordner des Dokuments; ein nackter Datei-Name über irgendeinen Ordner; eine von
 //    .gitignore gedeckte Laufzeit-Datei zählt) · c) ein `_name`, den kein Code trägt · d) eine .md, die die Karte nicht
@@ -262,7 +262,7 @@ function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
     return { gates, pfade, namen, kennung, karte, code, ignoriert, monolith };
 }
 
-// 8) STRIPPER-WAND (PFLICHT-OFFEN D3, Karte D3a 16.10.): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
+// 8) STRIPPER-WAND (PFLICHT-OFFEN D3): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
 //    scripts/lib/stamm.cjs) und EIN `__codeOf` (scripts/lib/welt-boot.cjs trägt es in jede Seite). Bis D3a lebten 171
 //    Stripper-Stellen in 65 Dateien mit verschiedener Semantik — dieselbe Quelle wurde je Linse anders bereinigt. Ein
 //    Kommentar-Regex in einem replace, ein Zeichen-Automat auf Schrägstrich-Paare oder ein eigener __codeOf-Einbau
@@ -288,7 +288,7 @@ function stripperBefund(dateien) {
     return out;
 }
 
-// 6b) DIE DECKE JE DATEI (PFLICHT-OFFEN D(3), D3b 17.10.): keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
+// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
 //     lebt nach Domäne (scripts/playtest/<domaene>.cjs, `stamm-umzug --richter`), eine Linse teilt am selben Tag; ROT beim Namen.
 const DATEI_DECKE = 4000;
 const dateiDeckeBefund = (dateien) =>
@@ -434,7 +434,7 @@ function main() {
         errs.push("champion.md trägt das Pflicht-Output-Format (Pflicht-OFFEN Rest) nicht mehr");
 
     // 5) ARCHIV-WAND (Lehre 15: git ist das Archiv, kein Doppel-Archiv im Baum): keine verfolgte Datei, die .gitignore
-    // ausschließt — am 14.10. lagen 201 Mess-Rohdateien (217 MB) unter artifacts/ im Baum, per `git add -f` aus Übergaben.
+    // ausschließt.
     let ignoriertVerfolgt = null;
     try {
         ignoriertVerfolgt = execSync("git ls-files -ci --exclude-standard", { cwd: root, encoding: "utf8" })

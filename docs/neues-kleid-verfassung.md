@@ -17,7 +17,7 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 | **P0** | Worker == iframe byte-identisch | 720/720 byte-genau (der Harness im Archiv: `git show 1011d41d:scripts/diag-foundry-parity.cjs`) |
 | **P1** | Asset-Vertrag v1 (Pflanzen) eingefroren | `spec/asset-contract/v1/` + `gate:asset-contract` (132 Golden-Dateien) |
 | **P2** | Kern-Split `foundry-core.js` (Studio-Generator als geteilte Quelle) | `gate:portal-boot` (die Shell liest die Globals) |
-| **P3a** | Foundry iframe → Worker (Geometrie off-thread) | `gate:foundry-warm` (der Worker bäckt echte Assets headless) |
+| **P3a** | Foundry iframe → Worker (Geometrie off-thread) | `gate:fluss` W0 (der Worker bäckt echte Assets headless, die Foundry-Bäume stehen) |
 | **P4** | Die Foundry ist die EINE aktive Baum-Quelle | der Chokepoint `_buildVariantLODs` (null bei lebender Foundry) + der Scatter-Gate + `gate:foundry-deadlock` |
 | **P5** | Der Impostor backt im STUDIO-Bäcker (Bäcker-Vereinigung: Worker-Kanal `bake-impostor`, kein Welt-Nachbau) | `_tickImpostorBake` → `_foundryBakeImpostorRequest` → `_applyStudioImpostorPayload` + `gate:foundry-impostor` (kein iframe, kein RTT-Nachbau) |
 | **P6** | EIN Wuchs (der Studio-Generator liest den geteilten Kern) | `growTreeNodes` delegiert an `__phytoCore.growSkeleton`, Inline-Wuchs geschnitten + `gate:asset-contract` (output-neutral) |
@@ -83,7 +83,7 @@ Stoff-Klasse × Gelenk; die Metaball-Haut v2 fiel mit KONVERGENZ III, 876babf8).
 
 ### Gesetz 5 — jede Regel hat ihre Linse
 
-Jede Pipeline-Regel trägt ihr eigenes Gate: `gate:foundry-warm` (Worker bäckt) · `gate:foundry-deadlock`
+Jede Pipeline-Regel trägt ihr eigenes Gate: `gate:fluss` W0 (Worker bäckt) · `gate:foundry-deadlock`
 (die Nähe konvergiert unter Last) · `gate:portal-boot` (die Shell liest foundry-core) ·
 `gate:foundry-impostor` (kein iframe) · `gate:asset-contract` / `gate:ofen-contract` (die Verträge)
 · `gate:constitution` (diese Verfassung). Der `check`-Gate fährt die statischen (kein Browser); die

@@ -443,14 +443,11 @@ class AnazhRealm_koerper_fahrt {
         // Foundry-Geometrie — sie bleibt stehen, sonst verlöre Welt/Werkstatt/Cache das Asset.
         group.traverse((node) => {
             if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);
-            // W-A4b — Ref-Rückgabe der geteilten Foundry-Quell-Gruppe (V4(B)-Disziplin):
-            // war sie WÄHREND des Haltens LRU-geräumt (_evicted), fällt ihre Geometrie
-            // erst JETZT (nie mitten im Leben, nie geleakt). Idempotent via Nullen.
+            // W-A4b — Ref-Rückgabe der geteilten Foundry-Quell-Gruppe (`_foundryLoslassen`). Idempotent via Nullen.
             const src = node.userData && node.userData.foundrySrcGroup;
             if (src) {
                 node.userData.foundrySrcGroup = null;
-                src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-                if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+                this._foundryLoslassen(src);
             }
             // Die Render-Objekte des Leibs lösen sich in jedem Renderer, der ihn zeichnete (die Hörer an geteilten
             // Stoffen) — nach dem nächsten Submit, mit der Geometrie (`_renderObjekteLoesen`).
@@ -928,7 +925,7 @@ class AnazhRealm_koerper_fahrt {
             if (nahe.some((e) => e !== entry)) continue;
             const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
             if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
-            if (boden === null && !(this._koerperWasser(x, z, fz.y) > fz.y)) continue; // ein Abgrund ohne Wasser
+            if (boden === null && !this._nassAt(x, z, 0, fz.y)) continue; // ein Abgrund ohne Wasser
             // die Füße nie unter der Rad-Ebene (ein Boden tiefer ist Wasser-Grund unter einem schwimmenden Werk: er schwimmt)
             return { x, z, y: Math.max(boden !== null ? boden : fz.y, fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
         }

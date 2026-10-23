@@ -1,4 +1,4 @@
-// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots, 05.10.): ein freier Slot und eine leere Hülle zeichnen NIE,
+// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
 // Befund (Radeon 890M, Mess-Wiese −900/−850, drei Wander-Schleifen à 1,2 km, Regler voll): `_archGroupFree` setzte nur die
@@ -57,7 +57,7 @@ function quellBefunde(q) {
 async function welt() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
@@ -76,7 +76,7 @@ async function welt() {
         await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
         // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
-        // die Streu mit, Kamera und Nah-Wiese blieben am Start (bis 06.10. lag das Auge jedes Umzugs bei 36 0).
+        // die Streu mit, Kamera und Nah-Wiese blieben am Start.
         const spieler = () => st.playerMesh.position;
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register

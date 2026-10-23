@@ -283,7 +283,7 @@ function deckung(umbauListe, aufblaehen, nurIds) {
 // ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
 // Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
 // Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
-// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third (Augen-Befund 14.10.). Gemessen an Genesis Third (werkbank
+// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third. Gemessen an Genesis Third (werkbank
 // zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
 // Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
 // Hysterese-Band in der Stufe 1 (23 082), der Wurf der Stufe 3 (19 248) und der Wurf der fernen Stufe (kathedrale + ruine
