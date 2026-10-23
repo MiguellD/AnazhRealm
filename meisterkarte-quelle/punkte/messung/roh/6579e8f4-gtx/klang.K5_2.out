@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6579e8f4-gtx\klang.K5_2.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; KLANG_ZENSUS_PORT=$((7754+20000)) node scripts/diag-klang-zensus.cjs --takt --echt --json "$A" > "$D/takt.out" 2>&1; echo "TAKT EXIT=$?"; GEH1_MIN=4 FAHRT_MIN=3 GEH2_MIN=3 node "$D/m14-spielgang.cjs"
+TAKT EXIT=0
+12:50:21 Zensus A {"name":"A","vramMB":117.75,"pufferMB":31.81,"texturenMB":85.94,"heapMB":257.21,"halter":{"szene":32.28,"bild":0},"pos":[0,0],"t":52138.39999997616}
+
+--- stderr ---
+FEHLER TypeError: Cannot read properties of null (reading 'userData')
+    at evaluate (evaluate at C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6579e8f4-gtx\klang.K5_2-werk\m14-spielgang.cjs:66:33, <anonymous>:7:25)
+    at #evaluate (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:391:56)
+    at async ExecutionContext.evaluate (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:277:16)
+    at async IsolatedWorld.evaluate (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:105:16)
+    at async CdpFrame.evaluate (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:362:20)
+    at async CdpPage.evaluate (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Page.js:830:20)
+    at async C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6579e8f4-gtx\klang.K5_2-werk\m14-spielgang.cjs:66:22
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 27: 10112 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
