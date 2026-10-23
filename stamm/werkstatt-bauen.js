@@ -383,8 +383,7 @@ class AnazhRealm_werkstatt_bauen {
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
-        // Geteilte string-id macht das Bauwerk peer-übergreifend identifizierbar (Abbau-Sync). Ein eigener
-        // (nicht-built-in) Bauplan reist als define_blueprint mit — sonst kennt der Empfänger ihn nicht.
+        // Geteilte string-id macht das Bauwerk peer-übergreifend identifizierbar (Abbau-Sync).
         const archId = this._newArchId();
         // Guss-Stempel: ein beim Craft gestempelter Bauplan (bp.studioOv) führt, sonst die gewählte
         // Werkstatt-Prägung (freier Bau: confirmBuild IST der Guss); EINE Quelle `_studioStampFor`.
@@ -436,14 +435,8 @@ class AnazhRealm_werkstatt_bauen {
         }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
-            // Same und Drehung des stehenden Werks (Slot 3 und 7; Slot 6 der Stempel oder null).
-            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId, bmStamp || null, dreh];
-            const ownBp = this.state.blueprints[bm.blueprintName];
-            const prog =
-                ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
-                    ? ["chain", ["define_blueprint", bm.blueprintName, ownBp.parts], spawnOp]
-                    : spawnOp;
-            this.p2pBroadcastDsl(prog);
+            // Same und Drehung des stehenden Werks — das EINE reisende Programm (`_werkProgramm`, auch der Werk-Code).
+            this.p2pBroadcastDsl(this._werkProgramm(bm.blueprintName, posNode, steht.seed, archId, bmStamp, dreh));
         }
         // Das Werk steht: das nächste Setzen zieht seinen eigenen Samen, das Phantom zeigt ihn (ein Wurf der Werkstatt
         // bleibt stehen, wie gewürfelt).
@@ -948,16 +941,22 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // === Welle 6.C3 — Keybindings (Datenmodell + Persistenz) ===
-    _loadKeybindings() {
-        const defaults = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+    // Zwei Schichten derselben Aktionen: die Tastatur und Maus (`state.keybindings`, "anazh.keybindings") und das Gamepad
+    // (`state.padBelegung`, "anazh.padbelegung", Codes „Pad<n>" — auch für eine DSL-Fähigkeit, leib.K5).
+    _loadKeybindings(pad) {
+        const defaults = { ...(pad ? AnazhRealm.PAD_BELEGUNG : AnazhRealm.DEFAULT_KEYBINDINGS) };
         if (typeof localStorage === "undefined") return defaults;
         try {
-            const raw = localStorage.getItem("anazh.keybindings");
+            const raw = localStorage.getItem(pad ? "anazh.padbelegung" : "anazh.keybindings");
             if (!raw) return defaults;
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return defaults;
-            for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
-                if (typeof parsed[action] === "string" && parsed[action].length > 0) {
+            for (const action of pad ? Object.keys(parsed) : AnazhRealm.KEYBINDING_ACTIONS) {
+                if (
+                    typeof parsed[action] === "string" &&
+                    parsed[action].length > 0 &&
+                    (!pad || /^Pad\d+$/.test(parsed[action]))
+                ) {
                     defaults[action] = parsed[action];
                 }
             }
@@ -971,23 +970,30 @@ class AnazhRealm_werkstatt_bauen {
         if (typeof localStorage === "undefined" || !this.state.keybindings) return;
         try {
             localStorage.setItem("anazh.keybindings", JSON.stringify(this.state.keybindings));
+            localStorage.setItem("anazh.padbelegung", JSON.stringify(this.state.padBelegung));
         } catch {
             /* quota / private-mode */
         }
     }
 
     setKeybinding(action, code) {
-        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
         if (typeof code !== "string" || code.length === 0) return false;
+        const pad = /^Pad\d+$/.test(code);
+        const B = pad ? this.state.padBelegung : this.state.keybindings;
+        // das Pad bindet JEDE Aktion (auch Gespräch und Schubladen, ohne Standard-Knopf) und jede DSL-Fähigkeit
+        const frei =
+            pad && (AnazhRealm.KEYBINDING_ACTIONS.includes(action) || Object.hasOwn(this.state.abilities, action));
+        if (!action || !B || !(action in B || frei)) return false;
         // Konflikt-Schutz per Swap: belegt der Code schon eine andere Aktion, bekommt diese das alte
-        // Binding — keine toten Bindings, keine unbelegten Aktionen.
-        const oldCode = this.state.keybindings[action];
-        for (const k of AnazhRealm.KEYBINDING_ACTIONS) {
-            if (k !== action && this.state.keybindings[k] === code) {
-                this.state.keybindings[k] = oldCode;
+        // Binding — keine toten Bindings, keine unbelegten Aktionen (eine Fähigkeit ohne altes Binding fällt).
+        const oldCode = B[action];
+        for (const k of Object.keys(B)) {
+            if (k !== action && B[k] === code) {
+                if (oldCode) B[k] = oldCode;
+                else delete B[k];
             }
         }
-        this.state.keybindings[action] = code;
+        B[action] = code;
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
@@ -996,6 +1002,7 @@ class AnazhRealm_werkstatt_bauen {
 
     resetKeybindings() {
         this.state.keybindings = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+        this.state.padBelegung = { ...AnazhRealm.PAD_BELEGUNG };
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
@@ -1025,7 +1032,8 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     beginKeybindRebind(action) {
-        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
+        const aktionen = [...AnazhRealm.KEYBINDING_ACTIONS, ...Object.keys(AnazhRealm.PAD_BELEGUNG)];
+        if (!action || !this.state.keybindings || !aktionen.includes(action)) return false;
         this.state.keybindRebind = { action, startedAt: performance.now() };
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         return true;
@@ -1054,7 +1062,11 @@ class AnazhRealm_werkstatt_bauen {
         const bm = this.state.buildMode;
         if (bm.active && bm.blueprintName) {
             const bp = this.state.blueprints[bm.blueprintName];
-            const label = bp && bp.label ? bp.label : bm.blueprintName;
+            // das Label wird Text, nie Markup (die Zeile ist innerHTML; ein Bauplan kann aus fremder Hand stammen — Welt-Import)
+            const label = String(bp && bp.label ? bp.label : bm.blueprintName).replace(
+                /[<>&"]/g,
+                (c) => `&#${c.charCodeAt(0)};`
+            );
             // HUD spiegelt die aktuellen Keybindings („B bauen“ statt „RMB bauen“);
             // Fallback DEFAULT_KEYBINDINGS, falls state.keybindings noch fehlt.
             const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
@@ -1834,6 +1846,29 @@ class AnazhRealm_werkstatt_bauen {
             sigBtn.disabled = !vpReady;
             if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
         });
+    }
+
+    // TEILEN in EINER Geste: der Knopf ruft `teileWerk` (Signatur → Code); der Code steht in der Zeile und geht in die
+    // Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
+    _workshopAppendTeilenRow(zone, bp) {
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-teilen-row";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "workshop-teilen-btn";
+        btn.textContent = "Teilen";
+        const out = document.createElement("code");
+        out.className = "workshop-teilen-code";
+        out.style.wordBreak = "break-all";
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            const res = await this.teileWerk(bp.name);
+            btn.disabled = false;
+            out.textContent = res.ok ? res.code : `Teilen fehlgeschlagen: ${res.grund}`;
+            if (res.ok && navigator.clipboard) navigator.clipboard.writeText(res.code).catch(() => {});
+        });
+        row.append(btn, out);
+        zone.appendChild(row);
     }
 
     // V8.06 — Klonen + Neuer Bauplan + (V17.91) Undo/Redo/Löschen direkt in der Mode-Bar. Idempotent.

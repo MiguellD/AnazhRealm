@@ -69,13 +69,9 @@ const state = {
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
     voxelEdits: [], // Array of { x, y, z, r, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
-    spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
-    bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
-    bankKruemmung: 0.04, // Mirror AnazhRealm.HYDROSPHERE.bankKruemmung
-    bankWeite: 24, // Mirror AnazhRealm.HYDROSPHERE.bankWeite
-    bankRundung: 0.6, // Mirror AnazhRealm.HYDROSPHERE.bankRundung
-    dammBreite: 2.6, // Mirror AnazhRealm.HYDROSPHERE.dammBreite (die Damm-Krone, Gegenprüfung 07.10., Runde 4)
-    dammFreibord: 0.2, // Mirror AnazhRealm.HYDROSPHERE.dammFreibord
+    // DAS GESETZ DER HYDROSPHÄRE des Mains (`HYDROSPHERE`: Zelle, Bank, Damm, Freibord, Bett — Karte hydro-faden): der Faden
+    // rechnet mit ihm die Regionen (gelaende-core `hydrosphaere`) und baut mit ihm den Kanal. Fehlt es, wirft der Bau.
+    hydroGesetz: null,
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -103,71 +99,37 @@ self.onmessage = function (e) {
         } else if (msg.type === "state-update") {
             applyStateDelta(msg.delta);
             self.postMessage({ type: "ack", op: "state-update", requestId: msg.requestId || null });
+        } else if (msg.type === "hydro") {
+            // DIE HYDROSPHÄRE IM FADEN (Karte hydro-faden, Lehre 14): die Heimat (`key` "heim") oder eine ferne Kachel entsteht
+            // HIER, an DERSELBEN Stelle der Zustands-Reihe in jedem Faden (der EINE Sender `_voxelZustandPost`) — der Voxel-Faden
+            // antwortet dem Main per Transfer (`hydroAntwort`), ein Neben-Faden behält sie nur. Jeder Auftrag dahinter liest sie.
+            const h = hydroRegion(msg.key, msg.origin || null);
+            if (msg.requestId) {
+                const a = hydroAntwort(h);
+                self.postMessage(
+                    { type: "hydro-result", requestId: msg.requestId, key: msg.key, region: a.region },
+                    a.transfer
+                );
+            }
         } else if (msg.type === "density-grid") {
             const { ox, oy, oz, dimX, dimY, dimZ, step, requestId } = msg;
             const density = computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step);
             self.postMessage({ type: "density-grid-result", requestId, density: density.buffer }, [density.buffer]);
         } else if (msg.type === "chunk-mesh") {
-            // V9.91 (Phase 3): voller Chunk-Mesh-Build im Worker. Returns
-            // {positions, normals, indices, colors, waterCells} via
-            // Transferable. Main-Thread macht nur noch BufferGeometry-
-            // Konstruktion + Architektur-Cell-Stempel + BVH-Collision +
-            // Scene-Attach (~30 ms statt 100-150 ms).
-            // die Flut-Saat der Nachbarn (Main `_flutSaat`, null ohne Carve im 3×3) reist als Daten mit dem Auftrag
-            const { cx, cz, lod, saat, requestId } = msg;
-            const mesh = buildChunkMesh(cx, cz, lod, saat || null);
-            if (mesh.empty) {
-                self.postMessage({ type: "chunk-mesh-result", requestId, empty: true, lod: lod | 0 });
-            } else {
-                self.postMessage(
-                    {
-                        type: "chunk-mesh-result",
-                        requestId,
-                        empty: false,
-                        lod: lod | 0,
-                        positions: mesh.positions.buffer,
-                        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
-                        stufeZiel: mesh.stufeZiel ? mesh.stufeZiel.buffer : null,
-                        normalZiel: mesh.normalZiel ? mesh.normalZiel.buffer : null,
-                        farbeZiel: mesh.farbeZiel ? mesh.farbeZiel.buffer : null,
-                        normals: mesh.normals.buffer,
-                        indices: mesh.indices.buffer,
-                        colors: mesh.colors.buffer,
-                        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
-                        himmel: mesh.himmel.buffer,
-                        schutt: mesh.schutt.buffer,
-                        felsFeuchte: mesh.felsFeuchte,
-                        waterCells: mesh.waterCells.buffer,
-                        // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
-                        hTri: mesh.hTri.buffer,
-                        hN: mesh.hN,
-                        hKnoten: mesh.hKnoten.buffer,
-                        hMuend: mesh.hMuend.buffer,
-                        hSeiten: mesh.hSeiten.buffer,
-                        hKanten: mesh.hKanten.buffer,
-                        hRand: mesh.hRand.buffer,
-                        vertCount: mesh.positions.length / 3,
-                        indexCount: mesh.indices.length,
-                    },
-                    [
-                        mesh.positions.buffer,
-                        mesh.normals.buffer,
-                        mesh.indices.buffer,
-                        mesh.colors.buffer,
-                        mesh.himmel.buffer,
-                        mesh.schutt.buffer,
-                        mesh.waterCells.buffer,
-                        mesh.hTri.buffer,
-                        mesh.hKnoten.buffer,
-                        mesh.hMuend.buffer,
-                        mesh.hSeiten.buffer,
-                        mesh.hKanten.buffer,
-                        mesh.hRand.buffer,
-                    ].concat(
-                        mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : []
-                    )
-                );
-            }
+            // V9.91 (Phase 3): voller Chunk-Mesh-Build im Worker, die Arrays per Transfer (`chunkAntwort`). DIE PLATTE IM FADEN
+            // (Karte hydro-faden, Lehre 24): trägt der Auftrag den Schlüssel seines Warm-Starts (`platte`, nur edit-freie
+            // Footprints), liest der Faden ihn zuerst von der Platte und legt jeden frischen Bau dort ab — der Haupt-Faden
+            // klont nie mehr einen Reply in die IndexedDB oder aus ihr. Die Flut-Saat der Nachbarn (Main `_flutSaat`, null
+            // ohne Carve im 3×3) reist als Daten mit dem Auftrag.
+            if (msg.platte) plattePost(msg);
+            else chunkPost(msg, null);
+        } else if (msg.type === "zellen-frei") {
+            // der Main trägt die Zellen nicht mehr: nur sie fallen, ein neuerer Bau desselben Chunks bleibt
+            msg.keys.forEach((k, i) => {
+                const l = (zellen.get(k) || []).filter((b) => b.zid !== msg.zids[i]);
+                if (l.length) zellen.set(k, l);
+                else zellen.delete(k);
+            });
         } else if (msg.type === "water-sheet") {
             // B1 (V18.345) — der Wasser-Sheet OFF-THREAD (Streaming, CA-frei). Der Main
             // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Uint8Array oder
@@ -175,7 +137,29 @@ self.onmessage = function (e) {
             // + transferiert die Geometrie-Arrays zurück. Main macht nur BufferGeometry +
             // Mesh (`_applyWorkerWaterSheet`). `getDach` undefined → dachlos (der Main baut jede
             // Nachbarschaft mit gezeichnetem Dach selbst, `_waterSheetCaFree`).
-            const { cx, cz, requestId, smoothPasses, cells } = msg;
+            const { cx, cz, requestId, smoothPasses } = msg;
+            // DIE ZELLEN DES FADENS (Karte hydro-faden): ein Verweis `{ zid }` nimmt die Zellen, die dieser Faden für den Chunk
+            // baute und unverändert beim Main liegen (`zellen`); fehlt einer, fragt der Main mit den Zellen selbst nach.
+            let fehlt = false;
+            const cells = msg.cells.map((c, i) => {
+                if (!c || !(c.zid > 0)) return c;
+                const z = (zellen.get(cx + ((i % 3) - 1) + "," + (cz + ((i / 3) | 0) - 1)) || []).find(
+                    (b) => b.zid === c.zid
+                );
+                if (!z) {
+                    fehlt = true;
+                    return null;
+                }
+                if (!c.fest) return z.cells;
+                // der Architektur-Stempel des Mains: seine Zellen sind fest (`_stampArchitectureSolidCellsInto`)
+                const k = z.cells.slice();
+                for (let j = 0; j < c.fest.length; j++) k[c.fest[j]] = CELL_STATE.SOLID;
+                return k;
+            });
+            if (fehlt) {
+                self.postMessage({ type: "water-sheet-result", requestId, fehlt: true });
+                return;
+            }
             const ctx = {
                 smoothPasses: smoothPasses | 0,
                 getCells: (ncx, ncz) => {
@@ -252,6 +236,148 @@ self.onmessage = function (e) {
         });
     }
 };
+
+// DIE ANTWORT EINES CHUNKS (per Transfer, Lehre 24): die Arrays des Baus; das Morph-Ziel (`morphZiel`, das der Geomorph des
+// Mains beschreibt) und in der gröbsten Stufe Normalen- und Farb-Ziel sind eigene Kopien — sie entstehen hier im Faden, nie im
+// Haupt-Faden (bis zur Karte hydro-faden kopierte `_buildVoxelChunkDataFromWorkerMesh` sie: 2,5 MB je Minute Fahrt).
+function chunkAntwort(mesh, lod) {
+    if (mesh.empty) return { type: "chunk-mesh-result", empty: true, lod: lod | 0 };
+    const grob = !mesh.stufeZiel;
+    return {
+        type: "chunk-mesh-result",
+        empty: false,
+        lod: lod | 0,
+        positions: mesh.positions.buffer,
+        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
+        stufeZiel: grob ? null : mesh.stufeZiel.buffer,
+        morphZiel: (grob ? mesh.positions : mesh.stufeZiel).slice().buffer,
+        normalZiel: (grob ? mesh.normals.slice() : mesh.normalZiel).buffer,
+        farbeZiel: (grob ? mesh.colors.slice() : mesh.farbeZiel).buffer,
+        normals: mesh.normals.buffer,
+        indices: mesh.indices.buffer,
+        colors: mesh.colors.buffer,
+        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+        himmel: mesh.himmel.buffer,
+        schutt: mesh.schutt.buffer,
+        felsFeuchte: mesh.felsFeuchte,
+        waterCells: mesh.waterCells.buffer,
+        // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
+        hTri: mesh.hTri.buffer,
+        hN: mesh.hN,
+        hKnoten: mesh.hKnoten.buffer,
+        hMuend: mesh.hMuend.buffer,
+        hSeiten: mesh.hSeiten.buffer,
+        hKanten: mesh.hKanten.buffer,
+        hRand: mesh.hRand.buffer,
+        vertCount: mesh.positions.length / 3,
+        indexCount: mesh.indices.length,
+    };
+}
+
+// DIE ZELLEN DES FADENS (Karte hydro-faden): je Chunk die Wasser-Zellen seiner letzten Bauten (`ZELLEN_JE_CHUNK`, der Main trägt
+// beim Stufen-Wechsel noch den älteren, bis der neuere eintritt), je Bau seine Nummer (`zid`) — das Wasser-Sheet nimmt sie
+// per Verweis statt eines Klons von neun Zell-Blöcken je Bestellung (79,7 MB je Minute Fahrt bis zur Karte). Der Main gibt
+// einen Bau frei, wenn er ihn nicht mehr trägt (`zellen-frei`); ein verworfener fällt mit dem Deckel.
+const zellen = new Map();
+const ZELLEN_JE_CHUNK = 4;
+let zellenNr = 0;
+
+// Der Reply an den Main, die Puffer per Transfer: die Zellen behält der Faden als Kopie (`zellen`), die Platte bekommt den
+// Reply VOR dem Transfer (ihr Put klont hier im Faden).
+function chunkPost(msg, a) {
+    const antwort = a || chunkAntwort(buildChunkMesh(msg.cx, msg.cz, msg.lod, msg.saat || null), msg.lod);
+    if (!a && msg.platte) platteLege(msg.platte, antwort);
+    const transfer = [];
+    for (const k in antwort) if (antwort[k] instanceof ArrayBuffer) transfer.push(antwort[k]);
+    if (antwort.waterCells && antwort.waterCells.byteLength) {
+        antwort.zid = ++zellenNr;
+        const k = msg.cx + "," + msg.cz;
+        const l = (zellen.get(k) || []).concat({
+            zid: antwort.zid,
+            cells: new Uint8Array(antwort.waterCells.slice(0)),
+        });
+        zellen.set(k, l.slice(-ZELLEN_JE_CHUNK));
+    }
+    antwort.requestId = msg.requestId;
+    self.postMessage(antwort, transfer);
+}
+
+// DIE PLATTE DES BODENS (Warm-Start, V18.484 — seit der Karte hydro-faden im Faden): der rohe Reply eines edit-freien Chunks
+// liegt in IndexedDB ("anazhChunkMesh"/"chunks"), der zweite Boot liest den Ring von ihr. Stempel (`state.platte.stempel`:
+// Version · Generation · Erbgut · Form) ungleich → leeren; ein Fehler → nur noch Bau (`tot`); voll (`max`) → leeren —
+// die Korrektheit hängt nie an ihr. Der Main sagt, ob sie gilt (`state.platte.an`: headless aus).
+const platte = { auf: null, db: null, stempel: null, tot: false, zahl: 0 };
+function platteAuf() {
+    const P = state.platte;
+    if (!P || !P.an || platte.tot || !self.indexedDB) return Promise.resolve(null);
+    if (platte.auf && platte.stempel === P.stempel) return platte.auf;
+    platte.stempel = P.stempel;
+    platte.db = null;
+    platte.auf = new Promise((ok) => {
+        const tot = () => {
+            platte.tot = true;
+            ok(null);
+        };
+        const req = self.indexedDB.open("anazhChunkMesh", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("chunks");
+        req.onerror = tot;
+        req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction("chunks", "readwrite");
+            const st = tx.objectStore("chunks");
+            const g = st.get("__stamp");
+            g.onsuccess = () => {
+                if (g.result !== P.stempel) {
+                    st.clear();
+                    st.put(P.stempel, "__stamp");
+                    platte.zahl = 1;
+                } else st.count().onsuccess = (e) => (platte.zahl = e.target.result | 0);
+            };
+            tx.oncomplete = () => ok((platte.db = db));
+            tx.onerror = tot;
+        };
+    });
+    return platte.auf;
+}
+function plattePost(msg) {
+    platteAuf()
+        .then(
+            (db) =>
+                db &&
+                new Promise((ok) => {
+                    const g = db.transaction("chunks", "readonly").objectStore("chunks").get(msg.platte);
+                    g.onsuccess = () => ok(g.result || null);
+                    g.onerror = () => ok(null);
+                })
+        )
+        .then((p) => {
+            // ein Reply ohne Morph-Ziel ist eine alte Form: der Faden baut frisch
+            if (p && !p.empty && !p.morphZiel) p = null;
+            if (p) p.vonPlatte = true;
+            chunkPost(msg, p || null);
+        })
+        .catch((err) =>
+            self.postMessage({ type: "error", op: "chunk-mesh", requestId: msg.requestId, message: String(err) })
+        );
+}
+// der Put klont SOFORT (synchron, hier im Faden) — vor dem Transfer, der die Puffer abgibt; die Platte steht, denn der Auftrag
+// mit Schlüssel wartete auf sie (`plattePost`)
+function platteLege(key, antwort) {
+    const db = platte.db;
+    if (!db || platte.tot) return;
+    try {
+        const st = db.transaction("chunks", "readwrite").objectStore("chunks");
+        if (platte.zahl >= state.platte.max) {
+            st.clear();
+            st.put(platte.stempel, "__stamp");
+            platte.zahl = 1;
+        }
+        st.put(antwort, key).onerror = () => (platte.tot = true);
+        platte.zahl++;
+    } catch (_e) {
+        platte.tot = true;
+    }
+}
 
 // DIE ORT-WAHL IM FADEN (siedlung.K5, K10): der Auftrag des Wirts (`_ortWahl`) — der Export `plan`, der Wunsch `origin`,
 // die Ringe `W` (ORT_WAHL), `M` (WERK_LAND_M), der Spieler `spieler` {x, z, frei} und je Slot das Raster seines Fundaments
@@ -558,14 +684,9 @@ function applyStateSnapshot(snap) {
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
-    if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
-    if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
-    if (typeof snap.bankNeigung === "number") state.bankNeigung = snap.bankNeigung;
-    if (typeof snap.bankKruemmung === "number") state.bankKruemmung = snap.bankKruemmung;
-    if (typeof snap.bankWeite === "number") state.bankWeite = snap.bankWeite;
-    if (typeof snap.bankRundung === "number") state.bankRundung = snap.bankRundung;
-    if (typeof snap.dammBreite === "number") state.dammBreite = snap.dammBreite;
-    if (typeof snap.dammFreibord === "number") state.dammFreibord = snap.dammFreibord;
+    // eine Region, die dieser Faden nicht selbst rechnete (er wurde nach ihrer Bestellung geboren, `_hydroAn` im Main)
+    if (snap.hydroRegion) hydroSetzen(snap.hydroRegion.key, snap.hydroRegion.h);
+    if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -579,6 +700,8 @@ function applyStateSnapshot(snap) {
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
     if (snap.fern) state.fern = snap.fern;
+    // DIE PLATTE DES BODENS (Karte hydro-faden): ob sie gilt, ihr Stempel und ihr Deckel
+    if (snap.platte) state.platte = snap.platte;
 }
 
 function applyStateDelta(delta) {
@@ -801,6 +924,41 @@ function terrainDensityAt(x, y, z) {
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
 }
 
+// DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand, die
+// Fläche ungecarvt (`hydroComputing` hält den Kanal aus, wie der Stamm es bis dahin im Haupt-Faden tat); danach das
+// globale Band über alle Regionen (gelaende-core `hydroBand`, derselbe Rechner wie `_computeHydroBand` im Stamm).
+function hydroRegion(key, origin) {
+    if (!state.hydroGesetz)
+        throw new Error("voxel-worker: die Hydrosphäre ohne ihr Gesetz (hydroGesetz fehlt im Zustand)");
+    state.hydroComputing = true;
+    let h;
+    try {
+        h = G.hydrosphaere(state, state.hydroGesetz, voxelSurfaceY, origin);
+    } finally {
+        state.hydroComputing = false;
+    }
+    hydroSetzen(key, h);
+    return h;
+}
+function hydroSetzen(key, h) {
+    if (key === "heim") state.hydrosphere = h;
+    else (state.hydroTiles || (state.hydroTiles = {}))[key] = h;
+    const regionen = [state.hydrosphere].concat(state.hydroTiles ? Object.values(state.hydroTiles) : []);
+    state.hydroBand = G.hydroBand(typeof state.waterLevel === "number" ? state.waterLevel : 0, regionen);
+}
+
+// Die Antwort an den Main (Lehre 24): die Felder der Region reisen per Transfer — der Faden behält seine eigenen und kopiert
+// sie hier (die Kopie liegt im Faden, nie im Haupt-Faden); Flüsse, Seen, Fälle und der Kanal-Index reisen als Daten.
+function hydroAntwort(h) {
+    const lakeBedCell = h.lakeBedCell.slice();
+    const lakeW = h.lakeW.slice();
+    const lakeNear = h.lakeNear.slice();
+    const waterY = h.water.waterY.slice();
+    const waterKind = h.water.waterKind.slice();
+    const region = Object.assign({}, h, { lakeBedCell, lakeW, lakeNear, water: { waterY, waterKind } });
+    return { region, transfer: [lakeBedCell.buffer, lakeW.buffer, lakeNear.buffer, waterY.buffer, waterKind.buffer] };
+}
+
 // A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` im Stamm): Heimat-Region wenn (x,z) in ihr, sonst die
 // Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad). Der Kachel-Schlüssel ist der des Gelände-
 // Gesetzbuchs (`G.kachelSchluessel`); der Kachel-Container ist hier ein plain Object (postMessage-Form).
@@ -833,10 +991,11 @@ function hydrosphereCarveAt(x, z) {
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
     const list = rb[bj * bd + bi];
     if (!list) return null;
-    const sN = state.bankNeigung;
-    const sK = state.bankKruemmung;
-    const fuss = state.bankRundung;
-    const kB = state.dammBreite;
+    const H = state.hydroGesetz;
+    const sN = H.bankNeigung;
+    const sK = H.bankKruemmung;
+    const fuss = H.bankRundung;
+    const kB = H.dammBreite;
     let P = Infinity;
     let L = -Infinity;
     for (let s = 0; s < list.length; s++) {
@@ -853,15 +1012,15 @@ function hydrosphereCarveAt(x, z) {
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
         const dK = halfW + D / sN;
-        if (dist >= dK + kB + state.bankWeite) continue;
+        if (dist >= dK + kB + H.bankWeite) continue;
         const spiegel = seg.sA + (seg.sB - seg.sA) * t;
-        const B = spiegel - (1 - state.spiegelFreibord) * D;
+        const B = spiegel - (1 - H.spiegelFreibord) * D;
         const u0 = dist - halfW;
         let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
         const u = dist - dK;
         if (u > 0) p += sK * u * u;
         // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung (Mirror)
-        let l = spiegel + Math.max(state.spiegelFreibord * D, state.dammFreibord);
+        let l = spiegel + Math.max(H.spiegelFreibord * D, H.dammFreibord);
         const uL = u - kB;
         if (uL > 0) l -= sN * uL + sK * uL * uL;
         if (p < P) P = p;
@@ -1248,7 +1407,7 @@ function hydroRiverAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const krone = halfW + D / state.bankNeigung;
+        const krone = halfW + D / state.hydroGesetz.bankNeigung;
         if (dist > krone) continue;
         const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
         gSumme += g;
@@ -3447,7 +3606,7 @@ function flussAbdruck(x, z, F) {
                 else if (t > 1) t = 1;
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
                 const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
-                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.bankNeigung);
+                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.hydroGesetz.bankNeigung);
                 if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
                 let schon = false;
                 for (let k = 0; k < A.n; k++)

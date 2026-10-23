@@ -171,12 +171,12 @@ async function checkBandWaves1to3(ctx) {
             Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
         // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
-        // Einstellungen tragen keine Welt-Akte mehr (V18.79, Profi-Struktur). Die alte
+        // Einstellungen tragen keine Welt-Akte mehr (Profi-Struktur). Die alte
         // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
         out.activeWorldIslandInDom = !!document.getElementById("feed-active-ident");
         // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
         // + „Welt-Datei exportieren" (in der Insel, id action-export-state wiederverwendet). Der Test
-        // wandert mit (V9.56-i): er prüft die Verortung, nicht den alten Ort.
+        // wandert mit: er prüft die Verortung, nicht den alten Ort.
         out.worldImportInBibliothek = !!document.getElementById("library-import");
         out.worldExportInBibliothek = !!document.getElementById("action-export-state");
         // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
@@ -275,7 +275,7 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
             r._blueprintResonance({ a: 2, b: 3 }, { a: 1, b: -1 }) === -1 &&
             r._blueprintResonance({ a: 2 }, { a: 0.5 }) === 1;
 
-        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift, V17.17)
+        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift)
         out.esse = r._computeWorkshopDomain(blu.esse) === "forging";
         out.brennkolben = r._computeWorkshopDomain(blu.brennkolben) === "alchemy";
         out.webstuhl = r._computeWorkshopDomain(blu.webstuhl) === "textile";
@@ -360,7 +360,7 @@ async function checkBandOmegaGrammatik(ctx) {
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
-        // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt (V9.56-i).
+        // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt.
         const temple = { parts: r._buildClassicalTemple("dorisch") };
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
         const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
@@ -418,7 +418,7 @@ async function checkBandOmegaGrammatik(ctx) {
                     },
                 ],
             }).buckles === true;
-        // die WAND-Verfeinerung (V18.242): eine breite tragende Wand knickt NICHT (keine freie Säule)
+        // die WAND-Verfeinerung: eine breite tragende Wand knickt NICHT (keine freie Säule)
         o.wallNoBuckle =
             r._failsUnderLoad({
                 parts: [
@@ -1076,8 +1076,8 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            // V17.91 — die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
-            // angezeigt (V17.86), nicht im entfernten Editor-Header-Status.
+            // die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // angezeigt, nicht im entfernten Editor-Header-Status.
             const spCar = document.getElementById("workshop-stats-panel");
             out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");
 
@@ -1378,7 +1378,7 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
-            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Das Brennglas-Gesetz bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
             // Eiche liegt (nachts brennt nichts).
             const beforeTod = r.state.timeOfDay;
             r.state.timeOfDay = 0.5;
@@ -1579,8 +1579,7 @@ async function checkBandPsi0Winkel(ctx) {
     });
     // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
-    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
-    // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das Gemüt kommt aus Gattung und Größe).
     check(
         `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
         res.role.max <= 0.94 && res.role.warn <= 7
@@ -1594,8 +1593,8 @@ async function checkBandPsi0Winkel(ctx) {
         res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04
     );
 
-    // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
-    // Loops sind VERDICHTET (V9.82). KONSUM aller Leser am Ruf + die Organ-
+    // Ψ1 — das EINE argmax-Organ: die ~7 Inline-
+    // Loops sind VERDICHTET. KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
     const psi1 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1606,7 +1605,7 @@ async function checkBandPsi0Winkel(ctx) {
             { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
         ] };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
-        // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
+        // das Temperament fiel aus dem Organ (Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
             liest("_computeWorkshopDomain", [bpK]) &&

@@ -420,7 +420,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 T.attribute("color", "vec3"),
                 T.positionWorld,
             ]);
-        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
+        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
         out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
@@ -566,7 +566,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         }
         out.lod23Builds = lod23Builds;
 
-        // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+        // die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
         // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
         // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
         const b = (rr) => r._detailBand(rr);
@@ -591,7 +591,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             BS.halt > 0 &&
             BS.vorlauf > 0;
         out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-        // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+        // die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
         // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
         out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
         r.updateCreatures(0.016);
@@ -734,7 +734,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Eine Voxel-Welt baut keine Heightfield-Chunks und keine heightData (groundHeightField null,
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
-    const voxelP5c1Results = await safeEvaluate(page, () => {
+    const voxelP5c1Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -742,7 +742,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden
         // keine Heightfield-Chunks: `chunkMap` abwesend oder leer
         out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
         out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
@@ -759,14 +759,14 @@ async function checkBandVoxelTerrainCore(ctx) {
         // ist gelöscht.
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
-        // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
+        await r.generateNewWorld({ force: true });
+        // „abwesend ODER leer": kein Heightfield-Chunk gebaut.
         out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
-        r.generateNewWorld({ force: true });
+        await r.generateNewWorld({ force: true });
         return out;
     });
 
@@ -1029,14 +1029,14 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
         out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
         // Ein Wasser-Chunk am Wasser-Ort des Gesetzes (`__wasserChunk`: die Heimat trägt seit K16 keinen See).
-        window.__wasserChunk("see");
+        await window.__wasserChunk("see");
         // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
@@ -1176,12 +1176,12 @@ async function checkBandV18132FerneSeen(ctx) {
             return JSON.stringify(v);
         };
         const before = fp();
-        r._ensureHydroTilesAround(-2048, 0, 10); // Kachel WEST (-1,0)
+        await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
         out.homeIdentical = fp() === before;
-        // hydroBand deckt JEDEN Spiegel (V9.77: das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
+        // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
         // Zell-Bau ließ jede Fluss-Zelle über dem Band AIR (Heimat 344 von 549 Segmenten ohne gezeichnetes Wasser).
         let maxSpiegel = -Infinity;
@@ -1198,7 +1198,7 @@ async function checkBandV18132FerneSeen(ctx) {
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
-        // KONSUM (V17.31): jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
+        // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
         // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
         const K = (m, a, schatten) => {
             if (schatten) r._hydroRiverAt = () => null;
@@ -1279,7 +1279,7 @@ async function checkBandV18150Ride(ctx) {
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
             };
-            // Welle L (Q5): die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
+            // die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
             // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,
             // Steigung ≤ 20 %). An (96, 60) stand der Wagen in einer Mulde (der Rand 2 m hoch auf 3 m) — ein Hindernis ist
             // ein anderes Band (gate:fahr-leben H).
@@ -1332,7 +1332,7 @@ async function checkBandV18150Ride(ctx) {
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
-            // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
+            // ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
             for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
             r.state.keys.w = true;
@@ -1496,7 +1496,7 @@ async function checkBandGammaGenese(ctx) {
                 if (typeof f !== "function") return true;
                 return !window.__fehlt(f, /Math\.random/);
             });
-            // (7) genVersion REIST im Snapshot (V8.59-Klasse: was der Save
+            // (7) genVersion REIST im Snapshot (Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
             const snap = r.buildStateSnapshot();
             out.snapGen = snap && snap.worldMeta ? snap.worldMeta.genVersion : null;
@@ -1540,7 +1540,7 @@ async function checkBandGammaGenese(ctx) {
         return [0, 1, 2].reduce((sum, i) => sum + (c5[i] - c0[i]) * (w[i] - c0[i]), 0);
     });
     check(`Γ1-Lesart-4 die Feuchte zieht die Boden-Farbe zur feuchten Erde (Zug ${zugNass})`, zugNass > 0);
-    // Γ4 (K16) — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
+    // Γ4 — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
     // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
     // der Ebene (Relief-Minimum).
@@ -1626,7 +1626,7 @@ async function checkBandGammaGenese(ctx) {
     check("Γ1 genVersion reist im Welt-Snapshot (V8.59-Klasse)", res.snapGen === 2);
 }
 
-// V18.199 — Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
+// Γ-M LICHEN: grüne
 // Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen(ctx) {
@@ -1837,7 +1837,7 @@ async function checkBandSeamNormal(ctx) {
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
-// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b, Welle LF kampf Nachbesserung 4): ein Leichnam behielt 90 s die Darstellung
+// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b): ein Leichnam behielt 90 s die Darstellung
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
@@ -2108,7 +2108,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "wesen")
-                // der Leichnam bleibt unter den Wesen (vorher, bis Nachbesserung 3)
+                // der Leichnam bleibt unter den Wesen
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2145,7 +2145,7 @@ async function checkBandTodZensus(ctx) {
             for (let k = 0; k < 60 && !(tB.userData._hopH > 0.3 && !(tB.userData._hopV > 0)); k++) takt(); // im Scheitel
             hop = tB.userData._hopH || 0;
             o.hopBeimTod = +hop.toFixed(3);
-            // DIE LAST FÄLLT ZURÜCK (K13): das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
+            // DIE LAST FÄLLT ZURÜCK: das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
             // Inventar des Spielers legt, und die Einträge im Journal
             const holz = () =>
                 (s.player.inventory || []).reduce(
@@ -2174,7 +2174,7 @@ async function checkBandTodZensus(ctx) {
                         }
                     }
             );
-            // EINE RÄUM-METHODE (K13), Konsum am Ruf: der Fall räumt über _leibZeichenFrei
+            // EINE RÄUM-METHODE, Konsum am Ruf: der Fall räumt über _leibZeichenFrei
             let raeumt = 0;
             decke("_leibZeichenFrei", (alt) => function (...a) { raeumt++; return alt.apply(this, a); });
             const lastSoll = ALLE.reduce(
@@ -2455,7 +2455,7 @@ async function checkBandTodZensus(ctx) {
 
 // Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
-// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause (K21): nach 10 s ohne Takt springt kein Wolf weiter
+// trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast(ctx) {
     const { page, check } = ctx;
@@ -2484,7 +2484,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const nearSpot = findLand(-40, 40, 0);
         // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
         const farSpot = findLand(560, 720, 500);
-        // kein Ersatz-Ort (K16): findet die Suche kein Land, bricht die Probe laut
+        // kein Ersatz-Ort: findet die Suche kein Land, bricht die Probe laut
         if (!nearSpot || !farSpot) throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
     
         const resetSim = (spot) => {
@@ -2530,7 +2530,7 @@ async function checkBandBewegungUnterLast(ctx) {
                 }
                 const p = simPos();
                 if (p.y < minY) minY = p.y;
-                // Körper-Mitte im Soliden = geclippt (die V18.329-Disziplin: _fieldSolid,
+                // Körper-Mitte im Soliden = geclippt (die Disziplin: _fieldSolid,
                 // NICHT getTerrainHeightAt — letzteres lügt am Überhang).
                 if (r._fieldSolid(p.x, p.y + 0.9, p.z)) clipTicks++;
                 if (s._frameOverBudget) overBudgetSeen = true;
@@ -2594,9 +2594,9 @@ async function checkBandBewegungUnterLast(ctx) {
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`), statt dass der
-            // 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0) — der stehende Wolf
-            // machte den Selbsttest blind (CI 39011585355: 0/4; lokal an der Kreatur-Uhr 109,99 dasselbe, über 40 Uhren 58 %)
+            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`),
+            // statt dass der 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0)
+            // — der stehende Wolf machte den Selbsttest blind
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
             let t = performance.now();

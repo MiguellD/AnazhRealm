@@ -1,4 +1,4 @@
-// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (Welle L Folge, v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
+// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
 // erschaffen). Die Defekte, die die sichtbare Leben-Schau am 07.10. auf dem v1-Pfad fand
 // (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim NAMEN. Im echten Boot (headless, foundry-ON,
 // Null-Renderer der Welt): D10, Wortschatz, Werk-Same und Brennglas rufen ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
@@ -166,7 +166,7 @@ function wegVerdict(m) {
     else if (tl.lesen !== tl.stoffe) out.push(`das Phantom färbt sich nicht: ${tl.lesen}/${tl.stoffe} Stoffe lesen die Tönung`);
     if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
     if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
-    // Grün heißt: das Setzen trägt (Integration V18.536, Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
+    // Grün heißt: das Setzen trägt (Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
     const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
     if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
@@ -214,7 +214,7 @@ function werkVerdict(m) {
     else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
     if (!gleich(m.phantomDreh, m.werkDreh))
         out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
-    // Das Werk steht nie im Spieler (die EINE Spieler-Klemme, Gegenprüfung 08.10. „das Phantom umhüllt die Kamera"); wie weit
+    // Das Werk steht nie im Spieler; wie weit
     // das Werk reicht, misst die Linse an der Studio-Gestalt des Phantoms in Weltgröße (jeder Vertex, Integration V18.536 —
     // die Klemme maß die Spender-Teile, 3,01 m).
     if (!(m.mindest > 0)) out.push("kein Spieler-Abstand des Werks (Vorbedingung)");
@@ -222,7 +222,7 @@ function werkVerdict(m) {
         out.push(
             `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
         );
-    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (Integration V18.536: die Stamm-Hülle trägt
+    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (die Stamm-Hülle trägt
     // seit v1-ankunft die Welt-Skala des Studio-Baums).
     if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
         out.push(
@@ -230,7 +230,7 @@ function werkVerdict(m) {
         );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
-    // Jedes Setzen ein neues Werk (Integration V18.536, Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.
+    // Jedes Setzen ein neues Werk: nach dem Setzen zeigt das Phantom den nächsten Samen.
     if (m.naechsterSame == null) out.push("nach dem Setzen kein Phantom mit Samen (Vorbedingung)");
     else if (m.naechsterSame === m.werkSame)
         out.push(`das nächste Setzen zeigt dasselbe Werk (Same ${m.werkSame}) — jedes Setzen derselbe Wurf`);
@@ -556,7 +556,7 @@ async function probe(argW) {
             }
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
-            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort (K20).
+            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort.
             const Q = { x: frei.x + 3, y: frei.y, z: frei.z + 3 };
             const pw = r._phantomWerk;
             let woG = null;
