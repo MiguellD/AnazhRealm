@@ -1894,7 +1894,10 @@
     // Reviers (revierM um den Spieler, je Zelle des Rasters rasterM) = kopfJeHa × Σ lebensraum (Eignung × Haeufigkeit) ×
     // Flaeche (ha) × Nahrung — Nahrung × Lebensraum. DIE BILANZ (bestandBilanz) ist logistisch (Verhulst 1838) je taktS der
     // Spiel-Zeit: unter der Kapazitaet K wirft die Gattung mit geburt × (1 − n/K), darueber stirbt mit tod × (n/K − 1)
-    // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand.
+    // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand. DER FRASS (bestandFrass, Oekologie K1): je
+    // Takt nimmt jedes Tier nach seinem Anteil Aesung (1 − diet) fress vom Leben seines Orts — negativ ins Feld; das Overlay
+    // zerfaellt zum Substrat zurueck, das ist das Nachwachsen (der Verbiss senkt die Aesung, die Aesung den Bestand: die
+    // Rueckkopplung ist negativ, wie das Feld sie erlaubt).
     var BESTAND_GESETZ = Object.freeze({
         taktS: 10,
         revierM: 200,
@@ -1903,7 +1906,12 @@
         beuteVoll: 10,
         geburt: 0.25,
         tod: 0.2,
+        fress: 0.02,
     });
+    function bestandFrass(diet, B) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return B.fress * (1 - d);
+    }
     function bestandNahrung(diet, aesung, beute) {
         var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
         return (1 - d) * aesung + d * beute;
@@ -3350,6 +3358,7 @@
         BESTAND_GESETZ: BESTAND_GESETZ,
         bestandNahrung: bestandNahrung,
         bestandBilanz: bestandBilanz,
+        bestandFrass: bestandFrass,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

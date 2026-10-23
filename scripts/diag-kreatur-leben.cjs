@@ -138,10 +138,17 @@ async function lebenBuehnen(
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
-    // ── bestand (Ökologie K2): der echte Lebenszyklus in Sprüngen der Spiel-Zeit (10 s je Takt) an EINEM Ort; voll: ab Takt 180
-    // die Nahrung halbiert (lebendig × ½), halb: von Anfang an, dieselben Würfe ──
+    // ── bestand (Ökologie K2 + K1): der echte Lebenszyklus in Sprüngen der Spiel-Zeit (10 s je Takt) an EINEM Ort; voll: ab Takt 180
+    // die Nahrung halbiert (lebendig × ½), halb: von Anfang an, dieselben Würfe; je Saat 1–8 sieben Stunden bei voller Nahrung —
+    // je Gattung die zweite gegen die siebte Stunde ──
     await buehne("bestand", async (restore) => {
         if (taeter === "bestand-nahrung") decke(restore, "_kreaturNahrung", () => () => 0.5);
+        if (taeter === "bestand-deckel")
+            decke(restore, "_kreaturBestand", (alt) => () => {
+                const b = alt.call(r);
+                for (const g in b) Object.assign(b[g], { geburt: 0.25, tod: 0 });
+                return b;
+            });
         const alt = [s.spielZeit, s.faunaLifecycle];
         restore.push(() => ([s.spielZeit, s.faunaLifecycle] = alt));
         let halb = false;
@@ -149,25 +156,41 @@ async function lebenBuehnen(
             const f = wfa.call(r, x, z);
             return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
         });
-        const aus = {};
-        for (const lauf of ["voll", "halb"]) {
-            r._faunaStroeme = null;
+        const lauf = (saat, takte, ab) => {
+            r._faunaStroeme = saat ? { seed: s.worldMeta.seed, rng: { fauna: r._streamRng("bestand-" + saat) } } : null;
             s.faunaLifecycle = { lastTick: s.spielZeit };
+            s.lifeField = undefined;
             const n = [];
-            const z = (aus[lauf] = { tode: [0, 0] });
-            for (let k = 0; k < (lauf === "voll" ? 360 : 180); k++) {
-                halb = lauf === "halb" || k >= 180;
+            const tode = [0, 0];
+            for (let k = 0; k < takte; k++) {
+                halb = k >= ab;
                 s.spielZeit += 10;
                 r.tickFaunaLifecycle();
-                z.tode[+(k >= 180)] += s.leichname.length;
+                tode[+halb] += s.leichname.length;
                 for (const c of s.leichname.slice()) r.removeCreature(c);
-                n.push(s.creatures.length);
+                n.push(s.creatures.map((c) => A.TETRAPODA_SOUL_MAP[c.userData.soul]));
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
-            const mittel = (a, b) => +(n.slice(a, b).reduce((p, q) => p + q, 0) / (b - a)).toFixed(2);
-            Object.assign(z, { bestand: mittel(60, 180), hunger: mittel(300, 360) || null });
+            const mittel = (a, b, g) =>
+                +(n.slice(a, b).reduce((p, je) => p + je.filter((x) => !g || x === g).length, 0) / (b - a)).toFixed(2);
+            return { tode, mittel };
+        };
+        const t0 = performance.now();
+        const V = lauf(0, 360, 180);
+        const H = lauf(0, 180, 0);
+        const saaten = [];
+        for (let i = 1; i <= 8; i++) {
+            const L = lauf(i, 2520, Infinity);
+            const je = {};
+            for (const g in A._lebensraumGesetz().L.gattung) je[g] = [L.mittel(360, 720, g), L.mittel(2160, 2520, g)];
+            saaten.push(je);
         }
-        return aus;
+        return {
+            voll: { bestand: V.mittel(60, 180), hunger: V.mittel(300, 360), tode: V.tode },
+            halb: { bestand: H.mittel(60, 180) },
+            saaten,
+            s: Math.round((performance.now() - t0) / 1000),
+        };
     });
     // ── durst (Tiere K4, DURST_GESETZ): drei Hirsche 15–30 m vom Fluss, 1,5 × durstS: ihre Trünke am Wasser ──
     await buehne("durst", async (restore) => {
@@ -270,6 +293,14 @@ function lebenUrteil(name, z, soll) {
         soll(
             V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1,
             `der Tod folgt der Nahrung nicht: halbiert ${V.hunger} Tiere, ${V.tode[1]} Tode`
+        );
+        const paare = z.saaten.flatMap((je, i) =>
+            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
+        );
+        const bruch = paare.filter((p) => p.a >= 1 && !(p.e >= p.a / 3 && p.e <= 3 * p.a));
+        soll(
+            z.saaten.length >= 8 && paare.filter((p) => p.a >= 1).length >= 16 && !bruch.length,
+            `der Bestand bricht aus oder stirbt aus: ${bruch.map((p) => p.wo).join(" · ") || paare.filter((p) => p.a >= 1).length + " Bestände"} (Soll je Gattung die siebte Stunde in [⅓×, 3×] der zweiten, ≥ 2 je Saat, 8 Saaten)`
         );
     }
     if (name === "durst")

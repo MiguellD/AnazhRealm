@@ -1725,7 +1725,7 @@ class AnazhRealm_kreatur_leben {
     // ihrer Boden-Klasse × Fläche × die Nahrung nach ihrer Ernährung — die Äsung des Orts `_kreaturNahrung`, die Beute = die
     // Pflanzenfresser im Revier) und die Bilanz {geburt, tod} je Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt
     // (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt (die Kosten hängen an der Bewegung, nie am Takt).
-    // Liefert { gattung: { n, K, geburt, tod } }.
+    // Liefert { gattung: { n, K, frass, geburt, tod } }.
     _kreaturBestand() {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
@@ -1777,14 +1777,15 @@ class AnazhRealm_kreatur_leben {
         const aus = {};
         for (const g in n) {
             const k = B.kopfJeHa * K[g];
-            aus[g] = Object.assign({ n: n[g], K: +k.toFixed(2) }, BG.bilanz(n[g], k, B));
+            aus[g] = Object.assign({ n: n[g], K: +k.toFixed(2), frass: BG.frass(diet[g], B) }, BG.bilanz(n[g], k, B));
         }
         return aus;
     }
 
     // DER LEBENSZYKLUS (Ökologie K2, tetrapoda BESTAND_GESETZ): je taktS s der Spiel-Zeit (`spielZeit`: das Portal friert sie
     // ein) die Bilanz des Reviers (`_kreaturBestand`) — je Gattung über ihrer Kapazität stirbt mit ihrer Chance das Älteste am
-    // Hunger (die Trauer des Spielers hebt, sein Frieden dämpft), darunter wirft der Ort eine Gruppe (`_creatureNaturalBirth`).
+    // Hunger (die Trauer des Spielers hebt, sein Frieden dämpft), darunter wirft der Ort eine Gruppe (`_creatureNaturalBirth`);
+    // zuvor äst jedes Tier am Ort (der Fraß, Ökologie K1).
     // Jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück. Bis Ökologie K2 setzte ein Deckel den Bestand (Ziel
     // 4–14 und Deckel 4–28 Tiere aus dem Feld am Spieler, FAUNA_TARGET/MAX_POPULATION), getaktet in der Wanduhr (Abklingen 25
     // bzw. 35 s); kein Fraß, keine Beute änderte eine Geburt, gestorben wurde nur über dem Deckel und am Alter.
@@ -1794,6 +1795,11 @@ class AnazhRealm_kreatur_leben {
         if (st.spielZeit - (L.lastTick || 0) < AnazhRealm._bestandGesetz().B.taktS) return;
         L.lastTick = st.spielZeit;
         const bestand = this._kreaturBestand();
+        // DER FRASS (Ökologie K1): jedes Tier nimmt je Takt nach seiner Äsung vom Leben seines Orts (negativ ins Feld)
+        for (const c of st.creatures) {
+            const b = bestand[AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul]];
+            if (b && b.frass > 0) this._depositLife(c.position.x, c.position.z, -b.frass);
+        }
         const rng = this._faunaRng();
         for (const g in bestand) {
             const p = bestand[g].tod;
@@ -2396,11 +2402,17 @@ AnazhRealm._bestandGesetz = function () {
     const B = k && k.BESTAND_GESETZ;
     if (
         B &&
-        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod].every(Number.isFinite) &&
+        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod, B.fress].every(Number.isFinite) &&
         typeof k.bestandNahrung === "function" &&
-        typeof k.bestandBilanz === "function"
+        typeof k.bestandBilanz === "function" &&
+        typeof k.bestandFrass === "function"
     ) {
-        AnazhRealm._bestandGesetzMemo = Object.freeze({ B, nahrung: k.bestandNahrung, bilanz: k.bestandBilanz });
+        AnazhRealm._bestandGesetzMemo = Object.freeze({
+            B,
+            nahrung: k.bestandNahrung,
+            bilanz: k.bestandBilanz,
+            frass: k.bestandFrass,
+        });
         return AnazhRealm._bestandGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:BESTAND_GESETZ");
