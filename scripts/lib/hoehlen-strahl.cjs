@@ -1,4 +1,4 @@
-// hoehlen-strahl.cjs — DIE STRAHL-WAHRHEIT DES BODEN-SATZES (Welle 7, die Höhlen-Sicht).
+// hoehlen-strahl.cjs — DIE STRAHL-WAHRHEIT DES BODEN-SATZES (die Höhlen-Sicht).
 //
 // Die Höhlen-Sicht (`_hoehlenSicht`) wählt je Pass die Höhlen-Zellen, die ein Strahl durch Mündung und Portale erreichen
 // KANN — eine konservative Rechnung über Boxen. Diese Linse ist ihr unabhängiger Richter: sie schießt Strahlen gegen JEDES
@@ -22,7 +22,7 @@ function installHoehlenStrahl() {
         if (!s) return null;
         const P = s.geom.attributes.position.array;
         const Z = s.geom.attributes.aMorphTarget ? s.geom.attributes.aMorphTarget.array : null;
-        // der Morph-Code (K51-2) reist in der vierten Komponente der Satz-Farbe
+        // der Morph-Code reist in der vierten Komponente der Satz-Farbe
         const C4 =
             s.geom.attributes.color && s.geom.attributes.color.itemSize === 4 ? s.geom.attributes.color.array : null;
         const W = C4 ? { length: C4.length / 4 } : null;

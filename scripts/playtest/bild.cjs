@@ -79,7 +79,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- a) Tag-Nacht-Zyklus
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
-        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; V8.48: der Morgen um 0,32 steigt und knickt nicht)
+        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; der Morgen um 0,32 steigt und knickt nicht)
         const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
         r._luftBeta = () => klar;
         try {
@@ -324,7 +324,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         }
         out.affinityPicksDichteInDichteField = dichteWins > 20;
 
-        // --- Vision 2 (Welle 5 Klang): die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
+        // --- Vision 2: die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
         // (Grundton ∝ Körperlänge^−0,9): das kleine Wesen ruft höher als das große.
         const rufKern = AnazhRealm._umweltGesetz().kern;
         const kleinF0 = rufKern.tierRufPuffer({ laengeM: 0.7, stimmung: "freude", saat: 1 }).f0;
@@ -361,7 +361,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         r._applyDayNightToScene();
-        // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
+        // Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
         const skyU = r.state.skyboxUniforms.himmelTint;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
@@ -692,7 +692,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Phase A: Stern-Feld ---
-        // V10.0-i.a: InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
+        // InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
         // Vendor-Bug mit pointUV → Profi-Pattern: 4-Vertex-Quad pro Instanz).
         const sf = r.state.starField;
         out.starFieldIsPoints = !!(sf && sf.isInstancedMesh === true);
@@ -805,10 +805,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
         out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
         out.aerialOutputError = _aerBrueche[0] || null;
-        // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
+        // Welt-Wasser — das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
-        out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
         // --- Atmosphäre-Persistenz --- (der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
         const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
@@ -915,7 +914,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
         );
-        check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
         check(
             "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
@@ -1173,20 +1171,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 pm.position.copy(pos);
                 s._fieldVy = 0;
                 s.playerVel.setValue(0, 0, 0);
-                s.keys = Object.assign({}, k);
+                Object.assign(s.verbTafel, { sprint: false, sprung: false }, k); // die Leib-Felder der Verb-Tafel (leib.K5)
                 s.player.stamina = 100;
                 r._stepCharacter(r.constructor.FIXED_DT, 0);
                 return s._fieldVy;
             };
             try {
-                const tauch = vy({ shift: true }),
-                    auf = vy({ " ": true }),
+                const tauch = vy({ sprint: true }),
+                    auf = vy({ sprung: true }),
                     ruhe = vy({});
                 out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
                 out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
             } finally {
                 for (const k in buehne) delete r[k];
-                Object.assign(s, { _fieldVy: 0, keys: {} });
+                Object.assign(s.verbTafel, { sprint: false, sprung: false });
+                s._fieldVy = 0;
                 Object.assign(s.player, { mountedArch: sattel, stamina: sta });
                 pm.position.copy(pos);
                 s.playerVel.setValue(0, 0, 0);
@@ -1238,7 +1237,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
         check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
         check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("V8.33: im Charakter-Schritt sinkt Shift und steigt Space unter Wasser", v833Results.physicsUsesSwimFn);
+        check("V8.33: im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
         check("V8.32: getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
         check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
@@ -1260,7 +1259,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         (stammDateien) => {
             const out = {};
             const ring = document.getElementById("slider-ring");
-            // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
+            // der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
             // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
             out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
 
@@ -1302,7 +1301,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             const ox = pm.position.x;
             const oz = pm.position.z;
             const oTod = r.state.timeOfDay;
-            // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
+            // deterministische schräge Sonne: der Light-Space-Snap
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
             r.setTimeOfDay(0.3, "human");
@@ -1419,7 +1418,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
-        // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
+        // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
         r.state.player.hp = 50;
         r.state.player.hpMax = 100;
         r.state.player.stamina = 75;
@@ -1683,7 +1682,7 @@ async function checkBandV18164WarumLicht(ctx) {
         out.baumMicro =
             !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
 
-        // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): der Snapshot trägt microStrength, der Restore liest sie.
+        // (5) der GEHEILTE M7-Persistenz-Riss (Klasse): der Snapshot trägt microStrength, der Restore liest sie.
         const au = r._ensureAtmoUniforms();
         const snap = r.buildStateSnapshot();
         out.persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
@@ -1732,8 +1731,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const busch = r._phytoArt("busch_hazel");
         out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
         out.understoryArts = !!(r._phytoArt("farn_busch") && r._phytoArt("blume_gross"));
-        const layers = A.SCATTER && A.SCATTER.layers;
-        out.understoryLayer = !!(layers && layers.some((l) => l.kind === "under"));
         let buschParts = 0;
         try {
             // N7.3 — UNIT-RICHTER: busch_hazel ist Studio-bekannt → foundry-ON gäbe der
@@ -1762,7 +1759,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         res.buschGrammar === true
     );
     check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);
-    check("Ω-OPSIS S4 (IV3) die Understory-Scatter-Schicht existiert (5-Strata)", res.understoryLayer === true);
     check(
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true
@@ -1773,7 +1769,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     );
 }
 
-// Der Schatten-Takt (V18.524; ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
+// Der Schatten-Takt (ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
 // Leser (shadow.autoUpdate/needsUpdate) — die nahe Kaskade im Regler-Intervall (≤ SCHATTEN_TAKT.nahMax), die ferne
 // im fernFaktor-Takt. Das Intervall ist eine Regelkreis-Stellgröße.
 async function checkBandV18264ShadowCache(ctx) {

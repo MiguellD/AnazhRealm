@@ -5,7 +5,7 @@
 // (4) nasse Vertices sitzen exakt bei Atlas-L − drop, (5) COVERAGE: ≥90 % der atlas-nassen
 // in-Region-Zellen im Annulus tragen ein Quad, (6) Re-Anker beim Spieler-Crossing,
 // (7) der Toggle (`atmosphere.farWater=false`) räumt sauber. Reine CPU-Geometrie (~40 s).
-// ZWEI LÄUFE: der Alt-Mechanik-Lauf (foundry deterministisch aus, V18.411-Hook)
+// ZWEI LÄUFE: der Alt-Mechanik-Lauf
 // UND der PRODUKTIONS-Lauf (foundry AN — seit V18.462 ist das Provisorium zurück auf AN,
 // der Studio-Regime-Default-AUS-Term ist gefallen; die Linse prüfte bis dahin NUR die
 // gefallene Weiche = Verifikation von Existenz statt Konsum).
@@ -17,7 +17,7 @@ async function runOnce(browser, noFoundry) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((nf) => {
         window.__anazhHeadlessNullRenderer = true;
-        // Lauf 1 = Alt-Mechanik (Foundry deterministisch aus, V18.411-Hook);
+        // Lauf 1 = Alt-Mechanik;
         // Lauf 2 = PRODUKTIONS-Regime (Foundry an — das Fern-Wasser ist seit V18.462
         // auch dort DEFAULT AN, die alte Regime-Weiche ist gefallen).
         if (nf) window.__anazhGateNoFoundry = true;

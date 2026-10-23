@@ -1378,7 +1378,7 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
-            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Das Brennglas-Gesetz bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
             // Eiche liegt (nachts brennt nichts).
             const beforeTod = r.state.timeOfDay;
             r.state.timeOfDay = 0.5;
@@ -1594,7 +1594,7 @@ async function checkBandPsi0Winkel(ctx) {
         res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04
     );
 
-    // Ψ1 (meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
+    // Ψ1 — das EINE argmax-Organ: die ~7 Inline-
     // Loops sind VERDICHTET. KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
     const psi1 = await safeEvaluate(page, () => {
@@ -1606,7 +1606,7 @@ async function checkBandPsi0Winkel(ctx) {
             { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
         ] };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
-        // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
+        // das Temperament fiel aus dem Organ (Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
             liest("_computeWorkshopDomain", [bpK]) &&

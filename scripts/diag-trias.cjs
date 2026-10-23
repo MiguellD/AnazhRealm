@@ -1,4 +1,4 @@
-// diag-trias.cjs — DIE TRIAS-LINSE (Trias-Welle): die Szenen-Dreiecke bleiben
+// diag-trias.cjs — DIE TRIAS-LINSE: die Szenen-Dreiecke bleiben
 // ueber die Wanderung GEDECKELT — platzierte Studio-Architektur (haus_ u. a.) lebt in
 // der EINEN LOD-Geschichte statt fuer immer auf ihrer Bau-Stufe zu kleben.
 //
@@ -177,7 +177,7 @@ const triasStaticLaws = () => [
         if (!res.bookReady) return res;
 
         const pm = r.state.playerMesh;
-        // Das Auge reist mit (K36): jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
+        // Das Auge reist mit: jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
         // Kamera des Spiels sitzt es über dem Spieler (ohne Spiel-Takt folgt die Kamera dem Teleport sonst nicht).
         const tp = (x, z) => {
             pm.position.set(x, r.getTerrainHeightAt(x, z) + 2, z);
@@ -305,7 +305,7 @@ const triasStaticLaws = () => [
             }
             res.l1Level = h0b._lodLevel;
             res.l1Served = h0b._servedLod;
-            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…` am Anfang), die Streu `typ#f:…`.
+            // der platzierte Bau keyt nach Studio-Geometrie (`f:…` am Anfang), die Streu `typ#f:…`.
             const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/(^|#)f:[^|]+\|\d+\|(\d)[|:]/);
             res.l1Slot = mS ? Number(mS[2]) : null;
         }

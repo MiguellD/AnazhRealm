@@ -103,7 +103,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
         const carveRet = r.carveVoxel(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
-        // V18.97-Telemetrie (V18.93-Muster): bei Rot zeigt die Invariante den
+        // bei Rot zeigt die Invariante den
         // ECHTEN Lauf-Zustand (Position/Surface/Edit-Annahme), statt zu raten.
         out.telemetry = JSON.stringify({
             pm: { x: +pm.x.toFixed(1), y: +pm.y.toFixed(1), z: +pm.z.toFixed(1) },
@@ -749,7 +749,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
         out.assignClearsSelection = r.state.inventorySelected === null;
 
-        // V18.57 Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
+        // Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
         // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
         // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
         const sp = r._selfProfile();
@@ -769,7 +769,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
         out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
-        // V18.61 Ich-F (H.1) — die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
+        // die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
         out.ichHasNoReise = !document.getElementById("ich-reise");
         out.hofChronikInDom = !!document.getElementById("hof-chronik");
         r._renderHofChronik();
@@ -788,7 +788,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             document.querySelector(".ich-readout #ich-stage-spec") &&
             document.querySelector(".ich-readout #status-emotions")
         );
-        // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
+        // der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
         out.ichSoulBarInHeader = !!document.querySelector(".inventory-col-character .ich-soul-bar #player-soul-select");
         // der Werkstatt-Hinweis lebt jetzt als Tooltip am Select (Chrome komprimiert, kein Absatz).
@@ -1676,7 +1676,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
         res.t3DcConstants
     );
-    // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
+    // T4: der Wasser-Automat-Kern — Wasser fliesst (Option A).
     check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
@@ -1970,7 +1970,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
                 if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
             }
             out.cellMismatches = cellMismatches;
-            // V9.91 Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
+            // Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
             // Differenz von <100 Cells bei ~71k Cells = < 0.15%).
             out.cellsNearMatch = cellMismatches < len * 0.01;
         } else {
@@ -2091,7 +2091,7 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
-// PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
+// PHASE A — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
 async function checkBandPhaseAFundament(ctx) {

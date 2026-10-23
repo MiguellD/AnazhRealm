@@ -9,7 +9,7 @@
 //     im Bild bleibt.                                                                                   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
-//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
+//   V-D3 FREMDER ZUG — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
 //     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
 //     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
 //     Zug der Vorschau: sie wird NACH der Ankunft geweckt.                                            Soll ≤ 20 s
@@ -26,7 +26,7 @@
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
 //     der gezeichneten Instanz geprüft). Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
 //     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
+//     Framerate) und um die Plattform, nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
 //     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los.
@@ -80,7 +80,7 @@ const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, karteMin: 0
 // W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
 // die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
 const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
-// V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
+// V-D3 FREMDER ZUG: jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
     const out = [];
@@ -98,7 +98,7 @@ function zugVerdict(m) {
                     : `zug ${wer}: ${z.key} nach dem Zug nicht angekommen (der fremde Zug im Rang der Ferne)`
             );
     }
-    // V-D3 STUFEN (K38-N2): jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
+    // V-D3 STUFEN: jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
     // die Karte wartet auf ihre Höhen-Stufe (Rahmen und Sichthöhe) bzw. auf ihren Bake, nie auf eine Uhr.
     const st = m.stufen || [];
     if (st.length !== 3) out.push(`zug stufen: ${st.length} von 3 Stufen gemessen (vakuös)`);
@@ -115,7 +115,7 @@ function zugVerdict(m) {
             out.push(
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
-    // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
+    // V-D3 VORRAT: der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
     // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag.
     const vr = m.vorrat;
     if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
@@ -798,7 +798,7 @@ function wand(src) {
         fehltIn("dslEffects", /const c[xyz] = Number\(|playerMesh\.position : \{ x: 0/),
         fehltIn("_dslRulePos", /Array\.isArray/),
     ];
-    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
+    // Der Foundry-Pfad pollt nicht: jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
     // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
     // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
     const zg = zeitGraph(src);
@@ -1491,7 +1491,7 @@ async function probe(arg) {
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D3 FREMDER ZUG (K38): der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
+    // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
     // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
     // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
     // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
@@ -1558,7 +1558,7 @@ async function probe(arg) {
                 r._refreshHeldMesh = echt;
             }
         }
-        // (c) JEDE STUFE der Vorschau (K38-N2): die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
+        // (c) JEDE STUFE der Vorschau: die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
         // Körper der Stufe, die L2-Karte ihre Höhen-Stufe (Rahmen + Sichthöhe), ihre Höhe und ihre Zelle im Atlas.
         m.stufen = [];
         const bpE = st.blueprints.baum_eiche;
@@ -1594,7 +1594,7 @@ async function probe(arg) {
         } finally {
             bpE._recipeLod = lodAlt;
         }
-        // (d) DER VORRAT (K38-N2): eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
+        // (d) DER VORRAT: eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
         // an; sobald ihr Körper im Flug ist, fragt ein Leser denselben Schlüssel — gezählt wird jeder Auftrag an den Worker.
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
@@ -2007,9 +2007,9 @@ async function korpusHaupt() {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
         const vorStand = stammLib.ersetze(quelle, [
             ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
-            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
+            // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
+            // der Rest der Klasse beim Vorher: der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
             ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
@@ -2017,11 +2017,11 @@ async function korpusHaupt() {
             // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
             ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
-            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
+            // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
         ]);
-        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
+        // die Klasse der festen Stellen-Zahl: ein Renderer weniger über die Bühne bleibt grün
         const weniger = wand(stammLib.ersetze(quelle, "_hofStartRAF", 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
         check(
             "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
@@ -2266,7 +2266,7 @@ async function korpusHaupt() {
             const v = ortVerdict(bruch);
             check(`Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand (c52089c7) der Täter beim Namen.
+        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const kGesund = (name) => {
             const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
             return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };

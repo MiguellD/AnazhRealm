@@ -208,7 +208,7 @@ async function checkBandRing6Workshop(ctx) {
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
-        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; V18.260: per Material
+        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; per Material
         // gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
         out.templeHasPillars =
             t && t.mesh && !!r.state.blueprints._t_r6_tor && (r.state.blueprints._t_r6_tor.parts || []).length >= 4;
@@ -1126,7 +1126,7 @@ async function checkBandRing6Workshop(ctx) {
         // Slot wechseln (Slot 1 = waterfall)
         r.selectHotbarSlot(1);
         out.switchFormChanges = r.state.buildMode.blueprintName === "waterfall";
-        // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
+        // confirmBuild platziert echte Struktur — S2: in schöpfer testen, weil
         // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
         r.setGameMode("schöpfer");
         const arBefore = r.state.architectures.length;
@@ -1333,8 +1333,8 @@ async function checkBandArchetypBank(ctx) {
             // (KIND_SUBSTANCE, parts + connections) trägt die Bank-Probe unverändert.
             {
                 n: "substanz fahrzeug_wagen (KIND_SUBSTANCE)",
-                p: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.parts,
-                c: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.connections,
+                p: r.constructor.KIND_SUBSTANCE.fahrzeug_wagen.parts,
+                c: r.constructor.KIND_SUBSTANCE.fahrzeug_wagen.connections,
                 e: "vehicle",
             },
             { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },
@@ -1579,9 +1579,9 @@ async function checkBandWHWald(ctx) {
     );
 }
 
-// Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Γ2 TOTHOLZ: ein gefallener Stamm im Wald.
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
-// seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
+// seed-deterministisch, KEIN Affinitäts-Wettstreit — Disziplin).
 async function checkBandV18198Gamma2Totholz(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -1761,7 +1761,7 @@ async function checkBandV18213MeshMerge(ctx) {
             out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
+            // der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
             // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
             r.state.architectures = r.state.architectures || [];
             r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });

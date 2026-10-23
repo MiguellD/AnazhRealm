@@ -91,7 +91,7 @@ function meshDiff(tag, gold, live) {
     return null;
 }
 
-/// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
+/// DIE BUDGET-WAND — der KONSUM des Budgets (render-config lod.budget,
 // Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
 //  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
 //      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen

@@ -5,7 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
+// die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
 // Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole(ctx) {
@@ -73,7 +73,7 @@ async function checkBandV1774UseByRole(ctx) {
         out.toggleOff = p.equipped.held == null;
 
         // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
-        // V18.66 Ich-J2 — der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
+        // der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
         // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit.
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
@@ -203,7 +203,7 @@ async function checkBandV1774UseByRole(ctx) {
     );
 }
 
-// V17.76 Welle 2 (Schritt 1) — die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
+// die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
 // Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
 // Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
 async function checkBandV1776WorkshopPrecision(ctx) {
@@ -303,7 +303,7 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
         out.rangeVisible = softP < meisterP - 0.1;
         delete r.state.blueprints["_softws"];
-        // KONSUM — V18.44: der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
+        // KONSUM — der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
         const panel = document.createElement("div");
         r._specRenderBody(panel, meister);
         const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
@@ -408,7 +408,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
         delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
-        // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
+        // Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
         out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
         // Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
@@ -538,7 +538,7 @@ async function checkBandV1790Recalibration(ctx) {
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
         out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
 
-        // (6) UI-Befund (b) — V17.91: Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // (6) UI-Befund (b) — Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
         for (const sheet of document.styleSheets) {
@@ -927,8 +927,8 @@ async function checkBandWelle6Keybindings(ctx) {
         out.sectionInDom = !!document.getElementById("keybindings-section");
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
-        // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
+        // je Aktion eine Zeile: 13 der Tastatur + 8, die nur das Gamepad frei bindet (leib.K5)
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 21;
         // Pro Aktion ein Rebind-Button mit data-action
         out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
@@ -979,7 +979,7 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
@@ -1068,7 +1068,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                 // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
                 // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
                 out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-                // Welle B — die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
+                // die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
                 // ein Studio-Leaf keyt nach seiner Studio-Geometrie): eine baum_kiefer#0-Gruppe.
                 out.cutoverGroupExists = !!(
                     r.state.archInstanceGroups &&
@@ -1269,7 +1269,7 @@ async function checkBandWelle6XAudit(ctx) {
             out._a3bMarked = !!(armorResult && armorResult.ok);
             const equipResult = r.equipArmor("audit_armor_real");
             out._a3bEquipped = !!(equipResult && equipResult.ok);
-            // V18.61 Ich-F — das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
+            // das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
             r._ichRenderSpecSheet();
             const container = document.getElementById("ich-stage-spec");

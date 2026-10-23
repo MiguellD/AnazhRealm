@@ -184,7 +184,7 @@ async function checkBandW17Multiplayer(ctx) {
         r.p2pSend = origSend;
 
         // buildStateSnapshot persistiert multiplayer im portalMeta
-        // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
+        // (der feste Feld-Satz — Lehre); _sanitizePortalMeta
         // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
         const bpName = "_w17b_portal";
         const wp = r.state.blueprints["welt_portal"];

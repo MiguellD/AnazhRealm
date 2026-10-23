@@ -17,7 +17,7 @@
 //       Schritt „Destroyed texture …" an einem Größen-Ziel beim Namen zeigen (`GROESSEN_ZIELE`: Szenen-Tiefe oder seit D10 der
 //       Spiegel-Strahl). JEDER Schritt urteilt in Bau-Ereignissen: jeder Submit unter einem eigenen Fehler-Bereich, nach n Frames
 //       das Urteil, sobald der GPU-Prozess sie geprüft hat — ein Bereich von r184 (je async Pipeline-Bau offen, swiftshader-Linux
-//       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt (CI 38825754441). K hält den Rest.
+//       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");

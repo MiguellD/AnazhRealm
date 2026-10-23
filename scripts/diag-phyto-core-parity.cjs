@@ -121,7 +121,7 @@ ok(
     tested + " Läufe, " + maxDivergent + " divergent"
 );
 
-// ── P-ZWILLING (K24): EINE Ableitung Dials → P ──
+// ── P-ZWILLING: EINE Ableitung Dials → P ──
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker

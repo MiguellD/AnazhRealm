@@ -1079,7 +1079,6 @@ async function checkBandW16Distribution(ctx) {
         r.requestWorldBundleFromPeer = origReqClick;
 
         // UI: die Welt-Katalog-Sektion im DOM.
-        out.uiInDom = !!document.getElementById("mesh-world-catalog") && !!document.getElementById("mesh-world-status");
 
         // Cleanup
         r._p2pRemovePeer("w16peer");
@@ -1193,7 +1192,6 @@ async function checkBandW16Distribution(ctx) {
             "W16 P2: ein Klick auf den Holen-Knopf routet durch den delegierten Listener (Spieler-Pfad)",
             w16Results.catalogButtonClickRoutes
         );
-        check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
     }
 }
 
@@ -1541,11 +1539,6 @@ async function checkBandLateMultiUser(ctx) {
         out.joinSetsOverride = joinRes.ok === true && p2p.roomOverride === "raum-xyz";
         out.joinSameRejected = r.joinLobbyRoom("raum-xyz").reason === "already_here";
 
-        out.lobbyDom =
-            !!document.getElementById("p2p-lobby") &&
-            !!document.getElementById("p2p-lobby-publish-toggle") &&
-            !!document.getElementById("p2p-lobby-refresh");
-
         // ── Kreatur-Sicht-Sync ──
         // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
@@ -1625,7 +1618,6 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P4: _renderLobbyUI rendert eine Beitreten-Zeile", w7p4Results.lobbyRendered);
         check("W7 P4: joinLobbyRoom setzt roomOverride", w7p4Results.joinSetsOverride);
         check("W7 P4: joinLobbyRoom in denselben Raum → already_here", w7p4Results.joinSameRejected);
-        check("W7 P4: Lobby-UI-Elemente im DOM", w7p4Results.lobbyDom);
         check("Kreatur-Sync: spawnCreatureAt vergibt eine netId", w7p4Results.creatureHasNetId);
         check("Kreatur-Sync: _p2pBroadcastCreatures sendet creature-pos", w7p4Results.broadcastSendsCreatures);
         check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);

@@ -194,7 +194,7 @@ function staticLaws(q) {
             res.e.err = (e && e.message) || String(e);
         }
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
-        // Geometrie (V18.477 FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
+        // Geometrie (FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
         // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
         // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
         // Die Probe wanderte mit dem Gesetz: vorher klemmte [0] hart. =====
@@ -229,7 +229,7 @@ function staticLaws(q) {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();

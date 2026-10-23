@@ -261,7 +261,7 @@ function staticLaws(manifestSrc) {
         // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
         try {
             res.x = {};
-            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
+            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH
             const frozenG = r.constructor.CREATURE_SOULS.wolf.bodyParts;
             const effG = r._tetrapodaSoulParts("wolf");
             res.x.glutDocked = !!effG && effG.length === frozenG.length;

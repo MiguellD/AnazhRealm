@@ -6,7 +6,7 @@
 //
 //   A — RÄUMLICH, gleiche LOD (die Determinismus-Wette):
 //       Teilen zwei gleich-LODige Nachbar-Chunks am gemeinsamen Rand koinzidente Oberflächen-
-//       Vertices (Pad+Crop-Overlap)? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
+//       Vertices? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
 //       → die gleiche-LOD-Naht ist STRUKTURELL straff (kein T1/T2 nötig). Wenn nicht: sub-cell-
 //       Jitter = ein echter Riss.
 //
@@ -91,7 +91,7 @@ const server = statikServer();
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 
-        // Terrain-Chunks sammeln (Vertices in Welt-Koords). Pro Chunk: cx,cz,lod,step,
+        // Terrain-Chunks sammeln. Pro Chunk: cx,cz,lod,step,
         // pos (BufferAttribute), idx (Index-Array — die Geometrie IST indiziert, :18296), vset
         // (quantisierte Vertex-Menge für die exakte „geteilte Vertices?"-Frage, §1.2-These).
         const QV = 0.03; // Quantisierung für „derselbe Vertex" (float32-Determinismus → <QV)
@@ -112,7 +112,7 @@ const server = statikServer();
         }
 
         // Das dispositive Maß: EXAKT-geteilte Vertices, GEBINNT nach Abstand zur Naht-Ebene.
-        // Die ÜBERLAPP-Zellen (Pad+Crop) sitzen NAHE der Ebene + sollten koinzidente
+        // Die ÜBERLAPP-Zellen sitzen NAHE der Ebene + sollten koinzidente
         // Vertices rendern (deterministische Density + welt-identische Laplacian-Nachbarn) →
         // same-LOD: das nächste Bin (auf der Naht-Linie) ist ~100% geteilt → die Oberfläche ist
         // dort STETIG (kein Riss); die ferneren Bins (Interieur) sind natürlich ungeteilt (kein
@@ -859,9 +859,9 @@ const server = statikServer();
         console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
-    // G0 (goldstandard-mesh-plan) — `--gate`: das echte Naht-Gate. Es schützt gegen den
+    // G0 — `--gate`: das echte Naht-Gate. Es schützt gegen den
     // VAKUÖSEN Pass (0 Cross-LOD-Paare = die Messung lief gar nicht → grün ohne Beweis;
-    // die V18.370-Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
+    // die Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.

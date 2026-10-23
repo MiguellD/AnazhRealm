@@ -1,9 +1,7 @@
-// diag-charakter-achsen.cjs — V18.466 DIE CHARAKTER-ACHSEN DER STUDIOS (Konsum-Beweis).
-// Der Schöpfer-Befund („schau die studios an, du wirst sehen was noch fehlt"):
-// die Studios tragen ORTHOGONALE Design-Sprachen — Schmiede-TRADITIONEN
+// diag-charakter-achsen.cjs — DIE CHARAKTER-ACHSEN DER STUDIOS (Konsum-Beweis).
+// Die Studios tragen ORTHOGONALE Design-Sprachen — Schmiede-TRADITIONEN
 // (Frank/Nihon/Pars/Urvolk/Brut), Garage-KULTUREN (cavallo/toro/stern/vorsprung/
-// monolith), 22 Klang-Genres — die Gesetzbücher exportieren sie, aber die Welt
-// konnte sie nie wählen. Diese Linse hält die Naht:
+// monolith), 22 Klang-Genres — die Welt wählt sie. Diese Linse hält die Naht:
 //
 //   T (Tradition): ov.__tradition FORMT die Klinge (Fingerprint je Tradition
 //     verschieden; Möbel folgen: Nihon = Kashira anders als Frank-Scheibenknauf),

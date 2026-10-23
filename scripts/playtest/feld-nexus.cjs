@@ -89,7 +89,7 @@ async function checkBandRing2Extended(ctx) {
             learned.source === "human";
 
         // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
-        // Welle 6.H P2A — Kreatur ist Group; Color lebt auf Sub-Meshes.
+        // Kreatur ist Group; Color lebt auf Sub-Meshes.
         const someCreature = r.state.creatures[0];
         const readCreatureColor = (c) => {
             if (!c) return 0;
@@ -467,7 +467,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -638,7 +638,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 7. Liste rendert Soul-Klassen auf creature-name
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -764,7 +764,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         r.state.creatureProactiveSpeechEnabled = true;
         r.state.lastCreatureProactiveSpeech = -Infinity;
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -992,7 +992,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -1203,7 +1203,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Stats-Panel im DOM + NACH Canvas (jetzt VOLLBREIT aus dem Preview-Wrapper
             // heraus, als Geschwister unter der ganzen Reihe → Dokument-Reihenfolge prüfen, nicht
-            // Wrapper-Kind-Index; V9.56-i: der Test wandert mit dem Layout).
+            // Wrapper-Kind-Index; der Test wandert mit dem Layout).
             const stats = document.getElementById("workshop-stats-panel");
             out.statsInDom = !!stats;
             if (stats && canvas) {
@@ -1407,7 +1407,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("test_v807");
             out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
 
-            // V18.44 Spec-Sheet: die Tags sind Daten-Viz-BALKEN (.spec-bar mit .spec-bar-fill.lvl-X),
+            // Spec-Sheet: die Tags sind Daten-Viz-BALKEN (.spec-bar mit .spec-bar-fill.lvl-X),
             // nicht mehr Stern-Chips. Geprüft wird: Balken existieren + tragen eine Stufen-Klasse.
             const statsPanel = document.getElementById("workshop-stats-panel");
             const tagBars = statsPanel ? statsPanel.querySelectorAll(".spec-bar") : [];

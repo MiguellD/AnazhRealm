@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Befund (OMEN 0710-6, V18.535-ABAB, verworfene Boots): die Bühne
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Befund: die Bühne
 // hielt das Wetter (gate:wetter-wache), aber keinen anderen Zug — im Boot 4B setzte der Nexus mitten im Lauf ein Dorf (die
 // Gier sprang), in anderen Boots kamen Tiere at_player, Größen- und Tempo-Würfel, die Tageszeit. Jeder solche Zug ist ein
 // Welt-Akt der DSL, und alle laufen durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung

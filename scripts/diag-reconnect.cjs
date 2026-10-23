@@ -616,7 +616,7 @@ function makeRealmA(env, initSrcOverride) {
         check("kein Math.random im Reconnect-Pfad (seeded Jitter, Lehre 7)", stammLib.fehlt(pfad, /Math\.random/), stammLib.fehlt.wo);
     }
 
-    // ── D  DIE TÜR TRÄGT DIE ABSICHT (K04): `initP2PSync` setzt `p2p.enabled` als erste Tat, kein Aufrufer setzt sie von
+    // ── D  DIE TÜR TRÄGT DIE ABSICHT: `initP2PSync` setzt `p2p.enabled` als erste Tat, kein Aufrufer setzt sie von
     // Hand davor (Knopf, Boot, die Zwei-Seiten-Smokes) — sonst plant der close-Zweig nach einem gescheiterten
     // Erst-Aufbau des nackten Aufrufs keinen Rejoin. Der Laufzeit-Beweis ist gate:mp-sync (b); hier die Absenz.
     {

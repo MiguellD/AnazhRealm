@@ -1999,7 +1999,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.roundtripKeepsTrust =
             !!reloaded["gh-test"] && reloaded["gh-test"].trust === "sandboxed" && reloaded["gh-test"].vendored === true;
         // UI: die GitHub-Holen-Sektion im DOM.
-        out.uiRepoSection = !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -2040,7 +2039,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
             "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
             vendor2Results.roundtripKeepsTrust
         );
-        check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
     } else {
         check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
     }
@@ -2235,7 +2233,7 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
-// R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
+// R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {

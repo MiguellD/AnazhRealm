@@ -1,4 +1,4 @@
-// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ (W9-Muster).
+// diag-membran-gesetz.cjs — DIE MEMBRAN ALS GESETZ.
 // Beweist in drei Wänden, dass die Portal-Passage EINE Zahlen-Quelle hat:
 //
 //   1. ZWILLINGS-WAND: porta-core.MEMBRAN_GESETZ trägt EXAKT die eingefrorenen
@@ -33,7 +33,7 @@ function eq(a, b, tol) {
 
 console.log("— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —");
 
-// ── Wand 1: die Zwillings-Tabelle (Alt-Literale V18.463, eingefroren) ──
+// ── Wand 1: die Zwillings-Tabelle ──
 const FROZEN = {
     profilW: 64,
     seg: 45, // 1310-3: von 90 (Vertex-Welle bildgleich bei 45, Genesis −47k Dreiecke, −1,0 ms GPU) — ein erklärter Akt

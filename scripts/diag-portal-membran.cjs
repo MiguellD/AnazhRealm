@@ -1,4 +1,4 @@
-// diag-portal-membran.cjs — V18.464 DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
+// diag-portal-membran.cjs — DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
 // Beweist im ECHTEN Boot (foundry-ON, warmes Buch, Null-Renderer), dass ein
 // Tor-Gestalt-Portal in der Welt VOLLSTÄNDIG integriert ist:
 //

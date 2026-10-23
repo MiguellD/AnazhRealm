@@ -994,7 +994,7 @@ async function checkBandV1737RulesUI(ctx) {
         out.collapsibleHeaders =
             secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
 
-        // V18.52 Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
+        // Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
         // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen).
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
@@ -1133,7 +1133,7 @@ async function checkBandV1739RulesUX(ctx) {
             r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
             r.state.worldRules.some((x) => x.id === keepId);
 
-        // --- (E) V18.53: ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
+        // --- (E) ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
         //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {

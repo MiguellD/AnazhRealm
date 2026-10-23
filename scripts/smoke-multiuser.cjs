@@ -57,7 +57,7 @@ async function run() {
     wsB.send(JSON.stringify({ type: "pos", x: 10, y: 20, z: 30, yaw: 1.5 }));
     await sync();
 
-    // Ring 11 V2: DSL-AST-Broadcast. A sendet voxel_carve → B sollte
+    // DSL-AST-Broadcast. A sendet voxel_carve → B sollte
     // dasselbe Programm zugestellt bekommen, mit peerId-Stempel des Servers.
     const sampleDsl = ["voxel_carve", 4.2, -3.5, 6, 2.5];
     wsA.send(JSON.stringify({ type: "dsl", program: sampleDsl }));
@@ -68,7 +68,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
     await sync();
 
-    // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
+    // Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
     // mit dem peerId-Stempel des Servers.
     wsA.send(
         JSON.stringify({

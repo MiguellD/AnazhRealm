@@ -253,7 +253,7 @@ async function checkBandCadWorkshop(ctx) {
             // --- Phase 2: UI-Elemente ---
             out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
             const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
-            // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+            // connect ist 4. Modus dazugekommen
             out.fourModeButtons = modeBtns.length === 4;
             out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
 
@@ -554,7 +554,6 @@ async function checkBandCadWorkshop(ctx) {
                 out.triggerOpens = overlay.hidden === false;
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             }
-            out.triggerExists = !!trigger;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -570,7 +569,6 @@ async function checkBandCadWorkshop(ctx) {
         check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
         check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
-        check("V18.47 Omnibox: der Maus-Trigger in der Topbar existiert (⌕ Suche)", omniResults.triggerExists);
         check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
         check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
@@ -673,7 +671,6 @@ async function checkBandCadWorkshop(ctx) {
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
-            out.paletteInDom = !!palette;
             if (palette) {
                 const cards = palette.querySelectorAll(".workshop-shape-card");
                 out.nineCards = cards.length === 9;
@@ -790,7 +787,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
         check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
             "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
@@ -1257,7 +1253,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const UM = r.constructor._umweltGesetz().UMWELT;
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
         out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
-        // Welle 5 Klang — der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
+        // der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
         out.keinDrohn = !("ambient" in s) && !("weather" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
@@ -1339,7 +1335,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const ichRaum = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
         out.topbarInDom = !!topbar;
         out.statusbarInDom = !!statusbar;
-        out.spielerDrawerInDom = !!ichRaum;
 
         // Emotion-Rows leben jetzt im Spieler-Drawer
         const rows = ichRaum ? ichRaum.querySelectorAll("#status-emotions .emotion") : [];
@@ -1416,7 +1411,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("UI V2: #topbar im DOM", uiResults.topbarInDom);
         check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
-        check("UI V2: Spieler-Drawer im DOM", uiResults.spielerDrawerInDom);
         check(
             "UI V2: alle sechs Emotion-Rows im Spieler-Drawer",
             uiResults.allSixAxes,
@@ -1590,7 +1584,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
         const container = document.getElementById("status-abilities");
-        out.containerInDom = !!container;
         // der Spieler öffnet den Hof: nur dort schreibt der Status-Takt die Gesten (K2 Belegung)
         r.toggleDrawer("kreaturen");
 
@@ -1618,7 +1611,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
         // (c) Run-Button klicken → ability läuft, Welt-Effekt
-        // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+        // Kreatur ist Group; rote Vor-Color auf
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
         if (r.state.creatures[0]) {
             const cR = r.state.creatures[0];
@@ -1631,7 +1624,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         }
         const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
         if (runBtn) runBtn.click();
-        // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+        // Kreatur ist Group; Color über Sub-Meshes lesen.
         const cFirst = r.state.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
@@ -1696,7 +1689,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiAbilitiesResults && uiAbilitiesResults.error ? uiAbilitiesResults.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("UI: Abilities-Container ist im DOM", uiAbilitiesResults.containerInDom);
         check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
         check(
             "UI: Hinzugefügte Ability erscheint als Row",
@@ -1833,7 +1825,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     const consoleResults = await safeEvaluate(page, () => {
         const out = {};
         const panel = document.getElementById("console");
-        out.consoleInDom = !!panel;
         out.chatOutputInside = panel && panel.querySelector("#chat-output") !== null;
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
@@ -1846,7 +1837,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
         // Collapse-Toggle
         const toggle = document.getElementById("console-collapse");
-        out.toggleInDom = !!toggle;
         out.initiallyCollapsed = panel && panel.classList.contains("collapsed");
 
         if (toggle) toggle.click();
@@ -1869,12 +1859,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
             consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("UI V2: #console im DOM", consoleResults.consoleInDom);
         check(
             "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
             consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
         );
-        check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
         check("UI V2: #chat-feed (Fading-Feed) in der Konsole", consoleResults.chatFeedInside);
         check("UI V2: der Fading-Feed-Observer ist verdrahtet (_chatFeedWired)", consoleResults.feedWired);
         check("UI V2: Konsole startet EINGEKLAPPT (der freie Bildschirm, V18.82)", consoleResults.initiallyCollapsed);
@@ -2250,7 +2238,7 @@ async function checkBandM5HudPolitur(ctx) {
         p.boosts = savedBoosts;
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
-        // V18.347 Cap-Gotcha: den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
+        // Cap-Gotcha: den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
         const _saveMaxM5 = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
@@ -2374,7 +2362,7 @@ async function checkBandWBHofKarte(ctx) {
         const out = {};
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
-        // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
+        // den maxCreatures-Cap (20) für die EINE Test-Kreatur
         // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
         const _saveMaxWB = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;

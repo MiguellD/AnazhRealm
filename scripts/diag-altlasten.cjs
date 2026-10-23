@@ -6,7 +6,7 @@
 // hier seine Zeile — ein gefallener Name kann strukturell nicht in den Stamm
 // zurückkehren (grep = 0 auf dem KOMMENTAR-BEREINIGTEN Code; Kommentare dürfen
 // die Geschichte erzählen, der CODE darf das Wort nicht mehr tragen — die
-// V18.267-Disziplin). Wächst mit jedem künftigen Abschied: eine Zeile je Name.
+// Disziplin). Wächst mit jedem künftigen Abschied: eine Zeile je Name.
 //
 // Selbst-Test: --selftest injiziert einen verbotenen Namen in eine Kopie und
 // beweist, dass die Linse feuert (kein vakuöses Grün).
@@ -1396,7 +1396,7 @@ function scanLabBuster() {
             if (m[1] !== version) errs.push(`${path.relative(root, idx)} trägt stale ?v=${m[1]} (aktuell ${version})`);
         }
     }
-    // V18.472 (Perf-Panel-Linse fing es): AnazhRealm.VERSION driftete vier Wellen lang
+    // AnazhRealm.VERSION driftete vier Wellen lang
     // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
@@ -2912,7 +2912,7 @@ function markerDateien(root) {
     return out;
 }
 
-// DIE STUFEN-WAND (Welle 6): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
+// DIE STUFEN-WAND: eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
 // deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
@@ -3196,7 +3196,7 @@ function gateDateien(root) {
     return aus;
 }
 
-// DIE LINSEN TRAGEN DIE WAND MIT (Welle G): eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
+// DIE LINSEN TRAGEN DIE WAND MIT: eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
 // gefallener Name dort ist ein toter Aufruf, den erst ein Lauf findet (`werkbank fernwald` rief `_weltSeiteDirty` nach dem
 // Abschied der Seiten-Ebene; vier weitere Reste älterer Abschiede lagen dort). Die Gates in scripts/ bleiben draußen: ihre
 // Absenz-Proben tragen die gefallenen Namen als Suchtext.
@@ -3289,7 +3289,7 @@ function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT: foundry-core (der Ofen/Bäcker) steht mit in
     // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
-    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
+    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad; die Rückkehr-Wand ist die EINE).
     const files = [...STAMM, "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
@@ -3408,7 +3408,7 @@ function main() {
             process.exit(1);
         }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
-        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
+        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld`, transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
         const quelleAlt = stammLib.ersetze(stamm, "_buildPbrNodeMaterial",
             "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
@@ -3596,7 +3596,7 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
         );
-        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
+        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
         const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
         const tmpLinse = path.join(require("os").tmpdir(), "altlasten-selftest-linse.cjs");

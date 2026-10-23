@@ -529,7 +529,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
     );
 }
 
-// V17.80 U1 (resonanz-system §2.2) — der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
+// der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
 // (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
 // referenziert sie (U2 webt sie ein) → die Form ist jetzt vollständig im Vektor, kein Regress.
 async function checkBandV1780FormAxes(ctx) {
@@ -705,7 +705,7 @@ async function checkBandV1781RoleRegister(ctx) {
     );
 }
 
-// V17.82 U3 (resonanz-system §5) — der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
+// der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
 // ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
 // liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
 async function checkBandV1782CatalystReadout(ctx) {
@@ -1343,7 +1343,7 @@ async function checkBandWave4(ctx) {
                 { tool: "polierscheibe", op: "polish", cap: 0.97 },
             ],
         };
-        // Welle 6.D Etappe 3a — Min-Regel-Hybrid: 2 Schritte (0.4, 0.97)
+        // Min-Regel-Hybrid: 2 Schritte (0.4, 0.97)
         // → 0.4 + 0.57 × 0.7 = 0.799 (nicht mehr strict min). Der
         // alte Pfad (strict min) wurde 13.05.2026 hybridisiert.
         out.precisionIsHybrid = Math.abs(r.computePartPrecision(part1) - (0.4 + 0.57 * 0.7)) < 0.01;
@@ -1745,7 +1745,7 @@ async function checkBandWave5(ctx) {
             builtIn: false,
             parts: noTipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
         };
-        // V18.235 (V17.32-Konfund-Heilung): awe auf BASIS 0 — sonst confoundiert
+        // awe auf BASIS 0 — sonst confoundiert
         // (Warmup-awe an der Decke → der Tip-Magie-Effekt kann nicht weiter heben).
         r.state.player.emotions.awe = 0;
         const aweBefore = r.state.player.emotions.awe;
@@ -2901,7 +2901,7 @@ async function checkBandWaves9And10a(ctx) {
                 !!roleChip9b &&
                 roleChip9b.textContent.includes("Bauwerk") &&
                 roleChip9b.classList.contains("role-emergent");
-            // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
+            // Apply schmiede-hammer auf eisen-Part (Domain-Op aus der Op-Bibliothek leihen)
             if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
@@ -3727,7 +3727,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
             out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9);
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
-            // V18.317/.347 — Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
+            // Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
             r.state.architectures = r.state.architectures || [];
             r.state.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             const snap = r.buildStateSnapshot();

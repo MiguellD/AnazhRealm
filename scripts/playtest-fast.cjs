@@ -259,7 +259,7 @@ function check(name, ok) {
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
-            // r.constructor.KIND_SUBSTANCE, die dokumentierte V18.259-Falle).
+            // r.constructor.KIND_SUBSTANCE, die dokumentierte Falle).
             out.blueprintBuilds = safe(() => {
                 const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
                 const names = ["esse", "welt_portal", "ruestung_brustpanzer"];

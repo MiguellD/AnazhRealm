@@ -941,16 +941,22 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     // === Welle 6.C3 — Keybindings (Datenmodell + Persistenz) ===
-    _loadKeybindings() {
-        const defaults = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+    // Zwei Schichten derselben Aktionen: die Tastatur und Maus (`state.keybindings`, "anazh.keybindings") und das Gamepad
+    // (`state.padBelegung`, "anazh.padbelegung", Codes „Pad<n>" — auch für eine DSL-Fähigkeit, leib.K5).
+    _loadKeybindings(pad) {
+        const defaults = { ...(pad ? AnazhRealm.PAD_BELEGUNG : AnazhRealm.DEFAULT_KEYBINDINGS) };
         if (typeof localStorage === "undefined") return defaults;
         try {
-            const raw = localStorage.getItem("anazh.keybindings");
+            const raw = localStorage.getItem(pad ? "anazh.padbelegung" : "anazh.keybindings");
             if (!raw) return defaults;
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return defaults;
-            for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
-                if (typeof parsed[action] === "string" && parsed[action].length > 0) {
+            for (const action of pad ? Object.keys(parsed) : AnazhRealm.KEYBINDING_ACTIONS) {
+                if (
+                    typeof parsed[action] === "string" &&
+                    parsed[action].length > 0 &&
+                    (!pad || /^Pad\d+$/.test(parsed[action]))
+                ) {
                     defaults[action] = parsed[action];
                 }
             }
@@ -964,23 +970,30 @@ class AnazhRealm_werkstatt_bauen {
         if (typeof localStorage === "undefined" || !this.state.keybindings) return;
         try {
             localStorage.setItem("anazh.keybindings", JSON.stringify(this.state.keybindings));
+            localStorage.setItem("anazh.padbelegung", JSON.stringify(this.state.padBelegung));
         } catch {
             /* quota / private-mode */
         }
     }
 
     setKeybinding(action, code) {
-        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
         if (typeof code !== "string" || code.length === 0) return false;
+        const pad = /^Pad\d+$/.test(code);
+        const B = pad ? this.state.padBelegung : this.state.keybindings;
+        // das Pad bindet JEDE Aktion (auch Gespräch und Schubladen, ohne Standard-Knopf) und jede DSL-Fähigkeit
+        const frei =
+            pad && (AnazhRealm.KEYBINDING_ACTIONS.includes(action) || Object.hasOwn(this.state.abilities, action));
+        if (!action || !B || !(action in B || frei)) return false;
         // Konflikt-Schutz per Swap: belegt der Code schon eine andere Aktion, bekommt diese das alte
-        // Binding — keine toten Bindings, keine unbelegten Aktionen.
-        const oldCode = this.state.keybindings[action];
-        for (const k of AnazhRealm.KEYBINDING_ACTIONS) {
-            if (k !== action && this.state.keybindings[k] === code) {
-                this.state.keybindings[k] = oldCode;
+        // Binding — keine toten Bindings, keine unbelegten Aktionen (eine Fähigkeit ohne altes Binding fällt).
+        const oldCode = B[action];
+        for (const k of Object.keys(B)) {
+            if (k !== action && B[k] === code) {
+                if (oldCode) B[k] = oldCode;
+                else delete B[k];
             }
         }
-        this.state.keybindings[action] = code;
+        B[action] = code;
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
@@ -989,6 +1002,7 @@ class AnazhRealm_werkstatt_bauen {
 
     resetKeybindings() {
         this.state.keybindings = { ...AnazhRealm.DEFAULT_KEYBINDINGS };
+        this.state.padBelegung = { ...AnazhRealm.PAD_BELEGUNG };
         this._saveKeybindings();
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         if (typeof this._updateBuildModeHud === "function") this._updateBuildModeHud();
@@ -1018,7 +1032,8 @@ class AnazhRealm_werkstatt_bauen {
     }
 
     beginKeybindRebind(action) {
-        if (!action || !this.state.keybindings || !(action in this.state.keybindings)) return false;
+        const aktionen = [...AnazhRealm.KEYBINDING_ACTIONS, ...Object.keys(AnazhRealm.PAD_BELEGUNG)];
+        if (!action || !this.state.keybindings || !aktionen.includes(action)) return false;
         this.state.keybindRebind = { action, startedAt: performance.now() };
         if (typeof this._renderKeybindingsUI === "function") this._renderKeybindingsUI();
         return true;

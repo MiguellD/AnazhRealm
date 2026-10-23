@@ -550,7 +550,7 @@ function selbsttest() {
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
-        // (l) der Befund von OMEN 1110-3 (GTX 1060): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        // (l) der Befund von OMEN 1110-3: das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
             (b) =>
@@ -1118,7 +1118,7 @@ const server = statikServer();
                 xh = miss(hin);
                 xh.augeInHoehle = !fest(ha[0], ha[1], ha[2]) && ueber;
                 r._hoehlenHinaus = () => {};
-                // dieselbe Lage: die Kette hielte die eben gerechnete Wahl (`_passLageGen`, Welle C) — die alte Probe rechnet neu
+                // dieselbe Lage: die Kette hielte die eben gerechnete Wahl (`_passLageGen`) — die alte Probe rechnet neu
                 if (r._passLagen) r._passLagen.clear();
                 const alt = window.__hoehlenStrahl(r, cam, hauptbild(hin), { nx: 160, ny: 90 });
                 delete r._hoehlenHinaus;

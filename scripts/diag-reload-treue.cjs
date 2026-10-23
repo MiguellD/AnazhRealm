@@ -1,7 +1,7 @@
 // diag-reload-treue.cjs — RELOAD-TREUE: DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
 // Der GUSS friert die wirksame Übergabe je Wesen ein
 // (group.userData.gussDials — nur wenn eine aktiv war, sonst feld-los + byte-alt), der Snapshot
-// trägt sie, und der Restore pinnt sie durch DENSELBEN Validator (Kreatur-PARAMS-Clamps) als
+// trägt sie, und der Restore pinnt sie durch DENSELBEN Prüfer (Kreatur-PARAMS-Klemme) als
 // dialsOv in den Neu-Guss. Diese Linse hält die Naht:
 //
 //   (R) GUSS-TREUE: Wolf unter Übergabe size 3.5 gegossen → Snapshot → Übergabe auf 1.5 GEÄNDERT
@@ -42,7 +42,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         r.state.maxCreatures = 12;
         const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const setUe = (size) => {
-            r._studioUebergabeEmpfang({ kind: "kreatur", gattung: "wolf", s: { size } });
+            r._studioUebergabeEmpfang({ type: "uebergabe", kind: "kreatur", preset: "wolf", seed: 0, ov: { size } });
         };
         const spawnWolf = (opts) =>
             // BÜHNE: der Wolf fällt präzise aus 40 m (die Probe misst Gestalt und Reload, nie den Boden)
@@ -86,7 +86,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         if (wolfS) r.removeCreature(wolfS);
 
         // ── (D) DEFAULT-TREUE: keine Übergabe ⇒ feld-los + byte-alt ──
-        r.state.studioUebergabe = { koerper: null, kreatur: {} };
+        delete r._ensureWorkshopState().studioOv.wolf;
         const wolfD = spawnWolf();
         res.d.feldLos = !(wolfD && wolfD.userData.gussDials);
         const snapD = r._serializeCreature(wolfD);
@@ -97,15 +97,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const rows = window.__tetrapodaCore && window.__tetrapodaCore.PARAMS_BY_KIND.kreatur;
         const sizeRow = rows && rows.find((x) => x.id === "size");
         const snapBoese = Object.assign({}, snapA, { gussDials: { size: 9999 } });
-        // der EINE Validator: der Restore klemmt durch _studioUebergabeValidate("kreatur", …), keinen Zwilling (Spion am Ruf)
-        const echtV = r._studioUebergabeValidate;
+        // der EINE Prüfer: der Restore klemmt durch _studioWerkPruefen("kreatur", …) wie der Übergabe-Kanal, keinen Zwilling
+        // (Spion am Ruf)
+        const echtV = r._studioWerkPruefen;
         let validiert = 0;
-        r._studioUebergabeValidate = function (art, ...x) {
+        r._studioWerkPruefen = function (art, ...x) {
             if (art === "kreatur") validiert++;
             return echtV.call(this, art, ...x);
         };
         const wolfW = r._restoreCreatureFromSnapshot(snapBoese, "happy");
-        delete r._studioUebergabeValidate;
+        delete r._studioWerkPruefen;
         res.w.einValidator = validiert > 0;
         res.w.geclampt = !!(
             wolfW &&

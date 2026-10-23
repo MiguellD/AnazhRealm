@@ -158,7 +158,7 @@ const server = statikServer();
 async function probe() {
     const r = window.anazhRealm;
     const st = r.state;
-    // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand (die Definition) — der Gelände-Teil ist
+    // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand — der Gelände-Teil ist
     // derselbe Weg wie im Spiel (`_fieldSolid` · `_fieldGradient`), die Boxen gehen alle durch `_segmentAABB`.
     const orakel = (sx, sy, sz, ex, ey, ez, o) => {
         const durchPflanzen = !!(o && o.durchPflanzen);

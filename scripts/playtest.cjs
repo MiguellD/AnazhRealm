@@ -707,32 +707,21 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWelleC2WaterIsoSurface, ctx);
             await timed(BAND.checkBandWelleC3CellularReaction, ctx);
             await timed(BAND.checkBandWellePerf3bDistanceLod, ctx);
-            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
-            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
             await timed(BAND.checkBandWellePerfDBudget, ctx);
-            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
             // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
-            // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
             await timed(BAND.checkBandWellePerf3cPhase3FullMesh, ctx);
-            // H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
             await timed(BAND.checkBandV17117FarWater, ctx);
-            // E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await timed(BAND.checkBandV17118WorkerEngaged, ctx);
-            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Luft↔Ring · A6 Kollision.
             await timed(BAND.checkBandPhaseAFundament, ctx);
-            // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(BAND.checkBandPhasenBF, ctx);
             await timed(BAND.checkBandWelle993WaterLodSeam, ctx);
-            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
             await timed(BAND.checkBandWelleV11D1WaterContext, ctx);
-            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
             await timed(BAND.checkBandWelleV11D2WaterBias, ctx);
-            // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(BAND.checkBandWelleV11D3DrinkTask, ctx);
             // FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(BAND.checkBandNahStreu, ctx);
@@ -884,6 +873,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
             await timed(BAND.checkBandTierFern, ctx);
             await timed(BAND.checkBandKoerperBewegung, ctx);
+            await timed(BAND.checkBandGamepadVerben, ctx);
             await timed(BAND.checkBandTodZensus, ctx);
             await timed(BAND.checkBandWasserWahrheit, ctx);
             await timed(BAND.checkBandTierSeparation, ctx);

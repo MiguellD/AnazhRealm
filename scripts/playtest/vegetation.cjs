@@ -39,7 +39,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
-        // nicht existent → durch den EINEN Abbau (Welle B: der Boden-Satz verliert den Bereich mit), kein Re-Populate
+        // nicht existent → durch den EINEN Abbau (der Boden-Satz verliert den Bereich mit), kein Re-Populate
         if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
@@ -808,7 +808,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
     }
 }
 
-// Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv-plan §4.A):
+// Γ7 BAUM-VARIANTEN-GRAMMATIK:
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
 async function checkBandV18205Gamma7Grammatik(ctx) {
@@ -957,7 +957,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
         if (grownKey && r.state.blueprints[grownKey]) {
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+            // der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
             // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
             // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
             r.state.architectures = r.state.architectures || [];
@@ -1877,7 +1877,7 @@ async function checkBandV18219bisVollendung(ctx) {
         return out;
     });
 
-    // V18.218.1 LOD-Activation
+    // LOD-Activation
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
@@ -1891,7 +1891,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
-    // V18.220 Scatter-Bitmask + Cap + Lookup
+    // Scatter-Bitmask + Cap + Lookup
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
@@ -1901,7 +1901,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
-    // V18.222 Canopy chunk-streaming
+    // Canopy chunk-streaming
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
@@ -2042,7 +2042,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 const region = r._scatterRegion(regX2, regZ2, pp2);
                 if (region && region.cells.length > 0) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
-                    // (V18.225 — Understory/Streu sind nie promotable)
+                    // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
                     if (cell) {
                         const archBefore = r.state.architectures.length;

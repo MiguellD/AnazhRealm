@@ -25,7 +25,7 @@ function diaetZaehler() {
     const stapel = [];
     let imGang = 0;
     let imOG = 0;
-    // DER REFRESH OHNE ÄNDERUNG (K71): kein Gruppen-Upload, kein neuer Puffer, jedes geschriebene Byte gleich dem alten —
+    // DER REFRESH OHNE ÄNDERUNG: kein Gruppen-Upload, kein neuer Puffer, jedes geschriebene Byte gleich dem alten —
     // offen bis zum Ende seiner Bindungen; Schreibe zählen beim Render-Objekt, dessen Auffrischung sie trägt.
     const offen = new Map();
     let aktRo = null;

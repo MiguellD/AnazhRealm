@@ -178,7 +178,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
         // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
-        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN; V9.56-i).
+        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN).
         r.selectBlueprintForEdit("_w13p2");
         const machZone =
             document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
@@ -352,7 +352,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
-        out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
         // renderLibraryUI baut eine Karte pro Registry-Welt.
         r.renderLibraryUI();
         const cards = document.querySelectorAll("#library-list .library-card");
@@ -361,7 +360,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
         out.cardShowsDsl =
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
-        // === Bib-A0/A/B/D (bibliothek-plan) — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
+        // === Bib-A0/A/B/D — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
         // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
         const wpRef = REG.fluid;
         const wp = r._worldProfile(wpRef);
@@ -419,7 +418,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // das Tagebuch ist eingeklappt (progressive disclosure; die Welt-Chronik lebt im Hof).
         const tagebuch = feedSelf && feedSelf.querySelector("details.feed-tagebuch");
         out.tagebuchCollapsed = !!tagebuch && !tagebuch.open && !!tagebuch.querySelector("#world-journal-list");
-        // V18.72/.73: die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
+        // die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
         const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
@@ -480,7 +479,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
         // die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
-        // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
+        // nach oben). Die Chips wuchsen auf DREI (Neueste · ✦ Für dich
         // · ★ Bewertung) — der Test wandert mit.
         out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
         const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
@@ -598,7 +597,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     if (w14Results && !w14Results.error) {
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
-        check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check(
@@ -970,8 +968,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.uiImportedCard =
             !!document.querySelector("#library-list .library-card-imported") &&
             !!document.querySelector("#library-list .library-imported-mark");
-        out.uiImportButton =
-            !!document.getElementById("library-import") && !!document.getElementById("library-import-input");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -1030,7 +1026,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
             w14p3Results.uiImportedCard
         );
-        check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
         check(
             "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe

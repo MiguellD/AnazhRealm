@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// DIE APPARAT-LINSE — gate:apparat (ULTRAGUSS U1)
+// DIE APPARAT-LINSE — gate:apparat
 //
 // Gesetz #0: nach der Fehler-Klasse die LINSE bauen. Rohe `.toString()`-Quelltext-Zitate wacht seit D3d die
 // Quelltext-Wand (gate:source-probes); hier steht der typeof-Ratchet — der Bestand darf nur SINKEN.
@@ -32,14 +32,11 @@ const stammLib = require("./lib/stamm.cjs");
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
 
-// DER typeof-RATCHET (ultraguss U1-Folge, die Voll-Wanderung ist
-// tabellen-getrieben offen): 878 namens-verankerte `typeof … === "function"`-
+// DER typeof-RATCHET (die Voll-Wanderung ist
+// tabellen-getrieben offen): die namens-verankerten `typeof … === "function"`-
 // Existenz-Proben leben im Apparat. Der Bestand darf NUR SINKEN — jede neue
 // Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
 // (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
-// Welle 5 Klang: 878 → 874 (die Proben auf _buildHydroAudioLayer · _tickHydrosphereAudio · _pointSegDist2D ·
-// _tagToFrequency fielen mit ihren Methoden); Integration W5-Klang: 874 → 873 (_playCreatureTaskPing fiel — das Tier
-// antwortet mit seiner Stimme).
 const FROZEN_TYPEOF = 873;
 
 function countTypeof(src) {

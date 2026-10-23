@@ -29,7 +29,7 @@
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
 //
-// Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks) prüft gate:altlasten — die EINE Rückkehr-Wand.
+// Die Absenz der gefallenen Band-Täter prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
 // --selftest: ein unbenanntes Mesh wird rot · eine injizierte fscatter:geroell:3:0-Instanz bei 200 m wird rot (bei
 // 40 m nicht) · eine Klasse über der Ratsche wird rot (auf ihr und in der Toleranz nicht) · eine Haushalt-Zeile über
@@ -233,7 +233,7 @@ function projektionPflicht() {
     return !!(t0 && t0.lagen != null);
 }
 
-// P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen, Integration V18.538): die Nah-Wiese zeichnet genau ihre Gestalten
+// P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen): die Nah-Wiese zeichnet genau ihre Gestalten
 // (je Vorlage × Stufe × Teil EINE Senke `nahWiese:L<stufe>:<v>:<teil>`), die Golden-Samen des Grases SIND diese Gestalten —
 // die Zeile nimmt je Zensus-Zeile die Golden-Dreiecke IHRER Gestalt (das Maximum über die Samen, wie beim Baum, hätte an der
 // Mess-Wiese 63 002 statt der gemessenen 54 994 projiziert) und hält Σ Büschel × Dreiecke je Pass gegen die Ratsche der

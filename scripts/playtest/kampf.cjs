@@ -81,8 +81,8 @@ async function checkBandV1755HarvestEffort(ctx) {
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
-        // (7) der Hold-Tick ist gegated (ohne breakHeld → nichts)
-        p.breakHeld = false;
+        // (7) der Hold-Tick ist gegated (ohne die gehaltene Abbau-Aktion der Verb-Tafel → nichts)
+        r.state.verbTafel.gehalten.break = false;
         const beforeTick = r.state.architectures.length;
         r._tickHarvest();
         out.tickGuarded = r.state.architectures.length === beforeTick;
@@ -101,7 +101,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
-        p.breakHeld = false;
+        r.state.verbTafel.gehalten.break = false;
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);
@@ -130,11 +130,11 @@ async function checkBandV1755HarvestEffort(ctx) {
         "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
         res.yieldScalesWithFitness
     );
-    check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
+    check("V17.55 W1: der Hold-Tick ist gegated (ohne gehaltenes Abbauen passiert nichts)", res.tickGuarded);
     check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
 }
 
-// V17.56 W2 (kampf-plan §8.1) — das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
+// das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
 // harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
 // das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
 async function checkBandV1755W2Profile(ctx) {
@@ -248,7 +248,7 @@ async function checkBandV1755W2Profile(ctx) {
     check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
-// V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
+// die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
 // Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
 async function checkBandV1759CapabilityReadout(ctx) {
@@ -534,7 +534,7 @@ async function checkBandV1786WorkshopCoherence(ctx) {
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             if (!panel) return null;
-            // V18.44 Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
+            // Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
             // (die .spec-role-chip zeigt NUR die Rolle; die Affordanzen sind separate .spec-cap-chips).
             const header = panel.querySelector(".spec-header");
             const roleChipEl = header && header.querySelector(".spec-role-chip");

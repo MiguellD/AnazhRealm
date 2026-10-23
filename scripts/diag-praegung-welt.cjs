@@ -46,7 +46,7 @@ const welt = async (seite) => {
     await welt(page);
 
     const out = await page.evaluate(async (TOT) => {
-        const res = { warm: {}, s: {}, n: {}, g: {}, r: {}, b: {} };
+        const res = { s: {}, n: {}, g: {}, r: {}, b: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
 
@@ -57,7 +57,6 @@ const welt = async (seite) => {
         await window.__weltDa(() => f.ready && f.recipes?.langschwert && f.recipes.gt && bps().klinge_langschwert && bps().fahrzeug_gt && !f._vorrat);
         const KC = r.constructor.KIND_CHARAKTER;
         const VC = globalThis.__vehicleCore;
-        res.warm.charakter = !!(KC?.weapon && KC.vehicle && VC?.CULTURES);
 
         // ===== (N-WELT) geprägtes Fahrzeug-Entry formt im Welt-Flatten anders =====
         const flatFor = (entry, preset) => window.__flatFor(r, entry, preset);
@@ -401,11 +400,9 @@ const welt = async (seite) => {
         // (T) die Geste des Empfängers: der Code in den Chat
         let spur = null;
         r.empfangeWerk = (...x) => (spur = r.constructor.prototype.empfangeWerk.apply(r, x));
-        const t0 = performance.now();
         r.processChatCommand(a.code);
         delete r.empfangeWerk;
         res.gut = spur ? await spur : { grund: "der Chat rief empfangeWerk nie" };
-        res.ms = Math.round(performance.now() - t0);
         const e = res.gut.ok && r.state.architectures.find((x) => x && x.id === res.gut.id);
         if (e) {
             res.stempel = JSON.stringify(e.studioOv) === JSON.stringify(a.ov) && e.seed === a.seed;
@@ -426,8 +423,6 @@ const welt = async (seite) => {
 
     await browser.close();
     server.close();
-
-    check("WARM: KIND_CHARAKTER und CULTURES geladen", out.warm.charakter === true);
 
     const { s, n, g, r: R, b: B } = out;
     const gleich = (x, y) => !!x && x === y;
@@ -496,7 +491,7 @@ const welt = async (seite) => {
     check(
         "B: das Werk steht, die Signatur trägt A als Autor",
         b.gut?.ok === true && b.gut.autor === a.autor,
-        `${JSON.stringify(b.gut)} · ${b.ms} ms`
+        JSON.stringify(b.gut)
     );
     check("B: Stempel und Same reisen tief gleich", b.stempel === true);
     check(

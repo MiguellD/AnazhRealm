@@ -1,4 +1,4 @@
-// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (Welle L Folge, v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
+// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
 // erschaffen). Die Defekte, die die sichtbare Leben-Schau am 07.10. auf dem v1-Pfad fand
 // (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim NAMEN. Im echten Boot (headless, foundry-ON,
 // Null-Renderer der Welt): D10, Wortschatz, Werk-Same und Brennglas rufen ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
@@ -214,7 +214,7 @@ function werkVerdict(m) {
     else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
     if (!gleich(m.phantomDreh, m.werkDreh))
         out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
-    // Das Werk steht nie im Spieler (die EINE Spieler-Klemme, Gegenprüfung 08.10. „das Phantom umhüllt die Kamera"); wie weit
+    // Das Werk steht nie im Spieler; wie weit
     // das Werk reicht, misst die Linse an der Studio-Gestalt des Phantoms in Weltgröße (jeder Vertex, Integration V18.536 —
     // die Klemme maß die Spender-Teile, 3,01 m).
     if (!(m.mindest > 0)) out.push("kein Spieler-Abstand des Werks (Vorbedingung)");
@@ -230,7 +230,7 @@ function werkVerdict(m) {
         );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
-    // Jedes Setzen ein neues Werk (Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.
+    // Jedes Setzen ein neues Werk: nach dem Setzen zeigt das Phantom den nächsten Samen.
     if (m.naechsterSame == null) out.push("nach dem Setzen kein Phantom mit Samen (Vorbedingung)");
     else if (m.naechsterSame === m.werkSame)
         out.push(`das nächste Setzen zeigt dasselbe Werk (Same ${m.werkSame}) — jedes Setzen derselbe Wurf`);
@@ -556,7 +556,7 @@ async function probe(argW) {
             }
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
-            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort (K20).
+            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort.
             const Q = { x: frei.x + 3, y: frei.y, z: frei.z + 3 };
             const pw = r._phantomWerk;
             let woG = null;
