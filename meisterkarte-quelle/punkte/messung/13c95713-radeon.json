@@ -1,0 +1,193 @@
+{
+ "sha": "13c95713e286923682dc8986505a581c9c8467db",
+ "geraet": "radeon",
+ "zeit": "2026-10-23T21:11:23.024Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 3048 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 110.8–381.9 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 1.81,
+   "zeit": "2026-10-23T19:20:33.733Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7701
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7929 (wasserSatz 36633 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.76 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 1.2,
+   "zeit": "2026-10-23T19:22:22.152Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "zahl": "über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.18,
+   "grund": "ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "zeit": "2026-10-23T19:23:34.209Z",
+   "abdruck": "1c2538e83974",
+   "port": 7705
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.773",
+   "exit": 0,
+   "minuten": 2.14,
+   "zeit": "2026-10-23T19:24:45.135Z",
+   "abdruck": "e03a045fab93",
+   "port": 7707
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 36 Menschen im Bild, 12 gehend, 111 fps",
+   "exit": 0,
+   "minuten": 1.36,
+   "zeit": "2026-10-23T19:26:53.338Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7716
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59145 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "exit": 1,
+   "minuten": 2.5,
+   "zeit": "2026-10-23T19:28:14.855Z",
+   "abdruck": "e53d97783caf",
+   "port": 7717
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.02,
+   "zeit": "2026-10-23T19:30:44.619Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7722
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.45,
+   "zeit": "2026-10-23T19:31:45.787Z",
+   "abdruck": "bbee11502f53",
+   "port": 7723
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 19.07,
+   "zeit": "2026-10-23T19:33:13.045Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7724
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0222 nyquist 0.0861 (Arm 0.408), 1 m glatt 0.0258 nyquist 0.0824 (Arm 0.909), 2 m glatt 0.0084 nyquist 0.0996 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 4.92,
+   "grund": "ROT: boden 0.5 m glatt 0.0222 nyquist 0.0861 (Arm 0.408), 1 m glatt 0.0258 nyquist 0.0824 (Arm 0.909), 2 m glatt 0.0084 nyquist 0.0996 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "zeit": "2026-10-23T19:52:17.064Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7725
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.65,
+   "zeit": "2026-10-23T19:57:12.340Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7726
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.42° Arm +18.3 % bei 15.11 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 1.42,
+   "zeit": "2026-10-23T19:58:51.636Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7736
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Drift Kamera ≤ 111.4° neben dem Fahrtvektor (Schlupf bis 56.9°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 2.52,
+   "grund": "ROT: Drift Kamera ≤ 111.4° neben dem Fahrtvektor (Schlupf bis 56.9°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "zeit": "2026-10-23T20:00:16.975Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7737
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.2/3.2/5.4°, Stufe ≤ 1.72 m · T4 Absteigen 0.29 m je Bild, Azimut nach 10 Bildern 4.6° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 32.33,
+   "zeit": "2026-10-23T20:02:48.049Z",
+   "abdruck": "ab61dce55516",
+   "port": 7738
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.2/3.2/5.4°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 18.53,
+   "zeit": "2026-10-23T20:35:07.675Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7739
+  },
+  "siedlung.K2#1": {
+   "gruen": true,
+   "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S",
+   "exit": 0,
+   "minuten": 1.3,
+   "zeit": "2026-10-23T20:53:39.628Z",
+   "abdruck": "22156cd39fff",
+   "port": 7740
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 33345.2 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 756.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 8.04,
+   "grund": "ROT: nH 12 erstes Haus nach 33345.2 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 756.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T20:54:57.502Z",
+   "abdruck": "d2f68243ff0a",
+   "port": 7742
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 33529.5 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 676.1 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 6.23,
+   "grund": "ROT: nH 12 erstes Haus nach 33529.5 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 676.1 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T21:02:59.689Z",
+   "abdruck": "9575bc09cb5b",
+   "port": 7743
+  },
+  "leib.K1#1": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 35.5 · third/gehen 36.7 · ego/wechsel 20.5 · third/wechsel 18.7",
+   "exit": 0,
+   "minuten": 2.16,
+   "zeit": "2026-10-23T21:09:13.671Z",
+   "abdruck": "8746d55fc31a",
+   "port": 7744
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 37.1 · third/gehen 34.8 · ego/springen 18.7 · third/springen 18.9 · ego/einsteigen 24.9 · third/einsteigen 24.8 · ego/hieb 29.3 · third/hieb 29.7",
+   "exit": 0,
+   "minuten": 5.14,
+   "zeit": "2026-10-23T21:11:23.024Z",
+   "abdruck": "156d9c781ed5",
+   "port": 7745
+  }
+ }
+}
