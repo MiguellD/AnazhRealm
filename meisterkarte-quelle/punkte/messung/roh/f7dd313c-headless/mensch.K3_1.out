@@ -1,0 +1,29 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7711/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 26.6 s
+[stall-akte] Puls 12×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 513 · welt 513 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 29808 103 % · GPU 21624 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 20:55 gpu 5/r 505 · 20:57 gpu 1/r 507 · 20:59 gpu 1/r 136 · 21:01 gpu 3/r 974 · 21:03 gpu 2/r 469 · 21:05 gpu 1/r 141 · 21:07 gpu 1/r 103 · 21:09 gpu 1/r 103 · 21:11 gpu 1/r 104 · 21:13 gpu 1/r 102 · 21:15 gpu 1/r 103 · 21:17 gpu 1/r 104 · 21:19 gpu 1/r 102 · 21:21 gpu 1/r 102 · 21:23 gpu 0/r 103 · 21:25 gpu 0/r 103
+[stall-akte] Stapel wegeMessen :3007 < takt :3017 < (anonym) :3057
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [WARN] Der Rundblick steht nach 120 Takten ohne: 327 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [WARN] FPS-Einbruch: 21 (zuvor ~63)
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [WARN] FPS-Einbruch: 27 (zuvor ~59)
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [WARN] FPS-Einbruch: 25 (zuvor ~56)
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.74] [WARN] FPS-Einbruch: 36 (zuvor ~53)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in wegeMessen :3007
+[stall-akte] Seite #2: der Puls kehrt zurück nach 22.2 s — complete · renderer bereit · weltbild da · frames 521 · welt 521 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":40,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"tagSek":21.9,"bewohner":81,"trefferMin":1,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.024,"wegLeib":721.2,"spuren":52},"blick":{"n":164,"quote":0.97,"sektorMax":0.176},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.2,"mittel":0.081},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":247,"tuer":247,"falsch":[],"aufWeg":0.946,"wegeMin":4,"wegeMax":7,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":26.7}
+
+  (35 s)
+
+✅ GRÜN — bewohner

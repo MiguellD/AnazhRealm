@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+gpu-lauf: Schloss punkte-radeon nach 1 s
+[linse-gpu] amd/rdna-3
+[welt-boot] FEHLER console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+  Dorf-Ort -129/-94 (Gefälle 0.598, der Spieler bei 0/0) · 0 Häuser () · W1 (Vorplatz über der Diele  m) · W2 Diele  cm · W4 Natur im Grundriss ? · W4 Weg ? · W4c Überstand  m · W4b (fern 212/212) Streu vorher ? Zellen im Dorf-Kreis, unter den Häusern ?, fern ? Streu, nah ? Natur + ? Streu, Neubau ?, Nah-Streu ?, Promotion ? (? Häuser) · W5 Optik  % · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[54225],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":42,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"ausstattung":null,"verblasst":false,"ms":2}} · W8 Lichtung ? · W7 Bau im Bau ? · W6 Tür frontal 
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,42,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 1 zugleich, 161 s
+❌ gate:haus-welt ROT (2)
+[welt-boot] ROT — 1 Fehler der Welt:
+  · console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 

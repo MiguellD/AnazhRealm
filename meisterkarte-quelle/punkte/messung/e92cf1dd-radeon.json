@@ -1,0 +1,17 @@
+{
+ "sha": "e92cf1dd9be12b67f3fdf30d327612140cf9b825",
+ "geraet": "radeon",
+ "zeit": "2026-10-23T11:13:07.922Z",
+ "host": "MiguellD",
+ "je": {
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "p95 ms third/hieb 36.7 · ego/hieb 27.1 · Hit-Stop 17/16 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 0 mm je Takt (1199 Takte)",
+   "exit": 0,
+   "minuten": 1.84,
+   "zeit": "2026-10-23T11:13:07.922Z",
+   "abdruck": "87deaeca8238",
+   "port": 7744
+  }
+ }
+}

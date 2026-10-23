@@ -1,0 +1,12 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --eigen --port 7723 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte\meisterkarte-quelle\punkte\messung\roh\f7dd313c-radeon\ferne.K1_1.json
+gpu-lauf: Schloss punkte-radeon nach 1 s
+SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT
+[linse-gpu] amd/rdna-3
+[seite] 2026-10-23T14:55:14.719Z navigiert http://127.0.0.1:7722/index.html
+WERKBANK bereit: Steuer 127.0.0.1:7723 · Seite :7722
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.88° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 29.33° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 10.67° von der In-Streuung > 10°
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN (offen: FARBTON)

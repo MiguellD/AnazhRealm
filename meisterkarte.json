@@ -1,18 +1,19 @@
 {
   "stand": "2026-10-23",
-  "kopf": "7c6f4b49",
-  "version": "V18.546.73",
+  "kopf": "f7dd313c",
+  "version": "V18.546.74",
   "skala": "2.0",
-  "summe": 42,
+  "summe": 43,
   "max": 330,
   "maschine": {
-    "kopf": "7c6f4b49",
-    "zeit": "2026-10-23T10:34:45.733Z",
+    "kopf": "f7dd313c",
+    "zeit": "2026-10-23T16:24:34.028Z",
     "kriterien": [
       "bauen.K1",
       "bauen.K3",
       "fahrzeug.K3",
       "fahrzeug.K4",
+      "feld.K1",
       "feld.K3",
       "ferne.K1",
       "ferne.K2",
@@ -38,11 +39,13 @@
       "mensch.K1",
       "mensch.K2",
       "mensch.K3",
+      "oekologie.K3",
       "physik.K2",
       "pipeline.K1",
       "pipeline.K3",
       "profiband.K4",
       "siedlung.K1",
+      "siedlung.K2",
       "siedlung.K5",
       "speicher.K1",
       "speicher.K2",
@@ -52,7 +55,9 @@
       "streaming.K5",
       "studios.K2",
       "tiere.K1",
+      "tiere.K2",
       "tiere.K3",
+      "tiere.K4",
       "ultiversum.K5",
       "vegetation.K4",
       "wetter.K1",
@@ -64,7 +69,7 @@
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 12,
+      "summe": 11,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -108,7 +113,7 @@
     {
       "key": "schoepfung",
       "titel": "IV · SCHÖPFUNG — die Studios, die Pipeline, die KI im System, Spieler-Bauen",
-      "summe": 7,
+      "summe": 8,
       "max": 40,
       "bereiche": [
         "studios",
@@ -137,7 +142,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 7,
+      "summe": 8,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -170,7 +175,7 @@
           "punkte": 1,
           "staffel": "1 = die 2D-Form (hoehe, flussLaeufe) ist EINE Quelle, Studio-Plan = Welt byte-gleich · 2 = auch dichte, editForm und Wasser-Spiegel im Kern, jede Mutation der festen Liste zieht Stamm-Leser UND Worker-Feld",
           "messung": "Konsum-Probe (gate:worker-dichte umgebaut, Node + Null-Renderer, ≤ 1 min): 10⁵ Zufalls-Punkte mit Höhle, Kanal, See-Becken und 20 Edits; dichte, editForm und Spiegel aus Stamm-Leser, Worker-Feld und Kern: maxDiff 0. Die Mutations-Liste ist fest benannt: Edit-Stärke, Edit-Radius, Dichte-Versatz, See-Spiegel — jede ändert den Ausgang von Stamm-Leser UND Worker-Feld (Punkt-Diff ≠ 0). `__consumes` allein zählt nicht, es beweist nur den Aufruf.",
-          "beleg": "Maschine: Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an 7c6f4b49 headless — offen: gelaende.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an f7dd313c headless — offen: gelaende.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Karte 1.0 maß Zwillings-Marken im Text (166 → 0): Umbenennen hätte 2 Punkte gezahlt, ohne dass ein Byte Verhalten fällt. Jetzt urteilt nur Verhalten: der Punkt-Diff gegen den Kern plus die FESTE Mutations-Liste — eine 2D-Mutation (hoehe) allein besteht nicht, und ein Leser, der die Kern-Funktion ruft und das Ergebnis verwirft, fällt an der Mutation (Befund B07).",
           "maschine": true
         },
@@ -179,7 +184,7 @@
           "punkte": 1,
           "staffel": "1 = (a) im Ausgabe-Bild an einem Gerät · 2 = (a), (b) und (d) an beiden Geräten, Ego und Third",
           "messung": "Spielgang-Station graben (werkbank, Bach nahe Genesis, Kamera des Spiels): (a) Graben 1 m und 3 m jenseits der Krone: EINE Fläche, nie über dem Spiegel, ≤ 2 s gefüllt; (b) 3-m-Damm quer: Stausee bis zur Überlaufhöhe ±0,1 m, Abfluss stromab hält; (d) Fern-Ring und Hydro-Raster zeigen den Edit ≤ 1 s (byte-Diff am Ring); Speicher-Rundlauf byte-gleich. Die Ruhe des Automaten zählt Feld K3, das Bauen in der Höhe Bauen K4.",
-          "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 3132 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 113.5–290.6 ms (1 m 3, 3 m 2) an 7c6f4b49 radeon — offen: gelaende.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 3110 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 78.8–347.4 ms (1 m 3, 3 m 5) an f7dd313c radeon · 9 von 10 Gräben über das Verb, in 2767 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 161–718.8 ms (1 m 4, 3 m 5) an 6579e8f4 gtx — offen: gelaende.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Sonderfall am Graben-Ort bestünde (a) an einer Stelle: die Station gräbt an Ufer-Punkten aus ≥ 5 Saaten. Ein Punkt aus Null-Renderer-Mechanik zählt nie als Bild (Lehre 16).",
           "aenderung": "Synthese gab 1 ohne 1-Stufe und ohne Bild → 0 (B08); die Ruhe ging nach Feld K3 (B23), das Hoch-Bauen nach Bauen K4 (V18); gemessen 21.10. im Ausgabe-Bild 0 → 1 (M2); nach R6 (feld-ruhe 8de57097) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M31) 22.10. 0 → 1.",
           "maschine": true
@@ -189,7 +194,7 @@
           "punkte": 1,
           "staffel": "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           "messung": "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          "beleg": "Maschine: spiegelTreue 0.7896 (wasserSatz 36615 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.4 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.73 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 7c6f4b49 radeon — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: spiegelTreue 0.7899 (wasserSatz 36649 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.74 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an f7dd313c radeon · spiegelTreue 0.7862 (wasserSatz 36563 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.74 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 6579e8f4 gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
           "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09); gemessen 21.10. in Ausgabe-Größe an der Kamera des Spiels 0 → 1 (M1).",
           "maschine": true
@@ -199,7 +204,7 @@
           "punkte": 1,
           "staffel": "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
           "messung": "gate:wasser-leben F + gate:kopplung F1 + Kern-Mutation: Wasser an 50 Zufalls-Punkten; Tier-Trinkziel, Tier-Scheu, Pflanzen-Wasserurteil, Klang-Nässe, Auftrieb und Leib folgen binnen eines Takts; 0 Pflanzen im gezeichneten Wasser, 0 Tiere trocken durch eine zweite Fläche. Jeder Lauf endet in See oder Meer (100 %), der Spiegel steigt stromab nie; die Strömung treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten. Die Leser-Liste steht nur hier (Wetter K3 verweist).",
-          "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 7c6f4b49 headless — offen: gelaende.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an f7dd313c headless — offen: gelaende.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Ausnahme-Filter je Leser (das Tier meidet Wasser-Chunks) bestünde eine Zählung; die Kern-Mutation an Zufalls-Punkten verlangt, dass jeder Leser binnen eines Takts folgt.",
           "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1.",
           "maschine": true
@@ -209,7 +214,7 @@
           "punkte": 1,
           "staffel": "1 = Kontakt p95 ≤ 3 cm für eine Rolle an einem Ort, beide Sichten · 2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
           "messung": "werkbank eval + bild an der Mess-Wiese (spec/profiband/haushalt.json) und am 25°-Hang: Huf, Rad und Streu-Fuß gegen das gezeichnete Mesh an 200 Zufalls-Kontakten, Schweben/Einsinken p95 ≤ 3 cm; Feinform-Fehler gegen das Gesetz ≤ 5 cm. Der Fuß des Spielers zählt Leib K2, das boden-nah-Bild Vegetation K1.",
-          "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an 7c6f4b49 headless — offen: gelaende.K5#2 radeon: ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an 7c6f4b49 · gelaende.K5#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an f7dd313c headless — offen: gelaende.K5#2 radeon: ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an f7dd313c · gelaende.K5#2 gtx: ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht) an 6579e8f4",
           "schlupfloch": "Ein Offset je Art schiebt den Mittelwert auf 0; gezählt wird p95 am Hang und in Fahrt, und jede Rolle ruft benannt EINE Funktion.",
           "aenderung": "Die 1 der Synthese stand auf dem boden-nah-Bild (laiWirk 1,855, veraltet) — das zählt Vegetation K1 (B10); der Kontakt war ungemessen → 0. Am Kopf 57a9f2ab gemessen (Radeon, Ego und Third) → 1; mit der GTX an 2160be58 (M26, 21.10.) → 2; an der strengeren K8 (k8-huf, je Größen-Band das schlechteste Reh) 22.10. → 1.",
           "maschine": true
@@ -302,7 +307,7 @@
           "punkte": 1,
           "staffel": "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
           "messung": "werkbank eval über einen Spielzeit-Sprung (Ereignis-Takte, nie Wanduhr), zwei Orte 3 km auseinander, 20 min Spielzeit; gleiche Saat → gleiche Folge, andere Saat → andere. Die Emotion schreibt nur über eine DSL-Regel mit Quelle (Affekt K2), nie als fester Trigger. Die Gleichheit über Peers zählt Feld K2.",
-          "beleg": "Maschine: saat-a an 2 Orten × 2 Wanduhren gleich (10 Züge: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders an 7c6f4b49 headless — offen: wetter.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: saat-a an 2 Orten × 2 Wanduhren gleich (10 Züge: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders an f7dd313c headless — offen: wetter.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Eine zweite regionale Wort-Tafel oder das Senden des Worts an die Peers erfüllte Teile ohne Gesetz; die Front muss aus EINER Kern-Funktion kommen (die Mutation zieht beide Orte). Den Wunsch der Emotion zu STREICHEN, um Saat-Reinheit zu gewinnen, ist verboten: er bleibt Schreib-Akt (V03).",
           "aenderung": "Der Synthese-Satz „gleiche Zustände allein aus der Saat“ hätte belohnt, die Kopplung an die Emotion zu streichen (V03); die Peer-Gleichheit zählt Feld K2 (B12); die Staffel ist neu (B02).",
           "maschine": true
@@ -312,7 +317,7 @@
           "punkte": 1,
           "staffel": "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose · 2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
           "messung": "werkbank bild an Mess-Wiese und Dorfgasse, klar gegen 10 min Regen (Spieler-Wort; die Bühne hält das Wetter, nicht Mittag): poröse Stoffe (Boden, Putz, Rinde) Luma 0,5–0,8 × trocken, dichte (Metall, Glas) unverändert, Glanz-Anteil ≥ 2×; Pfützen nur in den Senken des Kerns (Korrelation mit der Krümmung r ≥ 0,5) mit spiegelTreue ≥ 0,5; im Haus 0 Regen-Pixel und gleiche Luma; Trocknen 5–15 min Spielzeit ohne Sprung — zählt erst nach gemessener Benetzung; Fall ≤ 9,2 m/s.",
-          "beleg": "Maschine: Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.773 an 7c6f4b49 radeon — offen: wetter.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.773 an f7dd313c radeon · Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 80 (n 336/865), Wiese draußen 0.773 an 6579e8f4 gtx — offen: wetter.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein globales Abdunkeln bestünde den Luma-Teil: darum porös gegen dicht im SELBEN Schuss, der Dach-Test und die Mulden-Korrelation. „Trocken unter dem Dach“ und „trocknet“ sind ohne Nässe wahr: die Trocken-Kurve zählt erst nach der Benetzung (B13).",
           "aenderung": "Nässe stand zweimal (Wetter K2, Material K5) mit zwei Soll und zwei geplanten Quellen — ein Zwilling vor dem Bau (B15, V23); jetzt EIN Kriterium, EIN Zustand; Schnitt naesse 0 → 1 (7670a4a1).",
           "maschine": true
@@ -339,7 +344,7 @@
           "punkte": 1,
           "staffel": "1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen · 2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)",
           "messung": "Konsum-Probe `_windAt(x,z,t)` mit Mutation je Leser; hinter einem Kamm fällt die Böen-Amplitude um 40 %, in der Tal-Düse steigt sie um 20 %. Die sichtbare Böe zählt Vegetation K2, gesehen = gehört Klang K2.",
-          "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 7c6f4b49 headless — offen: wetter.K5#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an f7dd313c headless — offen: wetter.K5#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein zweiter Wind-Term für das Gelände wäre ein Zwilling: die Probe zählt Leser derselben Funktion und mutiert sie.",
           "aenderung": "Der Wind stand dreimal (Wetter K5, Vegetation K2 mit Klang-Teil, Klang K2) — je EIN Heim (B16, V25).",
           "maschine": true
@@ -431,7 +436,7 @@
       "key": "physik",
       "titel": "Physik der Körper — Kontakt, Impuls, Trümmer, Seile, der aktive Leib",
       "gruppe": "physis",
-      "punkte": 2,
+      "punkte": 1,
       "pfad": "Feature-Stopp bis v1.0 — außer H4 (Kontakt in Fahrt)",
       "dateien": "`stamm/kreatur-verhalten.js` (Stoß) · `stamm/koerper-bewegung.js` · `stamm/bau-buch.js` (Ω-PHYSIS) · `koerper-core.js`",
       "aaaa": "Alles, was einen Körper hat, folgt EINEM Körper-Gesetz: Masse = Volumen der Gestalt × Dichte der Stoff-Zeile (SI), Impuls-Tausch mit Stoßzahl je Stoff-Paar, Reibung μ je Stoff-Paar × Nässe, Auftrieb aus der Dichte gegen Wasser — für Spieler, Tier, Wagen, jedes gebaute Teil und jedes lose Ding. Der Spieler stößt ein Fass um, und eine Wand, deren Lastpfad er durchtrennt, stürzt in Trümmer, die liegen bleiben. Die Hängebrücke schwingt, die Fahne flattert im selben Wind wie das Gras. Ein gestoßener Leib fängt sich mit einem Ausfallschritt, ein fallender wird zur Ragdoll und steht wieder auf. 0 Durchdringen bei der Höchstgeschwindigkeit des Spiels; bei 30, 60 oder 144 fps ≤ 1 cm Abweichung nach 200 Schritten; 200 aktive Körper ≤ 1,5 ms CPU an der GTX-CPU. **Wo wir die Besten schlagen:** TotK und Teardown pflegen Masse und Material je Asset; bei uns kommt die Masse aus dem Studio-Gesetz (Volumen des erzeugten Meshes × Stoff-Zeile) — jedes prozedurale Ding ist ab dem ersten Bild physisch, die geschmiedete Klinge, das gebaute Haus, der gewachsene Baum, Labor = Welt.",
@@ -453,10 +458,10 @@
         },
         {
           "name": "Kontakt ohne Durchdringen, im festen Takt, beim Tempo des Spiels",
-          "punkte": 1,
+          "punkte": 0,
           "staffel": "1 = die Leiber (Mechanik, als solche benannt) · 2 = auch der Wagen bei der vmax des Spiels × 1,2 und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten",
           "messung": "Spielgang + gate:kollision-bild: Bär und Wagen gegen eine 0,35-m-Mauer bei der vmax des schnellsten Spiel-Rezepts × 1,2 (heute ≈ 19 m/s; die Zahl steigt im selben Commit mit der vmax), Durchdringen 0; bei 30, 60 und 144 fps weicht die Lage nach 200 Sim-Schritten ≤ 1 cm ab; Bild-Probe Spalt ≤ 5 cm. Kamera und Spieler-Leib im Fels zählen Leib K4.",
-          "beleg": "Maschine: Durchdringen 60 0/10 · 30 0/10 · gemischt 0/10, Lage nach 200 Schritten Bär 0 m, Wagen 0 m an 7c6f4b49 headless — offen: physik.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 0 — offen: physik.K2#1 headless: ROT: L7/L8 fehlen in der Ausgabe (Exit 0) an f7dd313c",
           "schlupfloch": "Eine dickere Kollisions-Hülle verhindert Durchdringen und lässt Lücken im Bild: die Bild-Probe misst den Spalt. „30 m/s“ war eine Pose, die das Spiel nicht hat (vmax ≈ 16 m/s, `vehicle-core.js:2481`): das Soll folgt der vmax des Gesetzes (B18, B67).",
           "aenderung": "Die Ego-Pixel-Probe der Kamera wanderte nach Leib K4 (V02).",
           "maschine": true
@@ -731,9 +736,10 @@
           "punkte": 0,
           "staffel": "1 = Tiefe 2–3 mit Festhalte-Probe · 2 = Tiefe ≥ 4",
           "messung": "Spielgang-Station Sturm (werkbank, 20 min Spielzeit per Sprung, Ego): gezählt werden die Teilsysteme, deren beobachtbarer Zustand sich zur LAUFZEIT ändert UND die den Zustand ihres Vorgängers lesen; Festhalte-Probe: wird der Vorgänger festgehalten, bleibt der Nachfolger stehen. Ein Glied, das nur zur Genese liest, zählt nicht.",
-          "beleg": "Graben → Wasser → Wiese (9aac0517) ist im Code eine Kette, aber die Festhalte-Probe gibt es nicht; Hydrosphäre → Feuchte → Platzierung ist zur Laufzeit statisch. Das Wetter ist ein Stern: Klang, Licht, Luft, Regen und Tier-Laune lesen das Wort direkt (`stamm/klang.js:279`, `stamm/bild-himmel.js:1130/2227`, `stamm/kreatur-verhalten.js:2199`).",
+          "beleg": "Maschine: 0 — offen: feld.K1#1 headless: ungemessen (R10)",
           "schlupfloch": "Mehr Leser an die Ursache zu hängen (Stern) hebt die Zahl, nicht die Tiefe: nur ein Glied, das beim Festhalten seines Vorgängers stehen bleibt, zählt.",
-          "aenderung": "Die „Tiefe 2“ der Synthese war aus Commit-Messages gelesen → 0 (B22)."
+          "aenderung": "Die „Tiefe 2“ der Synthese war aus Commit-Messages gelesen → 0 (B22).",
+          "maschine": true
         },
         {
           "name": "Gleich für alle: Saat + Schreib-Akte = Welt, über Peers und Reload",
@@ -749,7 +755,7 @@
           "punkte": 1,
           "staffel": "1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe · 2 = jede langsame Simulation (Wasser, Overlays, Wetter, Brand, Wachstum) hat 0 Einheiten in Ruhe und arbeitet nur in berührten Zellen",
           "messung": "werkbank stand + takt im echten Loop, 60 s Ruhe (Spieler steht, Wetter ruht), Sim-Einheiten je Teil-Simulation. Die Kosten der Sturm-Pose sind eine Zelle von Profiband K2.",
-          "beleg": "Maschine: Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 32400); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 an 7c6f4b49 headless — offen: feld.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 32400); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 an f7dd313c headless — offen: feld.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Teil-Simulationen unter Last abzuschalten hält den Takt und bricht die Welt (fail-soft): die Probe misst die Kette aus K1 im selben Lauf; über dem Budget drosselt nur das Tempo, nie die Existenz (Lehre 13).",
           "aenderung": "EIN Heim der Ruhe (B23); Gelände K2 zählt sie nicht mehr, der Sturm-Takt ist eine Zelle des Profi-Bands (V26); Schnitt feld-ruhe 22.10. 0 → 1.",
           "maschine": true
@@ -901,7 +907,7 @@
           "punkte": 0,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59154 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt an 7c6f4b49 · vegetation.K4#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59190 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt an f7dd313c · vegetation.K4#1 gtx: ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7291 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59206 px; Halm/Boden in haus_gotisch 41-0 turm 0/7291 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt an 6579e8f4",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24).; nach R6 (751a7ac6 Nah-Streu, be20b015 `_naturRaeumen`) 23.10. 1 → 0.",
           "maschine": true
@@ -989,7 +995,7 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 0.98 (min 0.6, in Flucht 0.28), fremder Verband 0 m an 7c6f4b49 headless — offen: tiere.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.6, in Flucht 0.299), fremder Verband 0 m an f7dd313c headless — offen: tiere.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
@@ -998,16 +1004,17 @@
           "punkte": 0,
           "staffel": "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           "messung": "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          "beleg": "Seit main f2904a72 (tiere-kreislauf, V18.546.33 5bef501f) reißt das Rudel mit echtem Leben: gate:kreatur-takt jagdkreis (A) — 3 Wölfe gegen einen gesunden Hirsch (168 HP) an 10 Orten einer Saat, Riss 403–585 s an 7/10 in 600 s (5311e7f1; Täter jagd-hp, die verwundete Beute, ROT mit Riss 6,5 s); der Leib wird Kadaver (56,5 → 0 kg in 120 s), Fuchs und Bär kommen aus 35 m und fressen 34,8 / 21,5 s (`scripts/lib/kreatur-proben.cjs:2037-2098`; CI 39498582018 grün an f2904a72). Die 1 trägt das nicht: die Quote ist Riss je 600-s-Fenster an Orten statt je Jagd über ≥ 10 Saaten, gemessen nur mit 3 Wölfen gegen den Erwachsenen, und 70 % liegt über dem Band 20–40 % (MacNulty); 1 Wolf und Kitz ungemessen. Fressen < 60 s, kein Bild.",
+          "beleg": "Maschine: 0 — offen: tiere.K2#1 headless: ungemessen (R10)",
           "schlupfloch": "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
-          "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27)."
+          "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27).",
+          "maschine": true
         },
         {
           "name": "Gang und Leib: der Fuß steht, die Gangart folgt dem Tempo, Labor = Welt",
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 24 Läufen (4 Gattungen), Satz-Tiere 0.036 über 122.4 m von 11 an 7c6f4b49 headless — offen: tiere.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 24 Läufen (4 Gattungen), Satz-Tiere 0.036 über 122.4 m von 11 an f7dd313c headless — offen: tiere.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1017,9 +1024,10 @@
           "punkte": 0,
           "staffel": "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
           "messung": "Familie diag-kreatur-leben: 200 Würfe über das Gelände (Landform aus dem Gelände-Kern: Hirsch Wiese und Waldrand, Wolf Wald, Bär Fluss und Hang); Zeitraffer über 24 Spielstunden (die Uhr ist Spieler-Wort).",
-          "beleg": "Die Art wählt `_pickFaunaSoulAtPlayer` über Tags × Feld mit 0,15 Rauschen (`stamm/kreatur-leben.js:1439-1458`); weil die Seelen bewusst tag-identisch sind (Lehre 8), entscheidet praktisch das Rauschen; lebensraum 0 Treffer; Hunger nur als Magen des Räubers am Kadaver (tiere-kreislauf), Durst 0 Treffer.",
+          "beleg": "Maschine: 0 — offen: tiere.K4#1 headless: ungemessen (R10)",
           "schlupfloch": "Arten von Hand an Koordinaten zu setzen oder einen Zeitplan zu skripten erfüllte Anteile ohne Gesetz: Seed-Wechsel und Bedürfnis-Mutante beweisen das Lesen.",
-          "aenderung": "Staffel neu (B28)."
+          "aenderung": "Staffel neu (B28).",
+          "maschine": true
         },
         {
           "name": "Begegnung im Bild, Dichte und Kosten beim Namen",
@@ -1135,9 +1143,10 @@
           "punkte": 0,
           "staffel": "1 = ein Wesen, das der Spieler schlug, hält bei der nächsten Begegnung Abstand (Median ≥ 2× ein Kontroll-Wesen), ein gefüttertes nähert sich, ohne Modell, über Speichern · 2 = dazu deponiert ein Riss Furcht am Ort, und die Herde meidet die Zelle (Aufenthalt −50 % gegen den Gegenlauf)",
           "messung": "werkbank eval am Spieler-Weg mit echten Verben; Gegenlauf mit gelöschtem Gedächtnis bzw. Feld-Furcht 0.",
-          "beleg": "`_creatureRemember` schreibt (`stamm/kreatur-leben.js:1088`); gelesen von Spezialisierung, Snapshot, Prompt (`stamm/feld-nexus.js:1116`) und Hof-UI (`werkstatt-hof.js:577`) — kein Verhaltens-Leser für Furcht oder Vertrauen (0 Treffer memory.some/filter/find im Stamm); `_depositEmotion` existiert, kein Riss deponiert.",
+          "beleg": "Maschine: 0 — offen: oekologie.K3#1 headless: ungemessen (R10) · oekologie.K3#2 headless: ungemessen (R10)",
           "schlupfloch": "Erinnerungen, die nur UI und Prompt lesen, zählen nicht: Konsum heißt Abstand und Weg in der Welt.",
-          "aenderung": "Aus KI K3(a) und Leben-Feld (Furcht) zusammengeführt — zwei geplante Bauten für dieselbe Furcht (V32)."
+          "aenderung": "Aus KI K3(a) und Leben-Feld (Furcht) zusammengeführt — zwei geplante Bauten für dieselbe Furcht (V32).",
+          "maschine": true
         },
         {
           "name": "Der Spieler im Kreislauf: Beute sein, Furcht und Triumph",
@@ -1260,7 +1269,7 @@
           "punkte": 1,
           "staffel": "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät · 2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
           "messung": "NEUER Bewohner-Zensus in der Familie kreatur-proben am Start-Dorf und an einer Stadt mit nH ≥ 27; Spielgang-Station Dorfplatz (Ego und Third, Mittag); Selbsttest: ein Haus ohne Bewohner ist ROT beim Namen.",
-          "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 108.8 fps an 7c6f4b49 radeon — offen: mensch.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 13 gehend, 112.9 fps an f7dd313c radeon · Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 38 Menschen im Bild, 16 gehend, 104.2 fps an 6579e8f4 gtx — offen: mensch.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Statisten-Puppen als statische Meshes erfüllten die Zählung: gezählt werden nur Körper mit Leib-Löser und Bewegung > 0 im Tag; Gegenprobe Haus mit leute 0 → 0 Körper.",
           "aenderung": "Gemessen 22.10. (bewohner-tag, Radeon) 0 → 1; nach R6 (bewohner-wege) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M32) 22.10. 0 → 1.; nach R6 (stadt-takt, tier-satz, stadt-erwachen) 23.10. 1 → 0.",
           "maschine": true
@@ -1270,7 +1279,7 @@
           "punkte": 1,
           "staffel": "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
           "messung": "NEUE Zeitraffer-Linse auf der Uhr des Spieler-Worts; der Plan ist bei gleichem Seed bit-gleich; Bild der Station Schmiede: um 10 Uhr besetzt, um 2 Uhr leer; Selbsttest: ein um 6 h verschobener Plan ist ROT.",
-          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 7c6f4b49 headless — offen: mensch.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an f7dd313c headless — offen: mensch.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Teleport an den Soll-Ort erfüllte den Anteil: K3 verlangt Gangzeit auf Wegen, im Nahbereich sind Sprünge > 2 m je Frame ROT.",
           "aenderung": "Staffel neu (B31); gemessen 22.10. (bewohner-tag, Radeon) 0 → 1.",
           "maschine": true
@@ -1280,7 +1289,7 @@
           "punkte": 1,
           "staffel": "1 = 0 Durchdringung und Eintritt zu 100 % über die Tür im Start-Dorf · 2 = 24 h ohne Steckenbleiber in einer Stadt, Gangzeit auf Wegen ≥ 0,85, ≥ 100 m Weg je Bewohner und Tag, Ausweichen ohne Berührung",
           "messung": "NEUE Wege-Linse; Selbsttest: ein Haus quer über dem Weg ist ROT am Täter.",
-          "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945 an 7c6f4b49 headless — offen: mensch.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.946 an f7dd313c headless — offen: mensch.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Bewohner, die im Haus bleiben, machen keine Fehler: Mindest-Strecke und 4–10 Wege aus K2.",
           "aenderung": "Staffel neu (B31); Schnitt bewohner-wege 22.10. 0 → 1.",
           "maschine": true
@@ -1794,7 +1803,7 @@
           "punkte": 1,
           "staffel": "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
           "messung": "Spielgang-Station Mess-Wiese: eine 18-%- und eine Weiß-Kugel als Proben-Leib über das EINE Stoff-Programm der Welt (Albedo-Zeile der Tafel; ein eigenes MeshStandardMaterial auf der Kugel ist im Selbsttest ROT); aus der Luma von Sonnen- und Schattenseite im Ausgabe-Bild Licht-Verhältnis, Schatten-Anteil und Himmels-Azimut. Soll (Liu & Jordan 1960): klar mittags 5–12,5, Schatten-Anteil 0,08–0,20, Himmel zur Sonne ≥ 1,2; Sonne 10° ≥ 2,5; bedeckt ≤ 1,5.",
-          "beleg": "Maschine: Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 7c6f4b49 radeon — offen: licht.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an f7dd313c radeon · Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 6579e8f4 gtx — offen: licht.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Wer die Rechnung misst, misst sich selbst: ein Fehler hinter der Rechnung (Stoff-Antwort, Ton-Kurve, Schatten-Knoten) bliebe grün. Eine Kugel mit eigenem Stoff mäße die Probe statt der Welt (B35).",
           "aenderung": "Karte 1.0 gab Licht K1 „Mittag GRÜN“ aus der Rechnung der Belichtung → 0; die Kugel muss über den Welt-Stoff zeichnen (B35).",
           "maschine": true
@@ -1913,7 +1922,7 @@
           "punkte": 1,
           "staffel": "1 = C = e^(−βd) ±15 % bei 1/2/5/8 km an einem Gerät, Uhr 0,5 · 2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
           "messung": "Spielgang-Station Hügel (Auge 120 m) und Augenhöhe: Grat gegen Himmel bei 1/2/5/8 km im Ausgabe-Bild; β aus einer EXTERNEN Referenz in spec (meteorologische Sichtweite je Wetter, Rayleigh-β je Kanal), nie aus LUFT gelesen.",
-          "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 7c6f4b49 radeon — offen: ferne.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an f7dd313c radeon · Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6579e8f4 gtx — offen: ferne.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Nebel, der die Ferne grau macht, senkt den Kontrast ohne Physik: Farb- und Mie-Bedingung. β aus LUFT prüfte nur, ob der Code sich selbst folgt (B36).",
           "aenderung": "Das Soll kommt aus einer externen Referenz (B36).",
           "maschine": true
@@ -1923,7 +1932,7 @@
           "punkte": 1,
           "staffel": "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
           "messung": "Station Hügel und Gipfel, klar, 4 Azimute: Restkontrast Gelände/Himmel am Rand der letzten Fern-Schale.",
-          "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an 7c6f4b49 radeon — offen: ferne.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an f7dd313c radeon · Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an 6579e8f4 gtx — offen: ferne.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Mehr Nebel versteckt die Kante und verliert die Ferne — K1 verbietet das; bei Dunst gemessen wäre die Kante immer unsichtbar: darum klar.",
           "maschine": true
         },
@@ -2050,7 +2059,7 @@
           "punkte": 0,
           "staffel": "1 = Boden und Fels auf 0,5/1/2 m: nyquist ≥ 0,15 und glatte Blöcke ≤ 10 % an einem Gerät · 2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen (0,5 / 1 / 2 m), Tafel-Maße detail/nyquist, glatte 8×8-Blöcke (σ Luma < 4), Ego, Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0178 nyquist 0.0941 (Arm 0.408), 1 m glatt 0.0259 nyquist 0.0823 (Arm 0.909), 2 m glatt 0.0089 nyquist 0.0976 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an 7c6f4b49 · material.K2#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0307 nyquist 0.086 (Arm 0.408), 1 m glatt 0.0315 nyquist 0.0738 (Arm 0.909), 2 m glatt 0.0133 nyquist 0.0929 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an f7dd313c · material.K2#1 gtx: ROT: boden 0.5 m glatt 0.0453 nyquist 0.0628 (Arm 0.408), 1 m glatt 0.0339 nyquist 0.0714 (Arm 0.909), 2 m glatt 0.0127 nyquist 0.0973 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 6579e8f4",
           "schlupfloch": "Rauschen erfüllt Nyquist ohne Material: das 1/f^β-Band und das Verbot von Kachel-Mustern; ein Schuss nur auf den besten Stoff reicht nicht: je Klasse.",
           "maschine": true
         },
@@ -2059,7 +2068,7 @@
           "punkte": 1,
           "staffel": "1 = Haus und Fels Stufe/L0 0,95–1,05 bei Uhr 0,5 an einem Gerät · 2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte",
           "messung": "werkbank albedo --nah-fern je Stufe (Stoff-Albedo, nicht das belichtete Bild). Der Luma-Sprung im Moment des Wechsels zählt LOD K4, die Byte-Gleichheit der Karte Pipeline K2.",
-          "beleg": "Maschine: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 7c6f4b49 radeon — offen: material.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an f7dd313c radeon · Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.986 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an 6579e8f4 gtx — offen: material.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Hand-Faktor je Stufe gleicht die Zahl an und bricht bei einer anderen Uhr: die zweite Uhr-Spalte; belohnt wird nur EINE Ableitung.",
           "aenderung": "EIN Heim des Stufen-Tons (vorher auch Pipeline K2, Siedlung K1; V22).; am Kopf 3528f2d0 die Haus-Hälfte belegt (material-albedo), der Fels ungemessen: bleibt 0.",
           "maschine": true
@@ -2460,7 +2469,7 @@
           "punkte": 1,
           "staffel": "1 = Undo/Redo wirkt in 8/8 Studios · 2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8",
           "messung": "Gang-Probe in diag-studio-huelle --engine: je Studio 20 zufällige Griffe, nie zweimal derselbe Wert; Zeit vom Eingabe-Ereignis bis zum ersten Ausgabe-Bild mit neuem Bau-Hash. Ob eine Zeile die 200-ms-Schranke trägt, steht je Zeile im Vertrag (`uniform: true`, Byte-Beweis), nie in der Messung.",
-          "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 7c6f4b49 headless — offen: studios.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an f7dd313c headless — offen: studios.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Den JS-Rückruf stoppen statt des Bilds, einen gecachten Wert wiederholen, oder jeden Regler „Neubau“ nennen, um die weiche Schranke zu bekommen: das erste Bild mit NEUEM Bau-Hash, nie wiederholte Werte, die Klasse je Zeile im Vertrag (B43).",
           "aenderung": "Die Schranken-Klasse je Zeile steht im Vertrag (B43).",
           "maschine": true
@@ -2596,7 +2605,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 4/8 Studio-Seiten, deren Werk mit gleichem Bau-Hash in der Welt steht · 2 = 8/8, mit zufälligem ov je Lauf und jeder Zeile von PARAMS_BY_KIND",
           "messung": "diag-studio-uebergabe für alle 8 Studios: im echten Studio ein zufälliges ov, „In der Welt ansehen“; in der Welt trägt das nächste gesetzte Werk derselben Art denselben Bau-Hash wie die Bühne. Reload zählt Speicher K4, Mitspieler Tore K4, Teilen Tore K5.",
-          "beleg": "Maschine: 0 — offen: pipeline.K1#1 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an 7c6f4b49 · pipeline.K1#2 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: pipeline.K1#1 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an f7dd313c · pipeline.K1#2 headless: ROT: kein (K)-Kanal: die Linse kennt den EINEN Übergabe-Kanal nicht (Exit 0) an f7dd313c",
           "schlupfloch": "Die 1-Stufe „alle Mesh-Arten über die Werkstatt der Welt“ erfüllte der Werkstatt-Weg ohne jede Übergabe (B46): die 1 verlangt Studio-Seiten. Den Empfang zu loggen, ohne dass ein Werk ihn liest: gemessen wird der Bau-Hash des Welt-Werks.",
           "aenderung": "Staffel geschärft; Restore und Peer haben eigene Heime (B46, V17).",
           "maschine": true
@@ -2615,7 +2624,7 @@
           "punkte": 2,
           "staffel": "1 = reglerBudget ≤ 3 ohne geschrumpften Wertebereich · 2 = 0, und je Art L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke",
           "messung": "gate:regler-wirkt, Teil Budget, über die echte Foundry-Brücke: je Art × Stufe × Regler-Rand Dreiecke und Befehle ≤ PORTAL_RENDER_CONFIG.lod.budget; der Wertebereich steht in der Ratsche.",
-          "beleg": "Maschine: über Budget 0 (Staffel 1 ≤ 3) in 6559 Bauten, leer 0, Exits 0/0/0 an 7c6f4b49 headless · über Budget 0, Quote max L1/L0 0.49 · L2/L0 0.15 an 7c6f4b49 headless",
+          "beleg": "Maschine: über Budget 0 (Staffel 1 ≤ 3) in 6559 Bauten, leer 0, Exits 0/0/0 an f7dd313c headless · über Budget 0, Quote max L1/L0 0.49 · L2/L0 0.15 an f7dd313c headless",
           "schlupfloch": "Den Regler-Rand enger klemmen statt im Rezept zu reduzieren: der Wertebereich steht in der Ratsche; ein Budget anheben ist ein Vertrags-Akt des Schöpfers.",
           "aenderung": "EIN Heim der Reduktion je Stufe (vorher auch LOD K5; B38); Staffel neu (B48); Schnitt pipeline-k3-s2 22.10. 1 → 2.",
           "maschine": true
@@ -2694,7 +2703,7 @@
       "key": "ki",
       "titel": "Die KI im System — Satz → Tat, Regler-Sprache, Gedächtnis, Modell-Regeln",
       "gruppe": "schoepfung",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (mit der KI erschaffen, Drehbuch-Schritt 18)",
       "dateien": "`stamm/feld-nexus.js` (maybeAnswerWithLlm, Prompt, ollama) · `stamm/feld-dsl.js` (70 Ops, spawn_studio) · `stamm/dienst.js` llmCall · `save-server.js` (/api/proxy/llm)",
       "aaaa": "Ein Satz wird Tat: aus einem eingefrorenen Korpus von 40 Schöpfer-Sätzen ergeben ≥ 95 % ein gültiges Programm und ≥ 85 % die gemeinte Welt-Änderung (Prädikat am Welt-Zustand und im Bild), 0 brechen die feste Welt, p95 bis zur ersten sichtbaren Änderung ≤ 3 s — mit Anthropic oder einem lokalen Modell; ohne Schlüssel trägt der Satz-Parser die Grundstufe. Die KI spricht das ganze Gesetz: alle Regler der acht Studios, am Kern geklemmt — „eine knorrige alte Eiche“ setzt die Regler der Eiche. Wesen erinnern sich im Gespräch, und die Regeln, die das Modell schreibt, laufen durch dieselbe Wertung wie die des Nexus. **Wo wir die Besten schlagen:** Generative Agents lebt im Text, Voyager spielt allein, Genie 3 träumt Pixel für Minuten; bei uns schreiben Mensch, Nexus und KI dieselbe DSL in EIN Gesetz — deterministisch, gespeichert, teilbar —, und jedes KI-Wort löst auf dieselben Rezepte auf wie die Werkstatt: kein halluziniertes Asset.",
@@ -2709,17 +2718,17 @@
           "punkte": 1,
           "staffel": "1 = Grundstufe ohne Schlüssel: ≥ 10 Positiv-Sätze mit Welt-Prädikat gemessen und gehalten · 2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)",
           "messung": "EIN Korpus (spec/abnahme/ki-korpus.json, 40 Sätze, eingefroren, Nenner je Version fest; neue Sätze nur aus Funden des Schöpfers oder des Blind-Spielers; darunter Negativ-Sätze) über den echten Chat-Pfad (maybeAnswerWithLlm) gegen einen echten Anbieter (Anthropic oder lokal ollama; Anbieter-Host im Netz-Log, Antwort-Id), Temperatur fest; Prädikat auf state UND Ausgabe-Bild nach 10 s (≥ 0,5 % Pixel). Die Station wort des Spielgangs fährt denselben Korpus.",
-          "beleg": "Maschine: 22 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-20) an 7c6f4b49 headless — offen: ki.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 22 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-20) an f7dd313c headless — offen: ki.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Stub statt Modell, handverlesene oder für den Parser geschriebene Sätze, ein Prädikat auf das Log („spawned_studio“) statt auf die Welt: Anbieter-Host und Antwort-Id im Netz-Log, eingefrorener Korpus, Prädikat auf state und Bild.",
           "aenderung": "Zwei Korpora (KI 40, Spielgang 20) waren ein Zwilling (V29); die 1 der Synthese stand auf einer Negativ-Probe (B49) → 0. Am Kopf 57a9f2ab mit lokalem Modell ohne Schlüssel gemessen (23 Positiv-Sätze mit Welt-Prädikat, Ratsche hält) → 1; die 2 verlangt das Soll mit Modell und ein sehendes Bild-Prädikat (Bild-Diff gegen dieselbe Ruhe statt Pixel-Anteil).",
           "maschine": true
         },
         {
           "name": "Die KI spricht das ganze Gesetz: Regler-Wörter",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = ≥ 50 % der Zeilen von PARAMS_BY_KIND sind aus einem KI-Programm erreichbar (ov als fünftes Argument von spawn_studio, am Kern geklemmt, fail-closed), und der Bau-Hash des Welt-Werks folgt · 2 = ≥ 95 % und der Korpus-Teil Regler-Wörter („knorrig“, „schmal und hoch“) ≥ 80 % mit Modell",
           "messung": "Zählung über alle Zeilen; Bau-Hash des gesetzten Welt-Werks gleich dem Studio-Werk mit demselben ov; die Bild-Wirkung jeder Zeile erbt das Kriterium aus Studios K1, ohne sie erneut zu zählen.",
-          "beleg": "Maschine: 0 — offen: ki.K2#1 headless: ROT: keine ERREICHT-Zeile: spawn_studio trägt kein ov (Exit 0) an 7c6f4b49",
+          "beleg": "Maschine: 73 von 112 Zeilen (65.2 %) aus einem KI-Programm, Bau-Hash folgt an f7dd313c headless — offen: ki.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein fünftes Argument, das angenommen, aber nicht verbaut wird: gemessen wird der Bau-Hash; Regler nur für eine Art freischalten hilft nicht, der Nenner sind alle Zeilen.",
           "aenderung": "Die 1 der Synthese war der Wort-Katalog (B50) → 0; die Regler-Wirkung zählte viermal (Studios K1, Pipeline K1, Spielgang K5, KI K2) — hier nur die Erreichbarkeit.",
           "maschine": true
@@ -2855,7 +2864,7 @@
           "punkte": 1,
           "staffel": "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom · 2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
           "messung": "Spielgang-Station bauen über die echte UI: Eiche, Haus, GT und ein eigener Teil-Bauplan, je über Werkstatt, Rezeptbuch und Hotbar, in schöpfer, frieden und pfad, Ego und Third. Die Klick-Zahl zählt nur hier (Spielgang K1 verweist).",
-          "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 7c6f4b49 headless — offen: bauen.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an f7dd313c headless — offen: bauen.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Schritte per Methoden-Aufruf statt per Klick: gezählt werden echte Eingabe-Ereignisse (isTrusted); ein vorgewärmter Cache täuscht Tempo vor: je Lauf eine Kalt-Variante.",
           "aenderung": "Die 1 der Synthese stand auf Chokepoint-Aufrufen (B52) → 0; mit echten Eingaben gemessen und geschnitten 0 → 1 (bauen-k1, 7670a4a1).",
           "maschine": true
@@ -2874,7 +2883,7 @@
           "punkte": 1,
           "staffel": "1 = die Wirkung aus der Form ist gemessen, die Statik gilt nur in der Werkstatt · 2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt mit sichtbarer Folge, und 5 Wirkungs-Konstruktionen halten 100 %",
           "messung": "Prüf-Satz in der Welt gesetzt: Turm, Kragarm, Brücke, Bogen; Wirkung: das Brennglas zündet mittags und nachts nie, das Rad rollt, die Schale hält Wasser.",
-          "beleg": "Maschine: Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 11 s, brennt 20 s („Die Sonne entzündete durch „Prüf-Linse\" „Eiche\" (30 m von di\") · Nacht Wärme 0 ·  an 7c6f4b49 headless — offen: bauen.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 11 s, brennt 20 s („Die Sonne entzündete durch „Prüf-Linse\" „Eiche\" (30 m von di\") · Nacht Wärme 0 ·  an f7dd313c headless — offen: bauen.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Das Urteil anzeigen, ohne dass es gilt: gemessen wird, ob das instabile Werk steht; ein Tag statt der Form („ist_linse“) zählt nicht, die Probe baut die Form neu.",
           "maschine": true
         },
@@ -3127,7 +3136,7 @@
       "key": "fahrzeug",
       "titel": "Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung",
       "gruppe": "wege",
-      "punkte": 2,
+      "punkte": 3,
       "pfad": "v1 (benutzen: fahren)",
       "dateien": "`vehicle-core.js` (fahrSchritt, chaseKamera, LACK_GESETZ) · `stamm/koerper-fahrt.js` · `stamm/koerper-bewegung.js` (FIXED_DT, `_loopCamera`) · `worlds/garage` · `scripts/diag-fahr-leben.cjs`",
       "aaaa": "Ein Wagen aus dem Gesetz (vehicle-core) fährt auf dem Wegenetz durch Wiese, Wald und Dorf, ohne steckenzubleiben. Die Reifen haben eine Kurve mit Spitze bei 6–10° und ≥ 15 % Abfall und greifen auf Weg, Gras, Schotter, Nässe und Schnee anders (Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×), aus derselben Stoff-Zeile, die den Boden malt; der Kern rechnet mit ≥ 240 Hz. Die Rig-Kamera aus dem Kern atmet das Tempo (FOV +≥ 8°, Arm +≥ 15 %, Azimut auf dem Fahrtvektor), jeder Übergang — Ego↔Third, Auf- und Absteigen in Fahrt, Hang — bleibt ohne Sprung. Klang, Federung, Spur, Staub, Spritzwasser und Rumble lesen denselben Fahr-Zustand. Lücken und Tempo-Decke richtet Streaming, das Band Profiband. **Wo wir die Besten schlagen:** Forza und BeamNG tunen jeden Wagen und jede Strecke einzeln; bei uns folgen Kamera und Grip aus den Maßen und dem Boden-Gesetz — jedes prozedurale Fahrzeug ist ab dem ersten Bild getunt.",
@@ -3161,17 +3170,17 @@
           "punkte": 1,
           "staffel": "1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen · 2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber",
           "messung": "Garage G7 + gate:fahr-leben (Familie kamera), Welt und Garage; der Leser-Grep über `window.__codeOf` zählt die FOV-Schreiber.",
-          "beleg": "Maschine: Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.37° Arm +18.2 % bei 15.06 m/s (Ende ok) an 7c6f4b49 radeon — offen: fahrzeug.K3#2 radeon: ROT: Drift Kamera ≤ 107.8° neben dem Fahrtvektor (Schlupf bis 59.5°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov] an 7c6f4b49 · fahrzeug.K3#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.38° Arm +18.2 % bei 15.08 m/s (Ende ok) an f7dd313c radeon · Garage FOV +9.07° Arm +18.1 % bei 15.22/16.00 m/s · Welt FOV +9.36° Arm +18.1 % bei 15.05 m/s (Ende ok) an 6579e8f4 gtx · Drift Kamera ≤ 4.8° neben dem Fahrtvektor (Schlupf bis 23.3°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov] an 6579e8f4 gtx — offen: fahrzeug.K3#2 radeon: ROT: Drift Kamera ≤ 108.8° neben dem Fahrtvektor (Schlupf bis 71.5°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov] an f7dd313c",
           "schlupfloch": "Ein FOV-Sprung misst +8° und ruckelt; ein fünfter FOV-Schreiber streitet mit Kampf und Fernglas: Ruck-p95, Azimut-Fehler und die Ein-Schreiber-Regel.",
           "aenderung": "Die 1 der Synthese war „chaseKamera im Kern“ (Existenz, B58) → 0. Am Kopf 57a9f2ab in Welt UND Garage bei 0,94–0,95 vmax gemessen → 1; die 2 wartet auf die GTX (M27).",
           "maschine": true
         },
         {
           "name": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
           "messung": "gate:fahr-leben T4 (Mechanik) + Station fahrt im Bild: nach Ego → Third in voller Fahrt steht der Azimut binnen 10 Bildern ≤ 10° an der Gier, jede zeichnende Stufe ≤ 2 m an der Physik-Lage, Bild-Deckung in Third 1; Auf- und Absteigen in Fahrt und am Hang ohne Kamera-Sprung > 0,5 m je Bild.",
-          "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 0.3/3.1/4.9°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4° an 7c6f4b49 radeon · nach Ego → Third im Bild 3/3, Azimut 0.2/3.5/5.7°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4° an 7c6f4b49 radeon — offen: fahrzeug.K4#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 0.1/3.6/5.3°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4° an f7dd313c radeon · nach Ego → Third im Bild 3/3, Azimut 0.3/3.1/5.3°, Stufe ≤ 1.71 m · T4 Absteigen 0.29 m je Bild, Azimut nach 10 Bildern 4.6° · Hang 17.4° an 6579e8f4 gtx · nach Ego → Third im Bild 3/3, Azimut 1.6/5.3/7.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.33 m je Bild, Azimut nach 10 Bildern 4.6° · Hang 17.4° an f7dd313c radeon · nach Ego → Third im Bild 3/3, Azimut 0.2/3.2/5.4°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4° an 6579e8f4 gtx",
           "schlupfloch": "Bei 6–10 m/s gemessen könnte derselbe Rig bei höherer vmax brechen: die 2 fällt automatisch, wenn eine neue vmax-Stufe ohne T4 im Bild gemergt wird.",
           "aenderung": "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57); das Radeon-Bild am Kopf 21.10. → 2 (M8).",
           "maschine": true
@@ -3242,7 +3251,7 @@
       "key": "siedlung",
       "titel": "Siedlung — das Haus von innen, die Stadt, das Gelände, die Jahrhunderte",
       "gruppe": "wege",
-      "punkte": 1,
+      "punkte": 0,
       "pfad": "v1 (ankommen: Start-Dorf, betreten) · B",
       "dateien": "`fachwerk-core.js` (EPOCHEN, SIEDLUNG, ortPlan, exportSettlement) · `stamm/siedlung-*.js` · `gelaende-core.js` (ERDBAU) · `stamm/koerper-bewegung.js` (Anti-Clip)",
       "aaaa": "Jede Welt-Zelle trägt die Siedlung, die ihr Boden, ihr Wasser und ihre Epoche verlangen; die Größen folgen dem Rang-Größe-Gesetz, und binnen 2 km vom Spawn sieht der Spieler von einem Hügel eine ummauerte Stadt. Wählt er ein Jahr (1320 · 1560 · 1860 · 1935), wächst dieselbe Stadt in Jahresringen — der alte Kern bleibt zu ≥ 80 % im jüngeren —, und nach v1.0 wächst sie in Spielzeit aus ihren Bewohnern. Die Gassen laufen auf den Höhenlinien (Gefälle p95 ≤ 12 % vor dem Erdbau). Jedes Haus ist durch die Tür bis in Keller und Dachboden begehbar, ohne Anti-Clip-Hub. Das erste Haus steht nach ≤ 0,5 s, egal ob 12 oder 300 Häuser. **Wo wir die Besten schlagen:** AC Unity baut EIN Paris von Hand in einer Epoche, CityEngine und die City Sample rechnen offline und liefern Gigabytes; unser Plan ist eine Funktion (Seed, Ort, Epoche) im Browser, deren Kosten am Schirm hängen, und die Jahrhunderte sind ein Parameter, keine neuen Assets.",
@@ -3255,10 +3264,10 @@
       "kriterien": [
         {
           "name": "Das Haus von innen: Tür, Treppe, Keller, Dachboden",
-          "punkte": 1,
+          "punkte": 0,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 7c6f4b49 headless — offen: siedlung.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: 0 — offen: siedlung.K1#1 headless: ROT: 0 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.48 m, Anti-Clip-Hub 1 (haus_provenzalisch rand keller -0.12: Fuß 0.16 → 0.64 m) an f7dd313c",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
@@ -3268,9 +3277,10 @@
           "punkte": 0,
           "staffel": "1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät · 2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte",
           "messung": "diag-settlement, neuer Teil C: Zensus der Auto-Zellen mit Größen-Histogramm weiler…metropole; Bild vom Hügel aus dem Ausgabe-Pfad.",
-          "beleg": "Gemessen am Kopf (Node, Radeon-Laptop, ein Lauf): exportSettlement mit nH 12 → dorf (16 Slots), nH 120 → grossstadt (127), nH 300 → metropole (307); der Export trägt kein `mauer` und kein `graph`. Die Welt würfelt nH 8..17 (SIEDLUNG nHMin 8 / nHSpan 10, `fachwerk-core.js:2844`; `stamm/siedlung-ort.js:1935`), die DSL klemmt bei 120 (`:1786`): in der Welt gibt es nur Dörfer.",
+          "beleg": "Maschine: 0 — offen: siedlung.K2#1 radeon: ROT: Z1 keine Zeile · Boot-Seed anazh-realm-seed: Stadt keine mit Ort · Mauer ?, Pool undefined · Schuss vom undefined undefined m vor der Mitte, undefined m höher · ohne Abnahme (Exit 4) an f7dd313c · siedlung.K2#1 gtx: ungemessen (R10)",
           "schlupfloch": "Eine Sonderregel am Genesis-Spawn bestünde „Stadt binnen 2 km“, ein Zipf-Fit über 8 × 8 km wäre Rauschen (B61): zufällige Spawns über 8 Saaten, 32 × 32 km mit Intervall; eine Chat-Stadt zählt nicht.",
-          "aenderung": "Saaten-Pflicht und größeres Fenster (B61); die Jahrhunderte wanderten nach K4."
+          "aenderung": "Saaten-Pflicht und größeres Fenster (B61); die Jahrhunderte wanderten nach K4.",
+          "maschine": true
         },
         {
           "name": "Gelände-Treue: der Grundriss liest den Boden",
@@ -3295,7 +3305,7 @@
           "punkte": 0,
           "staffel": "1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät · 2 = beide Geräte",
           "messung": "Station dorf: Zelle wecken bei nH 12 und 300, Zeit bis zum ersten Haus mit seinem Bau-Hash im Ausgabe-Bild. Die Stadt im Profi-Band ist eine Zelle von Profiband K1.",
-          "beleg": "Maschine: 0 — offen: siedlung.K5#1 radeon: ROT: nH 12 erstes Haus nach 32649.5 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1805.1 ms (haus_fraenkisch, Bau-Hash ed9b6932) an 7c6f4b49 · siedlung.K5#1 gtx: ungemessen (R10) · siedlung.K5#2 radeon: ROT: nH 12 erstes Haus nach 32842.9 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 1698.6 ms (haus_fraenkisch, Bau-Hash ed9b6932) an 7c6f4b49 · siedlung.K5#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: siedlung.K5#1 radeon: ROT: nH 12 erstes Haus nach 33314.3 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 332 ms (haus_fraenkisch, Bau-Hash ed9b6932) an f7dd313c · siedlung.K5#1 gtx: ROT: nH 12 erstes Haus nach 33116.7 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 660.2 ms (haus_fraenkisch, Bau-Hash ed9b6932) an 6579e8f4 · siedlung.K5#2 radeon: ROT: nH 12 erstes Haus nach 33096.2 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 292.6 ms (haus_fraenkisch, Bau-Hash ed9b6932) an f7dd313c · siedlung.K5#2 gtx: ROT: nH 12 erstes Haus nach 32761 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 691.6 ms (haus_fraenkisch, Bau-Hash ed9b6932) an 6579e8f4",
           "schlupfloch": "Ein schneller Platzhalter-Würfel als erstes Haus ist fail-soft: der Bau-Hash der Studio-L-Kette im Bild.",
           "aenderung": "Die Last der Stadt zählt Profiband K1 (Messort stadt; V26), die Bewohner zählen Menschen.",
           "maschine": true
@@ -3403,7 +3413,7 @@
           "punkte": 1,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: p95 ms ego/gehen 43.7 · third/gehen 40.2 · ego/wechsel 23.8 · third/wechsel 24.3 an 7c6f4b49 radeon · p95 ms ego/gehen 48.9 · third/gehen 43 · ego/springen 30.6 · third/springen 26.7 · ego/einsteigen 31.2 · third/einsteigen 25.6 · ego/hieb 25.5 · third/hieb 43.6 an 7c6f4b49 radeon — offen: leib.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: p95 ms ego/gehen 39 · third/gehen 43.1 · ego/wechsel 24 · third/wechsel 25.5 an 6579e8f4 gtx · p95 ms ego/gehen 35.6 · third/gehen 34 · ego/springen 18.8 · third/springen 18.8 · ego/einsteigen 25.2 · third/einsteigen 23.8 · ego/hieb 19.5 · third/hieb 39 an f7dd313c radeon — offen: leib.K1#2 gtx: ROT: p95 ms ego/gehen 40.5 · third/gehen 39.9 · ego/springen 32.5 · third/springen 27.4 · ego/einsteigen 36.5 · third/einsteigen 26.2 · ego/hieb 33.4 · third/hieb 54.6 an 6579e8f4",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
@@ -3431,7 +3441,7 @@
           "punkte": 1,
           "staffel": "1 = Third nie im Fels oder in der Wand (0 Fels-Pixel im Nahbereich der Kamera), Ruck ≤ 0,02 m p95 beim Gehen, an einem Gerät · 2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte",
           "messung": "Spielgang über Hang, Gasse und Haus in Third; Pixel-Probe auf Fels/Wand vor der Kamera, Ruck aus der Kamera-Bahn.",
-          "beleg": "Maschine: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":3} · Ruck p95 0.0065 höchstens 2.968 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei an 7c6f4b49 radeon — offen: leib.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":3} · Ruck p95 0.0065 höchstens 2.968 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei an f7dd313c radeon · stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":2} · Ruck p95 0.0069 höchstens 2.700 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei an 6579e8f4 gtx — offen: leib.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Eine weit hinausgeschobene Kamera vermeidet Fels und verliert den Leib: die Leib-Deckung im Bild hält in derselben Probe.",
           "aenderung": "Aus Physik K2 umgezogen (V02).",
           "maschine": true
@@ -3441,7 +3451,7 @@
           "punkte": 0,
           "staffel": "1 = Gehen, Kamera und Fahren analog über den Achs-Wert (Lenkwinkel stetig) · 2 = jedes Verb, Rumble aus dem Zustand, Belegung frei",
           "messung": "Station leib mit simuliertem Gamepad (Achs-Folge als Eingabe-Quelle), Lenkwinkel und Leib-Tempo gegen den Achs-Wert.",
-          "beleg": "Maschine: 0 — offen: leib.K5#1 headless: ROT: keine Zeile der Gamepad-Probe für /: Gehen ∝/ /: Fahren:/ (Exit 0) an 7c6f4b49 · leib.K5#2 headless: ROT: keine Zeile der Gamepad-Probe für /: jedes Verb liest NUR/ /: Gehen ∝/ /: Fahren:/ /: jeder Knopf über/ (Exit 0) an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: leib.K5#1 headless: ROT: keine Zeile der Gamepad-Probe für /: Gehen ∝/ /: Fahren:/ (Exit 0) an f7dd313c · leib.K5#2 headless: ROT: keine Zeile der Gamepad-Probe für /: jedes Verb liest NUR/ /: Gehen ∝/ /: Fahren:/ /: jeder Knopf über/ (Exit 0) an f7dd313c",
           "schlupfloch": "Ein Achs-Wert, der auf 0/1 gerundet wird, besteht „Gamepad an“: die Stetigkeit über den Achs-Wert.",
           "aenderung": "Aus Fahrzeug K1(d) umgezogen (B17, V02).",
           "maschine": true
@@ -3534,7 +3544,7 @@
           "punkte": 1,
           "staffel": "1 = Schwung und Treffer folgen der Trägheit des Werks (Dauer ∝ √I ±5 % an echten Blueprints, Klingen-Sweep am Chokepoint) — Mechanik · 2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
           "messung": "gate:kampf-gefuehl am echten Chokepoint (`_beginPlayerSwing`, `_kampfSweepTick`, `damageCreature`) + Mutations-Probe an schmiede-core; Bild-Station halten.",
-          "beleg": "Maschine: (A) I1=0.437 → 0.364 s · I2=2.624 → 0.891 s · Ratio 2.449 (soll √(I2/I1)=2.449) · 0 von 5 Proben ROT an 7c6f4b49 headless — offen: halten.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: (A) I1=0.437 → 0.364 s · I2=2.624 → 0.891 s · Ratio 2.449 (soll √(I2/I1)=2.449) · 0 von 5 Proben ROT an f7dd313c headless — offen: halten.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Schadens-Wert je Waffe von Hand bestünde die Probe: die Mutation einer schmiede-core-Zahl verlangt das Gesetz.",
           "aenderung": "Neu (V01); die 1 steht auf gemessener Gesetz-Mechanik am Chokepoint.",
           "maschine": true
@@ -3544,7 +3554,7 @@
           "punkte": 0,
           "staffel": "1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät · 2 = Klang und Funken aus dem Stoff-Paar (Spektrum je Paar verschieden), Ego und Third, beide Geräte",
           "messung": "Station halten: `werkbank latenz --verb hieb --sicht third,ego --proben 30` (`scripts/werkbank.cjs` latenzAn, Urteil `latenzUrteil` in `scripts/lib/haenger-linse.cjs`): Klick per CDP (der erste Klick fängt den Zeiger), Start `mousedown.timeStamp`, Ende die Marke `getCurrentTexture`, an der die rechte Hand ≥ 1 cm aus ihrer Lage steht; die Zeit im Hörer des Spiels; Hit-Stop = längste Folge präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und stehender Hand; ROT bei p95 > 50 ms, einem Verb ≠ hieb oder Hit-Stop-Median < 2 Bilder. Klang-Abgriff je Stoff-Paar (Stahl/Holz, Stahl/Stein, Holz/Fell).",
-          "beleg": "Maschine: 0 — offen: halten.K2#1 radeon: ROT: p95 ms third/hieb 37.8 · ego/hieb 25.3 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 55.8 mm je Takt (1218 Takte) an 7c6f4b49 · halten.K2#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: halten.K2#1 radeon: ROT: p95 ms third/hieb 30.4 · ego/hieb 29.4 · Hit-Stop 0/0 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 38.6 mm je Takt (629 Takte) an f7dd313c · halten.K2#1 gtx: ROT: p95 ms third/hieb 35.8 · ego/hieb 31.9 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (181–200 ms), die Hand gleitet im Halt bis 38.6 mm je Takt (1180 Takte) an 6579e8f4",
           "schlupfloch": "Ein Treffer-Klang je Waffe statt je Paar: das Spektrum muss mit dem getroffenen Stoff wechseln. Eine Schwung-Pose ohne Bild zählt nicht: das Ende ist die präsentierte Textur mit bewegter Hand, und ein Verb ≠ hieb ist ROT.",
           "aenderung": "Gemessen ROT (M18, 21.10.), geschnitten 0 → 1 (halten-latenz, e5003509): der Pick fragt die Gestalt statt der Haut.",
           "maschine": true
@@ -3554,7 +3564,7 @@
           "punkte": 0,
           "staffel": "1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form · 2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
           "messung": "Station halten: Werkzeug-Satz aus der Schmiede, Wirkung am Baum, am Boden, an der Wiese; Form-Mutation.",
-          "beleg": "Maschine: 0 — offen: halten.K3#1 headless: ROT: Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel ungemessen (keine Probe) an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: halten.K3#1 headless: ROT: Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel ungemessen (keine Probe) an f7dd313c",
           "schlupfloch": "Ein Tag „axt“ am Werk: die Form-Mutation verlangt die Geometrie.",
           "maschine": true
         },
@@ -3840,7 +3850,7 @@
           "punkte": 0,
           "staffel": "1 = eine geteilte Regel oder Welt mit verbotenen Ops wird beim Laden benannt abgewiesen (RULE_FORBIDDEN_EFFECT_OPS), 0 Schreibe auf den frozen Kern · 2 = ein Korpus aus Prompt-Injektionen in Bauplänen, Namen und Regeln lenkt die KI nicht (0 ausgeführte fremde Anweisungen), die Signatur-Prüfung schlägt bei Manipulation an",
           "messung": "Whitelist-Probe beim Laden; Injektions-Korpus gegen den KI-Pfad; manipulierter Bauplan gegen verifyBlueprintSignature.",
-          "beleg": "Maschine: 0 — offen: ultiversum.K5#1 headless: ROT: Zeile fehlt: /^\\s*(✅|❌) op:rule / /^\\s*(✅|❌) P2P: eine Regel mit verbotenem Effekt fällt benannt/ /^\\s*(✅|❌) 0 Schreibe: / (Exit 0) an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: ultiversum.K5#1 headless: ROT: Zeile fehlt: /^\\s*(✅|❌) op:rule / /^\\s*(✅|❌) P2P: eine Regel mit verbotenem Effekt fällt benannt/ /^\\s*(✅|❌) 0 Schreibe: / (Exit 0) an f7dd313c",
           "schlupfloch": "Nur eigene Inhalte testen: der Korpus ist feindlich geschrieben.",
           "aenderung": "Neu (Fehlliste B: Vertrauen und Sicherheit).",
           "maschine": true
@@ -4071,7 +4081,7 @@
           "punkte": 0,
           "staffel": "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden` · 2 = 0 überall, beide Geräte",
           "messung": "Konsum-Zählung im Kalt-Boot und im Spiel: Chunk-Stoff, Hydrosphäre und Asset-Bau, die synchron im Haupt-Faden entstehen, obwohl ein Faden zuständig ist; jede neue forceSync-Stelle ist ROT beim Namen.",
-          "beleg": "Maschine: 0 — offen: streaming.K4#1 headless: ROT: keine Faden-Zeile (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: streaming.K4#1 headless: ROT: keine Faden-Zeile (die Linse kennt --faden nicht?) · Exit 0 an f7dd313c",
           "schlupfloch": "forceSync setzen oder den Rückfall umbenennen: forceSync nur an den drei benannten Stellen.",
           "aenderung": "Aus Architektur K3.",
           "maschine": true
@@ -4081,7 +4091,7 @@
           "punkte": 0,
           "staffel": "1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
           "messung": "Instrument am Empfang (onmessage), im Kalt-Boot und in 60 s Fahrt: per structured clone empfangene MB je Minute und Kopien nach dem Empfang (Byte-Summe, nicht Nachrichten-Zahl).",
-          "beleg": "Maschine: 0 — offen: streaming.K5#1 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49 · streaming.K5#2 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an 7c6f4b49",
+          "beleg": "Maschine: 0 — offen: streaming.K5#1 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an f7dd313c · streaming.K5#2 headless: ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0 an f7dd313c",
           "schlupfloch": "Klone in viele kleine Nachrichten zerlegen: die Byte-Summe je Minute.",
           "aenderung": "Aus Architektur K4; die 1 der Synthese war die Existenz des Foundry-Transfers (B68) → 0.",
           "maschine": true
@@ -4162,7 +4172,7 @@
       "key": "profiband",
       "titel": "Das Profi-Band — Bild und Takt, wie der Spieler spielt",
       "gruppe": "fundament",
-      "punkte": 0,
+      "punkte": 1,
       "pfad": "v1 (p95 ≤ 33 ms auf jedem Standardgerät) · E",
       "dateien": "`spec/profiband/haushalt.json` · `spec/profiband/ratsche-*.json` · `scripts/werkbank.cjs` (lauf, profil, band, haenger) · `stamm/bild-kosten.js` (Diät) · `stamm/dirigent-takt.js`",
       "aaaa": "Auf der Radeon 890M (iGPU) UND der GTX 1060 mit i7-8750H läuft das Spiel so, wie es gespielt wird: gehend, sprintend, im Wagen mit Sicht-Wechsel, im Sturm mit 50 Tieren, durch die Gasse einer Stadt, in Ego und Third, bei Tag und Nacht. Die Zahlen: Frame p95 ≤ 16,7 ms (der v1-Boden ≤ 33 ms), p99 ≤ 25 ms, 0 Frames über 100 ms; CPU-Takt p95 ≤ 5,8 ms stehend und ≤ 8 ms in Bewegung, gemessen als ganze Belegung; ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB VRAM, GPU p95 ≤ 12 ms; unter Regler voll und nach 20 min ohne Drift. **Wo wir die Besten schlagen:** Valorant verspricht 60 fps ab GT 730 mit bewusst schlichter Kunst, Fortnite hält auf der GTX 1060 54 fps in Ultra; wir zeichnen eine unendliche Gesetz-Welt im Browser mit ≈ 50 MB VRAM auf der iGPU, weil die Kosten am Schirm hängen, nie an der Weltgröße.",
@@ -4202,10 +4212,10 @@
         },
         {
           "name": "Glätte: keine Hänger",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234.3 · 209.3 · 209.2 · 209.1 ms; Hänger 1/1/1/1) an 7c6f4b49 · profiband.K4#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 4 von 4 Sitzungen ohne Frame > 100 ms (max 66.8 · 100 · 50 · 58.2 ms; Hänger 0/0/0/0) an 6579e8f4 gtx — offen: profiband.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4301,7 +4311,7 @@
           "punkte": 1,
           "staffel": "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
           "messung": "`werkbank bild --zeit` und Klang-Abgriff in derselben Sitzung (60 s, Wiese, Böen frei); Mindest-Varianz beider Signale.",
-          "beleg": "Maschine: r 0.87 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 119.3 fps, Klang an an 7c6f4b49 radeon — offen: klang.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: r 0.87 bei Lag 0 (n 119), Spitze 0.89 bei -0.5 s, CV Bild 0.23 / Ohr 0.55, 60.1 fps, Klang an an f7dd313c radeon · r 0.81 bei Lag 0 (n 119), Spitze 0.81 bei 0 s, CV Bild 0.23 / Ohr 0.54, 118.9 fps, Klang an an 6579e8f4 gtx — offen: klang.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Den Wind konstant setzen: Mindest-Varianz beider Signale und die Böen-Zeitskala aus dem Gesetz.",
           "aenderung": "EIN Heim der Kopplung Bild ↔ Ohr (Vegetation K2 trägt sie nicht mehr; B16, V25); gemessen 21.10. 0 → 1 (M15); nach R6 (klang-takt bdf4b129) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M33, r 0,87) 22.10. 0 → 1.",
           "maschine": true
@@ -4320,7 +4330,7 @@
           "punkte": 1,
           "staffel": "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
           "messung": "Station gang + fahrt mit Klang-Abgriff: Schritte über Erde, Stein, Holz, Wasser; GT-Motor über die Drehzahl; Vorbeifahrt.",
-          "beleg": "Maschine: erde 334 Hz (n 19) · stein 2415 Hz (n 18) · glut 1907 Hz (n 18) — kleinster Abstand 508 Hz an 7c6f4b49 radeon — offen: klang.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: erde 340 Hz (n 18) · stein 2346 Hz (n 18) · glut 1710 Hz (n 18) — kleinster Abstand 636 Hz an f7dd313c radeon · erde 337 Hz (n 18) · stein 2436 Hz (n 18) · glut 1864 Hz (n 19) — kleinster Abstand 572 Hz an 6579e8f4 gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Rausch-Burst je Schritt ohne Stoff-Bezug: die spektrale Distanz je Stoff.",
           "aenderung": "Die 1 der Synthese war die Existenz der Leser (B70) → 0; am Abgriff gemessen 21.10. 0 → 1 (M15).",
           "maschine": true
@@ -4330,7 +4340,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 7c6f4b49 headless — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.1 · fahrt 0.1 · nacht 0.09 ms · Aussetzer ungezählt (null) an 7c6f4b49 · klang.K5#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an f7dd313c headless — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.21 · fahrt 0.2 · nacht 0.19 ms · Aussetzer ungezählt (Exit 1) an f7dd313c · klang.K5#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
@@ -4407,7 +4417,7 @@
           "punkte": 1,
           "staffel": "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
           "messung": "gate:persistence (S), erweitert um den Tab-Tod: im 10-min-Spielgang wird der Prozess an 20 Punkten getötet (Vorlade-Haken an jedem Schreib-Aufruf plus zufällige Punkte), dann neu geladen — auf einem Host ohne save-server, wie der Spieler über den Link.",
-          "beleg": "Maschine: 20 Tode: Alter max 1.505 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 7c6f4b49 radeon · 20 Tode: Alter max 1.584 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 7c6f4b49 radeon — offen: speicher.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 20 Tode: Alter max 4.943 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an f7dd313c radeon · 20 Tode: Alter max 2.451 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an f7dd313c radeon — offen: speicher.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Nur zwischen den Schreibern töten: Haken an jedem Schreib-Aufruf; den Server-Pfad prüfen, den der Spieler nie hat: der Host ohne save-server.",
           "aenderung": "Die 1 der Synthese stand auf dem Server-Pfad, den der Spieler über den Link nicht hat (B71) → 0; am Pfad des Spielers gemessen 22.10. (speicher-h1, Radeon) 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a (Radeon, M35) und b0b2d8ed (GTX, M30) gemessen 22.10. 0 → 2.; nach R6 (stadt-erwachen be20b0153 in saveState) 23.10. 2 → 0.",
           "maschine": true
@@ -4417,7 +4427,7 @@
           "punkte": 1,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "Maschine: je Bild p95 0 / p99 0 ms (7865 Bilder, 85 Rufe); je Ruf p50 8.3 / p95 10.4 / max 13.9 ms an 7c6f4b49 radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: je Bild p95 0 / p99 6.5 ms (4662 Bilder, 87 Rufe); je Ruf p50 6.9 / p95 10.8 / max 25.9 ms an f7dd313c radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1; nach R6 (speicher-h1) 1 → 0, am neuen Pfad gemessen 22.10. 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a gemessen (M35) 22.10. 0 → 1.; nach R6 (stadt-erwachen be20b0153, 16dd81d0 `_imLeerlauf`) 23.10. 1 → 0.",
           "maschine": true
@@ -4435,7 +4445,7 @@
           "punkte": 1,
           "staffel": "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
           "messung": "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
-          "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4) | ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe | ✅ (W) Werke auf der Lichtung nach dem Reload 2/2 | ✅ Dichte über den Reload: Linie 673 Löcher, 0 korrupt an 7c6f4b49 headless — offen: speicher.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4) | ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe | ✅ (W) Werke auf der Lichtung nach dem Reload 2/2 | ✅ Dichte über den Reload: Linie 653 Löcher, 0 korrupt an f7dd313c headless — offen: speicher.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild.",
           "maschine": true
         },
@@ -4444,7 +4454,7 @@
           "punkte": 1,
           "staffel": "1 = eine Migrations-Klasse bewiesen · 2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe",
           "messung": "Korpus-Lauf über alle Stände; Bauten, Edits und Inventar gezählt. Der Bauplan zwischen Geräten zählt Tore K5.",
-          "beleg": "Maschine: ✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {\"von\":0,\"nach\":2, | ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null) an 7c6f4b49 headless — offen: speicher.K5#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: ✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {\"von\":0,\"nach\":2, | ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null) an f7dd313c headless — offen: speicher.K5#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Nur den letzten Stand testen: der Korpus wächst mit jeder Versions-Stufe.",
           "aenderung": "Der Rundlauf zwischen Geräten wohnt in Tore K5 (V17).",
           "maschine": true
@@ -4901,12 +4911,20 @@
       "was": "main-Vorlauf 73f28224..3528f2d0 (stadt-takt, tier-satz, material-albedo, fahrt-takt; Werkzeug wackler-klasse, decke-basis; V18.546.71); je Kriterium `git log` Mess-SHA..3528f2d0 über die Dateien des Pfads, Kopf-Messung = integ-zug-CI Run 39886536255 (voll 18/18) und echt-CI an integ-probe 3528f2d0 (Run 39887887404, OMEN-GTX: naesse, luft-tiefe, Wasser-Bild grün), dazu die OMEN-Züge 1–3 (koordination `bericht/2210-abab-zug1.md`, `2310-abab-zug2.md`, `2310-abab-zug3.md`, je nicht langsamer). Befund: stadt-erwachen be20b0153 ist entgegen der Annahme auf main GELANDET — der fahrt-takt-Merge 8ad675c8 zog integ 40d00ade (vor dem Rückbau von integ-probe auf ff6d7d51), 6e376d2e brachte ihn nach main; `_dorfErwachen` steht am Kopf, Zug 3 maß also main + stadt-erwachen + material-albedo + fahrt-takt. Kein Schnitt hebt ein Kriterium: material-albedo belegt nur die Haus-Hälfte von Material K3 Staffel 1 (Radeon L1/L0 0,992, L2/L0 0,936 → 0,986; der Fels ungemessen, R10), stadt-takt und tier-satz senken Kosten unter ROTen Böden (GTX Stadt gehend F95 467 → 58,3 → 49,8 ms, Sturm Befehle 115 → 76, Dreiecke p95 857k → 645k; Wiese-Belegung p95 5,93–5,95 > 5,8, gpu-bank 12,45–12,99 > 12), fahrt-takt den Geomorph-Posten (Radeon 2,59 → 1,64 ms; der Fahrer hängt an 2 von 4 Boots). Verloren nach R6 (Pfad mit Welt-Byte geändert, Neumessung M37–M42): Speicher K1 2 → 0 (be20b0153 setzt in saveState den Gang des Dorf-Erwachens synchron zu Ende; die (T)-Linse der CI am Kopf hält die 1 nicht — Linux, Log ungelesen, kein Tod im Erwachen, Präzedenz 6cfce28a), Speicher K2 1 → 0 (derselbe Ruf, dazu die Leck-Probe des Flugschreibers im selben `_imLeerlauf`, 16dd81d0), Profiband K4 1 → 0 (der Geh-Takt: Bau-Satz-Deckel, morphFolge, Flugschreiber-Auszug aus dem Takt; Zug 3 fuhr `--regler voll`, R8), Menschen K1 1 → 0 (Bewohner-Satz mit Knochen-Matrizen auf der GPU, Liste in Raten, Erwachen in Raten; am Kopf nur der Null-Renderer), Vegetation K4 1 → 0 (Nah-Streu über `_bauSatzLege`, `_naturRaeumen` über `_blockerUmPlatz`), Tiere K3 2 → 1 (jedes Tier jenseits der 4 nächsten geht über `_tierSatzGang`, 16 gebackene Phasen; `diag-tier-gang` kennt `_satz` nicht — die 1 hält mit Satz-Schlupf 0,036). Gehalten, obwohl der Pfad sich änderte: Feld K3 (`_harvestScatterPick` 751a7ac6, gelaende-chunks.js, dienst.js — gate:stand-takt grün am Kopf, Gruppe 8), Gelände K5 (Streu-Fuß 751a7ac6, Huf der Satz-Tiere — Körper-steht K8 grün am Kopf, Gruppe 7), Halten K2 (9367ab90 `_gattungGlieder` — die Liste ist am Diff gleich, fehlende Kapseln überspringt die Treffer-Schleife), Gelände K2 (morphFolge greift nur bei lod > nl), Pipeline K3 (Vertrags-Akt v6, gate:regler-wirkt grün am Kopf), Menschen K2/K3, Siedlung K1 und Speicher K4 (Mechanik am Kopf grün), Wetter K2, Ferne K1/K2 (echt-Job der GTX am Kopf). Neue Messschuld M37–M43 (M43 die Fels-Stufen, Material K3 möglich +1). Material H3 schrumpft auf seinen Rest (+2 → +1); Profiband H1, Menschen H1 und der Export-Hebel der Siedlung schrumpfen auf ihren Rest. Netto 49 − 7."
     },
     {
+      "skala": "2.0",
+      "max": 330,
       "stand": "2026-10-23",
       "kopf": "7c6f4b49",
-      "summe": 42,
+      "summe": 44,
+      "was": "main-Vorlauf 3528f2d0..7c6f4b49 (Zug 4 halten-gesetz 452972a6, Zug 5 material-mikro + material-lack 7c6f4b49; je OMEN-ABAB nicht langsamer, bericht/2310-abab-zug4.md, 2310-abab-zug5.md). Erste Buchung nach der Regel „gemessen am Kandidaten vor dem Landen, netto“ (Schöpfer 23.10.). Gemessen: Profiband K4 0 → 1 (M39 am Kandidaten 7c6f4b49, GTX, Regler frei, 4/4 ohne Frame > 100 ms, max 83,4), Speicher K1 0 → 1 (M37 GTX an 452972a6, 20 Tode, Alter ≤ 1,51 s, 0 korrupt, 0 halb, 2 Tode im Dorf-Erwachen ohne halbes Dorf; Zug 5 berührt den Speicher-Pfad nicht). Offen und nicht gebucht: Speicher K2 (die Hülle um den requestIdleCallback-Rückruf und die Leck-Probe als eigener Posten fehlen in der GTX-Messung — Radeon M38), Material K1 (material-lack: Haut Labor/Welt 0,857 → 0,997 an der Radeon am Zweig-Kopf, die Messung am Kandidaten fehlt), Material K2 (material-mikro: glatt 0,92 → 0,02 grün, nyquist 0,09 < 0,15 ROT, Befund am Maß), Halten K1/K3 (halten-gesetz: Mechanik in der CI grün, Station fehlt). Kein R6-Verlust: Zug 4 berührt Kampf/Halten, Zug 5 Boden-Stoff, Albedo-Linse und Fels — kein gebuchtes Kriterium liest diese Pfade außer Profiband K4 (am Kandidaten neu gemessen). Netto 42 + 2."
+    },
+    {
+      "stand": "2026-10-23",
+      "kopf": "f7dd313c",
+      "summe": 43,
       "max": 330,
       "skala": "2.0",
-      "was": "main-Vorlauf 3528f2d0..7c6f4b49 (Zug 4 halten-gesetz 452972a6, Zug 5 material-mikro + material-lack 7c6f4b49; je OMEN-ABAB nicht langsamer, bericht/2310-abab-zug4.md, 2310-abab-zug5.md). Erste Buchung nach der Regel „gemessen am Kandidaten vor dem Landen, netto“ (Schöpfer 23.10.). Gemessen: Profiband K4 0 → 1 (M39 am Kandidaten 7c6f4b49, GTX, Regler frei, 4/4 ohne Frame > 100 ms, max 83,4), Speicher K1 0 → 1 (M37 GTX an 452972a6, 20 Tode, Alter ≤ 1,51 s, 0 korrupt, 0 halb, 2 Tode im Dorf-Erwachen ohne halbes Dorf; Zug 5 berührt den Speicher-Pfad nicht). Offen und nicht gebucht: Speicher K2 (die Hülle um den requestIdleCallback-Rückruf und die Leck-Probe als eigener Posten fehlen in der GTX-Messung — Radeon M38), Material K1 (material-lack: Haut Labor/Welt 0,857 → 0,997 an der Radeon am Zweig-Kopf, die Messung am Kandidaten fehlt), Material K2 (material-mikro: glatt 0,92 → 0,02 grün, nyquist 0,09 < 0,15 ROT, Befund am Maß), Halten K1/K3 (halten-gesetz: Mechanik in der CI grün, Station fehlt). Kein R6-Verlust: Zug 4 berührt Kampf/Halten, Zug 5 Boden-Stoff, Albedo-Linse und Fels — kein gebuchtes Kriterium liest diese Pfade außer Profiband K4 (am Kandidaten neu gemessen). Netto 42 + 2."
+      "was": "main-Vorlauf 7c6f4b49..f7dd313c (Zug 6 6579e8f4: editform-kern, ki-regler, kontakt-tempo u. a., OMEN-ABAB nicht langsamer; dazu der echt-Läufer radeon-890m, nur Werkzeug). Erste Buchung ganz durch die Punkte-Maschine: 54 Kriterien gemessen am Kopf (headless 21/32, Radeon 18/29, GTX 20/28 an 6579e8f4), R6 liest Welt-Bytes (Werkzeug und Versions-Stempel sind kein Weltwechsel). Gewonnen: Mensch K1, Material K3, KI K2, Speicher K2 (+4). Verloren, weil die Hand-Buchung veraltet war: Halten K2 (die Hand gleitet im Hit-Stop, an main rot, geheilt im Zug 9), Siedlung K1 (0 von 8 Gängen Tür → Keller → Dachboden), Leib K1 Staffel 2 (GTX gehen p95 40,5 ms), Fahrzeug K3 Staffel 2, Physik K2 (die Station liest L7/L8 nicht). Netto 44 → 43. Im Zug 9 (CI und echt grün, ABAB an der GTX läuft): Halten K2, Ökologie K3, Tiere K2, Tiere K4, Feld K1, Siedlung K2, Vegetation K4, Gamepad, Übergabe-Kanal, Teilen sicher, Hydrosphäre."
     }
   ],
   "text": {

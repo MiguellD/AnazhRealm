@@ -1,0 +1,45 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden
+
+========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========
+  Boot standard: 3197 ms (Seed anazh-realm-seed)
+    Strom vor dem Ack (Teil S): pending · volle Stände 0 · Dichte true · Brüche 0
+
+  Welt standard (Seed anazh-realm-seed):
+    wiese            (-280|-1046)  L0 =  L1 =  L2 =  L3 =
+    genesis          (0|0)  L0 =  L1 =  L2 =  L3 =
+    fluss            (-214|-715)  L0 =  L1 =  L2 =  L3 =
+    wiese+turm       (-280|-1045)  L0 =  L1 =  L2 =  L3 =
+    wiese+300        (-279|-1074)  L0 =  L1 =  L2 =  L3 =
+    wiese+300 Ost    (-236|-1074)  L0 =  L1 =  L2 =  L3 =
+    wiese+300 Süd    (-279|-1031)  L0 =  L1 =  L2 =  L3 =
+    Hülle: Turm Hub 3.487 · 3.5 · 3.488 · 3.484 · 3.483 · 3.484 · 3.485 · 3.487 · 3.49 · 3.492 m · Fern-Ring 306 von 640 Ecken in der Reichweite
+    Edit-Wahrheit: 300 Edits über den Spielpfad, der Main hält 300, SHA Main = Worker in 12/12 Gittern · Karte = Liste 3/3 Gitter · 4000/4000 Punkte
+    28 Gitter · 1539958 Ecken · abweichend 0 · maxDiff 0
+    Flut-Saat am Chunk -5,-17 (Wassertisch über dem Grund): 133632 Zellen, die Saat ändert 379 im Main und 379 im Worker · Main ↔ Worker abweichend 0
+    Erbgut: [wildnis] · Wildnis-Gewicht 1 · Höhen wiese 27.612 · genesis 90.311 · fluss 23.365
+    Höhen der Ferne (Main-Scheiben = Voxel-Faden): 4608 Punkte · abweichend 0
+    Stoff des Walds (Main = Voxel-Faden, Teil W): 243 Zellen · 7045 Darts · abweichend 0
+  Boot buehne: 1894 ms (Seed pruefbuehne-1)
+
+  Welt bühne (Seed pruefbuehne-1):
+    s0-atrium        (0|0)  L0 =  L1 =  L2 =  L3 =
+    s2-hang30        (0|148)  L0 =  L1 =  L2 =  L3 =
+    s4-hindernisse   (0|-170)  L0 =  L1 =  L2 =  L3 =
+    s5-furt          (0|-380)  L0 =  L1 =  L2 =  L3 =
+    s5-kolk          (0|-350)  L0 =  L1 =  L2 =  L3 =
+    s6-klamm         (410|0)  L0 =  L1 =  L2 =  L3 =
+    meer             (0|640)  L0 =  L1 =  L2 =  L3 =
+    s0-atrium+turm   (0|1)  L0 =  L1 =  L2 =  L3 =
+    s0-atrium+300    (23|6)  L0 =  L1 =  L2 =  L3 =
+    s0-atrium+300 Ost (66|6)  L0 =  L1 =  L2 =  L3 =
+    s0-atrium+300 Süd (23|49)  L0 =  L1 =  L2 =  L3 =
+    Hülle: Turm Hub 3.5 · 3.448 · 3.467 · 3.479 · 3.487 · 3.493 · 3.499 · 3.497 · 3.494 · 3.492 m · Fern-Ring 306 von 640 Ecken in der Reichweite
+    Edit-Wahrheit: 300 Edits über den Spielpfad, der Main hält 300, SHA Main = Worker in 12/12 Gittern · Karte = Liste 3/3 Gitter · 4000/4000 Punkte
+    44 Gitter · 2419934 Ecken · abweichend 0 · maxDiff 0
+    Flut-Saat am Chunk 9,0 (Wassertisch über dem Grund): 133632 Zellen, die Saat ändert 429 im Main und 429 im Worker · Main ↔ Worker abweichend 0
+    Erbgut: [insel, rampe, bucht, rinne] · Wildnis-Gewicht 0 · Höhen s0-atrium 10.26 · s2-hang30 19.054 · s4-hindernisse 9.75 · s5-furt -3.6 · s5-kolk -12 · s6-klamm 3.4 · meer -15
+    Höhen der Ferne (Main-Scheiben = Voxel-Faden): 4608 Punkte · abweichend 0
+    Stoff des Walds (Main = Voxel-Faden, Teil W): 567 Zellen · 11059 Darts · abweichend 0
+
+✅ Dichte-Spiegel Main == Worker, byte-genau (maxDiff 0) in standard + buehne
+
