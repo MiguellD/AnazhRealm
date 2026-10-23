@@ -179,7 +179,26 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            keys: {},
+            keys: {}, // die Tastatur roh (event.key klein) — gelesen NUR vom Sammler der Verb-Tafel
+            // DIE VERB-TAFEL (leib.K5): Tastatur, Maus und Gamepad schreiben hinein, jedes Verb liest NUR sie (`_verbTafelSammeln`).
+            // Analog: vor/quer (−1..1, quer + = links), gas/bremse (0..1), lenken (−1..1, + = links), der Blick seit dem letzten
+            // Bild (rad). Digital: sprint · sprung · rutsch · handbremse und `gehalten` (Aktion → gedrückt, der EINE Auslöser).
+            verbTafel: {
+                vor: 0,
+                quer: 0,
+                sprint: false,
+                sprung: false,
+                rutsch: false,
+                gas: 0,
+                bremse: 0,
+                lenken: 0,
+                handbremse: false,
+                blickGier: 0,
+                blickNeig: 0,
+                gehalten: {},
+            },
+            padBelegung: null, // Aktion → "Pad<n>" (die freie Belegung des Gamepads, `_loadKeybindings`)
+            _pad: null, // das Gamepad dieses Bilds (Achsen hinter der Totzone, Abzüge, Knöpfe), `_eingabeTakt`
             // 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei kaltem Kern steht der Spieler sichtbar
             // (_kernPflichtWand nennt den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung (init) die
             // Kern-Werte VOR dem ersten Loop-Frame.

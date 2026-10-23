@@ -1,4 +1,4 @@
-// sicht-linse.cjs — DIE SICHT-LINSE (Welle C): was die Sicht-Kette je Frame ARBEITET. Befund 06.10. (OMEN, GTX 1060 +
+// sicht-linse.cjs — DIE SICHT-LINSE: was die Sicht-Kette je Frame ARBEITET. Befund 06.10. (OMEN, GTX 1060 +
 // i7-8750H, CPU-Profil 12 s, Regler voll, Blick gepinnt, Mess-Wiese −900/−850): die Sicht je Pass (`_passSicht` an
 // scene.onBeforeRender) kostete ~6 ms CPU je Frame — `_chunkSatzPass` 5,3 · `_hoehlenSicht` 4,5 · `_hoehlenSichtLicht` 3,6
 // (je Kaskaden-Pass acht Ecken je Box über JEDE Mündung des Rings und jede Höhlen-Zelle der Box, ohne Frühausstieg) —

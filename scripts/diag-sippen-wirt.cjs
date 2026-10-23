@@ -59,7 +59,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             if (!Array.isArray(meshes)) return { fehler: "keine Antwort" };
             const g = PC.budgetSippen(meshes);
             const teile = meshes.filter((m) => m && m.position && m.position.array).length;
-            // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Welle L, Q13 F-D8) sind vier
+            // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Q13 F-D8) sind vier
             // Instanzen EINER Gruppe — ein Draw, vier Mal die Dreiecke. Jede andere Art trägt je Leaf ihren eigenen Schlüssel.
             const wd = new Set(eigen.map((lf) => lf.leafKey)).size;
             return { gd: g.draws, gt: g.tris, wd, wt, teile, stufe: flat.lod };

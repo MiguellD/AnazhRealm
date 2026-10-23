@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-season-meadow.cjs — DIE SAISON IST EINE FARBE (V18.527; vorher V6 „die Wiese folgt der Saison").
+// diag-season-meadow.cjs — DIE SAISON IST EINE FARBE (vorher V6 „die Wiese folgt der Saison").
 // Jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"); das Jahr
 // trägt die EINE Uniform `uSeasonMul` nach dem Studio-Gesetz. Diese Linse beweist (Node, die geladene Klasse — D3c: am
 // Lauf, nie am Quelltext; das Studio-Orakel F1a stand am Text der Shell und fiel):

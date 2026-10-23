@@ -1,4 +1,4 @@
-// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Welle 5, Gebot 10): was der ferne Wald im BILD ist.
+// fernwald-linse.cjs — DIE FERNWALD-LINSE der Werkbank (Gebot 10): was der ferne Wald im BILD ist.
 // Die Form-Wahrheit (jedes Karten-Ding jenseits der Mesh-Zone ist seine Karte, kein
 // Satz, kein Pop am Radius) hält `gate:fernwald`; diese Linse misst, was davon im Bild ankommt.
 //

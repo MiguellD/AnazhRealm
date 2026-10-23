@@ -1,6 +1,6 @@
-// diag-p2p-gestalt.cjs — P2P-GESTALT (V18.478): DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
-// Der soul-Kanal (_p2pBroadcastSoul) trägt die Avatar-Prägung additiv, der Empfänger (_p2pMsgSoul)
-// prüft sie durch DENSELBEN Prüfer wie der Übergabe-Kanal (_studioWerkPruefen — EINE Quelle) und legt
+// diag-p2p-gestalt.cjs — P2P-GESTALT: DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
+// Der soul-Kanal (_p2pBroadcastSoul) trägt die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)
+// validiert sie durch DENSELBEN Validator (_studioUebergabeValidate — EINE Quelle) und legt
 // sie als PER-PEER-Wahrheit (entry.uebergabe) ab; der Peer-Guss (_p2pApplyPeerSoul) führt sie
 // transient über _activePeerUebergabe in den EINEN Leser _koerperStudioDials (try/finally räumt
 // sie IMMER — kein Leck in den lokalen Stat-/Guss-Read). Diese Linse hält die Naht:

@@ -1,4 +1,4 @@
-// diag-ankunft.cjs — DIE ANKUNFTS-LINSE (Welle L Folge, v1-Schritte 1–2: ankommen · laufen und sehen). Die Defekte, die die
+// diag-ankunft.cjs — DIE ANKUNFTS-LINSE (v1-Schritte 1–2: ankommen · laufen und sehen). Die Defekte, die die
 // SICHTBARE Leben-Schau am 07.10. auf dem Welle-L-Stand fand (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim
 // NAMEN. Jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON, Null-Renderer) und misst seine Wirkung;
 // das Bild der Ankunft beweist die echte GPU (Bild-Paare vorher/nachher), diese Linse die Mechanik.

@@ -6,7 +6,7 @@
 //
 //   A — RÄUMLICH, gleiche LOD (die Determinismus-Wette):
 //       Teilen zwei gleich-LODige Nachbar-Chunks am gemeinsamen Rand koinzidente Oberflächen-
-//       Vertices (Pad+Crop-Overlap, V9.79)? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
+//       Vertices? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
 //       → die gleiche-LOD-Naht ist STRUKTURELL straff (kein T1/T2 nötig). Wenn nicht: sub-cell-
 //       Jitter = ein echter Riss.
 //
@@ -51,7 +51,7 @@ const server = statikServer();
                 if (typeof r.state.renderer.renderAsync === "function")
                     r.state.renderer.renderAsync = () => Promise.resolve();
                 r.state.postProcessingFailed = true;
-                // V18.370 — den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
+                // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
                 // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).
                 r.state.voxelWorker = null;
@@ -64,7 +64,7 @@ const server = statikServer();
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                // V18.370 — bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
+                // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
                 if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
             }
@@ -91,7 +91,7 @@ const server = statikServer();
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 
-        // Terrain-Chunks sammeln (Vertices in Welt-Koords, V9.25). Pro Chunk: cx,cz,lod,step,
+        // Terrain-Chunks sammeln. Pro Chunk: cx,cz,lod,step,
         // pos (BufferAttribute), idx (Index-Array — die Geometrie IST indiziert, :18296), vset
         // (quantisierte Vertex-Menge für die exakte „geteilte Vertices?"-Frage, §1.2-These).
         const QV = 0.03; // Quantisierung für „derselbe Vertex" (float32-Determinismus → <QV)
@@ -112,7 +112,7 @@ const server = statikServer();
         }
 
         // Das dispositive Maß: EXAKT-geteilte Vertices, GEBINNT nach Abstand zur Naht-Ebene.
-        // Die ÜBERLAPP-Zellen (Pad+Crop, V9.79) sitzen NAHE der Ebene + sollten koinzidente
+        // Die ÜBERLAPP-Zellen sitzen NAHE der Ebene + sollten koinzidente
         // Vertices rendern (deterministische Density + welt-identische Laplacian-Nachbarn) →
         // same-LOD: das nächste Bin (auf der Naht-Linie) ist ~100% geteilt → die Oberfläche ist
         // dort STETIG (kein Riss); die ferneren Bins (Interieur) sind natürlich ungeteilt (kein
@@ -859,9 +859,9 @@ const server = statikServer();
         console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
-    // G0 (goldstandard-mesh-plan) — `--gate`: das echte Naht-Gate. Es schützt gegen den
+    // G0 — `--gate`: das echte Naht-Gate. Es schützt gegen den
     // VAKUÖSEN Pass (0 Cross-LOD-Paare = die Messung lief gar nicht → grün ohne Beweis;
-    // die V18.370-Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
+    // die Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.

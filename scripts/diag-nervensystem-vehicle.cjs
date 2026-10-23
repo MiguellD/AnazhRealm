@@ -194,7 +194,7 @@ function staticLaws(q) {
             res.e.err = (e && e.message) || String(e);
         }
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
-        // Geometrie (V18.477 FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
+        // Geometrie (FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
         // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
         // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
         // Die Probe wanderte mit dem Gesetz: vorher klemmte [0] hart. =====
@@ -298,7 +298,7 @@ function staticLaws(q) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
-        // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527); die Anfrage MUSS entstehen (sonst prüfte F nichts)
+        // Körper-Schlüssel preset|gestalt|stufe[|ov]; die Anfrage MUSS entstehen (sonst prüfte F nichts)
         !!out.f.gtKey && !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey),
         out.f.err || String(out.f.gtKey)
     );

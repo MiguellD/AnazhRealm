@@ -1,4 +1,4 @@
-// diag-portal-membran.cjs — V18.464 DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
+// diag-portal-membran.cjs — DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
 // Beweist im ECHTEN Boot (foundry-ON, warmes Buch, Null-Renderer), dass ein
 // Tor-Gestalt-Portal in der Welt VOLLSTÄNDIG integriert ist:
 //
@@ -563,7 +563,7 @@ async function blickStufe(check) {
             res.n.keinNebelInSzene = fremd === 0;
         }
 
-        // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
+        // ── F: Tür-Flügel öffnen sich dem Reisenden ──
         // Erst die NÄHE (die Stufe misst vom Auge, K43: Stufe 0 bis 9,5 m — nur sie trägt die Flügel), dann MATERIALISIEREN
         // (das Asset ist async — der Rewarm-Weg von Hand, ein gesetzter Bau wechselt im Takt wie im Spiel), dann Ticks.
         p.x = ex;

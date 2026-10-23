@@ -1,4 +1,4 @@
-// haenger-linse.cjs — DIE HÄNGER-LINSE (Welle K): jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
+// haenger-linse.cjs — DIE HÄNGER-LINSE: jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
 // Die Hitch-Telemetrie (gate:hitch-telemetrie) zählt je SEKUNDE, nie je Hänger — diese Linse sagt, WER den Frame trug.
 //
 // Ein Hänger ist ein Abstand zweier GERENDERTER Frames über der Schwelle (dieselbe Größe wie `werkbank lauf` frameMs,

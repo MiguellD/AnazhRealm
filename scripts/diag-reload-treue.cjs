@@ -1,5 +1,5 @@
-// diag-reload-treue.cjs — RELOAD-TREUE (V18.478): DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
-// Der GUSS friert die wirksame Prägung je Wesen ein
+// diag-reload-treue.cjs — RELOAD-TREUE: DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
+// Der GUSS friert die wirksame Übergabe je Wesen ein
 // (group.userData.gussDials — nur wenn eine aktiv war, sonst feld-los + byte-alt), der Snapshot
 // trägt sie, und der Restore pinnt sie durch DENSELBEN Prüfer (Kreatur-PARAMS-Klemme) als
 // dialsOv in den Neu-Guss. Diese Linse hält die Naht:

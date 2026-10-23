@@ -1,11 +1,6 @@
-// diag-render-diaet.cjs — V18.475 DIE RENDER-DIÄT (Schöpfer-Trace 14.07.: 1733 dc /
-// ~72 ms CPU-Submit; die Schwester-Hälfte der V18.474-Fern-Diät).
-//
-// DER BEFUND: `_archLeafMaterial` baute je Part-FARBE ein EIGENES MeshStandardNode-
-// Material → jede Farbe zersplitterte in eine eigene Material-Familie (WebGPU-Pipeline; bis V18.509 auch
-// einen eigenen Batch = Draw-Call).
-// DIE HEILUNG: EIN geteiltes Material je TAG-SIGNATUR (`_sharedFoliageMaterial`,
-// das bewiesene V18.288-Muster); die Part-Farbe reist als INSTANZ-Farbe über den
+// diag-render-diaet.cjs — DIE RENDER-DIÄT (die Schwester-Hälfte der Fern-Diät):
+// EIN geteiltes Material je TAG-SIGNATUR (`_sharedFoliageMaterial`,
+// das bewiesene Muster); die Part-Farbe reist als INSTANZ-Farbe über den
 // bestehenden Tint-Kanal (leaf.tint → `_archSlotColor` → setColorAt — EINE Naht,
 // die Engine multipliziert instanceColor auf den colorNode). AUSNAHME
 // (fail-closed): GLÜHENDE Substanz (das Emissiv im PBR-Bau konsumiert opts.color —
@@ -32,8 +27,6 @@
 //   W (Welt): in der gebauten Dorf-/Wald-Szene stammt JEDES leaf.tint-Material
 //     aus dem EINEN _foliageMatCache (Map Signatur→Material ⇒ je Signatur genau
 //     EIN Material per Konstruktion); Leaves/Materialien/Gruppen dokumentiert.
-//   (Block X — die Index-Konsistenz des geteilten BatchedMesh — fiel V18.510 mit dem Batch-Pfad: jedes Leaf
-//   ist seine eigene InstancedMesh, gemischte Index-Formen teilen keinen Puffer mehr.)
 //
 //   node scripts/diag-render-diaet.cjs
 "use strict";
@@ -129,7 +122,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 o.leaves = flat.leaves.length;
                 o.mats = mats.size; // Materialien je Tag-Signatur (alle 6 Parts = stein)
                 o.tints = flat.leaves.filter((l) => l.tint !== undefined).length;
-                // Welle B: der platzierte Bau ist global — die Fixtur zählt über ihren EIGENEN Bauplan-Namen
+                // der platzierte Bau ist global — die Fixtur zählt über ihren EIGENEN Bauplan-Namen
                 const regTag = name + "#";
                 const vor = zaehle(regTag);
                 const entries = [];
@@ -271,7 +264,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         } catch (e) {
             res.farbe = { err: String((e && e.message) || e) };
         }
-        // ── Q am Ruf (D3c, vorher am Stamm-TEXT): die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
+        // ── Q am Ruf (D3c): die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
         // das geteilte Material, der blockierte Pfad lässt es stehen (die Glüh-Antwort misst F am Slot)
         if (neu.probeFlat) {
             const zaehl = (k, fn) => {
