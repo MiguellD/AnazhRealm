@@ -1,0 +1,3 @@
+# Messplatz GTX — Warteschlange (Gesetz: zug/messplatz.md). <id> <prio> <art> schluessel=wert …
+# Zug 6 (A 7c6f4b49 · B 6579e8f4) fährt die OMEN-Sitzung noch von Hand zu Ende; die Zeile in zug/abab.txt ist das Landetor.
+z6-punkte 2 punkte sha=6579e8f409c5234276210ace7e19798e63ad423c geraet=gtx
