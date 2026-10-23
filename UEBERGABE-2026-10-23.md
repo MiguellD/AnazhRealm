@@ -82,3 +82,15 @@
 3. **Zug 10** mit den vier Zweigen aus z10-heimholen (`fahre.sh z10 …`).
 4. **Zug 11** mit Welle 7, den Cloud-Zweigen und speicher-journal-m, jeder Zweig zuvor auf main gehoben.
 5. Die Stationen neuer Kriterien vor der Landung in koordination `meisterkarte-quelle/punkte/stationen/` eintragen.
+
+## Entscheid für die nächste Woche (Koordinator, 23.10. abends)
+
+1. **Generalprobe:** ein Leer-Kandidat fährt den ganzen Weg (fahre.sh, Nachwache, Buchung, Veröffentlichung), bevor echte Züge fahren.
+2. **Decke = Code-Atome ohne Kommentare** (`scripts/diag-betriebsgesetz.cjs`, je Datei über den EINEN Stripper `scripts/lib/stamm.cjs`):
+   - Eine neue Linse zahlt mit Code, nach der Regel „Linse ersetzt Linse“.
+   - Es gibt keinen Etiketten-Kehraus.
+   - Zuerst landen die offenen Zweige, die noch mit Kommentaren bezahlt haben; danach greift die neue Messung.
+3. **Täglich:**
+   - ein Auge-Lauf des v1-Pfads auf der Radeon;
+   - ~30 % des Budgets für Pflicht-OFFEN A, B und E;
+   - Züge alle ~2 h.
