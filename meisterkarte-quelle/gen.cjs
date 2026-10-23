@@ -5,6 +5,9 @@
 const fs = require("fs");
 const path = require("path");
 const DIR = __dirname;
+// DIE PUNKTE-MASCHINE (punkte/punkte.cjs): für jedes registrierte Kriterium tragen punkte und beleg aus stand.json, der Rest
+// bleibt Hand-Buchung (Übergang).
+const PM = require(path.join(DIR, "punkte", "punkte.cjs"));
 
 const de = (x, d = 2) => x.toFixed(d).replace(".", ",");
 const halb = (x) => { const g = Math.floor(x), r = x - g; if (r === 0) return String(g); if (Math.abs(r - 0.5) < 1e-9) return (g ? String(g) : "") + "½"; return de(x, 1); };
@@ -19,13 +22,15 @@ function bauen() {
   const gruppen = ["g1", "g2", "g3", "g4", "g5", "g6"].map((g) => require(path.join(DIR, "src", g + ".js")));
   const bereiche = [];
   const gr = [];
+  const stand = PM.liesStand();
   for (const g of gruppen) {
     gr.push({ key: g.gruppe.key, titel: g.gruppe.titel, intro: g.gruppe.intro, bereiche: g.bereiche.map((b) => b.key) });
     for (const b of g.bereiche) {
+      const kr = b.kriterien.map((k, i) => PM.maschinenKriterium(stand, b.key, i, k));
       bereiche.push({
-        key: b.key, titel: b.titel, gruppe: g.gruppe.key, punkte: b.kriterien.reduce((s, k) => s + k.punkte, 0),
+        key: b.key, titel: b.titel, gruppe: g.gruppe.key, punkte: kr.reduce((s, k) => s + k.punkte, 0),
         pfad: b.v1, dateien: b.dom, aaaa: b.aaaa, beste: b.beste,
-        kriterien: b.kriterien.map((k) => ({ name: k.name, punkte: k.punkte, staffel: k.staffel, messung: k.messung, beleg: k.beleg, schlupfloch: k.schlupfloch, ...(k.aenderung ? { aenderung: k.aenderung } : {}) })),
+        kriterien: kr.map((k) => ({ name: k.name, punkte: k.punkte, staffel: k.staffel, messung: k.messung, beleg: k.beleg, schlupfloch: k.schlupfloch, ...(k.aenderung ? { aenderung: k.aenderung } : {}), ...(k.maschine ? { maschine: true } : {}) })),
         hebel: b.hebel.map((h) => {
           const p = h.k.reduce((s, x) => s + Number(x.split("+")[1]), 0);
           return { name: h.name, bewegt: h.k, punkte: p, tage: h.t, p_je_tag: +(p / mitte(h.t)).toFixed(2), wurzel: h.wurzel, pflicht: h.pflicht, v1: !!h.v1, ...(h.bedingt ? { bedingt: true } : {}), ...(h.oeffnet ? { oeffnet: h.oeffnet } : {}) };
@@ -37,6 +42,7 @@ function bauen() {
   const summe = bereiche.reduce((s, b) => s + b.punkte, 0);
   const j = {
     stand: meta.stand, kopf: meta.kopf, version: meta.version, skala: "2.0", summe, max: bereiche.length * 10,
+    ...(stand ? { maschine: { kopf: stand.kopf, zeit: stand.zeit || null, kriterien: Object.keys(stand.je) } } : {}),
     gruppen: gr.map((g) => ({ key: g.key, titel: g.titel, summe: bereiche.filter((b) => b.gruppe === g.key).reduce((s, b) => s + b.punkte, 0), max: g.bereiche.length * 10, bereiche: g.bereiche, intro: g.intro })),
     bereiche,
     buergschaft: meta.buergschaft,
@@ -98,7 +104,14 @@ function pruefen(j) {
   }
   const last = j.verlauf[j.verlauf.length - 1];
   if (last.summe !== j.summe || last.max !== j.max) f.push("Verlauf-Ende ≠ Summe");
-  return { fehler: f, delta };
+  // die Punkte-Maschine: ihr Stand gilt nur am Kopf der Karte, jedes registrierte Kriterium trägt die Marke
+  const bekannt = new Set(j.bereiche.flatMap((b) => b.kriterien.map((_, i) => b.key + ".K" + (i + 1))));
+  const masch = j.bereiche.flatMap((b) => b.kriterien.map((k, i) => (k.maschine ? b.key + ".K" + (i + 1) : null))).filter(Boolean);
+  if (j.maschine) {
+    f.push(...PM.standPruefen({ kopf: j.maschine.kopf, je: Object.fromEntries(j.maschine.kriterien.map((k) => [k, 1])) }, j.kopf, bekannt));
+    if (masch.length !== j.maschine.kriterien.length) f.push("Maschine: " + masch.length + " Kriterien tragen die Marke, stand.json bucht " + j.maschine.kriterien.length);
+  } else if (masch.length) f.push("Maschinen-Marke ohne stand.json: " + masch.join(", "));
+  return { fehler: f, delta, maschine: masch.length, hand: bekannt.size - masch.length };
 }
 
 function kName(j, id) { const [bk, kk] = id.split(".K"); const b = j.bereiche.find((x) => x.key === bk); return (b ? kurz(b) : bk) + " K" + kk; }
@@ -250,9 +263,10 @@ const OUT_MD = path.join(DIR, "..", "MEISTERKARTE.md");
 let j;
 if (mode === "build") { j = bauen(); fs.writeFileSync(OUT_JSON, JSON.stringify(j, null, 2) + "\n"); }
 else j = JSON.parse(fs.readFileSync(arg || OUT_JSON, "utf8"));
-const { fehler, delta } = pruefen(j);
+const { fehler, delta, maschine, hand } = pruefen(j);
 if (fehler.length) { console.error("ROT:\n - " + fehler.join("\n - ")); process.exitCode = 1; }
 if (mode !== "check") fs.writeFileSync(OUT_MD, render(j));
 console.log("Summe " + j.summe + "/" + j.max + " · Bereiche " + j.bereiche.length + " · Kriterien " + j.bereiche.length * 5 + " · Hebel " + alleHebel(j).length + " · Δ-Kriterien " + Object.keys(delta).length + " · Fehler " + fehler.length);
+console.log("Maschine " + maschine + " Kriterien / Hand " + hand + (j.maschine ? " (stand.json am Kopf " + j.maschine.kopf + ")" : " (kein stand.json)"));
 console.log("Gruppen: " + j.gruppen.map((g) => g.key + " " + g.summe + "/" + g.max).join(" · "));
 console.log("TOP-5: " + top(j, (h) => h.v1 && !h.bedingt, 5).map((x) => x.b.key + " H" + (x.i + 1) + " " + de(x.h.p_je_tag)).join(" · "));

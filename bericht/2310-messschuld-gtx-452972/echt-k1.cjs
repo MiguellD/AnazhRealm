@@ -53,6 +53,21 @@ function haken() {
         console.log("__W__ " + JSON.stringify(e));
         if (window.__tod && window.__tod(e)) for (console.log("__TOD__"); ; );
     };
+    // DIE LESE-HAKEN (23.10.): welcher Stand den Boot trägt — jedes Lesen des Welt-Stands (localStorage-Abbild, IndexedDB) legt
+    // sein rec in window.__gelesen; die Zeile vergleicht es mit den Schreib-Haken (die lebende Lage kann das Laden versetzen)
+    window.__gelesen = [];
+    const get = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (k) {
+        const v = get.call(this, k);
+        if (/^anazhRealmState_[^.]*$/.test(k) && typeof v === "string") window.__gelesen.push({ quelle: "platz", rec: rec(v) });
+        return v;
+    };
+    const iget = IDBObjectStore.prototype.get;
+    IDBObjectStore.prototype.get = function (k) {
+        const req = iget.apply(this, arguments);
+        if (!String(k).endsWith(".bak")) req.addEventListener("success", () => { const v = req.result; if (v && typeof v.json === "string") window.__gelesen.push({ quelle: "idb", at: v.at, rec: rec(v.json) }); });
+        return req;
+    };
     const set = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, v) {
         set.call(this, k, v);
@@ -154,6 +169,24 @@ const dorfStand = (page, e) =>
             const ganz = alle.filter((e) => e.t <= vorher.tot + 1000 && e.rec && e.rec.x === g.x && e.rec.z === g.z && e.rec.b === g.b && e.rec.e === g.e);
             zeile.alterS = ganz.length ? Math.max(0, vorher.tot - Math.max(...ganz.map((e) => e.t))) / 1000 : null; // der Haken-Tod kommt in Node bis 0,3 s nach dem Schreiber an
             zeile.verlorenBloecke = vorher.bMax - g.b; zeile.verlorenEdits = vorher.eMax - g.e; // Blöcke, die vor dem Tod in einem FESTEN Schreiben lagen, aber nicht kamen
+            zeile.gelesen = await o.page.evaluate(() => window.__gelesen || []).catch(() => []);
+            // der gelesene Stand gegen die Schreib-Haken: trägt er ein festes Schreiben, ist die Abweichung der lebenden Lage eine
+            // Versetzung NACH dem Laden (Lage in mm), nie ein ungesehener Schreiber
+            const passt = (r) => alle.filter((e) => e.t <= vorher.tot + 1000 && e.rec && r && e.rec.x === r.x && e.rec.z === r.z && e.rec.b === r.b && e.rec.e === r.e);
+            for (const l of zeile.gelesen) {
+                const m = passt(l.rec);
+                l.geschrieben = m.length ? m[m.length - 1].art : null;
+                l.alterS = m.length ? Math.max(0, vorher.tot - Math.max(...m.map((e) => e.t))) / 1000 : null;
+                l.versetztMm = l.rec ? Math.round(Math.hypot(l.rec.x - g.x, l.rec.z - g.z)) : null;
+            }
+            // DAS ALTER AM GELESENEN STAND: das erste Lesen, das ein Schreiben trug (IndexedDB vor dem Abbild), misst das Alter; die lebende
+            // Lage nach dem Laden darf davon abweichen (kontakt-tempo schiebt Leiber auseinander) — die Versetzung ist eine eigene Zahl
+            const traeger = zeile.gelesen.find((l) => l.geschrieben && l.quelle === "idb") || zeile.gelesen.find((l) => l.geschrieben);
+            if (traeger) {
+                zeile.versetztMm = traeger.versetztMm;
+                if (zeile.alterS == null) (zeile.alterS = traeger.alterS), (zeile.alterAm = "gelesen");
+            }
+            zeile.eGeladen = g.e; // die Station urteilt: entstand in keinem Zyklus ein Edit, ist die Sonde blind (ROT)
             zeile.tod = vorher.art;
             if (vorher.erw && vorher.erw.key) {
                 zeile.dorfGeladen = await dorfStand(o.page, vorher.erw);
@@ -189,6 +222,7 @@ const dorfStand = (page, e) =>
         await klick(o.cdp);
         await warte(500);
         await taste(o.cdp, "keyDown");
+        const bauFehler = (zeile.bauFehler = []); // was der Bauer wirft, ausser dem Tod selbst (Target closed beim Kill)
         const bauer = setInterval(() => {
             o.page
                 .evaluate(() => {
@@ -198,9 +232,14 @@ const dorfStand = (page, e) =>
                     const ziel = { x: p.x + 6, y: r._terrainMacroSurfaceY(p.x + 6, p.z), z: p.z }, u = r._setzUrteil("stein_block", ziel, true);
                     if (u.ok || u.grund === "material") r.spawnArchitecture("stein_block", ziel, { silent: true });
                     else (window.__absage = window.__absage || {})[u.grund] = ((window.__absage || {})[u.grund] || 0) + 1;
-                    r.carveVoxelSphere(p.x - 5, r._terrainMacroSurfaceY(p.x - 5, p.z), p.z, 1.5);
+                    // editform-kern benannte carveVoxelSphere in carveVoxel um: beide Namen, damit die Sonde an jedem Baum gräbt
+                    (r.carveVoxel || r.carveVoxelSphere).call(r, p.x - 5, r._terrainMacroSurfaceY(p.x - 5, p.z), p.z, 1.5);
                 })
-                .catch(() => {});
+                .catch((e) => {
+                    // der Catch laeuft in Node, nicht in der Seite; der Kill selbst ist kein Baufehler
+                    const t = String(e);
+                    if (!/closed|Target|Session|detached|Execution context/i.test(t)) bauFehler.push(t.slice(0, 160));
+                });
         }, 1500);
         const art = ERW[z] || (z % 2 === 0 ? ["idb", "fest", "platz"][(z >> 1) % 3] : "zufall");
         await warte(6000 + Math.random() * 12000);
@@ -245,6 +284,10 @@ const dorfStand = (page, e) =>
         ueber10: urteil.filter((x) => x.alterS == null || !(x.alterS <= 10)).length,
         halbe: urteil.filter((x) => x.alterS == null || x.verlorenBloecke > 0 || x.verlorenEdits > 0).length,
         korrupt: zyklen.filter((x) => x.befund.length).length,
+        ohneAlter: zyklen.filter((x) => x.tod && x.alterS == null).map((x) => ({ z: x.z, tod: x.tod, g: x.g, gelesen: x.gelesen })),
+        versetztMaxMm: Math.max(0, ...zyklen.map((x) => x.versetztMm || 0)),
+        alterAmGelesen: zyklen.filter((x) => x.alterAm === "gelesen").map((x) => ({ z: x.z, alterS: x.alterS, versetztMm: x.versetztMm })),
+        bauFehler: zyklen.reduce((n, x) => n + (x.bauFehler || []).length, 0),
         erwachen: zyklen.filter((x) => x.erwachen || x.dorfGeladen).map((x) => ({ z: x.z, erwachen: x.erwachen, tod: x.tod, alterS: x.alterS, dorfGeladen: x.dorfGeladen, dorfNach10s: x.dorfNach10s })),
         saveRufe: saveMs.length,
         saveMs: { p50: q(saveMs, 0.5), p95: q(saveMs, 0.95), max: q(saveMs, 1) },

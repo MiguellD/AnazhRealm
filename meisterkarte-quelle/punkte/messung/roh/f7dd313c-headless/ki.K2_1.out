@@ -1,0 +1,41 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-praegung-welt.cjs
+
+=== WARM-ANKER ===
+  ✅ Foundry warm (Buch trägt langschwert + gt, Auto-Blueprints da, KIND_CHARAKTER + CULTURES geladen) — {"ready":true,"langschwert":true,"gt":true,"bps":true,"charakter":true}
+
+=== (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck (geprägt==ungeprägt wäre rot) — stripped=515787a7/12 vs U=515787a7/12
+  ✅ gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck — stripped=439da209/18 vs U=439da209/18
+
+=== (N) NAHT — die Prägung formt in Hand UND Welt ===
+  ✅ HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt — U=439da209/18 Nihon=fc241ed2/17
+  ✅ WELT-Flatten: fahrzeug_gt-Entry geprägt (toro ≠ stern, mind. eine ≠ ungeprägt) — U=515787a7/12 toro=4ac87a2a/12 stern=d49e2d35/12
+
+=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===
+  ✅ wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie
+  ✅ nachträgliches präge ändert das bestehende Artefakt NICHT
+  ✅ Neu-Guss OHNE Prägung räumt den Alt-Stempel
+  ✅ auch der Schmiede-Guss stempelt (Konsum _forgeMaterialAndFreeze → _stampStudioOv)
+
+=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · place-DSL · Taille ===
+  ✅ spawnArchitecture stempelt den Entry (tiefe Kopie)
+  ✅ Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück
+  ✅ Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv
+  ✅ place-DSL: spawn_blueprint Slot 6 reist in den Entry (P2P-Naht)
+  ✅ Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden
+  ✅ Taille-Wand: >8-KiB-Stempel fällt am Chokepoint
+
+=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===
+  ✅ der ungeprägte Bau legt NUR den alten Schlüssel (ohne |ov:) an, geprägte NUR |ov:-Schlüssel — plain=["gt|3|1","gt|3|0"] ov=4
+  ✅ der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert
+  ✅ kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)
+  ✅ BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau — direkt=515787a7/12 flatten=515787a7/12
+
+=== (K) KI-REGLER — spawn_studio prägt ===
+  ✅ SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau), ist ROT — {"Stempel":"unbewegt","Bau":"unbewegt"}
+  ✅ ERREICHT: 73 von 112 Zeilen von PARAMS_BY_KIND (65.2 %) erreicht — je Art vehicle 14/15 · gate 18/26 · weapon 17/18 · haus 21/21 · ausstattung 3/3 · klang 0/7 · koerper 0/8 · kreatur 0/5 · flower 0/5 · grass 0/4 (tot 10, ohne Wort 29)
+  ✅ KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk — {"st":"erreicht","ov":{"W":6,"pitchDeg":60,"annexN":2},"genannt":["W -3→6","pitchDeg 75→60","annexN 1.6→2"],"ok":true}
+  ✅ FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen setzen nichts, benannt — {"fremd":true,"text":true,"liste":true,"baum":true}
+  ✅ PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt) — fehlt:  · Mutation true
+
+✅ GRÜN — die Prägung reist mit dem Artefakt

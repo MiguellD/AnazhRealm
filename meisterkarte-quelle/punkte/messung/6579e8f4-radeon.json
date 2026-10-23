@@ -1,0 +1,28 @@
+{
+ "sha": "6579e8f409c5234276210ace7e19798e63ad423c",
+ "geraet": "radeon",
+ "zeit": "2026-10-23T11:11:13.658Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59180 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "exit": 1,
+   "minuten": 9.44,
+   "grund": "ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59180 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "zeit": "2026-10-23T10:52:55.437Z",
+   "abdruck": "e53d97783caf",
+   "port": 7716
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "p95 ms third/hieb 43.6 · ego/hieb 27.3 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 39.1 mm je Takt (1158 Takte)",
+   "exit": 0,
+   "minuten": 1.9,
+   "grund": "ROT: p95 ms third/hieb 43.6 · ego/hieb 27.3 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 39.1 mm je Takt (1158 Takte)",
+   "zeit": "2026-10-23T11:11:13.658Z",
+   "abdruck": "87deaeca8238",
+   "port": 7744
+  }
+ }
+}

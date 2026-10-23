@@ -1,0 +1,26 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7739; SP=$((7739 + 20000)); LP=$((7739 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6579e8f4-gtx\leib.K1_2.json"
+@@PUNKTE@@ LATENZ
+ego/gehen {"n":50,"fehlt":0,"p50":29.9,"p95":40.5,"max":62.7,"eingabe":0.4,"hoerer":0,"kette":12.3,"kurve":16.6,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":19.1,"p95":32.5,"max":37.4,"eingabe":0.3,"hoerer":0.1,"kette":8.3,"kurve":8.1,"takte":2}
+ego/einsteigen {"n":50,"fehlt":0,"p50":14.7,"p95":36.5,"max":110,"eingabe":0.3,"hoerer":0.4,"kette":14,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":11.1,"p95":33.4,"max":49.1,"eingabe":0.4,"hoerer":1.6,"kette":10.8,"kurve":0,"takte":2,"halt":1}
+third/gehen {"n":50,"fehlt":0,"p50":28.8,"p95":39.9,"max":43.1,"eingabe":0.6,"hoerer":0,"kette":10.1,"kurve":16.7,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":18.7,"p95":27.4,"max":27.8,"eingabe":0.6,"hoerer":0.2,"kette":9.9,"kurve":8.1,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":14.8,"p95":26.2,"max":40.7,"eingabe":0.7,"hoerer":0.2,"kette":13,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":29.6,"p95":54.6,"max":60,"eingabe":13,"hoerer":1.5,"kette":16.4,"kurve":0,"takte":3,"halt":8}
+LATENZ ROT (Bild 11.2 ms) ego/hieb Verben hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb, Hit-Stop 1 Bilder · third/hieb p95 54.6 ms > 50 (fehlt 0) — Täter kette 16.4 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 27:  7956 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

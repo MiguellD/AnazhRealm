@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] Seite #2: der Puls kehrt zurück nach 21.3 s — complete · renderer bereit · weltbild da · frames 538 · welt 538 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":40,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"tagSek":21.1,"bewohner":81,"trefferMin":1,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.024,"wegLeib":706.2,"spuren":54},"blick":{"n":164,"quote":0.97,"sektorMax":0.176},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.2,"mittel":0.077},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":247,"tuer":247,"falsch":[],"aufWeg":0.945,"wegeMin":4,"wegeMax":7,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":26.6}
+
+  (35 s)
+
+✅ GRÜN — bewohner

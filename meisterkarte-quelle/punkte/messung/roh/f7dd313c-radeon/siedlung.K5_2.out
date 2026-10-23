@@ -1,0 +1,118 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7743; SP=$((7743 + 20000)); LP=$((7743 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"
+gpu-lauf: Schloss punkte-radeon nach 2 s
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 9.1,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 32975.8,
+   "bilder": 1966,
+   "radius": 106.00390757335899
+  },
+  "latenzMs": 120.4,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 2822,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 33096.2,
+   "bilder": 1973,
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.52,
+    -1350.34
+   ],
+   "abstand": 105.5
+  },
+  "hash": "f5558d2c",
+  "bilder": 4795,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 80590
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 11.5,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 78.7,
+   "bilder": 2,
+   "radius": 105
+  },
+  "latenzMs": 213.9,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 2822,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 292.6,
+   "bilder": 11,
+   "typ": "haus_fraenkisch",
+   "same": 867856,
+   "ort": [
+    -826.92,
+    -1130.07
+   ],
+   "abstand": 20.8
+  },
+  "hash": "ed9b6932",
+  "bilder": 2833,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 47805
+}
+@@PUNKTE@@ EXIT 0

@@ -1,0 +1,23 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte\meisterkarte-quelle\punkte\messung\roh\7c6f4b49-radeon\gelaende.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=7601 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7601/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7601; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (148 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (215 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (281 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T09:43:14+02:00 (350 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (4 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (73 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (140 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (208 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (276 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (343 s)
+gpu-lauf: warte auf messbahn 2026-10-23T09:50:08+02:00 (411 s)
+gpu-lauf: Schloss punkte-radeon nach 746 s
+{"saat":11,"abstand":1,"verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":413}
+{"saat":11,"abstand":3,"verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":267,"gefuelltMs":171.4,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":376}
+{"saat":23,"abstand":1,"verb":"pfluecken","edits":1,"k":49,"krone":3.68,"nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":473}
+{"saat":23,"abstand":3,"verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":41,"nassEnde":265,"gefuelltMs":142.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":429}
+{"saat":37,"abstand":1,"verb":"graben","edits":3,"k":47,"krone":3.34,"nassVor":105,"nassEnde":296,"gefuelltMs":124.1,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":372}
+{"saat":37,"abstand":3,"verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":240,"nassEnde":204,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":373}
+{"saat":51,"abstand":1,"verb":"graben","edits":5,"k":7,"krone":3.34,"nassVor":153,"nassEnde":333,"gefuelltMs":290.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":335}
+{"saat":51,"abstand":3,"verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":257,"nassEnde":228,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":426}
+{"saat":73,"abstand":1,"verb":"graben","edits":7,"k":16,"krone":3.34,"nassVor":116,"nassEnde":297,"gefuelltMs":113.5,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":388}
+{"saat":73,"abstand":3,"verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":225,"nassEnde":207,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":433}

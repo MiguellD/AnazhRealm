@@ -1,0 +1,280 @@
+{
+ "sha": "f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4",
+ "geraet": "radeon",
+ "zeit": "2026-10-23T16:21:57.398Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 3110 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 78.8–347.4 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 1.72,
+   "zeit": "2026-10-23T14:44:50.620Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7701
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7899 (wasserSatz 36649 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.74 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 1.18,
+   "zeit": "2026-10-23T14:46:33.980Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "zahl": "über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.9,
+   "grund": "ROT: über dem Soll: huf@hang 3.2 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "zeit": "2026-10-23T14:47:44.614Z",
+   "abdruck": "1c2538e83974",
+   "port": 7705
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.773",
+   "exit": 0,
+   "minuten": 2.02,
+   "zeit": "2026-10-23T14:48:38.890Z",
+   "abdruck": "e03a045fab93",
+   "port": 7707
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 13 gehend, 112.9 fps",
+   "exit": 0,
+   "minuten": 1.26,
+   "zeit": "2026-10-23T14:50:39.806Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7716
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59190 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "exit": 1,
+   "minuten": 2.37,
+   "grund": "ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59190 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "zeit": "2026-10-23T14:51:55.164Z",
+   "abdruck": "e53d97783caf",
+   "port": 7717
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.9,
+   "zeit": "2026-10-23T14:54:17.312Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7722
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.33,
+   "zeit": "2026-10-23T14:55:11.293Z",
+   "abdruck": "bbee11502f53",
+   "port": 7723
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.33,
+   "zeit": "2026-10-23T14:56:30.944Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7724
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0307 nyquist 0.086 (Arm 0.408), 1 m glatt 0.0315 nyquist 0.0738 (Arm 0.909), 2 m glatt 0.0133 nyquist 0.0929 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 4.79,
+   "grund": "ROT: boden 0.5 m glatt 0.0307 nyquist 0.086 (Arm 0.408), 1 m glatt 0.0315 nyquist 0.0738 (Arm 0.909), 2 m glatt 0.0133 nyquist 0.0929 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "zeit": "2026-10-23T14:57:50.493Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7725
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.51,
+   "zeit": "2026-10-23T15:02:38.020Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7726
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.38° Arm +18.2 % bei 15.08 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 0.92,
+   "zeit": "2026-10-23T15:04:08.501Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7736
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Drift Kamera ≤ 108.8° neben dem Fahrtvektor (Schlupf bis 71.5°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 1.77,
+   "grund": "ROT: Drift Kamera ≤ 108.8° neben dem Fahrtvektor (Schlupf bis 71.5°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.016 m (165) · FOV-Schreiber [_kamFov]",
+   "zeit": "2026-10-23T15:05:03.561Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7737
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/3.6/5.3°, Stufe ≤ 1.71 m · T4 Absteigen 0.25 m je Bild, Azimut nach 10 Bildern 4.9° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.69,
+   "zeit": "2026-10-23T15:06:49.782Z",
+   "abdruck": "ab61dce55516",
+   "port": 7738
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 1.6/5.3/7.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.33 m je Bild, Azimut nach 10 Bildern 4.6° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.6,
+   "zeit": "2026-10-23T15:08:31.051Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7739
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "zahl": "Z1 keine Zeile · Boot-Seed anazh-realm-seed: Stadt keine mit Ort · Mauer ?, Pool undefined · Schuss vom undefined undefined m vor der Mitte, undefined m höher · ohne Abnahme (Exit 4)",
+   "exit": 4,
+   "minuten": 1.34,
+   "grund": "ROT: Z1 keine Zeile · Boot-Seed anazh-realm-seed: Stadt keine mit Ort · Mauer ?, Pool undefined · Schuss vom undefined undefined m vor der Mitte, undefined m höher · ohne Abnahme (Exit 4)",
+   "zeit": "2026-10-23T15:10:06.796Z",
+   "abdruck": "22156cd39fff",
+   "port": 7740
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 33314.3 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 332 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 5.11,
+   "grund": "ROT: nH 12 erstes Haus nach 33314.3 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 332 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T15:11:27.034Z",
+   "abdruck": "d2f68243ff0a",
+   "port": 7742
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 33096.2 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 292.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 5.16,
+   "grund": "ROT: nH 12 erstes Haus nach 33096.2 ms (haus_fraenkisch, Bau-Hash f5558d2c) · nH 300 erstes Haus nach 292.6 ms (haus_fraenkisch, Bau-Hash ed9b6932)",
+   "zeit": "2026-10-23T15:16:33.518Z",
+   "abdruck": "9575bc09cb5b",
+   "port": 7743
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "p95 ms ego/gehen 52.2 · third/gehen 46.4 · ego/wechsel 21.3 · third/wechsel 20.8",
+   "exit": 0,
+   "minuten": 2.13,
+   "grund": "ROT: p95 ms ego/gehen 52.2 · third/gehen 46.4 · ego/wechsel 21.3 · third/wechsel 20.8",
+   "zeit": "2026-10-23T15:21:43.079Z",
+   "abdruck": "8746d55fc31a",
+   "port": 7744
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 35.6 · third/gehen 34 · ego/springen 18.8 · third/springen 18.8 · ego/einsteigen 25.2 · third/einsteigen 23.8 · ego/hieb 19.5 · third/hieb 39",
+   "exit": 0,
+   "minuten": 5.06,
+   "zeit": "2026-10-23T15:23:50.580Z",
+   "abdruck": "156d9c781ed5",
+   "port": 7745
+  },
+  "leib.K4#1": {
+   "gruen": true,
+   "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":3} · Ruck p95 0.0065 höchstens 2.968 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei",
+   "exit": 1,
+   "minuten": 0.91,
+   "zeit": "2026-10-23T15:28:54.237Z",
+   "abdruck": "bce5fed3572d",
+   "port": 7746
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "p95 ms third/hieb 30.4 · ego/hieb 29.4 · Hit-Stop 0/0 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 38.6 mm je Takt (629 Takte)",
+   "exit": 0,
+   "minuten": 1.86,
+   "grund": "ROT: p95 ms third/hieb 30.4 · ego/hieb 29.4 · Hit-Stop 0/0 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 38.6 mm je Takt (629 Takte)",
+   "zeit": "2026-10-23T15:29:48.732Z",
+   "abdruck": "87deaeca8238",
+   "port": 7750
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 199.9 · 249.9 · 200 · 216.7 ms; Hänger 1/1/1/1)",
+   "exit": 0,
+   "minuten": 12.39,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 199.9 · 249.9 · 200 · 216.7 ms; Hänger 1/1/1/1)",
+   "zeit": "2026-10-23T15:31:40.204Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7756
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.87 bei Lag 0 (n 119), Spitze 0.89 bei -0.5 s, CV Bild 0.23 / Ohr 0.55, 60.1 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.54,
+   "zeit": "2026-10-23T15:44:03.399Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7757
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "erde 340 Hz (n 18) · stein 2346 Hz (n 18) · glut 1710 Hz (n 18) — kleinster Abstand 636 Hz",
+   "exit": 0,
+   "minuten": 1.01,
+   "zeit": "2026-10-23T15:45:35.564Z",
+   "abdruck": "762071c99dce",
+   "port": 7758
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.21 · fahrt 0.2 · nacht 0.19 ms · Aussetzer ungezählt (Exit 1)",
+   "exit": 1,
+   "minuten": 4.26,
+   "grund": "ROT: Klang-Takt p95 gehen 0.21 · fahrt 0.2 · nacht 0.19 ms · Aussetzer ungezählt (Exit 1)",
+   "zeit": "2026-10-23T15:46:36.118Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7760
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 4.943 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 8.65,
+   "zeit": "2026-10-23T15:50:51.907Z",
+   "abdruck": "b0e83e1e02aa",
+   "port": 7761
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 2.451 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 22.45,
+   "zeit": "2026-10-23T15:59:30.611Z",
+   "abdruck": "675248d33f86",
+   "port": 7762
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Bild p95 0 / p99 6.5 ms (4662 Bilder, 87 Rufe); je Ruf p50 6.9 / p95 10.8 / max 25.9 ms",
+   "exit": 0,
+   "minuten": 2.31,
+   "zeit": "2026-10-23T16:21:57.398Z",
+   "abdruck": "1f4b3b5822c2",
+   "port": 7763
+  }
+ }
+}

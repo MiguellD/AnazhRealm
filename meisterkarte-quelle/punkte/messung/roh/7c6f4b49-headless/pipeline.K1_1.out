@@ -1,0 +1,40 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-studio-uebergabe.cjs --welt
+
+=== WARM-ANKER ===
+  ✅ Foundry warm (Buch trägt mensch + wolf, Kerne + Bäcker-Tisch geladen, state-Feld deklariert) — {"ready":true,"mensch":true,"wolf":true,"kerne":true,"player":true,"stateFeld":true}
+
+=== (S) SELBST-TEST — der Default-Zustand ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippte Übergabe ⇒ EXAKT der Default-Guss-Fingerabdruck (Gleichheit ist sichtbar) — stripped=58e90a30/14 vs default=58e90a30/14
+  ✅ gestrippte Kreatur-Übergabe ⇒ Spawn-Größe zurück auf Default (Gleichheit ist sichtbar) — normStripped=0.9487676446636567 normDefault=0.9487676446636418
+
+=== (N) NAHT — die Übergabe formt Avatar UND Kreatur messbar ===
+  ✅ der Empfänger nimmt die koerper-Übergabe an
+  ✅ Avatar-Neu-Guss trägt andere GEOMETRIE (Dials height/mass/… treffen morphAuf) — ue=bb10fb1b/14 default=58e90a30/14
+  ✅ Farb-Fingerabdruck: topColor ROT erscheint (Default trägt navy, nie rot) — defaultRot=false defaultNavy=true ueRot=true
+  ✅ skinTone-Wahl (ebenholz) reist als Guss-Farbe der Haut
+  ✅ der LIVE-Avatar (state.playerMesh) wurde NEU GEGOSSEN (applyPlayerSoul-Chokepoint)
+  ✅ der Empfänger nimmt die kreatur-Übergabe an (gattung wolf)
+  ✅ die EINE Kreatur-Dial-Quelle liefert die Übergabe (size 3.5)
+  ✅ die EINE Körper-Dial-Quelle liefert die Übergabe (height 1.15, Größen-Faktor ≠ 1)
+  ✅ der Kreatur-Guss formt anders (Baker-Dials ⇒ Proportions-Fingerabdruck ≠ Default) — ue=f6ef8bb4/13 default=b338637d/13
+  ✅ Kreatur-SPAWN trägt die Größe: size 3.5 ⇒ Welt-Gestalt ×(3.5/2.4) durch die EINE Pipe (Box3, wurf-normalisiert; der bodySize-Wurf bleibt byte-alt) — bodySizeFaktor=1 normUe=1.389380161960914 normDefault=0.9487676446636418
+  ✅ Ofen-Memo-Disziplin: Übergabe prägt EIGENE Keys (Dials im JSON), Default-Keys unangetastet
+
+=== (W) WÄNDE — fail-closed ohne Wurf, Default bleibt ===
+  ✅ kaputte Payloads fallen (kind fremd · NaN-only · Riesen-String · Gattung fremd · Nicht-Objekt · Array) — {"kindFremd":true,"nanOnly":true,"riesenString":true,"gattungFremd":true,"keinObjekt":true,"arrayPayload":true}
+  ✅ kein Wurf auf dem gesamten Wand-Pfad — threw=0
+  ✅ nach den Ablehnungen bleibt der Default (koerper null)
+  ✅ Zahlen-Clamp auf die Kern-PARAMS-Grenze (height 99 → max)
+  ✅ must-ignore: fremde s-/gestalt-Felder + erfundene Farbe fallen still, der Rest reist
+
+=== (R) ROUNDTRIP — Snapshot → Restore durch DENSELBEN Validator ===
+  ✅ buildStateSnapshot trägt die Übergabe (koerper s+gestalt · kreatur je Gattung)
+  ✅ der Restore bringt sie zurück (Feld-genau)
+  ✅ Empfang und Restore laufen durch DENSELBEN Validator (Konsum _studioUebergabeValidate)
+  ✅ ein VERGIFTETER Snapshot wird am Restore geclampt + gesiebt (Chokepoint-Validator)
+
+=== (B) BYTE-IDENTITÄT ohne Übergabe ===
+  ✅ _koerperStudioDials liefert die BUCH-REFERENZ (===) vor UND nach der Übergabe-Episode
+  ✅ _tetrapodaStudioDials liefert die BUCH-REFERENZ (===) vor UND nach der Übergabe-Episode
+
+✅ GRÜN — DIE STUDIO-ÜBERGABE TRÄGT: die Live-Bearbeitung des Schöpfers reist über die W12-Brücke in die Welt (Avatar-Neu-Guss mit Gestalt + Farben, Kreatur-Spawns mit Dials), die Wände stehen fail-closed, der Snapshot trägt sie, und ohne Übergabe ist der Guss-Pfad byte-identisch.
