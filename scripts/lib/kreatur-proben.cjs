@@ -1834,24 +1834,23 @@ async function kreaturProben(r, T, opts) {
                 return o;
             };
             restore.push(() => (K.verbandZug = alt));
-            decke(restore, "_leibKontakte", () => function () {});
+            decke(restore, "_leibPaar", () => () => false);
         }
-        if (taeter === "abstand-spieler")
-            // die Separation ohne den Spieler (V18.536): nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
-            decke(
-                restore,
-                "_applyCreatureSeparation",
-                (alt) =>
-                    function (...a) {
-                        const p = this.state.playerMesh;
-                        this.state.playerMesh = null;
-                        try {
-                            return alt.apply(this, a);
-                        } finally {
-                            this.state.playerMesh = p;
-                        }
+        if (taeter === "abstand-spieler") {
+            // die Separation und der Weg des Gangs ohne den Spieler (V18.536): ein Nachbar drückt das vordere Tier in ihn
+            const ohne = (alt) =>
+                function (...a) {
+                    const p = this.state.playerMesh;
+                    this.state.playerMesh = null;
+                    try {
+                        return alt.apply(this, a);
+                    } finally {
+                        this.state.playerMesh = p;
                     }
-            );
+                };
+            decke(restore, "_applyCreatureSeparation", ohne);
+            decke(restore, "_leibGegenLeiber", ohne);
+        }
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
         pm.set(start.x, start.y, start.z);

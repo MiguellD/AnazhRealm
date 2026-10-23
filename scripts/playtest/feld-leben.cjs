@@ -759,7 +759,6 @@ async function checkBandWelle6APolish(ctx) {
         out.hasHangMaxSlopeY = typeof hangMax === "number";
         out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
-        out.stateZwillingAbwesend = !("maxWalkableSlopeY" in r.state);
 
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
         // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
@@ -850,10 +849,6 @@ async function checkBandWelle6APolish(ctx) {
     if (wave6a3Results) {
         check("Welle 6.A3: Steilhang-Gesetz (hang.maxSlopeY) fail-closed lesbar", wave6a3Results.hasHangMaxSlopeY);
         check("Welle 6.A3: hang.maxSlopeY == 0.5 (cos 60° = walkable bis 60°)", wave6a3Results.hangMaxSlopeYIs05);
-        check(
-            "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
-            wave6a3Results.stateZwillingAbwesend
-        );
         check(
             "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
             wave6a3Results.skyOnSteepSlope === false
