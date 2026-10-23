@@ -1262,113 +1262,15 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
-// V11.0-d.3 (Pfeiler D — Trinken am Ufer) — Beweis dass der drink-Task als
-// 6. Task registriert ist, dass die Sprache (Aura+Ping+Chat) ihn trägt,
-// und dass _tickCreatureDrink den 3-Phasen-Zyklus durchläuft.
+// V11.0-d.3 — der Chat trägt das Trinken („trinke" → der Auftrag drink); das Trinken selbst (aus Durst zum Wasser, auf der
+// Kreatur-Uhr, Mutante „Durst aus") misst gate:kreatur-takt durst.
 async function checkBandWelleV11D3DrinkTask(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        // Sprache: drink ist 6. Task + hat Aura-Hue (die Antwort ist die Stimme des Tiers, kein Ping-Ton).
-        const tasks = r.constructor.CREATURE_TASKS;
-        out.tasksInclude = tasks.includes("drink");
-        out.tasksLength = tasks.length;
-        out.auraHue = r.constructor.CREATURE_TASK_AURA_HUE.drink;
-
-        // Konstanten existieren.
-        out.haltDist = r.constructor.CREATURE_DRINK_HALT_DIST;
-        out.duration = r.constructor.CREATURE_DRINK_DURATION_S;
-        out.searchRadius = r.constructor.CREATURE_DRINK_SEARCH_RADIUS;
-        out.speed = r.constructor.CREATURE_DRINK_SPEED;
-
-        // Chat-Pattern „trinke" liefert drink-Programm.
-        const parsed = r.parseChatToDsl("trinke");
-        out.chatParsesTrinke =
-            parsed && parsed.program && parsed.program[0] === "creature_task_nearest" && parsed.program[1] === "drink";
-
-        // Empirisch: _findNearestWaterPoint findet Wasser im Spawn-Bereich.
-        let waterSpot = null;
-        const SCAN = 100;
-        const STEP = 6;
-        for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
-            for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
-                if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
-            }
-        }
-        out.waterFound = waterSpot !== null;
-        if (waterSpot) {
-            // Stelle eine Land-Cell in der Nähe des Wassers + suche von dort.
-            const found = r._findNearestWaterPoint(waterSpot.x + 15, waterSpot.z + 15, 40);
-            out.findReturnsObj = found !== null && typeof found.x === "number" && typeof found.z === "number";
-        }
-
-        // Verhaltens-Probe: assign drink an existing Kreatur, ein Tick laufen,
-        // task.args._target sollte gesetzt sein (Phase 1 abgeschlossen).
-        if (Array.isArray(r.state.creatures) && r.state.creatures.length > 0) {
-            const creature = r.state.creatures[0];
-            const origX = creature.position.x;
-            const origZ = creature.position.z;
-            const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
-            // Platziere die Kreatur nahe an einem Wasser-Punkt (falls vorhanden).
-            if (waterSpot) {
-                const sy = r._voxelSurfaceY(waterSpot.x + 12, waterSpot.z + 12);
-                if (Number.isFinite(sy)) {
-                    creature.position.set(waterSpot.x + 12, sy + 0.5, waterSpot.z + 12);
-                }
-            }
-            const ok = r.assignCreatureTask(creature, "drink", {}, { silent: true });
-            out.assignOk = ok === true;
-            const taskAfter = r._getCreatureTask(creature);
-            out.taskNameAfter = taskAfter ? taskAfter.name : null;
-            // Ein Tick — der drink-Tick sollte _target setzen wenn Wasser
-            // in 40m gefunden, sonst zurück zu wander.
-            r.updateCreatures(0.016);
-            const taskTicked = r._getCreatureTask(creature);
-            out.taskNameAfterTick = taskTicked ? taskTicked.name : null;
-            // Wenn Wasser gefunden: noch drink-Task; sonst wander-Fallback.
-            // Beide sind valide Outcomes je nach Welt-Variation.
-            if (taskTicked && taskTicked.name === "drink") {
-                out.targetSet = taskTicked.args && taskTicked.args._target !== undefined;
-            }
-
-            // Wieder-Herstellung.
-            creature.position.set(origX, creature.position.y, origZ);
-            if (origTask) r.assignCreatureTask(creature, origTask.name, origTask.args || {}, { silent: true });
-            else r.assignCreatureTask(creature, "wander", {}, { silent: true });
-        }
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-d.3: Drink-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle V11.0-d.3: 'drink' in CREATURE_TASKS (6. Task)", res.tasksInclude === true);
-    check("Welle V11.0-d.3: CREATURE_TASKS jetzt 6 Einträge", res.tasksLength === 6);
-    check("Welle V11.0-d.3: AURA_HUE.drink = 210 (azur)", res.auraHue === 210);
-    check("Welle V11.0-d.3: CREATURE_DRINK_HALT_DIST = 1.5m", res.haltDist === 1.5);
-    check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
-    check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
-    check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
-    check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
-    if (res.waterFound) {
-        check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
-    }
-    if (res.assignOk !== undefined) {
-        check("Welle V11.0-d.3: assignCreatureTask akzeptiert 'drink'", res.assignOk === true);
-        check("Welle V11.0-d.3: Kreatur trägt drink-Task nach assign", res.taskNameAfter === "drink");
-        // Nach einem Tick: entweder noch drink (Wasser gefunden, walking)
-        // oder wander (Wasser nicht in 40m, Auto-Fallback). Beide OK.
-        check(
-            "Welle V11.0-d.3: nach Tick — Task ist drink ODER wander (3-Phasen läuft oder Fallback)",
-            res.taskNameAfterTick === "drink" || res.taskNameAfterTick === "wander",
-            `nach Tick: ${res.taskNameAfterTick}`
-        );
-    }
+    const p = await page.evaluate(() => window.anazhRealm.parseChatToDsl("trinke"));
+    check(
+        "Welle V11.0-d.3: Chat-Pattern trinke → creature_task_nearest drink",
+        !!p && !!p.program && p.program[0] === "creature_task_nearest" && p.program[1] === "drink"
+    );
 }
 
 // BEDROHUNG: ein WILDES Wesen (Temperament aus glühender Substanz, kein hostile-Flag) jagt nur im
@@ -1379,9 +1281,6 @@ async function checkBandPhaseEThreat(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const HUNT = r.constructor._verhaltenGesetz().jagd;
-        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeCooldownSec > 0;
-        out.soul = !!r.constructor.CREATURE_SOULS.wolf; // die Raubtier-Seele (ALTLASTEN-NULL: der WOLF)
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();
@@ -1433,9 +1332,7 @@ async function checkBandPhaseEThreat(ctx) {
                 }
                 return ok;
             };
-            // (1) die GATTUNG trägt WILD (predator = Carnivor-diet als Daten;
-            // die Substanz bleibt Richter für alle Nicht-Raubtiere).
-            out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
+            // (1) die Gattung trägt WILD: gate:kreatur-takt temperament (wolf@1 wild).
             // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
             // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
             out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
@@ -1493,8 +1390,6 @@ async function checkBandPhaseEThreat(ctx) {
         }
         return out;
     });
-    check("Phase E Bedrohung: Konstanten + Raubtier-Seele", res.consts && res.soul);
-    check("Phase E Bedrohung (NULL): die Gattung trägt WILD (Carnivor-diet als Daten)", res.wildTemperament);
     check(
         "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
         res.drivePfad && res.fearBeatsHunt

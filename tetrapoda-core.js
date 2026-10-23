@@ -1861,6 +1861,13 @@
         var g = L.gattung[gattung];
         return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
     }
+    // DER DURST (Tiere K4, additiv): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr durch durstS; ab 1 sucht das Tier
+    // Wasser im Umkreis VERHALTEN.aufgaben.trinkSuchM und trinkt, dann ist er 0; fand es keines, sucht es nach suchPauseS
+    // wieder (das Rotwild zieht mehrmals am Tag zur Traenke).
+    var DURST_GESETZ = Object.freeze({ durstS: 1200, suchPauseS: 300 });
+    function durst(seitS, D) {
+        return seitS > 0 ? seitS / D.durstS : 0;
+    }
     // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
     // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
     var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
@@ -3308,6 +3315,8 @@
         bodenKlasse: bodenKlasse,
         lebensraum: lebensraum,
         lebensraumWahl: lebensraumWahl,
+        DURST_GESETZ: DURST_GESETZ,
+        durst: durst,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

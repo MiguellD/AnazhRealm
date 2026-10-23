@@ -167,12 +167,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
         // --- c) Fauna-Lifecycle
-        out.faunaTargetPop = AnazhRealm.FAUNA_TARGET_POPULATION === 8;
-        out.faunaMaxPop = AnazhRealm.FAUNA_MAX_POPULATION === 20;
-        out.faunaTickInterval = AnazhRealm.FAUNA_TICK_INTERVAL_MS === 10000;
-        out.faunaBirthCdExists = AnazhRealm.FAUNA_BIRTH_COOLDOWN_MS > 0;
-        out.faunaDeathCdExists = AnazhRealm.FAUNA_DEATH_COOLDOWN_MS > 0;
-        out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
+        // (die Geburt misst gate:kreatur-takt lebensraum am Takt; ihre Zahlen stehen im Gesetz, nie als Spiegel im Test)
 
         // _findOldestCreature liefert die älteste (kleinster bornAt). Test-Isolation: ALLE Kreaturen auf
         // `now`, dann c0 + c1 gezielt älter — Worldgen-Kreaturen würden mit der Test-Laufzeit älter als c1.
@@ -270,12 +265,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         );
 
         // --- c) Fauna-Lifecycle
-        check("Welle 6.G3.c: FAUNA_TARGET_POPULATION === 8", wave6g3Results.faunaTargetPop);
-        check("Welle 6.G3.c: FAUNA_MAX_POPULATION === 20", wave6g3Results.faunaMaxPop);
-        check("Welle 6.G3.c: FAUNA_TICK_INTERVAL_MS === 10000", wave6g3Results.faunaTickInterval);
-        check("Welle 6.G3.c: FAUNA_BIRTH_COOLDOWN_MS > 0", wave6g3Results.faunaBirthCdExists);
-        check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
-        check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
         check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
         check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
         check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);

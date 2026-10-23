@@ -567,12 +567,14 @@ class AnazhRealm_kreatur_verhalten {
         const umstellt = R.umstellt;
         const hetzt = ud._motionZustand === "hetzen";
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
-        if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
-            if (this._kreaturJagdEndet(creature, zielKey)) {
-                this._kreaturZustandStempel(creature, null);
-                direction.set(0, 0, 0);
-                return;
-            }
+        const hetze =
+            ((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt);
+        if (this._kreaturJagdEndet(creature, zielKey, hetze)) {
+            this._kreaturZustandStempel(creature, null);
+            direction.set(0, 0, 0);
+            return;
+        }
+        if (hetze) {
             this._kreaturZustandStempel(creature, "hetzen");
             // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
             // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
@@ -616,21 +618,40 @@ class AnazhRealm_kreatur_verhalten {
         this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
     }
 
-    // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (eine Hetze, die
-    // länger als dauerS ruhte, beginnt eine neue); dauert die Jagd dauerS, bricht der Jäger ab und ist ruheS erschöpft — er jagt
-    // nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
+    // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (ruhte die Hetze
+    // länger als ruheS, beginnt die nächste eine neue); dauert die Jagd dauerS — in der Hetze oder in der Pirsch danach —, bricht der
+    // Jäger ab und ist ruheS erschöpft: er jagt nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
     // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
-    _kreaturJagdEndet(creature, zielKey) {
+    _kreaturJagdEndet(creature, zielKey, hetze) {
         const ud = creature.userData;
         const now = this.state.creatureAnimationTime;
         const J = AnazhRealm._jagdGesetz().J;
-        const jg = ud._jagd;
-        if (!jg || jg.ziel !== zielKey || now - jg.zuletzt > J.dauerS) ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
-        ud._jagd.zuletzt = now;
+        // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei; erst die Hetze beginnt eine neue
+        if (ud._jagd && (ud._jagd.ziel !== zielKey || now - ud._jagd.zuletzt > J.ruheS)) ud._jagd = null;
+        if (!ud._jagd) {
+            if (!hetze) return false;
+            ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
+        }
+        if (hetze) ud._jagd.zuletzt = now;
         if (now - ud._jagd.beginn < J.dauerS) return false;
         ud._jagd = null;
         ud._erschoepftBis = now + J.ruheS;
         return true;
+    }
+    // DER DURST (Tiere K4, tetrapoda durst): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr (ab der Geburt); nach einer
+    // Suche ohne Wasser ruht er suchPauseS.
+    _kreaturDurstig(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
+        if (now < ud._durstSucheBis) return false;
+        const LG = AnazhRealm._lebensraumGesetz();
+        if (LG.durst(now - ud._getrunken, LG.D) < 1) return false;
+        // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
+        const h = this._hydroDistAt(creature.position.x, creature.position.z);
+        if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
+        ud._durstSucheBis = now + LG.D.suchPauseS;
+        return false;
     }
     _kreaturErschoepft(creature) {
         const b = creature.userData && creature.userData._erschoepftBis;
@@ -1901,8 +1922,21 @@ class AnazhRealm_kreatur_verhalten {
         const cx = creature.position.x;
         const cz = creature.position.z;
         // Phase 1: Wasser-Punkt suchen wenn keiner gesetzt.
+        const now = this.state.creatureAnimationTime; // das Trinken läuft auf der Kreatur-Uhr (Welle LF, Q1)
+        const ud = creature.userData;
+        // DER DURST TRINKT NUR IN RUHE (Tiere K4): wer aus Durst zum Wasser zieht, flieht vor der Bedrohung
+        const durst = task.args.durst === true;
+        if (durst && this._creatureWariness(creature) >= AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
         if (!task.args._target) {
             const water = this._findNearestWaterPoint(cx, cz, SEARCH_RADIUS);
+            if (!water && durst) {
+                ud._durstSucheBis = now + AnazhRealm._lebensraumGesetz().D.suchPauseS;
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
             if (!water) {
                 this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
                 if (typeof this.journalAppend === "function") {
@@ -1922,13 +1956,17 @@ class AnazhRealm_kreatur_verhalten {
         const dist = Math.hypot(dx, dz);
         // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
         if (dist <= HALT_DIST) {
-            const now = performance.now() / 1000;
             if (!task.args._drinkStart) {
                 task.args._drinkStart = now;
                 // Das Tier ruft zum Trink-Beginn (seine Stimme, multisensorisch — Vision §1.2).
                 this._tierRuf(creature);
             }
             if (now - task.args._drinkStart >= DURATION_S) {
+                ud._getrunken = now; // der Durst ist gestillt (Tiere K4)
+                if (durst) {
+                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                    return null;
+                }
                 // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:
                 // joy+hope, V18.100 G4-1 — dasselbe Substrat wie der Spieler;
                 // die "happy"-Projektion fällt aus der Valenz) + Erinnerung + wander.
@@ -3235,6 +3273,15 @@ class AnazhRealm_kreatur_verhalten {
             let direction;
             if (recomputeAI) {
                 task = this._getCreatureTask(creature);
+                // DER DURST ZIEHT ZUM WASSER (Tiere K4): ein Tier in Ruhe, ohne Auftrag des Spielers, trinkt, wenn es durstig ist
+                if (
+                    (!task || task.name === "wander") &&
+                    !creature.userData._motionZustand &&
+                    this._kreaturDurstig(creature)
+                ) {
+                    this.assignCreatureTask(creature, "drink", { durst: true }, { silent: true });
+                    task = this._getCreatureTask(creature);
+                }
                 direction = this._tickCreatureTaskDirection(creature, task, emotion);
                 if (direction === null) {
                     direction = scratchDir.set(0, 0, 0);
@@ -3789,7 +3836,7 @@ AnazhRealm._jagdGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
 };
-// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, Tiere K4): die Boden-Klasse eines Orts und die Eignung
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
 // je Gattung. Fail-closed.
 AnazhRealm._lebensraumGesetz = function () {
     if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
@@ -3802,13 +3849,18 @@ AnazhRealm._lebensraumGesetz = function () {
         L.haeufigkeit &&
         typeof k.bodenKlasse === "function" &&
         typeof k.lebensraum === "function" &&
-        typeof k.lebensraumWahl === "function"
+        typeof k.lebensraumWahl === "function" &&
+        k.DURST_GESETZ &&
+        [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
+        typeof k.durst === "function"
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
             bodenKlasse: k.bodenKlasse,
             lebensraum: k.lebensraum,
             wahl: k.lebensraumWahl,
+            D: k.DURST_GESETZ,
+            durst: k.durst,
         });
         return AnazhRealm._lebensraumMemo;
     }

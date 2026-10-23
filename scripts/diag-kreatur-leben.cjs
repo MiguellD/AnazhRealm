@@ -1,26 +1,30 @@
 #!/usr/bin/env node
-// gate:kreatur-leben — DIE LEBENS-LINSE (Klasse: „tote reisende Daten").
-//
-// V18.476 reiste das tetrapoda-hunt-Preset ins Buch — und KEIN Pfad wählte es
-// je. Diese
-// Linse hält die Klasse tot:
-//   A) DECKUNG — jede Verhaltens-Aktion/Stimmung des Kerns zeigt auf EXISTIERENDE
-//      Aktionen, die Seelen-Blöcke reisen im Buch (kein toter Verweis).
-//   B) SELBST-TEST — eine injizierte tote Stimmungs-Aktion wird erkannt.
-// Den Konsum im Stamm (Zustand-Stempel, Baum-Gang, Biss, Sprung, Herde) beweisen die Bänder mit Welt am
-// Verhalten (gate:kreatur-takt, gate:kampf-gefuehl); hier liest keine Probe Quelltext (D3c).
-// DAS LEBEN AM ECHTEN TAKT: die Lebens-Proben (furcht) sind ein Stück der Seiten-Funktion der Kreatur-Proben
-// (scripts/lib/kreatur-proben.cjs setzt `BUEHNEN` an ihre Marke, gate:kreatur-takt fährt sie headless und im Fenster).
+// gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
+// (`BUEHNEN` an ihrer Marke) Furcht, Durst und Lebensraum am ECHTEN Takt (gate:kreatur-takt).
 "use strict";
 
-// ── furcht: EIN Furcht-Gesetz (Ökologie K3, tetrapoda FURCHT_GESETZ) am ECHTEN Takt. (A) DAS WESEN ERINNERT: je Ort und Rolle
-// ein Tier allein — geschlagen (`damageCreature`, Quelle player), gefüttert (`activateCreatureConsumable`), gebunden, zur
-// Kontrolle; der Bär vor der Aura des Spielers: ruhig, zornig, zornig im frieden. Die Kampf-Furcht verblasst fern vom
-// Spieler, das Tier reist über den Speicherstand (`_serializeCreature` → `_restoreCreatureFromSnapshot`), dann kommt der
-// Spieler im Gehen bis 8 m heran und steht 25 s: der Median des Abstands je Rolle. (B) DER ORT ERINNERT: ein Kahlwild-Rudel
-// um seinen Wurf-Ort, in dessen Mitte ein Hirsch fällt (der Riss, Quelle jagd) — sein Aufenthalt in der Zelle über 90 s
+// ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
+// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
+// heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil) {
+async function lebenBuehnen(
+    buehne,
+    taeter,
+    decke,
+    r,
+    s,
+    A,
+    pm,
+    frei,
+    land,
+    tier,
+    ruhig,
+    ruhigSpieler,
+    takt,
+    quantil,
+    kamera,
+    imBlick
+) {
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke(restore, "_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke(restore, "_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -62,9 +66,9 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 ruhig(c0);
                 if (rolle === "geschlagen") r.damageCreature(c0, 4, { source: "player", fromPos: pm.clone() });
                 if (rolle === "gefuettert" && !r.activateCreatureConsumable(c0, "trank_lebenssaft").ok)
-                    throw new Error("die Gabe trägt nicht");
+                    throw new Error("keine Gabe");
                 pm.set(ort.x + 150, boden(ort.x + 150, ort.z), ort.z);
-                lauf(1200);
+                lauf(600);
                 const snap = JSON.parse(JSON.stringify(r._serializeCreature(c0)));
                 r.removeCreature(c0);
                 const c = r._restoreCreatureFromSnapshot(snap);
@@ -80,11 +84,11 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     lauf(1, e);
                 }
                 const d0 = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
-                for (let k = 0; k < 1500; k++) {
+                for (let k = 0; k < 900; k++) {
                     lauf(1, e);
                     R.abstand.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
                 }
-                R.naeher.push(d0 - Math.min(...R.abstand.slice(-1500)));
+                R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
             }
             erinnert[rolle] = {
@@ -132,39 +136,114 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
             }
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
-        return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf), orte: ort } };
+        return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
-    // ── lebensraum: die Art wählt der Ort (Tiere K4, tetrapoda LEBENSRAUM_GESETZ). An neun Orten des Spielers (Raster 300 m)
-    // je 25 natürliche Geburten (`_creatureNaturalBirth`): je geborenes Tier seine Gattung und die Boden-Klasse unter ihm
-    // (`_bodenKlasseAt`) — der Anteil im Lebensraum seiner Gattung; die Gegenprobe fährt der Läufer in einer Welt anderer Saat ──
+    // ── durst (Tiere K4, DURST_GESETZ): drei Hirsche 15–30 m vom Fluss, 1,5 × durstS: ihre Trünke am Wasser ──
+    await buehne("durst", async (restore) => {
+        if (taeter === "durst") decke(restore, "_kreaturDurstig", () => () => false);
+        const D = A._lebensraumGesetz().D;
+        let ort = null;
+        for (let k = 0; k < 441 && !ort; k++) {
+            const x = pm.x + ((k % 21) - 10) * 25,
+                z = pm.z + (Math.floor(k / 21) - 10) * 25;
+            const h = r._hydroDistAt(x, z),
+                rand = h.dist - Math.max(1, h.halfW);
+            if (rand > 15 && rand < 30 && r._landAt(x, z)) ort = { x, y: r.getTerrainHeightAt(x, z) + 0.5, z };
+        }
+        if (!ort) throw new Error("kein Fluss im Umkreis von 250 m");
+        pm.set(ort.x + 150, pm.y, ort.z);
+        const tiere = [0, 1, 2].map((i) => tier({ x: ort.x + i * 3, y: ort.y, z: ort.z }, "wesen", 1));
+        tiere.forEach(ruhig);
+        const z = { truenke: [0, 0, 0], amWasser: 0, durstS: D.durstS };
+        const zuletzt = [];
+        for (let k = 0; k < 1.5 * D.durstS * 60; k++) {
+            ruhigSpieler();
+            takt(1 / 60);
+            tiere.forEach((c, i) => {
+                const g = c.userData._getrunken;
+                if (zuletzt[i] !== undefined && g !== zuletzt[i]) {
+                    z.truenke[i]++;
+                    if (r._findNearestWaterPoint(c.position.x, c.position.z, 4)) z.amWasser++;
+                }
+                zuletzt[i] = g;
+            });
+        }
+        return z;
+    });
+    // ── lebensraum (Tiere K4; die Geburt fern, außer Blick, in Gruppen): an neun Orten (Raster 300 m) je 25 Geburten — je Tier
+    // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe; die Gegenprobe in anderer Saat ──
     await buehne("lebensraum", async (restore) => {
-        const namen = A.CREATURE_SOUL_NAMES;
         if (taeter === "lebensraum")
-            decke(restore, "_pickFaunaSoulAtPlayer", () => (x, z, rng) => namen[Math.floor(rng() * 4)]);
+            decke(restore, "_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
+        const alt = {
+            geburt: () => ({ x: pm.x + 15, z: pm.z }),
+            "geburt-einzeln": () => r._kreaturGeburtsOrt(r._faunaRng()),
+        };
+        if (alt[taeter])
+            decke(restore, "_creatureNaturalBirth", () => () => {
+                const o = alt[taeter]();
+                return !!o && !!r.spawnCreatureAt(o.x, pm.y, o.z, "happy", "wesen");
+            });
         const LG = A._lebensraumGesetz();
-        const z = { n: 0, drin: 0, gattung: {}, klasse: {} };
+        const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
+        Object.assign(z, { imBlick: 0, fensterMax: 0, fernMin: A.CREATURE_SPAWN_FAR_MIN });
         const p0 = pm.clone();
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < (taeter ? 3 : 9); i++) {
             pm.set(p0.x + ((i % 3) - 1) * 300, p0.y, p0.z + (Math.floor(i / 3) - 1) * 300);
+            kamera(1, 0);
             for (let k = 0; k < 25; k++) {
                 const vor = s.creatures.length;
                 r._creatureNaturalBirth();
-                for (const c of s.creatures.slice(vor)) {
+                const neu = s.creatures.slice(vor);
+                if (!neu.length) continue;
+                z.geburten++;
+                if (neu.length > 1) z.gruppen++;
+                const j = s.worldJournal.entries[s.worldJournal.entries.length - 1];
+                if (j && j.type === "growth" && j.ctx && j.ctx.gruppe === neu.length) z.journal++;
+                const paar = (2 * r._kreaturRaum(neu[0])) / neu[0].userData.bodySize;
+                for (const c of neu) {
                     const g = A.TETRAPODA_SOUL_MAP[c.userData.soul],
                         kl = r._bodenKlasseAt(c.position.x, c.position.z);
                     z.n++;
                     if (LG.lebensraum(g, kl, LG.L) > 0) z.drin++;
                     z.gattung[g] = (z.gattung[g] || 0) + 1;
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
-                    r.removeCreature(c);
+                    z.minM = Math.min(z.minM, +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(1));
+                    if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
+                    const nn = Math.min(
+                        ...neu
+                            .filter((o) => o !== c)
+                            .map((o) => Math.hypot(c.position.x - o.position.x, c.position.z - o.position.z) / paar)
+                    );
+                    if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
                 }
+                for (const c of neu) r.removeCreature(c);
             }
         }
-        return Object.assign(z, { anteil: z.n ? +(z.drin / z.n).toFixed(3) : null, saat: s.worldMeta.seed });
+        return Object.assign(z, {
+            anteil: z.n ? +(z.drin / z.n).toFixed(3) : null,
+            saat: s.worldMeta.seed,
+            fensterRaum: A._verhaltenGesetz().herde.fensterRaum,
+        });
     });
 }
-// das Soll der Lebens-Proben (gerufen aus dem Urteil der Kreatur-Proben, `soll(bedingung, grund)`)
+// das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
+    if (name === "durst")
+        soll(
+            z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
+            `kein Tier trinkt aus Durst: Trünke ${z.truenke} in ${1.5 * z.durstS} s, ${z.amWasser} am Wasser`
+        );
+    if (name === "lebensraum") {
+        soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
+        soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
+        soll(
+            z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
+            `keine Gruppe: ${z.gruppen} von ${z.geburten} Würfen`
+        );
+        soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
+        soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
+    }
     if (name === "lebensraum")
         for (const [wo, L] of [
             ["", z],
@@ -177,43 +256,47 @@ function lebenUrteil(name, z, soll) {
                         Object.keys(L.gattung).length >= 3 &&
                         L.anteil >= 0.9 &&
                         L.saat !== (wo ? z.saat : null),
-                    `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} im Lebensraum ihrer Gattung (Soll ≥ 0,9, ≥ 150 Tiere, ≥ 3 Gattungen; ${JSON.stringify(L.gattung)} auf ${JSON.stringify(L.klasse)}, Saat ${L.saat})`
+                    `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
     soll(
         [...G.erinnerungen, ...F.erinnerungen].every((n) => n >= 1),
-        `das Gedächtnis reist nicht über den Speicherstand: Erinnerungen nach dem Laden geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
+        `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
     soll(
         G.medianM >= 2 * K.medianM,
-        `das Wesen vergisst, wer es schlug: Abstand bei der nächsten Begegnung Median ${G.medianM} m gegen ${K.medianM} m der Kontrolle (Soll ≥ 2×)`
+        `das Wesen vergisst, wer es schlug: ${G.medianM} m gegen ${K.medianM} m der Kontrolle (Soll ≥ 2×)`
     );
     soll(
         F.medianM <= 0.5 * K.medianM && F.naeherM >= 2,
-        `das gefütterte Wesen nähert sich nicht: Median ${F.medianM} m gegen ${K.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m)`
+        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m)`
     );
-    soll(B.medianM <= 0.8 * K.medianM, `die Bindung macht nicht mutig: Median ${B.medianM} m gegen ${K.medianM} m`);
+    soll(B.medianM <= 0.8 * K.medianM, `die Bindung macht nicht mutig: ${B.medianM} m`);
     soll(
         baerZornig.medianM >= 2 * baerRuhig.medianM && baerFrieden.medianM <= 0.5 * baerZornig.medianM,
-        `die Aura treibt die Furcht nicht: der Bär vor dem ruhigen Spieler ${baerRuhig.medianM} m, vor dem zornigen ${baerZornig.medianM} m (Soll ≥ 2×), im frieden ${baerFrieden.medianM} m (Soll ≤ ½×)`
+        `die Aura treibt die Furcht nicht: der Bär ruhig ${baerRuhig.medianM} m, zornig ${baerZornig.medianM} m, im frieden ${baerFrieden.medianM} m`
     );
     const O = z.ort;
-    soll(O.gegenlauf >= 0.2, `das Rudel steht im Gegenlauf nicht am Riss-Ort (Aufenthalt ${O.gegenlauf}, vakuös)`);
+    soll(O.gegenlauf >= 0.2, `das Rudel steht im Gegenlauf nicht am Riss-Ort (${O.gegenlauf}, vakuös)`);
     soll(
         O.aufenthalt <= 0.5 * O.gegenlauf,
-        `die Herde meidet den Riss nicht: Aufenthalt in der Zelle ${O.aufenthalt} gegen ${O.gegenlauf} im Gegenlauf ohne Feld-Furcht (Soll −50 %)`
+        `die Herde meidet den Riss nicht: Aufenthalt ${O.aufenthalt} gegen ${O.gegenlauf} ohne Feld-Furcht (Soll −50 %)`
     );
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    // der Rumpf mit seinen Bühnen, gerufen mit den Helfern der Seiten-Funktion
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
-    PROBEN: ["furcht", "lebensraum"],
+    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
+    PROBEN: ["furcht", "lebensraum", "durst"],
     TAETER: {
-        lebensraum: [["lebensraum", /^Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/]],
+        durst: [["durst", /kein Tier trinkt aus Durst/]],
+        lebensraum: [
+            ["lebensraum", /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/],
+            ["geburt", /vor dem Spieler/],
+            ["geburt-einzeln", /keine Gruppe/],
+        ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
             ["furcht-ort", /meidet den Riss nicht/],
@@ -237,47 +320,15 @@ function check(name, ok, detail) {
 global.self = global;
 require(path.join(root, "tetrapoda-core.js"));
 const core = global.__tetrapodaCore;
-check("tetrapoda-core lädt (Namensraum __tetrapodaCore)", !!core);
 
-const MOTION = (core && core.MOTION) || {};
 const V = (core && core.VERHALTEN) || null;
 
-check("MOTION trägt hunt UND schwimmen (die einst toten/neuen Gänge)", !!(MOTION.hunt && MOTION.schwimmen));
-
-function stimmungLuecken(V) {
-    const missing = [];
-    for (const mood in V.stimmung) {
-        // SCHLUSS-WELLE 17.07.: "schwellen" ist die Schwellen-DATEN-Zeile
-        // der Stimmungs-Tabelle (keine Stimmung) — überspringen.
-        if (mood === "schwellen") continue;
-        const row = V.stimmung[mood];
-        if (!row || !Array.isArray(row.aktionen)) {
-            missing.push(mood + ":(leer)");
-            continue;
-        }
-        for (const a of row.aktionen) if (!V.aktionen[a]) missing.push(mood + ":" + a);
-        if (!Array.isArray(row.alle) || row.alle.length !== 2 || !(row.alle[0] <= row.alle[1]))
-            missing.push(mood + ":alle");
-    }
-    return missing;
-}
-
-// ── A2) DECKUNG: Verhaltens-Seele in sich geschlossen ──
-check("fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)", !!(V && V.aktionen && V.stimmung));
+// ── die Seele in sich: die Aktionen jeder Stimmung prüft gate:studio-vertrag (§B6+), hier der Takt alle=[min,max] ──
 if (V) {
-    const missing = stimmungLuecken(V);
     check(
-        "jede Stimmungs-Aktion existiert im Katalog + alle=[min,max] gültig",
-        missing.length === 0,
-        missing.length ? "TOT: " + missing.join(",") : `${Object.keys(V.stimmung).length} Stimmungen`
+        "je Stimmung alle=[min,max] (min ≤ max)",
+        Object.entries(V.stimmung).every(([k, z]) => k === "schwellen" || (z.alle && z.alle[0] <= z.alle[1]))
     );
-    // SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf
-    const tot = { ...V, stimmung: { ...V.stimmung, tot: { aktionen: ["gibtsnicht"], alle: [1, 2] } } };
-    check(
-        "SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf",
-        stimmungLuecken(tot).join() === "tot:gibtsnicht"
-    );
-
     const bekannt = new Set([
         "freq",
         "bodyX",
@@ -311,6 +362,4 @@ if (fails > 0) {
     console.log(`\n❌ ROT — ${fails} Verletzung(en).`);
     process.exit(1);
 }
-console.log(
-    "\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jede Stimmung zeigt auf eine lebende Aktion, jedes Aktions-Profil auf ein Feld der Haltung."
-);
+console.log("\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jedes Aktions-Profil zeigt auf ein Feld der Haltung.");

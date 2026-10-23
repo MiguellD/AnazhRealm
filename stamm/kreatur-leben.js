@@ -1623,9 +1623,11 @@ class AnazhRealm_kreatur_leben {
         const LG = AnazhRealm._lebensraumGesetz();
         const lebt = (x, z) => LG.lebensraum(AnazhRealm.TETRAPODA_SOUL_MAP[soul], this._bodenKlasseAt(x, z), LG.L) > 0;
         const imRaum = lebt(ort.x, ort.z);
-        for (let k = 0; geboren.length < n && k < 2 * n; k++) {
+        // das Fenster der Herde (herde.fensterRaum Paar-Räume): jeder Geworfene steht in ihm zu einem, der schon steht
+        const fenster = AnazhRealm._verhaltenGesetz().herde.fensterRaum / W.abstandRaum;
+        for (let k = 0; geboren.length < n && k < 3 * n; k++) {
             // der Abstand wächst mit den Geworfenen, nicht mit den Würfen: ein Platz, der nicht trägt, gibt seinen Ring dem
-            // nächsten Winkel (sonst stünde der Nächste weiter als das Fenster der Herde)
+            // nächsten Winkel
             const a = dreh + k * 2.39996;
             const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
             const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
@@ -1633,6 +1635,7 @@ class AnazhRealm_kreatur_leben {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
                 if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z)))
                     continue;
+                if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
             const gY = this.getTerrainHeightAt(x, z);
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);

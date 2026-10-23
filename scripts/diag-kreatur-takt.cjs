@@ -108,7 +108,7 @@ async function headless(laeufe) {
         await bereit();
         await einschwingen();
         for (const l of laeufe) aus.push(await lauf(l));
-        // EINE FREMDE WELT: frische Platte, die Welt aus json importiert und aktiv, neu geladen, eingeschwungen
+        // eine fremde Welt aus json: frische Platte, importiert, aktiv, geladen, eingeschwungen
         const fremdeWelt = async (json) => {
             await page.evaluate(() => {
                 try {
@@ -128,12 +128,11 @@ async function headless(laeufe) {
                 r.activeWorldSet(res.worldId);
                 return res.worldId;
             }, json);
-            if (!id) throw new Error(`die Welt ${json.worldMeta.seed} ließ sich nicht importieren`);
+            if (!id) throw new Error(`${json.worldMeta.seed} ließ sich nicht importieren`);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await bereit();
             const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
-            if (seed !== json.worldMeta.seed)
-                throw new Error(`die Welt ${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
+            if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
         };
         const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
@@ -148,7 +147,7 @@ async function headless(laeufe) {
                 if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
             }
         }
-        // DIE GEGENPROBE DES LEBENSRAUMS (Tiere K4): die Wildnis einer anderen Saat (die Bühnen-Datei ohne Erbgut und Bestand)
+        // die Gegenprobe des Lebensraums (Tiere K4): die Wildnis anderer Saat
         if (mit("lebensraum").length) {
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
             delete json.worldMeta.erbgut;
