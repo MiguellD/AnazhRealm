@@ -413,6 +413,7 @@ class AnazhRealm_dirigent_takt {
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
+        o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
@@ -1183,6 +1184,13 @@ class AnazhRealm_dirigent_takt {
                 },
             },
             {
+                name: "morphFolge",
+                prio: 1, // Welt-Substanz: die Naht eines Nachbarn, dessen Stufe wechselte (`_tickMorphFolge`), nach dem Strom
+                run: (ms) => {
+                    this._tickMorphFolge(st._frameChunksBuilt ? 0 : Math.min(ms, AnazhRealm.MORPH_FOLGE_MS));
+                },
+            },
+            {
                 name: "waterIso",
                 prio: 1, // Welt-Substanz (kein throttle-bares Deko), aber nach dem Terrain
                 run: (ms) => {
@@ -1378,18 +1386,22 @@ class AnazhRealm_dirigent_takt {
             st.isServerSaveInFlight = true;
         }
         if (!lokal && !server) return;
+        this._imLeerlauf(() => {
+            if (lokal) this.saveState();
+            if (server)
+                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                    st.isServerSaveInFlight = false;
+                });
+        }, 2000);
+    }
+
+    // DER LEERLAUF DES HAUPT-FADENS (Lehre 14): `f` läuft im nächsten Leerlauf-Fenster (`requestIdleCallback`), spätestens
+    // nach `fristMs` — nie im Takt; ohne die API im nächsten Task. Leser: das Speichern (`_loopAutoSave`), die Leck-Probe des
+    // Flugschreibers (`_flightRecorderTick`).
+    _imLeerlauf(f, fristMs) {
         const ric = globalThis.requestIdleCallback;
-        const leerlauf = typeof ric === "function" ? ric.bind(globalThis) : (f) => setTimeout(f, 0);
-        leerlauf(
-            () => {
-                if (lokal) this.saveState();
-                if (server)
-                    this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                        st.isServerSaveInFlight = false;
-                    });
-            },
-            { timeout: 2000 }
-        );
+        if (typeof ric === "function") ric.call(globalThis, f, { timeout: fristMs });
+        else setTimeout(f, 0);
     }
 
     _loopRender() {

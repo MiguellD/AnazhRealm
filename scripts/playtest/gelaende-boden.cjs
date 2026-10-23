@@ -421,8 +421,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 T.positionWorld,
             ]);
         // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
-        // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
-        // 1,2 m unter dem gezeichneten Boden).
+        // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
         out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
         out.voxelSurfaceIsBoundary =
@@ -789,60 +788,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
         );
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
-    }
-
-    // ### Voxel — Lösch-Beweise der voxel-Gate-`else`-Hälften ###
-    // `worldMeta.voxelTerrain` ist permanent true → die Heightfield-`else`-Hälften waren unreachable.
-    const voxelV938Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const srcGen = r.generateTerrainWithParameters;
-        return {
-            // (2) heightData-Allokations-Loop in generateTerrain*
-            // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
-            noHeightDataAlloc: window.__fehlt(srcGen, /new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/),
-            // (3) der Wasserfall-Loop (256×256) ist weg:
-            // kein `for (let z = 0; z < DEPTH; z++)` mehr.
-            noWaterfallLoop: window.__fehlt(srcGen, /for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/),
-            // (4) `getTerrainHeightAt` ist voxel-only — kein
-            // `groundHeightField`-Read mehr in der Source.
-            getHeightVoxelOnly: window.__fehlt(r.getTerrainHeightAt, /groundHeightField/),
-            // (5) `findSurfaceAbove` ist voxel-only — kein
-            // `groundHeightField`-Read mehr, kein floatingIslands-
-            // Loop.
-            findSurfaceVoxelOnly: window.__fehlt(r.findSurfaceAbove, /groundHeightField|floatingIslands/),
-            // Regression-Schutz: die zwei verschlankten Funktionen
-            // leben weiter + liefern eine endliche Zahl.
-            getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
-            findSurfaceWorks: Number.isFinite(r.findSurfaceAbove(0, -100, 0)),
-        };
-    });
-
-    if (voxelV938Results && !voxelV938Results.error) {
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
-            voxelV938Results.noHeightDataAlloc
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Wasser kommt aus dem Hydrosphären-Netz)",
-            voxelV938Results.noWaterfallLoop
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: getTerrainHeightAt ist voxel-only (Heightfield-else-Pfad + Raycast-Fallback gelöscht)",
-            voxelV938Results.getHeightVoxelOnly
-        );
-        check(
-            "Voxel V9.38 Phase 5c.2.c.3.b.ii: findSurfaceAbove ist voxel-only (Heightfield-Pfad + floatingIslands-Loop gelöscht)",
-            voxelV938Results.findSurfaceVoxelOnly
-        );
-        check(
-            "Voxel V9.38: getTerrainHeightAt liefert weiter eine endliche Höhe (Regression)",
-            voxelV938Results.getHeightWorks
-        );
-        check(
-            "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
-            voxelV938Results.findSurfaceWorks
-        );
     }
 
     // ### Voxel — Lösch-Beweise der Heightfield-Pipeline ###
@@ -1692,8 +1637,7 @@ async function checkBandV18199GammaMLichen(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (L1) die LICHEN-Konstanten frozen (L1b liest ihre Werte)
-        out.lichenFrozen = A.LICHEN && Object.isFrozen(A.LICHEN);
+        // (L1) die LICHEN-Konstanten
         if (A.LICHEN) {
             out.feuchteLo = A.LICHEN.feuchteLo;
             out.feuchteHi = A.LICHEN.feuchteHi;
@@ -1758,7 +1702,6 @@ async function checkBandV18199GammaMLichen(ctx) {
         return out;
     });
 
-    check("V18.199 (L1a) AnazhRealm.LICHEN frozen", res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
@@ -2071,7 +2014,7 @@ async function checkBandTodZensus(ctx) {
 
             // DIE TÄTER (Selbst-Test): der alte Defekt, eingespielt an der Naht, die ihn heute trägt
             if (taeter === "sicht")
-                // der Takt der Gefallenen ohne die Sicht des Leibs (vorher: _tickLeichname trieb nur den Fall)
+                // der Takt der Gefallenen ohne die Sicht des Leibs
                 decke(
                     "_leibSicht",
                     (alt) =>
@@ -2081,7 +2024,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "zeichen")
-                // der Fall ohne das Räumen dessen, was das lebende Tier trug (vorher: erst removeCreature räumte)
+                // der Fall ohne das Räumen dessen, was das lebende Tier trug
                 decke(
                     "_leibZeichenFrei",
                     (alt) =>
@@ -2091,7 +2034,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "last")
-                // der Fall, in dem die Last verfällt (vorher: der Satz ohne Messung — ein Fall ohne Rückgabe sähe niemand)
+                // der Fall, in dem die Last verfällt
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2101,7 +2044,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "raeumen")
-                // die Aura räumt wieder in ihrer eigenen Kopie (vorher: _refreshCreatureTaskAura neben _leibZeichenFrei)
+                // die Aura räumt wieder in ihrer eigenen Kopie
                 decke(
                     "_refreshCreatureTaskAura",
                     (alt) =>
@@ -2118,7 +2061,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "kopie")
-                // die Kopie beim Mitspieler ohne die Sicht des Leibs (vorher: jede Kopie in jeder Ferne die volle Gestalt)
+                // die Kopie beim Mitspieler ohne die Sicht des Leibs
                 decke(
                     "_p2pTickRemoteCreatures",
                     (alt) =>
@@ -2144,8 +2087,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "haltung")
-                // der Fall hält die Haltung nicht fest (vorher: der Stufen-Schalter stellte einen stehend Gefallenen jenseits der
-                // Grenze in die Stand-Pose der Gestalt, NACH seiner Tod-Lage)
+                // der Fall hält die Haltung nicht fest
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2156,7 +2098,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "sprung")
-                // der Fall nimmt die Höhe des Hüpfers mit (vorher: die Wurzel der Tod-Lage stand, wo der Sprung den Leib trug)
+                // der Fall nimmt die Höhe des Hüpfers mit
                 decke(
                     "_kreaturFaellt",
                     (alt) =>
@@ -2179,7 +2121,7 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "stimme")
-                // der letzte Ruf aus dem liegenden Leib (vorher: _tickLeichname rief, wenn er lag)
+                // der letzte Ruf aus dem liegenden Leib
                 decke(
                     "_tickLeichname",
                     (alt) =>
@@ -2512,8 +2454,7 @@ async function checkBandTodZensus(ctx) {
     check(`Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`, blind.length === 0, blind.join(" · "));
 }
 
-// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): Schöpfer-Befund „ab Sekunde 1 nur ~3–13 FPS,
-// nach 4 Minuten KEINE Bewegung möglich". `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
+// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause (K21): nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).

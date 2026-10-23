@@ -1478,7 +1478,7 @@ const ENTSORGUNG_BESITZER = {
     _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
-    _bewohnerFort: { arten: ["geometry", "material"], grund: "die Sätze der Gestalten (`_bewohnerSatz`, je Siedlung frisch)" },
+    _gangSatzAbschied: { arten: ["geometry", "material"], grund: "die Gang-Sätze (`_gangSatz`, je Satz frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
         arten: ["material"],
@@ -3471,6 +3471,7 @@ function main() {
             warte("async () => { while (Date.now() - t0 < FRIST) await sleep(150); };") === 1 &&
             warte("async () => { for (;;) { if (Date.now() - t0 > 9000) break; await tick(); } };") === 1 &&
             warte('async () => { await window.__gebautNach("x").catch(() => {}); };') === 1 &&
+            ["8000 }).catch(() => {})", "0 }).catch(() => {})", "9 }).catch((e) => { throw e; })"].map((f) => warte(`page.waitForFunction(() => 1, { timeout: ${f};`)).join() === "1,0,0" &&
             warte(frist, { "scripts/diag-w.cjs": 1 }) === 0 &&
             warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&
             warte("async () => { for (let n = 0; !e.fertig && n < 120; n++) await tick(); };") === 0 &&

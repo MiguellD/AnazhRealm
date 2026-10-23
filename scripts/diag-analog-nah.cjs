@@ -1,10 +1,6 @@
 // diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt
 // (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah-
-// Grenze `ANALOG_NAH_M` (64 m). Befund (Blick-Tour 1, echte GPU, Mess-Wiese, unter Last): eine Baumkrone in 40 m als
-// glatter Ellipsoid-Klumpen mit Kegel-Stamm, nach der Rückkehr an die Mess-Wiese 165 Analog-Sätze < 64 m, die 20 s
-// lang schmolzen (die gedockte Studio-Stufe wurde über das Bau-Budget platziert, ein Eintrag je 250 ms); beim Boot 141
-// Sätze bis zum 90-s-Deckel der Bühne (die Karten warteten auf die Bühne, die Bühne auf die Karten).
-// Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den Analog-Pfad blind) auf der
+// Grenze `ANALOG_NAH_M` (64 m). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den Analog-Pfad blind) auf der
 // Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit, welcher Satz zeichnet)
 // und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
 // Klasse · Träger · Abstand · seit wann · warum dort kein Mesh steht). Ein Satz, dessen Mesh schon übernimmt und der

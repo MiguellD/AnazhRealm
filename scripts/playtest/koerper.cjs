@@ -982,6 +982,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
                 Math.abs(out.manaFullBoth - 180) < 0.001;
         }
 
+
         // (M4) computePlayerStats gibt stats.manaMax
         const savedSoul = r.state.player && r.state.player.soul;
         try {

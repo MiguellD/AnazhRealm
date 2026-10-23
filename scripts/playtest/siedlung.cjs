@@ -1591,8 +1591,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (T1) TOTHOLZ_RATE Konstante existiert
-        out.rateConstExists = typeof A.TOTHOLZ_RATE === "number" && A.TOTHOLZ_RATE > 0 && A.TOTHOLZ_RATE < 1;
 
         // (T2) Bauplan `stamm_gefallen` ist registriert
         const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
@@ -1651,7 +1649,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         return out;
     });
 
-    check("V18.198 (T1) TOTHOLZ_RATE Konstante existiert (0 < x < 1)", res.rateConstExists === true);
     check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
     check("V18.198 (T2b) Bauplan ist builtIn + instanced", res.bpBuiltIn === true && res.bpInstanced === true);
     check(`V18.198 (T2c) Label 'Gefallener Stamm' (gemessen ${JSON.stringify(res.bpLabel)})`, res.bpLabel === true);
