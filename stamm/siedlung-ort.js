@@ -2360,30 +2360,58 @@ class AnazhRealm_siedlung_ort {
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
             // Alle Leser fragen nur Existenz (truthy). Ein Stand mitten im Gang schließt ihn zuerst (`saveState`).
             wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
-            this._autoSettlementQueue = this._dorfZug(v2, anchor, key, this._dorfErwachen(v2, anchor, ort, key));
+            this._autoSettlementQueue = this._dorfZug(
+                v2,
+                anchor,
+                key,
+                this._dorfErwachen(v2, anchor, ort, key, b.wasser)
+            );
             return v2;
         }, this._ortWahlWartet(key));
     }
-    // DAS ERWACHEN IN RATEN (stadt-erwachen, Lehre 14): der Gang des Zugs einer Zelle, je Takt EIN Schritt vor dem ersten Haus —
-    // das Wasser-Urteil ihres Erdbaus VOR dem Eintrag (`_erdbauAmWasser`, je Rate `AUTO_SETTLEMENT.wasserZellenJeTakt` Zellen
-    // seiner Normalform), EIN Schritt legt ihn (`_erdbauSetzen` unter dem Schlüssel des Orts `ort`), einer normt die Welt mit ihm
-    // (`_erdbauLage`), dann die Schichten (`_dorfErlebnis`). Bis stadt-erwachen trug der Rückruf des Erwachens alles: nH 300
-    // 192 ms synchron (`_ortPlanSetzen` 96, davon `_erdbauWirkt` 45; die Schichten 95), das Bild 461–469 ms (GTX 22.10.).
-    *_dorfErwachen(v2, anchor, ort, key) {
-        const E = globalThis.__gelaendeCore.erdbauNormal(v2.erdbau);
-        yield;
-        const n = AnazhRealm.AUTO_SETTLEMENT.wasserZellenJeTakt;
-        let nass = false;
-        for (let ab = 0; E && !nass && ab < E.zellen.size; ab += n) {
-            nass = this._erdbauAmWasser(E, ab, n);
-            yield;
-        }
-        this._erdbauSetzen(ort, v2.erdbau, nass);
+    // DAS ERWACHEN IN RATEN (stadt-erwachen, Lehre 14): der Gang des Zugs einer Zelle, je Takt EIN Schritt — EIN Schritt legt
+    // den Erdbau (`_erdbauSetzen` unter dem Schlüssel des Orts `ort`, mit dem Wasser-Urteil `w` des Vorlaufs), einer normt die
+    // Welt mit ihm (`_erdbauLage`); dann liegt der Grund (`yield true`), und die Schichten (`_dorfErlebnis`) gehen in den Takten
+    // zwischen den Häusern (`_dorfZugSchritt`). Bis stadt-erwachen trug der Rückruf des Erwachens alles: nH 300 192 ms synchron,
+    // das Bild 461–469 ms (GTX 22.10.).
+    // DAS NÄCHSTE HAUS ZUERST (stadt-erwachen-2, Lehre 25): bis hier gingen das Urteil (3 Raten), der Erdbau und ALLE Schichten
+    // (Wege, 4 Laternen-Raten, Ausstattung) vor dem ersten Haus — nH 300 hob das nächste im Takt 13, an der GTX gezeichnet nach
+    // 4,67–4,82 s (vorher 0,65 s). Ohne Vorlauf (Teleport, Start-Dorf) fällt das Urteil hier, in Raten vor dem Eintrag.
+    *_dorfErwachen(v2, anchor, ort, key, w) {
+        while (!this._dorfWasserSchritt(w)) yield;
+        this._erdbauSetzen(ort, v2.erdbau, w.nass);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         yield;
         this._erdbauLage(); // die Normalform der Welt mit dem neuen Ort (ihr erster Leser zahlte sie)
-        yield;
+        yield true;
         yield* this._dorfErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
+    }
+    // DAS WASSER-URTEIL DES ERDBAUS IM VORLAUF (Lehre 14: im Idle vorgebacken): ändert der Erdbau des Plans v2 (seine Splats
+    // `erdbau`) den Grund an gezeichnetem Wasser (`_erdbauAmWasser` VOR dem Eintrag)? Ein Gang in Raten — die Normalform, dann je
+    // Rate `AUTO_SETTLEMENT.wasserZellenJeTakt` Zellen —, den der Takt im Vorlauf-Ring treibt (`_tickAutoSettlement`) und
+    // der Gang des Erwachens zu Ende geht, falls die Zelle ohne Vorlauf erwacht. Rückgabe { gang, nass } (nass: undefined offen).
+    _dorfWasserUrteil(erdbau) {
+        const realm = this;
+        const gang = (function* () {
+            const E = erdbau ? globalThis.__gelaendeCore.erdbauNormal(erdbau) : null;
+            yield;
+            const n = AnazhRealm.AUTO_SETTLEMENT.wasserZellenJeTakt;
+            for (let ab = 0; E && ab < E.zellen.size; ab += n) {
+                const nass = realm._erdbauAmWasser(E, ab, n);
+                yield;
+                if (nass) return true;
+            }
+            return false;
+        })();
+        return { gang, nass: undefined };
+    }
+    // EINE Rate des Urteils `w` (`_dorfWasserUrteil`); true, sobald es steht
+    _dorfWasserSchritt(w) {
+        if (w.nass === undefined) {
+            const s = w.gang.next();
+            if (s.done) w.nass = s.value;
+        }
+        return w.nass !== undefined;
     }
     // OHNE ORT-WAHL (der Ort-Faden steht noch nicht: der Sandbox-Weg holt die Quelle des Voxel-Fadens, `_nebenFaden`) fragt der
     // nächste Takt neu — ein Wurf des Fadens meldet sich dort laut beim Namen (`_bruchMelden`). Der Rückruf der Zell-Kette und
@@ -2426,8 +2454,10 @@ class AnazhRealm_siedlung_ort {
             const anker = { x: i2.x, y: 0, z: i2.z };
             // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker im Ort-Faden, ohne den Erdbau zu legen
             return this._ortWahl(plan, Object.assign({}, anker), false, null).then(() => {
+                const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, anker));
+                v.wasser = this._dorfWasserUrteil(v2 ? v2.erdbau : null);
                 v.da = true;
-                return { plan, anker };
+                return { plan, anker, wasser: v.wasser };
             });
         });
         M.set(key, v);
@@ -2448,8 +2478,23 @@ class AnazhRealm_siedlung_ort {
     _dorfZugSchritt(q, ueber) {
         const f = this._foundry;
         const neu = [];
-        for (let n = 0; q.gang && this._kappeOffen(n, 1); n++) if (q.gang.next().done) q.gang = null;
-        if (q.gang) return neu;
+        // DAS NÄCHSTE HAUS ZUERST (stadt-erwachen-2): bis der Grund liegt (`yield true` des Gangs) geht der Gang allein; danach
+        // trägt ein Takt die Häuser, der nächste eine Rate des Gangs (die Schichten), im Wechsel — der Takt, der den Grund
+        // legte, hebt schon das nächste Haus; ohne offenes Haus geht der Gang jeden Takt
+        const frei = !!q.frei;
+        if (q.gang && (!frei || q.gangDran || q.idx >= q.plan.slots.length)) {
+            q.gangDran = false;
+            for (let n = 0; q.gang && this._kappeOffen(n, 1); n++) {
+                const s = q.gang.next();
+                if (s.done) q.gang = null;
+                else if (s.value === true) {
+                    q.frei = true;
+                    break;
+                }
+            }
+            if (frei || !q.frei) return neu;
+        }
+        q.gangDran = !!q.gang;
         const pm = this.state.playerMesh;
         const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         const A = AnazhRealm.AUTO_SETTLEMENT;
@@ -2624,10 +2669,15 @@ class AnazhRealm_siedlung_ort {
         // (jenseits des doppelten Vorlauf-Rings), fällt — kehrt er zurück, bereitet sie sich neu vor
         const V = this._dorfVorraete || (this._dorfVorraete = new Map());
         let fliegt = false;
+        let rate = 1; // je Takt EINE Rate des Wasser-Urteils eines bereiten Vorrats (`_dorfWasserUrteil`)
         for (const [k, w] of V) {
             fliegt = fliegt || !w.da;
             if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + 2 * A.vorlaufM) ** 2)
                 V.delete(k);
+            else if (w.da && rate && w.wasser.nass === undefined) {
+                this._dorfWasserSchritt(w.wasser);
+                rate = 0;
+            }
         }
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
