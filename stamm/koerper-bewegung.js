@@ -1391,6 +1391,7 @@ class AnazhRealm_koerper_bewegung {
                         steer: (keys[FT.lenken.tasten[0]] ? 1 : 0) - (keys[FT.lenken.tasten[1]] ? 1 : 0),
                         hand: !!keys[FT.handbremse.tasten[0]],
                         tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
+                        haft: this._fahrHaft(), // die Nässe am Reibkreis (feld.K1)
                     },
                     fahrG,
                     nowDt
