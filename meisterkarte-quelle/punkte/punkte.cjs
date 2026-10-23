@@ -167,8 +167,9 @@ function git(args, cwd) {
     return r.stdout.trim();
 }
 function spielRepo() {
-    const common = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], KOORD);
-    return path.dirname(common);
+    // git < 2.31 kennt --path-format nicht und gibt es als eigene Zeile zurück (OMEN: git 2.30): die letzte Zeile, gegen KOORD aufgelöst
+    const common = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], KOORD).split(/\r?\n/).pop();
+    return path.dirname(path.resolve(KOORD, common));
 }
 function voll(repo, sha) {
     try {
