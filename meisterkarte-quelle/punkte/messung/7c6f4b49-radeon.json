@@ -1,7 +1,7 @@
 {
  "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
  "geraet": "radeon",
- "zeit": "2026-10-23T10:12:10.822Z",
+ "zeit": "2026-10-23T10:31:50.165Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -239,32 +239,31 @@
    "port": 7654
   },
   "speicher.K1#1": {
-   "gruen": false,
-   "zahl": "20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)",
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.505 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
    "exit": 0,
-   "minuten": 9.32,
-   "grund": "ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)",
-   "zeit": "2026-10-23T09:53:14.660Z",
-   "abdruck": "5cc0e7a17732",
+   "minuten": 8.48,
+   "zeit": "2026-10-23T10:14:43.038Z",
+   "abdruck": "b0e83e1e02aa",
    "port": 7755
   },
   "speicher.K1#2": {
    "gruen": true,
-   "zahl": "20 Tode: Alter max 1.551 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "zahl": "20 Tode: Alter max 1.584 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
    "exit": 0,
-   "minuten": 9.31,
-   "zeit": "2026-10-23T10:02:33.618Z",
-   "abdruck": "c4653228849b",
+   "minuten": 8.64,
+   "zeit": "2026-10-23T10:23:11.941Z",
+   "abdruck": "675248d33f86",
    "port": 7756
   },
   "speicher.K2#1": {
    "gruen": true,
-   "zahl": "je Bild p95 0 / p99 0 ms (8666 Bilder, 96 Rufe); je Ruf p50 8.8 / p95 12.2 / max 13.4 ms",
+   "zahl": "je Bild p95 0 / p99 0 ms (7865 Bilder, 85 Rufe); je Ruf p50 8.3 / p95 10.4 / max 13.9 ms",
    "exit": 0,
-   "minuten": 10.62,
-   "zeit": "2026-10-23T09:21:24.123Z",
-   "abdruck": "21efeaae5f6c",
-   "port": 7657
+   "minuten": 2.35,
+   "zeit": "2026-10-23T10:31:50.165Z",
+   "abdruck": "1f4b3b5822c2",
+   "port": 7757
   }
  }
 }

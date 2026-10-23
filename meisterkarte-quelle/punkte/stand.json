@@ -748,16 +748,16 @@
    ]
   },
   "speicher.K1": {
-   "punkte": 0,
-   "beleg": "Maschine: 20 Tode: Alter max 1.551 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 7c6f4b49 radeon — offen: speicher.K1#1 radeon: ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich) an 7c6f4b49 · speicher.K1#1 gtx: ungemessen (R10) · speicher.K1#2 gtx: ungemessen (R10)",
+   "punkte": 1,
+   "beleg": "Maschine: 20 Tode: Alter max 1.505 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 7c6f4b49 radeon · 20 Tode: Alter max 1.584 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 7c6f4b49 radeon — offen: speicher.K1#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "speicher.K1#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": "20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)",
+     "gruen": true,
+     "zahl": "20 Tode: Alter max 1.505 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
      "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
-     "grund": "ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)"
+     "grund": null
     },
     {
      "id": "speicher.K1#1",
@@ -771,7 +771,7 @@
      "id": "speicher.K1#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "20 Tode: Alter max 1.551 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+     "zahl": "20 Tode: Alter max 1.584 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
      "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
      "grund": null
     },
@@ -787,13 +787,13 @@
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: je Bild p95 0 / p99 0 ms (8666 Bilder, 96 Rufe); je Ruf p50 8.8 / p95 12.2 / max 13.4 ms an 7c6f4b49 radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: je Bild p95 0 / p99 0 ms (7865 Bilder, 85 Rufe); je Ruf p50 8.3 / p95 10.4 / max 13.9 ms an 7c6f4b49 radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "speicher.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "je Bild p95 0 / p99 0 ms (8666 Bilder, 96 Rufe); je Ruf p50 8.8 / p95 12.2 / max 13.4 ms",
+     "zahl": "je Bild p95 0 / p99 0 ms (7865 Bilder, 85 Rufe); je Ruf p50 8.3 / p95 10.4 / max 13.9 ms",
      "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
      "grund": null
     },
@@ -1001,5 +1001,5 @@
   }
  },
  "kopfVoll": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
- "zeit": "2026-10-23T10:13:15.022Z"
+ "zeit": "2026-10-23T10:34:45.733Z"
 }

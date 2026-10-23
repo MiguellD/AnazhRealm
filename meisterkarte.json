@@ -3,11 +3,11 @@
   "kopf": "7c6f4b49",
   "version": "V18.546.73",
   "skala": "2.0",
-  "summe": 41,
+  "summe": 42,
   "max": 330,
   "maschine": {
     "kopf": "7c6f4b49",
-    "zeit": "2026-10-23T10:13:15.022Z",
+    "zeit": "2026-10-23T10:34:45.733Z",
     "kriterien": [
       "bauen.K1",
       "bauen.K3",
@@ -137,7 +137,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 6,
+      "summe": 7,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -4391,7 +4391,7 @@
       "key": "speicher",
       "titel": "Speicher und Persistenz",
       "gruppe": "fundament",
-      "punkte": 3,
+      "punkte": 4,
       "pfad": "v1 (nichts geht verloren) · E (kein Frame)",
       "dateien": "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
       "aaaa": "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
@@ -4404,10 +4404,10 @@
       "kriterien": [
         {
           "name": "Nichts geht verloren — auf dem Pfad des Spielers",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
           "messung": "gate:persistence (S), erweitert um den Tab-Tod: im 10-min-Spielgang wird der Prozess an 20 Punkten getötet (Vorlade-Haken an jedem Schreib-Aufruf plus zufällige Punkte), dann neu geladen — auf einem Host ohne save-server, wie der Spieler über den Link.",
-          "beleg": "Maschine: 20 Tode: Alter max 1.551 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 7c6f4b49 radeon — offen: speicher.K1#1 radeon: ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich) an 7c6f4b49 · speicher.K1#1 gtx: ungemessen (R10) · speicher.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 20 Tode: Alter max 1.505 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 7c6f4b49 radeon · 20 Tode: Alter max 1.584 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 7c6f4b49 radeon — offen: speicher.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Nur zwischen den Schreibern töten: Haken an jedem Schreib-Aufruf; den Server-Pfad prüfen, den der Spieler nie hat: der Host ohne save-server.",
           "aenderung": "Die 1 der Synthese stand auf dem Server-Pfad, den der Spieler über den Link nicht hat (B71) → 0; am Pfad des Spielers gemessen 22.10. (speicher-h1, Radeon) 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a (Radeon, M35) und b0b2d8ed (GTX, M30) gemessen 22.10. 0 → 2.; nach R6 (stadt-erwachen be20b0153 in saveState) 23.10. 2 → 0.",
           "maschine": true
@@ -4417,7 +4417,7 @@
           "punkte": 1,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "Maschine: je Bild p95 0 / p99 0 ms (8666 Bilder, 96 Rufe); je Ruf p50 8.8 / p95 12.2 / max 13.4 ms an 7c6f4b49 radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: je Bild p95 0 / p99 0 ms (7865 Bilder, 85 Rufe); je Ruf p50 8.3 / p95 10.4 / max 13.9 ms an 7c6f4b49 radeon — offen: speicher.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1; nach R6 (speicher-h1) 1 → 0, am neuen Pfad gemessen 22.10. 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a gemessen (M35) 22.10. 0 → 1.; nach R6 (stadt-erwachen be20b0153, 16dd81d0 `_imLeerlauf`) 23.10. 1 → 0.",
           "maschine": true
@@ -4903,7 +4903,7 @@
     {
       "stand": "2026-10-23",
       "kopf": "7c6f4b49",
-      "summe": 41,
+      "summe": 42,
       "max": 330,
       "skala": "2.0",
       "was": "main-Vorlauf 3528f2d0..7c6f4b49 (Zug 4 halten-gesetz 452972a6, Zug 5 material-mikro + material-lack 7c6f4b49; je OMEN-ABAB nicht langsamer, bericht/2310-abab-zug4.md, 2310-abab-zug5.md). Erste Buchung nach der Regel „gemessen am Kandidaten vor dem Landen, netto“ (Schöpfer 23.10.). Gemessen: Profiband K4 0 → 1 (M39 am Kandidaten 7c6f4b49, GTX, Regler frei, 4/4 ohne Frame > 100 ms, max 83,4), Speicher K1 0 → 1 (M37 GTX an 452972a6, 20 Tode, Alter ≤ 1,51 s, 0 korrupt, 0 halb, 2 Tode im Dorf-Erwachen ohne halbes Dorf; Zug 5 berührt den Speicher-Pfad nicht). Offen und nicht gebucht: Speicher K2 (die Hülle um den requestIdleCallback-Rückruf und die Leck-Probe als eigener Posten fehlen in der GTX-Messung — Radeon M38), Material K1 (material-lack: Haut Labor/Welt 0,857 → 0,997 an der Radeon am Zweig-Kopf, die Messung am Kandidaten fehlt), Material K2 (material-mikro: glatt 0,92 → 0,02 grün, nyquist 0,09 < 0,15 ROT, Befund am Maß), Halten K1/K3 (halten-gesetz: Mechanik in der CI grün, Station fehlt). Kein R6-Verlust: Zug 4 berührt Kampf/Halten, Zug 5 Boden-Stoff, Albedo-Linse und Fels — kein gebuchtes Kriterium liest diese Pfade außer Profiband K4 (am Kandidaten neu gemessen). Netto 42 + 2."
