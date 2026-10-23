@@ -1,4 +1,4 @@
-// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (Welle L Folge, v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
+// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
 // erschaffen). Die Defekte, die die sichtbare Leben-Schau am 07.10. auf dem v1-Pfad fand
 // (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim NAMEN. Im echten Boot (headless, foundry-ON,
 // Null-Renderer der Welt): D10, Wortschatz, Werk-Same und Brennglas rufen ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
@@ -166,7 +166,7 @@ function wegVerdict(m) {
     else if (tl.lesen !== tl.stoffe) out.push(`das Phantom färbt sich nicht: ${tl.lesen}/${tl.stoffe} Stoffe lesen die Tönung`);
     if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
     if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
-    // Grün heißt: das Setzen trägt (Integration V18.536, Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
+    // Grün heißt: das Setzen trägt (Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
     const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
     if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
@@ -230,7 +230,7 @@ function werkVerdict(m) {
         );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
-    // Jedes Setzen ein neues Werk (Integration V18.536, Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.
+    // Jedes Setzen ein neues Werk: nach dem Setzen zeigt das Phantom den nächsten Samen.
     if (m.naechsterSame == null) out.push("nach dem Setzen kein Phantom mit Samen (Vorbedingung)");
     else if (m.naechsterSame === m.werkSame)
         out.push(`das nächste Setzen zeigt dasselbe Werk (Same ${m.werkSame}) — jedes Setzen derselbe Wurf`);

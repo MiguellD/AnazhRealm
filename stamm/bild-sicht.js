@@ -2629,6 +2629,7 @@ class AnazhRealm_bild_sicht {
                 sichtHaupt: null, // die Zellen, die das letzte Hauptbild erreichte (die Empfänger der Kaskaden)
                 sichtGen: 0, // zählt jede neue Menge `sichtHaupt` — eine Kaskade, die andere Empfänger las, wählt neu
                 voll: false, // trug die letzte perspektivische Sicht jede Mündung im Bild mit ihrer Sperre?
+                um: 0, // der Halt der Lage der letzten perspektivischen Sicht (`_hoehlenSicht`)
                 // die Generation des Bodens: jeder Ein- und Austritt eines Boden-Bereichs und jeder Geomorph-Schreiber legt den
                 // Horizont neu — eine gemerkte Sperre gilt nur dem Boden, den sie gemessen hat (`_hoehlenSperre`)
                 boden: 0,
@@ -2905,7 +2906,8 @@ class AnazhRealm_bild_sicht {
     // gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ginge.
     _hoehlenSperre(s, tor, ex, ey, ez) {
         if (this._hoehlenAugeGleich(s.hoehle, tor, ex, ey, ez)) return tor.sperre;
-        const t = AnazhRealm.HOEHLEN_AUGE_M;
+        // der Würfel trägt dazu den Halt der Lage (`H.um`): jedes Auge unter ihr liegt höchstens so weit vom jetzigen
+        const t = AnazhRealm.HOEHLEN_AUGE_M + s.hoehle.um;
         tor.boden = s.hoehle.boden;
         tor.auge[0] = ex;
         tor.auge[1] = ey;
@@ -3019,6 +3021,11 @@ class AnazhRealm_bild_sicht {
         const ex = e[12],
             ey = e[13],
             ez = e[14];
+        // DER HALT (`PASS_WAHL.haltM`): die Sicht gilt, solange die Lage steht — jedes Auge dieser Frames liegt höchstens den
+        // Halt `um` vom jetzigen (beide höchstens den halben vom Anker). Jeder Strahl eines solchen Auges durch eine Box
+        // läuft vom jetzigen durch die um `um` geweitete Box (Minkowski): die Rechtecke weiten jede Box um ihn, das Auge
+        // steht in jeder Zelle, deren Luft es um ihn erreicht, und die Sperre gilt im Würfel um ihn geweitet.
+        const um = (H.um = S.lage.halt);
         // (1) das Auge in einer Zelle
         const v = this._hoehlenAuge || (this._hoehlenAuge = new THREE.Vector3());
         v.set(ex, ey, ez);
@@ -3029,7 +3036,8 @@ class AnazhRealm_bild_sicht {
                 const b = s.bloecke.get(cx + dx + "," + (cz + dz));
                 if (!b || !b.hoehle) continue;
                 for (const kn of b.hoehle.knoten)
-                    if (kn.luft && kn.luft.containsPoint(v)) this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
+                    if (kn.luft && kn.luft.distanceToPoint(v) <= um)
+                        this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
             }
         // Die Bereiche mit Starts im Bild: das EINE Gesetz der Pass-Wahl gegen die Hülle ihrer Mündungen und Ränder — ein
         // Bereich daneben (hinter dem Auge, jenseits der fernen Ebene) prüft keinen seiner Starts (Welle C: vorher jeder Pass
@@ -3050,7 +3058,7 @@ class AnazhRealm_bild_sicht {
         for (const bh of imBild)
             for (const kn of bh.starts)
                 for (const tor of kn.tore) {
-                    if (!this._hoehlenRect(tor.box, m, rc)) continue;
+                    if (!this._hoehlenRect(tor.box, m, rc, um)) continue;
                     tor.st = st;
                     tor.r0 = rc[0];
                     tor.r1 = rc[1];
@@ -3086,15 +3094,16 @@ class AnazhRealm_bild_sicht {
                 const b = kn.bereich;
                 for (let seite = 0; seite < 4; seite++) {
                     const rb = kn.raender[seite];
-                    if (!rb || !this._hoehlenRect(rb, m, rc)) continue;
+                    if (!rb || !this._hoehlenRect(rb, m, rc, um)) continue;
+                    // draußen, wenn ein Auge unter der gehaltenen Lage (um `um` vom jetzigen) draußen stehen kann
                     const draussen =
                         seite === 0
-                            ? ex < b.cx * span
+                            ? ex < b.cx * span + um
                             : seite === 1
-                              ? ex > (b.cx + 1) * span
+                              ? ex > (b.cx + 1) * span - um
                               : seite === 2
-                                ? ez < b.cz * span
-                                : ez > (b.cz + 1) * span;
+                                ? ez < b.cz * span + um
+                                : ez > (b.cz + 1) * span - um;
                     if (draussen) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
                     else this._hoehlenMarke(H, kn);
                 }
@@ -3119,7 +3128,7 @@ class AnazhRealm_bild_sicht {
                 const p = ed.p;
                 if (p.st !== st) {
                     p.st = st;
-                    p.auf = this._hoehlenRect(p.box, m, p.rect);
+                    p.auf = this._hoehlenRect(p.box, m, p.rect, um);
                 }
                 if (!p.auf) continue;
                 const q = p.rect;
@@ -3149,14 +3158,14 @@ class AnazhRealm_bild_sicht {
     // offenen Rand) wieder in Himmels-Luft — das Auge stand in der Höhle, an ihrer Mündung, oder der Strahl lief unter einem
     // Überhang, durch einen Tunnel. Jeder Ausgang im Bild ist ein Fenster (sein Rechteck ∩ das der Zelle, nicht näher als
     // beide), und hinter ihm erreicht der Strahl jede gesperrte Mündung, deren fernste Sperre vor dem Ausgang liegt
-    // (`_hoehlenSperre`, gemessen vom geprüften Auge: der Würfel `HOEHLEN_AUGE_M` verschiebt sie um höchstens 2 × seine Kante).
+    // (`_hoehlenSperre`, gemessen vom geprüften Auge: der Würfel `HOEHLEN_AUGE_M` samt Halt `H.um` verschiebt sie um höchstens 2 × seine Kante).
     _hoehlenHinaus(H, kn, m, st, ex, ez) {
         for (const tor of kn.tore)
             if (tor.st === st) this._hoehlenAusgang(H, kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4, tor.weit);
         const q = H.rect;
         for (let seite = 0; seite < 4; seite++) {
             const rb = kn.raender[seite];
-            if (rb && this._hoehlenRect(rb, m, q))
+            if (rb && this._hoehlenRect(rb, m, q, H.um))
                 this._hoehlenAusgang(H, kn, q[0], q[1], q[2], q[3], q[4], this._hoehlenWeit(rb, ex, ez));
         }
     }
@@ -3169,7 +3178,7 @@ class AnazhRealm_bild_sicht {
         if (r[3] < y1) y1 = r[3];
         if (x0 > x1 || y0 > y1) return;
         if (kn.z > z0) z0 = kn.z;
-        const bis = weit + 2 * AnazhRealm.HOEHLEN_AUGE_M;
+        const bis = weit + 2 * (AnazhRealm.HOEHLEN_AUGE_M + H.um);
         // `hinter` liegt nach der Sperre geordnet (`_hoehlenSicht`): ab der ersten jenseits des Ausgangs keine mehr
         const h = H.hinter;
         for (let i = 0; i < h.length; i++) {
@@ -3271,14 +3280,14 @@ class AnazhRealm_bild_sicht {
             h.lrStand = stand;
             return L;
         };
-        const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
-        const K = H.kacheln || (H.kacheln = new Map());
-        K.clear();
         const P = S.lage;
         // der Licht-Rand des Passes (`lichtRandTexel`): die Wahl hält über die Stufen der Sonne — ein Werfer, der nach einer
         // Drehung bis zum Rand wirft, wirft schon jetzt (sein Rechteck und seine Nähe um den Rand geweitet)
         const m = P.licht;
-        // die Kachel-Spanne aller Empfänger (i0, j0, i1, j1) und ihre tiefste Tiefe
+        // DIE EMPFÄNGER zuerst: je Empfänger sein Licht-Rechteck, dazu die Spanne aller (Meter quer zum Licht) und ihre
+        // tiefste Tiefe
+        const R = H.empf || (H.empf = []);
+        R.length = 0;
         const E = H.empfSpanne || (H.empfSpanne = new Float64Array(5));
         E[0] = E[1] = Infinity;
         E[2] = E[3] = E[4] = -Infinity;
@@ -3286,22 +3295,12 @@ class AnazhRealm_bild_sicht {
             if (!box) return;
             kn.sicht = st;
             const L = lage(h, box);
-            const tief = L[5];
-            const i0 = Math.floor(L[0] / T),
-                i1 = Math.floor(L[3] / T),
-                j0 = Math.floor(L[1] / T),
-                j1 = Math.floor(L[4] / T);
-            for (let j = j0; j <= j1; j++)
-                for (let i = i0; i <= i1; i++) {
-                    const key = (i + 32768) * 65536 + (j + 32768);
-                    const w = K.get(key);
-                    if (w === undefined || tief > w) K.set(key, tief);
-                }
-            if (i0 < E[0]) E[0] = i0;
-            if (j0 < E[1]) E[1] = j0;
-            if (i1 > E[2]) E[2] = i1;
-            if (j1 > E[3]) E[3] = j1;
-            if (tief > E[4]) E[4] = tief;
+            R.push(L);
+            if (L[0] < E[0]) E[0] = L[0];
+            if (L[1] < E[1]) E[1] = L[1];
+            if (L[3] > E[2]) E[2] = L[3];
+            if (L[4] > E[3]) E[3] = L[4];
+            if (L[5] > E[4]) E[4] = L[5];
         };
         // die Zellen des Hauptbilds: je Bereich EINE Prüfung seiner Hülle (gemerkt an diesem Stempel)
         if (H.sichtHaupt)
@@ -3319,7 +3318,35 @@ class AnazhRealm_bild_sicht {
             if (!bh || !bh.startHuelle || !this._passTrifftBox(P, bh.startHuelle, 0)) continue;
             for (const kn of bh.starts) for (const tor of kn.tore) empfang(kn, tor, tor.box);
         }
-        if (K.size === 0) return;
+        if (R.length === 0) return;
+        // DAS KACHEL-GITTER (stadt-k1): dicht über der Spanne der Empfänger, je Kachel die tiefste Tiefe — bis hier eine Map
+        // je Kachel, und jede Zelle der Kandidaten fragte jede Kachel unter ihrem Licht-Rechteck (Stadt gehend, Radeon: je
+        // Kaskaden-Pass 1,4–2,2 ms, davon Licht-Lagen 0,08 und Urteile 0,3 — der Rest die Fragen an die Map). Die Kacheln
+        // stehen ortsfest (Index floor(u / T)); sprengt die Spanne `HOEHLEN_LICHT_GITTER_MAX`, verdoppelt sich die Kachel —
+        // eine gröbere Kachel trägt die tiefste Tiefe einer größeren Fläche, es wirft eher mehr, nie weniger.
+        let T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
+        let i0, j0, ni, nj;
+        for (;;) {
+            i0 = Math.floor(E[0] / T);
+            j0 = Math.floor(E[1] / T);
+            ni = Math.floor(E[2] / T) - i0 + 1;
+            nj = Math.floor(E[3] / T) - j0 + 1;
+            if (ni * nj <= AnazhRealm.HOEHLEN_LICHT_GITTER_MAX) break;
+            T *= 2;
+        }
+        const i1 = i0 + ni - 1,
+            j1 = j0 + nj - 1;
+        let G = H.gitter;
+        if (!G || G.length < ni * nj) G = H.gitter = new Float64Array(Math.max(ni * nj, G ? 2 * G.length : 256));
+        G.fill(-Infinity, 0, ni * nj);
+        for (let q = 0; q < R.length; q++) {
+            const L = R[q];
+            const tief = L[5];
+            const a0 = Math.floor(L[0] / T) - i0,
+                a1 = Math.floor(L[3] / T) - i0;
+            for (let j = Math.floor(L[1] / T) - j0, jb = Math.floor(L[4] / T) - j0; j <= jb; j++)
+                for (let i = a0, o = j * ni; i <= a1; i++) if (tief > G[o + i]) G[o + i] = tief;
+        }
         // die Werfer-Kandidaten: die Zellen, die das EINE Gesetz der Pass-Wahl in diesem Pass trifft (Box der Kaskade und
         // Licht-Kapsel gegen ihre Scheibe — `_chunkSatzAbschnitt` wählt dieselben)
         for (const b of s.ordnung) {
@@ -3327,10 +3354,10 @@ class AnazhRealm_bild_sicht {
             const L = lage(b, b.huelle);
             if (
                 L[2] - m > E[4] ||
-                Math.floor((L[3] + m) / T) < E[0] ||
-                Math.floor((L[0] - m) / T) > E[2] ||
-                Math.floor((L[4] + m) / T) < E[1] ||
-                Math.floor((L[1] - m) / T) > E[3]
+                Math.floor((L[3] + m) / T) < i0 ||
+                Math.floor((L[0] - m) / T) > i1 ||
+                Math.floor((L[4] + m) / T) < j0 ||
+                Math.floor((L[1] - m) / T) > j1
             )
                 continue;
             for (const kn of b.hoehle.knoten) {
@@ -3338,15 +3365,18 @@ class AnazhRealm_bild_sicht {
                 if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
                 const Z = lage(z, z.huelle);
                 const nah = Z[2] - m;
+                if (nah > E[4]) continue;
+                const a0 = Math.max(i0, Math.floor((Z[0] - m) / T)) - i0,
+                    a1 = Math.min(i1, Math.floor((Z[3] + m) / T)) - i0,
+                    b0 = Math.max(j0, Math.floor((Z[1] - m) / T)) - j0,
+                    b1 = Math.min(j1, Math.floor((Z[4] + m) / T)) - j0;
                 let wirft = false;
-                for (let j = Math.floor((Z[1] - m) / T); j <= Math.floor((Z[4] + m) / T) && !wirft; j++)
-                    for (let i = Math.floor((Z[0] - m) / T); i <= Math.floor((Z[3] + m) / T); i++) {
-                        const w = K.get((i + 32768) * 65536 + (j + 32768));
-                        if (w !== undefined && w >= nah) {
+                for (let j = b0; j <= b1 && !wirft; j++)
+                    for (let i = a0, o = j * ni; i <= a1; i++)
+                        if (G[o + i] >= nah) {
                             wirft = true;
                             break;
                         }
-                    }
                 if (wirft) kn.sicht = st;
             }
         }
@@ -3379,8 +3409,8 @@ class AnazhRealm_bild_sicht {
     // Tiefe (NDC-z) in `out[4]`, `out[5]`; false, wenn die Box hinter dem Auge oder neben dem Bild liegt. Eine Box, die die
     // Augen-Ebene kreuzt, zählt mit ihrem Teil VOR dem Auge (an der Ebene w = ε geschnitten — ihre Schnitt-Punkte liegen
     // weit draußen, das Klemmen trägt sie; ihre nahe Tiefe ist −∞): der Strahl durch ein Portal trifft es vor dem Auge, sein
-    // Schirm-Punkt ist die Projektion dieses Treffers.
-    _hoehlenRect(box, m, out) {
+    // Schirm-Punkt ist die Projektion dieses Treffers. `um`: die Box um so viel geweitet (der Halt, `_hoehlenSicht`).
+    _hoehlenRect(box, m, out, um = 0) {
         const E = 1e-4;
         const C = this._hoehlenEcken || (this._hoehlenEcken = new Float64Array(24));
         let x0 = Infinity,
@@ -3399,9 +3429,9 @@ class AnazhRealm_bild_sicht {
             if (py > y1) y1 = py;
         };
         for (let c = 0; c < 8; c++) {
-            const x = c & 1 ? box.max.x : box.min.x,
-                y = c & 2 ? box.max.y : box.min.y,
-                z = c & 4 ? box.max.z : box.min.z;
+            const x = c & 1 ? box.max.x + um : box.min.x - um,
+                y = c & 2 ? box.max.y + um : box.min.y - um,
+                z = c & 4 ? box.max.z + um : box.min.z - um;
             const cx = m[0] * x + m[4] * y + m[8] * z + m[12],
                 cy = m[1] * x + m[5] * y + m[9] * z + m[13],
                 cz = m[2] * x + m[6] * y + m[10] * z + m[14],
@@ -3465,6 +3495,8 @@ AnazhRealm.HOEHLEN_AUGE_M = 0.25;
 // DIE KASKADE der Höhlen-Sicht (`_hoehlenSichtLicht`): die Kante einer ortsfesten Licht-Kachel quer zum Licht (m), die je
 // Kachel die tiefste Empfänger-Tiefe trägt.
 AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
+// Das dichte Kachel-Gitter über der Spanne der Empfänger trägt höchstens so viele Kacheln (dann verdoppelt sich die Kachel).
+AnazhRealm.HOEHLEN_LICHT_GITTER_MAX = 1 << 18;
 
 // FERN_RING (unten) — Fern-Kulisse aus dem EINEN Höhen-Gesetz (`_terrainMacroSurfaceY(x,z,false)`),
 // 3 Ring-Schalen (3 Draw-Calls fix). `winkel`/`reihen` = Segment-Gitter je Schale (192×16: seit die Luft die

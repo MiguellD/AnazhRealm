@@ -27,7 +27,7 @@ function sha256Hex(buf) {
 }
 
 // ---------------------------------------------------------------------------
-// Kommentar-Stripper (die V18.267-Falle: der Code darf das Wort im KOMMENTAR tragen,
+// Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
 // der CODE darf es nicht — jeder Source-Grep läuft über den gestrippten Body).
 // Strings/Templates bleiben ERHALTEN (die Stempel-Probe sucht "cores.manifest.json",
 // das als String-Literal im Code lebt).
@@ -36,7 +36,7 @@ const stripComments = require("./stamm.cjs").ohneKommentare;
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
 // nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
-// Foundry-Brücke seit K42, vorher die Labor-Shell). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
+// Foundry-Brücke). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
 // Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
 // Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
 function computeStamp(root, lies) {

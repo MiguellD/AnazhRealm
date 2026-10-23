@@ -741,6 +741,7 @@ class AnazhRealm_kampf {
         if (p) {
             p._hitStopAb = nowSec;
             p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+            p._stoss = Math.max(p._stoss || 0, e); // (4) das Rumble des Treffers (`_rumbleTakt`)
         }
         this.state._landImpactPending = Math.max(
             this.state._landImpactPending || 0,
@@ -864,7 +865,7 @@ class AnazhRealm_kampf {
         const p = this.state.player;
         const d = p && p._bogenDraw;
         if (!d) return;
-        if (!this.state.isPointerLocked || !this._heldBogenRecipe()) {
+        if (!this.state.verbTafel.gehalten.break || !this._heldBogenRecipe()) {
             p._bogenDraw = null;
             this._bogenHudZeige(null);
             return;
@@ -1604,10 +1605,11 @@ class AnazhRealm_kampf {
     // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
     // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
     _tickHarvest() {
-        const p = this.state.player;
-        if (!p || !p.breakHeld) return;
-        if (!this.state.isPointerLocked || this.state.inventoryOpen || this._uiSchubladeOffen()) {
-            p.breakHeld = false;
+        const [p, g] = [this.state.player, this.state.verbTafel.gehalten];
+        if (!p || !g.break) return;
+        // gehalten über die Verb-Tafel (Maus oder Pad); ein verlorener Zeiger löst es an der Tasten-Wand (`_alleTastenLos`)
+        if (this.state.inventoryOpen || this._uiSchubladeOffen()) {
+            g.break = false;
             return;
         }
         const now = performance.now() / 1000;

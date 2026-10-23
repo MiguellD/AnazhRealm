@@ -3,7 +3,7 @@
 // diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe)
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf den WebGL2-Backend zurück; die WGSL-Konsumenten
-// (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die V18.267-Falle
+// (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die Falle
 // in GPU-Form). Die Probe erzwingt den Rückfall (window.__anazhForceWebGL, der EINE Hook, alle 5 Renderer-Münzstellen) und
 // beweist auf echtem GL (die CI swiftshader, lokal die Karte):
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)

@@ -36,7 +36,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 
         // (4) DSL-Op voxel_carve schnitzt echt — der Edit landet in
         // worldMeta.voxelEdits. Frieden-Modus damit Edit-Gate
-        // (V9.17) den Fill-Pfad nicht abweist.
+        // den Fill-Pfad nicht abweist.
         const oldMode = r.getGameMode();
         r.setGameMode("frieden");
         if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
@@ -219,7 +219,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.dslEffects.peer_dsl === "undefined" &&
             typeof r.dslEffects.remote_run === "undefined";
 
-        // V2.1: CSP enthält generelle ws:/wss:-Whitelist (statt
+        // CSP enthält generelle ws:/wss:-Whitelist (statt
         // explizite IP-Liste, die LAN-Spieler blockierte).
         const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
         const cspContent = cspMeta ? cspMeta.getAttribute("content") : "";
@@ -1248,7 +1248,7 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
         r.setGameMode("schöpfer"); // Gates frei
-        // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
+        // Das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste Phantom
         // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
         // („group.traverse is not a function") und riss 21 Folgetests mit.
         const phantomBei = (x, y, z) => {
@@ -2254,7 +2254,7 @@ async function checkBandLateMultiUser(ctx) {
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
         out.inviteInputExists = !!document.getElementById("new-world-invite");
-        // V9.35: die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
+        // die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
         // (Voxel permanent + irreversibel — Toggle-Tod).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
         out.hostBannerExists = !!document.getElementById("world-host-banner");
@@ -2905,8 +2905,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 },
             ];
             r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
-            // V18.153 — die Linien sind Werkstatt-Werkzeug: der Test bestellt
-            // sie wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+            // die Linien sind Werkstatt-Werkzeug: der Test bestellt
+            // sie wie der Werkstatt-Viewer (der Test wandert mit).
             const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
             const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
             out.connHasLine = conn.some((c) => c.isLine);
@@ -2919,7 +2919,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const pre = r.state.workshop && r.state.workshop.preview;
             out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
             r._renderWorkshopDOM();
-            // V17.91 — die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
+            // die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
             // werden jetzt im 3D-Connect-Modus angelegt/gelöst. Der frühere „Sollbruchstelle"-Text-Check entfiel.
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
@@ -3046,9 +3046,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             }
         }
 
-        // W-C(f)/R-008 (V18.169) — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
+        // W-C(f)/R-008 — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
         // <details>-Summary, kein toter Verweis-Hint; #player-equip trägt höchstens
-        // die Schnell-Trünke (Gebrauch). Test wandert mit (V9.56-i).
+        // die Schnell-Trünke (Gebrauch). Test wandert mit.
         r.renderPlayerEquipUI();
         const eq = document.getElementById("player-equip");
         out.equipHint =

@@ -464,7 +464,7 @@ addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.up
 /* EINE Brücke für alle Welten (../huelle/huelle.js): ready einmal, die DSL spricht über die ECHTEN UI-Pfade (Button-click
    = eine Quelle), das Einzelwort der Heimat ganz (["gt"] → „gt", nie „g"); Esc meldet die Heimkehr — im Fahr-Modus
    gehört Esc dem Werkstatt-Exit (der Tasten-Hörer oben hält ihn an). */
-const heimat=AnazhHuelle.bruecke({
+AnazhHuelle.bruecke({
     welt: "garage",
     // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
     panorama: function () {
@@ -482,7 +482,12 @@ const heimat=AnazhHuelle.bruecke({
     esc: function () {
         return mode !== "fahren";
     },
+    // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle, 18.10. „In der Welt ansehen"): der Wagen des Bauers der Welt —
+    // Gattung, Same 1, die Werte der Regler-Zeilen aus P und die Kultur; der nächste gesetzte Wagen der Gattung trägt ihn.
+    werk: function () {
+        const ov = Object.assign({}, kulturId && VC.CULTURES[kulturId] ? VC.CULTURES[kulturId].fx : {});
+        PARAMS.forEach((z) => (ov[z.id] = P[z.id]));
+        return { kind: "vehicle", preset: presetId, seed: 1, ov };
+    },
+    werkOrt: document.getElementById("werkOrt"),
 });
-// IN DER WELT ANSEHEN (18.10.): die Heimkehr über die EINE Brücke — die Heimat (das Garage-Tor) schließt die Bühne, dort fahren
-// die Wagen aus demselben Bauer; die allein geöffnete Seite führt in die Welt. Kein Studio-Modus der Welt, kein Labor-Wagen in ihr.
-document.getElementById('welt').onclick=()=>{if(window.parent!==window)heimat.post({type:'exit',world:'garage'});else location.href='../../index.html';};

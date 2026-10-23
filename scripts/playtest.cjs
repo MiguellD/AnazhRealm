@@ -549,7 +549,7 @@ if (require.main === module) (async () => {
                 }
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
-            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request, V18.132).
+            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).
             r.state.voxelWorker = _warmupSavedWorker;
             return {
                 foundryWarmMs: foundryReadyMs,
@@ -707,34 +707,23 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWelleC2WaterIsoSurface, ctx);
             await timed(BAND.checkBandWelleC3CellularReaction, ctx);
             await timed(BAND.checkBandWellePerf3bDistanceLod, ctx);
-            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
-            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
             await timed(BAND.checkBandWellePerfDBudget, ctx);
-            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
             // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
-            // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
             await timed(BAND.checkBandWellePerf3cPhase3FullMesh, ctx);
-            // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
             await timed(BAND.checkBandV17117FarWater, ctx);
-            // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await timed(BAND.checkBandV17118WorkerEngaged, ctx);
-            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Luft↔Ring · A6 Kollision.
             await timed(BAND.checkBandPhaseAFundament, ctx);
-            // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(BAND.checkBandPhasenBF, ctx);
             await timed(BAND.checkBandWelle993WaterLodSeam, ctx);
-            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
             await timed(BAND.checkBandWelleV11D1WaterContext, ctx);
-            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
             await timed(BAND.checkBandWelleV11D2WaterBias, ctx);
-            // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(BAND.checkBandWelleV11D3DrinkTask, ctx);
-            // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
+            // FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(BAND.checkBandNahStreu, ctx);
 
             // Band 3 — Atmosphäre, Welt-Portal/Vibe-Pass/Bibliothek, Übersetzer + Untrusted-Tor, späte Politur.
@@ -884,6 +873,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
             await timed(BAND.checkBandTierFern, ctx);
             await timed(BAND.checkBandKoerperBewegung, ctx);
+            await timed(BAND.checkBandGamepadVerben, ctx);
             await timed(BAND.checkBandTodZensus, ctx);
             await timed(BAND.checkBandWasserWahrheit, ctx);
             await timed(BAND.checkBandTierSeparation, ctx);
@@ -982,7 +972,7 @@ if (require.main === module) (async () => {
     }
     console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (gateAborted) {
-        // V18.309 — UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
+        // UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
         // rätselhafte ✅-Liste oder Endlos-Schweigen. Eine laute Zeile, Exit≠0,
         // egal ob STRICT — ein unvollständiger Lauf ist nie ein grünes Gate.
         console.log(`\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`);

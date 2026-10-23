@@ -298,6 +298,11 @@ class AnazhRealm_koerper_seele {
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
+        // die Wunde als Stoß des Leibs: das Rumble (`_rumbleTakt`) ∝ Schaden je Lebenskraft × die Wunden-Verstärkung des Pads
+        this.state.player._stoss = Math.max(
+            this.state.player._stoss || 0,
+            Math.min(1, (scaled / Math.max(1, stats.hpMax || 0)) * AnazhRealm.PAD_GESETZ.rumble.wunde)
+        );
         // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
         // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
         this._feelAction("damage");
