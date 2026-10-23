@@ -24,19 +24,14 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         // um zu beweisen, dass die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
         const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
-        const THREE = window.THREE;
-        if (THREE && THREE.Color) {
-            for (const k of Object.keys(e)) e[k] = 0;
-            const cold = r._dayNightComputeTint();
-            for (const k of Object.keys(e)) e[k] = 0;
-            e.joy = 0.9;
-            const warm = r._dayNightComputeTint();
-            out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
-            out.coldR = cold.skyColor.r;
-            out.warmR = warm.skyColor.r;
-        } else {
-            out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
-        }
+        for (const k of Object.keys(e)) e[k] = 0;
+        const cold = r._dayNightComputeTint();
+        for (const k of Object.keys(e)) e[k] = 0;
+        e.joy = 0.9;
+        const warm = r._dayNightComputeTint();
+        out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
+        out.coldR = cold.skyColor.r;
+        out.warmR = warm.skyColor.r;
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
         return out;
@@ -383,18 +378,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
         // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
-        const THREE_g3 = window.THREE;
-        if (THREE_g3 && THREE_g3.Color) {
-            const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-            r.state.player.emotions.awe = 0;
-            r.state.player.emotions.sorrow = 0;
-            const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
-            r.state.player.emotions.sorrow = 1.0;
-            const satG3High = satG3(r._dayNightComputeTint().skyColor);
-            out.sorrowReducesSaturation = satG3High < satG3Zero;
-        } else {
-            out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
-        }
+        const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+        r.state.player.emotions.awe = 0;
+        r.state.player.emotions.sorrow = 0;
+        const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
+        r.state.player.emotions.sorrow = 1.0;
+        const satG3High = satG3(r._dayNightComputeTint().skyColor);
+        out.sorrowReducesSaturation = satG3High < satG3Zero;
         // Reset
         r.state.player.emotions.sorrow = 0;
         r._applyDayNightToScene();

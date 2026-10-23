@@ -1,6 +1,5 @@
 // abnahme-urteil.cjs — DIE ABNAHME-ZEILE (K32, Entscheidung 1110 §2.10 / D3): das EINE Ergebnis-Format, mit dem jedes Beweisbild
-// sich selbst prüft. Anlass 13.10. (Augen-Befund 10): vier Beweisbilder anderer Karten waren unbrauchbar — die Kamera stand in
-// Laub und Zweigen (K17 Dorfhang, K20 Waldrand, K24 Tanne, K16 1,7 m im Wald), die Aufnahme speicherte sie still.
+// sich selbst prüft — eine Kamera in Laub und Zweigen speichert kein Beweisbild still.
 //
 // Die Messung (`m`) trägt die Aufnahme selbst (scripts/lib/ausgabe-aufnahme.cjs, `__abnahmeMessen` + `__bildMasse`):
 //   stand  { version, sha }            der Stand aus dem LAUFENDEN Spiel (AnazhRealm.VERSION), die SHA setzt der Node-Aufrufer
@@ -502,9 +501,7 @@ function abnahmeSelbsttest(fixtureDir) {
 // Schwelle: das Pixel ZEIGT sie — ihr Schatten fehlt in G wie in O_k, eine Wurzel unter dem Boden zeigt in keinem der beiden.
 // Ein Misch-Pixel (zwei Klassen über der Schwelle, der Halm vor dem Grund) zählt EINMAL, bei der stärkeren; `misch` zählt sie.
 // Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
-// RAUSCHEN_MAX. Bis K63-n1 vier Schüsse unter freier Uhr und eine Schatten-Ausnahme nach der Farbart: zwei Schüsse derselben
-// Pose unterschieden sich an 27,5 % der Nah-Pixel um mehr als 18, 34 673 Pixel standen in zwei Masken, Gras unter den Tannen
-// in der Laub-Maske (Prüfer K63 R1).
+// RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
 function klassenTeilung(G, Os, W, H, schwelle) {
     const t = schwelle == null ? 18 : schwelle;
@@ -702,7 +699,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (ohne && weissIn(ohne, p)) wtZiel++;
         else wt++;
     }
-    // DIE KANTE DER SILHOUETTE (K68-n2, Augen-Befund 14.10. „Nadelbaum-Karten groß und kantig"): je Rand-Pixel der Klasse,
+    // DIE KANTE DER SILHOUETTE (K68-n2): je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
@@ -1162,7 +1159,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
     spiegelTreue: 1,
 });
-// DER ORT EINES BILDS der Tafel (K63-n8; Koordinator 15.10.: die `bild`-Felder zeigten in den Scratch, AppData): relativ zur
+// DER ORT EINES BILDS der Tafel (K63-n8): relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
 // absolut, nie mit `..`, nie mit Backslash.
 function bildPfadFehler(p) {
@@ -1556,8 +1553,7 @@ function albedoZeile(ma, q) {
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
-// DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
-// es GRÜN): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
+// DER STAND einer Messung (K63-n2): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
 // die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
 // Integration hebt VERSION und machte jede Zeile veraltet, ohne dass ihr Code sich rührte; Version und Commit stehen als Beleg).
 // Ein Block ohne Version, Commit oder Abdruck ist ungeprüft, einer mit fremdem Abdruck „veraltet seit <Commit der Messung>" —
@@ -1656,8 +1652,7 @@ function eigenschaftBand(e, q, wo) {
     return { fehler: `${wo}: Verweis ${v.datei} ${v.feld} — kein lesbares Band (art toleranz)` };
 }
 
-// DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine Kommentarzeile in einer Stamm-Datei machte jede Zeile der Albedo-Tafel veraltet
-// und sperrte jeden folgenden Merge): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
+// DER CODE-ABDRUCK (K63-n8; eine Kommentarzeile macht keine Zeile veraltet): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
 // Kommentare und Leerraum zwischen den Token; JSON kanonisch (geparst, neu geschrieben). Eine andere Dateiart trägt keinen
 // Stand (laut, nie still die Bytes); ein Token-Fehler bricht laut. Form `c:` + 16 Hex — eine Prüfsumme anderer Form (die
 // Bytes bis K63-n7) ist ungeprüft, nie gleich.
@@ -1885,12 +1880,10 @@ function sollTafelUrteil(tafel, q) {
             urteil = "ROT";
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
-        // DER BENANNTE MANGEL (K63-n2; Prüfer K63 R2: Kopf, Laub und Tore standen GRÜN, ihre Maße sahen den Mangel des Plans nicht):
-        // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
+        // DER BENANNTE MANGEL (K63-n2): trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
-        // nie ein Bruch der Tafel (A10, 17.10.: der Schreiber `--ist` wies das ehrliche ROT von boden-nah-farbe ab, die Tafel behielt
-        // die Messung vom 16.10. — fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
+        // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
         const mg = (k.wirkung || {}).mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
         const gh = (k.wirkung || {}).geheilt;
@@ -2524,8 +2517,7 @@ function sollTafelSelbsttest(tafel, q) {
         if (vorher.urteil !== "ROT" || !/schattenAnteil 0\.239/.test(vorher.grund || "") || !/umgebungAzimut 1/.test(vorher.grund || ""))
             v.push(`${k7.id}: die Licht-Bilanz vor D3 nennt Schatten und Richtung nicht (${vorher.urteil} ${vorher.grund})`);
     } else v.push("die Tafel trägt das Licht-Verhältnis ohne umgebungAzimut (der Fall der Licht-Bilanz fehlt)");
-    // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): der Schuss vom 15.10. 02:14 (K63-n6, 14 s nach dem Umstellen) zeigte nur
-    // Membran und Nebel — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
+    // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
     const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
     const s6 = k6 && Object.keys(k6.mass.messung).find((s) => /^L\d$/.test(s) && !/^L3$/.test(s));

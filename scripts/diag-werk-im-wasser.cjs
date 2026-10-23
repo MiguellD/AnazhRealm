@@ -27,7 +27,7 @@
 //       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
-//       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
+//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
 //   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
 //       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl

@@ -22,9 +22,7 @@
 //     und zeichnet selbst; je Pass ordnet die Wahl (`_instanzWahlPass`, das EINE Gesetz der Pass-Wahl) genau die Karten nach
 //     vorn, die das Frustum der Pass-Kamera treffen — eine Linsen-Kamera über den 16 Karten sieht alle 16, eine in den Himmel
 //     keine, eine über der Westhälfte die 8 der Westhälfte; jede gezeichnete Instanz ist eine Karte der Fixtur, jede Marke
-//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Befund (echte GPU, Mess-Wiese): die Gruppe im
-//     @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
-//     Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
+//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";

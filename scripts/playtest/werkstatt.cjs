@@ -672,8 +672,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Methoden existieren
-    
+
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
             out.paletteInDom = !!palette;
@@ -844,8 +843,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methoden existieren
-        
+
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();

@@ -2818,8 +2818,9 @@ class AnazhRealm_kreatur_verhalten {
     // (Tod-Zensus: fern gefallen lag er auf 2 m als Fern-Guss ohne Schatten, nah gefallen trug er auf 40 m die volle Gestalt
     // — 2 400 von 5 460 Leichnam-Takten). Rückgabe: fern?
     _leibSicht(creature, distSq, inFrustum) {
-        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
         const ud = creature.userData;
+        // im Satz (`_tickTierSatz`) zeichnet der Leib nicht
+        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true && !ud._satz;
         const fern = this._gelenkStufe(creature, distSq);
         if (!inFrustum) return fern; // das Bild-Gesetz setzt DERSELBE Frame, in dem der Leib in den Blick kommt
         if (!fern && ud._tierBaum) this._fellBildschirmGesetz(creature, ud._tierBaum);
@@ -2905,6 +2906,16 @@ class AnazhRealm_kreatur_verhalten {
                     jz = j.position.z - p.z;
                 if (jx * jx + jz * jz < w2) return false;
             }
+        return this._kreaturAusserBlick(c, frustum, rand);
+    }
+
+    // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, das Auge des Satzes
+    // `_tierSatzImBild`): die Körper-Kugel samt Saum (`KREATUR_RUHE.saumM`) und Rand (`rand` je Meter Abstand zur Kamera: im
+    // Takt der Vor-Frame-Frustum und die Drehung bis zum Render, `_tickKreaturRuhe`; im Bild 0) gegen den Frustum
+    _kreaturAusserBlick(c, frustum, rand) {
+        const R = AnazhRealm.KREATUR_RUHE;
+        const u = c.userData;
+        const p = c.position;
         // die Körper-Kugel: Reichweite des Leibs waagrecht, die halbe Höhe senkrecht (je Leib und Größe einmal)
         if (!(u._ruheKugelR > 0) || u._ruheKugelS !== c.scale.x) {
             const leib = this._kreaturLeib(c, 0, this._ruheLeib || (this._ruheLeib = {}));
@@ -2916,6 +2927,30 @@ class AnazhRealm_kreatur_verhalten {
         s.center.set(p.x, p.y + u._ruheKugelH, p.z);
         const cp = this.state.camera.position;
         s.radius = u._ruheKugelR + R.saumM + s.center.distanceTo(cp) * rand;
+        return !frustum.intersectsSphere(s);
+    }
+
+    // DIE RICHTUNG DES SCHATTENS (die EINE Licht-Quelle der Kaskaden, `directionalLight`): waagrecht weg vom Licht (`x`, `z`)
+    // und die Länge je Meter Höhe des Werfers (`cot`, der Kotangens der Licht-Höhe); null ohne Licht
+    _kreaturLicht() {
+        const dl = this.state.directionalLight;
+        if (!dl) return null;
+        const v = (this._kreaturLichtV || (this._kreaturLichtV = new THREE.Vector3()))
+            .subVectors(dl.position, dl.target.position)
+            .normalize();
+        const h = Math.hypot(v.x, v.z) || 1;
+        return { x: -v.x / h, z: -v.z / h, cot: h / Math.max(v.y, 1e-3) };
+    }
+    // DER WURF AUSSER BLICK: der Leib ist außer Blick, und sein Schatten auch — die Körper-Kugel längs des Schattens (Länge
+    // Höhe × `licht.cot`, gekappt bei `KREATUR_RUHE.wurfM`), um die halbe Länge gewachsen, gegen den Frustum
+    _kreaturWurfAusserBlick(c, frustum, licht) {
+        if (!this._kreaturAusserBlick(c, frustum, 0)) return false;
+        if (!licht) return true;
+        const u = c.userData;
+        const L = Math.min(AnazhRealm.KREATUR_RUHE.wurfM, 2 * u._ruheKugelH * licht.cot);
+        const s = this._ruheKugel;
+        s.center.set(c.position.x + 0.5 * L * licht.x, c.position.y + u._ruheKugelH, c.position.z + 0.5 * L * licht.z);
+        s.radius = u._ruheKugelR + AnazhRealm.KREATUR_RUHE.saumM + 0.5 * L;
         return !frustum.intersectsSphere(s);
     }
 
@@ -2962,9 +2997,7 @@ class AnazhRealm_kreatur_verhalten {
         const pm = st.playerMesh && st.playerMesh.position;
         if (!cam || !pm) return 0;
         let fr = null;
-        let n = 0;
-        for (const c of st.creatures) {
-            if (!c || !c.userData || c.userData._ruht !== true) continue;
+        const blick = () => {
             if (!fr) {
                 cam.updateWorldMatrix(true, false);
                 const m = (this._ruheBildM || (this._ruheBildM = new THREE.Matrix4())).multiplyMatrices(
@@ -2973,7 +3006,14 @@ class AnazhRealm_kreatur_verhalten {
                 );
                 fr = (this._ruheBildF || (this._ruheBildF = new THREE.Frustum())).setFromProjectionMatrix(m);
             }
-            if (this._kreaturRuht(c, pm, fr, 0, 0)) continue;
+            return fr;
+        };
+        // das Auge des Tier-Satzes sieht mit demselben Blick (`_tierSatzImBild`)
+        if (this._tierSaetze && this._tierSaetze.size) this._tierSatzImBild(blick());
+        let n = 0;
+        for (const c of st.creatures) {
+            if (!c || !c.userData || c.userData._ruht !== true) continue;
+            if (this._kreaturRuht(c, pm, blick(), 0, 0)) continue;
             this._kreaturErwacht(c);
             n++;
             if (st.renderer && st.renderer._isHeadlessNull) continue;
@@ -3438,7 +3478,9 @@ class AnazhRealm_kreatur_verhalten {
             // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
             {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
-                if (mroles) {
+                // im Satz geht der Satz (`_tickTierSatz`): der Leib zeichnet nicht, sein Weg rückt die Phase
+                if (creature.userData._satz) this._tierSatzGang(creature, dt);
+                else if (mroles) {
                     const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? dt * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
@@ -3515,6 +3557,8 @@ class AnazhRealm_kreatur_verhalten {
             // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
         this._kreaturTaktI = null;
+        // DIE MENGE (profiband.K1): wer nicht als Leib lebt, steht und geht im Satz seiner Gestalt
+        this._tickTierSatz(playerPos);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_verhalten]);
@@ -3720,8 +3764,9 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
 // Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
 // des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
-// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
-AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens
+// `wurfM` m weit (`_kreaturWurfAusserBlick`).
+AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60, wurfM: 12 });
 // Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
 // `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.
