@@ -62,7 +62,7 @@ const server = statikServer();
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter(); ) {
+        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter();) {
             const r0 = window.anazhRealm;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
@@ -76,7 +76,7 @@ const server = statikServer();
         const r = window.anazhRealm;
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => !!(!(f && !f.ready)));
+        await window.__weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!(f && f.ready);
         for (let it = 0; it < 350; it++) {
             r.state._frameOverBudget = false;
@@ -94,17 +94,16 @@ const server = statikServer();
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
-            await window
-                .__gebautNach("noch: f.pending && f.pending.size > 0", {
-                    fertig: () => !!(!(f.pending && f.pending.size > 0)),
-                    takt: async () => {
+            await window.__gebautNach("noch: f.pending && f.pending.size > 0", {
+                fertig: () => !!!(f.pending && f.pending.size > 0),
+                takt: async () => {
                     try {
                         r._gameLoopTick && r._gameLoopTick(performance.now());
                     } catch (_e) {}
                     await sleep(50);
-                    },
-                    max: 400,
-                });
+                },
+                max: 400,
+            });
         }
 
         // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer
@@ -117,9 +116,7 @@ const server = statikServer();
         if (st.voxelChunkGrass) for (const m of st.voxelChunkGrass.values()) if (m) grassSet.add(m);
         const waterSet = new Set();
         if (st.voxelChunkWaterIso) for (const m of st.voxelChunkWaterIso.values()) if (m) waterSet.add(m);
-        const skySet = new Set(
-            [st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean)
-        );
+        const skySet = new Set([st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean));
         const islandSet = new Set((st.floatingIslands || []).filter(Boolean));
         // N7.4 — die Vor-Studio-Kulissen (Horizont-Mantel/Canopy-Shell) sind GESCHNITTEN:
         // die Verletzungs-Klasse ist per Konstruktion unmöglich, der Detektor entfällt.
@@ -212,6 +209,7 @@ const server = statikServer();
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
             // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
             "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
+            "siedlung-mauer": { b: "substanz", why: "siedlung-mauer (die Stadtmauern, ein Pool)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -342,7 +340,9 @@ const server = statikServer();
                 else if (!Object.values(soll).some((x) => x > 0))
                     f.push("kein Büschel im Blick der Linse — die Linse misst die Nah-Wiese nicht");
                 if (leer.length)
-                    f.push(`${leer.length} Senken mit Soll leer nach dem Sicht-Satz (${leer.join(", ")}) — leer bewiesen`);
+                    f.push(
+                        `${leer.length} Senken mit Soll leer nach dem Sicht-Satz (${leer.join(", ")}) — leer bewiesen`
+                    );
                 const belegt = Object.values(w.je).filter((x) => x > 0).length;
                 const n = wieseImZensus(z);
                 if (n !== belegt) f.push(`${n} von ${belegt} belegten Senken der Nah-Wiese als Studio-Emitter gezählt`);
@@ -489,7 +489,8 @@ const server = statikServer();
                     // der Siedlungs-Pool: ohne Stempel rot beim Namen, mit der Kennung des Stamms Substanz
                     poolOhne: z2.violations.some((v) => v.name === "siedlung-zaun" && /UNBEKANNTER/.test(v.label)),
                     poolMit:
-                        !!mitKennung && (z2.detail.substanz[zaunWhy] || 0) === (o.zensus.detail.substanz[zaunWhy] || 0) + 1,
+                        !!mitKennung &&
+                        (z2.detail.substanz[zaunWhy] || 0) === (o.zensus.detail.substanz[zaunWhy] || 0) + 1,
                     // N4.3 — die Tuft-Wand feuert NAMENTLICH (nicht nur der Zähler):
                     tuftWallFired: z2.violations.some((v) => /foundryGras/.test(v.label)),
                 };
@@ -595,7 +596,8 @@ const server = statikServer();
             `  Selbst-Test Siedlungs-Pool: ohne Identität → ${out.selftest.poolOhne ? "rot ✅" : "NICHT rot ❌"} · mit der Kennung des Stamms → ${out.selftest.poolMit ? "Substanz ✅" : "NICHT Substanz ❌"}`
         );
         if (!out.selftest.poolOhne) fails.push("Selbst-Test: ein Siedlungs-Pool ohne Identität blieb ungesehen");
-        if (!out.selftest.poolMit) fails.push("Selbst-Test: der Siedlungs-Pool mit der Kennung des Stamms ist keine Substanz");
+        if (!out.selftest.poolMit)
+            fails.push("Selbst-Test: der Siedlungs-Pool mit der Kennung des Stamms ist keine Substanz");
         if (!out.selftest.fired) fails.push("Selbst-Test: injizierte Fremd-Emitter nicht gefangen");
         if (!out.selftest.tuftWallFired)
             fails.push("Selbst-Test: die Tuft-Wand (Gras ohne foundryGras-Stempel) feuert nicht");
@@ -615,7 +617,9 @@ const server = statikServer();
         );
         if (!sw.ohneKey) fails.push("Selbst-Test: eine belegte Senke der Nah-Wiese ohne Leaf-Key blieb ungesehen");
         if (!sw.blind.length)
-            fails.push("Selbst-Test: leere Senken der Nah-Wiese mit Soll (blinder Sicht-Satz) röten das W-Urteil nicht");
+            fails.push(
+                "Selbst-Test: leere Senken der Nah-Wiese mit Soll (blinder Sicht-Satz) röten das W-Urteil nicht"
+            );
     }
     if (fails.length) {
         console.log(`\n❌ ASSET-INVENTUR ROT: ${fails.join(" · ")}`);
