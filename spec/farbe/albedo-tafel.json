@@ -515,6 +515,12 @@
             "id": "lack",
             "gruppe": "Metall/Lack",
             "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
+            "pflicht": true,
+            "band": [
+                0.0123,
+                0.871
+            ],
+            "bandQuelle": "Frostbite (Lagarde & de Rousiers 2014, Moving Frostbite to PBR §3.2.1): Dielektrika sRGB 30–240 (tolerant) = linear 0,0123–0,871",
             "labor": {
                 "studio": "garage",
                 "aktion": {
@@ -639,6 +645,12 @@
             "id": "haut",
             "gruppe": "Haut/Fell",
             "titel": "Mensch, die Haut im Ton Mahagoni 0x6a4230 (K57: vorher 0x5f3826) (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
+            "pflicht": true,
+            "band": [
+                0.0123,
+                0.871
+            ],
+            "bandQuelle": "Frostbite (Lagarde & de Rousiers 2014, Moving Frostbite to PBR §3.2.1): Dielektrika sRGB 30–240 (tolerant) = linear 0,0123–0,871",
             "labor": {
                 "studio": "koerperstudio",
                 "stoff": {
@@ -693,6 +705,12 @@
             "id": "fell",
             "gruppe": "Haut/Fell",
             "titel": "Wolf, das Fell (Labor: Leib und Strähnen des Wolfs, Rauheit ab 0,85 — ohne Nase, Augen, Krallen, Zähne; Welt: die Fell-Haut)",
+            "pflicht": true,
+            "band": [
+                0.0123,
+                0.871
+            ],
+            "bandQuelle": "Frostbite (Lagarde & de Rousiers 2014, Moving Frostbite to PBR §3.2.1): Dielektrika sRGB 30–240 (tolerant) = linear 0,0123–0,871",
             "labor": {
                 "studio": "tetrapoda",
                 "aktion": {

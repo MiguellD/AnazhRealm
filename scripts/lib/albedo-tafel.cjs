@@ -14,7 +14,9 @@
 //   RATSCHE  je Zeile die Abweichung des letzten Nachzugs — eine neue Messung darf nur näher an 1 (a ≤ Ratsche + Messrand);
 //            sie ist die Wand, solange W5 (das FARB-GESETZ in jedem Kern) offen ist.
 //   SOLL     a ≤ ln(1 + Toleranz) (die Toleranz steht in der Tafel, W5: „Albedo Lab ↔ Welt je Klasse innerhalb einer
-//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb), nie Teil des Ratschen-Urteils.
+//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb), nie Teil des Ratschen-Urteils; eine Zeile mit
+//            `pflicht` (material.K1) hält es selbst (ROT `soll`), ihre beiden Seiten im realen Band `band` (ROT `band`,
+//            die externe Referenz in `bandQuelle`), gemessen auf beiden Seiten echt (die Wand: `gemessen.*.echt`).
 //   KARTE    je Studio die 18-%-Karte unter dem Labor-Licht: k·L = Belichtung × Leuchtdichte (der Eingang der Tonkurve),
 //            Soll: Mittelgrau + 1 EV durch die Kurve der Labore (Tafel `belichtung.kurve`, r128 ACESFilmicToneMapping;
 //            `kartenEichung`, scripts/lib/licht-linsen.cjs — dieselbe Rechnung, mit der die Welt ihre Kurve eicht, BELICHTUNG),
@@ -143,6 +145,10 @@ function tafelPruefen(t) {
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+        if (z.pflicht !== undefined && typeof z.pflicht !== "boolean") f.push(`${z.id}: pflicht ist kein Wahrheitswert`);
+        const bandOk = (b) => Array.isArray(b) && b.length === 2 && b.every(zahl) && b[0] > 0 && b[0] < b[1] && b[1] < 1;
+        if (z.band !== undefined && !(bandOk(z.band) && typeof z.bandQuelle === "string" && z.bandQuelle))
+            f.push(`${z.id}: band ist kein [min, max] in (0, 1) mit bandQuelle (die externe Referenz, R4)`);
         // DIE STUFEN-PFLICHT (K63-n7): eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
         const wk = String((z.welt && z.welt.klasse) || "");
@@ -245,7 +251,24 @@ function tafelUrteil(t, messung) {
                     art: "ratsche",
                     text: `${z.id}: Labor/Welt ${e.verhaeltnis} (|ln| ${e.abweichung}) über der Ratsche ${z.ratsche} + Rand`,
                 });
+            // DIE PFLICHT-ZEILE (material.K1, Haut und Lack): sie hält das SOLL selbst — ihre Ratsche deckt keine Abweichung
+            if (z.pflicht === true && !e.imSoll)
+                rot.push({
+                    art: "soll",
+                    text: `${z.id}: Labor/Welt ${e.verhaeltnis} außerhalb des Solls ±${Math.round(t.toleranz * 100)} % (Pflicht-Zeile)`,
+                });
         }
+        // DAS REALE BAND (material.K1, R4: das Soll aus einer externen Referenz, `bandQuelle`): jede gemessene Seite liegt darin
+        if (Array.isArray(z.band))
+            for (const [seite, M] of [
+                ["Labor", L],
+                ["Welt", W],
+            ])
+                if (M && zahl(M.Y) && M.Y > 0 && (M.Y < z.band[0] || M.Y > z.band[1]))
+                    rot.push({
+                        art: "band",
+                        text: `${z.id}: ${seite} Y ${M.Y} außerhalb des realen Bands ${z.band[0]}–${z.band[1]} (${z.bandQuelle})`,
+                    });
         zeilen.push(e);
     }
     const karten = [];
