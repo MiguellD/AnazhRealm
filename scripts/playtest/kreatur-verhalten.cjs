@@ -411,7 +411,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "fuchs");
         const tagsWolf = r.computeCreatureCompoundTags(sprite);
         const tagsWesen = r.computeCreatureCompoundTags(wesen);
-        // Die Tiere sind BEWUSST tag-identisch (V17.16-Spawn-Wand) — die
+        // Die Tiere sind BEWUSST tag-identisch (Spawn-Wand) — die
         // Diskrimination lebt in der GRÖSSEN-Achse (6.D-Band), nicht in Tags.
         out.spriteMoreMagie = Math.abs((tagsWolf.magieleitung || 0) - (tagsWesen.magieleitung || 0)) < 0.001;
         out.wesenMoreDichte = (tagsWesen.dichte || 0) > 0;
@@ -1154,7 +1154,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // S2 — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
         // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
-        // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
+        // aber NICHT gratis — die Diskrepanz geheilt).
         r.setGameMode("frieden");
         r.state.player.inventory = new Array(27).fill(null);
         r._clearBuildMode();

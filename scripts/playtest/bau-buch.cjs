@@ -2650,7 +2650,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Default-Tools sind alle generic (domain=null)
             const tools = r.state.tools || {};
-            // Welle 9b / V17.78 — die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
+            // Welle 9b / die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
             // polier RAUS, die Werkstatt trägt jetzt die Präzision); nur `hände` bleibt domain-neutral (0.4).
             // Die Domain-Tools tragen jeweils eine domain ∈ TOOL_DOMAINS.
             const originalGenericNames = ["hände"];
@@ -3549,7 +3549,7 @@ async function checkBandV18164AutoConnect(ctx) {
         delete blu.__acRm;
 
         // (9) §7.2 — SATTEL in der Welt (Substanz-Optik am expliziten Sitz),
-        // GHOST nur in der Werkstatt (opts-bestellt, V18.153-Trennung).
+        // GHOST nur in der Werkstatt (opts-bestellt, Trennung).
         bp.connections.push({ type: "sitz", partA: 0, partB: -1, anchor: { x: 0, y: 0.175, z: 0 } });
         const world = r._buildFromBlueprint(bp, 0);
         const shop = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
@@ -3705,7 +3705,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 }
             }
 
-            // ─── (T9) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ──
+            // ─── (T9) Tag-Neutralität (Wand): bp.parts unverändert ──
             // der bpClone braucht _isGrown + _grownSpecies für faire
             // SPECIES_TAG_VARIATION-Anwendung (sonst Variation-an vs aus).
             const tagsSkel = r.computeCompoundTags(bp);

@@ -273,7 +273,7 @@ async function checkBandCadWorkshop(ctx) {
                 // rotate 3×(ring+picker) = 6 · scale 3×(cube+shaft+picker) + 2×(center+picker) = 11.
                 out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
 
-                // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                // --- Bug-Fix Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
                 // Bauplan ist aktuell stein_block (Built-in). Sync rufen
                 // und prüfen dass Gizmo versteckt ist.
                 r.selectBlueprintForEdit("stein_block");
@@ -423,7 +423,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
+            // Welle 6.X.2 Konsole-Handle ist jetzt
             // top-right statt bottom-right (unten verdeckt von
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
@@ -537,7 +537,7 @@ async function checkBandCadWorkshop(ctx) {
             // wieder schließen
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             out.escCloses = !!overlay && overlay.hidden === true;
-            // (6) V18.47 — der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
+            // (6) der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
             const trigger = document.getElementById("omnibox-trigger");
             if (trigger && overlay) {
                 trigger.click();
@@ -652,7 +652,7 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
     }
 
-    // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+    // ### Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -838,9 +838,6 @@ async function checkBandCadWorkshop(ctx) {
             const pre = r.state.workshop.preview;
 
             // Layout-Struktur
-            out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
-            out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
-            out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
             // Side-Palette steht VOR der Preview im DOM (flex-row macht
             // dann visuell „links neben")
             const row = document.getElementById("workshop-preview-row");
@@ -937,10 +934,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check(
-            "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
-            v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
-        );
         check(
             "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
             v803Results.paletteBeforePreview

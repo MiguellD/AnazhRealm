@@ -739,7 +739,7 @@ async function checkBandWFFluss(ctx) {
         const out = {};
         // (1) ein trockener Punkt gibt durch den EINEN Leser -Infinity durch (kein Wasser erfunden; die gefallene Lauf-Fläche
         // trägt gate:altlasten). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
-        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global).
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (global).
         const hW = r._hydroFor(0, 0);
         let dryW = null;
         if (hW && hW.ready && hW.water && hW.water.waterKind) {

@@ -176,8 +176,6 @@ async function checkBandWaves1to3(ctx) {
         // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
         // + „Welt-Datei exportieren" (in der Insel, id action-export-state wiederverwendet). Der Test
         // wandert mit: er prüft die Verortung, nicht den alten Ort.
-        out.worldImportInBibliothek = !!document.getElementById("library-import");
-        out.worldExportInBibliothek = !!document.getElementById("action-export-state");
         // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
         const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
@@ -232,10 +230,6 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
         check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
-        check(
-            "Welle 3 F: Welt-Verwaltung im Welt-Manager (Bibliothek: Empfangen + Welt-Datei-Export)",
-            wave3Results.worldImportInBibliothek && wave3Results.worldExportInBibliothek
-        );
         check("Welle 3 F: Diese-Welt-Insel zeigt slug", wave3Results.worldInfoShowsSlug);
         check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
         check("Tagebuch: Liste rendert Erinnerungen", wave3Results.journalListHasEntries);

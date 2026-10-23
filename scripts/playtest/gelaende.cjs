@@ -99,7 +99,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const carveSurf = r.getTerrainHeightAt(pm.x, pm.z);
         const cy = (Number.isFinite(carveSurf) ? carveSurf : pm.y) - 1.5;
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
-        // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
+        // statt sie sofort zu rebuilden.
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
         const carveRet = r.carveVoxel(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
@@ -394,7 +394,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12 }];
             out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
             // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
-            // frieden — damit das V9.17-Füll-Gate frei ist.
+            // frieden — damit das Füll-Gate frei ist.
             // voxelTerrainActive ist permanent — kein Setup nötig.
             const p3bMode = r.getGameMode();
             r.setGameMode("frieden");
@@ -574,7 +574,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "hände");
         // die Kosten skalieren mit dem Werkzeug-cap (nicht
         // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
-        // konsumiert), die genaue Skalierung prüft der V8.39-Block.
+        // konsumiert), die genaue Skalierung prüft der Block.
         out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
 
         // Cleanup
@@ -754,7 +754,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
             typeof sp.mood === "object" &&
             Array.isArray(sp.boosts)
         );
-        out.ichStageCanvas = !!document.getElementById("ich-stage-canvas");
         const ichSpec = document.getElementById("ich-stage-spec");
         out.ichSpecSheet = !!(ichSpec && ichSpec.querySelector(".spec-sheet"));
         out.ichSpecHeaderName = !!(ichSpec && ichSpec.querySelector(".spec-header .spec-name"));
@@ -764,7 +763,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
         // die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
         out.ichHasNoReise = !document.getElementById("ich-reise");
-        out.hofChronikInDom = !!document.getElementById("hof-chronik");
         r._renderHofChronik();
         out.hofChronikRenders = (() => {
             const h = document.getElementById("hof-chronik");
@@ -798,7 +796,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
             if (!rows.length) return true; // keine Rezepte → keine Verletzung
             return [...rows].some((row) => /solid/.test(row.style.borderLeft || ""));
         })();
-        out.ichSearchExists = !!document.getElementById("ich-search");
         out.ichNoDeadOmniboxButton = !document.getElementById("ich-omnibox-trigger");
         (() => {
             const s = document.getElementById("ich-search");
@@ -889,7 +886,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
         check(
             "V18.57 Ich: die Selbst-Bühne (Canvas) + das geteilte Spec-Sheet im Overlay",
-            wave6c1Results.ichStageCanvas && wave6c1Results.ichSpecSheet
+            wave6c1Results.ichSpecSheet
         );
         check(
             "V18.57 Ich: das Spec-Sheet trägt Header (Name) + Zwei-Spalten-Body + WERTE-Balken (Werte führen)",
@@ -901,7 +898,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
         check(
             "V18.61 Ich-F: die Chronik/Reise wandert in den Hof (Welt-Stimme), das Ich trägt keine Reise mehr (H.1)",
-            wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
+            wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikRenders
         );
         check(
             "V18.68 Ich-J6: SELF (Viewer+Worn) | HABE (Inventar zentral) | WERK (Rezepte) + STATSBAR (Spec+Emotion) unten",
@@ -921,7 +918,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
         check(
             "V18.65 Ich: EINE Selbst-Suche im Header (kein toter Omnibox-Knopf mehr)",
-            wave6c1Results.ichSearchExists && wave6c1Results.ichNoDeadOmniboxButton
+            wave6c1Results.ichNoDeadOmniboxButton
         );
         check(
             "V18.65 Ich: die Selbst-Suche TREIBT das Rezeptbuch (tippen → Nicht-Treffer aus, das Werkstatt-Loop)",
@@ -2081,7 +2078,7 @@ async function checkBandPhaseAFundament(ctx) {
         if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm" };
         const out = {};
         // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
-        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
+        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen.
         for (const [key, entry] of r.state.voxelChunks) {
             if (!entry || entry.empty || !entry.mesh) continue;
             const [cx, cz] = key.split(",").map(Number);

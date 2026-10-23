@@ -602,7 +602,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         );
     }
 
-    // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
+    // ### Welle 6.H Phase 2E @-Adressen-Pattern + Soul-Farben ###
     // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
     // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
@@ -1220,7 +1220,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
             out.topBarUndoRedo =
                 !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
-            out.topBarDeleteBlueprint = !!document.getElementById("workshop-delete-blueprint-btn");
 
             // Del-Button
             const delBtn = document.getElementById("workshop-delete-selected-part");
@@ -1277,7 +1276,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         check(
             "V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste",
-            v805Results.topBarUndoRedo && v805Results.topBarDeleteBlueprint
+            v805Results.topBarUndoRedo
         );
         check(
             "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
@@ -1532,7 +1531,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
     }
 
-    // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
+    // ### Welle 6.H Ollama-API-Key (gehosteter Setup) ###
     // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
     // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {

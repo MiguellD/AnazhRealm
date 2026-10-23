@@ -835,7 +835,6 @@ async function checkBandRing6Workshop(ctx) {
         // UI vorhanden
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
-        out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
         // Ein Eintrag je SICHTBAREM Bauplan — derselbe Filter wie `_workshopRenderBlueprintList`: ohne
         // `grown_*`-Streaming-Varianten, ohne `(fels|kristall|glut)_var1+` (var0 vertritt die Sorte), ohne
@@ -955,10 +954,6 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
-        check(
-            "Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
-            ring66Results.workshopStatsPanelInDom
-        );
         check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
         check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
@@ -1498,7 +1493,7 @@ async function checkBandWHWald(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) V18.257 — die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
+        // (1) die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
         const refTbl = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
@@ -1607,7 +1602,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         }
 
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
-        // und das Entry trägt blockerAABBs (V13.10-Solidität).
+        // und das Entry trägt blockerAABBs (Solidität).
         const before = r.state.architectures.length;
         try {
             const e = r.spawnArchitecture("stamm_gefallen", { x: 1234, y: 50, z: 1234 }, { silent: true });

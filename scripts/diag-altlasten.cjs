@@ -1623,7 +1623,7 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
 }
 
 // DIE KARTEN-WAND (W6): die Karten-Methoden malen nichts im Haupt-Thread — keine CanvasTexture, kein Canvas, kein
-// getContext/putImageData (bis V18.528: je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
+// getContext/putImageData (einst je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
 // backt im Welt-Renderer, die GPU legt sie ab (`_karteWeltBacken`, `_karteAblage`, S2).
 const KARTEN_METHODEN = [
     "_impostorAtlas",

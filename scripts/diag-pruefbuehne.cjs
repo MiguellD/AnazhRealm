@@ -848,7 +848,7 @@ const S0_GESTALT_INSTALL = () => {
 };
 const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
-// DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
+// DER FARBTON DES FEUERS (K11b, Auge „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
 // ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 28–45°. Die Sättigung (HSV, Soll
 // der Karte ≤ 0,75) ist eine WAND: das Auge der Nacht sieht mesopisch
 // (`NACHT_AUGE`, die Sättigung der Post-Kette folgt der Leuchtdichte, CIE 191:2010). Der Selbsttest `tag` gibt dem Schuss das

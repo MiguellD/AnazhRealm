@@ -150,7 +150,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
                 st.scatterRegions = new Map();
                 // N7.3 — UNIT-RICHTER: das Nach-Dünnen ist im Studio-Regime BY DESIGN ein No-op
                 // (thinStudioNoop oben) → die lebende Regler-Mechanik prüft dieser Block unter
-                // LOKALEM Hook (V18.423-Form: sichern + wiederherstellen im finally).
+                // LOKALEM Hook (Form: sichern + wiederherstellen im finally).
                 const _prevThinHook = window.__anazhGateNoFoundry;
                 window.__anazhGateNoFoundry = true;
                 try {
@@ -589,7 +589,7 @@ async function checkBandV18197GammaMStrata(ctx) {
 
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
-        // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
+        // (Achse-Argmax), wie vor bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
         // nicht für jede Höhe (≈ 1 % der Höhen läge 1 ulp über D → „stein").
@@ -936,7 +936,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test");
         out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
         out.richPartsCount = richParts ? richParts.length : 0;
-        // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
+        // Tag-Neutralität: jedes Part ist holz oder laub (Wand).
         out.richAllHolzOrLaub =
             Array.isArray(richParts) && richParts.every((p) => p.material === "holz" || p.material === "laub");
         // FOLIAGE AT TIPS: ≥ 80 % der laub-Parts sind vom Stamm-Sockel weg (|xz| > 0.4 oder y > 1.5); nicht
@@ -1170,7 +1170,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         if (mat && mat.holz && mat.laub) {
             out.holzColor = mat.holz.color;
             out.laubColor = mat.laub.color;
-            // dunkler als V18.214: holz < 0x80, laub < 0x80 in jedem Kanal
+            // dunkler als holz < 0x80, laub < 0x80 in jedem Kanal
             const holzR = (mat.holz.color >> 16) & 0xff;
             const holzG = (mat.holz.color >> 8) & 0xff;
             out.holzIsErdig = holzR < 0x80 && holzG < 0x60; // erdiges Braun
@@ -1283,7 +1283,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
                 const parts = r._growTreeBlueprintRich("baum_karst", "v216-karst-1");
                 out.karstPartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.karstPartsValid = out.karstPartsCount >= 30;
-                // V17.16-VARIATIONS-Wand passt: dichte+0.10 deklariert → spawnable
+                // VARIATIONS-Wand passt: dichte+0.10 deklariert → spawnable
                 out.karstAllHolzOrLaub =
                     Array.isArray(parts) && parts.every((p) => p.material === "holz" || p.material === "laub");
             }
@@ -1313,7 +1313,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             r._lastTreeSkeleton = origLast;
         }
 
-        // ─── (D) Wachstum als spawnable Bauplan (V17.16-Wand passiert) ─
+        // ─── (D) Wachstum als spawnable Bauplan (Wand passiert) ─
         try {
             const karstKey = r._growTreeBlueprintForSpawn("baum_karst", "v216-karst-spawn-1");
             out.karstSpawnable = !!karstKey;
@@ -1365,7 +1365,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check(`V18.216 (C5) Farn ≥3 foliage-anchors (gemessen ${res.farnAnchors})`, res.farnHasAnchors === true);
     check(`V18.216 (C6) Blume-Grow ≥4 parts (gemessen ${res.blumePartsCount})`, res.blumePartsValid === true);
 
-    // (D) V17.16-VARIATIONS-Wand passiert
+    // (D) VARIATIONS-Wand passiert
     check(
         "V18.216 (D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)",
         res.karstSpawnable === true
@@ -1712,7 +1712,7 @@ async function checkBandV18218LODStufen(ctx) {
             }
         }
 
-        // ─── (F) V17.16-Tag-Wand: LOD0/1/2 share compoundTags ────────
+        // ─── (F) Tag-Wand: LOD0/1/2 share compoundTags ────────
         // N7.3 — UNIT-RICHTER (wie Block C): die Grammatik-LOD-Baupläne unter lokalem Hook.
         if (r._buildVariantLODs) {
             window.__withNoFoundry(() => {
@@ -1785,7 +1785,7 @@ async function checkBandV18218LODStufen(ctx) {
         res.lod2UnderCap === true
     );
 
-    // (F) V17.16-Tag-Wand
+    // (F) Tag-Wand
     check("V18.218 (F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
     check("V18.218 (F2) LOD0 + LOD2 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD02 === true);
 }
@@ -2001,7 +2001,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
                 out.cellHasVariant = Number.isFinite(c0.variantIndex);
                 out.cellHasSlots = Array.isArray(c0.slots) && c0.slots.length > 0;
-                // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt) —
+                // Lookup-Buffer ist jetzt LEBENDIG (Passagier geheilt) —
                 // an einer PROMOTABLE (Baum-)Cell prüfen (Understory hat keinen
                 // Lookup-Eintrag).
                 const tc = region.cells.find((c) => c.promotable && c.slots);

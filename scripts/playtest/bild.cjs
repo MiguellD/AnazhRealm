@@ -657,7 +657,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
     }
 
-    // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
+    // ### 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
     // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
     // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
     const v828Results = await safeEvaluate(page, () => {
@@ -774,7 +774,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
         const _phantomMat = r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 });
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
-        // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
+        // (6) kein still gefangener Node-Fehler (Marker-Disziplin).
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
         out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
         out.aerialOutputError = _aerBrueche[0] || null;
@@ -968,7 +968,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
-        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
+        // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
         // oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben — Gras und Streu darauf steckten im Boden. DIE
         // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
@@ -1284,7 +1284,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             r._applyDayNightToScene();
             const tgt = r.state.directionalLight.target.position;
             // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
-            // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
+            // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der Light-
             // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
             out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
             // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
@@ -1628,7 +1628,7 @@ async function checkBandV18164WarumLicht(ctx) {
         const ruf = r._blueprintConjunctionCall(wagenOhneSitz);
         out.tatHinweis = !!ruf && /Sitz-Anker/.test(ruf.text) && ruf.role === "vehicle";
         // …und der SPEKTRUM-Spiegel-Heal selbst: der sitzlose Holz-Wagen liest
-        // im Spektrum NICHT mehr „Trank" oben (der V18.162-Heal erreicht jetzt
+        // im Spektrum NICHT mehr „Trank" oben (der Heal erreicht jetzt
         // BEIDE Register — eine Wahrheit, alle Leser).
         const spec2 = r._blueprintRoleSpectrum(wagenOhneSitz);
         out.spektrumKeinTrank = spec2[0].role !== "consumable";
@@ -1655,7 +1655,7 @@ async function checkBandV18164WarumLicht(ctx) {
         out.restoreLiest = r.state.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
         r.setMicroStrength(a0.microStrength ?? r.constructor.AERIAL.microStrength);
 
-        // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
+        // (6) §6.5 → KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
         out.ladeNebelKonsum = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();

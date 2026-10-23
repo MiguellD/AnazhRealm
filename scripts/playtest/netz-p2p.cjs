@@ -9,7 +9,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
+    // ### Voxel modify_terrain stirbt, voxel_carve/_fill leben ###
     // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
@@ -1891,7 +1891,7 @@ async function checkBandLateMultiUser(ctx) {
         );
     }
 
-    // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
+    // ### Ring 11 LAN-Fähigkeit + Sync-Korrektheit ###
     // 1. signaling-server bindet 0.0.0.0 (LAN)  2. CSP ws:/wss: (Custom-IPs)  3. Raum-Override
     // (state.p2p.roomOverride)  4. spawn_*-Chat-Patterns embedden Position+Seed → der Empfänger spawnt
     // am SENDER-Ort  5. Non-broadcastable-Filter: player_*-Ops bleiben lokal.
@@ -2204,7 +2204,7 @@ async function checkBandLateMultiUser(ctx) {
         // 9. UI-Elemente vorhanden
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
-        // V9.35: die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
+        // die Heightfield-Opt-out-Checkbox ist GELÖSCHT
         // (Voxel permanent + irreversibel — Toggle-Tod).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
 

@@ -1121,7 +1121,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.hpOrderBaerWolfFuchs = baerStats.hpMax > wolfStats.hpMax && wolfStats.hpMax > fuchsStats.hpMax;
         out.speedOrderFuchsWolfBaer = fuchsStats.speed > wolfStats.speed && wolfStats.speed > baerStats.speed;
         // Wolf trägt holz-Glieder (magieleitung 0.3) → mehr Mana-Kanal als der
-        // fleisch/knochen-Mensch (die V18.196-Emergenz, lebend weitergeprobt).
+        // fleisch/knochen-Mensch (die Emergenz, lebend weitergeprobt).
         out.wolfHasMoreManaThanHuman = (wolfStats.manaMax || 0) > (humanStats.manaMax || 0);
         // Der Mensch (fleisch/knochen, GEMESSEN 134 HP) trägt sein EIGENES
         // Profil — distinkt von jedem Tier (die Substanz unterscheidet ihn).
@@ -1171,7 +1171,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-        // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
+        // UI im DOM (Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
         try {

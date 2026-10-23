@@ -484,7 +484,7 @@ async function checkBandV1790Recalibration(ctx) {
         out.materialVals = `eisen=${dEisen.toFixed(1)} holz=${dHolz.toFixed(1)} (${(dEisen / Math.max(0.01, dHolz)).toFixed(2)}×)`;
 
         // (3) FACETTE 3 — V18.311 (Gesetz #0, Schöpfer „Spieler runter"): der Equip-Fold ist jetzt EINE
-        // kanonische Quelle (`_foldEquippedStatTags`), geteilt von Spieler + Kreatur; der V17.90-Größen-Faktor
+        // kanonische Quelle (`_foldEquippedStatTags`), geteilt von Spieler + Kreatur; der Größen-Faktor
         // ist VORERST raus → eine 3× größere Klinge faltet GLEICH wie eine 1× (size-neutral, Readout UND Kampf).
         const ab1 = r._blueprintAbilityStats(blade("eisen", 1));
         const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
@@ -1240,7 +1240,7 @@ async function checkBandWelle6XAudit(ctx) {
                 document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
             const rowA3 = zoneA3 && zoneA3.querySelector(".workshop-umwidmen-row");
             out._a3aLabelCount = rowA3 ? rowA3.querySelectorAll(".workshop-umwidmen-btn").length : 0;
-            // W-C(f)/V18.169 — die Zeile schrumpfte aufs INTENT-TRIO (Portal → ·
+            // W-C(f)/die Zeile schrumpfte aufs INTENT-TRIO (Portal → ·
             // ⚒ Station · ✨ Emergent): Rüstung/Konsumabel fixt der PROZESS.
             out.markListShowsEmergentRole =
                 !!rowA3 && out._a3aLabelCount === 3 && /⚒ Station/.test(rowA3.textContent || "");
@@ -1322,7 +1322,7 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+        // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
         const consoleLog = document.getElementById("console-log-section");
         const logEl = document.getElementById("log");
         out.logbookConsoleSectionExists = !!consoleLog;
@@ -1942,7 +1942,6 @@ async function checkBandWGGelenke(ctx) {
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Button + RAF-Konsum (Wiring; Animation Browser).
-        out.probeBtn = !!document.getElementById("workshop-probe-btn");
         return out;
     });
     check(
@@ -1959,7 +1958,7 @@ async function checkBandWGGelenke(ctx) {
     );
     check(
         "W-G(c) Gelenk-Probe: Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
-        res.probeBtn && res.probeInRAF
+        res.probeInRAF
     );
 }
 

@@ -726,10 +726,9 @@ async function checkBandRing9to10(ctx) {
 
         // Dialog + Stammbaum-DOM
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
-        // Bib (V18.71): der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
-        // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
+        // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
+        // in einer eigenen #world-lineage-section (die wanderte ins Eiland — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
-        out.lineageDivInDom = !!document.getElementById("world-lineage");
         out.fusionStrategiesArray =
             Array.isArray(AnazhRealm.FUSION_STRATEGIES) && AnazhRealm.FUSION_STRATEGIES.length === 3;
 
@@ -2161,7 +2160,7 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND (V18.151, Karte speicher-journal): wirft localStorage, bricht die Sicherung nicht — die Welt liegt auf der
+// DIE QUOTA-WAND (Karte speicher-journal): wirft localStorage, bricht die Sicherung nicht — die Welt liegt auf der
 // Platte des Speicher-Fadens (der localStorage trägt nur Index und Zeiger; den Rundlauf fährt gate:persistence J und T).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;

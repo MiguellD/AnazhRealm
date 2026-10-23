@@ -1236,7 +1236,7 @@ function main() {
             `)` +
             (pflicht ? "" : pw.errs.length ? ` — noch keine Pflicht (render-config ohne tree[0].lagen): ${pw.errs.join("; ")}` : "")
     );
-    // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
+    // Die Zeile nahWiese (Pflicht seit der Integration: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
         errs.push(`P: der Zensus ${zs.ort} trägt keine Zeile nahWiese (je Gestalt × Stufe die gelegten Büschel)`);

@@ -175,7 +175,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
-        // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
+        // UI: Signatur-Sektion in der MACH-ZONE (Step 1, die Signatur wanderte aus dem
         // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN).
         r.selectBlueprintForEdit("_w13p2");
         const machZone =
@@ -522,7 +522,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedTrends = !!document.querySelector("#feed-trends .feed-trend-row");
         r._setFeedRating("world:fluid", 5); // Toggle zurück → sauber
         r._renderFeedTrends();
-        // Bib-D / V18.65: die Suche TREIBT den Feed (KONSUM auf Feature-Ebene — kein toter Knopf).
+        // Bib-D / die Suche TREIBT den Feed (KONSUM auf Feature-Ebene — kein toter Knopf).
         const libSearch = document.getElementById("library-search");
         if (libSearch) {
             libSearch.value = "strom";
