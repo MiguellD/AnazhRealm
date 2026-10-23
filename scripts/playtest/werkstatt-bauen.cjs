@@ -614,7 +614,6 @@ async function checkBandWelle6Keybindings(ctx) {
         const out = {};
         // Statische Konstante
         out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
-        // Methoden-Existenz
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
@@ -866,8 +865,6 @@ async function checkBandWelle6Keybindings(ctx) {
         // State init
         out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
         out.keybindRebindInitNull = r.state.keybindRebind === null;
-
-        // Methoden-Existenz
 
         // setKeybinding ändert state
         const before = r.state.keybindings.confirmBuild;
@@ -1289,15 +1286,6 @@ async function checkBandWelle6XAudit(ctx) {
             out.statsShowsArmorRow = false;
         }
 
-        // --- A4 (SYNERGIE-WELLE gewandert): die Avatar-Aura ist GANZ gefallen —
-        // kein Tick, keine Lampe, keine Haut-Shells; der Kamera-Wechsel bleibt aura-frei.
-        r.setCameraMode("first");
-        out.auraHiddenInFirst = !r.state.playerAuraGlow && typeof r.tickPlayerAura !== "function";
-        r.setCameraMode("third");
-        out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
-        r.setCameraMode("first");
-        out.auraPositionStillTracked = true; // gegenstandslos — nichts folgt mehr
-
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
         // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
@@ -1332,18 +1320,6 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): die Lampe ist geschnitten — kein Sprite in 1st",
-            wave6x1Results.auraHiddenInFirst
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
-            wave6x1Results.auraVisibleInThird
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
-            wave6x1Results.auraPositionStillTracked
         );
     } else {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");

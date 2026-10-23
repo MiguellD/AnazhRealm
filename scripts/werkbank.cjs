@@ -949,13 +949,14 @@ async function starte() {
             fehler.push(("[konsole] " + m.text()).split("\n").slice(0, 3).join(" | ").slice(0, 400));
         if (fehler.length > 200) fehler.splice(0, fehler.length - 200);
     });
-    const lade = async () => {
+    const lade = async (nav) => {
         boot.ladungen++;
         const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
-        await page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await (nav ||
+            page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
+                waitUntil: "domcontentloaded",
+                timeout: 60000,
+            }));
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(LINSEN_INSTALL);
         await page.evaluate(ZAEHLER_INSTALL);
@@ -972,22 +973,7 @@ async function starte() {
         await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(ZZ.ZIEL_INSTALL);
         await page.evaluate(HL.HAENGER_INSTALL);
-        await page.evaluate(async () => {
-            const dl = performance.now() + 300000;
-            while (
-                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-                performance.now() < dl
-            )
-                await new Promise((r) => setTimeout(r, 200));
-        });
-        await page.evaluate(async () => {
-            const dl = performance.now() + 60000;
-            while (
-                !(window.anazhRealm && window.anazhRealm.state.renderer && window.anazhRealm.state.renderer.backend) &&
-                performance.now() < dl
-            )
-                await new Promise((r) => setTimeout(r, 200));
-        });
+        await page.evaluate(() => window.__weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
@@ -1005,8 +991,8 @@ async function starte() {
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
-    // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
-    // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
+    // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Neuladen). Steht die Seite schon in ihr
+    // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
         const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
         const slug = json.worldMeta && json.worldMeta.slug;
@@ -1017,16 +1003,14 @@ async function starte() {
                 return !!(m && m.slug === s);
             }, slug);
         if (await steht()) return { slug, neu: false };
+        const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
         const res = await page.evaluate((j) => {
-            const r = window.anazhRealm;
-            const x = r.importWorldBeside(j);
-            if (!x || !x.ok) return { fehler: JSON.stringify(x).slice(0, 200) };
-            r.activeWorldSet(x.worldId);
-            return { id: x.worldId };
+            const x = window.anazhRealm.importWorldBeside(j, { reload: true });
+            return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade();
+        await lade(nav);
         await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
@@ -1115,29 +1099,34 @@ async function starte() {
                 }
                 if (o && o.kamera) r.setCameraMode(o.kamera);
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-                // eingeschwungen, wenn DIE WELT STEHT (A9, `_weltSteht`: nichts baut, keine Regung seit WELT_STEHT_TAKTE Takten)
-                // und der Ring an seinem Ziel gebaut ist — in Takten gezählt, die Frist ist nur die Wand. Der Ort schwingt unter
-                // REGLER VOLL ein (die Bedingung der Messung, E): der Ring wächst bis an sein Ziel, nie nach der Last der Nachbarn
-                // auf der geteilten GPU (A9, Mess-Wiese: Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
+                // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
+                // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
+                // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
+                // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
                 const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
                 const decke = r.state.perfTargetMs;
                 r.state.perfTargetMs = 1000;
-                let takte = 0;
+                const takt = async () => {
+                    if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
+                    try {
+                        window.__buehne();
+                        window.__ortSchritt();
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await sleep(50);
+                };
+                let takte;
                 try {
-                    for (const dl = performance.now() + 150000; performance.now() < dl; takte++) {
-                        try {
-                            window.__buehne();
-                            window.__ortSchritt();
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {}
-                        if (r._weltSteht() && r._builtRingRadius() >= ziel) break;
-                        await sleep(50);
-                    }
+                    takte = await window.__gebautNach(`Messort ${o ? o.ort : `${x} ${z}`}: der Ring ${ziel}`, {
+                        fertig: () => r._builtRingRadius() >= ziel,
+                        takt,
+                        max: 1800,
+                        warum: () => `der Ring steht bei ${r._builtRingRadius()}`,
+                    });
+                    takte += await window.__weltStehtNach(takt);
                 } finally {
                     r.state.perfTargetMs = decke;
                 }
-                if (!(r._builtRingRadius() >= ziel))
-                    throw new Error(`Messort ${o ? o.ort : `${x} ${z}`}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${ziel}`);
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
                 const q = r._autoSettlementQueue;
@@ -1362,7 +1351,7 @@ async function starte() {
                         return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
-                        r._tickBauSatz();
+                        r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
                 };
@@ -1837,7 +1826,7 @@ async function starte() {
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
-                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei" });
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
                     await page.evaluate(() => {
                         const r = window.anazhRealm;
                         r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
@@ -2143,7 +2132,7 @@ async function starte() {
                 if (req.url === "/albedo" && b.nahFern) {
                     // DIE ALBEDO NAH GEGEN FERN: Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
                     // Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
-                    // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
+                    // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie am Deckel nicht, misst die Linse
                     // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
                     // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
@@ -2151,7 +2140,6 @@ async function starte() {
                         const r = window.anazhRealm;
                         const st = r.state;
                         const t0 = performance.now();
-                        const frist = t0 + 120000;
                         const quadrat = () => {
                             const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
                             const span = r._voxelChunkConfig().span;
@@ -2200,13 +2188,15 @@ async function starte() {
                                 karte: k ? (karteHier(k) ? 1 : 0) : null,
                             };
                         };
-                        while (performance.now() < frist) {
+                        const steht = () => {
                             if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
                             if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
                             const k = st.fernKroneNah;
                             const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
                             q = quadrat();
-                            if (q.fehlt.length === 0 && !baut && (!k || karteHier(k))) return zustand(true);
+                            return q.fehlt.length === 0 && !baut && (!k || karteHier(k));
+                        };
+                        const takt = async () => {
                             try {
                                 if (window.__buehne) window.__buehne();
                                 if (window.__ortSchritt) window.__ortSchritt();
@@ -2214,9 +2204,11 @@ async function starte() {
                             } catch (_e) {}
                             takte++;
                             await new Promise((w) => setTimeout(w, 50));
-                        }
-                        q = quadrat();
-                        return zustand(false);
+                        };
+                        return window.__gebautNach("das Quadrat der Linse", { fertig: steht, takt, max: 1800 }).then(
+                            () => zustand(true),
+                            () => (steht(), zustand(false))
+                        );
                     });
                     // DER UPLOAD IM HAUPTBILD, VOR der Linse in der stehenden Welt: die Linse schießt in
                     // einem eigenen Pass — dort baut jedes Render-Objekt neu und lädt jede Textur frisch, das Hauptbild nicht
@@ -2244,15 +2236,15 @@ async function starte() {
                             gezeichnet++;
                             return altRender.apply(this, a);
                         };
+                        // je Gang die Abgabe der GPU: danach ist die Leine frei, der nächste Takt zeichnet
                         const bilder = async (n) => {
                             const ziel = gezeichnet + n;
-                            const frist = performance.now() + 30000;
-                            while (gezeichnet < ziel && performance.now() < frist) {
+                            for (const weiter = window.__deckel("die Bilder der Linse", 120, false); gezeichnet < ziel && weiter(); ) {
                                 try {
                                     if (window.__buehne) window.__buehne();
                                     r._gameLoopTick(performance.now());
                                 } catch (_e) {}
-                                await new Promise((w) => setTimeout(w, 50));
+                                await rend.backend.device.queue.onSubmittedWorkDone();
                             }
                             return n - Math.max(0, ziel - gezeichnet);
                         };
@@ -3835,7 +3827,7 @@ async function starte() {
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
             const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
-            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle") });
+            const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), posten: opt("--posten") });
             console.log(w.tabelle);
             if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
             process.exit(w.befunde.length ? 1 : 0);
@@ -3849,6 +3841,7 @@ async function starte() {
             wetter: opt("--wetter"),
             wandern: opt("--wandern", spitze ? "bahn" : "aus"),
             schwelle: opt("--schwelle", 100),
+            posten: opt("--posten"),
             probe: argv.includes("--probe"),
             json: opt("--json"),
         });

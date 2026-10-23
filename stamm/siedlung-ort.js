@@ -1626,31 +1626,6 @@ class AnazhRealm_siedlung_ort {
         }
     }
 
-    // DIE NORMALE IN EINER ZAHL (oktaedrisch, je Achse 12 Bit — eine ganze Zahl unter 2^24, in f32 exakt): der Gang-Puffer
-    // trägt Lage und Normale in EINEM Texel; `_oktaAus` ist die Umkehrung auf der CPU, `_bewohnerGangKnoten` die im Shader.
-    static _oktaIn(x, y, z) {
-        const l = Math.abs(x) + Math.abs(y) + Math.abs(z) || 1;
-        let u = x / l;
-        let v = y / l;
-        if (z / l < 0) {
-            const u0 = u;
-            u = (1 - Math.abs(v)) * (u0 >= 0 ? 1 : -1);
-            v = (1 - Math.abs(u0)) * (v >= 0 ? 1 : -1);
-        }
-        return Math.round((u * 0.5 + 0.5) * 4095) * 4096 + Math.round((v * 0.5 + 0.5) * 4095);
-    }
-    static _oktaAus(w) {
-        const qu = Math.floor(w / 4096);
-        const u = (qu / 4095) * 2 - 1;
-        const v = ((w - qu * 4096) / 4095) * 2 - 1;
-        const z = 1 - Math.abs(u) - Math.abs(v);
-        const t = Math.max(-z, 0);
-        const x = u - (u >= 0 ? t : -t);
-        const y = v - (v >= 0 ? t : -t);
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
-    }
-
     // DER AKT HEBT ÜBER DEN ZUG (siedlung.K5): die Slots des Plans v2 in seiner Folge (vom Platz nach außen), je Schritt des
     // Zugs (`_dorfZugSchritt`) ein Bild — das erste zeigt das erste Haus. Bis K5
     // hob der Akt alle Slots in EINER Aufgabe (nH 120: 123 Häuser, 410 ms bis zum ersten Bild). Rückgabe: Promise der Bilanz.

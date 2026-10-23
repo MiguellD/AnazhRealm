@@ -50,8 +50,10 @@ class AnazhRealm_siedlung_bewohner {
     // zweiter Stand vor der eigenen Tür) · markt der Stand auf dem Platz · feld ein Stand im nächsten Acker des Plans · hof
     // der Stand vor der Tür. Jeder Stand ist frei: kein Grundriss eines Baus (`_imGrundriss`, mit dem Saum des Leibs), Land
     // (`_landAt`) und der persönliche Raum (`BEWOHNER.raumM`) zu jedem anderen; wer im Ring um die Tür keinen findet, steht
-    // weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`).
-    _bewohnerListe(S) {
+    // weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`). IN RATEN (Lehre 14,
+    // stadt-takt: die Stadt legte ihre Liste in EINEM Takt, ~16 ms): nach jedem Haus gibt die Liste den Takt zurück
+    // (`yield`), der Bewohner-Takt legt höchstens `BEWOHNER.haeuserJeTakt` Häuser je Takt.
+    *_bewohnerListe(S) {
         const FC = globalThis.__fachwerkCore;
         if (!FC || typeof FC.leuteVon !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:leuteVon");
         const KC = window.__koerperCore;
@@ -167,13 +169,14 @@ class AnazhRealm_siedlung_bewohner {
             return null;
         };
         const liste = [];
-        plan.slots.forEach((sl, si) => {
+        for (const [si, sl] of plan.slots.entries()) {
+            yield;
             const wx = S.ox + sl.x;
             const wz = S.oz + sl.z;
             const haus = steht.get(`${sl.seed >>> 0}@${Math.round(wx)},${Math.round(wz)}`);
-            if (!haus) return; // kein Haus, keine Leute
+            if (!haus) continue; // kein Haus, keine Leute
             const n = FC.leuteVon(sl.ov);
-            if (!(n > 0)) return;
+            if (!(n > 0)) continue;
             const rolle = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
             const c = Math.cos(sl.phi || 0);
             const s = Math.sin(sl.phi || 0);
@@ -221,7 +224,7 @@ class AnazhRealm_siedlung_bewohner {
                     takt: 0,
                 });
             }
-        });
+        }
         return liste;
     }
 
@@ -306,17 +309,14 @@ class AnazhRealm_siedlung_bewohner {
         if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
     }
 
-    // DER SATZ EINER GESTALT (Lehre 23: WebGPU zieht jeden Draw einzeln — die Kosten der Menge hängen nie an der Kopfzahl): die
-    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) als drei Instanz-Senken über den EINEN Zeichner (`_instanzMesh`):
-    // die Haut in ihrem Stoff, jeder andere Teil (Kleid, Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits
-    // der Armlänge ist ein Auge < 3 px), und der Wurf aus der NUR-WURF-Stufe 3 (Studio-Vertrag B2: sie wird nie gezeigt und
-    // wirft für die Art — die Teile `wurf.seh` der Grobstufen-Zeile, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die
-    // Nah-Wahl). DER GANG IM SATZ: der Satz geht das EINE Gang-Gesetz des nahen Leibs — je Gestalt EIN
-    // Gang-Puffer, eine Textur: `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`), je Phase und Ecke
-    // die Lage im Raum des Leibs und die oktaedrische Normale. Jede Ecke trägt ihre Nummer (`aVid`, negativ = die Rückseite
-    // eines beidseitigen Teils), jede Instanz Phase und Gewicht ihres Gangs (`aGang`, `_bewohnerSatzSchreiben`); der
-    // positionNode liest VOR der Instanz-Matrix (Lehre 22), die Normale mit, und der Wurf liest denselben Puffer (Lehre 26:
-    // der Schatten geht, wie das Auge sieht). Ein Bewohner im Satz ist eine Matrix; der Satz geht mit seiner Siedlung.
+    // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): die
+    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) als drei Senken: die Haut in ihrem Stoff, jeder andere Teil (Kleid,
+    // Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits der Armlänge ist ein Auge < 3 px), und der Wurf aus der
+    // NUR-WURF-Stufe 3 (Studio-Vertrag B2: sie wird nie gezeigt und wirft für die Art — die Teile `wurf.seh` der
+    // Grobstufen-Zeile, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl). DER GANG IM SATZ: der Satz geht das
+    // EINE Gang-Gesetz des nahen Leibs in EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand
+    // (`_bewohnerGangPose`), je Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist
+    // eine Matrix; der Satz geht mit seiner Siedlung.
     _bewohnerSatz(S, G, b) {
         const T = THREE;
         const KC = window.__koerperCore;
@@ -331,7 +331,6 @@ class AnazhRealm_siedlung_bewohner {
         let haut = null;
         let stoff = null;
         let groesst = 0;
-        let nv = 0;
         stufen.forEach((t, si) =>
             t.root.traverse((m) => {
                 if (!m.isSkinnedMesh) return;
@@ -342,8 +341,7 @@ class AnazhRealm_siedlung_bewohner {
                     groesst = tris;
                     stoff = m.material;
                 }
-                const q = { m, basis: nv, beid: m.material.side === T.DoubleSide };
-                nv += m.geometry.attributes.position.count;
+                const q = { m, beid: m.material.side === T.DoubleSide };
                 quellen.push(q);
                 if (si === 0) teilVon[seh === "haut" ? "haut" : "rest"].push(q);
                 else if (z1.wurf.seh.indexOf(seh) >= 0) teilVon.wurf.push(q);
@@ -355,92 +353,31 @@ class AnazhRealm_siedlung_bewohner {
             );
             return false;
         }
-        const N = AnazhRealm.BEWOHNER.gangPhasen;
-        const W = 2048;
-        const H = Math.max(1, Math.ceil(((N + 1) * nv) / W));
-        const tex = new T.DataTexture(new Float32Array(W * H * 4), W, H, T.RGBAFormat, T.FloatType);
-        tex.name = "bewohner-gang";
-        tex.minFilter = tex.magFilter = T.NearestFilter;
-        tex.generateMipmaps = false;
-        const satz = { quellen, n: N, nv, tex, gebacken: 0, geos: [], tempo: b.tempo };
-        // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
-        this._bewohnerGangPose(b.leib, satz, N);
-        tex.needsUpdate = true;
-        // die Stoffe des Satzes: Haut und Kleid als Klon (der Gang-Knoten ist EINER je Gestalt), der Wurf im Kleid
-        const gangKnoten = AnazhRealm._bewohnerGangKnoten(tex, N, nv);
-        satz.stoffe = [haut, stoff].map((st) => {
-            const c = st.clone();
-            c.name = "bewohner-satz";
-            c.positionNode = gangKnoten;
-            return c;
-        });
-        const stoffVon = { haut: satz.stoffe[0], rest: satz.stoffe[1], wurf: satz.stoffe[1] };
-        const D = tex.image.data;
-        const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
-        for (const k of ["haut", "rest", "wurf"]) {
-            const P = [];
-            const Nn = [];
-            const C = [];
-            const V = [];
-            const I = [];
-            for (const q of teilVon[k]) {
-                const a = q.m.geometry.attributes;
-                const ix = q.m.geometry.index.array;
-                const basis = P.length / 3;
-                for (let i = 0; i < a.position.count; i++) {
-                    const o = (N * nv + q.basis + i) * 4;
-                    const n = AnazhRealm._oktaAus(D[o + 3]);
-                    P.push(D[o], D[o + 1], D[o + 2]);
-                    Nn.push(n[0], n[1], n[2]);
-                    C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
-                    V.push(q.basis + i + 1);
-                }
-                for (let t = 0; t < ix.length; t++) I.push(basis + ix[t]);
-                // ein beidseitiger Teil (die Strähnen-Kreuzquads des Haars) trägt im Satz seine Rückseite als eigene Fläche
-                if (q.beid && k !== "wurf") {
-                    const b2 = P.length / 3;
-                    for (let i = basis; i < b2; i++) {
-                        P.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-                        Nn.push(-Nn[i * 3], -Nn[i * 3 + 1], -Nn[i * 3 + 2]);
-                        C.push(C[i * 3], C[i * 3 + 1], C[i * 3 + 2]);
-                        V.push(-V[i]);
-                    }
-                    for (let t = 0; t < ix.length; t += 3) I.push(b2 + ix[t], b2 + ix[t + 2], b2 + ix[t + 1]);
-                }
-            }
-            const geo = new T.BufferGeometry();
-            const n = P.length / 3;
-            geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
-            geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(Nn), 3));
-            geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
-            geo.setAttribute("aVid", new T.BufferAttribute(new Float32Array(V), 1));
-            for (const nm of ["aLodLevel", "aH0", "aH0L"])
-                geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
-            geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(cap * 2), 2));
-            geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), n), 1));
-            geo.computeBoundingSphere();
-            satz.geos.push(geo);
-            const m = AnazhRealm._instanzMesh(geo, stoffVon[k], cap);
-            m.name = "bewohner-satz";
-            m.userData.inventar = "bewohner";
-            m.userData.gang = { n: N, nv, puffer: tex.image.data };
-            m.receiveShadow = k !== "wurf";
-            m.layers.mask = k === "wurf" ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
-            m.castShadow = k === "wurf";
-            AnazhRealm._instanzZahl(m, 0);
-            this.state.scene.add(m);
-            satz[k] = m;
-        }
+        const stoffVon = { haut, rest: stoff, wurf: stoff };
+        const satz = this._gangSatz(
+            {
+                name: "bewohner-satz",
+                inventar: "bewohner",
+                n: AnazhRealm.BEWOHNER.gangPhasen,
+                quellen,
+                cap: S.liste.filter((x) => x.gestalt === b.gestalt).length,
+                senken: ["haut", "rest", "wurf"].map((k) => ({
+                    teil: k,
+                    quellen: teilVon[k],
+                    stoff: stoffVon[k],
+                    wurf: k === "wurf",
+                })),
+            },
+            // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
+            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
+        );
         return satz;
     }
 
     // DIE POSE k DES GANG-PUFFERS (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo
-    // des Leibs, eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib, auf der CPU
-    // geskinnt: je Ecke die gewichtete Matrix ihrer Knochen (Pose × Inverse der Vorlage × Bindung) in den Raum des Leibs, die
-    // Normale oktaedrisch in w. Danach steht der Leib wieder im Stand.
+    // des Leibs, eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib, geskinnt in den
+    // Raum des Leibs (`_gangSatzPose`). Danach steht der Leib wieder im Stand.
     _bewohnerGangPose(g, satz, k) {
-        const T = THREE;
-        const teile = g.userData._tierBaum.teile;
         if (k < satz.n) {
             if (!satz.gang) {
                 const h = {};
@@ -449,48 +386,7 @@ class AnazhRealm_siedlung_bewohner {
             this._animateHuman(g, 0, (2 * Math.PI * k) / satz.n, true, false, null, satz.gang);
         } else this._animateHuman(g, 0, 0, false, false, null);
         this._leibMatrix(g);
-        const inv = (this._bewohnerInv || (this._bewohnerInv = new T.Matrix4())).copy(g.matrixWorld).invert();
-        const D = satz.tex.image.data;
-        const e = new Float32Array(16);
-        for (const q of satz.quellen) {
-            const m = q.m;
-            const a = m.geometry.attributes;
-            const K = m.userData.__skinJoints.map(
-                (nm, j) =>
-                    new T.Matrix4()
-                        .multiplyMatrices(inv, teile[nm].matrixWorld)
-                        .multiply(m.skeleton.boneInverses[j])
-                        .multiply(m.bindMatrix).elements
-            );
-            const si = a.skinIndex;
-            const sw = a.skinWeight;
-            const P = a.position;
-            const Nn = a.normal;
-            for (let i = 0; i < P.count; i++) {
-                e.fill(0);
-                for (let c = 0; c < 4; c++) {
-                    const w = sw.getComponent(i, c);
-                    if (w === 0) continue;
-                    const ke = K[si.getComponent(i, c)];
-                    for (let r = 0; r < 16; r++) e[r] += w * ke[r];
-                }
-                const vx = P.getX(i);
-                const vy = P.getY(i);
-                const vz = P.getZ(i);
-                const nx0 = Nn.getX(i);
-                const ny0 = Nn.getY(i);
-                const nz0 = Nn.getZ(i);
-                const o = (k * satz.nv + q.basis + i) * 4;
-                D[o] = vx * e[0] + vy * e[4] + vz * e[8] + e[12];
-                D[o + 1] = vx * e[1] + vy * e[5] + vz * e[9] + e[13];
-                D[o + 2] = vx * e[2] + vy * e[6] + vz * e[10] + e[14];
-                D[o + 3] = AnazhRealm._oktaIn(
-                    nx0 * e[0] + ny0 * e[4] + nz0 * e[8],
-                    nx0 * e[1] + ny0 * e[5] + nz0 * e[9],
-                    nx0 * e[2] + ny0 * e[6] + nz0 * e[10]
-                );
-            }
-        }
+        this._gangSatzPose(satz, k, g.userData._tierBaum.teile, g.matrixWorld);
         if (k < satz.n) {
             this._animateHuman(g, 0, 0, false, false, null);
             this._leibMatrix(g);
@@ -515,43 +411,6 @@ class AnazhRealm_siedlung_bewohner {
         });
         return fertig;
     }
-    // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
-    // Leibs): je Ecke die Lage zwischen den zwei Phasen um die Phase der Instanz, gemischt mit dem Stand nach dem Gewicht des
-    // Gangs; die Normale ebenso (oktaedrisch, die Rückseite kehrt sie um) — sie geht als normalLocal in die Instanz-Normale.
-    static _bewohnerGangKnoten(tex, n, nv) {
-        const T = THREE.TSL;
-        const W = T.int(tex.image.width);
-        const a = T.attribute("aGang", "vec2");
-        const vid = T.attribute("aVid", "float");
-        const id = T.int(T.abs(vid)).sub(1);
-        const f = T.fract(a.x).mul(n);
-        const k0 = T.floor(f);
-        const t = f.sub(k0);
-        const k1 = T.mod(k0.add(1), n);
-        const lies = (k) => {
-            const i = T.int(k).mul(T.int(nv)).add(id);
-            return T.textureLoad(tex, T.ivec2(i.mod(W), i.div(W)), T.int(0));
-        };
-        const s = lies(T.float(n));
-        const p0 = lies(k0);
-        const p1 = lies(k1);
-        const dek = (w) => {
-            const qu = T.floor(w.div(4096));
-            const e = T.vec2(qu, w.sub(qu.mul(4096)))
-                .div(4095)
-                .mul(2)
-                .sub(1);
-            const z = T.float(1).sub(T.abs(e.x)).sub(T.abs(e.y));
-            const xy = e.sub(T.sign(e).mul(T.max(z.negate(), 0)));
-            return T.vec3(xy, z);
-        };
-        const lage = T.mix(s.xyz, T.mix(p0.xyz, p1.xyz, t), a.y);
-        const nrm = T.normalize(T.mix(dek(s.w), T.mix(dek(p0.w), dek(p1.w), t), a.y)).mul(T.sign(vid));
-        return T.Fn(() => {
-            T.normalLocal.assign(nrm);
-            return lage;
-        })();
-    }
 
     // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge
     // (Haut und Kleid) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
@@ -561,16 +420,15 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerSatzSchreiben(S, bewegt = null) {
         const m4 = this._bewohnerM4 || (this._bewohnerM4 = new THREE.Matrix4());
         const ARTEN = ["wurf", "haut", "rest"];
-        const setze = (Z, k, i, b) => {
-            Z[k].setMatrixAt(i, m4);
-            const ph = Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0;
-            Z[k].geometry.attributes.aGang.setXY(i, ph - Math.floor(ph), Z.fertig ? b._gaitW || 0 : 0);
-        };
-        const neu = (m) => {
-            m.instanceMatrix.needsUpdate = true;
-            m.geometry.attributes.aGang.needsUpdate = true;
-            m.boundingSphere = null;
-        };
+        const setze = (Z, k, i, b) =>
+            AnazhRealm._gangSatzInstanz(
+                Z[k],
+                i,
+                m4,
+                0,
+                Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
+                Z.fertig ? b._gaitW || 0 : 0
+            );
         if (bewegt) {
             const dran = new Set();
             for (const b of bewegt) {
@@ -584,7 +442,7 @@ class AnazhRealm_siedlung_bewohner {
                     dran.add(Z[ARTEN[k]]);
                 });
             }
-            for (const m of dran) neu(m);
+            for (const m of dran) AnazhRealm._gangSatzNeu(m);
             return;
         }
         S.gestalten.forEach((G, gi) => {
@@ -601,11 +459,7 @@ class AnazhRealm_siedlung_bewohner {
                 b.satzOrt = ARTEN.map((k) => (k !== "wurf" && b.nah ? -1 : zahl[k]++));
                 b.satzOrt.forEach((i, k) => i >= 0 && setze(Z, ARTEN[k], i, b));
             }
-            for (const k of ARTEN) {
-                const m = Z[k];
-                AnazhRealm._instanzZahl(m, zahl[k]);
-                if (zahl[k] > 0) neu(m);
-            }
+            for (const k of ARTEN) AnazhRealm._gangSatzZahl(Z[k], zahl[k]);
         });
     }
 
@@ -636,22 +490,28 @@ class AnazhRealm_siedlung_bewohner {
         for (const S of alle.values()) {
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
-                if (S.liste) this._bewohnerFort(S);
+                if (S.liste || S.listeWerk) this._bewohnerFort(S);
                 continue;
             }
             if (!S.liste) {
                 if (d2 > A.nearM * A.nearM) continue;
                 const q = this._autoSettlementQueue;
                 if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
+                if (!S.listeWerk) S.listeWerk = this._bewohnerListe(S);
+                let w = null;
+                for (let k = 0; k <= BW.haeuserJeTakt && !(w && w.done); k++) w = S.listeWerk.next();
+                if (!w.done) continue;
+                S.listeWerk = null;
                 S.gestalten = this._bewohnerGestalten(S);
-                S.liste = this._bewohnerListe(S);
+                S.liste = w.value;
                 S.planStunde = null;
                 this._bewohnerWacheSetzen(S);
             }
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
             if (S.wache.stand !== S.wegeStand) {
+                const trifft = this._bewohnerWechsel(S, S.wegeStand);
                 S.wegeStand = S.wache.stand;
-                this._bewohnerWegPruefen(S);
+                this._bewohnerWegPruefen(S, trifft);
             }
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
@@ -1022,8 +882,9 @@ class AnazhRealm_siedlung_bewohner {
     // DIE WAND AN DER STRECKE (mensch.K3): die Kapsel des Leibs — die des Spielers (`_resolveCapsuleVsAABB`: Radius
     // PLAYER_WALL_RADIUS, Wand ab der Stufe PLAYER_STEP_UP über der Sohle) bis zum Scheitel (`BEWOHNER.kopfM`) — längs a → e
     // gegen das EINE Blocker-Netz (`_blockerNahe`, je Box `_streckeBoxAbstand2`): Haus, Bau, Baum, Fels. Die Höhe trägt der
-    // Boden an beiden Enden (die Stufe am tieferen, der Scheitel am höheren). Liefert den Eintrag der ersten Wand oder null;
-    // a = e fragt den Stand.
+    // Boden an beiden Enden (die Stufe am tieferen, der Scheitel am höheren), je Punkt gemerkt bis zum nächsten Edit oder
+    // Erdbau (`_editGenZaehler`): Knoten, Orte und Tür fragen das Gesetz einmal, nie je Strecke. Liefert den Eintrag der ersten
+    // Wand oder null; a = e fragt den Stand.
     _bewohnerWand(a, e) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const kand = this._bewohnerWandKand || (this._bewohnerWandKand = []);
@@ -1037,8 +898,14 @@ class AnazhRealm_siedlung_bewohner {
             for (const box of boxen) {
                 if (this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
                 if (lo !== lo) {
-                    const ya = this.getTerrainHeightAt(a.x, a.z);
-                    const ye = a === e ? ya : this.getTerrainHeightAt(e.x, e.z);
+                    this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
+                    const st = this._editGenZaehler | 0;
+                    const grund = (q) =>
+                        q._grundStand === st
+                            ? q._grundY
+                            : ((q._grundStand = st), (q._grundY = this.getTerrainHeightAt(q.x, q.z)));
+                    const ya = grund(a);
+                    const ye = a === e ? ya : grund(e);
                     lo = Math.min(ya, ye) + AnazhRealm.PLAYER_STEP_UP;
                     hi = Math.max(ya, ye) + AnazhRealm.BEWOHNER.kopfM;
                     if (!Number.isFinite(lo + hi)) [lo, hi] = [-Infinity, Infinity]; // ohne Boden ist jede Box Wand
@@ -1053,37 +920,63 @@ class AnazhRealm_siedlung_bewohner {
     // eines Wegs seine Kanten, die Kreuzungen (Knoten zweier Wege näher als `kreuzM`) verbunden; es hängt über FREIE Kanten
     // zusammen (`_bewohnerKante`): was getrennt liegt (ein Weg, der seitlich in eine Straße mündet, eine Gasse, über der ein
     // Baum steht), schließt der kürzeste freie Schritt zum Rest (bis `naehtM`) — EIN Netz je Dorf. Wechselt eine Hülle im
-    // Rechteck der Wache, entsteht es neu.
+    // Rechteck der Wache, urteilt es neu. DER GRUND DES NETZES (Knoten, Folgen, Kreuzungen: die Lage allein, `S.netzGrund`)
+    // entsteht je Siedlung einmal — ein neuer Stand urteilt nur die Kanten (Lehre 25: der Takt kostet die Änderung), und jeder
+    // Knoten behält seinen Boden (`_bewohnerWand`); jede Naht urteilt über `_bewohnerKante` (gemerkt wie jede Kante).
+    // EIN STAND, DER KEIN URTEIL ÄNDERT, ÄNDERT DAS NETZ NICHT: jede gemerkte Kante, die eine gewechselte Hülle berührt
+    // (`_bewohnerWechsel`), urteilt neu — bleibt jedes Urteil, gilt das Netz weiter; sonst entsteht es mit dem Geurteilten neu.
     _bewohnerNetz(S) {
-        if (S.netz && S.netz.stand === S.wache.stand) return S.netz;
-        const knoten = [];
-        const kanten = [];
-        const zug = [];
-        const N = { knoten, kanten, baeume: new Map(), frei: new Map(), stand: S.wache.stand };
-        const kante = (i, j) => {
+        const alt = S.netz;
+        if (alt && alt.stand === S.wache.stand) return alt;
+        const trifft = alt && this._bewohnerWechsel(S, alt.stand);
+        let erbe = null;
+        if (trifft) {
+            const n = alt.knoten.length;
+            let gleich = true;
+            erbe = new Map();
+            for (const [key, f] of alt.frei) {
+                const a = alt.knoten[Math.floor(key / n)];
+                const e = alt.knoten[key % n];
+                const neu = trifft(a, e) ? !this._bewohnerWand(a, e) : f;
+                if (neu !== f) gleich = false;
+                erbe.set(key, neu);
+            }
+            if (gleich) {
+                alt.stand = S.wache.stand;
+                return alt;
+            }
+        }
+        const G = S.netzGrund || (S.netzGrund = { knoten: [], kanten: [] });
+        const knoten = G.knoten;
+        const kante = (kanten, i, j) => {
             const w = Math.hypot(knoten[i].x - knoten[j].x, knoten[i].z - knoten[j].z);
             kanten[i].push(j, w);
             kanten[j].push(i, w);
         };
-        let wi = 0;
-        for (const rd of (S.plan.roads || []).concat(S.plan.feldwege || [])) {
-            let vor = -1;
-            for (const q of rd.pts || []) {
-                if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
-                knoten.push({ x: S.ox + q.x, z: S.oz + q.z });
-                kanten.push([]);
-                zug.push(wi);
-                const i = knoten.length - 1;
-                if (vor >= 0) kante(vor, i);
-                vor = i;
+        if (!knoten.length) {
+            const zug = [];
+            let wi = 0;
+            for (const rd of (S.plan.roads || []).concat(S.plan.feldwege || [])) {
+                let vor = -1;
+                for (const q of rd.pts || []) {
+                    if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
+                    knoten.push({ x: S.ox + q.x, z: S.oz + q.z });
+                    G.kanten.push([]);
+                    zug.push(wi);
+                    const i = knoten.length - 1;
+                    if (vor >= 0) kante(G.kanten, vor, i);
+                    vor = i;
+                }
+                wi++;
             }
-            wi++;
+            const K2 = AnazhRealm.BEWOHNER.kreuzM ** 2;
+            for (let i = 0; i < knoten.length; i++)
+                for (let j = i + 1; j < knoten.length; j++)
+                    if (zug[i] !== zug[j] && (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2 < K2)
+                        kante(G.kanten, i, j);
         }
-        const K2 = AnazhRealm.BEWOHNER.kreuzM ** 2;
-        for (let i = 0; i < knoten.length; i++)
-            for (let j = i + 1; j < knoten.length; j++)
-                if (zug[i] !== zug[j] && (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2 < K2)
-                    kante(i, j);
+        const kanten = G.kanten.map((k) => k.slice());
+        const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
         const teil = new Int32Array(knoten.length);
         const N2 = AnazhRealm.BEWOHNER.naehtM ** 2;
         for (;;) {
@@ -1117,15 +1010,14 @@ class AnazhRealm_siedlung_bewohner {
                 }
             }
             paare.sort((p, q) => p[0] - q[0]);
-            const naht = paare.find(([, i, j]) => !this._bewohnerWand(knoten[i], knoten[j]));
+            const naht = paare.find(([, i, j]) => this._bewohnerKante(N, i, j));
             if (!naht) {
                 this._bruchMelden(
                     `BEWOHNER: das Wege-Netz von „${S.plan.name || "?"}" zerfällt in ${n} Teile (kein freier Schritt bis ${AnazhRealm.BEWOHNER.naehtM} m)`
                 );
                 break;
             }
-            kante(naht[1], naht[2]);
-            N.frei.set(naht[1] < naht[2] ? naht[1] * knoten.length + naht[2] : naht[2] * knoten.length + naht[1], true);
+            kante(kanten, naht[1], naht[2]);
         }
         return (S.netz = N);
     }
@@ -1165,8 +1057,9 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DER REST DES WEGS nach einem Wechsel der Wache: wer geht, prüft die Beine vor sich (vom Leib bis zum Ziel, ohne das Bein
-    // durch die eigene Tür); trifft eines eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt).
-    _bewohnerWegPruefen(S) {
+    // durch die eigene Tür), die eine gewechselte Hülle berühren (`trifft`, `_bewohnerWechsel`; null: jedes); trifft eines
+    // eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt).
+    _bewohnerWegPruefen(S, trifft = null) {
         for (const b of S.liste) {
             if (!b.weg || !b.leib) continue;
             const o = b.orte;
@@ -1174,12 +1067,32 @@ class AnazhRealm_siedlung_bewohner {
             for (let i = b.wi; i < b.weg.length; p = b.weg[i++]) {
                 const q = b.weg[i];
                 const tuerBein = q === o.tuer || (q === o.vor && (p === o.tuer || (i === b.wi && b.stand === o.tuer)));
-                if (tuerBein || !this._bewohnerWand(p, q)) continue;
+                if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
                 b.weg = null;
                 b.stand = null;
                 break;
             }
         }
+    }
+
+    // DIE WECHSEL SEIT EINEM STAND der Wache (ihr Buch, `_blockerWacheMelden`): die Probe, ob eine Strecke a → e eine Hülle
+    // berührt, die seit `seit` wechselte (ihr Kasten samt Kapsel und Spur, wie die Wache); null, wenn das Buch nicht so weit
+    // zurück reicht — dann urteilt der Leser alles neu.
+    _bewohnerWechsel(S, seit) {
+        const w = S.wache;
+        const L = w.wechsel || [];
+        const n = w.stand - seit;
+        if (!(n >= 0 && n <= L.length)) return null;
+        const H = L.slice(L.length - n);
+        const r = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM + 1;
+        return (a, e) => {
+            const x0 = Math.min(a.x, e.x) - r;
+            const x1 = Math.max(a.x, e.x) + r;
+            const z0 = Math.min(a.z, e.z) - r;
+            const z1 = Math.max(a.z, e.z) + r;
+            for (const h of H) if (h[1] >= x0 && h[0] <= x1 && h[3] >= z0 && h[2] <= z1) return true;
+            return false;
+        };
     }
 
     // DER ANSCHLUSS eines Orts: der nächste Knoten des Netzes, den er frei erreicht (die zwölf nächsten geprüft; sonst der
@@ -1265,15 +1178,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         const memo = AnazhRealm._tierOfenMemo;
         for (const G of S.gestalten || []) {
-            for (const m of G.satz ? [G.satz.haut, G.satz.rest, G.satz.wurf] : []) {
-                if (m.parent) m.parent.remove(m);
-                this._instanzAbschied(m);
-            }
-            for (const geo of G.satz ? G.satz.geos : []) geo.dispose();
-            if (G.satz) {
-                for (const st of G.satz.stoffe) st.dispose();
-                G.satz.tex.dispose();
-            }
+            if (G.satz) this._gangSatzAbschied(G.satz);
             for (const key of G.keys) {
                 const v = memo && memo.get(key);
                 if (v && v.__ofen) v.__ofen.fest = false;
@@ -1281,6 +1186,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
         S.liste = null;
+        S.listeWerk = null;
         S.gestalten = null;
         S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
         this._ofenMemoRaeumen();
@@ -1303,7 +1209,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
 // Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon) · platzAnteil = so viele
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
-// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
+// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · haeuserJeTakt = so viele Häuser legt die Liste je Takt · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
 // im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
@@ -1318,6 +1224,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     raumM: 1.1,
     saumM: 0.45,
     geburtenJeTakt: 2,
+    haeuserJeTakt: 4,
     fernFaktor: 1.25,
     nahM: 8,
     nahHystM: 1,

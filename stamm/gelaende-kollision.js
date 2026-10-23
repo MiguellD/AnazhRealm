@@ -639,11 +639,18 @@ class AnazhRealm_gelaende_kollision {
     // DIE WACHE DES NETZES (mensch.K3): wer sich merkt, was er im Netz las (die Wege der Bewohner einer Siedlung), stellt
     // eine Wache über sein Rechteck { x0, x1, z0, z1, stand } in `_blockerWachen`; jede Hülle, die dort ein- oder austritt
     // oder neu gestempelt wird (die Studio-Hülle nach der Kern-Hülle, das Haus des Spielers, der gefällte Baum), zählt ihren
-    // Stand hoch — vor dem Stempel die alte Hülle, danach die neue. Der Leser vergleicht den Stand, nie den Bestand.
+    // Stand hoch — vor dem Stempel die alte Hülle, danach die neue. Der Leser vergleicht den Stand, nie den Bestand; DAS BUCH
+    // der Wache (`wechsel`, die letzten 256) trägt je Stand die Hülle, die ihn zählte — ein Leser urteilt nur neu, was sie
+    // berührt (`_bewohnerWechsel`, Lehre 25).
     _blockerWacheMelden(h) {
         const W = this._blockerWachen;
         if (!W || !W.size || !h) return;
-        for (const w of W) if (h[1] >= w.x0 && h[0] <= w.x1 && h[3] >= w.z0 && h[2] <= w.z1) w.stand++;
+        for (const w of W)
+            if (h[1] >= w.x0 && h[0] <= w.x1 && h[3] >= w.z0 && h[2] <= w.z1) {
+                w.stand++;
+                const L = w.wechsel || (w.wechsel = []);
+                if (L.push(h) > 256) L.shift();
+            }
     }
 
     // Trägt einen Eintrag in die Zellen von `karte` über das Rechteck x0..x1 · z0..z1 ein — zu groß (mehr als

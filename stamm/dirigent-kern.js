@@ -78,6 +78,7 @@ class AnazhRealm {
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
             satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
+            bauSatzRaten: null, // Map Gruppen-Schlüssel → der Bereich, der in Raten eintritt (_bauSatzRate)
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
@@ -1790,7 +1791,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.68";
+AnazhRealm.VERSION = "18.546.69";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

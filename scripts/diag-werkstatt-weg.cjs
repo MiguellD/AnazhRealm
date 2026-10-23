@@ -1012,8 +1012,7 @@ async function wegLauf(page, o) {
         Object.assign(e, { bauModus: z.bauModus, farbe: z.bauModus ? z.toenung.farbe : null, lichtung: { wand: z.wand, toenung: z.toenung } });
         if (o.phantom && z.bauModus) e.phantom = await bauWeg(page, "phantom");
         if (z.bauModus) await taste(page, "KeyF");
-        const frist = o.lage === "frieden ohne Material" ? 1500 : 8000;
-        await page.waitForFunction(() => window.__bauWeg.fertig(), { timeout: frist, polling: 50 }).catch(() => {});
+        if (!e.gesperrt) await page.evaluate(() => window.__gebautNach("der Weg", { fertig: () => window.__bauWeg.fertig() }));
     } catch (err) {
         e.fehler = String((err && err.message) || err);
     }

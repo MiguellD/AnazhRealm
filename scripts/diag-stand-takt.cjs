@@ -1160,8 +1160,8 @@ const server = statikServer();
                         O.wald = Wd;
                     }
                     // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
-                    // _satzBlock`), dann ein zweites Mal, jede Gruppe markiert wie bei jedem Stufen-Wechsel — gezählt die Bytes,
-                    // die der Block dabei FRISCH anlegt
+                    // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
+                    // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
                         const recs = (r._foundry && r._foundry.recipes) || {};
                         const kultur = Object.keys(recs).find((k) => {
@@ -1237,8 +1237,8 @@ const server = statikServer();
                                     }
                                 };
                                 try {
-                                    for (const g of gs) r._bauSatzMarke(g.key, g.satz);
-                                    r._tickBauSatz();
+                                    for (const g of gs) r._chunkSatzAus(g.satz, g.key) && r._bauSatzMarke(g.key, g.satz);
+                                    r._tickBauSatz(Infinity);
                                 } finally {
                                     delete r._satzBlock;
                                     globalThis.Float32Array = T.F;

@@ -460,12 +460,15 @@
         },
         {
             "id": "tier",
-            "titel": "Tier",
+            "titel": "Tier (die KREATUR_SATZ.nahLeiber Nächsten als Leib, jedes andere Tier im Nah-Kreis im Satz `tier-satz` seiner Gestalt: Fell · Glimmen · Rest der Grobstufe L1 und ihr Wurf — die Befehle hängen nie an der Kopfzahl)",
             "befehle": 30,
             "dreiecke": 60000,
             "regeln": [
                 {
                     "muster": "^tier:"
+                },
+                {
+                    "muster": "^tier-satz$"
                 }
             ]
         },
