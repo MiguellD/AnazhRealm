@@ -229,6 +229,8 @@ class AnazhRealm_kreatur_leben {
             gier: Number.isFinite(creature.rotation && creature.rotation.y)
                 ? +creature.rotation.y.toFixed(4)
                 : undefined,
+            // halten.K4 — die Pfeile, die im Tier stecken, reisen mit (Glied + Lage im Glied, `_pfeileDesTiers`)
+            pfeile: this._pfeileDesTiers(creature),
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -302,6 +304,7 @@ class AnazhRealm_kreatur_leben {
             c.rotation.y = snap.gier;
             c.userData._steuer = { gier: snap.gier, v: 0 };
         }
+        if (Array.isArray(snap.pfeile)) this._pfeileInsTierLaden(c, snap.pfeile); // halten.K4: die Pfeile stecken wieder
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
         if (snap.equipped && typeof snap.equipped === "object") {

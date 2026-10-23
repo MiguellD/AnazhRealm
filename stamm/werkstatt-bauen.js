@@ -2499,6 +2499,7 @@ class AnazhRealm_werkstatt_bauen {
                 },
                 nachRuhe: () => {
                     if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+                    if (this._wsKostenMessen) this._wsKostenMessen();
                 },
             });
         const btnRow = document.createElement("div");
@@ -2537,6 +2538,11 @@ class AnazhRealm_werkstatt_bauen {
             }
             panel.appendChild(lodRow);
         }
+        // DIE KOSTEN-LEISTE (studios.K5): je Stufe der Art ihre Kosten gegen die Budget-Zeile (B2c), gezählt am Welt-Werk
+        this._wsKostenMessen =
+            _cfgLodW && _cfgLodW.budget && _cfgLodW.budget[rec.kind]
+                ? this._workshopKostenLeiste(panel, preset, rec.kind, bp ? ws.selectedBlueprint : null)
+                : null;
         if (hasParams) {
             const reset = document.createElement("button");
             reset.type = "button";
@@ -2552,6 +2558,33 @@ class AnazhRealm_werkstatt_bauen {
         }
         panel.appendChild(btnRow);
         return true;
+    }
+
+    // DIE KOSTEN-LEISTE DER WERKSTATT (studios.K5): der Baustein der Hülle (`AnazhHuelle.kosten`, wie in den Studio-Shells) je
+    // Stufe der Art (kindStages) — Dreiecke, Stoffe und Wurf des Welt-Werks, das die Foundry für Same und Regler der Vorschau
+    // baut, gegen die Budget-Zeile (B2c); kein kind-Literal. Rückgabe: der Mess-Lauf (die Regler-Ruhe ruft ihn neu), ein
+    // späterer Lauf macht den früheren stumm.
+    _workshopKostenLeiste(panel, preset, kind, bpName) {
+        const L = AnazhRealm._studioRenderConfig.lod;
+        const stufen = (L.kindStages && L.kindStages[kind]) || [0];
+        const K = AnazhHuelle.kosten(panel, {
+            budget: L.budget[kind],
+            stufen,
+            quelle: "gezählt am Welt-Werk der Foundry (Same und Regler der Vorschau)",
+        });
+        const messen = () => {
+            const lauf = (this._wsKostenLauf = (this._wsKostenLauf || 0) + 1);
+            const bp = bpName ? this.state.blueprints[bpName] : null;
+            const gestalt = this._foundryVariantFor(this._werkSame(bp, bpName || preset), preset);
+            if (gestalt == null) return;
+            const ov = this._workshopStudioOvFor(preset);
+            for (const s of stufen)
+                this._foundryRequest(preset, gestalt, s, ov, 0).then((meshes) => {
+                    if (this._wsKostenLauf === lauf) K.setzen(s, AnazhRealm._foundryKosten(meshes));
+                });
+        };
+        messen();
+        return messen;
     }
 
     // Die Dial-Spezifikation + aktuellen Werte + apply/dice/reset je Art. EINE Struktur, drei Rezept-
