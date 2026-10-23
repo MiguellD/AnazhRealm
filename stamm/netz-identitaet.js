@@ -716,9 +716,13 @@ class AnazhRealm_netz_identitaet {
             .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
         if (fremd.length)
             this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
-        this.journalAppend("witness", `Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`, {
-            name: ziel,
-        });
+        this.journalAppend(
+            "witness",
+            AnazhRealm._datum`Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`,
+            {
+                name: ziel,
+            }
+        );
         this._spielerSagt(`Geteiltes Werk steht: ${this._werkLabel(ziel)} (von ${this._vibeFingerprint(h.autor)}).`);
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }

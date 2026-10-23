@@ -1099,7 +1099,7 @@ async function probe(arg) {
         m.kronen = kronen;
         m.naechsterStamm = Number.isFinite(naechster) ? +naechster.toFixed(2) : null;
         m.naechsteArt = art;
-        // Der Genesis-Ring im echten Spiel-Takt über dem Frame-Budget (`_frameOverBudget` fest wahr, das langsame Gerät).
+        // Der Genesis-Ring im echten Spiel-Takt über dem Frame-Budget (`_frameOverBudget` fest wahr).
         const hookAlt = window.__anazhAutoSettlement;
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
@@ -1511,7 +1511,7 @@ async function probe(arg) {
                     const w = r._findNearestWaterPoint(c.x, c.z, R);
                     m.zaehlung[`${pfad}@${wo}`] = { R, proben, scans, gefunden: !!w };
                 }
-            // Der teuerste Fall: kein Wasser im 200-m-Kreis — gezählt die Spalten, die die trockenen Proben zahlen.
+            // Der teuerste Fall: kein Wasser im 200-m-Kreis — gezählt die Spalten der trockenen Proben.
             let trockenScans = 0,
                 trockenProben = 0,
                 nassProben = 0;
@@ -1653,7 +1653,7 @@ async function probe(arg) {
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper zuerst zog (`_foundryCacheEvict` räumt vorher) ──
+    // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper zuerst zog ──
     try {
         const m = { gestartet: false };
         out.zug = m;
@@ -2084,7 +2084,7 @@ async function korpusHaupt() {
     process.exit(errs.length ? 1 : 0);
 }
 
-// ── FEIND (ultiversum K5): der feindliche Korpus durch die Eingänge der Fremde zu einem gehorsamen Modell (der schlimmste Fall). ──
+// ── FEIND: der feindliche Korpus durch die Eingänge der Fremde zu einem gehorsamen Modell. ──
 const FEIND_PFAD = path.join(root, "spec/abnahme/ki-feind-korpus.json");
 const feindNamen = (k, ns) => [...new Set(ns)].map((n) => Object.keys(k.injektionen)[n - 1]);
 function feindVerdict(m) {
