@@ -379,7 +379,7 @@ class AnazhRealm_wasser_hydro {
                 const lx = x + dx * step;
                 const lz = z + dz * step;
                 const lb = this._voxelSurfaceY(lx, lz);
-                if (lb !== null && Number.isFinite(lb) && lb > this._koerperWasser(lx, lz, lb) + 0.1) {
+                if (lb !== null && Number.isFinite(lb) && !this._nassAt(lx, lz, 0.1, lb)) {
                     if (step < bestDist) {
                         bestDist = step;
                         bestDx = dx;
@@ -561,6 +561,8 @@ class AnazhRealm_wasser_hydro {
     // nie) schreibt die Wahrheit die LAGE hinein: `gestalt.lage = { tiefe, schwimmt, unterkante }` — der Körper schwimmt,
     // sobald die Säule über seinem Grund die Linie übersteigt (seine Unterkante liegt dann auf Spiegel − Linie), sonst steht er
     // auf dem Grund (er watet; dichter als Wasser sinkt er). Leser: das Gefährt (`_fahrBoden`, `_rittSchritt`).
+    // DIE OBERGRENZE (Gelände K4): `grundY` −Infinity fragt den höchsten Spiegel über jedem Grund an (x, z) — der billige
+    // Beweis der Spalten-Probe (`_nassAt`) liest ihn hier, nie an der Wahrheit vorbei.
     _koerperWasser(x, z, grundY, gestalt) {
         const spiegel = this._koerperWasserSpiegel(x, z, grundY);
         if (gestalt) {
@@ -582,11 +584,13 @@ class AnazhRealm_wasser_hydro {
     // er unter Fels (eine Höhle unter oder neben dem Wasser): trocken, auch wo der Rand eines Sheets unter das Gelände in die
     // Höhle taucht (am See der Mess-Wiese lag die Anker-Kante in einer 16 m hohen Höhle 15 m über ihrem Boden). Ein Bau-Stempel
     // (Stamm, Pfeiler) ist kein Fels: das Gesetz kennt ihn nicht, das Sheet läuft durch ihn wie das Wasser um ihn.
-    // Ohne Chunk (die Ferne, die niemand sieht) der Spiegel des Gesetzes über seinem Grund.
+    // Ohne Chunk (die Ferne, die niemand sieht) der Spiegel des Gesetzes über seinem Grund — unter jedem Grund (−Infinity)
+    // samt Rand und voller Fluss-Breite.
     _koerperWasserSpiegel(x, z, grundY) {
         const endlich = Number.isFinite(grundY);
         const bild = this._wasserBildAt(x, z);
-        if (bild === undefined) return this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
+        if (bild === undefined)
+            return this._atlasWaterLevelAt(x, z, endlich ? grundY : grundY === -Infinity ? -1e9 : -Infinity);
         if (bild === null) return -Infinity;
         if (!endlich || !(bild > grundY)) return bild;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
@@ -682,6 +686,25 @@ class AnazhRealm_wasser_hydro {
             return this._koerperBodenUnter(x, ref, z);
         };
         return entry._werkBodenFn;
+    }
+
+    // Steht an (x, z) Wasser? Der Boden liegt mehr als `marge` (m, Vorgabe −5 cm) unter der EINEN Wasser-Wahrheit am Körper
+    // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
+    // null) trägt kein Wasser. DAS EINE URTEIL „ist hier Wasser" (Gelände K4) für jeden Leser, der kein Maß braucht: die
+    // Nässe des Klangs (Hör-Ring, Wasser-Hauch, Schritt), das Medium der Kamera und des Mitspielers, das Trink-Ziel und die
+    // Ufer-Suche der Tiere, das LAND jedes Werks (`_landAt`) und die Natur — die Nah-Wiese und die Nah-Streu reichen ihren
+    // gezeichneten Boden (`boden`, `_bodenSichtAt`), sonst gilt die Spalte des Gesetzes (`_voxelSurfaceY`).
+    // DER BILLIGE BEWEIS ZUERST (Lehre 25): die Obergrenze der Wahrheit (`_koerperWasser` unter jedem Grund) — ist dort kein
+    // Wasser, ist die Spalte trocken ohne Scan; ist ein Gitterpunkt über ihr + Marge Fels (`_felsUeber`), liegt der Boden
+    // darüber. Bis K4 las die Probe die Obergrenze selbst (`_wasserBildAt`, `_atlasWaterLevelAt`): ein See, den die
+    // Wahrheit an 50 Zufalls-Punkten trug, blieb für Klang, Trink-Ziel, Natur-Wand und Land an 50 von 50 trocken (K12 M).
+    _nassAt(x, z, marge = -0.05, boden) {
+        if (boden === undefined) {
+            const oben = this._koerperWasser(x, z, -Infinity);
+            if (!(oben > -Infinity) || this._felsUeber(x, z, oben + marge)) return false;
+            boden = this._voxelSurfaceY(x, z);
+        }
+        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_wasser_hydro]);

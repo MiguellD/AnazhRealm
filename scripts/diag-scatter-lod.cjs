@@ -52,14 +52,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
 
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
@@ -108,9 +108,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
         // BY DESIGN dem Region-Lifecycle (V18.464-B2; seit der Keying-Welle trägt
-        // JEDE Stufe der Boden-Schichten den Region-Key). Vorher war die Wahl
-        // flake-abhängig: je nach Foundry-Timing probte sie eine geschützte
-        // Boden-Zelle und maß den Guard statt des Wanderns.
+        // JEDE Stufe der Boden-Schichten den Region-Key).
         const map = r.state.scatterRegions;
         const b2Privat = (c) =>
             Array.isArray(c.slots) &&
@@ -217,7 +215,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     max: 500,
                 })
                 .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
-            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
+            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT: nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
             // BODEN-Schichten (nicht die globale Baum-Schicht) und der Takt holt sie auf ihre Nah-Stufe (privat, @reg).

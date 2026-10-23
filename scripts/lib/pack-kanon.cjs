@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, starteBrowser } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -162,19 +162,16 @@ function readPack(file) {
 }
 
 // ---------------------------------------------------------------------------
-// DER EINE BOOT-PFAD (wie gate:foundry-warm): AnazhRealm headless (Null-Renderer, GPU-frei)
+// DER EINE BOOT-PFAD (wie gate:fluss): AnazhRealm headless (Null-Renderer, GPU-frei)
 // mit ERZWUNGENER Foundry (der Worker bäckt echte Assets im Gate-Kontext; die IDB ist
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
     const server = statikServer();
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-        window.__anazhForceFoundry = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -191,7 +188,7 @@ async function bootRealm(port) {
     return { browser, page, server, pageErrors, close };
 }
 
-// Auf den Worker + das Rezeptbuch warten (die foundry-warm-Disziplin: der Rezept-Reply ist
+// Auf den Worker + das Rezeptbuch warten (der Rezept-Reply ist
 // ein EIGENER Round-Trip nach ready — auf die WAHRHEIT warten, nicht den Timing-Zufall).
 async function waitFoundryReady(page, timeoutMs) {
     return page.evaluate(async (tmo) => {

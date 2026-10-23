@@ -1,6 +1,6 @@
 "use strict";
 /* global process, console, __dirname */
-// scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung, plan 13.10. §6).
+// scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
 // Ein Zweig, der vor dem Schnitt abzweigte (oder über dessen Basis ein `--teile` lief), trägt den Stamm in einer anderen
 // Form als sein Ziel. Ein git-Merge je Datei sähe modify/delete bzw. add/add; dieses Werkzeug merged stattdessen den

@@ -74,7 +74,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Region wird erst NACH dem Restore neu gebaut, im ambienten Regime.
         try {
             const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
+            if (SCcfg && Number.isFinite(SCcfg.regionM)) {
                 const frx = Math.floor(ppD.x / SCcfg.regionM),
                     frz = Math.floor(ppD.z / SCcfg.regionM);
                 const fk = `${frx},${frz}`;
@@ -144,7 +144,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         try {
             const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const SCt = (window.AnazhRealm || r.constructor).SCATTER;
-            if (SCt && Number.isFinite(SCt.regionM) && typeof r._scatterRegion === "function" && st.scatterRegions) {
+            if (SCt && Number.isFinite(SCt.regionM) && st.scatterRegions) {
                 // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
                 // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
                 const snap = st.scatterRegions;
@@ -254,7 +254,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
     }
 }
 
-// DIE NAH-STREU (Waldboden 04.10.): der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
+// DIE NAH-STREU: der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
 // Boden-Zeilen des Studios (placement.boden, ring "nah"), gesetzt nach dem EINEN Boden-Gesetz (__phytoCore.
 // bodenGewicht), gebaut über die Foundry (Studio-Teile mit leafKey "f:…"). Konsum statt Existenz: eine echte Kachel
 // am Spieler wird gesetzt (deterministisch), der Takt baut ihre Blöcke in die Senken (InstancedMesh je Art × Gestalt ×
@@ -322,7 +322,7 @@ async function checkBandNahStreu(ctx) {
             cam.position.copy(camVor);
             return out;
         }
-        // (5b) DER WIND (Integration 05.10., W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
+        // (5b) DER WIND (W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
         // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt, die Höhe aus
         // dem Satz-Attribut aWiege), eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
         const weichK = new Set(["foliage", "foliageTex", "stem"]);
@@ -588,8 +588,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) STRATA_STEIN_DEPTH frozen Konstante
-        out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
@@ -644,7 +642,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         return out;
     });
 
-    check("V18.197 (S1) STRATA_STEIN_DEPTH frozen Konstante existiert", res.constExists === true);
     if (res.foundErdePoint) {
         check(
             `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
@@ -677,8 +674,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (I1) IRON_BANDS frozen Konstanten
-        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
+        // (I1) IRON_BANDS
         if (A.IRON_BANDS) {
             const IB = A.IRON_BANDS;
             out.constsSensible =
@@ -781,7 +777,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
     check(
         "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
         res.constsSensible === true && res.deepBeyondStrata === true
@@ -959,24 +954,22 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
-        if (typeof r._growTreeBlueprintForSpawn === "function") {
-            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
-            if (grownKey && r.state.blueprints[grownKey]) {
-                // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
-                // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
-                // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
-                r.state.architectures = r.state.architectures || [];
-                r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
-                // Snapshot bauen und das grownBlueprints-Feld prüfen.
-                const snap = r.buildStateSnapshot();
-                const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
-                out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
-                out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
-                // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
-                // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
-                out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
-                r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
-            }
+        const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
+        if (grownKey && r.state.blueprints[grownKey]) {
+            // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+            // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
+            // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
+            // Snapshot bauen und das grownBlueprints-Feld prüfen.
+            const snap = r.buildStateSnapshot();
+            const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
+            out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
+            out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
+            // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
+            // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
+            out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
         }
 
         return out;
@@ -1018,22 +1011,20 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // ─── Ω-K2 BAUM-FÜSSE ───
         // Flacher mossiger Saum am Stamm-Sockel: jeder Rich-Baum hat ein laub-Part mit y < trunkBaseR und
         // großem x/z-Stretch (Disk-Form).
-        if (typeof r._growTreeBlueprintRich === "function") {
-            const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
-            const sk = r._lastTreeSkeleton;
-            r._lastTreeSkeleton = null;
-            const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
-            // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
-            // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
-            const sockelParts = parts.filter(
-                (p) => p.material === "laub" && p.position.y < baseR * 2 && p.size.x > p.size.y * 1.5
-            );
-            out.k2HasFlare = sockelParts.length >= 1;
-            // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
-            if (sockelParts.length >= 1) {
-                const s = sockelParts[0];
-                out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
-            }
+        const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
+        const sk = r._lastTreeSkeleton;
+        r._lastTreeSkeleton = null;
+        const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
+        // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
+        const sockelParts = parts.filter(
+            (p) => p.material === "laub" && p.position.y < baseR * 2 && p.size.x > p.size.y * 1.5
+        );
+        out.k2HasFlare = sockelParts.length >= 1;
+        // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
+        if (sockelParts.length >= 1) {
+            const s = sockelParts[0];
+            out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
         }
 
         // ─── Ω-W VERTIEFTES WIND ───
@@ -1056,7 +1047,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
-        if (typeof r._growTreeBlueprintForSpawn === "function" && r.state && r.state.architectures) {
+        if (r.state && r.state.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
             if (grownKey && r.state.blueprints[grownKey]) {
                 // Spawn an Test-Position + harvest sofort.
@@ -1082,15 +1073,10 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
-        // Methoden · State · Restore-Pfad).
+        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
+        // und State (die Methoden bewacht gate:altlasten).
         out.cConstGone = !A.CANOPY_SHELL;
-        out.cMethodsGone =
-            typeof r._ensureCanopyShell === "undefined" &&
-            typeof r._buildCanopyShell === "undefined" &&
-            typeof r._disposeCanopyShell === "undefined";
         out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
-        out.cRestoreClean = window.__fehlt(r._loadStateRestoreWorldMeta, /_disposeCanopyShell/);
 
         return out;
     });
@@ -1114,13 +1100,11 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 
     // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
     check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
-    check("N7.4 (C2) Canopy-Shell-Methoden geschnitten (ensure/build/dispose weg)", res.cMethodsGone === true);
     check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
-    check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
-// Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel (W1 + Integration 05.10.): sie hatte keinen
+// Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel: sie hatte keinen
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald(ctx) {
     const { page, check } = ctx;
@@ -1130,8 +1114,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const out = {};
 
         // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 6 Baum-Spezies, kein Totholz ─────
-        out.variationExists = !!A.SPECIES_TAG_VARIATION;
-        if (out.variationExists) {
+        {
             const v = A.SPECIES_TAG_VARIATION;
             out.variationAllSpecies =
                 !!v.baum_tanne &&
@@ -1150,7 +1133,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         }
 
         // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
-        // Seit dem Waldboden (integriert 05.10.) ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
+        // Seit dem Waldboden ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
         const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =
@@ -1204,7 +1187,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         return out;
     });
 
-    check("V18.215 (W1a) SPECIES_TAG_VARIATION existiert", res.variationExists === true);
     check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
@@ -1510,18 +1492,16 @@ async function checkBandV18217VariantenPool(ctx) {
         }
 
         // ─── (E) Snapshot-Persistierung von variantSeed ───────────────
-        if (typeof r.buildStateSnapshot === "function") {
-            const snap = r.buildStateSnapshot();
-            const wmSnap = snap && snap.worldMeta;
-            out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
-            if (out.snapshotCarriesPool) {
-                const liveKey = "baum_eiche";
-                const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
-                if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
-                    out.snapshotPoolMatchesLive =
-                        Array.isArray(wmSnap.variantSeed[liveKey]) &&
-                        wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
-                }
+        const snap = r.buildStateSnapshot();
+        const wmSnap = snap && snap.worldMeta;
+        out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
+        if (out.snapshotCarriesPool) {
+            const liveKey = "baum_eiche";
+            const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
+            if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
+                out.snapshotPoolMatchesLive =
+                    Array.isArray(wmSnap.variantSeed[liveKey]) &&
+                    wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
             }
         }
 

@@ -685,6 +685,33 @@ class AnazhRealm_studio_gestalt {
             if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
             this._foundryCacheEvict(oldest);
         }
+        this._foundryRuheDeckel(key);
+    }
+    // DER RUHE-DECKEL (profiband K5, Gebot 7): ein Körper, den keine Senke zeichnet (`_liveRefs` 0), wuchs mit der bereisten
+    // Welt bis an den Gewichts-Deckel (Gang 6 min: 110 untätige = 146,5 MB neben 40,6 MB lebenden). Die ältesten Untätigen
+    // fallen, bis ihr Gewicht unter FOUNDRY_RUHE_BYTES steht — die jüngsten (eben gewärmt, eben verlassen) bleiben; `schone`
+    // ist der eben gesetzte Schlüssel. Gerufen beim Setzen und im Takt nach jeder Rückgabe (`_foundryLoslassen`).
+    _foundryRuheDeckel(schone) {
+        const f = this._foundry;
+        f.ruheOffen = false;
+        let ruhe = 0;
+        for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
+        for (const [k, v] of f.cache) {
+            if (ruhe <= AnazhRealm.FOUNDRY_RUHE_BYTES) break;
+            if (k === schone || !v || v._liveRefs > 0) continue;
+            ruhe -= v._cacheBytes || 0;
+            this._foundryCacheEvict(k);
+        }
+    }
+    // DIE EINE RÜCKGABE einer Cache-Gruppe durch ihren Halter (Senke, Leib, Schatten-Stellvertreter): war sie WÄHREND des
+    // Haltens geräumt (`_evicted`), fällt ihre Geometrie mit dem letzten Halter (nie mitten im Leben, nie geleakt); wird sie
+    // untätig, wiegt der nächste Takt sie gegen den Ruhe-Deckel (nie im selben Ruf — ein Umbau holt sie gleich wieder).
+    _foundryLoslassen(src) {
+        if (!src) return;
+        src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+        if (src._liveRefs > 0) return;
+        if (src._evicted) this._disposeFoundryGroupGeom(src);
+        else if (this._foundry) this._foundry.ruheOffen = true;
     }
     // DIE EINE RÄUMUNGS-NAHT — jede Räumung (LRU-Überlauf UND präge-Flush) geht hier durch, nie rohes
     // f.cache.delete: (a) Dispose nur ohne lebende InstancedMesh-Gruppe (_liveRefs 0), sonst `_evicted`-
@@ -737,8 +764,7 @@ class AnazhRealm_studio_gestalt {
         const q = g._schattenQuelle;
         if (q) {
             g._schattenQuelle = null;
-            q._liveRefs = Math.max(0, (q._liveRefs || 0) - 1);
-            if (q._evicted && !(q._liveRefs > 0)) this._disposeFoundryGroupGeom(q);
+            this._foundryLoslassen(q);
         }
     }
     // Die Gestalt, mit der ein Schatten-Zwilling wirft: die Geometrie der Wurf-Stufe (Baum: die L1), gestempelt als
@@ -1106,6 +1132,8 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // (~351 MB @ Ring 4) — darunter fallen gewärmte Assets vor dem Konsum (gate:foundry-crossfade).
 // Räumung graziös (re-anfragbar; _liveRefs: nie ein sichtbarer Baum).
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
+// Der RUHE-DECKEL: das Gewicht der Körper ohne lebende Senke (`_liveRefs` 0), das der Cache hält (`_foundryCacheSet`).
+AnazhRealm.FOUNDRY_RUHE_BYTES = 64 * 1024 * 1024;
 // Proaktiver Dock, zwei Kosten: ein GEDOCKTES Asset (schon im Cache) ist ein billiger
 // WebGPU-Instance → viele je Idle-Tick; ein nicht gedocktes löst einen Studio-Bake aus (das iframe
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.

@@ -17,11 +17,11 @@
 //      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
 //      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
 //      BLATT_BAND.
-//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Die Nadel sitzt im
-//      Wedel (Zelle 3, WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
+//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Die Nadel sitzt im Wedel (Zelle 3,
+//      WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
 //      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M.
 //  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): jede L1-Krone ist Karte oder Strähne.
-//  (V) VOLUMEN — die Normale der Krone (K68-N1, Prüfer K68): jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
+//  (V) VOLUMEN — die Normale der Krone: jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
 //      Normale der Krone (phyto-core kronenNormalen) — aus 8 Peilungen zeigt die GELICHTETE Normale der nahen Kronen-Hälfte
 //      aus der Krone hinaus (Anteil nach innen ≤ KRONE_WEG_MAX). Gelichtet ist, was die Leser tun: lesen Welt-Stoff, Labor und Bäcker der
 //      Karte die Normale flip-frei (`_laubStoffNormale` = normalViewGeometry · injectWind `krone` · der Normal-Pass), ist sie
@@ -31,7 +31,7 @@
 //      der hängenden Rute).
 //  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
 //      alphaTest 0,5, das Pixel als Mittel der Halton-Unterproben der zeitlichen Auflösung; Δ-Luma (Laub gegen Himmel)
-//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX (50 % von vorher 0,166), die
+//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX, die
 //      Deckung je λ 1…3 = Stufe 0 ± 0,1 (nah = fern). Konsum-Leser: der Laub-Stoff (`_blattAtlasProbe`).
 //  (H) HÖHEN-ZENSUS je Art (K20): der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
 //  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC3 ab Stufe 0, rgba ab
@@ -294,7 +294,7 @@ function nadelMass(fall, T, skala) {
 }
 // (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").
 // (W) DIE WEIDE trägt Weiden-Blätter: jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE),
-// u in [zelle/4, (zelle+1)/4]. Vorher (Prüfer W5, Bild weide-8m) las sie die Großblatt-Zelle — runde Hasel-Blätter.
+// u in [zelle/4, (zelle+1)/4].
 function weidenZelle(fall, T) {
     const z = PC.BLATT_ATLAS_WEIDE.zelle;
     let n = 0,
@@ -556,7 +556,7 @@ function frachtStufe(m, wert, teilen) {
     return { Z, zellen };
 }
 // Die Reihen: das Labor (das Bild, gerade) und die Welt je Format (die Fracht, der EINE Leser). `bcLeser` (Selbsttest):
-// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade (der Leser vor 05.10.).
+// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade.
 function frachtReihen(bild, bcLeser) {
     const fr = PC.blattAtlasFracht(bild, true);
     const stufen = (mips, teilen) =>
@@ -595,7 +595,7 @@ function frachtUrteil(R) {
         }
     return v;
 }
-// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20): die Zelle des Atlas als Karte auf dem Schirm
 // (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
 // zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
 // Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
@@ -619,7 +619,6 @@ for (let i = 1; i <= 8; i++) {
 }
 // Die Schwelle des Laub-Stoffs je Schirm-Ort: der alphaTest 0,5 (die Welt zeichnet ohne Raster-Schwelle).
 const kornSchwelle = () => 0.5;
-// Vorher (integ-probe 858ed586, Rang-Mips mit Orts-Hash, BC1): 0,166 an der Eichen-Krone auf 25 m (λ 1,58) — Ziel ≤ 50 %.
 const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
@@ -678,7 +677,7 @@ function kornReihe(mips, zBasis) {
         return { lambda, N, zellen };
     };
 }
-// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20, 13.10.): das Kanten-Korn (oben) misst die Deckung, das Bild
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20): das Kanten-Korn (oben) misst die Deckung, das Bild
 // der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
 // Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
 // Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
@@ -868,7 +867,7 @@ function brustDurchmesser(T, yWelt, skala) {
 // mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
 const SOLITAER_HD = 0.6;
 // Der Kronenansatz des Solitärs (tiefstes Blatt ÷ Höhe, Solitäreiche Marbach): tief, aber über einem kurzen Stamm —
-// unter 0,08 steht die Krone als Busch auf dem Boden (Blick-Sonde 12.10.), über 0,35 trägt er den Bestands-Schaft.
+// unter 0,08 steht die Krone als Busch auf dem Boden, über 0,35 trägt er den Bestands-Schaft.
 const SOLITAER_ANSATZ = [0.08, 0.35];
 function kronenAnsatz(T) {
     let lo = Infinity;
@@ -932,7 +931,7 @@ function hoehenUrteil(roh, skala) {
 }
 // (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
 // Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
-// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz. Vorher Eiche 4,0 gegen 5,2 · Weide 5,3 gegen 4,5.
+// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
 const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
 function pflanzKroneUrteil(roh, skala, a, nadel) {
     const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore

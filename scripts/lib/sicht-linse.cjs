@@ -39,7 +39,7 @@ const SICHT_PRUEFUNG = ["_passTrifft", "_hoehlenRect", "_hoehlenLichtLage", "_in
 const SICHT_TREFFER = ["_satzAbschnittSteht", "_instanzWahlSteht"];
 // Die Täter beim NAMEN: jede neu gerechnete Wahl (der Satz und sein Pass, die Gruppe).
 const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke", "_werferWahlMerke"];
-// DIE BYTES BEIM GRUND (K, 07.10.): jedes Index-Byte eines Satzes (`_chunkSatzSchreib`) trägt den Grund seines Schreibers —
+// DIE BYTES BEIM GRUND (K): jedes Index-Byte eines Satzes (`_chunkSatzSchreib`) trägt den Grund seines Schreibers —
 // die neue Wahl eines Passes (`wahl:<warum die Wahl nicht stand>`: `stand` = der Satz änderte Bereich, Hülle oder Ordnung,
 // `neu` = der Abschnitt fehlte, `lage` = die Lage des Passes, `liste`/`hoehle`), das Verdichten einer ruhenden Wahl
 // (`dicht`), das Umlegen aller Abschnitte (`umlegen`). Der Grund ist der innerste Schreiber im Stapel.
@@ -87,7 +87,7 @@ function sichtLinse(cfg) {
         paesse: 0,
         nach: 0,
     });
-    // DAS LICHT JE KASKADE (07.10., echte GPU): eine Kaskade rendert nicht jeden Frame — dreht das Licht in einem Frame, in dem
+    // DAS LICHT JE KASKADE (echte GPU): eine Kaskade rendert nicht jeden Frame — dreht das Licht in einem Frame, in dem
     // sie ruht, wählt sie erst in ihrem nächsten Pass neu, und der Frame davor trug die Drehung. Je Pass `k<i>` merkt die Linse
     // die Licht-Richtung ihres letzten Passes; weicht die jetzige ab, ist die Drehung die benannte Ursache dieses Passes
     // (vorher galt nur die Drehung gegen den Frame davor: Mess-Wiese, Radeon, 1 von 299 Ruhe-Frames „boden wahl:lage k1"
@@ -301,13 +301,11 @@ function sichtLinse(cfg) {
     const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
     let b0 = 0,
         bj0 = {};
-    // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen (Gegenprüfung 07.10.): ein Bereich kam (+), ging (−) oder
+    // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen: ein Bereich kam (+), ging (−) oder
     // wurde neu gebaut (~), der Anker der Ordnung zog um (der Spieler wechselte den Chunk), eine Hülle (Bereich oder Zelle)
     // änderte ihre Lage (`^`, ein Geomorph). Der Stand eines Satzes (`s.stand`) und sein Verdichten-Zähler sind die
     // Cache-Schlüssel des Spiels selbst — sie belegen NICHTS: ein Stand, den kein Beleg trägt, ist Satz-Arbeit OHNE Ursache
-    // (`<Familie> stand:ohne`), beim Namen. Die geschuldete Folge trägt ihre Ursache (`sichtSatzInhalt`). Vorher zählten
-    // `s.stand` und `s.verdichtet` selbst als Änderung: ein eingeschmuggelter Stand-Bruch (15 072 Prüfungen je Frame) stand
-    // GRÜN, und jede Arbeit des Frames war entschuldigt.
+    // (`<Familie> stand:ohne`), beim Namen. Die geschuldete Folge trägt ihre Ursache (`sichtSatzInhalt`).
     const inhaltVor = new Map();
     let inhaltOffen = {};
     let inhaltOhneOffen = {};
@@ -423,7 +421,7 @@ function sichtLinse(cfg) {
     // die Kamera des Hauptbilds: wandert ihr Auge über den Halt der Lage oder dreht ihr Blick über den halben Dreh-Rand gegen
     // den ANKER (`sichtKameraBewegt`), ist der Frame eine Änderung, und der Anker rückt nach (dieselbe Offen-Regel wie das
     // Licht). Das Auge der Spiel-Kamera atmet im Stand um Millimeter — gegen den Frame davor zählte jeder Ruhe-Frame als
-    // bewegt (Radeon, Mess-Wiese, 07.10.: 299 von 299), und die Linse entschuldigte jede Arbeit und jedes Byte.
+    // bewegt (Radeon, Mess-Wiese), und die Linse entschuldigte jede Arbeit und jedes Byte.
     let kameraAnker = null;
     let kameraOffen = 0;
     const kameraBewegt = () => {
@@ -574,7 +572,7 @@ function sichtLinse(cfg) {
     return L;
 }
 
-// DER INHALT EINES SATZES zwischen zwei Bildern (rein, Gegenprüfung 07.10.): die Belege beim Namen, nie die Zähler des Spiels.
+// DER INHALT EINES SATZES zwischen zwei Bildern (rein): die Belege beim Namen, nie die Zähler des Spiels.
 // `vor`/`jetzt` je { stand, verdichtet, anker, schmutzig, geom, vKap, iKap, ueber, bloecke: Map(Schlüssel → { b, h }) } —
 // `b` der Bereich (Identität), `h` seine Hülle und die seiner Zellen als Zahlen. `offen` = die Ordnung, die ein Ein-/Austritt
 // davor offen ließ. Grund `aenderung`: ein Bereich kam, ging oder wurde neu gebaut, der Anker zog um, eine Hülle änderte sich
@@ -635,7 +633,7 @@ function sichtSatzInhalt(vor, jetzt, offen) {
     return e;
 }
 
-// DIE BYTES UND IHR GRUND (rein, K 07.10.): je Frame die Index-Bytes nach Klasse — `aenderung` (eine neue Wahl, deren
+// DIE BYTES UND IHR GRUND (rein): je Frame die Index-Bytes nach Klasse — `aenderung` (eine neue Wahl, deren
 // Grund im selben Frame geschah: die Lage eines Passes bei gedrehtem Licht, der Inhalt ihrer Familie mit BENANNTEM Grund —
 // ein Bereich, ein Anker, eine Hülle: Streaming, ein Bau, ein Geomorph), `folge` (die Arbeit einer Änderung davor, solange eine
 // Wahl sie schuldet: das Verdichten einer ruhenden Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd
@@ -690,7 +688,7 @@ function sichtKameraBewegt(a, e, haltM, drehRand) {
     }
     return false;
 }
-// DIE BLENDE BEWEGT SICH (rein, Gegenprüfung 07.10.): Anker und jetzt je { ex, ez, werte } — das Auge der Maske (`uLodAuge`
+// DIE BLENDE BEWEGT SICH (rein): Anker und jetzt je { ex, ez, werte } — das Auge der Maske (`uLodAuge`
 // in XZ) wanderte um mehr als den halben Halt (`haltM`, `_blendeHaelt` des Spiels: es ist ein Ort der Lage wie das Auge der
 // Kamera), oder ein Wert der Blende (an · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes) änderte sich. Das Atmen des
 // Auges unter dem Halt ist keine Bewegung — es entschuldigt keine Arbeit.

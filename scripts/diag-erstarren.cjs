@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-erstarren.cjs — DIE ERSTARREN-LINSE (P0, Schöpfer-Browser-Befund 14.07.2026)
+// diag-erstarren.cjs — DIE ERSTARREN-LINSE (P0)
 //
 // Schöpfer: „es wird nach einem reset kurz spielbar, aber erstarrt jedes mal".
 // Diese Linse macht das Szenario headless messbar — kalter Boot (frisches

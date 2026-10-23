@@ -364,9 +364,7 @@ async function s0Probe(page, station, schein) {
                 if (amFeuer.length < 1) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
-                        : typeof r._leuchtTakt !== "function"
-                          ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
-                          : "der Licht-Takt setzt keinen Platz an die Glut";
+                        : "der Licht-Takt setzt keinen Platz an die Glut";
                     out.befunde.push(
                         `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
@@ -1068,7 +1066,7 @@ async function lichtLauf() {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
-                async (json, rest) => {
+                async (json) => {
                     await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
@@ -1104,7 +1102,7 @@ async function lichtLauf() {
         ]) {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
-                    async (st, gestalt, rest) => {
+                    async (st, gestalt) => {
                         const r = window.anazhRealm;
                         const s = r.state;
                                                 s.renderer.setAnimationLoop(null);

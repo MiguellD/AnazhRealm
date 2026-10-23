@@ -1,4 +1,4 @@
-// diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen, Welle L 06.10.).
+// diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen).
 // Befund der Leben-Prüfung (Dorf/Stadt S-S1 … S-S5; gespielt im sichtbaren Fenster): das Fachwerk-Labor baut ein
 // Profi-Dorf, lässt aber niemanden hinein — die promovierten Häuser behalten ihre Ganz-Haus-Hülle (4 von 4 zu, 1,1 m vor
 // der offenen Tür), demotierte Häuser werden Geister (0 Solids); auf der Speichertreppe klemmt der Kopf im Dachboden-Boden
@@ -23,7 +23,7 @@
 //   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
 //   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
-//   Vorher-Lauf gegen die Basis cf9a07ba (06.10., der Lauf des Commits 9876ffd2): B1 10/10 zu · 0/8 demotiert mit Hülle
+//   Vorher-Lauf gegen die Basis cf9a07ba (der Lauf des Commits 9876ffd2): B1 10/10 zu · 0/8 demotiert mit Hülle
 //   · B2 0/10 betreten · B3 Klemme 32/105 (Basis-Körper auf geheilter Hülle, Selbsttest „kopf"), Speicher 0/4 oben · B4
 //   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
 //   node scripts/diag-studio-begehen.cjs [--selftest]

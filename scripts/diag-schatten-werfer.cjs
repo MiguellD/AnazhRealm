@@ -1,10 +1,9 @@
 // diag-schatten-werfer.cjs — DIE WERFER-WAND (npm run gate:schatten-werfer).
 //
-// Jede CSM-Kaskade zeichnet ihre eigene Werfer-Menge: `_kaskadenPassen` misst die Box an der Scheibe im Licht-Raum
-// (gerastet, texel-geschnappt, nahe Ebene über dem höchsten Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die Regionen (Werfer-Hülle) und
-// darin die Werfer (Box je Blatt-Mesh) gegen das Frustum der Pass-Kamera. Im Schatten-Pass ist ein Region-Bundle eine
-// Gruppe (die Bundle-Wahrheit am Chokepoint `_renderScene`: unter dem Override-Stoff sammelt kein Render Bundles).
-// Der Boden ist EIN Satz außerhalb jedes Bundles — seine Bereiche sind Hüllen der Box (Empfänger-Band und Werfer).
+// Das Gesetz: `_kaskadenPassen` misst die Box jeder Kaskade an ihrer Scheibe im Licht-Raum (gerastet, texel-geschnappt,
+// nahe Ebene über dem höchsten Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die
+// Regionen (Werfer-Hülle) und darin die Werfer gegen das Frustum der Pass-Kamera; der Boden ist EIN Satz außerhalb jedes
+// Bundles.
 //
 // Diese Linse (Null-Renderer, GPU-frei) fährt die ECHTEN Methoden an einer echten CSM-Instanz (Addon-Init mit der
 // Haupt-Kamera, wie der erste Material-Bau) und der gebooteten Welt:
@@ -16,7 +15,7 @@
 //   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
 //       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
 //       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
-//   K8  die Wahl hält über die Stufen der Sonne (Welle C): dreht das Licht
+//   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht
 //       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
 //       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
 //       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
@@ -47,10 +46,10 @@
 //       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
 //       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot; ein Stoff OHNE Maske (die GPU zeichnet jede Instanz
 //       voll) bekommt kein Fenster — seine L1 jenseits d1 zeichnet; die Gruppen der Welt ohne Masken-Stoff stehen beim Namen
-//   W9  DAS EINE GESETZ, DREI LESER (W7-Vereinigung): ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
+//   W9  DAS EINE GESETZ, DREI LESER: ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   W10 DIE WURF-EBENE (K72): der Wurf IST die Ebene SHADOW_TWIN_LAYER
+//   W10 DIE WURF-EBENE: der Wurf IST die Ebene SHADOW_TWIN_LAYER
 //       (`castShadow` liest und schreibt ihr Bit, kein Knoten trägt ein eigenes Feld), jede Kaskaden-Kamera sieht NUR sie —
 //       jeder zeichnende Knoten der Szene ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
 //       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)
@@ -290,7 +289,7 @@ function probe(selbsttest) {
     // der Wahl um weniger, als das Gesetz des Halts erlaubt (`_wahlHaelt`: der halbe Licht-Rand über den längsten Licht-Weg),
     // legt jede Kaskade ihre Box neu (die Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden
     // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
-    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft (Gegenprüfung 07.10.):
+    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft:
     // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
     // den Licht-Rand); die Grenze des Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
@@ -864,7 +863,7 @@ function probe(selbsttest) {
     };
     if (boden) {
         const passeVoll = (kamera, nach) => {
-            // DIE ALTE REGEL (bis 05.10.): der Satz zeichnet den ganzen Ring in jedem Pass
+            // DIE ALTE REGEL: der Satz zeichnet den ganzen Ring in jedem Pass
             void kamera;
             void nach;
             boden.mesh.geometry.setDrawRange(0, boden.iSumme);

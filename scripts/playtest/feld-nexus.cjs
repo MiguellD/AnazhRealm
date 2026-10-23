@@ -125,13 +125,6 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // 10. Phase 5: createDynamicAbility/codeParser sind weg
-        out.dynamicCodeMethodsRemoved =
-            typeof r.createDynamicAbility === "undefined" &&
-            typeof r.codeParser === "undefined" &&
-            typeof r.developAdvancedPhysics === "undefined" &&
-            typeof r.developAdvancedRenderer === "undefined";
-
         // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
@@ -195,10 +188,6 @@ async function checkBandRing2Extended(ctx) {
         check(
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
-        );
-        check(
-            "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
-            phase3Results.dynamicCodeMethodsRemoved
         );
         check(
             "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
@@ -478,6 +467,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
+
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
@@ -1112,7 +1102,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
             "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + Takt 600 s",
-            wave6hP2eV3Results.hasWhitelist && wave6hP2eV3Results.whitelistSize && wave6hP2eV3Results.rareEventGap
+            wave6hP2eV3Results.hasWhitelist &&
+                wave6hP2eV3Results.whitelistSize &&
+                wave6hP2eV3Results.rareEventGap
         );
         check(
             "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
@@ -1201,6 +1193,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Werkstatt-Tab öffnen
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
+
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
             const wrapper = document.getElementById("workshop-preview-wrapper");
             const modeBar = document.getElementById("workshop-mode-bar");

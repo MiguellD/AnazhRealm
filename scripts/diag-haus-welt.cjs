@@ -157,10 +157,10 @@ const BASIS = {
         ],
     ],
     // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
-    // (`_ortTraegt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
+    // (am Sieger des Ort-Fadens, `_ortTraegtWirt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
     bauwand: [
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
-        ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
+        ["if (!this._bauFrei(wx, wz, sl.phi || 0,", "if (false && !this._bauFrei(wx, wz, sl.phi || 0,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
     // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
@@ -274,13 +274,14 @@ async function proben(phasen) {
     const start = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
     o.startOrt = { x: Math.round(start.x), z: Math.round(start.z) };
     const vorBau = new Set(s.architectures);
+    let steht = false;
     r.spawnSettlement(
         dorfOrt ? { seed: 7, nH: 18, position: { x: dorfOrt.x, y: dorfOrt.y, z: dorfOrt.z } } : { seed: 7, nH: 18 }
-    );
+    ).then(() => (steht = true));
     const dorfHaeuser = () =>
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
-    // der Export reist durch den Foundry-Worker: warten, bis die Slots stehen
-    for (let k = 0; k < 120 && dorfHaeuser().length < 10; k++) {
+    // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht
+    for (let k = 0; k < 120 && !steht; k++) {
         await pumpe(4);
         await warte(100);
     }
@@ -1394,10 +1395,13 @@ async function proben(phasen) {
             for (const c of region.cells || [])
                 if (((c.slots && c.slots.length) || c.feld) && Math.hypot(c.x - fx, c.z - fz) < 40) vorZellen++;
         const vorDorf = new Set(s.architectures);
-        r.spawnSettlement({ seed: 23, nH: 14, position: { x: fx, y: r.getTerrainHeightAt(fx, fz), z: fz } });
+        let fernSteht = false;
+        r.spawnSettlement({ seed: 23, nH: 14, position: { x: fx, y: r.getTerrainHeightAt(fx, fz), z: fz } }).then(
+            () => (fernSteht = true)
+        );
         const fernHaeuser = () =>
             s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
-        for (let k = 0; k < 120 && fernHaeuser().length < 8; k++) {
+        for (let k = 0; k < 120 && !fernSteht; k++) {
             await pumpe(4);
             await warte(100);
         }
@@ -1692,9 +1696,9 @@ async function proben(phasen) {
                 },
             };
             const vorSlot = new Set(s.architectures);
-            // K10: der Slot geht den Weg des Plans v2 — `_ortPlanSetzen` legt seinen Boden y und den Erdbau, bevor das Haus
+            // K10: der Slot geht den Weg des Plans v2 — `_ortWahl` legt seinen Boden y und den Erdbau, bevor das Haus
             // steht (je Haus ein eigener Ort: der Samen trägt die Kultur)
-            const v2 = r._ortPlanSetzen(
+            const v2 = await r._ortWahl(
                 { seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] },
                 { x: 0, z: 0 }
             );

@@ -672,6 +672,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
+
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
             out.paletteInDom = !!palette;
@@ -842,6 +843,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
+
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
@@ -1284,9 +1286,12 @@ async function checkBandEarlyRingsAndUi(ctx) {
             mixNass.regen.db >= UM.hoerschwelleDb &&
             mixTrocken.regen.db === -Infinity;
 
-        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar)
+        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar) — ein Misch-Takt sind vier Bilder
+        // (Lage · Mischung · Graph · Tier-Rufe, `_umweltKlangTick`)
         s.umwelt.letzteMischung = -Infinity;
-        r.symphonyTick();
+        s.umwelt.folge = 0;
+        s.umwelt.mix = null;
+        for (let i = 0; i < 4; i++) r.symphonyTick();
         out.taktMischt = !!s.umwelt.lage && !!s.umwelt.mix && Array.isArray(r._klangZensus().stimmen);
 
         // (d) Der Tier-Ruf zählt jeden Ruf (die Stimme folgt dem Körper)

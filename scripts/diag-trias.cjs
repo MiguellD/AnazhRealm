@@ -40,7 +40,7 @@ const HAUS_L2_MAX_TRIS = 8000;
 // ── AUSLÖSCHUNGS-WELLE — DIE SUBSTANZ-PARITAET (stehende Linse, Teil N4) ──
 // Die Judge-Substanz der fuenf gefallenen Donor-Blueprints lebt EINGEFROREN in
 // AnazhRealm.KIND_SUBSTANCE (je EINE Zeile `    <name>: {...json...},`). Die Muenzen
-// (sha256 ueber JSON.stringify der geparsten Zeile, Mint 10.07.2026) machen jede
+// (sha256 ueber JSON.stringify der geparsten Zeile) machen jede
 // Drift der Substanz laut.
 const KIND_SUBSTANCE_MINT = {
     geraet_schwert: "fbd9f91fa5f8e26c9dd99959ce99f0c8906cbe82662ee1f82035003529e4ff9b",
@@ -239,7 +239,7 @@ const triasStaticLaws = () => [
         ]);
         if (!plan || !plan.slots) return Object.assign(res, { fatal: "kein Settlement-Export" });
         tp(anchor.x, anchor.z);
-        res.placed = r._spawnSettlementFromExport(plan, anchor).placed;
+        res.placed = (await r._spawnSettlementFromExport(await r._ortWahl(plan, anchor), anchor)).placed;
         // DER KALT-STEMPEL (vor dem ersten Tick): jeder kalte Foundry-Eintrag im Radius trägt seine Distanz-Stufe von Geburt an
         const kalt = r.state.architectures.filter(
             (e) => e && typeof e.type === "string" && e.type.indexOf("haus_") === 0 && !e.instanced && !e.mesh &&
@@ -389,15 +389,16 @@ const triasStaticLaws = () => [
         // MESSEN (die Budget-Begruendungs-Zahl: 189-255 MB Arbeits-Menge gemessen ->
         // Budget 512 MB = ~2x Kopfraum, KEIN Arbeits-Mengen-Churn [der Crossfade-Sweep
         // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
-        // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege deckeln am
-        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel); Deckel + 44 leichte deckeln an der
-        // Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
+        // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege mit lebender Senke deckeln am
+        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel), 80 untaetige am RUHE-Deckel (64/8 = 8, profiband K5);
+        // Deckel + 44 leichte deckeln an der Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
         const f2 = r._ensureAssetFoundry();
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
         res.warmCacheSize = f2.cache.size;
         const savedC = { cache: f2.cache, bytes: f2.cacheBytes, req: f2.requested, lru: f2.lruEvicted };
         const BYTES = r.constructor.FOUNDRY_CACHE_BYTES;
-        const mkFake = (mb) => ({
+        const mkFake = (mb, lebt) => ({
+            _liveRefs: lebt ? 1 : 0,
             children: [
                 {
                     geometry: {
@@ -412,9 +413,14 @@ const triasStaticLaws = () => [
         f2.cacheBytes = 0;
         f2.requested = new Set();
         f2.lruEvicted = new Set();
-        for (let i = 0; i < 80; i++) r._foundryCacheSet("gewicht8|" + i, mkFake(8));
+        for (let i = 0; i < 80; i++) r._foundryCacheSet("gewicht8|" + i, mkFake(8, true));
         res.heavySize = f2.cache.size;
         res.heavyBytesOk = f2.cacheBytes <= BYTES;
+        f2.cache = new Map();
+        f2.cacheBytes = 0;
+        for (let i = 0; i < 80; i++) r._foundryCacheSet("ruhe8|" + i, mkFake(8));
+        res.ruheSize = f2.cache.size;
+        res.ruheSoll = r.constructor.FOUNDRY_RUHE_BYTES / (8 << 20);
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
@@ -504,9 +510,9 @@ const triasStaticLaws = () => [
             `ring=${out.l1RingDist}m level=${out.l1Level} served=${out.l1Served} slot=${out.l1Slot}`
         );
         check(
-            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap})`,
-            out.heavySize === 64 && out.heavyBytesOk === true,
-            `size=${out.heavySize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
+            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap}), untaetige am RUHE-Deckel (${out.ruheSoll})`,
+            out.heavySize === 64 && out.heavyBytesOk === true && out.ruheSoll >= 1 && out.ruheSize === out.ruheSoll,
+            `size=${out.heavySize} ruhe=${out.ruheSize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
         );
         check(
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,

@@ -14,12 +14,12 @@
 //       Tier.
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
-//       steht dort)
-//   K6  TIER AM CHUNK-RAND (K07): am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
+//       steht dort, kein Seegrund)
+//   K6  TIER AM CHUNK-RAND: am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
 //       des Eigners ist leer oder trägt nur, was darunter liegt — (a) der Stand-Leser quer durch die Rand-Streifen um den
 //       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm; die Pfote am
 //       Mesh misst K8
-//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
+//   K7  WIESE UND STREU AM CHUNK-RAND: der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
 //       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
@@ -28,7 +28,7 @@
 //       Bein, das schlechteste), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
-//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
+//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";

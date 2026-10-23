@@ -22,7 +22,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const t0 = Date.now();
@@ -31,7 +31,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
@@ -143,6 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         if (ziel) {
             const v = r._foundryVariantFor(1, ziel.preset);
             const key = r._foundryKoerperKey(ziel.preset, v, ziel.lod);
+            await flatMessen(ziel.preset, ziel.lod); // eine untätige Stufe räumte der Ruhe-Deckel: sie reist wieder an
             const grp = r._foundryCacheGet(key);
             const orig = r._foundryFlatVerschmelzen;
             try {
