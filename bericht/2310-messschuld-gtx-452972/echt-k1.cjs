@@ -190,6 +190,7 @@ const dorfStand = (page, e) =>
         await klick(o.cdp);
         await warte(500);
         await taste(o.cdp, "keyDown");
+        const bauFehler = (zeile.bauFehler = []); // was der Bauer wirft, ausser dem Tod selbst (Target closed beim Kill)
         const bauer = setInterval(() => {
             o.page
                 .evaluate(() => {
@@ -202,7 +203,11 @@ const dorfStand = (page, e) =>
                     // editform-kern benannte carveVoxelSphere in carveVoxel um: beide Namen, damit die Sonde an jedem Baum gräbt
                     (r.carveVoxel || r.carveVoxelSphere).call(r, p.x - 5, r._terrainMacroSurfaceY(p.x - 5, p.z), p.z, 1.5);
                 })
-                .catch((e) => (window.__bauFehler = String(e)));
+                .catch((e) => {
+                    // der Catch laeuft in Node, nicht in der Seite; der Kill selbst ist kein Baufehler
+                    const t = String(e);
+                    if (!/closed|Target|Session|detached|Execution context/i.test(t)) bauFehler.push(t.slice(0, 160));
+                });
         }, 1500);
         const art = ERW[z] || (z % 2 === 0 ? ["idb", "fest", "platz"][(z >> 1) % 3] : "zufall");
         await warte(6000 + Math.random() * 12000);
@@ -247,6 +252,7 @@ const dorfStand = (page, e) =>
         ueber10: urteil.filter((x) => x.alterS == null || !(x.alterS <= 10)).length,
         halbe: urteil.filter((x) => x.alterS == null || x.verlorenBloecke > 0 || x.verlorenEdits > 0).length,
         korrupt: zyklen.filter((x) => x.befund.length).length,
+        bauFehler: zyklen.reduce((n, x) => n + (x.bauFehler || []).length, 0),
         erwachen: zyklen.filter((x) => x.erwachen || x.dorfGeladen).map((x) => ({ z: x.z, erwachen: x.erwachen, tod: x.tod, alterS: x.alterS, dorfGeladen: x.dorfGeladen, dorfNach10s: x.dorfNach10s })),
         saveRufe: saveMs.length,
         saveMs: { p50: q(saveMs, 0.5), p95: q(saveMs, 0.95), max: q(saveMs, 1) },

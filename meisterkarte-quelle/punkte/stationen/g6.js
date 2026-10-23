@@ -393,6 +393,7 @@ module.exports = [
             // eine Sonde ohne Messung ist ROT (23.10.: carveVoxelSphere hiess nach editform-kern carveVoxel, 20 Zyklen ohne Edit)
             const edits = Math.max(0, ...j.zyklen.map((z) => z.eGeladen || 0));
             if (!(edits > 0)) return { gruen: false, zahl: "Sonde blind: in keinem Zyklus entstand ein Edit" };
+            if (j.bauFehler > 0) return { gruen: false, zahl: "Sonde wackelt: der Bauer warf " + j.bauFehler + "-mal (ausser dem Tod)" };
             const gruen = j.tode >= 20 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10;
             return {
                 gruen,
@@ -419,6 +420,7 @@ module.exports = [
             // eine Sonde ohne Messung ist ROT (23.10.: carveVoxelSphere hiess nach editform-kern carveVoxel, 20 Zyklen ohne Edit)
             const edits = Math.max(0, ...j.zyklen.map((z) => z.eGeladen || 0));
             if (!(edits > 0)) return { gruen: false, zahl: "Sonde blind: in keinem Zyklus entstand ein Edit" };
+            if (j.bauFehler > 0) return { gruen: false, zahl: "Sonde wackelt: der Bauer warf " + j.bauFehler + "-mal (ausser dem Tod)" };
             const tode = j.zyklen.filter((z) => z.tod).map((z) => z.tod);
             const gang = j.zyklen.filter((z) => z.erwachen && z.erwachen.gangAktiv).length;
             const arten = ["idb", "platz", "erwachen-hart", "erwachen-idb"].filter((a) => tode.includes(a));
