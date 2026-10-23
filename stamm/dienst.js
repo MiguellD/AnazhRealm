@@ -38,10 +38,9 @@ class AnazhRealm_dienst {
     // Tat des vorigen Satzes auslöste, 30–60 s auf der CPU. Ein Ruf der Welt (`hintergrund`: Journal-Kommentar, Reflexion eines
     // Wesens, die geteilte Stimme eines Mitspielers) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler
     // wartet auf keins von beiden. Ein zweiter Vordergrund-Ruf während des Abbruchs findet die Tür wieder besetzt (`while`).
-    // DER NAME IST DATUM, NIE ANWEISUNG (ultiversum K5): jeder Name und jeder fremde Text, der in eine Erinnerung oder einen
-    // Prompt fließt, reist isoliert (U+2068 … U+2069, die Unicode-Isolation, im Bild unsichtbar) — als Tag (`_datum\`… ${x}\``)
-    // jeder eingesetzte Text, Zahlen bleiben Zahlen. Die Tür macht daraus Platzhalter: das Modell liest nie, was ein Fremder
-    // schrieb (der gehorsame Feind von gate:v1-pfad --feind fand 6 von 6 Injektionen und tat 2), die Antwort bekommt die Namen.
+    // DER NAME IST DATUM, NIE ANWEISUNG (ultiversum K5): jeder Name und fremde Text in Erinnerung oder Prompt reist isoliert
+    // (U+2068 … U+2069, unsichtbar) als Tag `_datum\`… ${x}\``, Zahlen bleiben Zahlen; die Tür macht Platzhalter daraus — das Modell
+    // liest nie, was ein Fremder schrieb (der gehorsame Feind von gate:v1-pfad --feind tat 2 von 6), die Antwort bekommt die Namen.
     static _datum(teile, ...werte) {
         const iso = (s) => "⁨" + String(s == null ? "" : s).replace(/[⁦-⁩]/g, "") + "⁩";
         if (!Array.isArray(teile) || !teile.raw) return iso(teile);
@@ -59,12 +58,11 @@ class AnazhRealm_dienst {
             })
             .replace(/[⁦-⁩]/g, "");
     }
-    // Eine Erinnerung, wie das Modell sie liest: ein Satz dieser Welt (`d`, nur journalAppend stempelt ihn) trägt seine Namen
-    // isoliert; jede andere — vor dem Gesetz geschrieben, mit einer fremden Welt gekommen — ist ganz Datum.
+    // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
         return `[${String(e.type)
             .replace(/[^a-z]/gi, "")
-            .slice(0, 12)}] ${e.d === 1 ? e.text : AnazhRealm._datum(e.text)}`;
+            .slice(0, 12)}] ${e.d === 1 ? e.ki || e.text : AnazhRealm._datum(e.text)}`;
     }
 
     async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
@@ -260,8 +258,9 @@ class AnazhRealm_dienst {
             text: text.slice(0, 240),
             d: 1,
         };
-        // ein Schnitt mitten in einem Namen schließt seine Isolation (der Rest der Zeile bliebe sonst Datum)
+        // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
+        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
         if (ctx && typeof ctx === "object") entry.ctx = ctx;
         j.entries.push(entry);
         if (j.entries.length > (j.entryCap || 200)) {

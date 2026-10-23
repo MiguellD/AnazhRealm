@@ -1305,6 +1305,7 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
+        text = String(text).replace(/[⁦-⁩]/g, ""); // der Spieler liest rein, `d: 0` macht ihn Datum
         const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
