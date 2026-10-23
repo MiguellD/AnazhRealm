@@ -633,7 +633,11 @@ function haengerTabelle(a) {
 // F95 33,5 ms): je Name seine Zeit ab p95 über jeden Pfad (je Ast einmal gezählt), ROT über der Schwelle je Takt — ein Posten, der
 // in JEDEM Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
 // In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
-const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"];
+// Im Gang (`bahn`, Messort stadt, Radeon 23.10.) die Wahl der Pässe: sie ruht im Stand (Welle C) und kostet gehend jeden Takt.
+const POSTEN_JE_WEG = {
+    fahrt: ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"],
+    bahn: ["_chunkSatzPass", "_hoehlenSicht", "_instanzWahlPass"],
+};
 function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
     k.k.forEach((c, nm) => {
         const i = namen.indexOf(nm.split(" ")[0]);
@@ -642,7 +646,7 @@ function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
     });
     return namen.map((name, i) => ({ name, spitzeMs: +summe[i].toFixed(2) }));
 }
-function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_POSTEN : []) {
+function spitzenAuswerten(roh, spur, posten = POSTEN_JE_WEG[roh.wandern] || []) {
     const S = roh.wandern === "fahrt" ? 0.5 : 1;
     const T = roh.takte,
         P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null,
@@ -696,7 +700,7 @@ function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_PO
 }
 // Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
 function linseWerten(roh, spur, b) {
-    if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : []);
+    if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
     const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
@@ -865,16 +869,17 @@ function selbsttest() {
         if (p.befunde.length !== s.befunde.length + 1 || !/^Posten _teilA: /.test(p.befunde.at(-1)))
             f.push(`Posten ${p.posten.map((x) => `${x.name} ${x.spitzeMs}`).join(" · ")} ms falsch geurteilt`);
     });
-    // DIE FAHRT: der ruhige Lauf GRÜN; heißt _teilC (2 ms je Takt) computeVertexNormals, ROT beim Namen; ein stehender Wagen ROT
+    // DER WEG (über `linseWerten`, ohne `--posten`): heißt _teilC (2 ms je Takt) computeVertexNormals in Fahrt bzw.
+    // _chunkSatzPass im Gang, ROT beim Namen, sonst GRÜN; ein stehender Wagen ROT
     const [v0, b0] = spitzen[0];
-    const fahrt = (nm, bahnM) => {
+    const weg = (nm, bahnM, wandern = "fahrt") => {
         const nodes = sp.profil.nodes.map((n) => (n.id === 17 ? { ...n, callFrame: { ...n.callFrame, functionName: nm } } : n));
         const takte = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
-        return spitzenAuswerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }).befunde.join();
+        return linseWerten({ takte, wandern, bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }, { spitze: true }).befunde.join();
     };
-    const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
-    if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))
-        f.push("die Fahrt falsch geurteilt: " + urteil.join(" | "));
+    const u = [weg("_teilC", 500), weg("computeVertexNormals", 500), weg("_teilC", 20), weg("_teilC", 120, "bahn"), weg("_chunkSatzPass", 120, "bahn")];
+    if (u[0] || u[3] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(u[1]) || !/^die Fahrt stand[^,]*$/.test(u[2]) || !/^Posten _chunkSatzPass: 2[^,]*$/.test(u[4]))
+        f.push("der Weg falsch geurteilt: " + u.join(" | "));
     return f;
 }
 
