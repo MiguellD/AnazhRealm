@@ -6,6 +6,8 @@
 // Ein Eintrag mit befehl: null ist eine Staffel, die kein Werkzeug im Spiel-Baum messen kann — grund nennt, was fehlt.
 "use strict";
 
+const { jsonZeile } = require("../hilfe.cjs");
+
 const zeilen = (t) => String(t || "").split(/\r?\n/);
 const SOFT = { LINSE_GPU: "software" };
 
@@ -573,6 +575,53 @@ const alle = [
             "kein Werkzeug setzt den Turm auf Dach, Fels und Brücke (`_bodenSichtAt`) und misst den Fern-Ring-Edit ≤ 1 s per byte-Diff " +
             "in Ego und Third",
         quelle: "2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte",
+    },
+    // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
+    {
+        kriterium: "studios.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-nervensystem.cjs"],
+        env: { ...SOFT, NERV_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);
+            if (!e) return { gruen: false, zahl: "keine E-ZAHL-Zeile (Exit " + lauf.exit + ")" };
+            const lod = (e.lod || []).map((x) => "L" + x.ist + " " + x.tris).join(" · ");
+            const taeter = e.taeter || [];
+            return {
+                gruen: lauf.exit === 0 && taeter.length === 0,
+                zahl:
+                    `${e.bauplaene}/3 Baupläne · Stufen ${lod || "keine"} △ · Kosten ${(e.kosten || []).map((k) => k.klasse).join("/") || "keine"} · ` +
+                    `Neuladen ${e.geladen === true ? "steht" : "fehlt"} · der Wirt nennt die Art ${e.nennt}×` +
+                    (taeter.length ? " — " + taeter.join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/",
+            "index.html",
+            "cores.manifest.json",
+            "*-core.js",
+            "foundry-bruecke.js",
+            "worlds/neuntes-buch/",
+            "worlds/huelle/huelle.js",
+            "worlds/terrain/lib/",
+            "scripts/diag-nervensystem.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "1 = ein Probe-Gesetzbuch (Fixture-Kern in spec/ mit PARAMS_BY_KIND und Bauer) steht über die Werkstatt in der Welt mit LOD-Kette, Kosten-Leiste und Speicher-Rundlauf, `git diff stamm/` = 0",
+    },
+    {
+        kriterium: "studios.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: null,
+        grund:
+            "gate:nervensystem E misst Werkstatt und Wort-Katalog; es fehlen der KI-Satz bis spawn_studio, der P2P-Weg zum Mitspieler " +
+            "und der Atlas-Eintrag des Buchs (diag-atlas liest nur cores.manifest.json)",
+        quelle: "2 = auf allen Wegen (Werkstatt, KI-Satz, Foundry, P2P), und der Atlas nennt seine EINE Quelle",
     },
 ];
 
