@@ -26,7 +26,7 @@ async function WELLE_L() {
         lock: s.isPointerLocked,
         hp: p.hp,
         grace: p.respawnGraceUntil,
-        breakHeld: p.breakHeld,
+        breakHeld: s.verbTafel.gehalten.break,
         hotbar: Array.isArray(s.hotbar) ? s.hotbar.slice() : s.hotbar,
     };
     // ── die mitlaufenden Zähler (rufen IMMER durch; nur die Voxel-Ops werden gezählt statt geschnitzt) ──
@@ -82,7 +82,7 @@ async function WELLE_L() {
         });
         return orig.juice.apply(this, a);
     };
-    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs, Welle LF)
+    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs)
     r._beginPlayerSwing = function (...a) {
         const ok = orig.swing.apply(this, a);
         if (ok) zaehl.schwung++;
@@ -743,7 +743,7 @@ async function WELLE_L() {
         r.setGameMode("pfad");
         p.hp = 1e9;
         p.respawnGraceUntil = -Infinity;
-        // Die Gegenwehr ist der Ansprung (Welle LF kampf, Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
+        // Die Gegenwehr ist der Ansprung (Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
         // steht auf dem Boden) — gezählt wird, was das Maul am Leib schnappt.
         const gegenwehrAn = (c) => {
             const g0 = zaehl.gegenwehr;
@@ -1272,7 +1272,7 @@ async function WELLE_L() {
         zielen(punkt(hirsch, null));
         const z2 = zaehl.carve;
         p._swing = null;
-        p.breakHeld = true;
+        s.verbTafel.gehalten.break = true;
         p.lastHarvestStrikeAt = performance.now() / 1000;
         r.tryMouseBreak();
         stelle(hirsch, 1.6, 7); // aus dem Fadenkreuz geschoben
@@ -1287,7 +1287,7 @@ async function WELLE_L() {
             p.lastHarvestStrikeAt = -Infinity;
             r._tickHarvest();
         }
-        p.breakHeld = false;
+        s.verbTafel.gehalten.break = false;
         p._swing = null;
         w.z.haltenKrater = zaehl.carve - z2;
         w.c.haltenOhneKrater = w.z.haltenKrater === 0;
@@ -1354,7 +1354,7 @@ async function WELLE_L() {
         } finally {
             r.tryMouseBreak = tmbOrig;
             delete r.tryMouseBreak;
-            p.breakHeld = false;
+            s.verbTafel.gehalten.break = false;
         }
         // (M5) FERTIGEN eines Bauwerks fährt diag-werkstatt-weg mit echten Klicks (das Werk steht, nie in der Hand)
         ausruesten(null);
@@ -1423,7 +1423,7 @@ async function WELLE_L() {
             });
             w.c.s3 = w.z.s3 < 0;
         }
-        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (Welle LF: er fällt, die
+        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (er fällt, die
         // Ballistik hebt ihn) — gemessen der Winkel zwischen Pfeil und Fadenkreuz-Punkt von der Kamera aus, wenn der Pfeil die
         // Weite des Punkts erreicht
         if (rec) {
@@ -1929,7 +1929,7 @@ async function WELLE_L() {
                 r.setCameraMode("first");
                 r._loopCamera(T);
             }
-            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (Welle LF: _kampfKlingenKontakt —
+            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (_kampfKlingenKontakt —
             // Klinge B → T und das Tier), auf älteren Ständen der Glied-Test der Gestalt (Strecke a → b)
             const naht = "_kampfKlingenKontakt";
             const gtRoh = r[naht];
@@ -2000,7 +2000,7 @@ async function WELLE_L() {
                 }
                 if (!strecke || !p._swing) return { traf: false };
                 // der Treffer-Takt: die Anzeige-Uhr steht, die Pose dieses Takts wird gelegt, die Ich-Kamera folgt
-                p._hitStopUntil = Infinity;
+                p._hitStopUntil = T + 1;
                 r.animatePlayerSoul(T);
                 r._loopCamera(T);
                 s.camera.updateMatrixWorld(true);
@@ -3236,7 +3236,7 @@ async function WELLE_L() {
         s.isPointerLocked = saved.lock;
         p.hp = saved.hp;
         p.respawnGraceUntil = saved.grace;
-        p.breakHeld = saved.breakHeld;
+        s.verbTafel.gehalten.break = saved.breakHeld;
         p._swing = saved.swing;
         p._hitStopUntil = saved.hitStop;
         s.maxCreatures = saved.maxC;

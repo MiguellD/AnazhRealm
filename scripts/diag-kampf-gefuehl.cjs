@@ -581,7 +581,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
         await warteAufWelt(page, 120000);
-        // Warmup: die Welt settled pumpen (plateau-basiert, die V18.273-Lehre).
+        // Warmup: die Welt settled pumpen.
         await page.evaluate(async () => {
             const r = window.anazhRealm;
             await window.__weltStehtNach(() => {
@@ -597,28 +597,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 s = r.state,
                 A = r.constructor;
             const o = { checks: {} };
-            for (const fn of [
-                "_swingDynamics",
-                "_swingDauerFuerBlueprint",
-                "_playerSwingDauer",
-                "_beginPlayerSwing",
-                "_playerAttackCreature",
-                "_tickKampfSchwung",
-                "_kampfSweepTick",
-                "_kampfBladeReach",
-                "_segSegDistSq",
-                "_hitStopFactor",
-                "_kampfHitJuice",
-                "_playKampfOneShot",
-                "_applyKampfSchwungPose",
-                "damageCreature",
-                "_creatureCombatDeath",
-                "updateCreatures",
-                "_loopFixedStep",
-                "animatePlayerSoul",
-            ]) {
-                if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
-            }
             // KERN-PFLICHT: die Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).
             const AG = A._arenaGesetz();
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
@@ -646,7 +624,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
             const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
-            // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
+            // der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
             // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
             const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
@@ -717,7 +695,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
             s.yaw = 0; // Blick nach +z (die _loopCamera-Konvention)
             s.pitch = 0;
-            // die Klinge folgt dem Fadenkreuz (Welle L): die ECHTE Kamera steht auf dem Blick
+            // die Klinge folgt dem Fadenkreuz: die ECHTE Kamera steht auf dem Blick
             r.setCameraMode("first");
             r._loopCamera(900);
             p._hitStopUntil = 0;
@@ -734,7 +712,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             const cRuecken = spawnBei(0, -2.0); // HINTER dem Rücken
             if (!cNeben || !cRuecken) return { error: "Kreatur-Spawn fehlgeschlagen (Cap?)" };
             // Das Fadenkreuz steht 0,9 m NEBEN dem Ziel auf seiner Leibes-Höhe (Gier 0, die Neigung auf die Mitte):
-            // die Klinge zielt durchs Fadenkreuz und fegt den Bogen ±arcHalf (Welle L).
+            // die Klinge zielt durchs Fadenkreuz und fegt den Bogen ±arcHalf.
             {
                 const b = new THREE.Box3().setFromObject(cNeben);
                 const c = s.camera.position;
@@ -823,7 +801,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             for (let k = 1; k <= 20; k++) r._tickKampfSchwung(5000 + k * 0.02);
             o.checks.cSchwungFriert = !!p._swing && p._swing.t === 0;
             p._swing = null;
-            // (C2) die Gang-Phase friert (echter Konsument animatePlayerSoul)
+            // (C2) der GANZE Leib steht (halten.K2): mitten im Strike gleitet das Ziel
             if (!pm.userData.rig) r.applyPlayerSoul("human");
             const mesh = s.playerMesh;
             if (!mesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
@@ -831,16 +809,24 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             p.mountedArch = null;
             let vStub = 5;
             s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
+            const hand = () => mesh.userData.rig.armR.wrist.getWorldPosition(new THREE.Vector3()).sub(mesh.position);
+            o.handM = [];
             const gehe = (t0, n) => {
+                r._beginPlayerSwing(cNeben);
+                p._swing.t = p._swing.windupSec + 0.5 * p._swing.strikeSec;
                 p.animationLastTick = -Infinity;
                 r.animatePlayerSoul(t0);
-                const ph0 = p.walkPhase;
-                for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
+                const ph0 = p.walkPhase,
+                    h0 = hand();
+                for (let k = 1; k <= n; k++) {
+                    cNeben.position.x += 0.01;
+                    r.animatePlayerSoul(t0 + k / 60);
+                }
+                o.handM.push(hand().distanceTo(h0));
+                p._swing = null;
                 return p.walkPhase - ph0;
             };
-            const dPhaseGestoppt = gehe(6000, 30);
-            o.dPhaseGestoppt = dPhaseGestoppt;
-            o.checks.cGangFriert = dPhaseGestoppt === 0;
+            o.checks.cGangFriert = gehe(6000, 30) === 0 && o.handM[0] === 0;
             // (C3) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (Fixed-Akku-Probe)
             s.playerVel = saved.vel; // die Sim braucht den ECHTEN Body (kein Stub)
             const simT0 = s._fixedSimTime;
@@ -849,12 +835,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.simSteps = steps1 + steps2;
             o.simDelta = s._fixedSimTime - simT0;
             o.checks.cSimLaeuftWeiter = o.simSteps >= 2 && o.simDelta > 0;
-            // (C4) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder
+            // (C4) Gegenprobe: vor dem Treffer läuft die Anzeige-Uhr (der Halt ist ein Fenster ab ihm)
             s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
-            p._hitStopUntil = 0;
-            const dPhaseFrei = gehe(7000, 30);
-            o.dPhaseFrei = dPhaseFrei;
-            o.checks.cGegenprobeLaeuft = dPhaseFrei > 0;
+            p._hitStopAb = 8000;
+            o.checks.cGegenprobeLaeuft = gehe(7000, 30) > 0 && o.handM[1] > 0.001;
             // (S1) SELBST-TEST: _hitStopFactor ≡ 1 gestubbt → trotz Hit-Stop läuft die Uhr
             const savedFactor = r._hitStopFactor;
             p._hitStopUntil = Number.MAX_SAFE_INTEGER;
@@ -862,7 +846,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             const dPhaseStub = gehe(8000, 30);
             r._hitStopFactor = savedFactor; // restaurieren (Gate-Hook-Lehre)
             p._hitStopUntil = 0;
-            o.dPhaseStub = dPhaseStub;
             o.checks.s1LinseFeuert = dPhaseStub > 0;
 
             // ── (E) OBERKÖRPER-LAYER additiv über der Lokomotion ──
@@ -879,7 +862,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 return {
                     armX: rig.armR.shoulder.rotation.x,
                     chestY: rig.chest ? rig.chest.rotation.y : 0,
-                    // der Layer dreht die Gelenke als Quaternion (Welle LF: der Leib folgt der Klinge) — gemessen wird der
+                    // der Layer dreht die Gelenke als Quaternion (der Leib folgt der Klinge) — gemessen wird der
                     // Winkel der Drehung, nicht eine Euler-Achse
                     armQ: rig.armR.shoulder.quaternion.clone(),
                     chestQ: (rig.chest || rig.spine).quaternion.clone(),
@@ -955,7 +938,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             const uyC = upY(cTod);
             o.kipp.uyC = uyC;
             o.checks.dGekippt = uyC < 0.35 && liegt(cTod);
-            // der Leichnam liegt (Welle LF, Posten 7): nach dem Kippen bleibt er, bis die Frist des Gesetzbuchs (kippDauer +
+            // der Leichnam liegt (Posten 7): nach dem Kippen bleibt er, bis die Frist des Gesetzbuchs (kippDauer +
             // leichnamSec, Kreatur-Uhr) verstrichen ist — dann kehrt er zur Erde zurück
             const GT = r.constructor._arenaGesetz().gefuehl;
             tick(4, 0.1); // t=1.4
@@ -1007,7 +990,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)})`
         );
         console.log(
-            `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Phase gestoppt ${out.dPhaseGestoppt.toFixed(3)} / frei ${out.dPhaseFrei.toFixed(2)}`
+            `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Hand C2 / C4 / S1 ${out.handM.map((m) => (m * 1000).toFixed(1)).join(" / ")} mm`
         );
         console.log(
             `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
@@ -1040,12 +1023,12 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)"
         );
         check(c.cSchwungFriert, "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)");
-        check(c.cGangFriert, "(C) HIT-STOP: die Gang-Phase friert (walkPhase Δ=0 am echten Konsumenten)");
+        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)");
         check(
             c.cSimLaeuftWeiter,
             `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
         );
-        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder");
+        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand");
         check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)");
         check(
             c.s1LinseFeuert,

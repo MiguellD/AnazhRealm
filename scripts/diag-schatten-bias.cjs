@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Befund (Studio-Welle S3, Familie kreatur): der
-// Schatten-Bias war EIN fester Meter-Wert für beide Kaskaden — `atmosphere.shadowBias` = 1,0 → `shadow.normalBias` 1,0 m
-// (r184 schiebt die Probe des Empfängers um `normalWorld × normalBias` in Welt-Metern, ShadowNode). Der Boden fragte die
-// Karte 1 m über sich selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des
-// Spielers warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0)
-// und 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel.
-// Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt
-// den Selbsttest):
+// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Der Boden fragte die Karte 1 m über sich
+// selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des Spielers
+// warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0) und
+// 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel. Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit
+// Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt den Selbsttest):
 //   (S) DER SCHATTEN: je Werfer (wolf, fuchs, busch, pfosten, spieler) auf der ebenen Bühne der Mess-Wiese, Sonne seitlich
 //       (~26°) und mittags — drei Schüsse LEER · MIT · LEER2; die ERWARTUNG sind die Schatten-Dreiecke des Werfers (was mit
 //       castShadow im Schatten-Pass zeichnet, gehäutet, je Instanz) entlang des Lichts auf den gezeichneten Boden projiziert,
@@ -301,8 +298,8 @@ async function probe(cfg) {
     const csm = st.csmNode;
     const aus = { werfer: [], fern: [], akne: [], echt: [], bilder: [], zaehne: null, bias: null, texel: null };
     rend.setAnimationLoop(null);
-    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor (gemessen 09.10.: zwischen dem LEER und dem LEER2 eines Werfers
-    // wanderte die Sonne von 27° auf 36°, 12 665 Pixel „strömten") — nach jedem Takt steht sie wieder auf der Zeit der Probe.
+    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor — nach jedem Takt steht sie wieder auf der Zeit der
+    // Probe.
     let zeitFest = null;
     const uhrHalten = () => {
         if (zeitFest === null) return;
@@ -640,19 +637,18 @@ async function probe(cfg) {
         st.playerMesh.visible = false;
         st.playerMesh.position.set(bx - 4, boden(bx - 4, bz + 4) + 0.9, bz + 4);
     };
-    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag sie ganz
-    // im Schatten der Bäume (vorher wie nachher 0 px: kein Bias-Urteil möglich). Während einer Messung sieht jede Kaskaden-
-    // Kamera nur die Ebene ISO, und auf ihr liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-
-    // Kamera; im Schatten-Pass ist ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der
-    // Kaskaden bleiben die des Spiels.
+    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag
+    // sie ganz im Schatten der Bäume. Während einer Messung sieht jede Kaskaden-Kamera nur die Ebene ISO, und auf ihr
+    // liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-Kamera; im Schatten-Pass ist
+    // ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der Kaskaden bleiben die
+    // des Spiels.
     const ISO = 30;
     const isoAlt = lichter.map((lw) => lw.shadow.camera.layers.mask);
     const isoAn = () => lichter.forEach((lw) => lw.shadow.camera.layers.set(ISO));
     const isoAus = () => lichter.forEach((lw, i) => (lw.shadow.camera.layers.mask = isoAlt[i]));
     // DIE SCHATTEN-PIPELINE VORWÄRMEN: unter der Isolation zeichnet ein frisch gesetzter Körper erst nach dem Aufschalten der
-    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin (Werkbank
-    // 09.10.: derselbe Fuchs warf 1 077 Pixel, wenn seine Pipeline schon stand — in der Sonde 12). Frames mit kurzen Pausen,
-    // bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
+    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin.
+    // Frames mit kurzen Pausen, bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
     const schattenWarm = async (k) => {
         const E = r._erstZeichnung;
         for (let i = 0; i < 60; i++) {

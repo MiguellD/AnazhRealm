@@ -68,8 +68,7 @@ function nahDeckungInSeite(o) {
     const eintragNachId = new Map();
     for (const e of st.architectures || []) if (e && e.id != null) eintragNachId.set(e.id, e);
     const eintragVon = (obj, inst) => {
-        // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags;
-        // gemessen 15.10.: der Fuß des griechischen Hauses „verdeckt von bau-fundament" — sein eigener Sockel)
+        // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags)
         const fu = st.archFundament;
         if (fu && obj === fu.mesh) return eintragNachId.get(fu.idAt[inst]) || null;
         if (obj.isInstancedMesh && obj.userData && obj.userData.archInstanceKey && st.archInstanceGroups) {
@@ -79,10 +78,10 @@ function nahDeckungInSeite(o) {
         for (let p = obj; p; p = p.parent) if (archNachMesh.has(p)) return archNachMesh.get(p);
         return null;
     };
-    // DAS ZIEL IM SATZ (K63-n6; gemessen 15.10., Radeon: das römische Haus im Dorf „verdeckt von bauSatz in 14,49 m", Ziel
-    // 16,45 m — die eigene Front): der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
-    // lebende Instanz ihre n Ecken in Welt-Lage ab dem Bereichs-Anfang `vStart`), ein Dreieck dort gehört `slotEntry[i]` seiner
-    // Gruppe. Je Satz-Mesh die Ecken-Läufe der Einträge in `o.ohne` — sie decken nie und verdecken nie, wie jedes andere Ziel.
+    // DAS ZIEL IM SATZ (K63-n6): der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
+    // lebende Instanz ihre n Ecken in Welt-Lage ab dem Bereichs-Anfang `vStart`), ein Dreieck dort gehört
+    // `slotEntry[i]` seiner Gruppe. Je Satz-Mesh die Ecken-Läufe der Einträge in `o.ohne` — sie decken nie und
+    // verdecken nie, wie jedes andere Ziel.
     const ohneSatz = new Map();
     if (OHNE.size && st.chunkSaetze && st.archInstanceGroups)
         for (const [key, g] of st.archInstanceGroups) {
@@ -115,8 +114,8 @@ function nahDeckungInSeite(o) {
         if (nm === "bodenSatz") return { klasse: "Gelände", name: "Gelände" };
         if (nm === "bauSatz") return { klasse: "Bau", name: "bauSatz" };
         if (nm === "formationenSatz") return { klasse: "Fels", name: "Formation" };
-        // die Halm-Senken der Nah-Wiese (`nahWiese:L<stufe>:…`, `_nahWieseSenken`) sind die Boden-Schicht wie die wiegende Streu
-        // (gemessen 15.10.: als „Bau" deckten sie 15,3 % des Vordergrunds vor dem Haus im Dorf)
+        // die Halm-Senken der Nah-Wiese (`nahWiese:L<stufe>:…`, `_nahWieseSenken`) sind die Boden-Schicht wie die
+        // wiegende Streu
         if (nm.startsWith("nahWiese:L")) return { klasse: "Streu", name: nm };
         const art = artVonStoff(mat);
         if (nm === "streuSatz") {

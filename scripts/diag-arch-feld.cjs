@@ -195,11 +195,10 @@ function kartenGesetz(buch, zelleF) {
             if (ebF && ebF._ziegelSlot) satzBF = true;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
         }
-        // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr nächster
-        // Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein Gesetz — auf
-        // CPU-Raster unter Fremdlast 65–745 Takte je Karte (gemessen 05.10.; die Grenze 1000 maß bis dahin ihn: in 3 von 6
-        // Läufen kam die Karte erst danach, in der Reihe ihrer Zelle). Die Linse wartet bis 4000 Takte und prüft, dass
-        // keine fernere Zelle die ihre überholt.
+        // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr
+        // nächster Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein
+        // Gesetz — auf CPU-Raster unter Fremdlast 65–745 Takte je Karte. Die Linse wartet bis 4000 Takte und prüft,
+        // dass keine fernere Zelle die ihre überholt.
         for (let t = 1001; t <= 4000 && karteBF == null; t++) {
             await tick(1);
             buche(t);

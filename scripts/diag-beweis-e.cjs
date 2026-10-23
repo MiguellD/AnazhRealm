@@ -6,7 +6,7 @@
 //
 // Dieselbe Sonde läuft auf JEDEM Stand (die APIs sind geguardet) → das Bild-PAAR
 // vorher↔nachher entsteht, indem man sie in einem Worktree des Mesh-Stands
-// (z. B. d7ca0a1f) und auf HEAD fährt:
+//  und auf HEAD fährt:
 //
 //   node scripts/diag-beweis-e.cjs --tag analog [--out DIR] [--ohne-wiese] [--klassen baum,haus] [--proto-min 40]
 //   (im Worktree)  node scripts/diag-beweis-e.cjs --tag mesh --out <HEAD>/artifacts/beweis-e
@@ -41,7 +41,7 @@ const server = statikServer();
 
 // DIE BLICK-WAHL (unter dem Bauch des Tiers, hinter Stämmen):
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
-// meisten vom Objekt geänderten Pixeln trägt Fern- UND Armlängen-Schuss.
+// meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
     const r = window.anazhRealm;
     const THREE_ = window.THREE;
@@ -239,10 +239,9 @@ const SCHUSS_FN = async (kam) => {
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
         await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
-        // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den
-        // GPU-Puffer, oder eine offene updateRange über ein genulltes/kürzeres Array — Befund 30.09.:
-        // entlassene Batch-Stagings), sprengt queue.writeBuffer („Number of bytes to write is too large")
-        // — die Linse nennt es beim Namen (Objekt · Attribut · Bytes), statt dass der Schuss namenlos stirbt.
+        // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den GPU-Puffer, oder eine
+        // offene updateRange über ein genulltes/kürzeres Array), sprengt queue.writeBuffer — die Linse nennt es beim Namen
+        // (Objekt · Attribut · Bytes), statt dass der Schuss namenlos stirbt.
         try {
             const au = rend.backend && rend.backend.attributeUtils;
             if (au && !au.__linse) {
@@ -296,9 +295,8 @@ const SCHUSS_FN = async (kam) => {
         `Boot OK · V${boot.version} · ${boot.renderer} (WebGPU-Backend=${boot.backendWebGPU}) · Chunks=${boot.chunks} · Foundry=${boot.foundryBereit}`
     );
 
-    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D). Befund 30.09.: am Spawn
-    // stand die Kamera unter der Start-Plattform bzw. im Hang (Bühnen-Spanne bis 13 m) —
-    // alle Klassen stehen darum auf der Wiese, wo Bühne und Kamera wirklich eben sind.
+    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D) — dort sind Bühne und Kamera
+    // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
@@ -538,8 +536,8 @@ const SCHUSS_FN = async (kam) => {
     // DAS UMSTELLEN: der Spieler steht dort, wo die Kamera steht — der Chunk-Ring, die
     // Foundry-Stufe (Distanz zum Spieler) und der March folgen ihm; eingeschwungen, wenn
     // die Chunk-Zahl 15 Takte ruht (mindestens 40 Takte, höchstens 150 s).
-    // voll = true: warten, bis die Mesh-Zone GANZ steht (vor der Blick-Wahl — ein später gebauter Baum darf nicht
-    // in die gewählte Sichtlinie wachsen, Befund 30.09.); sonst genügen 60 Takte ohne Fortschritt.
+    // voll = true: warten, bis die Mesh-Zone GANZ steht (vor der Blick-Wahl: ein später gebauter Baum wüchse in die Sichtlinie);
+    // sonst genügen 60 Takte ohne Fortschritt.
     const umstellen = (kam, voll = false) =>
         page.evaluate(
             async (kam, voll) => {
@@ -560,8 +558,7 @@ const SCHUSS_FN = async (kam) => {
                     offenVor = -1,
                     ohneFortschritt = 0;
                 // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
-                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
-                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                // gröberen Stufe — der feinere Guss ist unterwegs. Vor dem Schuss wird gewartet (≤ 600 Takte).
                 let ziel = null,
                     zielD = Infinity;
                 for (const e of r.state.architectures) {
@@ -712,14 +709,12 @@ const SCHUSS_FN = async (kam) => {
             continue;
         }
         const suche = kameraFuer(klasse, o, 0, "fern");
-        // ERST einschwingen, DANN den Blick wählen (Befund 30.09.: die Blick-Wahl vor dem Einschwingen sah eine
-        // halb gebaute Mesh-Zone — danach stand ein frisch gebauter Stamm zwischen Kamera und Wolf).
+        // ERST einschwingen, DANN den Blick wählen.
         const um0 = await umstellen(suche, true);
         console.log(
             `  eingeschwungen am ${klasse}: ${um0.takte} Takte · ungebaut in der Mesh-Zone ${um0.offen}${um0.warum ? " — " + um0.warum : ""}\n      Impostor: ${um0.zensus}`
         );
-        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz (Befund 30.09.: der Arm-Schuss erbte den Fern-Azimut
-        // und stand im Busch vor dem Wolf).
+        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz.
         for (const art of ["fern", "arm"]) {
             const wahl = await page.evaluate(SICHT_FN, Object.assign({ klasse }, kameraFuer(klasse, o, 0, art)));
             console.log(

@@ -28,7 +28,7 @@ async function checkBandV18136Audit(ctx) {
         r.state.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
-        // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
+        // (2) die Kachel-Erosion ist gefallen: der Kachel-Eingang baut nur noch die Hydrosphäre.
         out.tileLean = window.__fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
         return out;
     });
@@ -115,11 +115,11 @@ async function checkBandWEFrequenzband(ctx) {
         out.glimmenOrdnung = pGlut.glimmen > pStein.glimmen + 0.3 && pQuarz.glimmen > pStein.glimmen + 0.2;
         out.tiefeOrdnung = pStein.micro > pHolz.micro && pEisen.micro >= pHolz.micro;
         // (2) die Tags REISEN in beide Part-Builder (Spiegel-Disziplin) und
-        // WIRKEN behavioral (V17.31, kein Existenz-Test): das HISM-Leaf eines
+        // WIRKEN behavioral (kein Existenz-Test): das HISM-Leaf eines
         // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
         const mGlut = r._archLeafMaterial({ material: "glut", shape: "box", size: { x: 1, y: 1, z: 1 } });
         const mStein = r._archLeafMaterial({ material: "stein", shape: "box", size: { x: 1, y: 1, z: 1 } });
-        // V18.234 — mode-robust: der echte Glow = Emissiv-FARBE × Intensität.
+        // mode-robust: der echte Glow = Emissiv-FARBE × Intensität.
         // (MeshStandard hat emissiveIntensity-Default 1 bei SCHWARZEM Emissiv = kein
         // Glühen → der reine emissiveIntensity-Proxy war toon-spezifisch.)
         const _glow = (m) => {
@@ -221,7 +221,7 @@ async function checkBandV18223PbrKohaerenz(ctx) {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
         }
 
-        // V18.234 — Default-Mode ist jetzt "pbr" → der Dispatch liefert ein PBR-Material.
+        // Default-Mode ist jetzt "pbr" → der Dispatch liefert ein PBR-Material.
         const mDef = r._buildToonNodeMaterial({ color: 0x808080 });
         out.defaultIsPbr = !!(mDef && mDef.userData && mDef.userData.isPbrMaterial === true);
         if (mDef && typeof mDef.dispose === "function") mDef.dispose();
@@ -272,7 +272,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const THREE = window.THREE;
         const out = {};
 
-        // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
+        // LAUT: ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
         {
             const logAlt = r.log;
             r.log = () => {};

@@ -3,11 +3,11 @@
 // Studio-Vertrag B2c: Baum und Strauch tragen `lod.budget[kind].fernform: "karte"` — jenseits der Nah-Grenze des Wirts
 // IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz) — auch im
 // GESETZTEN Wald (Architektur-Einträge aus `_forestPlantChunk`) jenseits der Mesh-Zone (des geregelten Cull-Radius,
-// 100–150 m; bis 05.10. ein Satz im Welt-March). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein
-// Karten-Ding trägt seine Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits
-// seines L1↔Karte-Bands auf die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu
-// SEINEM Rand im Saum vor `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst
-// `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine Karte dithert am Horizont (die Maske trägt keinen Schwund).
+// 100–150 m). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein Karten-Ding trägt seine
+// Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits seines L1↔Karte-Bands auf
+// die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu SEINEM Rand im Saum vor
+// `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine
+// Karte dithert am Horizont (die Maske trägt keinen Schwund).
 //
 // Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig; headless trägt der Rahmen aus der
 // L1-Geometrie, die Karte steht ohne Bake). Die Linse nennt jeden Täter beim Namen (Art, Distanz, Grund).
@@ -156,7 +156,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     });
                 }
                 for (const e of proben) await frag(e);
-                r._ensureHydroTilesAround(KX, KZ, 400); // der Spieler kommt: die Kachel steht
+                await window.__weltDa(() => !r._ensureHydroTilesAround(KX, KZ, 400)); // der Spieler kommt: die Kachel steht
                 const alt = [];
                 for (const e of proben) alt.push(await frag(e));
                 const frisch = await frischAlle(proben);
@@ -494,8 +494,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return { sichtH: sichtH && +sichtH.toFixed(1), imBand, jenseitsBand, zurueck, luecke, takte };
         };
         res.D2 = await riese();
-        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
-        // Karten-Ding keinen Band-Partner) — D2 muss rot werden; Tausch und Rückweg wecken (wie S1), der Regler hält (unter
+        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme: jenseits des Radius trug ein Karten-Ding
+        // keinen Band-Partner) — D2 muss rot werden; Tausch und Rückweg wecken (wie S1), der Regler hält (unter
         // CI-Last klemmt er), die Wahl schläft nie über den Rückweg ──
         if (riesenEintrag) {
             const e = riesenEintrag;

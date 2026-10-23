@@ -28,10 +28,10 @@ const PC = globalThis.__phytoCore;
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
-// DIE BILD-TAFEL (S3 pflanzen, Wand D): je Baum-Art × Same (Sommer) das Bild seiner L0 und
-// seiner L1 JE BLICK-HEBUNG (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°,
-// 30°, 60° von unten; Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1:
-// Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
+// DIE BILD-TAFEL (S3 pflanzen, Wand D): je Baum-Art × Same (Sommer) das Bild seiner L0 und seiner L1 JE BLICK-HEBUNG
+// (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°, 30°, 60° von unten;
+// Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1: Deckung der Mip 0,
+// mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
 // scripts/diag-asset-contract.cjs --tafel`; zuerst V18.536 auf 76c9624d, neu gemünzt im Vertrags-Akt K20: die Bäume
 // tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
 // 0,92–1,08 bei ΔE76 ≤ 2.
@@ -91,7 +91,7 @@ function meshDiff(tag, gold, live) {
     return null;
 }
 
-/// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
+/// DIE BUDGET-WAND — der KONSUM des Budgets (render-config lod.budget,
 // Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
 //  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
 //      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen
@@ -250,14 +250,13 @@ function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
     }
     return v;
 }
-// DIE GESTALTEN-WAND (S3 08.10., Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
+// DIE GESTALTEN-WAND (S3, Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
 // die Welt zieht je Gestalt einen eigenen Körper (`_foundryVariantFor`, je Gestalt × Stufe × Teil ein Leaf und ein Befehl).
 // Ein Rezept, dessen Bau den Samen nicht liest, trägt mit V ≥ 2 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
 // Drachentore = zwei Leaves, 43 Befehle, 8,67 MB). Die Wand baut je Art und Rezept mit V ≥ 2 JEDE Gestalt 1..V über die
 // echte Brücke (die erste gelieferte Gitter-Stufe, der EINE Bau-Fingerabdruck `bauAbdruck`; die Zweit-Kerne aus dem Bau
 // des Kosten-Zugs, kein Zweitbau) — V Gestalten müssen V verschiedene Abdrücke zeigen, jeder Zwilling ist ROT beim Namen
-// („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden: 1=9, …)"). Bis zur Gegenprüfung 08.10. verglich sie nur die
-// Samen 1 und 2 und war für Zwillinge dahinter blind: das Fahrzeug trug V 16 bei acht Lacken (Same 1 = 9 … 8 = 16).
+// („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden: 1=9, …)").
 // Eine Seed-Achse zu schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile.
 const SELBST_GESTALT = "drachentor"; // der Selbsttest: porta-Rezept, seed-invariant, mit V 2 MUSS es rot werden
 const SELBST_ACHSE = "gt"; // der Selbsttest hinter Same 2: das Lack-Gesetz wiederholt sich nach V — mit V + 1 MUSS es rot werden
@@ -901,7 +900,7 @@ function bildUrteil(mess, tafel) {
         );
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.wedel, at.gross, at.weide).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
-        // 05.10.: keine L1-Krone mehr aus Klingen (die Trauer-Klinge las als Papier-Streifen) — jede Krone ist Karte.
+        // keine L1-Krone aus Klingen — jede Krone ist Karte.
         const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;
         const fehlt = new Set();
         for (const x of kostenUrteil(messungen, wand.budgetOhneZB))
