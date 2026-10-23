@@ -118,3 +118,4 @@
   5. die WIP-Zweige vollenden und fahren.
 
 - **23:13:** Zug 11 (cbeb4bd9) liegt auf integ-probe, echt grün. Die CPU-Batterie ist im zweiten Versuch wieder an voll 2/8/16 rot, denselben Gruppen wie bei Zug 10 (haus-welt, Brennglas-Takt, webgl-probe W4/W5). Nicht gelandet. Nächste Sitzung: die Roten lesen (W4 war laut Agent schon an main lokal rot) und mit `FAHRT_KANDIDAT=cbeb4bd9… fahre.sh z11b -` wieder aufnehmen oder neu bauen.
+- **23:15, Radeon-Neustart:** Die Radeon-Punkte von Zug 9c (13c95713) liefen noch, Station für Station. Die fertigen Stationen stehen ungecommittet in koord-punkte `meisterkarte-quelle/punkte/messung/13c95713-radeon.json`, headless ist fertig (33 grün / 4 rot). Nächste Sitzung: committen, den Rest mit `punkte.cjs run --sha 13c95713… --geraet radeon --nur <offene>` fahren, dann punkte-maschine nach koordination mergen und buchen.
