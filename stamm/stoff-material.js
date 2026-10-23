@@ -764,7 +764,8 @@ class AnazhRealm_stoff_material {
                     if (opts.vertexColorAlbedo) {
                         // FELS: der Stoff am Vertex (das Fels-Gesetz, gelaende-core `felsNetz`) IST die Albedo; der EINE Substanz-Kern legt
                         // Korn + Kavität + Roughness drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
-                        // (positionWorld schmiert über instanzierte Felsen), KEIN Normal-Flatten/Bump (plättet die Krümmung).
+                        // (positionWorld schmiert über instanzierte Felsen), KEIN Normal-Flatten (plättet die Krümmung); das
+                        // Mikro-Relief (`_mikroRelief`, material.K2) kippt die Normale der Gestalt nur in ihrer Tangential-Ebene.
                         if (typeof this._substanceCharacter === "function") {
                             const _rk = this._substanceCharacter(_Ta, albedoNode, {
                                 pos: _Ta.positionLocal,
@@ -777,6 +778,7 @@ class AnazhRealm_stoff_material {
                             if (_rk.roughNode) mat.roughnessNode = _rk.roughNode;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                        this._mikroGestalt(_Ta, mat);
                     } else if (!opts.pflanzenStoff && typeof this._terrainGeologyAlbedo === "function") {
                         // Roughness-Variation für den Boden aus DEMSELBEN Substanz-Kern wie die Geologie
                         // (`_terrainGeologyAlbedo` → `_substanceCharacter`), sonst uniform 0.7 = Plastik-Sheen unterm IBL.
@@ -1241,6 +1243,7 @@ class AnazhRealm_stoff_material {
         // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
         // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
         // voll sonnen-lit, ACES wüsche die Krone teal/weiß.
+        let _mikroH = null; // die Höhe des Mikro-Reliefs (`_mikroStoff`: Kavität auf der Himmels-Sicht, Korn in der Albedo)
         if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
@@ -1269,16 +1272,19 @@ class AnazhRealm_stoff_material {
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
                     const _hS = opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null;
                     let _baseN = _hS ? _Tn.mix(_nWG, _up, _flat.mul(_hS)) : _Tn.mix(_nGeo, _up, _flat);
-                    // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
-                    // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
+                    const _nWahr = _hS ? _nWG : _nGeo; // die wahre Normale (Steile des Reliefs, Zuwendung des Schattens)
+                    // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
+                    // die geflattete Normale entgegen dem Gradienten, LOD-gegated.
                     {
                         const _B = AnazhRealm.TERRAIN_BUMP;
-                        const _ra = this._rauschAtlas();
                         const _wp = _Tn.positionWorld;
                         // Bump NUR auf flachem Boden (auf steilen Wänden ist xz-Höhen-Noise sinnlos). Schwellen (0.55, 0.85)
                         // sind gemessen (`diag-bump-flatdist`, top-surface-gefiltert): flache Wiese liegt bei ny 0.90–0.98 →
                         // voller Bump > 0.85, aus unter 0.55. Tiefere Schwellen schöben den Bump auf 32–52°-Hänge zurück.
-                        const _flatGate = _Tn.smoothstep(_Tn.float(0.55), _Tn.float(0.85), _nGeo.y).clamp(0.0, 1.0);
+                        // Die Steile liest die WAHRE Normale (in die Luft, `_nWahr`): unter der Himmels-Sicht zeigt `_nGeo` auf der
+                        // Oberseite nach unten (DoubleSide, die Rückseite) — dort stand das Tor bis material.K2 auf 0, das Relief
+                        // erreichte keinen Pixel der Wiese (Armlänge 0,5 und 1 m byte-gleich ohne es, Radeon).
+                        const _flatGate = _Tn.smoothstep(_Tn.float(0.55), _Tn.float(0.85), _nWahr.y).clamp(0.0, 1.0);
                         const _lod = _Tn
                             .float(1.0)
                             .sub(
@@ -1290,20 +1296,9 @@ class AnazhRealm_stoff_material {
                             )
                             .clamp(0.0, 1.0)
                             .mul(_flatGate);
-                        // Der Höhen-Schnitt y = 0 des Rausch-Gesetzes (die Ebene (x, z), Achse "z").
-                        const _grad = (freq, strength) => {
-                            const _f = _Tn.float(freq);
-                            const _h = (dx, dz) =>
-                                _ra.ebene(
-                                    _Tn.vec2(_wp.x.add(_Tn.float(dx)).mul(_f), _wp.z.add(_Tn.float(dz)).mul(_f)),
-                                    0,
-                                    "z"
-                                );
-                            const _hX = _h(_B.eps, 0).sub(_h(-_B.eps, 0));
-                            const _hZ = _h(0, _B.eps).sub(_h(0, -_B.eps));
-                            return _Tn.vec3(_hX, _Tn.float(0.0), _hZ).mul(_Tn.float(-strength)).mul(_lod);
-                        };
-                        _baseN = _baseN.add(_grad(_B.freq, _B.strength)).add(_grad(_B.freq2, _B.strength2));
+                        const _mk = this._mikroRelief(_Tn, _wp);
+                        _baseN = _baseN.add(_mk.neigung.mul(_lod));
+                        _mikroH = _mk.hoehe.mul(_lod);
                     }
                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView): die geflattete Welt-Normale
                     // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
@@ -1320,7 +1315,6 @@ class AnazhRealm_stoff_material {
                     // fleckig gegen 0,2 % ohne Schatten (gate:schatten-terminator). Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
                     // Normale (dieselbe, aus der die Lichtung mischt) zur Richtung des aktiven Körpers: abgewandt im Schatten,
                     // der Saum am Terminator (N·L 0 … `zuwendungSaum`, ~5° Sonne) weich.
-                    const _nWahr = _hS ? _nWG : _nGeo;
                     const _zu = _Tn.smoothstep(
                         _Tn.float(0.0),
                         _Tn.float(AnazhRealm.SCHATTEN_KASKADE.zuwendungSaum),
@@ -1334,6 +1328,7 @@ class AnazhRealm_stoff_material {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
+            if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
@@ -1791,13 +1786,43 @@ class AnazhRealm_stoff_material {
                 ...["a0", "a1", "a2", "b0", "b1", "b2"].map((name) => ({ name, type: "vec4" })),
             ],
         });
-        const ebene = (p, k, achse) => {
+        // DIE NEIGUNG DER EBENE (material.K2): derselbe Wert wie `rauschEbene` und seine Ableitung nach der Lage in der Zelle —
+        // die Ecken-Gradienten, bilinear gemischt, plus die Ableitung der Fünftgrad-Blende (30 t²(t − 1)²) mal dem Sprung der
+        // Ecken-Werte. EINE Probe trägt die Neigung, die vorher vier Proben als Differenz schätzten.
+        const ebeneNeigungMisch = T.Fn(([f, a, b]) => {
+            const ga = dekod(a);
+            const gb = dekod(b);
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const d = ga.mul(T.vec4(f.x, fx1, f.x, fx1)).add(gb.mul(T.vec4(f.y, f.y, fy1, fy1)));
+            const u = blende(f);
+            const du = f.mul(f).mul(f.sub(1.0)).mul(f.sub(1.0)).mul(30.0);
+            const unten = T.mix(d.x, d.y, u.x);
+            const oben = T.mix(d.z, d.w, u.x);
+            return T.vec3(
+                T.mix(unten, oben, u.y),
+                zelle(ga, u).add(du.x.mul(T.mix(d.y.sub(d.x), d.w.sub(d.z), u.y))),
+                zelle(gb, u).add(du.y.mul(oben.sub(unten)))
+            ).mul(R.skala);
+        }).setLayout({
+            name: "rauschEbeneNeigung",
+            type: "vec3",
+            inputs: [
+                { name: "f", type: "vec2" },
+                { name: "a", type: "vec4" },
+                { name: "b", type: "vec4" },
+            ],
+        });
+        // die Ebene (x, y | z) in Schicht k: `misch` ist der Wert (`rauschEbene`) oder Wert und Neigung (`rauschEbeneNeigung`)
+        const ebeneProbe = (misch) => (p, k, achse) => {
             const c = T.floor(p);
             const ci = T.ivec2(c);
             const i0 = ci.x.add(A * k).bitAnd(m);
             const j0 = ci.y.add(B * k).bitAnd(m);
-            return ebeneMisch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
+            return misch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
         };
+        const ebene = ebeneProbe(ebeneMisch);
+        const ebeneNeigung = ebeneProbe(ebeneNeigungMisch);
         const raum = (p) => {
             const c = T.floor(p);
             const ci = T.ivec3(c);
@@ -1815,8 +1840,94 @@ class AnazhRealm_stoff_material {
                 ecken(i1, j1, 2)
             );
         };
-        this._rauschAtlasCache = { tex, raum, ebene };
+        this._rauschAtlasCache = { tex, raum, ebene, ebeneNeigung };
         return this._rauschAtlasCache;
+    }
+
+    // DAS MIKRO-RELIEF (TERRAIN_BUMP, material.K2): Neigung und Kavität einer Fläche aus dem Rausch-Gesetz in Oktaven, die der
+    // Pixel trägt. Drei Oktaven folgen der Pixelgröße (`fwidth` der Welt-Lage): die feinste trägt `mikroPx` Pixel je Periode,
+    // jede weitere die halbe Frequenz, und zwischen zwei Stufen blendet die feinste ein, die gröbste aus (Gewichte fract · 1 ·
+    // 1 − fract — die Summe bleibt, keine Frequenz springt am Schirm). Was feiner als ein Pixel ist, flimmert und kostet; was
+    // gröber ist, fehlt bei Armlänge: die EINE Regel bindet beides an den Schirm, nie an die Weltgröße (Gebot 7). Jede Oktave
+    // ist EINE Probe mit Wert und Neigung (`ebeneNeigung`), die Lage modulo ihrer Periode (P Zellen) hält die Zahl klein, der
+    // Versatz im Zell-Raum trennt die Gitter der Oktaven (Perlin ist 0 auf jedem Gitterpunkt). `n` (Welt, Einheit): ohne sie die
+    // Ebene (x, z) des Bodens mit seinen festen Oktaven (Klumpen `freq`, Kiesel `freq2`), mit ihr die Fläche in jeder Lage
+    // (dreiplanar nach |n|⁴, in ihre Tangential-Ebene gelegt). Rückgabe { neigung (Welt, kippt die Normale gegen den Gradienten),
+    // hoehe (die Höhe der Oktaven am Schirm, mittelfrei in −1 … 1) } — die Höhe trägt KAVITÄT und KORN (`_mikroStoff`): unter der
+    // Mittags-Sonne kippt die Normale das Licht nur zweiter Ordnung (cos), im Schatten sieht das Auge nur das Himmels-Licht.
+    _mikroRelief(T, wp, n) {
+        const B = AnazhRealm.TERRAIN_BUMP;
+        const ra = this._rauschAtlas();
+        const P = AnazhRealm.RAUSCH_GESETZ.P;
+        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM)).negate();
+        const fr = T.fract(L);
+        const L0 = L.sub(fr);
+        // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie
+        // liegt am Pixel, wo das Auge das Korn sieht; gleiche Höhe je Oktave wäre β 2 und legte sie in die gröbste)
+        const oktaven = [
+            [T.exp2(L0), fr, 1],
+            [T.exp2(L0.sub(1.0)), T.float(1.0), B.mikroHoehe],
+            [T.exp2(L0.sub(2.0)), T.float(1.0).sub(fr), B.mikroHoehe * B.mikroHoehe],
+        ].map(([f, w, h]) => [f, w.mul(-B.mikro), w.mul(0.6 * h)]);
+        if (!n)
+            oktaven.push(
+                [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
+                [T.float(B.freq2), T.float(-B.strength2), T.float(0.0)]
+            );
+        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z)
+        const ebene = (a, b) => {
+            let g = T.vec3(0.0, 0.0, 0.0);
+            for (const [f, w, h] of oktaven) {
+                const q = T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
+                const e = ra.ebeneNeigung(q, 0, "z");
+                g = g.add(T.vec3(e.y.mul(w), e.z.mul(w), e.x.mul(h)));
+            }
+            return g;
+        };
+        if (!n) {
+            const g = ebene(wp.x, wp.z);
+            return { neigung: T.vec3(g.x, 0.0, g.y), hoehe: g.z };
+        }
+        const w4 = n.abs().pow(4.0);
+        const w = w4.div(w4.x.add(w4.y).add(w4.z));
+        const gx = ebene(wp.z, wp.y);
+        const gy = ebene(wp.x, wp.z);
+        const gz = ebene(wp.x, wp.y);
+        const g = T.vec3(0.0, gx.y, gx.x)
+            .mul(w.x)
+            .add(T.vec3(gy.x, 0.0, gy.y).mul(w.y))
+            .add(T.vec3(gz.x, gz.y, 0.0).mul(w.z));
+        return { neigung: g.sub(n.mul(n.dot(g))), hoehe: gx.z.mul(w.x).add(gy.z.mul(w.y)).add(gz.z.mul(w.z)) };
+    }
+
+    // DER STOFF des Mikro-Reliefs: die Höhe der Oktaven am Schirm trägt die KAVITÄT (aoNode: r184 multipliziert sie in das
+    // indirekte Licht, diffus und Glanz — die Mulde verdeckt ihren Himmel) und das KORN (colorNode: die Albedo der Mulde dunkler,
+    // der Erhebung heller — sie trägt auch das Sonnen-Licht). Beide mittelfrei um 1 (`kavitaet`, `korn` × Höhe), so bleibt die
+    // Albedo der Fläche im Mittel dieselbe (K53: was der Pixel nicht trägt, ist kein Mittel-Versatz); die Alpha des Stoffs bleibt
+    // (Lehre 26: der Schattenpass liest colorNode.a). Ohne colorNode trägt die Stoff-Farbe (r184 multipliziert die Vertex-Farbe danach).
+    _mikroStoff(T, mat, hoehe) {
+        const B = AnazhRealm.TERRAIN_BUMP;
+        const ao = T.float(1.0).add(hoehe.mul(B.kavitaet)).max(0.0);
+        mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
+        const c = T.vec4(mat.colorNode || T.materialColor);
+        mat.colorNode = T.vec4(c.rgb.mul(T.float(1.0).add(hoehe.mul(B.korn)).max(0.0)), c.a);
+    }
+
+    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode, aoNode und Korn des Stoffs: die
+    // Geometrie-Normale × Seite (Lehre 26, nie `normalWorld`) — facettiert (`flach`) die Normale der Facette aus den Ableitungen
+    // der Welt-Lage, zum Auge gewandt —, in ihrer Tangential-Ebene gekippt, fern mit dem Bump des Bodens ausgeblendet
+    // (lodNear … lodFar), mal `staerke` (Knoten oder Zahl), in Sicht-Lage (normalNode ist VIEW-space).
+    _mikroGestalt(T, mat, flach, staerke) {
+        const B = AnazhRealm.TERRAIN_BUMP;
+        const wp = T.positionWorld;
+        const zumAuge = T.cameraPosition.sub(wp);
+        const nF = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
+        const n = flach ? nF.mul(T.sign(nF.dot(zumAuge))) : T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const nah = T.float(1.0).sub(T.smoothstep(T.float(B.lodNear), T.float(B.lodFar), zumAuge.length()));
+        const k = nah.mul(staerke == null ? 1.0 : staerke);
+        const m = this._mikroRelief(T, wp, n);
+        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(m.neigung.mul(k))));
+        this._mikroStoff(T, mat, m.hoehe.mul(k));
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──

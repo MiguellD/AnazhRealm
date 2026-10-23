@@ -14,7 +14,7 @@
 //   RATSCHE  je Zeile die Abweichung des letzten Nachzugs — eine neue Messung darf nur näher an 1 (a ≤ Ratsche + Messrand);
 //            sie ist die Wand, solange W5 (das FARB-GESETZ in jedem Kern) offen ist.
 //   SOLL     a ≤ ln(1 + Toleranz) (die Toleranz steht in der Tafel, W5: „Albedo Lab ↔ Welt je Klasse innerhalb einer
-//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb), nie Teil des Ratschen-Urteils.
+//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb); eine `pflicht`-Zeile hält es selbst.
 //   KARTE    je Studio die 18-%-Karte unter dem Labor-Licht: k·L = Belichtung × Leuchtdichte (der Eingang der Tonkurve),
 //            Soll: Mittelgrau + 1 EV durch die Kurve der Labore (Tafel `belichtung.kurve`, r128 ACESFilmicToneMapping;
 //            `kartenEichung`, scripts/lib/licht-linsen.cjs — dieselbe Rechnung, mit der die Welt ihre Kurve eicht, BELICHTUNG),
@@ -116,7 +116,7 @@ function tafelPruefen(t) {
             f.push(`${z.id}: welt.klasse ist kein Regex`);
         }
         const ex = W.exemplar || {};
-        if (!["architektur", "tier", "spieler", "boden"].includes(ex.typ))
+        if (!["architektur", "tier", "mensch", "boden"].includes(ex.typ))
             f.push(`${z.id}: welt.exemplar.typ unbekannt`);
         if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) f.push(`${z.id}: welt.exemplar.name fehlt`);
         if (ex.typ === "boden" && !(Array.isArray(ex.stelle) && ex.stelle.length === 2 && ex.stelle.every(zahl)))
@@ -249,6 +249,7 @@ function tafelUrteil(t, messung) {
                     art: "ratsche",
                     text: `${z.id}: Labor/Welt ${e.verhaeltnis} (|ln| ${e.abweichung}) über der Ratsche ${z.ratsche} + Rand`,
                 });
+            if (z.pflicht && !e.imSoll) rot.push({ art: "soll", text: `${z.id}: Labor/Welt ${e.verhaeltnis} außerhalb des Solls` });
         }
         zeilen.push(e);
     }

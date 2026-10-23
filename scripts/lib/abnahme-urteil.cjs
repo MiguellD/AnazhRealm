@@ -605,27 +605,20 @@ function spiegelDaten() {
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   luma          Mittel der Luma auf der Klasse (deckung, kontrast, nyquist, silhouette, deckungUnten fielen mit A13: kein Leser)
-//   detail        mittlerer Gradient-Betrag im Inneren / Mittel (die Normalen- und Textur-Frequenz: glatt → 0)
+//   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
-        s = 0,
-        g = 0,
-        ng = 0;
-    const inM = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1;
+        s = 0;
     for (let y = 0; y < H; y++)
         for (let x = 0; x < W; x++) {
             const p = y * W + x;
             if (m[p] !== 1) continue;
             n++;
             s += L[p];
-            if (inM(x - 1, y) && inM(x + 1, y) && inM(x, y - 1) && inM(x, y + 1)) {
-                g += Math.hypot(L[p + 1] - L[p - 1], L[p + W] - L[p - W]) / 2;
-                ng++;
-            }
         }
     // ZWEITON (K63-n2, das Dither-Raster): je Fenster 8×8 (Schritt 4), in dem die Klasse ≥ ¼ der Pixel trägt, das BILD (nicht
     // die Maske — ein Raster über dem Himmel zeigt die Klasse nur auf jedem zweiten Pixel): Kontrast p90 − p10 ≥ 40, höchstens
@@ -814,6 +807,37 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
     const mittel = n ? s / n : null;
+    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil mit Luma-σ < 4;
+    // `nyquist` der Anteil der Schachbrett-Energie an der Gradient-Energie seiner 2×2-Zellen (k = (a−b−c+d)/4 gegen gx, gy: ein
+    // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
+    // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
+    const mk = [0, 0, 0, 0, 0, 0, 0]; // Blöcke, glatte, Σk², Σ(gx² + gy²), E je Stufe 0 … 2
+    for (let y0 = 0; y0 + 8 <= H; y0 += 8)
+        for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
+            let voll = true;
+            const B = new Float32Array(64);
+            for (let i = 0; i < 64 && voll; i++) {
+                const p = (y0 + (i >> 3)) * W + x0 + (i & 7);
+                voll = m[p] === 1;
+                B[i] = L[p];
+            }
+            if (!voll) continue;
+            const mb = B.reduce((a, b) => a + b, 0) / 64;
+            mk[0]++;
+            if (Math.sqrt(B.reduce((a, b) => a + (b - mb) * (b - mb), 0) / 64) < 4) mk[1]++;
+            for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
+                const Q = new Float32Array((q * q) / 4);
+                for (let i = 0; i < Q.length; i++) {
+                    const o = 2 * (i % (q / 2)) + 2 * q * Math.floor(i / (q / 2));
+                    const [a, b, c, d] = [P[o], P[o + 1], P[o + q], P[o + q + 1]];
+                    const [kk, eg] = [((a - b - c + d) / 4) ** 2, ((a - b + c - d) / 4) ** 2 + ((a + b - c - d) / 4) ** 2];
+                    if (st === 0) (mk[2] += kk), (mk[3] += eg);
+                    mk[4 + st] += (kk + eg) / Q.length;
+                    Q[i] = (a + b + c + d) / 4;
+                }
+                P = Q;
+            }
+        }
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
@@ -827,9 +851,12 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
         luma: mittel == null ? null : +mittel.toFixed(2),
-        detail: ng ? r4(g / ng / Math.max(1, mittel)) : null,
         kante: kr ? r4(ks / kr) : null,
         kr,
+        bloecke: mk[0],
+        glatt: mk[0] ? r4(mk[1] / mk[0]) : null,
+        nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
+        beta: mk[4] > 0 && mk[6] > 0 ? r4(2 + Math.log2(mk[6] / mk[4]) / 2) : null,
     };
 }
 
@@ -1127,7 +1154,6 @@ const SOLL_MASSE = Object.freeze([
     "farbtonStreuung",
     "zweiton",
     "kante",
-    "detail",
     "milchweiss",
     "oeffnungBunt",
     "zielTreue",
@@ -1146,7 +1172,6 @@ const MASS_AUFLOESUNG = Object.freeze({
     farbtonStreuung: 0.1,
     zweiton: 0.01,
     kante: 0.01,
-    detail: 0.005,
     milchweiss: 0.01,
     oeffnungBunt: 0.5,
     zielTreue: 0.02,
@@ -1265,23 +1290,6 @@ const MASS_RECHNER = {
             anteil: n / (flaeche(me) / 4),
             teile: `${ks.length} Kacheln ${rc.kachel} m in ${rc.band.join("–")} m · Belichtung ${ft.belichtung}`,
         };
-    },
-    // DAS DETAIL der Klasse (`klassenMasse` detail, Pixel-Mittel über ihre Teil-Klassen): glatt → 0
-    detail(ma) {
-        const me = ma.messung;
-        const f = bildMessungFehler(me);
-        if (f) return { fehler: f };
-        let s = 0,
-            n = 0,
-            arg = null;
-        for (const [k, z] of Object.entries(me.klassen)) {
-            if (z.detail == null) continue;
-            s += z.detail * z.pixel;
-            n += z.pixel;
-            if (!arg || z.detail < arg[1]) arg = [k, z.detail];
-        }
-        if (!n) return { fehler: "kein Inneres in der Klasse" };
-        return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
     },
     // DIE SPIEGEL-TREUE der Klasse (D10, `klassenMasse` spiegelTreue über die Summen `sp` ihrer Teil-Klassen): Pearson r der
     // Block-Luma gegen ihr Bild an der Wasser-Ebene (`spiegelPartner`); der Täter die Teil-Klasse mit den meisten Blöcken.
@@ -2006,10 +2014,20 @@ function sollTafelSelbsttest(tafel, q) {
     if (nm !== 1) v.push(`Teilung: ${nm} Misch-Pixel statt 1`);
     if (bildRauschen(G, G, W, H, 18).anteil !== 0) v.push("Rauschen: zwei gleiche Schüsse rauschen");
     if (bildRauschen(G, OA, W, H, 18).pixel !== 25) v.push("Rauschen: 25 geänderte Pixel nicht gezählt");
-    const voll = new Uint8Array(W * H).fill(1);
-    const glatt = klassenMasse(bild((x) => 40 + x * 8), voll, W, H);
-    if (!(glatt.detail > 0)) v.push(`Maß detail: Verlauf ${glatt.detail} nicht > 0`);
-    if (klassenMasse(bild(() => 99), voll, W, H).detail !== 0) v.push("Maß detail: Flachbild nicht 0");
+    // das Mikro-Detail (material.K2): ein Schachbrett nyquist 1, ein Verlauf 0 und glatt, das Spektrum 1/f^β trifft sein β
+    {
+        const n = 64,
+            v1 = new Uint8Array(n * n).fill(1),
+            grau = (f) => Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 === 3 ? 255 : f((i >> 2) % n, (i >> 2) / n | 0)));
+        const sb = klassenMasse(grau((x, y) => ((x + y) & 1 ? 60 : 180)), v1, n, n);
+        const vl = klassenMasse(grau((x) => 40 + x), v1, n, n);
+        if (!(sb.nyquist > 0.99 && vl.nyquist < 0.01 && vl.glatt === 1 && sb.glatt === 0))
+            v.push(`Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt} statt 1/0, 0/1`);
+        for (const b of [0, 1, 2]) {
+            const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
+            if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
+        }
+    }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
     // (die Ufer-Achse bis A13: 0,37), unter dem Fresnel-Verlauf je Zeile (2 % → 100 %) > 0,9; ohne Himmel im Wasser und 12 px
