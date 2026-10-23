@@ -85,6 +85,7 @@ class AnazhRealm {
             _chunkIdbHits: 0,
             _chunkIdbHitByKey: null,
             _pfeile: null,
+            pfeileStecken: null, // die steckenden Pfeile in Gelände und Bau (_pfeilStecken, im Speicher)
             _deviceLost: null, // der Grund eines verlorenen GPU-Geräts
             _schrittKlang: null,
             _holzExplizit: false,
