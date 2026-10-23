@@ -3,29 +3,36 @@
 # bash statt PowerShell: Windows PowerShell faehrt auf diesem Laptop keine Skript-Dateien (Ausfuehrungsrichtlinie Restricted,
 # erster Lauf 39935664101: der .ps1-Hook brach nach 0,4 s mit Exit 1, ohne eine Zeile zu laufen). Die Logik ist die der
 # OMEN-Vorlage (koordination bericht/2210-runner-hook/job-start.ps1), das Schloss dasselbe wie in gpu-lauf.sh (bash).
-# 1) Vertrauens-Wand: nur Repo MiguellD/AnazhRealm, nur Ereignis push oder schedule, nur Actor MiguellD - sonst endet der
-#    Job, bevor ein Schritt laeuft (zweite Wand neben der Fork-Freigabe; das Repo ist oeffentlich).
+# 1) Vertrauens-Wand: nur Repo MiguellD/AnazhRealm, nur Ereignis push oder schedule, nur Actor MiguellD. Sonst ROT - und ROT
+#    BEENDET den eigenen Runner.Worker: ein Exit 1 des Hooks faerbt den Job nur, danach liefen alle always()/!cancelled()-
+#    Schritte und die pre-Schritte fremder Actions weiter (Runner v2.338.0 StepsRunner, OMEN-Lauf 39807843752; Pruefung 23.10.).
 # 2) Schloss: wartet, bis das GPU-Schloss frei ist, und nimmt es als "ci-runner <run-id>/<attempt> <job>" (atomar mkdir,
-#    darin besitzer.txt). Ein ci-runner-Schloss beim Start ist verwaist (ein einziger Runner auf der Maschine) und wird
-#    geloest; ein fremdes Schloss, dessen besitzer.txt seit 60 min unveraendert steht (die Regel von gpu-lauf.sh: kein Befehl
-#    darf so lange), ist verwaist und wird beim Namen geloest. Hoechstens 120 min Warten, dann ROT mit Namen.
+#    darin besitzer.txt). Verwaist und beim Namen geloest (nach erneutem Lesen desselben Besitzers): ein ci-runner-Schloss beim
+#    Start (ein einziger Runner auf der Maschine), ein Halter, dessen pid= nicht mehr lebt (gpu-lauf.sh schreibt sie), ein
+#    Schloss, dessen besitzer.txt seit 60 min unveraendert steht (die Regel von gpu-lauf.sh). Hoechstens 25 min Warten, dann ROT
+#    mit Namen: der Job-Deckel ist 45 min (timeout-minutes, er zaehlt ab Job-Start, der Hook ist Schritt 2), der Plan der Schritte
+#    hoechstens 20 min (gate:ci-deckung, die Waage) - eine laengere Frist schluege nie, der Deckel kappte vorher ohne Namen.
 # 3) ROT heisst ROT: jeder Abbruch raeumt zuerst den Arbeitsordner (nie urteilt ein Schritt ueber den Baum des vorigen
-#    Laufs) und nennt den Grund; die Notiz scheitert nie (sonst die eigene Datei des Laufs).
+#    Laufs), nennt den Grund und beendet den Worker; die Notiz scheitert nie (sonst die eigene Datei des Laufs).
 # Die Konstanten stehen fest (kein Umgebungs-Schalter: ein Workflow koennte ihn setzen); der Selbsttest ersetzt sie in einer Kopie.
 set +e
 SCHLOSS='/c/Users/micha/AppData/Local/Temp/claude/gpu-schloss'
 LOG='/c/actions-runner/hooks/hook.log'
 WERK='/c/actions-runner/_work'
-FRIST_S=7200
+FRIST_S=1500
 TAKT_S=15
 SCHWEIGT_S=3600
 ICH="ci-runner $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT $GITHUB_JOB"
+toete_worker() { taskkill -F -IM Runner.Worker.exe >/dev/null 2>&1; }
 
 notiz() {
     local z
     z="$(date '+%Y-%m-%d %H:%M:%S') start $ICH: $1"
     { printf '%s\r\n' "$z" >>"$LOG"; } 2>/dev/null || { printf '%s\r\n' "$z" >>"$LOG.$GITHUB_RUN_ID"; } 2>/dev/null
 }
+besitzer() { tr -d '\r\n' 2>/dev/null <"$SCHLOSS/besitzer.txt"; }
+loese_wenn() { [ "$(besitzer)" = "$1" ] && rm -rf "$SCHLOSS"; }
+lebt() { tasklist -FI "PID eq $1" -NH 2>/dev/null | grep -qw "$1"; }
 rot() {
     local grund="$1" ws=""
     [ -n "$GITHUB_WORKSPACE" ] && ws=$(cygpath -u "$GITHUB_WORKSPACE" 2>/dev/null)
@@ -37,8 +44,9 @@ rot() {
                 ;;
         esac
     fi
-    notiz "ROT: $grund"
+    notiz "ROT: $grund - Worker beendet, kein weiterer Schritt"
     echo "Radeon-Runner: ROT - $grund"
+    toete_worker
     exit 1
 }
 
@@ -57,19 +65,18 @@ while :; do
         echo "Radeon-Runner: GPU-Schloss genommen als '$ICH'."
         exit 0
     fi
-    wer=$(tr -d '\r\n' <"$SCHLOSS/besitzer.txt" 2>/dev/null)
-    case "$wer" in
-        "ci-runner "*)
-            notiz "verwaistes Schloss '$wer' geloest"
-            rm -rf "$SCHLOSS"
-            continue
-            ;;
-    esac
+    wer=$(besitzer)
     jetzt=$(date +%s)
     seit=$(stat -c %Y "$SCHLOSS/besitzer.txt" 2>/dev/null || stat -c %Y "$SCHLOSS" 2>/dev/null)
-    if [ -n "$seit" ] && [ $((jetzt - seit)) -gt "$SCHWEIGT_S" ]; then
-        notiz "verwaistes Schloss '$wer' geloest - es schweigt seit $(((jetzt - seit) / 60)) min"
-        rm -rf "$SCHLOSS"
+    pid=$(printf '%s' "$wer" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p')
+    grund=""
+    case "$wer" in "ci-runner "*) grund="ci-runner-Schloss beim Start" ;; esac
+    [ -z "$grund" ] && [ -n "$pid" ] && ! lebt "$pid" && grund="Halter pid=$pid lebt nicht"
+    [ -z "$grund" ] && [ -n "$seit" ] && [ $((jetzt - seit)) -gt "$SCHWEIGT_S" ] &&
+        grund="es schweigt seit $(((jetzt - seit) / 60)) min"
+    if [ -n "$grund" ]; then
+        notiz "verwaistes Schloss '$wer' geloest - $grund"
+        loese_wenn "$wer"
         continue
     fi
     if [ "$gemeldet" = 0 ]; then
