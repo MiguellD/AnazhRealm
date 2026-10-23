@@ -6,3 +6,4 @@ z9-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=a2b28770a83f96fb18d6
 w6-material-gtx 2 punkte sha=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 geraet=gtx nur=material.K1#1,material.K1#2
 z9c-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=13c95713e286923682dc8986505a581c9c8467db zellen=w-ego,g-third,d-ego,stadt,fahrt
 z9c-punkte 2 punkte sha=13c95713e286923682dc8986505a581c9c8467db geraet=gtx
+z10b-abab 1 abab A=13c95713e286923682dc8986505a581c9c8467db B=833bbc244711329e2e23305ed857d7e53a47e20e zellen=w-ego,d-ego,stadt
