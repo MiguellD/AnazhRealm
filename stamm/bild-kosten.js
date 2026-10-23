@@ -2205,8 +2205,8 @@ class AnazhRealm_bild_kosten {
     // Halbschatten ist so breit, wie die Sonne (`sonneTan`, 0,53°) ihn über den Abstand Werfer → Empfänger zieht, nie schmaler
     // als `filterTexel` Texel der Karte: die Werfer sucht er im Umkreis `sucheM` der Kaskade (5 Vogel-Punkte, Karten-Tiefen ohne
     // Vergleich), ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
-    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius max(Halbschatten/2, Boden). Wo die Texel den Halbschatten nie unterschreiten
-    // (k0 ab 15 m, k1: `sucheM` 0), bleibt der Boden-Radius — der r184-PCF mit Radius 1, ohne Suche. Box und Tiefe stellt `_kaskadeFit`.
+    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius max(Halbschatten/2, Boden). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
+    // GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius, der r184-PCF. Box + Tiefe: `_kaskadeFit`.
     _schattenFilter(i) {
         const T = THREE.TSL;
         const K = AnazhRealm.SCHATTEN_KASKADE;
@@ -2219,7 +2219,7 @@ class AnazhRealm_bild_kosten {
             const z = shadowCoord.z;
             const vogel = (k, r) => shadowCoord.xy.add(T.vogelDiskSample(k, 5, phi).mul(r));
             let r = T.vec2(je(K.filterTexel)).div(karte);
-            if (sucheM > 0) {
+            if (sucheM > 0 && builder.renderer.backend.isWebGPUBackend === true) {
                 const summe = T.float(0).toVar();
                 const zahl = T.float(0).toVar();
                 for (let k = 0; k < 5; k++) {
