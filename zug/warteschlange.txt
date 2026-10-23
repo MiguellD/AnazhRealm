@@ -2,3 +2,4 @@
 # Zug 6 (A 7c6f4b49 · B 6579e8f4) fährt die OMEN-Sitzung noch von Hand zu Ende; die Zeile in zug/abab.txt ist das Landetor.
 z6-punkte 2 punkte sha=6579e8f409c5234276210ace7e19798e63ad423c geraet=gtx
 z7-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=877d3e04ea99e07f27e71600df4e4564c1378187 zellen=w-ego,g-third,d-ego,stadt,fahrt
+z9-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=a2b28770a83f96fb18d6657131c741312fcef266 zellen=w-ego,g-third,d-ego,stadt,fahrt
