@@ -5,6 +5,14 @@
   "skala": "2.0",
   "summe": 44,
   "max": 330,
+  "maschine": {
+    "kopf": "3528f2d0",
+    "zeit": "2026-10-23T06:29:35.858Z",
+    "kriterien": [
+      "gelaende.K4",
+      "mensch.K3"
+    ]
+  },
   "gruppen": [
     {
       "key": "physis",
@@ -141,9 +149,10 @@
           "punkte": 1,
           "staffel": "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
           "messung": "gate:wasser-leben F + gate:kopplung F1 + Kern-Mutation: Wasser an 50 Zufalls-Punkten; Tier-Trinkziel, Tier-Scheu, Pflanzen-Wasserurteil, Klang-Nässe, Auftrieb und Leib folgen binnen eines Takts; 0 Pflanzen im gezeichneten Wasser, 0 Tiere trocken durch eine zweite Fläche. Jeder Lauf endet in See oder Meer (100 %), der Spiegel steigt stromab nie; die Strömung treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten. Die Leser-Liste steht nur hier (Wetter K3 verweist).",
-          "beleg": "SCHNITT wasser-leser 66e114de (Merge 3298ee07, integ 6cfce28a), mit Welt-Byte in `stamm/wasser-hydro.js`, `klang.js`, `koerper-fahrt.js`, `netz-p2p.js`, `bild-himmel.js`, `vegetation-wiese.js`: `_nassAt` fragt seine Obergrenze die EINE Wahrheit `_koerperWasser(x, z, −Infinity)` statt `_wasserBildAt`/`_atlasWaterLevelAt`; Klang, Schritt, Kamera, Mitspieler, Ufer-Suche, Wagen-Abgrund und Nah-Wiese fragen dasselbe Urteil. Gemessen mit gate:wasser-leben K12 M (`scripts/lib/wasser-linse.cjs` wasserMutation; Mechanik am Leser, R3): 50 Zufalls-Punkte trockenen Lands am See der Mess-Wiese, `_koerperWasserSpiegel` trägt je Punkt eine Scheibe 3 m tief — Basis e3dd2b67 4 von 10 Lesern 0/50, Kopf 10 von 10 je 50/50 (leib, kamera, tier, wagen, scheu, trinken, klang, schritt, wand, land); Nah-Wiese 603 → 0, Nah-Streu 137 → 0 Pflanzen im Wasser; die Kontrolle `_atlasWaterLevelAt` folgt nie (die Probe ist nicht blind); dieselbe Linse an Basis und Kopf → Staffel 1. Frisch: Wasser-Wand (`npm run gate:wasser-leben` mit Mutation) in integ-CI Run 39820208133 an 6cfce28a grün (voll 5/18). In der unmutierten Welt rechnen die neuen Formeln dasselbe wie die alten — der Gewinn ist die EINE Quelle unter Mutation, kein anderes Bild. Für die 2 fehlen: überall, jeder Lauf endet in See oder Meer, die Strömung treibt > 0,5 m in 90 Takten. Davor: Das Netz entsteht zuerst aus dem Gesetz (Stream-Power S = ks·A^−θ, streng fallende Sohle, `gelaende-core.js:202-209`); die Strömung advektiert am EINEN Bewegungs-Chokepoint (gate:kopplung F1). Aber die Natur urteilt dreimal über Wasser (`vegetation-baum.js:1633` Gesetz · `vegetation-wiese.js:75` gezeichnet · die Nah-Streu selbst), und Tiere gehen trocken durch die zweite Fläche (`kreatur-verhalten.js:3033-3041`, SYSTEMKARTE W1). Die Mutations-Probe gibt es nicht.",
+          "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 3528f2d0 headless",
           "schlupfloch": "Ein Ausnahme-Filter je Leser (das Tier meidet Wasser-Chunks) bestünde eine Zählung; die Kern-Mutation an Zufalls-Punkten verlangt, dass jeder Leser binnen eines Takts folgt.",
-          "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1."
+          "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1.",
+          "maschine": true
         },
         {
           "name": "EINE Boden-Höhe je Rolle: Huf, Rad, Streu-Fuß, Feinform",
@@ -1210,9 +1219,10 @@
           "punkte": 1,
           "staffel": "1 = 0 Durchdringung und Eintritt zu 100 % über die Tür im Start-Dorf · 2 = 24 h ohne Steckenbleiber in einer Stadt, Gangzeit auf Wegen ≥ 0,85, ≥ 100 m Weg je Bewohner und Tag, Ausweichen ohne Berührung",
           "messung": "NEUE Wege-Linse; Selbsttest: ein Haus quer über dem Weg ist ROT am Täter.",
-          "beleg": "SCHNITT bewohner-wege 3d1f6b14 (Merge 71313b7a, integ 6cfce28a), mit Welt-Byte: die Wegsuche der Bewohner liest das EINE Blocker-Netz (`_bewohnerWand`, `_streckeBoxAbstand2`), der Leib tritt auf die Stufen vor der Tür (`_bewohnerTritt`), koerper-core VERHALTEN morgenPlatzH 1. Die Linse kam vorher (6636bc57) und war an der Basis e3dd2b67 ROT: Durchdringung 82 Takte (baum_tanne 37, haus_skandinavisch #431794 11, marktstand 9, felsbogen 8), Wege 2–6, Strecke min 5 m; am Zweig-Kopf (gate:kreatur-takt `bewohner`, Null-Renderer — Kontakt-Mechanik, R3, Präzedenz Siedlung K1): Durchdringung 0, Tür 248/248, Wege 4–7, Strecke min 46 m, Gangzeit auf Wegen 0,947; Selbsttest bewohner-quer (#4242) und bewohner-wand ROT beim Namen → Staffel 1. Frisch: gate:kreatur-takt prüft wandN === 0 und tuer === durch und ist in integ-CI Run 39820208133 an 6cfce28a grün (voll 4/18). GEMESSEN am Kopf 6cfce28a (22.10., Messschuld M32): headless Durchdringung 0, Tür 247/247, Wege 4–7, Strecke min 46 m, Gangzeit auf Wegen 0,946; im Fenster der Radeon Durchdringung 0, Tür 251/251, Gangzeit 0,942 → Staffel 1 bestätigt. Für die 2 fehlen die Stadt (nH ≥ 27), 24 h ohne Steckenbleiber, ≥ 100 m je Bewohner (heute min 46 m) und Ausweichen ohne Berührung. Der Weg ging über das Blocker-Netz, nicht über den exportSettlement-Graph. Davor: Keine Wegsuche (astar|navmesh|findPath 0 Treffer); die Wege-Karte ist nur eine Zeichen-Schicht (`stamm/siedlung-satz.js`); den graph streicht der Export (`fachwerk-core.js:exportSettlement` `:5377ff`), dims.tuer hat keinen Leser.",
+          "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945 an 3528f2d0 headless",
           "schlupfloch": "Bewohner, die im Haus bleiben, machen keine Fehler: Mindest-Strecke und 4–10 Wege aus K2.",
-          "aenderung": "Staffel neu (B31); Schnitt bewohner-wege 22.10. 0 → 1."
+          "aenderung": "Staffel neu (B31); Schnitt bewohner-wege 22.10. 0 → 1.",
+          "maschine": true
         },
         {
           "name": "Körper, Vielfalt, Ausdruck — und die Kosten einer Menge",

@@ -1,0 +1,35 @@
+{
+ "kopf": "3528f2d0",
+ "je": {
+  "gelaende.K4": {
+   "punkte": 1,
+   "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 3528f2d0 headless",
+   "stationen": [
+    {
+     "id": "gelaende.K4#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+     "sha": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+     "grund": null
+    }
+   ]
+  },
+  "mensch.K3": {
+   "punkte": 1,
+   "beleg": "Maschine: Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945 an 3528f2d0 headless",
+   "stationen": [
+    {
+     "id": "mensch.K3#1",
+     "geraet": "headless",
+     "gruen": true,
+     "zahl": "Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945",
+     "sha": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+     "grund": null
+    }
+   ]
+  }
+ },
+ "kopfVoll": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+ "zeit": "2026-10-23T06:29:35.858Z"
+}

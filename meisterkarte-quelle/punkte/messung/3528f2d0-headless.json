@@ -1,0 +1,26 @@
+{
+ "sha": "3528f2d0f4426d7d06e39685d92c1e9491674f97",
+ "geraet": "headless",
+ "zeit": "2026-10-23T06:28:29.776Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K4#1": {
+   "gruen": true,
+   "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+   "exit": 0,
+   "minuten": 0.35,
+   "zeit": "2026-10-23T06:28:08.530Z",
+   "abdruck": "a049a8dbebf9",
+   "port": 7700
+  },
+  "mensch.K3#1": {
+   "gruen": true,
+   "zahl": "Durchdringung 0, Tür 247/247, Hüllen 18/18, Gangzeit auf Wegen 0.945",
+   "exit": 0,
+   "minuten": 0.65,
+   "zeit": "2026-10-23T06:28:29.776Z",
+   "abdruck": "20aa4a506500",
+   "port": 7701
+  }
+ }
+}
