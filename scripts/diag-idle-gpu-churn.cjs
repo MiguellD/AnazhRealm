@@ -40,16 +40,11 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // WebGL2-Rückfall fuhr „voll"). Auf „voll" kostete ein Szenen-Render 7–110 s und jeder schwere Erst-Compile 50–70 s:
     // die Linse lief 21–65 min. Ihr Gegenstand bleibt ganz: Wiederholungs-Compiles im Leerlauf und bei der Env-
     // Regenerierung (Hauptpass); Churn im Schattenpass sieht sie auf diesem Holz nicht.
-    // DIE BÜHNE DER LINSE (Lehre 17; Mess-Lehre der Welle L): die Welt der Messung wächst nicht nach der Wand-Uhr. Bis zur
-    // Gegenprüfung 07.10. (Runde 3) zog das Wetter nach 120 s Spielzeit weiter, und das Start-Dorf wuchs, sobald ein Frame
-    // Luft hatte, mitten in den Warmup: auf dem langsamen Runner kam die Linse über die 120-s-Marke (der erste Erst-Compile
-    // 26-30 s statt 3 s), der Wetter-Takt hing 282 s, der Regen kompilierte 42 s, der Sternen-Himmel 71 s — 427-554 s je
-    // Lauf statt 75 s, zwei von drei Läufen rissen die Protokoll-Frist. Gemessen wird der Leerlauf EINER Welt: das Start-Dorf
+    // DIE BÜHNE DER LINSE (Lehre 17; Mess-Lehre der Welle L): die Welt der Messung wächst nicht nach der Wand-Uhr. Gemessen wird der Leerlauf EINER Welt: das Start-Dorf
     // steht vor dem Warmup (der Settle wartet auf es), Mittag, Sonne, die Saison fest, der Wetter-Zug hält; die Bühnen-Wand
     // am Ende nennt jede Drift beim Namen. Das Wetter hält die EINE Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs:
     // die Uhr des Auto-Zugs eingefroren unter 0, `_setWeather` verweigert dann JEDEN Zug — Auto-Zug, Emotion, Nexus, Gesetz,
-    // Mitspieler); bis zur Welle K hielt die Linse eine eigene Uhr (je Takt auf 0), an der jeder andere Schreiber vorbeikam.
-    // Ihr Spion nennt den Schreiber einer Drift beim Namen.
+    // Mitspieler). Ihr Spion nennt den Schreiber einer Drift beim Namen.
     const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
     const SELBSTTEST_RUHE = process.argv.includes("--selbsttest-ruhe");
     // SELBSTTEST der Programm-Wache: mitten im Warmup läuft ein Programm, das ein Dorf baut — die Wache MUSS es anhalten
@@ -134,9 +129,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         const r = window.anazhRealm, s = r.state;
         if (!s.rendererReady || !window.__origRender) return { err: "renderer nicht bereit" };
         if (s.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
-        // WIEDERHOLUNG vs. ERST-COMPILE (Befund CI 36718459377): auf dem langsamen Runner erreichte der Warmup nie
-        // Ruhe — die streamende Welt brachte neue Objekte, deren ERST-Compiles zählte Check B als Env-Churn (6 Stacks,
-        // alle _renderObjectDirect). Die V18.322-Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
+        // WIEDERHOLUNG vs. ERST-COMPILE: die streamende Welt bringt neue Objekte, deren ERST-Compiles kein Env-Churn sind.
+        // Die V18.322-Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
         // Quelltext, derselbe Zustand) noch einmal, weil ein Cache-Schlüssel seine Identität verliert. Darum trägt
         // jeder Compile seinen Fingerabdruck; `wdh` zählt die schon gesehenen.
         window.__cc = { gpuPipeline: 0, glLink: 0, wdh: 0 };
@@ -234,8 +228,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
         // jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr des Wetter-Zugs,
         // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht Quelle und
-        // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide. Bis 08.10. überschrieb die Linse
-        // `dslEval` selbst (ein Zwilling des Halts, der jedes Programm schluckte).
+        // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide.
         window.__weltaktSpion();
         window.__weltaktSeq0 = window.__weltaktBuch(0).seq;
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
@@ -332,9 +325,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             for (const k of kalt.keys()) if (!warm.has(k)) rest++;
             return { rest, n, cc: cnt() - c0, label };
         };
-        // DER TAKT RENDERT NICHT: `_gameLoopTick` ist der ganze Spiel-Loop und ruft `_loopRender` selbst (gemessen
-        // 03.10.: jeder Takt-Compile kam aus `loop → _loopRender` — die Erst-Compiles hereinstreamender Objekte, VOR
-        // jedem Warmup, bis 437 s in EINEM Aufruf; und jeder Linsen-Frame renderte doppelt). Die Linse legt den
+        // DER TAKT RENDERT NICHT: `_gameLoopTick` ist der ganze Spiel-Loop und ruft `_loopRender` selbst. Die Linse legt den
         // Render für die Dauer des Takts still; gerendert wird erst, wenn der Schlüssel-Warmup die Neuen kennt.
         window.__takt = () => {
             const c0 = cnt();

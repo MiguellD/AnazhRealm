@@ -116,8 +116,7 @@ function zugVerdict(m) {
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
     // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
-    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
-    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag.
     const vr = m.vorrat;
     if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
     else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
@@ -126,7 +125,6 @@ function zugVerdict(m) {
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
-//
 function rahmenVerdict(m) {
     if (!m || m.gestartet !== true) return ["rahmen start"];
     const out = [];
@@ -869,7 +867,7 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
     return null;
 }
 // Ein Satz: gültig (JSON, das Programm läuft ohne Absage) · Absicht (das Soll) · Bruch. Ein Negativ-Satz nur ohne versuchte
-// Tat — auch eine, die `dslEval` abweist, ist ROT (20.10.: „bring mir einen kaffee“ → spawn_creature kaffee_machine).
+// Tat — auch eine, die `dslEval` abweist, ist ROT.
 function korpusSatzUrteil(e, soll) {
     const a = e.antwort || {};
     const json = !!e.antwort && !a.error && !a.fallbackUsed;
