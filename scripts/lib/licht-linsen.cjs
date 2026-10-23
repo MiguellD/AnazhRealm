@@ -148,9 +148,9 @@ function albedoSicht(opts) {
                     for (const e of st.architectures || [])
                         if (e && e.type === ex.name && e.position) {
                             const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            // `nah` (K63-n4): nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
+                            // `nah`: nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
                             // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
-                            // `nah: 0` (K63-n6): nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
+                            // `nah: 0`: nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
                             // folgt dem LACK_GESETZ der Saat)
                             if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
                         }
@@ -166,7 +166,7 @@ function albedoSicht(opts) {
                             { seed: ex.seed || 7 }
                         );
                         gesetzt = true;
-                        // ein verweigerter Platz (K63-n5: der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
+                        // ein verweigerter Platz (der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
                         // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
                         if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
                     }
@@ -244,7 +244,7 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
-            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von einem Auge
+            // DAS AUGE DER STUFE AM EXEMPLAR (`exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von einem Auge
             // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
             // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
             const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
@@ -421,7 +421,7 @@ function albedoSicht(opts) {
             const c = bb.getCenter(new T.Vector3());
             return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
-        // DER SATZ DES EXEMPLARS (K63-n6): ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
+        // DER SATZ DES EXEMPLARS: ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
         // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
         // nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt, derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein
         // Mesh, das kein Satz ist, bleibt. DIE BASIS IM SATZ: der Satz-Stoff liest sein Metall je Ecke (`aRegler.y`) — `metalness = 0`
@@ -599,7 +599,7 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    // DIE STUFEN DES SCHUSSES (K63-n7): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
+                    // DIE STUFEN DES SCHUSSES: je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
                     const stufen = new Set();
                     for (const m of sel) {
                         const sk = /:L(\d+)$/.exec(kl.get(m) || "");
@@ -677,7 +677,7 @@ function albedoSicht(opts) {
     })();
 }
 
-// DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
+// DIE RUHE DER LINSE (die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
 // Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
 // und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr baut —
 // dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
@@ -1013,7 +1013,7 @@ function tagKurveSelbsttest() {
     ];
 }
 
-// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): Boden-Satz (nah) und Fern-Ring (fern, er liegt
+// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE („die weiße Masse“): Boden-Satz (nah) und Fern-Ring (fern, er liegt
 // darunter) zeichnen dieselbe Stelle. Aus 420 m Höhe (über der Karten-Sicht des Baums, 384 m) orthogonal über 2 × `halb` (132 m) je
 // Ort zwei Schüsse unter weißem Umgebungslicht π (hell − dunkel = die Albedo, wie `__albedoSicht`): nur der Satz, nur der Ring. Das
 // Quadrat trägt mehrere Zellen des Rings (Schale 0 schnappt auf 24 m: auf 132 m −12 … +7 % neben dem Gesetz, auf 44 m −22 … +20 %).
@@ -1076,7 +1076,7 @@ function nahFernSicht(opts) {
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
             return aus.slice(0, opts.jeKlasse || 4);
         };
-        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
+        // DIE KLASSEN AUS DER WELT (kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
         // offensten — je Klasse 30 m auseinander, keine Stelle in beiden; die Deckung ist der gepflanzte Bestand (phyto-core
         // `forestKronenDeckung`).
         const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
@@ -1114,7 +1114,7 @@ function nahFernSicht(opts) {
             fogAlt = sc.fog;
         sc.environment = null;
         sc.fog = null;
-        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
+        // DIE LUFT AUS: die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
         // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
         // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
         const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
@@ -1158,8 +1158,8 @@ function nahFernSicht(opts) {
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
-        // DER RING WEICHT DEM GEBAUTEN (K16): unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
-        // Klasse 2) — der Fern-Schuss im Quadrat der Chunks war seither leer (0 px). Für die Schüsse der Linse zeichnet der
+        // DER RING WEICHT DEM GEBAUTEN: unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
+        // Klasse 2). Für die Schüsse der Linse zeichnet der
         // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge), der Naht-Teil ruht; danach
         // steht die Teilung wieder, wie sie war.
         const fr = st.fernRing;
@@ -1291,8 +1291,7 @@ function nahFernSicht(opts) {
                 });
             }
         } finally {
-            // die Teilung des Rings steht wieder, wie sie war (9ca8b242 setzte diese Rückgabe in die Licht-Bilanz, wo `freiAlt`
-            // nie stand: `werkbank licht` brach seither mit „freiAlt is not defined", K63)
+            // die Teilung des Rings steht wieder, wie sie war
             if (freiAlt) {
                 freiIx.array.set(freiAlt);
                 freiIx.needsUpdate = true;
@@ -1310,7 +1309,7 @@ function nahFernSicht(opts) {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
         }
-        // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
+        // Die Karte der Fern-Krone im Boden-Stoff: steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
         const nk = st.fernKroneNah;
         return {
@@ -1433,7 +1432,7 @@ function nahFernUrteil(messung, band) {
     return { befunde, zeilen };
 }
 
-// __laubGegenlicht({ art, abstand, sonne }) — DAS LAUB IM GEGENLICHT (K19, phyto-core `laubDurchlass`): der nächste Baum der Art
+// __laubGegenlicht({ art, abstand, sonne }) — DAS LAUB IM GEGENLICHT (phyto-core `laubDurchlass`): der nächste Baum der Art
 // (Täter-Klasse f:<art>:L<stufe>, ein Exemplar aus der Instanz-Liste seiner Laub-Senke) aus `abstand` Metern (Augenhöhe 1,7 m,
 // Blick auf die Kronen-Mitte), die Sonne in `sonne` Grad Höhe einmal HINTER der Krone (Gegenlicht), einmal hinter dem Auge
 // (Auflicht) — dieselbe Höhe, gespiegeltes Azimut, dieselbe Licht-Kette (Sonne mit Schatten, Himmel, Hemi). Sichtbar nur die
@@ -1782,7 +1781,7 @@ function laubGegenlicht(opts) {
                 return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
             }
             if (opts.oben) {
-                // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
+                // DIE KRONE VON OBEN (Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
                 // über dem Exemplar, die Licht-Kette der Bühne unberührt (Mittag, Sommer, Sonne mit Schatten, Himmel). Drei Bilder
                 // aus demselben Auge: die Krone im Licht (L), dieselbe Krone unter weißem Umgebungslicht π und 0 (A = hell − dunkel,
                 // die Blatt-Albedo derselben Pixel) und allein eine waagrechte 18-%-Karte über der Spitze (Lk, unbeschattet).
@@ -2090,7 +2089,7 @@ function laubLichtUrteil(messung, band) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
-// DIE KRONE VON OBEN (K68-N3): die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
+// DIE KRONE VON OBEN: die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
 // Albedo A und dem Durchlass tau (phyto-core LAUB_LICHT: T = tau · R) streut ω = A · (1 + tau); eine dichte, isotrop streuende
 // Blattschicht wirft davon R∞ = (1 − √(1−ω)) / (1 + √(1−ω)) zurück (Zwei-Strom / Kubelka–Munk: Meador & Weaver 1980, J. Atmos.
 // Sci. 37:630; Sellers 1985, Int. J. Remote Sens. 6:1335 — die Natur: Nadelwald sichtbar 0,03–0,05, Laubwald 0,04–0,06, wo
@@ -2542,7 +2541,7 @@ function naesseUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
-// DER KONTAKT-SCHATTEN (schatten.K1, Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) 8 m voraus; je Pose
+// DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) 8 m voraus; je Pose
 // (ego 2 m quer, Auge 1,6 m · third 4,5 m, 2,6 m) drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die Welt, B ohne Pfosten, C ohne
 // Sonne. Die Sonnen-Sicht f = (A − C)/(B − C), linear, quer zum Streifen `fuss` (und `fern`) Meter hinter dem Pfosten: je Kante die
 // Breite 10–90 % von f, der Median in cm.
@@ -2679,8 +2678,8 @@ function kontaktSicht(o) {
     })();
 }
 
-// DAS URTEIL (schatten.K1 Staffel 1): am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose;
-// `fern` (3 m hinter dem Pfosten) steht als Zahl daneben, der Zuwachs je Meter für Staffel 2.
+// DAS URTEIL: am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose;
+// `fern` (3 m hinter dem Pfosten) steht als Zahl daneben.
 function kontaktUrteil(m) {
     const befunde = m && !m.fehler ? [] : [(m && m.fehler) || "keine Messung"];
     for (const pose of m && !m.fehler ? ["ego", "third"] : []) {

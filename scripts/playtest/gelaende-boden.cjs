@@ -580,7 +580,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             [0, 1, 2, 3, 9, 10, 12].every(
                 (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
             );
-        // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+        // Die Hysterese: ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
         // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
         // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
         out.lodHysteresis =
@@ -841,7 +841,7 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
         out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
-        // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+        // der Spieler in der Mitte des Chunks 0,0 (die Stufe folgt dem Kasten-Abstand)
         out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
         out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
         out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
@@ -1785,10 +1785,9 @@ async function checkBandWahrerAnblickPfade(ctx) {
     );
 }
 
-// G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-
+// G1 Seam-Normal: zwei same-LOD-
 // Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
-// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale — vor V18.372 bis 69° an ~18 % der
-// Rand-Verts, die Lichtungs-Naht „direkt unter dem Wasser".
+// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale.
 async function checkBandSeamNormal(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, () => {
@@ -2570,7 +2569,7 @@ async function checkBandBewegungUnterLast(ctx) {
         // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
         s.voxelWorker = savedWorker;
     
-        // ── (d) DIE PAUSE (K21, Lehre 13): der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
+        // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
         // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
         // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
         // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.

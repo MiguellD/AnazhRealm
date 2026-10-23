@@ -8,7 +8,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
-//                                                           DIE KLASSEN IM BILD (K63, spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
+//                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
 //                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
 //                                                           (`--quelle` ein anderer Stand; --terrain das Chunk-Material neu)
@@ -18,7 +18,7 @@
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
-//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT (K19)
+//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
@@ -81,25 +81,25 @@ const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
-// DIE WIESE des Messorts (K55): die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
+// DIE WIESE des Messorts: die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
 const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 // DER VRAM-ABGRIFF (jede GPU-Allokation beim Namen, dazu der Grund des Ziel-Zensus) — EINE Quelle für Werkbank und Gates.
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
-// DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
+// DIE MESSUNG IN DIE SOLL-TAFEL (`bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
-// DER ORT DER BILDER DER TAFEL (K63-n8, abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
+// DER ORT DER BILDER DER TAFEL (abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
 // artifacts/soll-tafel/ (gitignored, lokal) — Bild, Maske und Begleit-JSON nebeneinander
 const sollAblage = (ziel, endung) => {
     const d = path.join(root, "artifacts", "soll-tafel");
     fs.mkdirSync(d, { recursive: true });
     return path.join(d, String(ziel).replace(/:/g, "-") + endung);
 };
-// der Stand des Arbeitsbaums für jedes Begleit-JSON (K32): `gitStand` und der Code-Abdruck jeder Quelle (abnahme-urteil)
+// der Stand des Arbeitsbaums für jedes Begleit-JSON: `gitStand` und der Code-Abdruck jeder Quelle (abnahme-urteil)
 const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 // DER EINE SCHUSS (W1-n1, abnahme-urteil `schussVon`): das erste Ziel von „a,b:L1,…" trägt den Schuss mit dem Abdruck der
 // Quellen ALLER Ziele, jedes weitere NENNT es; geschrieben wird einmal, nach der Prüfung jeder Zeile
@@ -111,18 +111,18 @@ function sollIstSchreiben(ziele, messung) {
     for (const [k, teil, ziel] of orte)
         if (!k || (teil && teil !== "wirkung" && !/^L\d$/.test(teil)))
             throw new Error(`--ist ${ziel}: keine Klasse der Soll-Tafel oder Teil unbekannt (L<n> je Stufe, wirkung)`);
-    // DER STAND (K63-n2, abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
+    // DER STAND (abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
     // beim Messen auf der Platte standen — ändert sich eine, ist das Ist veraltet
     messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
     messung.quellen = Object.fromEntries([...new Set(orte.flatMap(([k]) => k.quellen || []))].map((d) => [d, pruefsumme(d)]));
     orte.forEach(([k, teil], i) => {
         const s = i ? liste[0] : messung;
         if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = s;
-        // je Stufe ein Schuss (K63-n4, `milchweiss`: die Tore des Schusses in der Stufe L<n>)
+        // je Stufe ein Schuss (`milchweiss`: die Tore des Schusses in der Stufe L<n>)
         else if (teil) (k.mass.messung = Object(k.mass.messung) === k.mass.messung ? k.mass.messung : {})[teil] = s;
         else k.mass.messung = s;
     });
-    // DER SCHREIBER PRÜFT (K63-n7, abnahme-urteil `sollIstAbweisung`): in die Tafel fällt nur, was die Linse liest — ein Schuss,
+    // DER SCHREIBER PRÜFT (abnahme-urteil `sollIstAbweisung`): in die Tafel fällt nur, was die Linse liest — ein Schuss,
     // in dem die Klasse nicht zeichnete (der L1-Schuss 14 s nach dem Umstellen: Membran und Nebel ohne Tor), bricht laut
     const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, sollQuelle());
     if (ab.length)
@@ -268,7 +268,7 @@ function lauf(k) {
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
         // DIE BAHN (`wandern: "bahn"`): 4 m/s die Kette des Orts (haushalt.json `bahn`) oder −z 0 → −60 m, hin und zurück;
-        // der Geher lebt IM Lauf (K1).
+        // der Geher lebt IM Lauf.
         const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
@@ -844,7 +844,7 @@ async function starte() {
     // Zug und Blick, der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
-    // DIE SICHT des gestellten Orts (K26): Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
+    // DIE SICHT des gestellten Orts: Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
@@ -1014,7 +1014,7 @@ async function starte() {
             const rend = r.state.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
-            // DAS GESICHT (K63-n2, `--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
+            // DAS GESICHT (`--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
             // die Augenhöhe, seine Blick-Richtung) und blickt ihn an — die Pose kommt aus dem Leib, nie von Hand
             let gpos = null;
             if (k.gesicht != null) {
@@ -1061,7 +1061,7 @@ async function starte() {
             const py = gpos ? gpos[1] : boden(px, pz, k.py),
                 ly = gpos ? gpos[4] : boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
-            // DIE KLASSE (K63, die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
+            // DIE KLASSE (die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
             if (k.klasse) {
                 const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
                 k.w = Math.round(db.x);
@@ -1069,7 +1069,7 @@ async function starte() {
             }
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
-            // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
+            // letzten Schusses (das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
             const cam = r.state.camera,
                 fov0 = cam.fov; // `--fov v`: das Blickfeld (vertikal) dieses Schusses, danach wieder das des Spiels
             if (k.fov) (cam.fov = Number(k.fov)), cam.updateProjectionMatrix();
@@ -1090,7 +1090,7 @@ async function starte() {
                 }
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
-            // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
+            // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
             const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel" };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
@@ -1117,7 +1117,7 @@ async function starte() {
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
-            // DIE KLASSEN IM BILD (K63-n1, scripts/lib/abnahme-urteil.cjs): an derselben Pose unter der EINEN Uhr G, G2 (das
+            // DIE KLASSEN IM BILD (scripts/lib/abnahme-urteil.cjs): an derselben Pose unter der EINEN Uhr G, G2 (das
             // Rauschen) und je Teil-Klasse (`_taeterKlasse`) O ohne sie; jedes Pixel höchstens EINER Klasse, die Maße aus dem Bild. `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
             // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Die Nah-Wiese ruht, solange
             // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
@@ -1126,7 +1126,7 @@ async function starte() {
                 const re = new RegExp(k.klasse);
                 const zeichnet = (o) =>
                     o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
-                // DER KOPF IN STOFFEN (K63-n2, `--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
+                // DER KOPF IN STOFFEN (`--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
                 // Lider) oder der am Kopf-Gelenk sitzt, heißt `spieler:kopf/<Stoff>` (Stoff = `__klasse`, sonst `auge`), der Rest
                 // `spieler:leib/…` — die Teilung zeigt dann jeden Stoff des Kopfs für sich
                 const KOPF_GELENK = /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/;
@@ -1157,7 +1157,7 @@ async function starte() {
                     if (!teile.has(kl)) teile.set(kl, []);
                     teile.get(kl).push(o);
                 };
-                // DER BAU-SATZ IN BEREICHEN (K63-n3, `_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
+                // DER BAU-SATZ IN BEREICHEN (`_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
                 // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
                 // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
                 // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
@@ -1230,7 +1230,7 @@ async function starte() {
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
                     const klassen = {};
-                    // das Außen der Silhouette (K68-n2, `klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
+                    // das Außen der Silhouette (`klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
                     const aussen = new Uint8Array(W * H);
                     for (let p = 0; p < W * H; p++) aussen[p] = teil[p] === 0 ? 1 : 0;
                     // DIE TREUE ZUM ZIEL (D8, abnahme-urteil `zielTreue`): je Pixel der Membran-Klasse der Strahl der Kamera auf die Ebene
@@ -1340,7 +1340,7 @@ async function starte() {
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
-                    // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
+                    // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton des Ofens, koerper `kopfToene`), projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
                     // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
                     // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
@@ -1842,7 +1842,7 @@ async function starte() {
                             gruendung: ort.gruendung || null,
                             bahn: ort.bahn || null,
                         });
-                        // DIE WIESE (K55): ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
+                        // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
                         // Ort, der keine Wiese ist, bricht die Aufstellung laut.
                         let wiese = null;
@@ -1884,22 +1884,22 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
-                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON
+                    // DIE KLASSE: die Maske neben dem Bild, die Maße im Begleit-JSON
                     if (o.klasse) {
                         const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
                         fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
                         o.klasse.maske = mdatei;
                         o.abnahme.klasse = o.klasse;
                     }
-                    // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
+                    // DAS BEGLEIT-JSON: die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`)
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (`--ist <id>[:L<n>|:wirkung]`)
                     if (b.ist) {
                         if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         const kl = o.klasse;
                         if (!Object.keys(kl.klassen).length)
                             throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
-                        // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
+                        // DER ORT DES BILDS (abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
                         // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
                         // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
                         // MEHRERE ZIELE (D8, `--ist tor-fern:L1,tor-bunt:L1,tor-ziel:L1`): derselbe Schuss misst je Ziel sein
@@ -2008,7 +2008,7 @@ async function starte() {
                         };
                         let q = quadrat(),
                             takte = 0;
-                        // DIE KARTE GEHÖRT DIESEM ORT (K53): ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
+                        // DIE KARTE GEHÖRT DIESEM ORT: ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
                         // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
                         // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
                         const karteHier = (k) => {
@@ -2199,7 +2199,7 @@ async function starte() {
                     });
                     const messung = {
                         datum: new Date().toISOString(),
-                        // der Stand der Welt-Seite (K63-n3, abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns
+                        // der Stand der Welt-Seite (abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns
                         stand: kernStand(),
                         echt: ECHT,
                         geraet,
@@ -2464,7 +2464,7 @@ async function starte() {
                     // und Ratsche (spec/profiband).
                     // Ein Toggle-Ort (bank) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
                     BAND.ratscheVon(BAND.ladeSpec(b.ort));
-                    // DAS GERÄT und DIE SICHT (K26): sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
+                    // DAS GERÄT und DIE SICHT: sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
                     // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
                     const hh = BAND.ladeSpec(b.ort).haushalt;
                     const geraetText = await geraetInfo();
@@ -2898,7 +2898,7 @@ async function starte() {
                 }
                 if (req.url === "/licht") {
                     const o = await page.evaluate(() => window.__lichtBilanz());
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `licht --ist <id>`): E an der waagrechten Karte, alle Lichter und
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (`licht --ist <id>`): E an der waagrechten Karte, alle Lichter und
                     // nur die Umgebung (der Himmel)
                     if (b.ist)
                         o.ist = sollIstSchreiben(b.ist, {
@@ -3313,7 +3313,7 @@ async function starte() {
         console.log(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
-        // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
+        // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
         const LL = require("./lib/licht-linsen.cjs");
         if (argv.includes("--selbsttest")) {
@@ -3355,7 +3355,7 @@ async function starte() {
                 [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.038, 0.96, -5.6), "ring@0": fz(1.047, 0.45, -2.82) } }).urteil, "GRUEN"],
                 [JSON.stringify(LL.laubLichtUrteil({ welt: { "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) } }).zeilen[1]), /"karte":0\.968.*"mittag":0\.788/],
                 [LL.laubLichtUrteil({ welt: { "haus@0": fz(0.763, -4.17, 1.04) } }).befunde.join(), /FERN haus@0: ohne die Zeile zu Mittag/],
-                // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
+                // die Krone von oben: Zwei-Strom-Band über der gemessenen Blatt-Albedo
                 [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
                 [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.08, A: 0.164, tau: [0.5, 1] } } } }).urteil, "GRUEN"],
                 [
@@ -3375,7 +3375,7 @@ async function starte() {
         // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
         // `--ort genesis`: die Bäume der Ankunft (A7, die Karte gegen ihre Gestalt)
         const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === (opt("--ort") || "wiese"));
-        // `--oben` (K68-N3): dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
+        // `--oben`: dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
         // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
         const oben = argv.includes("--oben");
         const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
@@ -3549,7 +3549,7 @@ async function starte() {
         }
     } else if (cmd === "ratsche") {
         // DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 eingeschwungene Band-Messungen aus Erst- UND Zweit-Boot an EINEM Ort ×
-        // Gerät × Sicht und EINER Version (K26); die Hülle zieht nur bei sauberer LINSE nach (setzt, senkt, hebt nie), `--neu`
+        // Gerät × Sicht und EINER Version; die Hülle zieht nur bei sauberer LINSE nach (setzt, senkt, hebt nie), `--neu`
         // ist der RE-MINT. Die Serie: jede .json der Befehlszeile (`--neu` ist ein Schalter ohne Wert).
         const dateien = argv
             .slice(1)
