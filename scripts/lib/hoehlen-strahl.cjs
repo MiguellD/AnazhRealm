@@ -1,4 +1,4 @@
-// hoehlen-strahl.cjs — DIE STRAHL-WAHRHEIT DES BODEN-SATZES (Welle 7, die Höhlen-Sicht).
+// hoehlen-strahl.cjs — DIE STRAHL-WAHRHEIT DES BODEN-SATZES (die Höhlen-Sicht).
 //
 // Die Höhlen-Sicht (`_hoehlenSicht`) wählt je Pass die Höhlen-Zellen, die ein Strahl durch Mündung und Portale erreichen
 // KANN — eine konservative Rechnung über Boxen. Diese Linse ist ihr unabhängiger Richter: sie schießt Strahlen gegen JEDES

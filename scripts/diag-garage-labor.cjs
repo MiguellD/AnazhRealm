@@ -1,4 +1,4 @@
-// diag-garage-labor.cjs — DIE LABOR-LINSE DER GARAGE (Welle L, Familie fahren): die Probefahrt-Werkstatt so, wie der
+// diag-garage-labor.cjs — DIE LABOR-LINSE DER GARAGE (Familie fahren): die Probefahrt-Werkstatt so, wie der
 // Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln. Befund 06.10.
 // (artifacts/profiband/studios/bild-befund-garage.md + artifacts/profiband/leben/befund-fahren-gelaende.md F-D9, gesehen auf der Radeon):
 //   G1 maus     — jede Mausbewegung warf `ReferenceError: dragging is not defined` (die Deklaration stand im Kommentar

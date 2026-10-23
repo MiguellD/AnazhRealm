@@ -1267,7 +1267,7 @@ function nahFernSicht(opts) {
                 cam.updateMatrixWorld(true);
                 // DIE WIEDERHOLUNG: ein Paar (nah, fern) zählt erst, wenn die nächste Runde an derselben Stelle dieselben
                 // Bildpunkte und dieselbe Albedo (1 %) zeigt — höchstens vier Runden, sonst urteilt die Linse laut
-                // (`wiederholt` false). In frischen Sitzungen (Integration V18.542, Software-Holz unter Last, 2 von 16 Läufen)
+                // (`wiederholt` false). In frischen Sitzungen (Software-Holz unter Last, 2 von 16 Läufen)
                 // zeigte die ERSTE Runde am ersten Ort einen Leser falsch und still: der Boden-Satz Y 0,694 statt 0,053, der
                 // Fern-Ring 0,152 statt 0,063 — die Stille eines Schusses allein hielt ein falsches Bild für fertig.
                 const paar = async () => ({
@@ -2411,7 +2411,7 @@ function naesseSicht(o) {
         // Umkreis 24 m am Dach-Pool an seiner Mitte (am Boden)
         if (o.dach) {
             const U = r._ensureAtmoUniforms();
-            const arten = (r.constructor.NAESSE || {}).dachArten || [];
+            const arten = r.constructor.NAESSE.dachArten || [];
             const ab = (a) => Math.hypot(a.position.x - p.x, a.position.z - p.z);
             const bauten = st.architectures.filter((a) => {
                 const pr = !a._hausHuelle && a.position && r._foundryPresetForEntry(a);

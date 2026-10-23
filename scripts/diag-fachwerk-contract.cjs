@@ -539,7 +539,7 @@ function bogenLinse() {
     }
     console.log(`      ↳ ${CASES.length} Fälle gebaut in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 
-    // 1b) KOLLISION == OPTIK IN JEDER FERNE (Welle L): jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
+    // 1b) KOLLISION == OPTIK IN JEDER FERNE: jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
     //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
     //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
     const NUR_WURF = (l) => !!(FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l] && FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l].nurWurf);

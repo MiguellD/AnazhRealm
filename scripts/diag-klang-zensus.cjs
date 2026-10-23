@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-klang-zensus.cjs — DIE KLANG-LINSE (npm run gate:klang-zensus, Welle 5 Klang)
+// diag-klang-zensus.cjs — DIE KLANG-LINSE (npm run gate:klang-zensus)
 //
 // Die Frage je Ort: WAS hört man dort, und trägt jede klingende Quelle ein GESETZ —
 // oder ist sie ein Stamm-Literal? Und kostet sie nur, solange man sie hört?

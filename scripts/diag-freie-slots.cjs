@@ -12,7 +12,7 @@
 //   F  Fundament-Pool: count == Zahl der Sockel, Rückverweis Slot ↔ Eintrag geschlossen
 //   S  Nah-Wiese · Zaun: keine Null-3×3 in [0, count), leer ⇒ unsichtbar; die Nah-Streu (W7: ihre Senken
 //      sind Daten, ihr Stoff-Satz zeichnet): Σ Blöcke == Anzahl, keine Senke trägt eine Mesh
-//   W  Nah-Wiese (Welle 6): ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
+//   W  Nah-Wiese: ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
 //      nie, die Senken stünden leer und S prüfte nichts. Die Linse legt den Satz nach jedem Umzug SELBST
 //      (scripts/lib/wiese-sicht.cjs: Linsen-Kamera am Ring-Mittelpunkt, Blick auf den nächsten Büschel) und verlangt:
 //      der Ring trägt Büschel, JEDE Senke anzahl > 0, jede gelegte Instanz steht im Ring um das Auge

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-takt.cjs — DIE TAKT-WAND (V18.512): ein Takt-Subsystem rechnet Teures nur für das, was es betrifft — nie je Takt für
+// diag-takt.cjs — DIE TAKT-WAND: ein Takt-Subsystem rechnet Teures nur für das, was es betrifft — nie je Takt für
 // die ganze Welt (`werkbank takt` 02.10.: `_tickFocusingAffordances` rechnete die Compound-Tags aller ~120 Bauten vor der
 // Reichweite, Ø 20 ms; Reichweite zuerst: Spiel-Takt p50 31 → 13 ms). Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
 //   T1  steht kein Bau in seiner Reichweite → der Brennglas-Takt ruft computeCompoundTags 0-mal
@@ -127,7 +127,7 @@ const SELBST = process.argv.includes("--selftest");
                 return true;
             };
             const ganzesFenster = function (d2) {
-                // die V18.512-Klasse: die Schwelle gilt das GANZE Fenster
+                // die Klasse: die Schwelle gilt das GANZE Fenster
                 const D = Number.isFinite(d2) ? d2 : 0;
                 const j = performance.now();
                 if (this._weltBakeFenster === undefined || j - this._weltBakeFenster > 1000) {

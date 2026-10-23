@@ -809,7 +809,7 @@ class AnazhRealm_werkstatt_vorschau {
     // DIE KLEMME DES VERTRAGS (Studio-Vertrag B4): Werte {id: Zahl} gegen die Zeilen PARAMS_BY_KIND ihrer Art — jede Zahl auf
     // [min, max], eine Zeile mit ganzem Schritt auf die ganze Zahl; was sie ändert, steht in `geklemmt` ({id, von, auf}), was
     // keine Zeile oder keine endliche Zahl trägt, in `fremd`. Ob das Fremde fällt (must-ignore: die Übergabe eines Studios,
-    // `_studioUebergabeValidate`) oder den Akt schließt (fail-closed: das Programm, `_studioStampFor`), sagt der Leser.
+    // `_studioWerkPruefen`) oder den Akt schließt (fail-closed: das Programm, `_studioStampFor`), sagt der Leser.
     _reglerKlemme(zeilen, werte) {
         const aus = { werte: {}, geklemmt: [], fremd: [] };
         for (const id of Object.keys(werte)) {
@@ -830,6 +830,14 @@ class AnazhRealm_werkstatt_vorschau {
         const ws = this.state.workshop;
         const ov = ws && ws.studioOv ? ws.studioOv[presetId] : null;
         return ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+    }
+    // DIE PRÄGUNG EINES REZEPTS als Werte (ws.studioOv ohne den Samen `__gestalt`): der Leser der Guss-Dials (Mensch, Gattung)
+    // und des Welt-Klangs; null ohne eine. Ein gesetztes Werk liest den Stempel samt Samen (`_studioStampFor`).
+    _studioPraegung(presetId) {
+        const ov = this._workshopStudioOvFor(presetId);
+        const out = {};
+        for (const k in ov || {}) if (k !== "__gestalt") out[k] = ov[k];
+        return Object.keys(out).length ? out : null;
     }
 
     // DIE EINE STUDIO-VORSCHAU-QUELLE (_workshopStudioPreviewFrom) für Bauplan- UND Rezept-Auswahl,
@@ -900,10 +908,12 @@ class AnazhRealm_werkstatt_vorschau {
         // ihre Gestalt selbst; der Foundry-Worker kennt sie nicht (MESHFREI per Vertrag).
         const ovenRec = f.recipes ? f.recipes[preset] : null;
         if (ovenRec && typeof ovenRec.kind === "string") {
-            const oven = this._workshopOvenPreview(ovenRec, preset, ov, lod);
+            // der Ofen gießt aus den Werten der Prägung (ohne den Samen eines Studio-Werks — der Guss ist seed-invariant)
+            const oven = this._workshopOvenPreview(ovenRec, preset, ov ? this._studioPraegung(preset) : null, lod);
             if (oven !== undefined) return oven;
         }
-        const variant = this._foundryVariantFor(seedNum, preset);
+        // die Gestalt des Werks: ein Studio-Werk trägt seinen Samen im Stempel, sonst folgt sie dem Samen der Auswahl
+        const variant = this._foundryGestaltFor({ seed: seedNum, studioOv: ov }, preset);
         if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Vorschau wartet
         if (ov) {
             // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB) — der Memo-Schlüssel ist

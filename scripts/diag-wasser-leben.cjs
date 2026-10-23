@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7 — jede Zahl zuerst ROT am Vorher, die
+// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Klassen Q6 + Q7 — jede Zahl zuerst ROT am Vorher, die
 // Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das

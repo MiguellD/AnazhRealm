@@ -1,4 +1,4 @@
-// diag-scatter-lod.cjs — V18.464 DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
+// diag-scatter-lod.cjs — DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
 // Beweist im echten Boot (foundry-ON, Null-Renderer), dass die Scatter-Stufen
 // NICHT mehr auf der Bau-Zeit-Distanz eingefroren sind:
 //
@@ -12,9 +12,9 @@
 //     jetzt ALLE geschnittenen Regionen — der 2×2-Fächer um den Spieler wird
 //     abgedeckt (Quell-Probe: der Block walkt rx0..rx1/rz0..rz1, nicht nur
 //     die Home-Region).
-//   F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): platzierte Fern-Leaves
+//   F: platzierte Fern-Leaves
 //     (Impostor-Quads) über ein 4×4-Region-Raster, A/B durch DIESELBE Pipe:
-//     S=1 (per-Region-Keying, die V18.300/V18.303-Welt) vs S=SCATTER_FERN_
+//     S=1 vs S=SCATTER_FERN_
 //     SUPERREGION (Super-Region). Erwartung ≥4× weniger lod2-Gruppen, Slot-
 //     Bilanz dicht (Empty-Dispose räumt beide Welten restlos), und die EINE
 //     Key-Funktion (_archFernRegionKey) ist der einzige Konstanten-Leser.
@@ -105,8 +105,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): die Probe MUSS eine
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
-        // BY DESIGN dem Region-Lifecycle (V18.464-B2; seit der Keying-Welle trägt
-        // JEDE Stufe der Boden-Schichten den Region-Key).
+        // BY DESIGN dem Region-Lifecycle (JEDE Stufe der Boden-Schichten trägt den Region-Key).
         const map = r.state.scatterRegions;
         const b2Privat = (c) =>
             Array.isArray(c.slots) &&
@@ -144,9 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         //       ferne Zelle: NAH heran (Stufe sinkt). Nah-Ziel 20 m: die
         //       Wahrnehmungs-Distanz dn ≤ raw (min(12/visH,1) ≤ 1) ⇒ raw 20 <
         //       thresh12 − hysteresis = 22.6 ⇒ der Abstieg 2→1 ist für JEDE
-        //       Sichthöhe garantiert (das alte Ziel 30 lag für visH ≤ 12-
-        //       Subjekte AUSSERHALB des Abstiegs-Bandes — nie abgedeckt, weil
-        //       die Nah-Richtung vor der Keying-Welle nie gewählt wurde). ──
+        //       Sichthöhe garantiert. ──
         const dx = probe.x - pm.x;
         const dz = probe.z - pm.z;
         const d0 = Math.hypot(dx, dz);
@@ -188,7 +185,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
-        // ── D (V18.485 — DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
+        // ── D (DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
         //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
         //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
         //     leert sich und wird ge-reapt (die EINE Reap-Frage); der Ursprungs-
@@ -264,7 +261,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
                 pm.x = dz2.x + 420;
                 pm.z = dz2.z;
-                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): seit V18.527 trägt eine Art
+                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): eine Art trägt
                 // nur ihre Budget-Gestalten (strauch 1), also teilen sich alle Zellen der Region dieselbe Hülle — der
                 // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
                 const huelleLeer = () =>
@@ -308,7 +305,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             dblk.err = String(e && e.message);
         }
         res.d = dblk;
-        // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
+        // ── F: A/B durch DIESELBE Pipe ──
         // Gestreute Fern-Geometrie (die Gras-Fernstufe; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
         // eigene Probe) über ein 4×4-Region-Raster: S=1 reproduziert das alte
         // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
@@ -443,7 +440,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 for (const sl of alleK) r._scatterFreeSlots(sl);
                 fern.karten.leck = lebend() - lebendVor;
                 const R = AR.ARCH_REGION_M;
-                // Welle B: der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
+                // der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
                 // streut das Fern-Flat (Name `fscatter:…:2` = Fern-Stufe) über den echten Streu-Eintritt in 4×4
                 // Regionen und räumt über den echten Streu-Austritt.
                 const PROBE = "fscatter:diaetprobe:0:2";

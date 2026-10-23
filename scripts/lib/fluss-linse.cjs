@@ -1,4 +1,4 @@
-// fluss-linse.cjs — DIE FLUSS-LINSE (V18.511): was der Foundry-Kanal den HAUPT-Thread kostet. Befund 02.10.:
+// fluss-linse.cjs — DIE FLUSS-LINSE: was der Foundry-Kanal den HAUPT-Thread kostet. Befund 02.10.:
 // 262 Studio-Assets = 404 MB liefen beim Boot durch den Haupt-Thread (Klon beim Empfang Σ 600 ms, IDB-Put Σ 3,7 s,
 // max 207 ms, IDB-Gets hinter den Schreib-Transaktionen Median 3,3 s) — kein Gate sah es, weil jede Zahl nur je
 // Auftrag klein wirkt. Die Linse hängt sich an den Worker-Kanal und misst je Antwort: Bytes, die Entpack-Zeit im

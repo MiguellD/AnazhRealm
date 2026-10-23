@@ -78,7 +78,7 @@ function urteil(z) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
         if (!x.aus && x.farbe) v.push(`WURF: ${x.name} — ohne Ausschnitt trägt der Wurf den Farb-Graphen`);
     }
-    // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
+    // DIE STAND-WAND: im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
     const s = z.stand || {};

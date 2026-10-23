@@ -1418,13 +1418,16 @@ class AnazhRealm_koerper_fahrt {
 
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
     // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
-    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
-    // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
+    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit, Zeiger-Verlust und die Heimkehr aus dem Portal lösen
+    // jede gehaltene Taste (state.keys) und jede gehaltene Aktion der Verb-Tafel — das Mahlen, den gespannten Bogen (er fällt, ohne zu
+    // schießen: `_tickBogenZug`), den Zoom — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt. Das Gamepad hält, was
+    // es hält: sein Stand kommt je Bild neu (`_eingabeTakt`).
     _alleTastenLos() {
         const k = this.state.keys;
         if (k) for (const n in k) k[n] = false;
+        const g = this.state.verbTafel.gehalten;
+        for (const n in g) g[n] = false;
         if (this.state._zoomActive) this.setZoomActive(false);
-        if (this.state.player) this.state.player.breakHeld = false;
     }
 
     setZoomActive(active) {

@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// cut-method.cjs — DER AST-PRÄZISE METHODEN-SCHNITT (die V17.20-Klasse strukturell heilen)
+// cut-method.cjs — DER AST-PRÄZISE METHODEN-SCHNITT (die Klasse strukturell heilen)
 //
-// DIE WURZEL (CLAUDE.md, V17.20-Lehre, GEMESSEN): ein Line-Range-Delete
-// (`sed 'A,Bd'`) eines „toten Clusters" kann eine NICHT-passende Methode
-// ENTHALTEN, die der Pattern-Grep nie sieht (damals `_configureRenderer`
-// mitten zwischen zwei `_voxelGpu*` → mit-gelöscht → die ganze Welt tot,
-// und `node --check` fängt es NICHT, weil die Syntax valide bleibt).
-//
-// DIE HEILUNG (Gesetz #0 — die Linse statt der Wachsamkeit): man löscht
-// NICHT mehr per Zeilen-Range, sondern per AST-SPANNE. acorn (eslint-Dep)
+// Ein Line-Range-Delete eines toten Clusters kann eine NICHT-passende Methode ENTHALTEN, die der Pattern-Grep
+// nie sieht (`node --check` fängt es nicht) — darum schneidet dieses Werkzeug per AST-SPANNE. acorn (eslint-Dep)
 // liefert die EXAKTEN Grenzen jeder Methode → ein Schnitt kann per
 // Konstruktion keinen Nachbarn mehr fangen. Plus build-before-dispose:
 // nach dem Schnitt `node --check`; bricht es, wird die Datei restauriert.
@@ -98,7 +92,7 @@ let startLine = lineOf(node.start);
 const endLine = lineOf(node.end);
 
 // Optional: den unmittelbar darüber liegenden Kommentar-Block mitnehmen
-// (die V17.20-Lehre „der Kopf-Kommentar gehört zur Methode"). Nur kontigu-
+// (die Lehre „der Kopf-Kommentar gehört zur Methode"). Nur kontigu-
 // ierliche Kommentar-Zeilen direkt über der Signatur, durch nichts getrennt.
 let commentFrom = null;
 if (withComment) {
@@ -121,7 +115,7 @@ const lineCount = endLine - startLine + 1;
 
 // Sicherheits-Wand: zwischen startLine+1 und endLine-1 darf KEINE weitere
 // Top-Level-Methoden-Signatur liegen (eine MethodDefinition kann das per
-// AST nicht — aber wir prüfen es als sichtbaren Beweis gegen die V17.20-Angst).
+// AST nicht — aber wir prüfen es als sichtbaren Beweis gegen die Angst).
 const innerHits = hits.filter((h) => h !== node && lineOf(h.start) > startLine && lineOf(h.start) < endLine);
 
 console.log(`Datei:    ${fileArg}`);

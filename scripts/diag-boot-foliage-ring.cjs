@@ -1,9 +1,5 @@
-// diag-boot-foliage-ring.cjs — V18.414-BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
-// Schöpfer-Befund: „es wird ein riesiger ferner Ring mit Billboards bepflückt, statt erst den ersten
-// Chunk zu beenden und DANN zu erweitern." WURZEL (gemessen): `foliageRadius` raste per perf-headroom
-// (leere Boot-Frames) auf MAX (240 m), während der gebaute Terrain-Ring erst 1 Chunk (43 m) war → die
-// Vegetation lag weit VOR dem Boden = der ferne Billboard-Ring. FIX: den Radius auf die gebaute Ring-
-// Kante kappen. Diese Linse treibt den NICHT-headless-Ramp-Pfad (Null-Renderer, `_isHeadlessNull=false`
+// diag-boot-foliage-ring.cjs — BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
+// Diese Linse treibt den NICHT-headless-Ramp-Pfad (Null-Renderer, `_isHeadlessNull=false`
 // erzwungen → perf-headroom auf ~0-frameMs, genau die Boot-Situation) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
