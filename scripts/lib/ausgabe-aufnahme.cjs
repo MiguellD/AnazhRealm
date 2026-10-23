@@ -373,11 +373,10 @@ function buehne(o) {
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
-    // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
-    // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
-    // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
-    // E 0,28 statt 1,89). Bis 07.10. erzwang jeder Aufruf eine PMREM-Regeneration (~25 Render-Pässe), und das Einschwingen von
-    // `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll — ohne Drift malt der Sprung nichts.
+    // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers)
+    // malt die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei,
+    // nie an der Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die
+    // Nacht-Umgebung, Himmel E 0,28 statt 1,89).
     r._himmelSprung = true;
     r._applyDayNightToScene();
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den

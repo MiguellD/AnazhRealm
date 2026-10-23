@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-// diag-schatten-terminator.cjs — (T) DER TERMINATOR, die Hang-Akne (1110-5; Familie der Bias-Wand `diag-schatten-bias.cjs`).
-// Befund: die 2,5D-Lichtung des Bodens schattiert jede Fläche, als sähe sie senkrecht zum Himmel; ob die Sonne sie trifft,
-// entschied am Terminator (N·L ≈ 0) allein der Schatten-Test, und der rauscht dort — an der 30°-Rampe der Prüfbühne
-// (s2-hang30) im Software-Holz bei Sonne 22° aus Azimut 45° (N·L −0,002) 11,6 % der Rampe fleckig gegen 0,2 % ohne Schatten.
-// Der Schnitt: der Boden trägt die Zuwendung seiner wahren Normale selbst (`receivedShadowNode`, `zuwendungSaum`).
-// Die Linse: die Werkbank im Software-Holz (swiftshader, `holz=voll`: Schatten an) an der Prüfbühne, je Sonne am Terminator
-// zwei Schüsse von oben im Ausgabe-Pfad (Schatten-Stärke 1 und 0, dieselbe Pipeline), gemessen NUR auf der Rampe (40 × 40
-// Weltpunkte, x ±12, z 136–160, auf den Schirm projiziert): die Fleckigkeit = der Anteil der Proben mehr als 25 % neben dem
-// Median der Rampe. ROT beim Namen, wenn der Schatten sie um mehr als TERMINATOR_FLECKEN_MAX hebt, wenn eine Sonne fehlt oder
-// die Rampe zu wenige Proben trägt (blind).
-// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot.
+// diag-schatten-terminator.cjs — (T) DER TERMINATOR, die Hang-Akne (1110-5; Familie der Bias-Wand
+// `diag-schatten-bias.cjs`). Der Schnitt: der Boden trägt die Zuwendung seiner wahren Normale selbst
+// (`receivedShadowNode`, `zuwendungSaum`). Die Linse: die Werkbank im Software-Holz (swiftshader, `holz=voll`: Schatten
+// an) an der Prüfbühne, je Sonne am Terminator zwei Schüsse von oben im Ausgabe-Pfad (Schatten-Stärke 1 und 0, dieselbe
+// Pipeline), gemessen NUR auf der Rampe (40 × 40 Weltpunkte, x ±12, z 136–160, auf den Schirm projiziert): die
+// Fleckigkeit = der Anteil der Proben mehr als 25 % neben dem Median der Rampe. ROT beim Namen, wenn der Schatten sie
+// um mehr als TERMINATOR_FLECKEN_MAX hebt, wenn eine Sonne fehlt oder die Rampe zu wenige Proben trägt (blind).
+// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder
+// Probe rot.
 //   node scripts/diag-schatten-terminator.cjs [--selftest] [--port 4609]
 "use strict";
 

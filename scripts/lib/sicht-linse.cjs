@@ -1,9 +1,5 @@
-// sicht-linse.cjs — DIE SICHT-LINSE (Welle C): was die Sicht-Kette je Frame ARBEITET. Befund 06.10. (OMEN, GTX 1060 +
-// i7-8750H, CPU-Profil 12 s, Regler voll, Blick gepinnt, Mess-Wiese −900/−850): die Sicht je Pass (`_passSicht` an
-// scene.onBeforeRender) kostete ~6 ms CPU je Frame — `_chunkSatzPass` 5,3 · `_hoehlenSicht` 4,5 · `_hoehlenSichtLicht` 3,6
-// (je Kaskaden-Pass acht Ecken je Box über JEDE Mündung des Rings und jede Höhlen-Zelle der Box, ohne Frühausstieg) —
-// obwohl der Spieler an der Oberfläche stand, keine Höhle im Bild war und sich nichts bewegte. Die Draw-Ersparnis der
-// Sicht fraß sich selbst wieder auf. Kein Gate sah es: jede Zahl im Flugschreiber war „der Frame".
+// sicht-linse.cjs — DIE SICHT-LINSE (Welle C): was die Sicht-Kette je Frame ARBEITET. Die Draw-Ersparnis der Sicht fraß
+// sich selbst wieder auf. Kein Gate sah es: jede Zahl im Flugschreiber war „der Frame".
 //
 // Die Linse hüllt die Leser der Sicht-Kette (Prototyp-Methoden, wie die Takt-Linse) und zählt je Frame: die Pässe, die
 // Aufrufe je Leser, die geprüften KÖRPER (`_passTrifft` je Leser, `_hoehlenRect` und `_hoehlenLichtLage` je acht Ecken,
@@ -49,10 +45,8 @@ const SICHT_SCHREIB = "_chunkSatzSchreib";
 // Abschnitt, der sich ohne Schuld dicht neu legt, kein Byte mehr — wohl aber den Gang über jede seiner Zellen. Die Linse
 // bucht darum den Gang selbst (die Indizes, die `_chunkSatzDicht` ab der ersten Abweichung prüft) beim Grund wie die Bytes.
 const SICHT_LEGE = "_chunkSatzDicht";
-// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN — jeder Leser der Pass-Wahl. Bis K72 nahm die Linse die Werfer der Region-
-// Bündel aus („eine Handvoll Bündel-Hüllen je Schatten-Pass"); gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe) prüfte
-// `_werferWahlPass` je Kaskaden-Render 18–37 Körper in 22 Gängen über die Kinder der Bündel — in jedem Render dieselbe Wahl.
-// Der echte Loop: höchstens so viele Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
+// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN — jeder Leser der Pass-Wahl. Der echte Loop: höchstens so viele
+// Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
 const RUHE_EREIGNIS = 0.05;
 const RUHE_LESER = [
     "_chunkSatzAbschnitt",
@@ -1050,10 +1044,8 @@ function sichtUrteil(b) {
                 "LINSE STUMPF: ein eingeschmuggelter Cache-Bruch (die Lage jedes Passes neu) arbeitet in Ruhe nicht"
             );
     }
-    // der Lege-Bruch (`b.legeBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es schuldet —
-    // die Linse muss das Neulegen OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen. Bis K71 hieß er
-    // Byte-Bruch und zählte Bytes; seit der vergleichende Schreiber (`_satzSetze`) nur Geändertes lädt, legt derselbe Bruch
-    // 0 Bytes (die Linse stand STUMPF, CI 38714975114) — sein Preis ist der Gang über die Zellen, und den zählt sie.
+    // der Lege-Bruch (`b.legeBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
+    // schuldet — die Linse muss das Neulegen OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen.
     if (b.legeBruch !== undefined) {
         const x = b.legeBruch;
         if (!x || !(x.legeOhneFrames > 0) || !Object.keys(x.legeOhneJe || {}).some((k) => / dicht:ohne /.test(k)))

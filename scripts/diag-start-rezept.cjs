@@ -1,7 +1,5 @@
-// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt,
-// holt ihre Browser-Schalter aus scripts/lib/software-gpu.cjs. Befund: 13 Skripte trugen eigene Kopien in 5 Varianten;
-// auf dem Linux-Runner starb das Gerät an der fehlenden Swapchain-Ablage, unter Windows fuhren sieben „WebGPU"-Linsen
-// still den WebGL2-Rückfall (die Vulkan-Kopie liefert dort keinen Adapter). Rein statisch, kein Browser.
+// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt, holt ihre
+// Browser-Schalter aus scripts/lib/software-gpu.cjs. Rein statisch, kein Browser.
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
 //   W2  das Rezept selbst: Linux trägt die Swapchain-Schalter, Windows trägt keinen Vulkan-/ANGLE-Schalter; die Weiche

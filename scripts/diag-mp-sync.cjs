@@ -502,12 +502,10 @@ function bericht(p) {
 
         // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
-        // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
-        // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
-        // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
-        // DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am Ende und nie einen festen Verzug: der Ort
-        // allein war blind (CI 38670118945, die alte Kappe holte den kurzen Lauf vor dem Urteil fast ein), der feste Verzug
-        // las einen Schub vor dem Fenster als Täter (CI 38677065212).
+        // (`_lockstepTickPeers`). Der Selbsttest gleich danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein
+        // Frame von 1/60 s): (d) muss ROT werden. DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am
+        // Ende und nie einen festen Verzug: der Ort allein war blind (CI 38670118945, die alte Kappe holte den kurzen
+        // Lauf vor dem Urteil fast ein), der feste Verzug las einen Schub vor dem Fenster als Täter (CI 38677065212).
         const lsGesetz = await pageB.evaluate(() => {
             const K = window.anazhRealm.constructor;
             return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };

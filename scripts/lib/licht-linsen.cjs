@@ -1083,11 +1083,8 @@ function nahFernSicht(opts) {
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
             return aus.slice(0, opts.jeKlasse || 4);
         };
-        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
-        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden. Bis K53 lasen sie 0,9 und 0,7: die Zahlen der Geburt
-        // (`forestGeburt`), die das Dach bis K16 als Deckung las; seit K16 ist die Deckung der gepflanzte Bestand (phyto-core
-        // `forestKronenDeckung`, Matérn-II gesättigt bei 0,18) — die Linse fand keinen Wald-Ort mehr. Gemessen 14.10. in 2 km um die
-        // Mess-Wiese: Deckung p50 0,176 · max 0,178 an V18.545 (main 9fb869a5), 0,175 · 0,178 am Kopf — der Wald ging nicht verloren.
+        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese
+        // die der offensten — je Klasse 30 m auseinander, keine Stelle in beiden.
         const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
         const wald = waehle(dichte);
         const orte = wald

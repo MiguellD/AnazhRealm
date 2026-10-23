@@ -1300,10 +1300,9 @@ async function WELLE_L() {
 
         // ═══ WELLE LF KAMPF — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
         r.setCameraMode("first");
-        // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
-        // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
-        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
-        // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
+        // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände
+        // (1,3 · 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz
+        // auf der Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt).
         await teil("T16", async () => {
             const hE = setze("wesen");
             const detail = [];
@@ -1364,11 +1363,10 @@ async function WELLE_L() {
             }
             if (hE) parke(hE);
         });
-        // (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3): die Befund-Geometrie — ein Fuchs 1,8 m vor dir, seine Füße 0,77 m
-        // tiefer, das Fadenkreuz auf ihm, neun Klicks über den EINEN Dispatcher (tryMouseBreak) mit dem Langschwert. Gemessen:
-        // das Verb des Drückens (hieb am Tier oder Luftschlag), Treffer, und was der Spieler-Kanal sagt. Gegenprobe: derselbe
-        // Fuchs in 1,3 m / −0,6 m (in Reichweite) trifft. Befund: das Tor wählte „hieb" bis 6 m ab der Schulter, die Klinge
-        // reichte 2,46 m — 9 Schwünge, 0 Treffer, kein Hinweis.
+        // (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3): die Befund-Geometrie — ein Fuchs 1,8 m vor dir, seine Füße
+        // 0,77 m tiefer, das Fadenkreuz auf ihm, neun Klicks über den EINEN Dispatcher (tryMouseBreak) mit dem
+        // Langschwert. Gemessen: das Verb des Drückens (hieb am Tier oder Luftschlag), Treffer, und was der
+        // Spieler-Kanal sagt. Gegenprobe: derselbe Fuchs in 1,3 m / −0,6 m (in Reichweite) trifft.
         await teil("T17", async () => {
             const fR = setze("fuchs");
             ausruesten("klinge_langschwert");
@@ -1740,12 +1738,12 @@ async function WELLE_L() {
                 parke(wolf);
             }
         });
-        // (T18) POSE, TREFFER-VOLUMEN UND ICH-SICHT LESEN DENSELBEN SCHWUNG (Posten 2): je Ziel EIN Großschwert-Hieb; im
-        // Treffer-Takt steht die Anzeige-Uhr (Hit-Stop ∞), die Pose des Spielers wird gelegt (animatePlayerSoul), die Kamera
-        // folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der Gestalt reicht
-        // (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte (Ecken des Geräts in
-        // Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte im Bild der Ich-Kamera
-        // liegen (Spitze UND Mitte). Befund: im Treffer-Takt stand das Großschwert über dem Kopf (ks02), die Ich-Sicht zeigte keine Klinge (ks01).
+        // (T18) POSE, TREFFER-VOLUMEN UND ICH-SICHT LESEN DENSELBEN SCHWUNG (Posten 2): je Ziel EIN Großschwert-Hieb;
+        // im Treffer-Takt steht die Anzeige-Uhr (Hit-Stop ∞), die Pose des Spielers wird gelegt (animatePlayerSoul),
+        // die Kamera folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der
+        // Gestalt reicht (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte
+        // (Ecken des Geräts in Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte
+        // im Bild der Ich-Kamera liegen (Spitze UND Mitte).
         await teil("T18", async () => {
             const hP = setze("wesen");
             ausruesten("klinge_grossschwert");
@@ -1923,9 +1921,8 @@ async function WELLE_L() {
                 parke(hP);
             }
         });
-        // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing bei
-        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns). Befund: 5 je Hieb
-        // für Dolch, Großschwert und Keule (flach).
+        // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing
+        // bei voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns).
         await teil("T19", async () => {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
@@ -1956,14 +1953,14 @@ async function WELLE_L() {
             w.z.ausdauer = zehr;
         });
         // (T27) LEBENSWERTE SIND ZUSTAND (K27): im Modus pfad senkt ein Biss (damagePlayer, jagd) hp und ein Hieb
-        // (_beginPlayerSwing) die Ausdauer; danach geht jeder Rufer der Stat-Neuberechnung einmal — Gerät (equipHeld an und
-        // ab, equipArmor an und ab, repairHeldDevice), Panel (_ichHandleOverlay), Boost (die Trauer der Bisse über der
-        // Schwelle: tickPlayerBoosts an, addPlayerBoost, der Ablauf ab) und der Tod-Takt (drei tickPlayerVitals nach dem Tod
-        // über damagePlayer). Vor jedem Rufer verwunden derselbe Biss und Hieb; gemessen werden hp, Ausdauer und Mana davor
-        // und danach, erlaubt ist Regen·dt (hp hat kein Regen-Gesetz: 0). Auf das Maximum setzen nur die Wandlung
-        // (applyPlayerSoul) und die Rückkehr (_playerDeathRespawn) — die Rufer mit `voll` liest die Probe aus dem Quelltext.
-        // Selbst-Test (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei JEDER Neuberechnung) als Hülle → der erste
-        // Rufer heißt equipHeld. Befund K27: 4 Wege zur Voll-Heilung (Gerät, Panel, Boost, Tod-Takt).
+        // (_beginPlayerSwing) die Ausdauer; danach geht jeder Rufer der Stat-Neuberechnung einmal — Gerät (equipHeld an
+        // und ab, equipArmor an und ab, repairHeldDevice), Panel (_ichHandleOverlay), Boost (die Trauer der Bisse über
+        // der Schwelle: tickPlayerBoosts an, addPlayerBoost, der Ablauf ab) und der Tod-Takt (drei tickPlayerVitals
+        // nach dem Tod über damagePlayer). Vor jedem Rufer verwunden derselbe Biss und Hieb; gemessen werden hp,
+        // Ausdauer und Mana davor und danach, erlaubt ist Regen·dt (hp hat kein Regen-Gesetz: 0). Auf das Maximum
+        // setzen nur die Wandlung (applyPlayerSoul) und die Rückkehr (_playerDeathRespawn) — die Rufer mit `voll` liest
+        // die Probe aus dem Quelltext. Selbst-Test (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei JEDER
+        // Neuberechnung) als Hülle → der erste Rufer heißt equipHeld.
         await teil("T27", async () => {
             const modeL = r.getGameMode();
             const inv = p.inventory;
@@ -2141,9 +2138,9 @@ async function WELLE_L() {
                 if (r.getGameMode() !== modeL) r.setGameMode(modeL);
             }
         });
-        // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
-        // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
-        // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
+        // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe
+        // (0,62 · 1 · 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und
+        // die EINE Masse seines Leibs (_leibMasse).
         await teil("T20", async () => {
             const reihe = [];
             for (const seele of ["fuchs", "wolf", "wesen", "baer"])
@@ -2173,9 +2170,9 @@ async function WELLE_L() {
                 }
             w.z.kampfWerte = reihe;
         });
-        // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was fliegt
-        // (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut keinen eigenen
-        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
+        // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was
+        // fliegt (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut
+        // keinen eigenen Zylinder, die Prüfstand-Shell keinen eigenen Pfeil.
         await teil("T21", async () => {
             ausruesten("klinge_langbogen");
             const recP = r._heldBogenRecipe();
@@ -2243,11 +2240,10 @@ async function WELLE_L() {
             }
             w.z.pfeilGestalt = pfeilAus;
         });
-        // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7): ein Hirsch auf geneigtem Boden, das Gefälle LÄNGS seiner Leibes-Achse
-        // (die Befund-Lage ks09: er blickt hangab) — die Naht `_fieldGradient` trägt das Gefälle (0,3 längs der Achse); dann der
-        // Tod und der Kreatur-Takt. Gemessen: wohin die Leibes-Achse (vorn, lokal +z) und die Hochachse nach dem Kippen zeigen,
-        // und ob der Leib 10 s danach noch liegt. Befund: der Hirsch richtete sich auf das Hinterteil auf (Kopf senkrecht) und war
-        // nach 22 Takten fort.
+        // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7): ein Hirsch auf geneigtem Boden, das Gefälle LÄNGS seiner
+        // Leibes-Achse (die Befund-Lage ks09: er blickt hangab) — die Naht `_fieldGradient` trägt das Gefälle (0,3
+        // längs der Achse); dann der Tod und der Kreatur-Takt. Gemessen: wohin die Leibes-Achse (vorn, lokal +z) und
+        // die Hochachse nach dem Kippen zeigen, und ob der Leib 10 s danach noch liegt.
         await teil("T22", async () => {
             const hT = setze("wesen");
             stelle(hT, 20, 6);
@@ -2370,10 +2366,10 @@ async function WELLE_L() {
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
         });
-        // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75) — ein Stand von vor
-        // dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen rechnet es noch: leibV = 0);
-        // voll gespeichert kehrt er voll zurück, halb verwundet halb; ein neuer Stand mit 30 % Leben kehrt mit 30 % zurück.
-        // Befund Gegenprüfung 1: ein voller Hirsch stand nach dem Reload bei 124/168, ein voller Bär bei 159/391.
+        // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75)
+        // — ein Stand von vor dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen
+        // rechnet es noch: leibV = 0); voll gespeichert kehrt er voll zurück, halb verwundet halb; ein neuer Stand mit
+        // 30 % Leben kehrt mit 30 % zurück.
         await teil("T25", async () => {
             const wunde = [];
             for (const [seele, L] of [
@@ -2416,12 +2412,12 @@ async function WELLE_L() {
             }
             w.z.wunde = wunde;
         });
-        // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5): alle drei Biss-Wege im ECHTEN Kreatur-Takt (updateCreatures,
-        // 1/60 s) — ein Wolf jagt den stehenden Spieler (6 m vor ihm), ein Wolf beißt ein Kitz 1,5 m vor seiner Schnauze (der
-        // Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die Gegenwehr). Gemessen im Biss-Takt
-        // (damagePlayer / damageCreature): die Geste des Beißers (seine laufende Aktion) und der Spalt zwischen seinem KOPF
-        // (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des Gebissenen (die Kapsel des Spielers / die Glieder
-        // des Tiers), dazu der Abstand der Mitten. Befund K-D13: 12 Bisse am stehenden Spieler, 9 ohne Geste, aus 1,36–2,39 m XZ.
+        // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5): alle drei Biss-Wege im ECHTEN Kreatur-Takt
+        // (updateCreatures, 1/60 s) — ein Wolf jagt den stehenden Spieler (6 m vor ihm), ein Wolf beißt ein Kitz 1,5 m
+        // vor seiner Schnauze (der Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die
+        // Gegenwehr). Gemessen im Biss-Takt (damagePlayer / damageCreature): die Geste des Beißers (seine laufende
+        // Aktion) und der Spalt zwischen seinem KOPF (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des
+        // Gebissenen (die Kapsel des Spielers / die Glieder des Tiers), dazu der Abstand der Mitten.
         await teil("T23", async () => {
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);
@@ -2790,11 +2786,10 @@ async function WELLE_L() {
                     kaltZerlegt: null,
                 };
                 await teil("T24", async () => {
-                    // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide Gattungen kalt
-                    // (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen, danach wiederhergestellt);
-                    // gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt (_kreaturGliederGruppen) und wie viele
-                    // Vertices. Befund Gegenprüfung 2: das Maul des Jägers (Wolf 29 987 Vertices) und die Gestalt der Beute (Fuchs
-                    // 31 405) — 12,4 und 3,1 ms im Kreatur-Takt, an der Bake-Uhr vorbei
+                    // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide
+                    // Gattungen kalt (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen,
+                    // danach wiederhergestellt); gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt
+                    // (_kreaturGliederGruppen) und wie viele Vertices.
                     {
                         const J1 = { x: P.x + 60, z: P.z - 60 };
                         const wolfC = neu("wolf", J1.x, J1.z, 1);

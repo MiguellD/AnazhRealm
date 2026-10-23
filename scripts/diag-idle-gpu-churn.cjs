@@ -230,12 +230,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return v;
             };
         }
-        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ← dslEval ←
-        // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
-        // jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr des Wetter-Zugs,
-        // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht Quelle und
-        // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide. Bis 08.10. überschrieb die Linse
-        // `dslEval` selbst (ein Zwilling des Halts, der jedes Programm schluckte).
+        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ←
+        // dslEval ← random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen,
+        // Fähigkeiten — und jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr
+        // des Wetter-Zugs, `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der
+        // Welt-Akt-Spion bucht Quelle und Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt
+        // beide.
         window.__weltaktSpion();
         window.__weltaktSeq0 = window.__weltaktBuch(0).seq;
         try { r._ensureSkyEnvironment(true); } catch (_e) {}

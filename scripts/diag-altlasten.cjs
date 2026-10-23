@@ -1447,17 +1447,13 @@ function scanInstanzWand(srcRoh) {
     return errs;
 }
 
-// DIE ENTSORGUNGS-WAND (AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines
-// Objekts entsorgt, muss ihr BESITZER sein. Befund: vier Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die
-// die Geteilt-Markierung überging — 3 Seelenwechsel legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung; die
-// Text-Wand der dritten Nachbesserung sah nur `.traverse(` + direktes `x.geometry` und verfehlte Kind-Schleifen
-// (`for…of`, `children.forEach`), Zwischen-Variablen (`const g = o.geometry; g.dispose()`) und reine Stoff-Schleifen
-// (`o.material.forEach((m) => m.dispose())`). Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
-// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt, über
-// eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der Besitzer-Liste mit
-// genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der Besitzer entsorgt die
-// Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen Zeilen sind die Besitzer
-// eigener frischer Objekte.
+// DIE ENTSORGUNGS-WAND (AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines Objekts entsorgt, muss ihr
+// BESITZER sein. Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
+// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt,
+// über eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der
+// Besitzer-Liste mit genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der
+// Besitzer entsorgt die Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen
+// Zeilen sind die Besitzer eigener frischer Objekte.
 const ENTSORGUNG_BESITZER = {
     _disposeSoulGroup: {
         arten: ["geometry"],
@@ -2942,12 +2938,12 @@ function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     }
     return errs;
 }
-// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
-// starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
-// ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
-// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
-// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
-// nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
+// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser
+// · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
+// Namen macht. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
+// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit
+// Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei nicht mehr
+// selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
     // die Werkbank: ihr Steuer-Server ist der JSON-Kanal einer offenen Mess-Welt (kein Statik-Boot), ihre Seiten-Fehler sind das
     // Urteil der Wache der Mess-Folge (omen-messfolge `wachenUrteil`) — der Zug in den Fehler-Sammler schärft dieses Urteil
@@ -3098,11 +3094,11 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
-// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das Dorf) steht
-// NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und ein gefallener Platz
-// nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne Kommentare), sind eine Abschrift,
-// gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`, `const X = x, Z = z`, die Blick-Tabelle einer
-// Linse. Bis K55 trugen 14 Proben die Mess-Wiese −900/−850 als Zahlen; K16 hob den Boden dort in einen Nadelwald-Hang.
+// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das
+// Dorf) steht NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und
+// ein gefallener Platz nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne
+// Kommentare), sind eine Abschrift, gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`,
+// `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
     const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));

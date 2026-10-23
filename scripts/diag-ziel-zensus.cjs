@@ -2,10 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-ziel-zensus.cjs — DER ZIEL-ZENSUS ALS WAND (gate:ziel-zensus, Auftrag 0710-1 P2 Familie HOST-VRAM)
 //
-// Befund (OMEN, GTX 1060, V18.534, Mess-Wiese, `werkbank ziele`): von 29 GPU-Texturen des Hosts (108,8 MB) hatten zwei
-// keinen Leser — die r8-Farben der Schatten-Kaskaden (kaskade0:farbe, kaskade1:farbe, je 4 MB), geschrieben in k0/k1,
-// gelesen von keinem Pass. Jede andere Textur der Post-Kette (Szene, Auflösung, Geschichte, drei Tiefen) hat ihren Leser
-// und lebt mit ihren Formgleichen zugleich. Die Wand hält das (scripts/lib/ziel-zensus.cjs):
+// Jede andere Textur der Post-Kette (Szene, Auflösung, Geschichte, drei Tiefen) hat ihren Leser und lebt mit ihren
+// Formgleichen zugleich. Die Wand hält das (scripts/lib/ziel-zensus.cjs):
 //   (a) ZENSUS — der echte Frame des Spiels (WebGPU auf swiftshader, Holz `kienspan`), n Frames der Bank-Runde: keine
 //       Täter-Klasse fällt (ohne Leser · teilbar · volle Auflösung · Tiefe · Format), jede Textur trägt einen Erzeuger. Am Bach
 //       der Mess-Wiese (`uferStellen`): ein Leser der Szenen-Tiefe zeichnet im Blick, sie MUSS im Fenster gelesen sein.

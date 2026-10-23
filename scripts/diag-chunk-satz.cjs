@@ -1162,13 +1162,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 delete r._chunkSatzUmlegen;
             }
             phase(eng, 2);
-            // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt die
-            // Kapazität eines Satzes `ruheTakte` Takte lang mehr als `schwelle` × Ziel, schrumpft er auf Inhalt × `luft` — am SELBEN Mesh, die Bereiche dicht nach vorn, jeder treu, jeder Abschnitt im
-            // nächsten Pass neu gelegt und treu. Befund (echte GPU, Mess-Wiese): in Ruhe hielt der Wasser-Satz 3,25 MB für 0,33 MB
-            // Inhalt, nach drei Wander-Schleifen der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt 1,3 MB. Zwei
-            // Proben: LEER (ein eigener Bau-Satz des Gates, gewachsen, ohne Bereich → vMin/iMin) und BELEGT (der Boden-Satz:
-            // die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach der Frist dicht auf Inhalt × luft).
-            // Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz kehrt zurück): er hält sein Hochwasser.
+            // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt
+            // die Kapazität eines Satzes `ruheTakte` Takte lang mehr als `schwelle` × Ziel, schrumpft er auf Inhalt ×
+            // `luft` — am SELBEN Mesh, die Bereiche dicht nach vorn, jeder treu, jeder Abschnitt im nächsten Pass neu
+            // gelegt und treu. Zwei Proben: LEER (ein eigener Bau-Satz des Gates, gewachsen, ohne Bereich → vMin/iMin)
+            // und BELEGT (der Boden-Satz: die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach
+            // der Frist dicht auf Inhalt × luft). Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz
+            // kehrt zurück): er hält sein Hochwasser.
             const VD = r.constructor.CHUNK_SATZ_VERDICHTEN;
             const RT = r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte;
             const ruhe = (n) => {

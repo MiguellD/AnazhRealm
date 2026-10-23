@@ -2,8 +2,6 @@
 // diag-ofen-contract.cjs — DER OFEN-VERTRAG (S1 Wände): das Byte-Golden des Tier- und Mensch-Bakes je
 // Stoff-Klasse × Gelenk (npm run gate:ofen-contract).
 //
-// Befund: die MESHFREI-Kerne (tetrapoda-core, koerper-core) tragen nur Daten-Goldens (v7: PRESETS + PARAMS); den Guss
-// macht der Ofen (foundry-core BAKERS_BY_KIND.kreatur/.koerper — dieselben Bäcker, die Foundry-Worker und Wirt rufen).
 // Sein Ausgang war ohne Golden: 3a0248e8 (das Fell folgt der Haut) und 8e6f628c (die Hand-Mitte) bewiesen ihren
 // Byte-Stand von Hand („sha256 je Stoff-Klasse × Gelenk, 189 Klassen: 185 byte-gleich, anders nur die vier
 // fellSchale@wolf"; „Mensch-Bake byte-gleich, 53 Klassen"). Diese Linse macht den Handbeweis zur Datei.

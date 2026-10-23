@@ -1310,16 +1310,11 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
-        // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
-        // Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG des Leibs:
-        // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
-        // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
-        // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
-        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
-        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
-        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
-        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
+        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die Lab-Mathe legt das Leben in die
+        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG
+        // des Leibs: der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine Blickrichtung (Blick +x,
+        // Lauf +x — wie gate:tier-gang), gewertet wird die zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg)
+        // faltet und schwingt nicht. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;

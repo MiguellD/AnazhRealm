@@ -156,17 +156,16 @@ function bankJe(lauf) {
     return { je, takt };
 }
 
-// DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
-// Befund 12.10. (1110-9, Genesis): jeder Eingriff machte das folgende 10-s-Band ~1 ms teurer — auch das Entfernen des
-// Tor-Zwillings. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung
+// getrennt. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
 // wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
-// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
-// `bloecke` = [{ zustand: "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in
-// Zeitfolge. DAS RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-
-// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so
-// aus Rauschen UND Schalter heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-
-// Block gegen das Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
+// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode). `bloecke` = [{ zustand:
+// "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in Zeitfolge. DAS
+// RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund- Nachbarn
+// (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so aus Rauschen UND Schalter
+// heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter- Block gegen das
+// Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
 const SCHALTER_MIN_BLOECKE = 2;
 const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
 function schalterUrteil(bloecke, toleranz = 0.005) {
@@ -387,12 +386,9 @@ function tierUrteil(name, t) {
     return v;
 }
 // DIE BAND-MESSUNG SELBST (rein, 0910-1; der LESER K26): was die Band beim Zählen aufzeichnete — der gestellte Ort
-// (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf zählt nie),
-// das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt ·
-// stufe · leck · weit · ungemessen) als Befund. Bis 13.10. las die Folge nur Ort und Rahmen-Ziel, der Exit sah die Linse nie:
-// 1110-12 urteilte in 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0".
-// `basis` = die Band-Messung der Basis-Seite A des ABAB (`--basis`): eine Zeile, die A am selben Ort, Gerät und in derselben
-// Sicht trägt (derselbe Schlüssel, B nicht über A hinaus), ist kein Befund dieser Seite — sie bleibt der Befund von A.
+// (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf
+// zählt nie), das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt ·
+// unbenannt · stufe · leck · weit · ungemessen) als Befund.
 function bandBefunde(messung, basis) {
     if (!messung || typeof messung !== "object") return ["BAND band: keine Messung (die Band schrieb keine Datei)"];
     const v = [];

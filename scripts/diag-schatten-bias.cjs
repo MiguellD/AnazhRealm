@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Befund (Studio-Welle S3, Familie kreatur): der
-// Schatten-Bias war EIN fester Meter-Wert für beide Kaskaden — `atmosphere.shadowBias` = 1,0 → `shadow.normalBias` 1,0 m
-// (r184 schiebt die Probe des Empfängers um `normalWorld × normalBias` in Welt-Metern, ShadowNode). Der Boden fragte die
-// Karte 1 m über sich selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des
-// Spielers warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0)
-// und 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel.
-// Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt
-// den Selbsttest):
+// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Der Boden fragte die Karte 1 m über sich
+// selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des Spielers
+// warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0) und
+// 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel. Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit
+// Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt den Selbsttest):
 //   (S) DER SCHATTEN: je Werfer (wolf, fuchs, busch, pfosten, spieler) auf der ebenen Bühne der Mess-Wiese, Sonne seitlich
 //       (~26°) und mittags — drei Schüsse LEER · MIT · LEER2; die ERWARTUNG sind die Schatten-Dreiecke des Werfers (was mit
 //       castShadow im Schatten-Pass zeichnet, gehäutet, je Instanz) entlang des Lichts auf den gezeichneten Boden projiziert,

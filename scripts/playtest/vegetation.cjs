@@ -45,8 +45,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
-        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
-        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
+        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es
+        // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);

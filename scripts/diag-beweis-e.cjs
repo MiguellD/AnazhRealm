@@ -560,8 +560,7 @@ const SCHUSS_FN = async (kam) => {
                     offenVor = -1,
                     ohneFortschritt = 0;
                 // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
-                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
-                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                // gröberen Stufe — der feinere Guss ist unterwegs. Vor dem Schuss wird gewartet (≤ 600 Takte).
                 let ziel = null,
                     zielD = Infinity;
                 for (const e of r.state.architectures) {
