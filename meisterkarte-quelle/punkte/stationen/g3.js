@@ -148,7 +148,8 @@ return [+best.h.toFixed(2), +best.x.toFixed(2), +best.y.toFixed(2), +best.z.toFi
 const ARM = ["0.5", "1", "2"];
 
 // DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1): die Welt-Seite wie diag-albedo-tafel neuMessen, aber auf der echten GPU
-// (`werkbank start --echt`, am Ort der gespeicherten Messung, 10 s Ruhe, `albedo --tafel`), danach die Labor-Seite
+// (`werkbank start --echt` gegen den eigenen save-server auf {PORT}+20000 mit frischem Stand, am Ort der gespeicherten Messung,
+// 10 s Ruhe, `albedo --tafel`), danach die Labor-Seite
 // `diag-albedo-tafel.cjs --labor --echt` je Studio (Port {PORT}+2). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor und
 // beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum trägt kein Band, und eine
 // Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
@@ -170,10 +171,22 @@ async function albedoTafelEcht(plan) {
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     const rest = (r) => String((r.stdout || "") + (r.stderr || "")).slice(-300);
     const log = path.join(DIR, "werkbank.log");
-    let t = null, Wm = null, Lm = null, w = null;
+    const SP = String(Number(P) + 20000);
+    let t = null, Wm = null, Lm = null, w = null, sv = null;
     try {
         t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
-        w = cp.spawn(process.execPath, [WB, "start", "--echt", "--port", P], { stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")] });
+        for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        const slog = fs.openSync(path.join(DIR, "save.log"), "w");
+        sv = cp.spawn(process.execPath, ["save-server.js"], { env: { ...process.env, PORT: SP }, stdio: ["ignore", slog, slog] });
+        const lebt = () =>
+            new Promise((r) => require("http").get("http://localhost:" + SP + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
+        for (let s = 0; !(await lebt()); s++) {
+            if (sv.exitCode != null || s > 60) throw new Error("der save-server auf " + SP + " steht nicht (Exit " + sv.exitCode + ")");
+            await warte(1000);
+        }
+        w = cp.spawn(process.execPath, [WB, "start", "--echt", "--port", P, "--seite", "http://localhost:" + SP], {
+            stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")],
+        });
         for (let s = 0; !/WERKBANK bereit/.test(fs.readFileSync(log, "utf8")); s += 2) {
             if (w.exitCode != null) throw new Error("die Werkbank startet nicht (Exit " + w.exitCode + "): " + fs.readFileSync(log, "utf8").slice(-300));
             if (s > 900) throw new Error("die Werkbank steht nach 900 s nicht");
@@ -188,6 +201,8 @@ async function albedoTafelEcht(plan) {
         const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
         if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + al.status + " " + rest(al));
         Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
+        // die echte Welt nennt ihren Adapter in der Messung (werkbank geraetInfo), nicht als [linse-gpu]-Zeile
+        aus.adapter = aus.adapter || (Wm.geraet ? "[echt] " + (typeof Wm.geraet === "string" ? Wm.geraet : JSON.stringify(Wm.geraet)) : null);
     } catch (e) {
         aus.fehler = "Welt: " + String((e && e.message) || e);
     } finally {
@@ -196,6 +211,7 @@ async function albedoTafelEcht(plan) {
             await warte(2000);
             if (w.exitCode == null) w.kill();
         }
+        if (sv && sv.exitCode == null) sv.kill();
     }
     if (!aus.fehler) {
         const ld = path.join(DIR, "labor.json");
