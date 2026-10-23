@@ -44,26 +44,6 @@ const CORES = MANIFEST.map((c) => ({
 }));
 
 const REZEPT_ID = /^[a-z0-9_-]+$/;
-// Registrierte + reservierte kinds (§3 B1). Ein UNBEKANNTER kind ist KEIN
-// Fehler (must-ignore G4.1) — er wird hier nur informativ gelistet.
-const KNOWN_KINDS = [
-    "tree",
-    "shrub",
-    "flower",
-    "grass",
-    "rock",
-    "vehicle",
-    "gate",
-    "weapon",
-    "haus",
-    "building",
-    "creature",
-    // W-A6/W-A7 (v1.1 §8, components-only-Domänen): Klang-Genres + Körper-/Kreatur-Gestalt-Daten.
-    "klang",
-    "koerper",
-    "kreatur",
-];
-
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // Ein absorbierender Proxy: frisst jeden Konstruktor/jede Methode der
@@ -977,10 +957,7 @@ function validateManifest(m) {
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
         const n = m.presets ? Object.keys(m.presets).length : 0;
         const kinds = m.presets ? [...new Set(Object.values(m.presets).map((r) => r && r.kind))] : [];
-        const unknown = kinds.filter((k) => !KNOWN_KINDS.includes(k));
-        console.log(
-            `      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`
-        );
+        console.log(`      ${n} Rezepte · kinds: ${kinds.join(", ")}`);
         if (funktionsKern)
             check(
                 `${entry.file}: §9 Gesetz-Kern (${m.api.length} Funktionen: ${m.api.join(" · ")})`,

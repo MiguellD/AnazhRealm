@@ -1,57 +1,22 @@
 #!/usr/bin/env node
-// ─────────────────────────────────────────────────────────────────────────
-// diag-kampf-gefuehl.cjs — DIE GERECHNETE SCHWUNGPHYSIK ERREICHT DEN KAMPF
-// (npm run gate:kampf-gefuehl; Orakel Tier-1 #5).
+// diag-kampf-gefuehl.cjs — DIE GERECHNETE SCHWUNGPHYSIK ERREICHT DEN KAMPF (npm run gate:kampf-gefuehl), headless am ECHTEN
+// Chokepoint (_beginPlayerSwing · _tickKampfSchwung · _kampfSweepTick · damageCreature · updateCreatures): (A) Dauer ∝ √I
+// eines Eigenwerks, das aus der Stoff-Zeile wiegt (ρ(holz) ×2), ungeklemmt, ± 5 % · (B) der Sweep trifft neben dem
+// Fadenkreuz genau einmal, hinter dem Rücken nie · (C) der Hit-Stop friert die Anzeige, nie die fixe Sim · (D) der Tod kippt
+// den Leib vor dem Despawn · (E) der Schwung ist ein additiver Oberkörper-Layer, danach byte-alt · (S1/S2) die Stubs von
+// _hitStopFactor und _segSegDistSq feuern.
 //
-// Die Linse hält fünf Kampf-Gesetze am ECHTEN Chokepoint (_beginPlayerSwing /
-// _tickKampfSchwung / _kampfSweepTick / damageCreature / updateCreatures),
-// headless/Null-Renderer:
-//
-//  (A) DAUER ∝ √I: ein Eigenwerk wiegt aus der Stoff-Zeile (1 m³ Holz = ρ der
-//      Schmiede in kg); verdoppelt sich ρ(holz) dort, schwingt es UNGEKLEMMT
-//      √(I2/I1) ± 5 % träger — die EINE Quelle (Cooldown, HUD und
-//      Werkstatt lesen _swingDauer*, der Klick löst nur aus).
-//  (B) KLINGEN-SWEEP: ein Ziel NEBEN dem Crosshair (0.9 m seitlich der Blick-
-//      Linie, innerhalb der Klingen-Kapsel) wird in der Strike-Phase getroffen,
-//      GENAU EINMAL je Schwung (Dedup); ein Ziel HINTER dem Rücken NIE.
-//      Treffer-Juice: Hit-Stop-Fenster gesetzt + Kamera-Impuls über den
-//      BESTEHENDEN Landungs-Dip (_landImpactPending) + Klang-One-Shot über die
-//      EXISTIERENDE Maschine (Stimme-aus → stumm, kein zweiter AudioContext).
-//  (C) HIT-STOP ≠ SIM: während des Hit-Stops steht die ANZEIGE-Uhr (walkPhase
-//      + Schwung-Phase frieren, der GANZE Leib steht), aber die FIXE SIM läuft
-//      weiter — die Fixed-Akku-Probe (_loopFixedStep steppt) beweist es.
-//  (D) TOD-KIPPEN: ein Kill despawnt NICHT sofort — der Körper kippt (die
-//      Rotation WÄCHST über die Ticks, Richtung aus _fieldGradient), das
-//      sterbende Wesen ist inert (damageCreature-Wand), der Despawn kommt
-//      erst NACH der Frist (kippDauer + Nachklang).
-//  (E) OBERKÖRPER-LAYER: der Schwung ist ein WEITERER additiver Posen-Layer
-//      über der Lokomotion (rechter Arm/Rumpf bewegen sich, die BEINE bleiben
-//      byte-gleich); nach dem Schwung ist die Pose rückstandsfrei byte-alt.
-//  (S) SELBST-TESTS (die Linse feuert): (S1) _hitStopFactor ≡ 1 gestubbt →
-//      die Anzeige-Uhr läuft trotz Hit-Stop — die Freeze-Messung misst den
-//      echten Faktor. (S2) _segSegDistSq ≡ ∞ gestubbt → der Sweep trifft
-//      nichts — die Treffer-Messung fließt durch die echte Kapsel-Mathe.
-//      Beide Stubs restauriert (Gate-Hook-Lehre).
-//
-// Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) am ECHTEN Chokepoint, gespielt wie ein Mensch: das
-// Fadenkreuz geht über Gier und Neigung durch die ECHTE Kamera (_loopCamera, 1st und 3rd), geklickt wird über den EINEN
-// Dispatcher (tryMouseBreak / _tickHarvest / tryMousePlace / Canvas-mousedown); gezählt wird nur mitlaufend
-// (damageCreature, _kampfHitJuice, _beginPlayerSwing, dslRun-Voxel-Ops — gezählt, nicht geschnitzt). Q8 Treffer (Zone,
-// hangab, Hit-Stop-Energie, keine Kappe, Gegenwehr, kein Panzer, Verschleiß, Pfeil, EINE Güte, EIN Roh-Schaden,
-// vorgebackene Haut, _blickVorn) · Q9 Maus (Halten, RMB, Werkstatt, Bau-Modus) · Q10 Blick · Q11 das Gesetz des Haltens
-// (die Mutation einer Kern-Zahl, kein Spender-Fold, das Werk nach der Form, EINHEITSBREI) · G3/T12 das EINE Grob-Tor · T27
-// Lebenswerte · die Posten der Leben-Schau (T13–T26). Die Selbst-Tests S3–S13 feuern je an ihrer Naht; jede Naht restauriert.
-//
-//   node scripts/diag-kampf-gefuehl.cjs
-// ─────────────────────────────────────────────────────────────────────────
+// Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) spielt wie ein Mensch — das Fadenkreuz durch die echte
+// Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
+// des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; die Selbst-Tests
+// S3–S14 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
-// (T13) DAS URTEIL DES RÜCKSTOSSES (0710-2, K-D9 — pure Funktion, Probe UND Selbst-Test): kein Positions-Satz im Treffer-
-// Takt, der Fuchs fliegt, die Masse des Leibs teilt den Stoß (Fuchs ≥ 3 × Bär mit derselben Keule), der Impuls der Waffe
-// wirkt (Keule ≥ 1,15 × Dolch am selben Fuchs).
+// (T13) Urteil des Rückstoßes (pure, Probe und Selbst-Test): kein Satz im Treffer-Takt, der Fuchs fliegt, die Masse teilt
+// (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch).
 const RUECK = { satzM: 0.05, fuchsMinM: 0.3, masse: 3, waffe: 1.15 };
 function rueckVerdict(R) {
     if (!R || !R.fuchsDolch || !R.fuchsKeule || !R.baerDolch || !R.baerKeule)
@@ -74,11 +39,8 @@ function rueckVerdict(R) {
         );
     return v;
 }
-// (T14) DIE MASSE-TAFEL (0710-4 — pure Funktion, Probe UND Selbst-Test): jeder Leib wiegt, was seine Gestalt wiegt — das
-// Volumen der geschlossenen Haut (die Linse rechnet es selbst, Divergenz-Satz) mal der Dichte SEINES Kerns (tetrapoda
-// MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3), der Wagen sein Kern-Volumen (carPhys) mal FAHR.masseDichte. Der Wirt hält
-// keine Dichte (kein STOSS.dichteLeib / dichteWagen, kein Kapsel-Leser _kreaturMasse), und die Reihe steht: Fuchs < Wolf <
-// Hirsch < Bär < Wagen.
+// (T14) die Masse-Tafel: Volumen der Haut × Dichte des Kerns, der Wagen sein Kern-Volumen × FAHR.masseDichte; der Wirt hält
+// keine Dichte; Fuchs < Wolf < Hirsch < Bär < Wagen.
 const MASSE = { toleranz: 0.02, reihe: ["fuchs", "wolf", "hirsch", "baer", "gt"] };
 function masseVerdict(M) {
     if (!M || !M.leiber) return ["masse keine Probe"];
@@ -107,10 +69,7 @@ function masseVerdict(M) {
     }
     return v;
 }
-// (T15) DER BISS ALS STOSS (0710-4 — pure Funktion, Probe UND Selbst-Test): Fuchs, Wolf und Bär (Größe 1) beißen je ein
-// Kitz (die Jagd auf Beute — das Kitz, 20 kg, ist die Beute jedes der drei: höchstens jagd.beuteMasse × die Masse des
-// Jägers; den Hirsch, 94 kg, schlägt der Fuchs, 15 kg, nicht) und den Spieler (die Jagd auf den Spieler): das Ziel
-// bekommt seinen Impuls (Δv > 0), und der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär).
+// (T15) der Biss als Stoß: das Ziel (Kitz, Spieler) bekommt Δv > 0, der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär).
 const BISS_SOLL = { dvMin: 0.01, jaeger: ["fuchs", "wolf", "baer"] };
 function bissVerdict(B) {
     if (!B || !B.beute || !B.spieler) return ["biss keine Probe"];
@@ -134,12 +93,8 @@ function bissVerdict(B) {
     }
     return v;
 }
-// (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1 — pure Funktion, Probe UND Selbst-Test): derselbe
-// Großschwert-Hieb auf denselben Hirsch (drei Abstände × fünf Lagen, Fadenkreuz auf der Leibes-Mitte) trifft jedes Mal; in der
-// Befund-Lage (abgewandt, 1,5 · 1,6 · 1,7 m) springt seine Energie nicht (höchstens ×1,25); jede Streuung ist
-// BENANNT — ein Treffer unter voller Wirkung nennt seinen Ort auf der Klinge (griffnah, hand, spitze) — und BEGRENZT (keine
-// Energie unter 0,2 × der stärksten desselben Geräts, der Boden des Kerns); das schwere Schwert schlägt im
-// Mittel nie schwächer als der Dolch.
+// (T16) die Treffer-Energie folgt dem Schwung: jeder Hieb trifft, die Befund-Lage springt höchstens × 1,25, jede Streuung
+// ist benannt und begrenzt (≥ 0,2 × die stärkste), das Großschwert nie schwächer als der Dolch.
 const ENERGIE_SOLL = { treffer: 13, befund: 1.25, boden: 0.2 };
 function energieVerdict(E) {
     if (!E || !Array.isArray(E.gross) || !Array.isArray(E.dolch)) return ["energie keine Probe"];
@@ -179,9 +134,8 @@ function energieVerdict(E) {
         v.push(`energie-nah: zu nah mit der Wirkung ${n.eff} — die Streuung ist nicht begrenzt`);
     return v;
 }
-// (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3 — pure Funktion, Probe UND Selbst-Test): das Verb-Tor des
-// Klicks liest dieselbe Reichweite wie die Klinge (kein reachMaxM im Dispatcher); ein Tier unter dem Fadenkreuz jenseits der
-// Klinge bekommt keinen stummen Hieb — der Spieler-Kanal nennt die Reichweite; in Reichweite trifft die Serie (≥ 8 von 9).
+// (T17) EINE Reichweite: das Verb-Tor des Klicks liest die der Klinge; jenseits nennt der Kanal sie, in Reichweite trifft
+// die Serie (≥ 8 von 9).
 const REICH_SOLL = { nah: 8 };
 function reichVerdict(R) {
     if (!R || !R.weit || !R.nah) return ["reich keine Probe"];
@@ -193,14 +147,9 @@ function reichVerdict(R) {
     if (!(R.nah.treffer >= REICH_SOLL.nah)) v.push(`reich-nah: in Reichweite nur ${R.nah.treffer} von 9 Treffern`);
     return v;
 }
-// (T26) DER HIEB TRIFFT IM HORIZONT-BLICK (K13 — pure Funktion, Probe UND Selbst-Test): die Klick-Pfad-Matrix — 8 Waffen ×
-// {0,9 m · 1,3 m · Reichweite − 0,2 m} × {Rumpf, Horizont} × {3rd, 1st} gegen einen gehaltenen Wolf, geklickt über den EINEN
-// Dispatcher (tryMouseBreak, nie _beginPlayerSwing direkt): jeder der 96 Fälle macht Schaden; je rotem Fall der Täter beim
-// Namen (kein Schwung · kein Ziel unter dem Fadenkreuz · zu weit · Sweep vorbei). Ein Wolf hinter dem Rücken und ein Begleiter bleiben heil
-// (kein Ziel, kein Schaden); ein Wolf unter dem Fadenkreuz jenseits der Klinge (der Dolch, Reichweite + 0,8 m) bleibt ein Luftschlag mit
-// dem Hinweis — nie ein Pflücken oder Graben dahinter. DIE ERNTE NEBEN DEM
-// WILDTIER (Runde 2): trägt das Fadenkreuz in Arm-Länge sein Ziel (Block · Blüte · Boden vor der Spitzhacke), bleibt der Klick dort
-// und ein ruhiger Wolf im Schwung-Kegel heil; ein Bauwerk jenseits der Arm-Länge nimmt dem Hieb den Wolf vor dem Spieler nicht.
+// (T26) der Hieb im Horizont-Blick: 96 Fälle (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st) über tryMouseBreak machen
+// Schaden, je rotem Fall der Täter; Rücken und Begleiter heil, jenseits der Klinge ein Luftschlag mit Hinweis; die Ernte
+// neben dem Wildtier bleibt beim Fadenkreuz.
 const KLICK_SOLL = { faelle: 96 };
 function klickVerdict(M) {
     if (!M || !Array.isArray(M.faelle) || M.faelle.length !== KLICK_SOLL.faelle)
@@ -246,9 +195,8 @@ function klickVerdict(M) {
         v.push(`klick-fern: der Pfeiler 8 m voraus nennt das Verb (${F.verb || "–"}), der Wolf vor dir nimmt ${F.dmg}`);
     return v;
 }
-// (T18) POSE = TREFFER-VOLUMEN = ICH-SICHT (Posten 2 — pure Funktion, Probe UND Selbst-Test): im Treffer-Takt
-// liegen die sichtbare Spitze des Geräts und seine Mitte auf der Geraden der Strecke, die der Sweep der Gestalt reicht (höchstens
-// ihr Klingen-Radius daneben), und Spitze und Mitte stehen im Bild der Ich-Kamera — bei jedem der drei Ziele.
+// (T18) Pose = Treffer-Volumen = Ich-Sicht: Spitze und Mitte des Geräts auf der Sweep-Strecke (± Klingen-Radius) und im
+// Bild der Ich-Kamera.
 const POSE_SPALT_M = 0.12;
 function poseVerdict(P, E) {
     if (!Array.isArray(P) || !P.length) return ["pose keine Probe"];
@@ -274,9 +222,7 @@ function poseVerdict(P, E) {
     });
     return v;
 }
-// (T19) DIE AUSDAUER JE HIEB AUS DER WAFFEN-MASSE (Posten 8 — pure Funktion, Probe UND Selbst-Test): ein Hieb
-// zehrt mit der Masse des Geräts — die Reihe steigt streng mit kg (Faust < Dolch < … < Vorschlaghammer), zwei Geräte
-// verschiedener Masse zehren nie gleich.
+// (T19) die Ausdauer je Hieb steigt streng mit der Masse des Geräts.
 function ausdauerVerdict(A) {
     if (!Array.isArray(A) || A.length < 3) return ["ausdauer keine Probe"];
     const v = [];
@@ -289,9 +235,8 @@ function ausdauerVerdict(A) {
             );
     return v;
 }
-// (T27) LEBENSWERTE SIND ZUSTAND (K27 — pure Funktion, Probe UND Selbst-Test): ein Biss senkt hp, ein Hieb die Ausdauer;
-// kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll. Jede Verletzung
-// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt).
+// (T27) Lebenswerte sind Zustand: kein Rufer der Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; jede Verletzung
+// nennt den Rufer.
 const LEBEN_SOLL = { eps: 1e-3 };
 function lebenswerteVerdict(L) {
     if (!L || !Array.isArray(L.schritte) || L.schritte.length < 10) return ["lebenswerte keine Probe"];
@@ -331,9 +276,7 @@ function lebenswerteWege(L) {
         }
     return [...wege];
 }
-// (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6 — pure Funktion, Probe UND Selbst-Test): Biss, Haut
-// und Leben eines Tiers steigen streng mit der Masse seines Leibs — über alle Gattungen und Größen hinweg (die Masse IST
-// Gattung × Größe).
+// (T20) Biss, Haut und Leben steigen streng mit der Masse des Leibs (Gattung × Größe).
 function kampfWerteVerdict(R) {
     if (!Array.isArray(R) || R.length < 6) return ["kampfwerte keine Probe"];
     const v = [];
@@ -351,9 +294,8 @@ function kampfWerteVerdict(R) {
     }
     return v;
 }
-// (T21) DIE GESTALT DES PFEILS (Posten 4 — pure Funktion, Probe UND Selbst-Test): was fliegt, ist der Pfeil
-// des Schmiede-Kerns — Schaft, Spitze, Nocke, drei Federn (mindestens 6 Teile, mindestens 3 Farben), beleuchtet, wirft Schatten,
-// 0,70–0,85 m lang; der Wirt baut keinen eigenen Zylinder, die Prüfstand-Shell keinen eigenen Pfeil.
+// (T21) der Pfeil ist die Gestalt des Schmiede-Kerns (≥ 6 Teile, ≥ 3 Farben, beleuchtet, wirft, 0,70–0,85 m), kein Zwilling
+// in Wirt oder Shell.
 function pfeilVerdict(P, shell) {
     if (!P) return ["pfeil keine Probe"];
     const v = [];
@@ -370,9 +312,7 @@ function pfeilVerdict(P, shell) {
         );
     return v;
 }
-// (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
-// der Leib auf der Flanke — die Leibes-Achse waagrecht (|vorn·y| ≤ 0,3), die Hochachse gekippt (oben·y ≤ 0,35) — auch wenn
-// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da.
+// (T22) der Leichnam liegt auf der Flanke (|vorn·y| ≤ 0,3, oben·y ≤ 0,35), auch hangab, und 10 s danach noch.
 function todVerdict(T) {
     if (!T) return ["tod keine Probe"];
     const v = [];
@@ -419,9 +359,7 @@ function todVerdict(T) {
         );
     return v;
 }
-// (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
-// der drei Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) beißt das Tier im Ansprung (die Geste pounce läuft im
-// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m).
+// (T23) jeder Biss-Weg (Jagd, Beute, Gegenwehr) beißt im Ansprung mit dem Maul am Leib (Spalt ≤ 0,05 m).
 function bissGesteVerdict(B) {
     if (!B) return ["biss-geste keine Probe"];
     const v = [];
@@ -444,8 +382,7 @@ function bissGesteVerdict(B) {
     }
     return v;
 }
-// (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (pure Funktion, Probe UND Selbst-Test): voll bleibt
-// voll, halb bleibt halb (ein Stand von vor dem Massen-Gesetz), 30 % bleiben 30 % (ein neuer Stand) — je ± 0,01.
+// (T25) die Wunde reist als Anteil des Lebens (voll, halb, 30 % je ± 0,01).
 function wundeVerdict(W) {
     if (!Array.isArray(W) || W.length < 2) return ["wunde keine Probe"];
     const v = [];
@@ -459,16 +396,9 @@ function wundeVerdict(W) {
     }
     return v;
 }
-// (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (pure Funktion, Probe
-// UND Selbst-Test): die Wahl der Beute rechnet keine Gestalt eines Tiers jenseits des Grob-Tors (Lehre 25: billige Filter
-// zuerst), und kein Jäger springt einen Leib an, der über seinem Sprung liegt (der Spieler auf einem Sims) — die Gegenprobe:
-// waagrecht stand er in der Weite seines Ansprungs. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
-// 1,3 m): mindestens 5 von 6 Ansprüngen beißen — der Biss trifft auch ein Ziel, das größer ist als das Kitz, und dort, wo die
-// Hetze hält.
-// Der Kopf zielt aus der gezeigten Pose: stehen Pose und Ziel still, steht das Ziel der Kopf-Neigung still — zehn Takte
-// _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt nur, wenn der erste Rest
-// ≥ 0,05 rad ist); die Klemmen-Takte im Spiel-Takt stehen als Bericht daneben. Die Probe hält Ort, Haltung und die Gier des
-// Rehs fest.
+// (T24) der Biss kostet, was in Reichweite steht (keine Gestalt jenseits des Grob-Tors), und springt nie über seinen Sprung
+// (Sims, Gegenprobe waagrecht); das stehende Reh: ≥ 5 von 6 Ansprüngen beißen; der Kopf zielt aus der gezeigten Pose (zehn
+// Takte ohne Fortschritt ≤ 1e-6 rad).
 const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {
     if (!R) return ["biss-reich keine Probe"];
@@ -516,10 +446,8 @@ function bissReichVerdict(R, reh) {
     }
     return v;
 }
-// (Q11) DAS URTEIL DES GESETZES (halten-gesetz, pure Funktion — Probe UND Selbst-Test): die Mutation einer Kern-Zahl ändert
-// den Treffer monoton — Masse (jedes Werk bis auf eines wiegt nach MAT — die Keule ist ganz aus Holz) hebt den Stoß jedes
-// schwereren Werks, Schneide hebt jeden Schnitt, Tempo hebt Wirkung und Stoß jedes frei schwingenden —, und die Kraft der
-// Führung ist der Leib (kein Spender faltet). Die Täter.
+// (Q11) das Urteil des Gesetzes: die Mutation einer Kern-Zahl (Masse, Schneide, Tempo) ändert den Treffer monoton, die
+// Kraft der Führung ist der Leib.
 function gesetzVerdict(G) {
     if (!G || !G.vor) return ["keine Messung"];
     const v = [];
@@ -545,10 +473,8 @@ function gesetzVerdict(G) {
     }
     return v;
 }
-// (Q11) DAS URTEIL DES WERKS (pure Funktion): die Referenz des Werkzeug-Gebrauchs, in Klicks über den Dispatcher (null: nie)
-// — die Fällaxt fällt die Eiche vor Klinge, Hacke, Hammer, Spaten und Hand; Hacke und Vorschlaghammer brechen den Fels vor
-// Axt und Klinge, die Hacke auch vor Spaten und Hand; Spaten und Schaufel graben vor der Hand, Klinge, Hammer und Axt
-// schwingen; die umgeformte Gestalt wirkt nach ihrer neuen Form (formVerdict).
+// (Q11) das Urteil des Werks in Klicks über den Dispatcher (null: nie): Fällaxt fällt, Hacke und Hammer brechen Fels,
+// Spaten und Schaufel graben, die umgeformte Gestalt folgt (formVerdict).
 const klickZahl = (x) => (x === null ? Infinity : x);
 function formVerdict(F) {
     const v = [];
@@ -578,6 +504,61 @@ function werkVerdict(W) {
     for (const x of ["langschwert", "vorschlaghammer", "faellaxt"])
         if (W.boden[x] !== null) v.push(`boden: ${x} gräbt in ${W.boden[x]} Klicks, soll schwingen`);
     return v.concat(formVerdict(W.form));
+}
+// (Q12) halten.K4: die Spitze gegen die Parabel ihres Abschusses als Anteil des Falls ½·|g|·τ² ab 0,1 s; Staffel 1 Bahn und
+// Treffer-Ort ≤ 5 %, Tempo √(2E/m); Staffel 2 der Pfeil steckt und kehrt aus dem Speicher wieder, das Tempo folgt BOGENMAT.
+const fall = (g, t) => 0.5 * Math.abs(g) * t * t;
+function bahnAbweichung(l, g) {
+    let max = 0;
+    for (const [t, ...q] of l.proben)
+        if (t >= 0.1 - 1e-9)
+            max = Math.max(
+                max,
+                Math.hypot(...q.map((x, i) => x - l.p0[i] - l.v0[i] * t - (i === 1 ? 0.5 * g * t * t : 0))) / fall(g, t)
+            );
+    return max;
+}
+function bogenK4Verdict(K) {
+    if (!K || !K.bahn || K.bahn.length < 9) return { s1: ["keine Messung"], s2: ["keine Messung"] };
+    const s1 = [];
+    for (const l of K.bahn) {
+        const a = bahnAbweichung(l, K.g);
+        if (!(a <= 0.05)) s1.push(`bahn ${l.wi}°/${l.hz} Hz ${(a * 100).toFixed(1)} %`);
+        if (!(Math.abs(Math.hypot(...l.v0) / l.vSoll - 1) <= 0.01)) s1.push(`tempo ${l.wi}°`);
+    }
+    const [W, T, S, Z] = [K.wand || {}, K.tier || {}, K.speicher || {}, K.zug || {}];
+    if (W.treffer) {
+        const t = (W.zF - W.p0[2]) / W.v0[2];
+        const d = [W.treffer.x, W.treffer.y, W.treffer.z].map(
+            (x, i) => x - W.p0[i] - W.v0[i] * t - (i === 1 ? 0.5 * K.g * t * t : 0)
+        );
+        W.anteil = Math.hypot(...d) / fall(K.g, t);
+    }
+    if (!(W.anteil <= 0.05)) s1.push("treffer-ort");
+    const soll = {
+        "steckt-wand": W.steckt === 1 && W.bild,
+        "steckt-boden": K.boden >= 3,
+        "steckt-tier": T.n >= 1,
+        "folgt-tier": T.amTier && Math.abs(T.folgt[0] - 2) < 0.01 && Math.hypot(T.folgt[1], T.folgt[2]) < 0.01,
+        "speicher-tier": T.imSnapshot >= 1 && T.wieder === T.n && T.lageGleich && T.bildWieder,
+        "speicher-welt": S.imSnapshot >= 1 && S.wieder === S.steckend && S.lageGleich && S.bild,
+        "zug-kraft":
+            Math.abs(Z.v1 / Z.vS1 - 1) < 0.01 && Math.abs(Z.v2 / Z.vS2 - 1) < 0.01 && Math.abs(Z.v2 / Z.v1 - 1) > 0.02,
+    };
+    return { s1, s2: Object.keys(soll).filter((k) => !soll[k]) };
+}
+// S14 — der Täter aus demselben Abschuss: die alte Bahn (semi-implizit je Takt), der alte Abschied (nichts steckt)
+function bogenK4Taeter(K) {
+    const bahn = K.bahn.map((l) => {
+        const [q, v, proben] = [l.p0.slice(), l.v0.slice(), []];
+        for (let k = 1; k / l.hz <= 1.5; k++) {
+            v[1] += K.g / l.hz;
+            for (let i = 0; i < 3; i++) q[i] += v[i] / l.hz;
+            proben.push([k / l.hz, ...q]);
+        }
+        return { ...l, proben };
+    });
+    return { ...K, bahn, wand: { ...K.wand, steckt: 0 }, boden: 0, tier: {}, speicher: {} };
 }
 const server = statikServer();
 
@@ -1151,6 +1132,27 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s13.some((x) => x.includes("gräbt")) && s13.some((x) => x.includes("fällt")),
             "SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie"
         );
+        const K4 = z.bogenK4 || {};
+        const k4 = bogenK4Verdict(K4);
+        const [Wd, Td, Sd, Zd] = [K4.wand || {}, K4.tier || {}, K4.speicher || {}, K4.zug || {}];
+        console.log(
+            `  (Q12) Bahn ${(K4.bahn || []).map((l) => `${l.wi}°/${l.hz}Hz ${(bahnAbweichung(l, K4.g) * 100).toFixed(1)}%`).join(" · ")} · Treffer-Ort ${f1(Wd.anteil * 100)} % · steckt Wand ${Wd.steckt} Boden ${K4.boden} Hirsch ${Td.n} (folgt ${f1(Td.folgt && Td.folgt[0])} m) · Speicher Tier ${Td.imSnapshot} → ${Td.wieder}, Welt ${Sd.imSnapshot} → ${Sd.wieder} · Zug ${f1(Zd.v1)} → ${f1(Zd.v2)} m/s ${(K4.fehler || []).join(" | ")}`
+        );
+        check(
+            !k4.s1.length,
+            "Q12 halten.K4 Staffel 1: die Bahn ist die Parabel (9 Läufe ≤ 5 % des Falls, Tempo √(2E/m), Treffer-Ort) " +
+                k4.s1.join(" · ")
+        );
+        check(
+            !k4.s2.length,
+            "Q12 halten.K4 Staffel 2: der Pfeil steckt und bleibt (Wand, Boden, Hirsch, Speicher; Zug-Kraft aus BOGENMAT) " +
+                k4.s2.join(" · ")
+        );
+        const s14 = K4.bahn && K4.bahn.length >= 9 ? bogenK4Verdict(bogenK4Taeter(K4)) : { s1: [], s2: [] };
+        check(
+            s14.s1.some((x) => x.startsWith("bahn")) && s14.s2.includes("steckt-wand"),
+            "SELBST-TEST (S14): die alte Bahn und der alte Abschied — die Linse nennt beide"
+        );
         // EINHEITSBREI an der Tafel: zwei Spender tragen 17 Gestalten — Dauer, Reichweite und die Wirkung bei EINEM Klingen-
         // Tempo (20 m/s) unterscheiden sich, wo nur der Kern sie trägt; ohne Kern (Selbsttest) fällt die Tafel auf die Spender
         const je = (f) =>
@@ -1279,8 +1281,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         });
         check(
             mvGut.length === 0 &&
-                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-mensch", "masse-reihe"].every((t) =>
-                    mvAlt.some((x) => x.startsWith(t))
+                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-mensch", "masse-reihe"].every(
+                    (t) => mvAlt.some((x) => x.startsWith(t))
                 ),
             "Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt, der Mensch ohne geschlossene Haut 0 kg) nennt Kern, Zwilling, Hirsch, Bär, Mensch und Reihe; eine Tafel aus EINER Quelle bleibt grün"
         );
