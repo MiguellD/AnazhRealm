@@ -218,9 +218,8 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
-        // DIE STUFE DES EXEMPLARS (K63-n7; gemessen 15.10., Radeon: der Wagen gt stand in der Blende L0/L1, die Stufe 1 faltet
-        // die Stoffe ihrer Seh-Klasse — Chrom und Glas lasen im Lack, Welt 0,0175 gegen 0,0066): eine Zeile erklärt die Stufen,
-        // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
+        // DIE STUFE DES EXEMPLARS (K63-n7): eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
+        // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
         if (ds && W && zahl(W.Y)) {
             // eine leere Liste ist keine Antwort: der Schuss trug keinen Zug mit Stufe (ein ganzer Satz statt seines Exemplars)
@@ -374,7 +373,7 @@ function tafelTabelle(u) {
 }
 
 // DAS ZIEL DES LABORS (EINE Quelle für Albedo und Karte): ein Halbfloat-Ziel W × H und sein Leser. Die Engine der Welt (r184,
-// die Garage seit 18.10.) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
+// auch die Garage) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
 // liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt). Die Kopie bucht beim Aufruf, das Ziel
 // wechselt sofort zurück.
 function laborZiel(R, W, H) {

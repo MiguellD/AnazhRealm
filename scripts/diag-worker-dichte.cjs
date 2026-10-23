@@ -9,8 +9,8 @@
 // Messorte des Haushalts, ein Fluss-Chunk; auf der Bühne ihre Stationen) wird das Gitter jeder LOD-Stufe 0–3 im
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann DIE HÜLLE am ersten Ort: ein Turm aus Füll-Edits bis
-// ÜBER das Band und ein Graben (der Band-Befund des Richters 09.10.: der Main legt den Edit auf jede Ecke seines Kastens,
-// der Worker übersprang über dem Band), Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
+// ÜBER das Band und ein Graben (der Main legt den Edit auf jede Ecke seines Kastens, der Worker ebenso über dem Band),
+// Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
 // über den Spielpfad (`carveVoxel`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
 // sind SHA Main = Worker.
 //
@@ -59,13 +59,14 @@ const abdruckPunkte = () => {
 const bedienung = () =>
     JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "worlds", "gelaende", "bedienung.json"), "utf8"));
 
-const server = statikServer({ keinCache: true });
+const server = statikServer({ root, keinCache: true });
 
 // Boot bis die Welt steht und der Worker den Worldgen-Stand trägt (der Null-Renderer wie im Playtest: die Probe
 // braucht keinen Render, nur Main und Worker).
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
+        await window.__weltDa(); // nach dem Erwachen des Boots
         for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
@@ -193,7 +194,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // seinem höchsten Grund (jede Spalte ist Grundwasser-Quelle, `_aquiferTrocken`), dieselbe Saat (jede Rand-Spalte
             // nass) im Sync-Bau des Mains (`_buildVoxelChunkWaterCells`) und im Worker (`chunk-mesh`, samt dem Stempel der Werke,
             // den der Main danach setzt): die Wasser-Zellen Wort für Wort gleich, und die Saat ändert sie in beiden (ohne Wirkung
-            // wäre die Probe stumpf). Bis K69-2 kannte der Worker keine Saat: der Carve-Neubau lief im Haupt-Faden.
+            // wäre die Probe stumpf).
             // der erste Ort, dessen Grund im Wasser-Band liegt (zuerst der Fluss-Chunk; am Hang liegt das Band unter dem Fels)
             for (const o of orte.slice().reverse()) {
                 const cfg = r._voxelChunkConfig(0);
@@ -766,8 +767,7 @@ function realismusLage(K, Z, saat) {
 // 2,4–3,5 µs (26 noise2D)"). Gemessen wird, was der Chunk-Bau zahlt: die WARME Spalte (das Netz-Gedächtnis je Zelle steht —
 // der Bau tastet in 1,8 m, derselbe Raster um 7,3 m versetzt) plus das kalte Gedächtnis, umgelegt auf die 1,8-m-Spalten
 // seiner Fläche; als noise2D-Äquivalent derselben vm, so fällt die Uhr des Holzes heraus (die Eichung der Karte: 2,95 µs =
-// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser. Bis 12.10. maß die Linse kalte µs auf dem
-// 30-m-Raster (25–47 µs unter Last: das Gedächtnis je Zelle auf 1/278 der Spalten des Spiels verteilt) und urteilte nicht.
+// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser.
 const SPALTEN_BUDGET = Object.freeze({ alle: 52.9, ebenen: 26.4, eichungUsJeNoise: 2.95 / 26 });
 function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
     const off = 7.3;
@@ -1512,10 +1512,10 @@ async function studioProbe() {
 // Realismus-Wand (die Boot-Saat und zwei frische: Regenesis der Ströme, die Hydrosphäre neu), 2 × 2 km um den Ursprung (die
 // Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) war grün, während der gebaute Boden rot war: 3,94–
 // 11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel je Saat: Senken > 1 m ≤ 1 je
-// km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (das Flag
-// des Hydro-Baus unterdrückt ihn) — ohne den Kanal grün → der Kanal (`_hydroNetzFluesse` → `_hydrosphereCarveAt`). Mit
-// `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 · Breite, ohne `kanalTiefe`) MUSS die
-// Boot-Saat rot färben.
+// km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (ohne
+// Hydrosphäre) — ohne den Kanal grün → der Kanal (`hydroNetzFluesse` → `_hydrosphereCarveAt`). Die Hydrosphäre jeder Saat
+// rechnet der Faden (Karte hydro-faden). Mit `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 ·
+// Breite, ohne `kanalTiefe`, dem Faden als Gesetz gegeben) MUSS die Boot-Saat rot färben.
 async function gebaut(page, fehler) {
     const b = await boote(page);
     if (!b.ok) {
@@ -1577,88 +1577,65 @@ async function gebaut(page, fehler) {
                 sin.sort((a, b) => a - b);
                 return { fenster: sin.length, sinuositaet: sin.length ? +sin[sin.length >> 1].toFixed(3) : null };
             };
-            // der Selbsttest je Saat — die Gerade: jedes Glied nur seine Sehne (Knoten zu Knoten), dieselbe Hydrosphäre neu
-            // gerechnet; der Mäander im Wasser MUSS rot werden (danach die Hydrosphäre des Gesetzes zurück)
-            const geradeMessung = () => {
-                const kern = window.__gelaendeCore;
-                // dieselben Punkte der Bahn, auf die Sehne gelegt (der Versatz quer fällt, t bleibt)
-                const gerade = (gl) => {
-                    const ex = gl.bx - gl.ax;
-                    const ez = gl.bz - gl.az;
-                    const len = Math.hypot(ex, ez) || 1;
-                    return gl.bahn.map((p) => ({
-                        t: p.t,
-                        x: gl.ax + ex * p.t,
-                        z: gl.az + ez * p.t,
-                        s: len * p.t,
-                        fx: ex / len,
-                        fz: ez / len,
-                    }));
-                };
-                window.__gelaendeCore = {
-                    ...kern,
-                    flussLaeufe: (...a) =>
-                        kern.flussLaeufe(...a).map((lf) => ({
-                            ...lf,
-                            glieder: lf.glieder.map((gl) => ({ ...gl, bahn: gerade(gl) })),
-                        })),
-                };
-                let m;
-                try {
-                    m = maeanderWasser(r._computeHydrosphere());
-                } finally {
-                    window.__gelaendeCore = kern;
-                }
-                s.hydrosphere = r._computeHydrosphere();
-                return m;
+            // der Selbsttest je Saat — die Gerade: jeder Fluss auf seine Sehne gelegt (der Bogen bleibt, der Versatz quer
+            // fällt); der Mäander im Wasser MUSS rot werden
+            const geradeMessung = (h) =>
+                maeanderWasser({
+                    rivers: h.rivers.map((rv) => {
+                        const P = rv.points;
+                        const [a, e] = [P[0], P[P.length - 1]];
+                        let bogen = 0;
+                        const s0 = P.map((p, k) => (bogen += k ? Math.hypot(p.x - P[k - 1].x, p.z - P[k - 1].z) : 0));
+                        return { points: P.map((p, k) => ({ ...p, x: a.x + ((e.x - a.x) * s0[k]) / bogen, z: a.z + ((e.z - a.z) * s0[k]) / bogen })) };
+                    }),
+                });
+            // die Hydrosphäre aus dem Faden (`gesetz`: ein anderes Gesetz für den Selbsttest), in den Main gelegt
+            const ausDemFaden = async (gesetz) => {
+                const auftrag = (msg) => r._voxelFadenAuftrag(s.voxelWorker, msg);
+                await auftrag({ type: "state-update", delta: { hydroGesetz: gesetz || r.constructor.HYDROSPHERE } });
+                s.hydrosphere = (await auftrag({ type: "hydro", key: "heim", origin: null })).region;
             };
             const bootSaat = s.worldMeta.seed;
             const bootMacro = s.worldMeta.macro;
             // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
-            // Hydrosphäre der Saat (ihre Kacheln fallen)
-            const regenesis = (saat, macro) => {
+            // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
+            const regenesis = async (saat, macro) => {
                 s.worldMeta.seed = saat;
                 r._voxelNoise = null;
                 if (macro !== undefined) s.worldMeta.macro = macro;
                 else delete s.worldMeta.macro;
-                s.hydroTiles = new Map();
-                s.hydrosphere = r._computeHydrosphere();
+                await r._worldgenComputeAndBuildHydrosphere();
             };
             const out = [];
             for (const saat of [bootSaat, ...saaten.filter((x) => x !== bootSaat)]) {
-                if (saat !== bootSaat) regenesis(saat, undefined);
+                if (saat !== bootSaat) await regenesis(saat, undefined);
                 const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
                 const voll = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
-                r._hydroComputing = true;
-                const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
-                r._hydroComputing = false;
                 const h = s.hydrosphere;
+                s.hydrosphere = null;
+                const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+                s.hydrosphere = h;
                 out.push({
                     seed: saat,
                     hydro: !!(h && h.ready),
                     fluesse: h && h.rivers ? h.rivers.length : 0,
                     maeander: maeanderWasser(h),
-                    maeanderGerade: selbst ? geradeMessung() : null,
+                    maeanderGerade: selbst ? geradeMessung(h) : null,
                     voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
                     ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
                     makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
                 });
             }
-            if (s.worldMeta.seed !== bootSaat) regenesis(bootSaat, bootMacro);
+            if (s.worldMeta.seed !== bootSaat) await regenesis(bootSaat, bootMacro);
             let stoerung = null;
             if (selbst) {
-                // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue)
-                const A = r.constructor;
-                const HC = A.HYDROSPHERE;
-                const tiefe = A._flussTiefe;
-                A._flussTiefe = (p) => (HC.carveBedMin + (HC.carveBedK * p.width) / p.quelle) * p.quelle;
-                s.hydrosphere = r._computeHydrosphere();
+                // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue: ohne `kanalTiefe`)
+                await ausDemFaden({ ...r.constructor.HYDROSPHERE, kanalTiefe: Infinity });
                 const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
                 const gestoert = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) =>
                     Number.isFinite(v) ? v : Hm[k]
                 );
-                A._flussTiefe = tiefe;
-                s.hydrosphere = r._computeHydrosphere();
+                await ausDemFaden(null);
                 stoerung = kurz(G.statistik(gestoert, n, S, wl, [], 0));
             }
             return { alle: out, stoerung };
@@ -1684,7 +1661,7 @@ async function gebaut(page, fehler) {
         if (!maeanderGut(out.maeander)) {
             rot = true;
             console.log(
-                "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`_hydroNetzFluesse` liest `bahn` des Kerns)"
+                "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`hydroNetzFluesse` liest `bahn` des Kerns)"
             );
         }
         if (!out.hydro || !out.fluesse) {
@@ -1697,7 +1674,7 @@ async function gebaut(page, fehler) {
             rot = true;
             console.log(
                 gruen(out.ohneKanal)
-                    ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün (`_hydroNetzFluesse` → `_hydrosphereCarveAt`)"
+                    ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün (`hydroNetzFluesse` → `_hydrosphereCarveAt`)"
                     : "  ⛔ der Boden ohne Kanal ist rot: Höhle oder Gesetz (`_terrainBaseDensityAtCol`)"
             );
         }
@@ -1723,6 +1700,384 @@ async function gebaut(page, fehler) {
     return rot ? 1 : 0;
 }
 
+// ── DER FADEN TRÄGT DIE BYTES (`--faden`, Streaming H3) ──
+// K4: eine Hydrosphäre (Heimat, Kachel), die nicht als Faden-Nachricht kam, und ein Bau im Haupt-Faden (Chunk-Stoff
+//     `_buildVoxelChunkData`, Guss aus `BAKERS_BY_KIND`) außerhalb von `FADEN_SYNC` ist ROT beim Namen des Rufers.
+// K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
+//     der Main summiert sie je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes und die Platte —
+//     je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min in der Fahrt.
+//   --faden [--selftest]   ein injizierter Hydro-Bau, Chunk-Bau und Klon (3 MB in einer Nachricht, 3 MB in 300
+//                          Krumen, eine Kopie) fallen ROT beim Namen.
+const FADEN_SYNC = ["_syncRebuildEditFootprint", "spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures"];
+const FADEN_SOLL = 5e6; // Bytes je Minute
+function klonBytes(v, frei, seen) {
+    if (v === null || typeof v !== "object") return typeof v === "string" ? v.length : 8;
+    if (seen.has(v)) return 0;
+    seen.add(v);
+    if (v instanceof ArrayBuffer) return frei.has(v) ? 0 : v.byteLength;
+    if (ArrayBuffer.isView(v))
+        return frei.has(v.buffer) || seen.has(v.buffer) ? 0 : (seen.add(v.buffer), v.buffer.byteLength);
+    let b = 8;
+    if (v instanceof Map || v instanceof Set) for (const e of v) b += klonBytes(e, frei, seen);
+    else for (const k in v) b += k.length + klonBytes(v[k], frei, seen);
+    return b;
+}
+// läuft VOR dem Quelltext jedes Fadens: jede ausgehende Nachricht trägt ihre Klon-Bytes (`__klon`)
+function fadenHuelle(klonBytes) {
+    const roh = self.postMessage.bind(self);
+    self.postMessage = function (m, tr) {
+        const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
+        if (m && typeof m === "object" && !ArrayBuffer.isView(m)) m.__klon = klonBytes(m, frei, new Set());
+        return roh(m, tr);
+    };
+}
+function fadenSeite(bytesQ, huelleQ, sync) {
+    const klonBytes = new Function("return " + bytesQ)();
+    const F = (window.__faden = { fenster: "boot", t: {}, hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] } });
+    Error.stackTraceLimit = 40; // die Kette bis zur Sync-Stelle (V8 hält sonst 10 Rahmen)
+    const von = new WeakSet();
+    const bytes = new WeakSet();
+    const zu = (art, k, b) => {
+        const w = F.t[F.fenster] || (F.t[F.fenster] = { empfang: {}, kopie: {}, gesendet: {}, platte: {} });
+        w[art][k] = (w[art][k] || 0) + b;
+    };
+    // der Rufer: der erste Rahmen aus dem Stamm (der Vendor ist nie der Täter), sonst der erste benannte außerhalb dieser Haken
+    const rufer = () => {
+        const z = new Error().stack.split("\n").slice(1);
+        const n = (l) => ((n) => n.slice(n.lastIndexOf(".") + 1))((/at (?:new )?([^\s(]+)/.exec(l) || [])[1] || "");
+        const st = z.find((l) => / at [\w$.]+ \(/.test(l) && l.includes(location.origin + "/stamm/"));
+        const fremd = (l) => /^[\w$]+$/.test(n(l)) && !/^(rufer|pruefe|set|zaehle|fadenBau|fadenGuss|kopie|construct|zu)$/.test(n(l));
+        return n(st || z.find(fremd) || "?");
+    };
+    const merke = (v, t) => {
+        if (!v || typeof v !== "object" || t > 3) return;
+        if (v instanceof ArrayBuffer) return bytes.add(v);
+        if (ArrayBuffer.isView(v)) return bytes.add(v.buffer);
+        von.add(v);
+        for (const k in v) merke(v[k], t + 1);
+    };
+    // der Quelltext jedes Blobs aus Text (der Boot der Foundry und des Klangs), gemerkt an seiner URL
+    const blobText = new WeakMap();
+    const urlText = new Map();
+    window.Blob = new Proxy(window.Blob, {
+        construct(t, a, nt) {
+            const b = Reflect.construct(t, a, nt === window.Blob ? t : nt);
+            if (Array.isArray(a[0]) && a[0].every((x) => typeof x === "string")) blobText.set(b, a[0].join(""));
+            return b;
+        },
+    });
+    const cou = URL.createObjectURL;
+    URL.createObjectURL = function (b) {
+        const u = cou.call(this, b);
+        if (blobText.has(b)) urlText.set(u, blobText.get(b));
+        return u;
+    };
+    const Roh = window.Worker;
+    let voxel = 0;
+    const W = function (url, opts) {
+        let innen, name;
+        if (urlText.has(String(url))) {
+            innen = urlText.get(String(url));
+            name =
+                (opts && opts.name) ||
+                (/klang/.test(innen) ? "klang" : /_foundry|manifest/.test(innen) ? "werk" : "blob");
+        } else {
+            const u = new URL(url, location.href);
+            innen = `self.__anazhBase=${JSON.stringify(new URL(".", u).href)};importScripts(${JSON.stringify(u.href)});`;
+            name = /voxel-worker/.test(u.pathname) ? (voxel++ ? "voxel-neben" : "voxel") : u.pathname;
+        }
+        const quelle = `(${huelleQ})(${bytesQ});\n${innen}`;
+        const w = new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), opts);
+        w.__faden = name;
+        return w;
+    };
+    W.prototype = Roh.prototype;
+    window.Worker = W;
+    const empfang = function (e) {
+        const d = e.data;
+        const b = d && typeof d.__klon === "number" ? d.__klon : klonBytes(d, new Set(), new Set());
+        zu("empfang", `${this.__faden}:${(d && d.type) || "?"}`, b);
+        merke(d, 0);
+    };
+    const om = Object.getOwnPropertyDescriptor(Roh.prototype, "onmessage");
+    Object.defineProperty(Roh.prototype, "onmessage", {
+        configurable: true,
+        get() {
+            return this.__om || null;
+        },
+        set(fn) {
+            this.__om = fn;
+            om.set.call(this, fn && ((e) => (empfang.call(this, e), fn.call(this, e))));
+        },
+    });
+    const ael = Roh.prototype.addEventListener;
+    Roh.prototype.addEventListener = function (t, fn, o) {
+        const g = t === "message" && typeof fn === "function" ? (e) => (empfang.call(this, e), fn.call(this, e)) : fn;
+        return ael.call(this, t, g, o);
+    };
+    const post = Roh.prototype.postMessage;
+    Roh.prototype.postMessage = function (m, tr) {
+        const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
+        zu("gesendet", `${this.__faden}:${(m && m.type) || "?"}`, klonBytes(m, frei, new Set()));
+        return post.call(this, m, tr);
+    };
+    // DIE PLATTE wie im Spiel: Put und Get klonen ihren Wert im Haupt-Faden — es zählt, wo der Wert Bytes trägt
+    window.__anazhChunkIdb = true;
+    const binaer = (v, t) =>
+        !!v && typeof v === "object" && t < 3 && (v instanceof ArrayBuffer || ArrayBuffer.isView(v) || Object.values(v).some((x) => binaer(x, t + 1)));
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (v, k) {
+        if (binaer(v, 0)) zu("platte", `put:${rufer()}`, klonBytes(v, new Set(), new Set()));
+        return put.call(this, v, k);
+    };
+    const res = Object.getOwnPropertyDescriptor(IDBRequest.prototype, "result");
+    const gelesen = new WeakSet();
+    Object.defineProperty(IDBRequest.prototype, "result", {
+        configurable: true,
+        get() {
+            const v = res.get.call(this);
+            if (binaer(v, 0) && !gelesen.has(this) && !(v instanceof IDBDatabase)) {
+                gelesen.add(this);
+                zu("platte", `get:${rufer()}`, klonBytes(v, new Set(), new Set()));
+            }
+            return v;
+        },
+    });
+    // die Kopien empfangener Bytes: ein NEUES Array aus ihnen (set in einen bestehenden Puffer ist Verbrauch)
+    const kopie = (b) => zu("kopie", rufer(), b);
+    const da = (x) => !!x && (bytes.has(x) || (ArrayBuffer.isView(x) && bytes.has(x.buffer)));
+    const TA = Object.getPrototypeOf(Int8Array).prototype;
+    const [sl, abs, af] = [TA.slice, ArrayBuffer.prototype.slice, Array.from];
+    TA.slice = function (...a) {
+        const r = sl.apply(this, a);
+        if (da(this)) kopie(r.byteLength);
+        return r;
+    };
+    ArrayBuffer.prototype.slice = function (...a) {
+        const r = abs.apply(this, a);
+        if (da(this)) kopie(r.byteLength);
+        return r;
+    };
+    Array.from = function (q, ...a) {
+        if (da(q)) kopie(q.byteLength);
+        return af.call(this, q, ...a);
+    };
+    for (const n of [
+        "Int8Array",
+        "Uint8Array",
+        "Int16Array",
+        "Uint16Array",
+        "Int32Array",
+        "Uint32Array",
+        "Float32Array",
+        "Float64Array",
+    ]) {
+        const K = window[n];
+        const P = new Proxy(K, {
+            construct(t, a, nt) {
+                if (ArrayBuffer.isView(a[0]) && da(a[0])) kopie(a[0].byteLength);
+                return Reflect.construct(t, a, nt === P ? t : nt); // eine Unterklasse behält ihren Prototyp
+            },
+        });
+        K.prototype.constructor = P;
+        window[n] = P;
+    }
+    // K4: woher kommt jede Hydrosphäre, wer baut Chunk-Stoff im Haupt-Faden
+    const pruefe = (wo, h) => {
+        if (!h || typeof h !== "object") return;
+        if (von.has(h)) F.hydro.faden++;
+        else F.hydro.rot.push(`${wo} · ${rufer()}`);
+    };
+    const haken = (r) => {
+        const s = r.state;
+        let heim = s.hydrosphere;
+        let kacheln = null;
+        const k = (m) => {
+            if (m && !m.__faden) {
+                const s0 = m.set;
+                m.set = function (key, h) {
+                    pruefe(`Kachel ${key}`, h);
+                    return s0.call(this, key, h);
+                };
+                m.__faden = 1;
+            }
+            return (kacheln = m);
+        };
+        k(s.hydroTiles);
+        const feld = (name, get, set) =>
+            Object.defineProperty(s, name, { configurable: true, enumerable: true, get, set });
+        feld(
+            "hydrosphere",
+            () => heim,
+            (h) => (pruefe("Heimat", h), (heim = h))
+        );
+        feld("hydroTiles", () => kacheln, k);
+        const P = Object.getPrototypeOf(r);
+        // ein Bau im Haupt-Faden: an einer Sync-Stelle oder Test-Naht (ein Rahmen trägt ihren Namen) gezählt, sonst ROT
+        const zaehle = (was) => {
+            const namen = new Error().stack.split("\n").map((l) => ((/at (?:new )?\S*?([\w$]+) \(/.exec(l) || [])[1]));
+            if (sync.some((n) => namen.includes(n))) F.bau.sync++;
+            else F.bau.rot.push(`${was} · ${rufer()}`);
+        };
+        // der Guss des Bäckers im Haupt-Faden (der Ofen verfehlte sein Memo); `_ofenAssembleAsset` ist Verbrauch
+        const [bau, B] = [P._buildVoxelChunkData, globalThis.BAKERS_BY_KIND];
+        if (typeof bau !== "function" || !B || !B.kreatur || !B.koerper) return (F.blind = "die Bau-Haken greifen nicht");
+        P._buildVoxelChunkData = function fadenBau(...a) {
+            zaehle(`Chunk ${a[0]},${a[1]}`);
+            return bau.apply(this, a);
+        };
+        for (const art of ["kreatur", "koerper"]) {
+            const guss = B[art];
+            B[art] = function fadenGuss(...a) {
+                zaehle(`Guss ${a[1]}`);
+                return guss.apply(this, a);
+            };
+        }
+        F.haken = true;
+    };
+    let real;
+    Object.defineProperty(window, "anazhRealm", {
+        configurable: true,
+        get: () => real,
+        set: (r) => haken((real = r)),
+    });
+}
+async function faden(page, fehler, url) {
+    // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
+    await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle), FADEN_SYNC);
+    await page.goto(url.replace("index.html", "cores.manifest.json"), { timeout: 60000 });
+    await page.evaluate(() =>
+        Promise.all(
+            ["anazhChunkMesh", "anazhFoundryAssets"].map(
+                (n) => new Promise((ok) => Object.assign(indexedDB.deleteDatabase(n), { onsuccess: ok, onerror: ok }))
+            )
+        ).then(() => localStorage.clear())
+    );
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // die Fahrt in Takten (K-WANDUHR): eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten
+    const takt = (n) =>
+        page.evaluate(async (n) => {
+            await window.__weltDa(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function");
+            const r = window.anazhRealm;
+            const p = r.state.playerMesh.position;
+            if (!n)
+                for (const weiter = window.__deckel("die Welt steht", 4000); weiter(); ) {
+                    if (r.state.voxelChunks && r.state.voxelChunks.size > 20 && r.state.voxelWorkerReady) break;
+                    await window.__seitenTakt();
+                }
+            for (let k = 0; k < n; k++) {
+                await window.__seitenTakt();
+                p.x += 960 / n;
+                const y = r._voxelSurfaceY(p.x, p.z);
+                if (Number.isFinite(y)) p.y = y + 1.8;
+            }
+            return n ? 60000 : performance.now();
+        }, n);
+    const fenster = async (name) => page.evaluate((n) => (window.__faden.fenster = n), name);
+    const dauer = { boot: await takt(0) };
+    await fenster("fahrt");
+    dauer.fahrt = await takt(1800);
+    if (SELBSTTEST) {
+        await fenster("selbst");
+        dauer.selbst = await page.evaluate(async () => {
+            const r = window.anazhRealm;
+            const G = globalThis.__gelaendeCore;
+            const t0 = performance.now();
+            (function injizierteHydro() {
+                const o = { x: 9 * 2048 - 1024, z: -1024 };
+                r.state.hydroTiles.set(
+                    "9,0",
+                    G.hydrosphaere(r._gelaende(), AnazhRealm.HYDROSPHERE, (x, z) => r._voxelSurfaceY(x, z), o)
+                );
+            })();
+            (function injizierterChunkBau() {
+                const p = r.state.lastPlayerVoxelChunk;
+                const b = r._buildVoxelChunkData(p.cx, p.cz, 0);
+                if (b && b.mesh) b.mesh.geometry.dispose();
+            })();
+            const w = new Worker(
+                URL.createObjectURL(
+                    new Blob([
+                        "self.postMessage({ type: 'klon', ta: new Float32Array(750000) });",
+                        "for (let i = 0; i < 300; i++) self.postMessage({ type: 'krume', b: new Uint8Array(10000) });",
+                    ])
+                ),
+                { name: "selbsttest" }
+            );
+            await new Promise((ok) => {
+                let n = 0;
+                w.onmessage = (e) => {
+                    if (e.data.type === "klon") new Float32Array(e.data.ta); // die Kopie nach dem Empfang
+                    if (++n === 301) ok();
+                };
+            });
+            w.terminate();
+            return performance.now() - t0;
+        });
+    }
+    const F = await page.evaluate(() => JSON.parse(JSON.stringify(window.__faden)));
+    const mb = (b) => (b / 1e6).toFixed(2);
+    const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+    const proMin = {};
+    console.log("\n=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===");
+    for (const w of Object.keys(dauer)) {
+        const T = F.t[w] || {};
+        const teile = [
+            ["Faden → Main", T.empfang],
+            ["Main → Faden", T.gesendet],
+            ["Kopie", T.kopie],
+            ["Platte", T.platte],
+        ];
+        proMin[w] = (teile.reduce((a, [, o]) => a + summe(o), 0) / dauer[w]) * 60000;
+        const top = (o) =>
+            Object.entries(o)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 4)
+                .map(([k, b]) => `${k} ${mb(b)} MB`)
+                .join(" · ");
+        console.log(
+            `  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min: ${teile.map(([n, o]) => `${n} ${mb(summe(o))} MB`).join(" · ")}`
+        );
+        for (const [n, o] of teile) if (summe(o)) console.log(`         ${n}: ${top(o)}`);
+    }
+    console.log(
+        `  Hydrosphären: ${F.hydro.faden} aus dem Faden · ${F.hydro.rot.length} im Haupt-Faden${F.hydro.rot.length ? " — " + F.hydro.rot.join(" | ") : ""}`
+    );
+    console.log(
+        `  Bauten im Haupt-Faden (Chunk-Stoff, Guss): ${F.bau.sync} an Sync-Stellen und Test-Nähten · ${F.bau.rot.length} sonst${F.bau.rot.length ? " — " + F.bau.rot.slice(0, 6).join(" | ") : ""}`
+    );
+    const k4 = F.hydro.rot.concat(F.bau.rot).filter((x) => !/injizierte/.test(x));
+    const blind =
+        F.blind ||
+        (!F.haken && "die Haken sitzen nicht") ||
+        (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen");
+    let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL || !!fehler();
+    if (blind) console.log(`  ⛔ BLIND: ${blind}`);
+    if (k4.length) console.log(`  ⛔ K4: ${k4.length} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
+    if (proMin.fahrt > FADEN_SOLL)
+        console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(FADEN_SOLL)}`);
+    if (SELBSTTEST) {
+        const S = F.t.selbst || { empfang: {}, kopie: {} };
+        const nennt = (liste, n) => liste.some((x) => x.includes(n));
+        const klon = (S.empfang["selbsttest:klon"] || 0) + (S.empfang["selbsttest:krume"] || 0);
+        const sieht =
+            nennt(F.hydro.rot, "injizierteHydro") &&
+            nennt(F.bau.rot, "injizierterChunkBau") &&
+            klon >= 5.9e6 &&
+            (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
+            summe(S.kopie) >= 2.9e6 &&
+            proMin.selbst > FADEN_SOLL;
+        console.log(
+            `  SELBSTTEST: injizierter Hydro-Bau, Chunk-Bau und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+        );
+        rot = rot || !sieht;
+    }
+    console.log(
+        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt"}\n`
+    );
+    return rot ? 1 : 0;
+}
+
 (async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     if (argv.includes("--studio")) process.exit(await studioProbe());
@@ -1734,8 +2089,9 @@ async function gebaut(page, fehler) {
         pageErr = (err.stack || err.message).split("\n")[0];
         console.log("[PAGE-ERROR]", pageErr);
     });
-    await nullRenderer(page);
+    await nullRenderer(page, { foundry: argv.includes("--faden") });
     const url = `http://127.0.0.1:${PORT}/index.html`;
+    if (argv.includes("--faden")) process.exit(await faden(page, () => pageErr, url));
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.
     await page.evaluate(() => {
@@ -1774,16 +2130,18 @@ async function gebaut(page, fehler) {
             const stationen = JSON.parse(
                 fs.readFileSync(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"), "utf8")
             ).stationen;
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
+            // Geboren wie im Spiel: importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechselNeuLaden`:
+            // Zeiger, Sperre, Reload) — ein Speichern der alten Seite bis zu ihrem Tod setzte den Zeiger sonst zurück
+            const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
             const id = await page.evaluate((json) => {
                 const r = window.anazhRealm;
                 const res = r.importWorldBeside(json);
                 if (!res.ok) return null;
-                r.activeWorldSet(res.worldId);
+                setTimeout(() => r._weltWechselNeuLaden(res.worldId));
                 return res.worldId;
             }, json);
             if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+            await nav;
             weltArg = { stationen };
         }
         const b = await boote(page);
@@ -1817,6 +2175,7 @@ async function gebaut(page, fehler) {
                     rep.befunde.push(`die Bühne trägt nicht ihr Erbgut (lebend [${rep.erbgut.terme}], Spec [${soll}])`);
             } else if (rep.erbgut.wildnis !== 1 || rep.erbgut.terme.join() !== "wildnis")
                 rep.befunde.push(`die Standard-Welt trägt nicht [wildnis] (lebend [${rep.erbgut.terme}])`);
+            for (const b of rep.befunde.filter((b) => b.includes("trägt nicht"))) console.log("  ⛔", b); // nach `zeige` geschoben
             if (rep.befunde.length) rot = true;
         }
         berichte.push(rep);

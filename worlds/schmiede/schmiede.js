@@ -1635,5 +1635,14 @@ P._kBase=P.kruemmung;basisP=Object.assign({},P);buildSliders();rebuild();appendA
         esc: function () {
             return !(typeof arena !== "undefined" && arena && arena.active); /* Esc = Pointer-Lock im Prüfstand */
         },
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): die Gattung mit Same 1, den Werten ihrer Regler-Zeilen und
+           der Tradition (die Welt-Gestalt der Kosten-Leiste) — das nächste gesetzte Werk der Gattung trägt es. */
+        werk: function () {
+            var ov = { __tradition: tradName(currentTrad) };
+            SC.PARAMS_BY_KIND.weapon.forEach(function (z) {
+                if (typeof P[z.id] === "number") ov[z.id] = P[z.id];
+            });
+            return { kind: "weapon", preset: rezeptDerGattung(), seed: 1, ov: ov };
+        },
     });
 })();

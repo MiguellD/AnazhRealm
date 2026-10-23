@@ -4526,5 +4526,17 @@ init();
         esc: () => !(forestMode || document.pointerLockElement),
         // DIE ASSET-KANÄLE (build-asset · get-book · export-settlement)
         sonst: (msg) => foundryKanal(msg),
+        // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): ein Rezept mit Regler-Zeilen des Vertrags (Blume, Gras), mit
+        // dem Samen der Bühne und den Werten seiner Zeilen aus der Ableitung der Dials (`deriveParamsPlant`). Die Labor-Dials
+        // selbst sind keine Zeilen (studio-vertrag B4, W4e): Baum, Strauch und Fels tragen kein Werk des Vertrags.
+        werk: () => {
+            const pre = PRESETS[CURRENT];
+            const zeilen = PARAMS_BY_KIND[pre.kind];
+            if (!zeilen || forestMode) return null;
+            const P = deriveParamsPlant(pre);
+            const ov = {};
+            for (const z of zeilen) if (typeof P[z.id] === "number") ov[z.id] = P[z.id];
+            return { kind: pre.kind, preset: CURRENT, seed: SEED, ov };
+        },
     });
 })();

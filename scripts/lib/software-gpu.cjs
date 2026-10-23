@@ -1,19 +1,19 @@
-// software-gpu.cjs — DAS EINE START-REZEPT für jede Linse, die WebGPU fährt (05.10.).
+// software-gpu.cjs — DAS EINE START-REZEPT für jede Linse, die WebGPU fährt.
 //   · Linux (CI-Runner): mit Dawns swiftshader-Adapter allein findet der GPU-Prozess keine Ablage für die Canvas-Swapchain
 //     und das Gerät stirbt beim ersten getCurrentTexture; von sieben Rezepten trug genau eines (480 Frames ohne Verlust):
 //     Vulkan im GPU-Prozess auf swiftshader + ANGLE auf swiftshader + keine Vulkan-Oberfläche (LINUX_SWAPCHAIN).
 //   · Windows: genau diese Schalter liefern KEINEN Adapter (der Renderer fiele still auf WebGL2); dort trägt nur Dawns Schalter.
-// DIE WEICHE (K39): lokal fährt jede Linse den HARDWARE-Adapter, die CI (env CI=true) swiftshader; `LINSE_GPU=software` ist der
+// DIE WEICHE: lokal fährt jede Linse den HARDWARE-Adapter, die CI (env CI=true) swiftshader; `LINSE_GPU=software` ist der
 // Rückweg für Paritäts-Läufe, `LINSE_GPU=hardware` erzwingt die Karte (nur unter Windows gemessen). Jede Linse nennt ihren
 // Adapter (`adapterZeile`), damit kein Bericht ein swiftshader-Ergebnis als Radeon ausgibt.
-// DIE ZEIT-ACHSE (K39-2): eine Linse OHNE Zeit-Urteil fährt lokal die Karte (auch die WebGL-Familie), eine MIT (`zeit: true`)
+// DIE ZEIT-ACHSE: eine Linse OHNE Zeit-Urteil fährt lokal die Karte (auch die WebGL-Familie), eine MIT (`zeit: true`)
 // swiftshader wie die CI — ihr Band ist dort geeicht. Die WebGL-Linse auf der Karte trägt WebGL2 wie auf swiftshader.
 // Die Wand: gate:start-rezept (scripts/diag-start-rezept.cjs).
 "use strict";
 
 const path = require("path");
 
-// DER CPU-COMPOSITOR (K67): auf swiftshader rastert der GPU-Prozess auch jedes Compositor-Bild auf der CPU; eine endlose
+// DER CPU-COMPOSITOR: auf swiftshader rastert der GPU-Prozess auch jedes Compositor-Bild auf der CPU; eine endlose
 // CSS-Animation hielt die Raster-Fäden voll, jeder synchrone Programm-Bau wartete dahinter (Raster-CPU p90 771 → 254 s). Die
 // Linse wünscht weniger Bewegung, die Seite hält dann jede Deko-Animation an (index.html, prefers-reduced-motion).
 const CPU_COMPOSITOR = ["--force-prefers-reduced-motion"];

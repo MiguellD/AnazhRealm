@@ -613,7 +613,7 @@ function standUrteil(b) {
         treue(X.phase, "mit den Tätern", X.je); // die Takte ohne Täter bleiben treu
         runde(X.phase, "mit den Tätern");
     }
-    // (U) STUFE (K51-5): ein reiner Stufen-Wechsel (dieselbe Fläche im Gesetz, der Morph trägt sie) regt nur die Boden-Karte —
+    // (U) STUFE: ein reiner Stufen-Wechsel (dieselbe Fläche im Gesetz, der Morph trägt sie) regt nur die Boden-Karte —
     // nie Stufen-Wahl, Cull, Streu, Ring oder Saum, nie Wald-Setzung oder Sichthöhen
     const U = b.stufe;
     if (!U) v.push("LEER: keine Stufen-Phase");
@@ -630,7 +630,7 @@ function standUrteil(b) {
                     `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung rufen ${m} ${U.rufe[m]}× (Wald-Setzung, Sichthöhen)`
                 );
     }
-    // (O) ORT (K69): ein Erdbau abseits wirft nur, was er ändern kann — der Stand des Walds (an ihm hängt die Gestalt jedes
+    // (O) ORT: ein Erdbau abseits wirft nur, was er ändern kann — der Stand des Walds (an ihm hängt die Gestalt jedes
     // Orts), die fernen Wald-Zellen, die fernen Chunk-Gedächtnisse und der Stand eines fernen Chunks bleiben.
     const O = b.ort;
     if (!O) v.push("LEER: keine Ort-Phase");
@@ -720,7 +720,7 @@ function standUrteil(b) {
                 `ORT: ${wo} verwarf die Worker-Antworten des fernen Chunks ${O.stand.key} (Stand ${O.stand.vor} → ` +
                     `${O.stand.nach}) — der Worker baut fern neu, was der Erdbau nie berührt`
             );
-        // DER ERDBAU UNTER DEM SPIELER (K69-2): der Chunk-Stoff entsteht im Worker, nie im Haupt-Faden (Lehre 14) — ein Takt,
+        // DER ERDBAU UNTER DEM SPIELER: der Chunk-Stoff entsteht im Worker, nie im Haupt-Faden (Lehre 14) — ein Takt,
         // der einen Chunk synchron baut (`_buildVoxelChunkData`) über SYNC_CHUNK_MS, ist der Riss beim Namen seiner Rufer.
         const AS = O.amSpieler;
         if (!AS || !AS.gelegt)

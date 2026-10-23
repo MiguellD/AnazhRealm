@@ -232,3 +232,26 @@
     opacity: 1;
     transform: translate(-50%, 0);
 }
+/* DER KNOPF DES ÜBERGABE-KANALS (bruecke, opt.werk): im Ort des Studios oder schwebend unten rechts */
+.h-werk {
+    width: 100%;
+    margin-top: 6px;
+    padding: 8px 12px;
+    font: 600 12px/1.2 system-ui, sans-serif;
+    color: var(--h-tinte);
+    background: var(--h-knopf);
+    border: 1px solid var(--h-akzent);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.h-werk:hover {
+    background: var(--h-akzent);
+    color: #000;
+}
+.h-werk-frei {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    width: auto;
+    z-index: 60;
+}

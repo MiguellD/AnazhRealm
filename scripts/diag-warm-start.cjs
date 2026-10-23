@@ -1,4 +1,4 @@
-// diag-warm-start.cjs — DER WARM-START-BEWEIS (DAS FELD ZEICHNET §4, V18.484):
+// diag-warm-start.cjs — DER WARM-START-BEWEIS:
 // gebaute uneditierte Chunk-Geometrie reist als GPU-fertige Bytes in IndexedDB
 // (DB "anazhChunkMesh") — der zweite Boot einer Welt liest den Ring aus der
 // Platte statt aus dem Meshing-Roundtrip. Vier Bänder (Browser, Null-Renderer;
@@ -64,12 +64,6 @@ async function jobKalt() {
     await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
-    // IDB-Schicht EXPLIZIT initialisieren (memoisiert — die Pumpe fände sie
-    // sonst erst ab dem zweiten Fetch; die Linse will ALLE Probe-Chunks
-    // durch die Stiftungs-Naht schicken).
-    await r._chunkIdbInit();
-    if (!r._chunkIdb || r._chunkIdb._idbDead || !r._chunkIdb._idbDb)
-        return { err: "IDB-Schicht kam trotz Hook nicht hoch (_idbDead)" };
     const { span } = r._voxelChunkConfig(0);
     const pm = st.playerMesh;
     const pcx = pm ? Math.floor(pm.position.x / span) : 0;
@@ -160,9 +154,6 @@ async function jobWarm(kaltIn) {
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (warm)" };
     if (st.worldMeta.seed !== kaltIn.seed)
         return { err: "Reload lud eine ANDERE Welt (Seed " + st.worldMeta.seed + " != " + kaltIn.seed + ")" };
-    await r._chunkIdbInit();
-    if (!r._chunkIdb || r._chunkIdb._idbDead || !r._chunkIdb._idbDb)
-        return { err: "IDB-Schicht kam im Warm-Lauf nicht hoch" };
     const posHashOf = (cx, cz) => {
         const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
         return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
@@ -251,7 +242,12 @@ async function jobSelbsttest(kaltIn) {
     await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (Selbsttest)" };
-    await r._chunkIdbInit(); // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
+    // die Platte lebt im Faden (Karte hydro-faden): sein erster Auftrag mit Schlüssel (der unberührte Probe-Chunk B) öffnet sie,
+    // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
+    await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
+    const [bx, bz] = kaltIn.probes[1];
+    for (const weiter = window.__deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
+        await new Promise((res) => setTimeout(res, 25));
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
     return await new Promise((resolve) => {
         const req = indexedDB.open("anazhChunkMesh", 1);
@@ -287,7 +283,7 @@ async function jobSelbsttest(kaltIn) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
-        window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkIdbInit)
+        window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkPlatte)
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 

@@ -12,10 +12,10 @@
 //                 scheitert (signaling-server aus), heilte nie. Probe: Server beim Aufbau 3 s aus, dann an; Rejoin
 //                 ≤ 31 s (Backoff-Deckel 30 s + Jitter). Täter, wenn ROT: der Rejoin liest eine Absicht, die die Tür
 //                 nie setzte.
-//   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
+//   (c) GRABEN    das Chat-Graben reist: A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
 //                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
 //                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
-//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen (K60): B sieht A
+//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen: B sieht A
 //                 an dessen Ort, und JEDER Takt hält das Gesetz (`taktBruch`): er verbraucht bis zur Kappe der Wanduhr
 //                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
 //                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
@@ -51,9 +51,8 @@ const LATENZ_MS = 150;
 // Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
 const LAUF_M = 1.5;
 const LAUF_FRIST_MS = 30000;
-// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
-// das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
-// Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
+// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen
+// sind — das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers.
 const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
@@ -79,7 +78,7 @@ const dTaeter = (m) =>
           : m.some((x) => x.startsWith("Abstand"))
             ? " — das Gesetz hält, der Ort weicht: Täter der Schritt des Ghosts (_lockstepStepGhost) oder sein Anker"
             : "";
-// DER SCHUB VOR DEM FENSTER (Prüfer K60 Runde 4, B gedrosselt × 8; dieselbe Form CI 38677065212): ein Puffer, der VOR dem
+// DER SCHUB VOR DEM FENSTER (K60, B gedrosselt × 8): ein Puffer, der VOR dem
 // Fenster auflief, steht nach dem ersten Takt (dt 25 ms, Kappe 15) bei 235 Schritten — das Gesetz trug ihn, das Urteil mit
 // festem Verzug (≤ Reserve + aufholJeSchritt) nannte `_lockstepTickPeers` als Täter. Je Takt [dt ms, Schritte, Puffer danach].
 const SCHUB_VOR_DEM_FENSTER = [
@@ -143,7 +142,7 @@ function installiere(alteTuer) {
     // DIE WAHRHEIT DES ZEICHEN-MOMENTS: `_p2pUpdatePeer` zeichnet den Ort, den der Ghost am Ende des VORIGEN Takts setzte
     // (`_lockstepTickPeers` läuft in `p2pTick` NACH dem Zeichnen) bzw. den Snap von vor P2P_SNAP_INTERP_DELAY_MS (120 ms).
     // Geurteilt wird darum gegen die Quellen in DIESEM Moment — der Ghost, der Snap-Puffer, der zuletzt empfangene Ort —,
-    // nie gegen den Ghost nach dem Takt (8a2f91e5 und be09baf4: 1–2 Takte ROT, als A aus dem Erst-Spawn 0/0 loslief).
+    // nie gegen den Ghost nach dem Takt.
     const zeichne = r._p2pUpdatePeer;
     r._p2pUpdatePeer = function (entry, t, dt) {
         const res = zeichne.call(this, entry, t, dt);
@@ -434,7 +433,7 @@ function bericht(p) {
                 window.__mp.eigenBewegtAm = null;
                 window.__mpP = undefined;
             });
-            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m (CI 38683406115)
+            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m
             const halt = await halteBis(pageA, {
                 taste: "w",
                 ziel: (soll) => {
@@ -500,21 +499,19 @@ function bericht(p) {
         if (!process.env.CI && l0.latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
 
-        // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // ── (d) LANGE TAKTE: B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
-        // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
-        // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
-        // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
-        // DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am Ende und nie einen festen Verzug: der Ort
-        // allein war blind (CI 38670118945, die alte Kappe holte den kurzen Lauf vor dem Urteil fast ein), der feste Verzug
-        // las einen Schub vor dem Fenster als Täter (CI 38677065212).
+        // (`_lockstepTickPeers`). Der Selbsttest gleich danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein
+        // Frame von 1/60 s): (d) muss ROT werden. DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am
+        // Ende und nie einen festen Verzug: der Ort allein war blind, der feste Verzug las einen Schub vor dem Fenster
+        // als Täter.
         const lsGesetz = await pageB.evaluate(() => {
             const K = window.anazhRealm.constructor;
             return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
         });
-        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL Schritte von A angekommen
-        // sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A sendet und wie belastet der Läufer
-        // ist (CI 38670118945 lief mit 300 ms Wanduhr-Takten; lokal unter Last kam je Takt kein einziger Schritt, K60-N3/mp-4.txt)
+        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL
+        // Schritte von A angekommen sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A
+        // sendet und wie belastet der Läufer ist
         const ZUFLUSS_SOLL = ZUFLUSS_FAKTOR * lsGesetz.aufhol;
         const langeTakte = (an, alteKappe) =>
             pageB.evaluate(
@@ -641,7 +638,7 @@ function bericht(p) {
         );
         await sleep(1500);
 
-        // ── (c) DAS CHAT-GRABEN REIST (K23) ──
+        // ── (c) DAS CHAT-GRABEN REIST ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
         // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
         // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxel/fillVoxel)

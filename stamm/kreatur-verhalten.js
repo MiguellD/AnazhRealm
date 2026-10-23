@@ -226,9 +226,11 @@ class AnazhRealm_kreatur_verhalten {
         // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
         // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
         const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-        const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
+        if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
+        // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
+        const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
         const jaeger = this._kreaturJaeger;
-        if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
+        if (!jaeger || !jaeger.length) return wSpieler;
         // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
         // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
@@ -260,27 +262,79 @@ class AnazhRealm_kreatur_verhalten {
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        // DAS WESEN ERINNERT (Ökologie K3, tetrapoda furchtErinnert): wer es schlug, den fürchtet es — die erinnerte Furcht hebt
+        // die Wariness und weitet Witterung und Flucht-Distanz; wer es fütterte, dem nähert es sich (die Furcht sinkt unter 0).
+        // Vorher las kein Verhalten das Gedächtnis (nur Spezialisierung, Prompt und Hof).
+        const FG = AnazhRealm._furchtGesetz();
+        const erinnert = this._kreaturFurchtErinnert(creature);
+        const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
+        const witterung = NAT.noticeRadius * weit;
         von.x = pm.x;
         von.z = pm.z;
-        von.r = NAT.fleeRadius;
+        von.r = NAT.fleeRadius * weit;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
+        if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
-        const menace =
-            (e.chaos || 0) * NAT.menaceFromChaos +
-            (e.sorrow || 0) * NAT.menaceFromSorrow -
-            (e.peace || 0) * NAT.calmFromPeace -
-            (e.joy || 0) * NAT.calmFromJoy;
+        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt)
+        const menace = FG.bedrohung(e, NAT);
         // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
         // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
         // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
         const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-        const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
-        let wariness = (menace * modeMul - boldness) * (fearActive ? 1 : proximity);
+        const proximity = Math.max(0, 1 - dist / witterung);
+        let wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
         if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
         return wariness;
+    }
+
+    // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·
+    // gefüttert; die Einträge schreiben `damageCreature` und `activateCreatureConsumable`, sie reisen im Speicherstand).
+    _kreaturFurchtErinnert(creature) {
+        const FG = AnazhRealm._furchtGesetz();
+        return FG.furchtErinnert(creature.userData && creature.userData.memory, FG.F);
+    }
+
+    // DIE FURCHT DES ORTS (Ökologie K3, tetrapoda furchtOrt): die Beute (ein Pflanzenfresser, diet bis
+    // temperament.gattung.pflanzDiet — der Jäger und der Aasfresser gehen an den Riss) liest den Abdruck der Zellen um sich
+    // (das Emotions-Feld `_emotionOverlayAt`, 3 × 3 Zellen der Kante LIFE_FIELD.cell); die Furcht einer Zelle wiegt bis
+    // ortRadiusZellen Zellen um ihre Mitte, linear zum Rand. Ist sie größer als die Wariness w, ist der Ort die Bedrohung: `von`
+    // ist die Mitte der Zelle, ihr Flucht-Radius der Umkreis. Liefert die Wariness. Ein Riss prägt den Ort
+    // (`_creatureCombatDeath`); vorher trug der Ort Gefühle, die kein Tier las.
+    _kreaturFurchtOrt(creature, NAT, von, w) {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return w;
+        const VG = AnazhRealm._verhaltenGesetz();
+        if (this._kreaturDiet(creature) > VG.temperament.gattung.pflanzDiet) return w;
+        const FG = AnazhRealm._furchtGesetz();
+        const zelle = AnazhRealm.LIFE_FIELD.cell;
+        const R = FG.F.ortRadiusZellen * zelle;
+        const x = creature.position.x,
+            z = creature.position.z;
+        const cx = Math.floor(x / zelle),
+            cz = Math.floor(z / zelle);
+        let best = w,
+            bx = 0,
+            bz = 0;
+        for (let i = -1; i <= 1; i++)
+            for (let j = -1; j <= 1; j++) {
+                const mx = (cx + i + 0.5) * zelle,
+                    mz = (cz + j + 0.5) * zelle;
+                const m = FG.furchtOrt(this._emotionOverlayAt(mx, mz), NAT, FG.F);
+                if (!(m > 0)) continue;
+                const wo = m * Math.max(0, 1 - Math.hypot(x - mx, z - mz) / R);
+                if (wo > best) {
+                    best = wo;
+                    bx = mx;
+                    bz = mz;
+                }
+            }
+        if (best === w) return w;
+        von.x = bx;
+        von.z = bz;
+        von.r = R;
+        return best;
     }
 
     // Jagt dieses Wesen den Spieler? NUR wildes Temperament, NUR im pfad, NUR unverängstigt (Furcht
@@ -288,6 +342,7 @@ class AnazhRealm_kreatur_verhalten {
     // task-losen Bewegungs-Zweig).
     _creatureHuntDrive(creature, wariness) {
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (this._kreaturErschoepft(creature)) return false; // die Jagd endete, der Jäger ruht (Tiere K2)
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return false;
         if (this._creatureTemperament(creature) !== "wild") return false;
@@ -313,6 +368,7 @@ class AnazhRealm_kreatur_verhalten {
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
         if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
+        if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -511,13 +567,20 @@ class AnazhRealm_kreatur_verhalten {
         const umstellt = R.umstellt;
         const hetzt = ud._motionZustand === "hetzen";
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
-        if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
+        const hetze =
+            ((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt);
+        if (this._kreaturJagdEndet(creature, zielKey, hetze)) {
+            this._kreaturZustandStempel(creature, null);
+            direction.set(0, 0, 0);
+            return;
+        }
+        if (hetze) {
             this._kreaturZustandStempel(creature, "hetzen");
             // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
             // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
             const K = AnazhRealm._steuerGesetz();
             const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
-            const sprint = K.sprintTempo(hueftL);
+            const sprint = this._kreaturSprint(creature, hueftL);
             // DIE HETZE HÄLT IN DER WEITE DES ANSPRUNGS (Welle LF kampf, Posten 5): der Rest ist der Spalt vor dem Maul
             // (_kreaturBissRadial, waagrecht, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
             // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn;
@@ -553,6 +616,53 @@ class AnazhRealm_kreatur_verhalten {
         const qx = tx + Math.sin(platz) * J.hetzM - p.x,
             qz = tz + Math.cos(platz) * J.hetzM - p.z;
         this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (ruhte die Hetze
+    // länger als ruheS, beginnt die nächste eine neue); dauert die Jagd dauerS — in der Hetze oder in der Pirsch danach —, bricht der
+    // Jäger ab und ist ruheS erschöpft: er jagt nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
+    // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
+    _kreaturJagdEndet(creature, zielKey, hetze) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const J = AnazhRealm._jagdGesetz().J;
+        // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei; erst die Hetze beginnt eine neue
+        if (ud._jagd && (ud._jagd.ziel !== zielKey || now - ud._jagd.zuletzt > J.ruheS)) ud._jagd = null;
+        if (!ud._jagd) {
+            if (!hetze) return false;
+            ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
+        }
+        if (hetze) ud._jagd.zuletzt = now;
+        if (now - ud._jagd.beginn < J.dauerS) return false;
+        ud._jagd = null;
+        ud._erschoepftBis = now + J.ruheS;
+        return true;
+    }
+    // DER DURST (Tiere K4, tetrapoda durst): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr (ab der Geburt); nach einer
+    // Suche ohne Wasser ruht er suchPauseS.
+    _kreaturDurstig(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
+        if (now < ud._durstSucheBis) return false;
+        const LG = AnazhRealm._lebensraumGesetz();
+        if (LG.durst(now - ud._getrunken, LG.D) < 1) return false;
+        // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
+        const h = this._hydroDistAt(creature.position.x, creature.position.z);
+        if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
+        ud._durstSucheBis = now + LG.D.suchPauseS;
+        return false;
+    }
+    _kreaturErschoepft(creature) {
+        const b = creature.userData && creature.userData._erschoepftBis;
+        return Number.isFinite(b) && this.state.creatureAnimationTime < b;
+    }
+    // DER SPRINT DES LEIBS (STEUER sprintTempo × tetrapoda wundTempo): die Wunde bremst Flucht, Hetze und Ansprung
+    _kreaturSprint(creature, hueftL) {
+        const ud = creature.userData;
+        const JG = AnazhRealm._jagdGesetz();
+        const anteil = ud && ud.hpMax > 0 && Number.isFinite(ud.hp) ? ud.hp / ud.hpMax : 1;
+        return AnazhRealm._steuerGesetz().sprintTempo(hueftL) * JG.wundTempo(anteil, JG.J);
     }
 
     // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint: updateCreatures ruft sie JEDEN Frame auf die
@@ -1812,8 +1922,21 @@ class AnazhRealm_kreatur_verhalten {
         const cx = creature.position.x;
         const cz = creature.position.z;
         // Phase 1: Wasser-Punkt suchen wenn keiner gesetzt.
+        const now = this.state.creatureAnimationTime; // das Trinken läuft auf der Kreatur-Uhr (Welle LF, Q1)
+        const ud = creature.userData;
+        // DER DURST TRINKT NUR IN RUHE (Tiere K4): wer aus Durst zum Wasser zieht, flieht vor der Bedrohung
+        const durst = task.args.durst === true;
+        if (durst && this._creatureWariness(creature) >= AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
         if (!task.args._target) {
             const water = this._findNearestWaterPoint(cx, cz, SEARCH_RADIUS);
+            if (!water && durst) {
+                ud._durstSucheBis = now + AnazhRealm._lebensraumGesetz().D.suchPauseS;
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
             if (!water) {
                 this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
                 if (typeof this.journalAppend === "function") {
@@ -1833,13 +1956,17 @@ class AnazhRealm_kreatur_verhalten {
         const dist = Math.hypot(dx, dz);
         // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
         if (dist <= HALT_DIST) {
-            const now = performance.now() / 1000;
             if (!task.args._drinkStart) {
                 task.args._drinkStart = now;
                 // Das Tier ruft zum Trink-Beginn (seine Stimme, multisensorisch — Vision §1.2).
                 this._tierRuf(creature);
             }
             if (now - task.args._drinkStart >= DURATION_S) {
+                ud._getrunken = now; // der Durst ist gestillt (Tiere K4)
+                if (durst) {
+                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                    return null;
+                }
                 // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:
                 // joy+hope, V18.100 G4-1 — dasselbe Substrat wie der Spieler;
                 // die "happy"-Projektion fällt aus der Valenz) + Erinnerung + wander.
@@ -2345,6 +2472,7 @@ class AnazhRealm_kreatur_verhalten {
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
         const soul = soulName || this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+        if (!soul) return 0; // der Lebensraum trägt hier keine Gattung (Tiere K4)
         return this._kreaturWurf(ort, soul, emotion, rng, platz).length;
     }
 
@@ -3145,6 +3273,15 @@ class AnazhRealm_kreatur_verhalten {
             let direction;
             if (recomputeAI) {
                 task = this._getCreatureTask(creature);
+                // DER DURST ZIEHT ZUM WASSER (Tiere K4): ein Tier in Ruhe, ohne Auftrag des Spielers, trinkt, wenn es durstig ist
+                if (
+                    (!task || task.name === "wander") &&
+                    !creature.userData._motionZustand &&
+                    this._kreaturDurstig(creature)
+                ) {
+                    this.assignCreatureTask(creature, "drink", { durst: true }, { silent: true });
+                    task = this._getCreatureTask(creature);
+                }
                 direction = this._tickCreatureTaskDirection(creature, task, emotion);
                 if (direction === null) {
                     direction = scratchDir.set(0, 0, 0);
@@ -3189,7 +3326,7 @@ class AnazhRealm_kreatur_verhalten {
                             this._kreaturZustandStempel(creature, "flucht");
                             // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
                             // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
-                            const fv = fd > 1e-6 ? AnazhRealm._steuerGesetz().sprintTempo(hueftL) / fd : 0;
+                            const fv = fd > 1e-6 ? this._kreaturSprint(creature, hueftL) / fd : 0;
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -3325,7 +3462,7 @@ class AnazhRealm_kreatur_verhalten {
                     }
                     const fort = bd > 1e-6 ? Math.max(0, (zvx * bx + zvz * bz) / bd) : 0;
                     const SG = AnazhRealm._steuerGesetz();
-                    const sprint = SG.sprintTempo(hueftL);
+                    const sprint = this._kreaturSprint(creature, hueftL);
                     // (ein Hauch von Wunsch bleibt: er trägt die Wendung zum Ziel, auch wenn der Kopf es schon erreicht)
                     const bv = Math.max(1e-3, weg > 0 ? Math.min(sprint, SG.ankunftTempo(weg, sprint) + fort) : fort);
                     if (bd > 1e-6) direction.set((bx / bd) * bv, 0, (bz / bd) * bv);
@@ -3656,6 +3793,78 @@ AnazhRealm._steuerGesetz = function () {
         return k;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
+};
+// DAS FURCHT-GESETZ (tetrapoda FURCHT_GESETZ + bedrohung · furchtErinnert · furchtOrt, Ökologie K3): die EINE Bedrohung eines
+// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts. Fail-closed.
+AnazhRealm._furchtGesetz = function () {
+    if (AnazhRealm._furchtGesetzMemo) return AnazhRealm._furchtGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const F = k && k.FURCHT_GESETZ;
+    if (
+        F &&
+        F.erinnerung &&
+        Number.isFinite(F.erinnerung.geschlagen) &&
+        Number.isFinite(F.erinnerung.gefuettert) &&
+        Number.isFinite(F.deckel) &&
+        Number.isFinite(F.fluchtJeFurcht) &&
+        F.riss &&
+        Number.isFinite(F.ortGewicht) &&
+        Number.isFinite(F.ortRadiusZellen) &&
+        typeof k.bedrohung === "function" &&
+        typeof k.furchtErinnert === "function" &&
+        typeof k.furchtOrt === "function"
+    ) {
+        AnazhRealm._furchtGesetzMemo = Object.freeze({
+            F,
+            bedrohung: k.bedrohung,
+            furchtErinnert: k.furchtErinnert,
+            furchtOrt: k.furchtOrt,
+        });
+        return AnazhRealm._furchtGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
+};
+// DIE JAGD HAT EIN ENDE (tetrapoda JAGD_GESETZ + wundTempo, Tiere K2): die Dauer der Jagd, die Ruhe des Erschöpften, die Wunde,
+// die den Sprint bremst. Fail-closed.
+AnazhRealm._jagdGesetz = function () {
+    if (AnazhRealm._jagdGesetzMemo) return AnazhRealm._jagdGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const J = k && k.JAGD_GESETZ;
+    if (J && [J.dauerS, J.ruheS, J.wundExp].every(Number.isFinite) && typeof k.wundTempo === "function") {
+        AnazhRealm._jagdGesetzMemo = Object.freeze({ J, wundTempo: k.wundTempo });
+        return AnazhRealm._jagdGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
+};
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
+// je Gattung. Fail-closed.
+AnazhRealm._lebensraumGesetz = function () {
+    if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const L = k && k.LEBENSRAUM_GESETZ;
+    if (
+        L &&
+        [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
+        L.gattung &&
+        L.haeufigkeit &&
+        typeof k.bodenKlasse === "function" &&
+        typeof k.lebensraum === "function" &&
+        typeof k.lebensraumWahl === "function" &&
+        k.DURST_GESETZ &&
+        [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
+        typeof k.durst === "function"
+    ) {
+        AnazhRealm._lebensraumMemo = Object.freeze({
+            L,
+            bodenKlasse: k.bodenKlasse,
+            lebensraum: k.lebensraum,
+            wahl: k.lebensraumWahl,
+            D: k.DURST_GESETZ,
+            durst: k.durst,
+        });
+        return AnazhRealm._lebensraumMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:LEBENSRAUM_GESETZ");
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;

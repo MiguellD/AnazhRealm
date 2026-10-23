@@ -1,5 +1,5 @@
-// plattform-probe.cjs — DIE PLATTFORM-PROBE der Goldens (Integration W5, 06.10.; S1 Wände, 07.10.: alle
-// Transzendenten statt nur Math.pow, jeder Golden-Satz, Node UND der Chrome-Worker der Pflanzen).
+// plattform-probe.cjs — DIE PLATTFORM-PROBE der Goldens (W5, S1: alle Transzendenten, jeder Golden-Satz, Node UND der
+// Chrome-Worker der Pflanzen).
 // Math.pow mit gebrochenem Exponenten rundet in V8 12.4 (Node 22) und 13.6 (Node 24) im letzten Bit verschieden — im Kern
 // und in three r128 (CatmullRomCurve3, Color.convertSRGBToLinear); ein Golden der einen Version bricht auf der anderen.
 //

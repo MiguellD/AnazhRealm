@@ -3,7 +3,7 @@
 // scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung).
 //
 // Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
-// Dateien unter stamm/ (ein Stand vor der Zerlegung 14.10.: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
+// Dateien unter stamm/ (ein Stand vor der Zerlegung: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
 // beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht
 // als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
 //
@@ -477,8 +477,7 @@ function kopf(t, methode, ab = 0) {
 // DER RUMPF AM KOPF (D2-N1) — der EINE Rumpf-Schneider jeder Linse: `rumpf(t, kopf)` gibt den Block `{…}`, der DIREKT an
 // einem Kopf hängt (ein Name sucht das Klassen-Glied wie `kopf`, ein Regex jeden Kopf): nach dem Treffer höchstens die
 // Parameter-Liste, ein `=>` und Leerraum, dann `{`. Ein Aufruf (`this._x(a);`, `if (this._x(a)) {`) trägt keinen eigenen
-// Block und zählt nie — der erste TEXT-Treffer hing an der Datei-Reihenfolge: gate:vehicle-drive A5 schnitt nach dem Umzug
-// am Aufruf in siedlung-ort.js statt an der Definition in koerper-fahrt.js (Zweig-CI 38894453753, voll 11/18). null ohne
+// Block und zählt nie (der erste TEXT-Treffer hängt an der Datei-Reihenfolge). null ohne
 // Definition; der Zähler liest Klammern blind wie jeder Schneider vor ihm (Linsen lesen kommentar-gestrippten Text), mit
 // `{ zitate: true }` überspringt er "…" und '…' (die Zeilen eines Daten-Literals tragen Klammern in Zeichenketten).
 function blockAm(t, a, e) {
@@ -639,9 +638,7 @@ function rufe(t) {
 // DIE STELLE IM STAMM (D2-N2) — die EINE Engstelle jeder Probe und jeder Mutation am Stamm-Text: `x` (Text oder Regex)
 // steht höchstens EINMAL im benannten Glied (`glied` = Name einer Methode, eines Getters oder Felds, am AST) oder — `null`
 // — im ganzen Stamm; mehrere wirft, keiner gibt der Probe null und wirft der Mutation (sie wäre vakuös). Der erste TEXT-
-// Treffer im ganzen Stamm hing an der Datei-Reihenfolge: gate:werkstatt-weg mutierte nach dem Umzug `this._bauSame("insel")`
-// in spawnIslandAt statt in chatDslPatterns, der Selbsttest wurde vakuös (Zweig-CI 38908372005, voll 14/18); gate:apparat
-// Klinge 6 nennt jeden rohen ersten Treffer.
+// Treffer im ganzen Stamm hängt an der Datei-Reihenfolge; gate:apparat Klinge 6 nennt jeden rohen ersten Treffer.
 // `treffer` gibt den Treffer wie `exec` (Index im ganzen Text), `ersetze` den ganzen Text mit der EINEN Stelle ersetzt
 // (`neu` wie bei `replace`); die Glieder-Tafel des Ergebnisses wandert verschoben mit (eine Kette parst den Stamm einmal).
 const tafeln = new Map();

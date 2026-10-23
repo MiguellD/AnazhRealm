@@ -60,6 +60,7 @@ export default [
                 atob: "readonly",
                 btoa: "readonly",
                 TextEncoder: "readonly",
+                TextDecoder: "readonly",
                 indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
                 AnazhHuelle: "readonly", // die Studio-Hülle (worlds/huelle/huelle.js, K41): die Werkstatt ruft DENSELBEN Regler-Generator
                 // CDN-Libs
