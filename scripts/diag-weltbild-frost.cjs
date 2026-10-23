@@ -952,7 +952,7 @@ function pruefRaum(echt) {
             const e = {
                 peerId: "frost-erscheinung-" + i,
                 soulName: "human",
-                uebergabe: { s: { height: +(1 + 0.04 * i).toFixed(3) } },
+                uebergabe: { height: +(1 + 0.04 * i).toFixed(3) },
             };
             E.im("peers", () => r._p2pApplyPeerSoul(e));
             if (e.mesh) leiber.push(e.mesh);

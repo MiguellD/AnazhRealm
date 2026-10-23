@@ -79,6 +79,7 @@ const WUERFE = [
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
+        await window.__weltDa(); // nach dem Erwachen des Boots
         for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r) {

@@ -194,4 +194,13 @@ AnazhHuelle.bruecke({
         if (w === "zufall") document.getElementById("rnd").click();
         else AnazhHuelle.knopfMitText(document.getElementById("presets"), w);
     },
+    // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): die Ordnung mit Same 1 und den Werten ihrer Regler-Zeilen (die
+    // Welt-Gestalt der Kosten-Leiste) — das nächste gesetzte Tor der Ordnung trägt es.
+    werk: function () {
+        var ov = {};
+        PC.PARAMS_BY_KIND.gate.forEach(function (z) {
+            ov[z.id] = W[z.id];
+        });
+        return { kind: "gate", preset: rezeptId(), seed: 1, ov: ov };
+    },
 });

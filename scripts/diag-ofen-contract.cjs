@@ -2,8 +2,6 @@
 // diag-ofen-contract.cjs — DER OFEN-VERTRAG (S1 Wände): das Byte-Golden des Tier- und Mensch-Bakes je
 // Stoff-Klasse × Gelenk (npm run gate:ofen-contract).
 //
-// Befund: die MESHFREI-Kerne (tetrapoda-core, koerper-core) tragen nur Daten-Goldens (v7: PRESETS + PARAMS); den Guss
-// macht der Ofen (foundry-core BAKERS_BY_KIND.kreatur/.koerper — dieselben Bäcker, die Foundry-Worker und Wirt rufen).
 // Sein Ausgang war ohne Golden: 3a0248e8 (das Fell folgt der Haut) und 8e6f628c (die Hand-Mitte) bewiesen ihren
 // Byte-Stand von Hand („sha256 je Stoff-Klasse × Gelenk, 189 Klassen: 185 byte-gleich, anders nur die vier
 // fellSchale@wolf"; „Mensch-Bake byte-gleich, 53 Klassen"). Diese Linse macht den Handbeweis zur Datei.
@@ -211,7 +209,7 @@ function taeterStoff(sb, c, g) {
     });
 }
 
-// ── DER START DES OFENS (K60-2): was jeder Studio-Faden rechnet, bevor er antwortet ──
+// ── DER START DES OFENS: was jeder Studio-Faden rechnet, bevor er antwortet ──
 // Die Brücke lädt im Faden als letzte und ruft `foundryModus` (jeder Foundry-Faden beim Start: das Buch, die Bäcker, die
 // Helfer); dessen `buildMaterials` prägt die Rinden-Normale (`makeBarkNormal`). Ihre Kerne griffen an gebrochenen Indizes in ein Float32Array: das schreibt nichts (die Spezifikation
 // verwirft den Index) und nimmt den langsamen Pfad der Eigenschafts-Namen — Radeon kalt 1,3 s im Buch-Faden vor dem Buch,
@@ -361,7 +359,7 @@ function taeterRinde(sb) {
     // 2) Samen-Invarianz: der Ofen liest den Samen nie (Synthese §2.3 „Gestalten ehrlich") — eingefroren.
     const s7 = vergleiche(ist, allesBacken(sb, 7));
     check("Samen-Invarianz: Samen 7 == Samen 1 je Klasse (der Ofen liest den Samen nie)", s7.length === 0, s7[0]);
-    // 3) Die Klassen-Zahl je Gesetzbuch (der Handbeweis 3a0248e8/8e6f628c: 189 Stoff-Klassen × Gelenk, Mensch 53).
+    // 3) Die Klassen-Zahl je Gesetzbuch.
     check(
         `Stoff-Klassen × Gelenk: Tier ${stoffTier} + Mensch ${stoffMensch} = ${stoffTier + stoffMensch} (der Handbeweis: 136 + 53 = 189)`,
         stoffTier + stoffMensch > 0
@@ -391,7 +389,7 @@ function taeterRinde(sb) {
     for (let i = 1; i < Math.min(diffs.length, 40); i++) console.log(`      ↳ ${diffs[i]}`);
     if (diffs.length > 40) console.log(`      ↳ … ${diffs.length - 40} weitere`);
 
-    // 5) DER START DES OFENS (K60-2): die Rinden-Normale jedes Studio-Fadens greift nie an einen gebrochenen Index.
+    // 5) DER START DES OFENS: die Rinden-Normale jedes Studio-Fadens greift nie an einen gebrochenen Index.
     const start = ofenStart();
     check(
         `Start des Ofens (die Brücke im Faden, foundryModus): makeBarkNormal greift ${start.gebrochen}-mal an einen gebrochenen Index (Soll 0, ${start.arrays} Start-Arrays) und malt auf ${start.gpu} GPU-Leinwand (Soll 0: dort wartet putImageData auf den GPU-Prozess)`,

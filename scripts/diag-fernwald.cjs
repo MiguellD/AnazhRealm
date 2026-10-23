@@ -156,7 +156,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     });
                 }
                 for (const e of proben) await frag(e);
-                r._ensureHydroTilesAround(KX, KZ, 400); // der Spieler kommt: die Kachel steht
+                await window.__weltDa(() => !r._ensureHydroTilesAround(KX, KZ, 400)); // der Spieler kommt: die Kachel steht
                 const alt = [];
                 for (const e of proben) alt.push(await frag(e));
                 const frisch = await frischAlle(proben);

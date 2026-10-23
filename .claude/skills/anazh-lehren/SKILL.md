@@ -33,7 +33,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Chunks = Iso-CACHE mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term ·
   WELT-MARCH EIN Pass · Edits = EINE Karte je Chunk (`_voxelEditKarte`). Heute ohne Kern: die 3D-Dichte (Höhle, Kanal, Edit) lebt im
   Stamm und als Abschrift in `voxel-worker.js` (~40 Funktionen, W1).
-- WASSER: die Hydrosphäre `_computeHydrosphere` → Zellen → Automat, die Ruhe ist sein Fixpunkt (`_ensureWaterCALevel`), sein Blick EIN
+- WASSER: die Hydrosphäre (gelaende-core `hydrosphaere`, gerechnet im voxel-worker, per Transfer im Main) → Zellen → Automat, die Ruhe ist sein Fixpunkt (`_ensureWaterCALevel`), sein Blick EIN
   Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, kein Kern, die Seen doppelt (Gelände-Kern und Stamm).
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
@@ -93,8 +93,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor
     Framerate (der Ring wächst bis `RING_EXIST_FLOOR` ohne fps-Gate, der PID atmet nur darüber).
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der
-    Chunk-Stoff entsteht im Worker, nie im Haupt-Thread). Heute rechnet die Hydrosphäre synchron im Haupt-Faden (`_computeHydrosphere`),
-    und der Faden ist bis zum ersten Weltbild 97 % belegt (W6).
+    Chunk-Stoff entsteht im Worker, nie im Haupt-Thread; die Hydrosphäre und die Platte des Bodens ebenso — `--faden` in
+    gate:worker-dichte zählt K4/K5). Heute ist der Faden bis zum ersten Weltbild 97 % belegt (W6).
 15. **git ist das Archiv:** kein Doppel-Archiv im Baum; Chronik = Commit-Message (Rumpf ≤ 600 Zeichen), vollendete Pläne fallen, Lehre =
     EINE Zeile hier, Offenes = PFLICHT-OFFEN; vor jedem Schnitt KONSUM prüfen (transitiv). Siegel-Wörter meiden auch Auftrags-, Zweig- und
     Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.

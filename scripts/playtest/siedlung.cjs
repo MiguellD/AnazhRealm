@@ -199,7 +199,7 @@ async function checkBandRing6Workshop(ctx) {
         };
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
-        // V18.260 — der Render-Merge fasst die Teile per Material zu wenigen Meshes
+        // der Render-Merge fasst die Teile per Material zu wenigen Meshes
         // zusammen. Die Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
@@ -208,7 +208,7 @@ async function checkBandRing6Workshop(ctx) {
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
-        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; V18.260: per Material
+        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; per Material
         // gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
         out.templeHasPillars =
             t && t.mesh && !!r.state.blueprints._t_r6_tor && (r.state.blueprints._t_r6_tor.parts || []).length >= 4;
@@ -689,7 +689,7 @@ async function checkBandRing6Workshop(ctx) {
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
         out.hotbarInDom = !!bar;
-        // V18.109 — E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
+        // E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
         out.hotbarHasNineSlots =
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
@@ -763,7 +763,7 @@ async function checkBandRing6Workshop(ctx) {
         const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
-        // V18.59 — die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
+        // die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
         const config = document.getElementById("hotbar-config");
         out.hotbarConfigInDom = !!config;
         out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 10; // 9 + Off-Hand (E8)
@@ -1103,7 +1103,7 @@ async function checkBandRing6Workshop(ctx) {
         // Slot wechseln (Slot 1 = waterfall)
         r.selectHotbarSlot(1);
         out.switchFormChanges = r.state.buildMode.blueprintName === "waterfall";
-        // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
+        // confirmBuild platziert echte Struktur — S2: in schöpfer testen, weil
         // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
         r.setGameMode("schöpfer");
         const arBefore = r.state.architectures.length;
@@ -1455,7 +1455,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
+        // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
@@ -1554,9 +1554,9 @@ async function checkBandWHWald(ctx) {
     );
 }
 
-// V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Γ2 TOTHOLZ: ein gefallener Stamm im Wald.
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
-// seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
+// seed-deterministisch, KEIN Affinitäts-Wettstreit — Disziplin).
 async function checkBandV18198Gamma2Totholz(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -1587,7 +1587,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // nicht tag-identisch zu baum_eiche sein — darf aber in KEINER Achse höher resonieren, sonst
         // verdrängte er, je in candidates aufgenommen, einen Sieger (ohne Laub: magieleitung niedriger, OK).
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-        // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
+        // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
@@ -1736,7 +1736,7 @@ async function checkBandV18213MeshMerge(ctx) {
             out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
+            // der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
             // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
             r.state.architectures = r.state.architectures || [];
             r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });

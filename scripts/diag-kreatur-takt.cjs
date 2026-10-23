@@ -22,7 +22,7 @@ const opt = (k, d) => {
 };
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
-// DIE FESTE RAMPE (K16-Q): der Querhang misst auch an der Rampe der Prüfbühne (Station S2, ihre Spec) — die Welt wählt
+// DIE FESTE RAMPE: der Querhang misst auch an der Rampe der Prüfbühne (Station S2) — die Welt wählt
 // ihren Hang nach ihrem Bestand (im K16-Gelände 22,2° in der CI, lokal 22,2° oder 25,5°), die Rampe steht fest
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = (() => {
@@ -108,10 +108,8 @@ async function headless(laeufe) {
         await bereit();
         await einschwingen();
         for (const l of laeufe) aus.push(await lauf(l));
-        // DIE RAMPE DER PRÜFBÜHNE (K16-Q): jeder Lauf mit dem Querhang misst ihn ein zweites Mal an der festen Rampe — die
-        // Bühne geboren wie im Spiel (importWorldBeside + aktiv + Reload, der Spieler am Fuß der Station), derselbe Täter
-        const mitRampe = laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes("querhang"));
-        if (mitRampe.length) {
+        // eine fremde Welt aus json: frische Platte, importiert, aktiv, geladen, eingeschwungen
+        const fremdeWelt = async (json) => {
             await page.evaluate(() => {
                 try {
                     localStorage.clear();
@@ -123,8 +121,6 @@ async function headless(laeufe) {
             await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.importWorldBeside, {
                 timeout: 120000,
             });
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
             const id = await page.evaluate(async (json) => {
                 const r = window.anazhRealm;
                 const res = await r.importWorldBeside(json);
@@ -132,16 +128,39 @@ async function headless(laeufe) {
                 r.activeWorldSet(res.worldId);
                 return res.worldId;
             }, json);
-            if (!id) throw new Error("die Prüfbühne ließ sich nicht importieren");
+            if (!id) throw new Error(`${json.worldMeta.seed} ließ sich nicht importieren`);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await bereit();
             const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
-            if (seed !== JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")).worldMeta.seed)
-                throw new Error(`die Bühne ist nicht aktiv (Seed ${seed})`);
+            if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
-            for (const [l, li] of mitRampe) {
+        };
+        const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
+        // DIE RAMPE DER PRÜFBÜHNE (K16-Q): jeder Lauf mit dem Querhang misst ihn ein zweites Mal an der festen Rampe — die
+        // Bühne geboren wie im Spiel (importWorldBeside + aktiv + Reload, der Spieler am Fuß der Station), derselbe Täter
+        if (mit("querhang").length) {
+            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
+            await fremdeWelt(json);
+            for (const [l, li] of mit("querhang")) {
                 const z = await lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE });
                 if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
+            }
+        }
+        // die Gegenprobe des Lebensraums (Tiere K4): die Wildnis anderer Saat
+        if (mit("lebensraum").length) {
+            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            delete json.worldMeta.erbgut;
+            Object.assign(json.worldMeta, {
+                worldId: "lebensraum-gegen",
+                slug: "lebensraum-gegen",
+                seed: "lebensraum-gegen",
+            });
+            Object.assign(json, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
+            await fremdeWelt(json);
+            for (const [l, li] of mit("lebensraum")) {
+                const z = await lauf({ proben: ["lebensraum"], taeter: l.taeter });
+                if (aus[li].lebensraum) aus[li].lebensraum.gegen = z.lebensraum;
             }
         }
     } finally {

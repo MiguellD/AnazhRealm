@@ -39,7 +39,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
-        // nicht existent → durch den EINEN Abbau (Welle B: der Boden-Satz verliert den Bereich mit), kein Re-Populate
+        // nicht existent → durch den EINEN Abbau (der Boden-Satz verliert den Bereich mit), kein Re-Populate
         if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
@@ -119,7 +119,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.densityHeadlessFull = !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
         st._foliageDensityScale = 1;
 
-        // V18.280 — DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
+        // DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
         out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [st.playerMesh.position]);
@@ -503,7 +503,7 @@ async function checkBandV18133Forage(ctx) {
         out.trankKraut =
             r.state.blueprints.trank_lebenssaft &&
             r.state.blueprints.trank_lebenssaft.parts.some((pp) => pp.material === "kraut");
-        // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden, V13.1): die erste Pflanze einer
+        // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden): die erste Pflanze einer
         // erntbaren Senke pflücken.
         let pick = null;
         const ns = r.state.nahStreu;
@@ -592,7 +592,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
-        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
+        // nicht für jede Höhe (≈ 1 % der Höhen läge 1 ulp über D → „stein").
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;
@@ -663,7 +663,7 @@ async function checkBandV18197GammaMStrata(ctx) {
     }
 }
 
-// V18.200 — Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
+// Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
 // V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
 async function checkBandV18200GammaMIronBands(ctx) {
@@ -691,8 +691,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
         }
 
-        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
-        // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+        // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
         const a1 = r._eisenAderAt(123.7, 456.3);
         const a2 = r._eisenAderAt(123.7, 456.3);
         out.deterministic = Math.abs(a1 - a2) < 1e-10;
@@ -807,7 +806,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
     }
 }
 
-// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv-plan §4.A):
+// Γ7 BAUM-VARIANTEN-GRAMMATIK:
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
 async function checkBandV18205Gamma7Grammatik(ctx) {
@@ -815,7 +814,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
 
         // (G2) Determinismus: gleiche seed → gleiche parts
         const p1 = r._growTreeBlueprint("eiche", "seed-a");
@@ -851,7 +849,7 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
         // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
         const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
-        // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
+        // baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
         const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
         const treeBp = __g6Key && r.state.blueprints[__g6Key];
         if (treeBp) {
@@ -956,7 +954,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
         if (grownKey && r.state.blueprints[grownKey]) {
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+            // der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
             // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
             // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
             r.state.architectures = r.state.architectures || [];
@@ -1612,7 +1610,7 @@ async function checkBandV18218LODStufen(ctx) {
         // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
         out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
         out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
-        // V18.526 — Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
+        // Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
         // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
         const t12 = A.LOD_DISTANCES.thresh12;
         out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
@@ -1876,7 +1874,7 @@ async function checkBandV18219bisVollendung(ctx) {
         return out;
     });
 
-    // V18.218.1 LOD-Activation
+    // LOD-Activation
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
@@ -1890,7 +1888,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
-    // V18.220 Scatter-Bitmask + Cap + Lookup
+    // Scatter-Bitmask + Cap + Lookup
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
@@ -1900,7 +1898,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
-    // V18.222 Canopy chunk-streaming
+    // Canopy chunk-streaming
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
@@ -1946,7 +1944,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         if (r.state.scene) {
             // Sicherstellen: Pool + Bake bereit
             r._variantSeedsFor("baum_eiche");
-            // V18.225 — die Dichte-Messung an der SPIELER-Region (vegetiert,
+            // die Dichte-Messung an der SPIELER-Region (vegetiert,
             // worldgen-habitabel) statt einer fernen leeren → die echte Plan-§13-
             // Dichte (≥hunderte/Chunk via 5 Strata) ist messbar.
             const ppm = r.state.playerMesh.position;
@@ -1963,7 +1961,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
             out.regionBuilt = !!region;
             out.regionInstanceCount = region ? region.instanceCount : 0;
             out.regionHasCells = region && Array.isArray(region.cells) && region.cells.length > 0;
-            // V18.225 — MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
+            // MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
             out.scatterLayerCount = Array.isArray(SC.layers) ? SC.layers.length : 0;
             out.byLayer = region ? region.byLayer : null;
             // Config-Beweis: Understory-Cap dominiert (der Dichte-Träger)
@@ -2005,7 +2003,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 out.cellHasSlots = Array.isArray(c0.slots) && c0.slots.length > 0;
                 // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt) —
                 // an einer PROMOTABLE (Baum-)Cell prüfen (Understory hat keinen
-                // Lookup-Eintrag, V18.225).
+                // Lookup-Eintrag).
                 const tc = region.cells.find((c) => c.promotable && c.slots);
                 if (tc) {
                     const look = r._scatterLookupCell(tc.x, tc.z, tc.layer || "tree");
@@ -2041,7 +2039,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 const region = r._scatterRegion(regX2, regZ2, pp2);
                 if (region && region.cells.length > 0) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
-                    // (V18.225 — Understory/Streu sind nie promotable)
+                    // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
                     if (cell) {
                         const archBefore = r.state.architectures.length;

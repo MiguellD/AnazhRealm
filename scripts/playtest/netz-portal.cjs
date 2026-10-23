@@ -184,7 +184,7 @@ async function checkBandW17Multiplayer(ctx) {
         r.p2pSend = origSend;
 
         // buildStateSnapshot persistiert multiplayer im portalMeta
-        // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
+        // (der feste Feld-Satz — Lehre); _sanitizePortalMeta
         // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
         const bpName = "_w17b_portal";
         const wp = r.state.blueprints["welt_portal"];
@@ -1995,7 +1995,7 @@ async function checkBandG8R3Locality(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
-        // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
+        // trusted → + allow-same-origin + allow-pointer-lock (unser
         // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
         out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
         out.trustedAttr =
@@ -2307,7 +2307,7 @@ async function checkBandW18Dwell(ctx) {
             else localStorage.setItem("anazh.portalState", savedStates);
         }
         // (7) der Empfänger merkt sich, wo der Gefährte wohnt, und sein Namensschild zeichnet es; die Chat-Gesten
-        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
+        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle.
         const pid = "peer-dwell-zensus";
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, r.state.p2p);
         const pe = r.state.p2p.peers.get(pid);

@@ -19,7 +19,7 @@
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
 //         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
-//   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
+//   B-d: DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
 //     die Blocker (_populateBlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot)
@@ -397,7 +397,7 @@ function staticLaws(garage) {
                 } catch (eD) {
                     res.drive.donorErr = (eD && eD.message) || String(eD);
                 }
-                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
+                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
                 for (let i = 0; i < 120; i++) {
@@ -515,7 +515,7 @@ function staticLaws(garage) {
                 let vEnde = 0;
                 const tick = (lenk) => {
                     t += dt;
-                    // Welle L (Q0 F-L6): der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
+                    // der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
                     // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
                     r._stepFixedSim(t, dt);
                     const v = r.state.playerVel;

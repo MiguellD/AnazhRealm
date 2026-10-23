@@ -1,7 +1,7 @@
-// AnazhRealm — Strict-Audit-Suite (V8.23)
+// AnazhRealm — Strict-Audit-Suite
 //
 // Generische Audit-Tests die Bug-Klassen abdecken, die in V8.13-V8.22 mehrfach
-// durchgerutscht sind. Drei Schichten (V18.274 — die vierte ist entfernt):
+// durchgerutscht sind. Drei Schichten (die vierte ist entfernt):
 //
 //   1. State-Field-Audit: scan source für this.state.X.Y.Z reads, prüft gegen
 //      live state-Initialisierung nach Init(). Fängt typos wie
@@ -9,13 +9,13 @@
 //
 //   2. CSS-Variable-Audit: alle `var(--X)` Verwendungen müssen via `--X:` im
 //      :root (oder body) definiert sein. Fängt undefinierten Variablen wie
-//      --parch-paper (Tooltip-Text unsichtbar in V8.12).
+//      --parch-paper.
 //
 //   3. Soft-Default-Audit: bekannte Default-Strings (Grok, Schöpfer) sollten
 //      nur in DEFAULT_*-Konstanten oder state-init existieren, nicht hardcoded
-//      in mehreren Pfaden. Fängt Hardcoded-Refs (V8.13 Begleiter-Name).
+//      in mehreren Pfaden. Fängt Hardcoded-Refs.
 //
-//   (entfernt V18.274) Public-Method-Smoke-Test — „jede public Methode blind
+//   (entfernt) Public-Method-Smoke-Test — „jede public Methode blind
 //      ohne Args aufrufen": Prämisse unsound für diesen Codebase (Worldgen/
 //      Avatar/Worker-Methoden exekutieren beim Blind-Call schwere async-Arbeit →
 //      Event-Loop-Hunger/Page-Overload, in JEDER Variante flacky) + fand nur
@@ -122,7 +122,7 @@ function auditSoftDefaults() {
 
 // ============================================================
 // 1. State-Field-Audit (browser-basiert)
-// V18.274 — der frühere 4. „Public-Method-Smoke" (jede public Methode blind ohne Args
+// der frühere 4. „Public-Method-Smoke" (jede public Methode blind ohne Args
 // aufrufen) ist ENTFERNT: seine Prämisse ist für diesen Codebase unsound — ~20 Methoden
 // (Worldgen/Avatar/Skybox/Worker) EXEKUTIEREN beim Blind-Call massive async-Arbeit →
 // Event-Loop-Hunger + Page-Overload („Target closed"), in JEDER Variante (await=Hang,
@@ -144,7 +144,7 @@ async function auditStateAndMethods() {
         page.on("pageerror", (err) => {
             fail("PAGE-ERROR", "Script-Exception", err.message);
         });
-        // V18.274 — GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
+        // GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
         // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
         await nullRenderer(page);
@@ -198,11 +198,11 @@ async function auditStateAndMethods() {
                 "__scatterExactWater",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
-                // V8.57 — Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
+                // Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
                 "_cameraDesiredY",
-                // ABSCHIEDS-WELLE (Drift-Nachlese, V18.272-Disziplin — jedes Feld am
+                // ABSCHIEDS-WELLE (Drift-Nachlese, Disziplin — jedes Feld am
                 // Lese-Ort geprüft): drei pre-existierende, undefined-SICHERE Felder:
                 // foliageBlades = Opt-out-Toggle, der eine Leser prüft `!== false`
                 // (undefined == an, wie die Schwestern-Toggles).
@@ -212,12 +212,12 @@ async function auditStateAndMethods() {
                 "worldField",
                 "worldField.seed",
                 "worldField.rngNoise",
-                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand (V18.354):
+                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand:
                 // der Scheduler setzt ihn am Frame-Anfang auf false, Leser truthy-only.
                 "_frameChunksBuilt",
                 // Lazy-set State-Felder (werden bei Bedarf gesetzt, default
                 // via `state.X || fallback`-Pattern als undefined akzeptiert).
-                // Echte Bugs wären HIER nicht — Schöpfer-Reflexion V8.22:
+                // Echte Bugs wären HIER nicht — Schöpfer-Reflexion:
                 // diese Felder sind alle defensiv gelesen.
                 "lastCreatureProactiveSpeech",
                 "inventoryHoverLast",
@@ -264,15 +264,15 @@ async function auditStateAndMethods() {
                 "ichStage",
                 "capabilityProposals",
                 "blueprintEditHistory",
-                // Lebendiges Feld (V17.27-Overlays — alle lazy-init mit `if (!state.X)`)
+                // Lebendiges Feld (Overlays — alle lazy-init mit `if (!state.X)`)
                 "lifeField",
                 "emotionField",
                 "wohlBaseline",
                 // Tick-Memoization (-Infinity Sentinel)
                 "_lastDayNightApply",
                 "_jumpPressedAt",
-                // V18.272 — Versöhnung der Whitelist mit den lazy-Feldern, die
-                // die Wasser-CA- (V18.84–.94), Perf- (V18.260–.271), Scatter- und
+                // Versöhnung der Whitelist mit den lazy-Feldern, die
+                // die Wasser-CA-, Perf-, Scatter- und
                 // Worldgen-Bögen einführten. JEDES Feld unten ist VERIFIZIERT
                 // entweder `if (!state.X) state.X = …`-guarded ODER undefined-
                 // sicher (Flag/Sentinel/Scratch) — kein echter read-before-init.
@@ -301,7 +301,7 @@ async function auditStateAndMethods() {
                 "postProcessingUniforms", // `if (state.X && state.X.localContrast)`-guarded
                 "godrayUniforms", // V8 (Kür) — lazy in `_ensurePostProcessing` gesetzt (wie postProcessingUniforms), NICHT im Snapshot; `if (state.X && …)`-guarded im _loopRender
                 "_godrayScale", // V8 (Kür) — Perf-Faktor, im `_nexusPerfActuate` gesetzt, `state.X ?? 1`-sicher gelesen
-                // Perf-Sense/Regelkreis (V18.263–.271):
+                // Perf-Sense/Regelkreis:
                 "_perfFrame", // `state._perfFrame || (state._perfFrame = {})`
                 "_perfMarks",
                 "_lastMoveT", // Zeitstempel, `state._lastMoveT || …`-sicher
@@ -311,7 +311,7 @@ async function auditStateAndMethods() {
                 "_creatureNetSeq", // `(state.X || 0) + 1`
                 "_herdContagionAcc", // `(state.X || 0) + delta`
                 "_skyEnvFailed", // gesetzt via `st._skyEnvFailed = true` im Fehlerpfad
-                // V18.275 — Kapazitäts-gewachsene Welt (beide undefined-sicher):
+                // Kapazitäts-gewachsene Welt (beide undefined-sicher):
                 "foliageRadius", // `state.X != null ? state.X : MAX`
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
@@ -350,9 +350,9 @@ async function auditStateAndMethods() {
 }
 
 // ============================================================
-// 5. Atmosphäre-Hardcode-Audit (V8.25)
+// 5. Atmosphäre-Hardcode-Audit
 // ============================================================
-// Heilt eine V8.24-Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
+// Heilt eine Lehre: Atmosphäre-Schichten (Tag-Nacht, Wetter, Fauna,
 // Klang) sind durchsetzt von Hardcode-Wunden wenn der Schreiber Werte aus
 // dem Kopf nimmt statt aus state.beobachten. Dieser Audit pattern-matcht
 // gegen drei Hardcode-Klassen INNERHALB einer Methode die mit `[ATMOSPHERE]`-
@@ -447,7 +447,7 @@ function auditAtmosphereHardcode() {
 }
 
 // ============================================================
-// 5. Playtest-Skip-Gate-Audit (V18.180-FIX §6.5) — das `if (api.exists)`-
+// 5. Playtest-Skip-Gate-Audit — das `if (api.exists)`-
 //    Anti-Pattern. Ein Test, der seine eigene Erwartung gegen die LIVE-API
 //    pruft (`if (revokedKeys.add)`, `if (revokeKey)`), läuft still durch,
 //    wenn die API anders heißt — er meldet PASS, ohne zu pruefen. Genau

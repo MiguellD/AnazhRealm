@@ -28,7 +28,7 @@ const core = globalThis.__koerperCore;
 const { mulberry32 } = globalThis.__phytoCore; // der Test-Strom ist der Strom des Kerns
 
 // ────────────────────────────────────────────────────────────────────────────
-// ALT — die eingefrorenen Original-Formeln (verbatim, Lab-Stand V18.451).
+// ALT — die eingefrorenen Original-Formeln.
 // ────────────────────────────────────────────────────────────────────────────
 
 // Lab Z.99 (verbatim eingefroren):

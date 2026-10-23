@@ -13,7 +13,7 @@
 // Artefakt ZURÜCK, dekodiert und vergleicht sha256 + Byte-Länge — eine Divergenz macht den
 // Lauf rot (Exit 1). r128 lebt NUR im Mint-Worker (Ü1/Ü2 übersetzt der Host-Chokepoint, N3.5).
 //
-// SAISON (V18.527): jeder Welt-Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season
+// SAISON: jeder Welt-Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season
 // "summer"), das Jahr färbt der Host über uSeasonMul — ein Pack ist saisonfrei.
 //
 //   node scripts/mint-asset-packs.cjs                       # mintet die warme Bibliothek

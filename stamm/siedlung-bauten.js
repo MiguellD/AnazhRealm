@@ -2671,3 +2671,7 @@ AnazhRealm.SCATTER_FERN_SUPERREGION = 4;
 // Einziger Konsument: _archLeafMaterial; false = das alte Je-Farbe-Muster, nur als A/B-Hebel der Linse
 // (gate:render-diaet).
 AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
+
+// DER FUSS DER STADTMAUER (siedlung.K2, `_stlMauerBuild`): so tief (m) reicht Wand und Turm unter den tiefsten Boden-Punkt
+// unter ihnen — die Kiste folgt dem Hang als Sehne, der Fuß deckt die Mulde dazwischen (das Labor steht auf seinem Boden-Gitter).
+AnazhRealm.STADTMAUER_FUSS_M = 1.5;

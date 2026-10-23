@@ -34,6 +34,7 @@ class AnazhRealm_dirigent_ankunft {
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
+        this.state.padBelegung = this._loadKeybindings(true);
         this.state.keybindRebind = null;
         // Revozierte Schlüssel aus dem globalen localStorage: ein Artefakt mit revoziertem Schlüssel irgendwo
         // in seiner Herkunftskette fällt beim Laden weg. Global, NIE im Welt-Snapshot
@@ -550,7 +551,8 @@ class AnazhRealm_dirigent_ankunft {
         // verbraucht).
         this.loadState();
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
-        this.generateNewWorld();
+        // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
+        await this.generateNewWorld();
 
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,
@@ -570,10 +572,7 @@ class AnazhRealm_dirigent_ankunft {
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
             // {type:"exit"}).
             if (this._portalOverlay) {
-                if (event.key === "Escape") {
-                    this.exitPortal();
-                    event.preventDefault();
-                }
+                if (event.key === "Escape" && this._verbTaste("cancelBuild", true)) event.preventDefault();
                 return;
             }
             // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
@@ -582,11 +581,10 @@ class AnazhRealm_dirigent_ankunft {
             const target = event.target;
             const inInput =
                 target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
-            // Inventar offen + Esc → schließen. WASD/Space/Hotbar laufen weiter (nur Maus-Look ist gesperrt,
-            // via exitPointerLock beim Öffnen).
+            // Inventar offen + Esc → schließen (der Auslöser, `_verbTaste` cancelBuild). WASD/Space/Hotbar laufen weiter (nur
+            // Maus-Look ist gesperrt, via exitPointerLock beim Öffnen).
             if (this.state.inventoryOpen && event.key === "Escape") {
-                this.toggleInventoryOverlay(false);
-                event.preventDefault();
+                if (this._verbTaste("cancelBuild", true)) event.preventDefault();
                 return;
             }
             // Rebind-Capture: die nächste Taste wird gefangen; Escape bricht ab, jeder andere Code bindet via
@@ -610,85 +608,21 @@ class AnazhRealm_dirigent_ankunft {
                 if (this._chatOeffnen()) event.preventDefault();
                 return;
             }
+            // DIE TASTATUR in die Verb-Tafel (leib.K5): die rohe Taste für den Sammler (die Pfeile schreiben die KANONISCHEN
+            // Bewegungs-Tasten über PFEIL_ALIAS), die Aktion (Belegung · feste Taste · Ziffer · Fähigkeit) an den EINEN Auslöser.
             this.state.keys[event.key.toLowerCase()] = true;
-            // Pfeil-Tasten schreiben die KANONISCHEN Bewegungs-Tasten am EINEN Input-Chokepoint
-            // (PFEIL_ALIAS); der Bewegungs-/Lenk-Pfad kennt nur w/a/s/d (kein Doppel-Leser).
             const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
             if (_pfeil) this.state.keys[_pfeil] = true;
-            // Aktionen über Keybindings (event.code, layout-unabhängig); 1-9 bleiben hardcoded (Slot-Indizes).
-            // Escape verlässt den Bau-Modus immer, auch wenn cancelBuild umgebunden ist — nie gefangen.
-            const action = this._actionForBindingCode(event.code);
-            if (action === "jump") {
-                this.handleJump(performance.now() / 1000);
-            }
-            if (event.key >= "1" && event.key <= "9") {
-                this.selectHotbarSlot(parseInt(event.key, 10) - 1);
-            } else if (action === "confirmBuild") {
-                if (this.confirmBuild()) event.preventDefault();
-            } else if (action === "cancelBuild" || event.key === "Escape") {
-                if (this.state.buildMode.active) this._clearBuildMode();
-                this._updateHotbarHighlight();
-            } else if (event.code === AnazhRealm.FAHR_TASTEN.einsteigen.code) {
-                // E toggelt Mount/Dismount für moveable-Architekturen, nur außerhalb des Werkstatt-Drawers (dort ist
-                // E der Rotate-Modus). Ein Portal in Reichweite schlägt das Reiten (_tryEnterPortalAtPlayer zuerst).
-                if (this.state.uiActiveDrawer !== "werkstatt") {
-                    if (!this._tryEnterPortalAtPlayer()) this.toggleMountAtPlayer();
-                    event.preventDefault();
-                }
-            } else if (event.code === "KeyZ") {
-                // Z halten zoomt durch eine magnifying-Architektur im Blick. Auto-repeat-tolerant: setZoomActive
-                // ist idempotent (_zoomActive-Flag).
-                if (this.state.uiActiveDrawer !== "werkstatt") {
-                    this.setZoomActive(true);
-                    event.preventDefault();
-                }
-            } else if (event.code === "KeyH") {
-                // UI-Putz: H blendet das HUD aus/ein — beim Spielen gehört der Bildschirm
-                // der Welt (BotW/Genshin-Geste). Topbar/Statusbar/Konsole/Stats/Hotbar
-                // verblassen. Nicht im Werkstatt-Drawer (dort ist die volle UI nötig).
-                if (this.state.uiActiveDrawer !== "werkstatt") {
-                    document.body.classList.toggle("hud-hidden");
-                    event.preventDefault();
-                }
-            } else if (action === "swapHands") {
-                // V18.109 — E8: G tauscht Haupt-Hand ↔ Off-Hand (Minecraft-Geste).
-                this.swapHands();
-                event.preventDefault();
-            } else if (action === "cameraToggle") {
-                // V8.17 — Camera-Mode toggeln (1st/3rd) jetzt action-basiert.
-                this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
-                event.preventDefault();
-            } else if (
-                action === "drawerKreaturen" ||
-                action === "drawerSpieler" ||
-                action === "drawerWerkstatt" ||
-                action === "drawerEinstellungen"
-            ) {
-                // V8.17 — Drawer-Shortcuts action-basiert (rebindable).
-                // Im Bau-Modus deaktiviert um nicht mit F/B zu kollidieren.
-                // (UI-Putz: drawerWelt entfällt — die Welt ist der Default-Blick.)
-                const drawerNames = {
-                    drawerKreaturen: "kreaturen",
-                    drawerSpieler: "spieler",
-                    drawerWerkstatt: "werkstatt",
-                    drawerEinstellungen: "einstellungen",
-                };
-                const drawer = drawerNames[action];
-                if (drawer && !this.state.buildMode.active) {
-                    this.toggleDrawer(drawer);
-                    event.preventDefault();
-                }
-            }
+            const aktion = this._tastenAktion(event);
+            if (aktion && this._verbTaste(aktion, true)) event.preventDefault();
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
-            // FAHR-ABSCHLUSS (19.07.) — der Pfeil-Alias löst symmetrisch.
+            // FAHR-ABSCHLUSS (19.07.) — der Pfeil-Alias löst symmetrisch; das Lösen der Aktion beendet ihr Halten (Zoom, Mahlen).
             const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
             if (_pfeil) this.state.keys[_pfeil] = false;
-            // Welle 10b.3 — Z-Loslassen beendet Zoom.
-            if (event.code === "KeyZ") {
-                this.setZoomActive(false);
-            }
+            const aktion = this._tastenAktion(event);
+            if (aktion) this._verbTaste(aktion, false);
         });
         // DIE TASTEN-WAND (Welle L, Befund V-k4): verliert das Fenster den Fokus (Fensterwechsel), wird die Seite
         // unsichtbar oder fällt der Zeiger-Lock, erreicht das keyup der gehaltenen Taste diese Seite nie — W blieb
@@ -722,11 +656,7 @@ class AnazhRealm_dirigent_ankunft {
                 if (target && typeof target.closest === "function" && target.closest("#workshop-preview-canvas"))
                     return;
                 event.preventDefault();
-                const bm = this.state.buildMode || {};
-                const current = typeof bm.slotIndex === "number" && bm.slotIndex >= 0 ? bm.slotIndex : 0;
-                const dir = event.deltaY > 0 ? 1 : -1;
-                const next = (current + dir + 9) % 9;
-                this.selectHotbarSlot(next);
+                this._verbTaste(event.deltaY > 0 ? "slotVor" : "slotZurueck", true);
             },
             { passive: false, capture: true }
         );
@@ -736,11 +666,11 @@ class AnazhRealm_dirigent_ankunft {
             if (!this.state.isPointerLocked) this._alleTastenLos();
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
         });
+        // DIE MAUS dreht über die Verb-Tafel: das Bild verbraucht den Blick vor der Sim (`_eingabeTakt`), wie den Stick
         document.addEventListener("mousemove", (event) => {
             if (this.state.isPointerLocked) {
-                this.state.yaw -= event.movementX * this.state.mouseSensitivity;
-                this.state.pitch -= event.movementY * this.state.mouseSensitivity;
-                this.state.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.state.pitch));
+                this.state.verbTafel.blickGier -= event.movementX * this.state.mouseSensitivity;
+                this.state.verbTafel.blickNeig -= event.movementY * this.state.mouseSensitivity;
             }
         });
         this.log("Maussteuerung für Kamera initialisiert", "INFO");
@@ -1203,7 +1133,6 @@ class AnazhRealm_dirigent_ankunft {
         // offener Werkstatt und gefangenem Zeiger gruben 4 Klicks auf „Bauplan …" 4 Krater r 3,5 m). Im Rebind-Capture
         // bindet der erste Maus-Button die Aktion.
         canvas.addEventListener("mousedown", (event) => {
-            if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (this.state.keybindRebind) {
                 const code = this._eventToBindingCode(event);
                 if (code) {
@@ -1212,32 +1141,14 @@ class AnazhRealm_dirigent_ankunft {
                 }
                 return;
             }
+            // der Knopf an den EINEN Auslöser: Halten mahlt (`_tickHarvest`), Loslassen löst den gespannten Bogen
             if (!this.state.isPointerLocked) return;
-            const code = this._eventToBindingCode(event);
-            const action = this._actionForBindingCode(code);
-            if (action === "break") {
-                // V17.55 W1 — Halten startet das Mahlen: der erste Hieb sofort, dann auto
-                // (_tickHarvest) in der Kadenz, bis losgelassen wird.
-                if (this.state.player) {
-                    this.state.player.breakHeld = true;
-                    this.state.player.lastHarvestStrikeAt = performance.now() / 1000;
-                }
-                this.tryMouseBreak();
-                event.preventDefault();
-            } else if (action === "place") {
-                this.tryMousePlace();
-                event.preventDefault();
-            }
+            const aktion = this._actionForBindingCode(this._eventToBindingCode(event));
+            if (aktion && this._verbTaste(aktion, true)) event.preventDefault();
         });
-        // V17.55 W1 — Loslassen der Abbau-Taste stoppt das Mahlen (nur die break-Taste).
         canvas.addEventListener("mouseup", (event) => {
-            if (!this.state.player) return;
-            if (this._actionForBindingCode(this._eventToBindingCode(event)) === "break") {
-                this.state.player.breakHeld = false;
-                // ARENA-GEFÜHL — Loslassen löst den gespannten Bogen (der Auszug-
-                // Anteil skaliert v0; ohne Draw-Zustand ein No-op, byte-alt).
-                if (this.state.player._bogenDraw) this._bogenRelease();
-            }
+            const aktion = this._actionForBindingCode(this._eventToBindingCode(event));
+            if (aktion) this._verbTaste(aktion, false);
         });
     }
 
@@ -1343,10 +1254,10 @@ AnazhRealm._sprintMulGesetz = function () {
     if (Number.isFinite(m) && m > 0) return m;
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.sprintMul");
 };
-// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die EINE Tafel, die
-// die Eingabe liest (E im keydown-Hörer, Gas · Bremse · Lenkung · Handbremse im Fahr-Schritt) und die Hilfe (`_hilfeZeilen`)
-// und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben w/a/s/d über
-// PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
+// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die Tasten der Fahrt, die
+// der Sammler der Verb-Tafel liest (`_verbTafelSammeln`: Gas · Bremse · Lenkung · Handbremse; E über TASTEN_FEST) und die Hilfe
+// (`_hilfeZeilen`) und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben
+// w/a/s/d über PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
 AnazhRealm.FAHR_TASTEN = Object.freeze({
     einsteigen: Object.freeze({ code: "KeyE", zeigen: "E", label: "einsteigen/aussteigen" }),
     gas: Object.freeze({ tasten: Object.freeze(["w"]), zeigen: "W", label: "Gas" }),
@@ -1358,6 +1269,15 @@ AnazhRealm.FAHR_TASTEN = Object.freeze({
 // Bewegungs-Tasten (die Studio-Eingabe-Wahrheit: KeyW||ArrowUp usw.); der
 // EINE Input-Chokepoint (keydown/keyup) konsumiert die Map, kein Zweit-Leser.
 AnazhRealm.PFEIL_ALIAS = Object.freeze({ ArrowUp: "w", ArrowDown: "s", ArrowLeft: "a", ArrowRight: "d" });
+// Die FESTEN TASTEN der Verb-Tafel (KeyboardEvent.code → Aktion, `_tastenAktion`): E steigt auf/ab oder betritt ein Portal, Z hält das
+// Fernglas, H blendet das HUD, Esc ist das Zurück (Bau verlassen, Inventar schließen, Portal verlassen) — auch wenn cancelBuild
+// umgebunden ist. Das Gamepad bindet dieselben Aktionen frei (PAD_BELEGUNG).
+AnazhRealm.TASTEN_FEST = Object.freeze({
+    [AnazhRealm.FAHR_TASTEN.einsteigen.code]: "einsteigen",
+    KeyZ: "zoom",
+    KeyH: "hud",
+    Escape: "cancelBuild",
+});
 // DAS ERSTE WELTBILD (`_ankunftsBild`): steht dieselbe Lücke so lange (ms), ohne dass etwas wächst, weicht der Ladeschirm
 // laut — das Log nennt, was fehlt (ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest).
 AnazhRealm.WELTBILD_STILL_MS = 15000;
@@ -1408,8 +1328,15 @@ function _bootAnazhRealm() {
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
     }
+    // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
+    // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
+    const erwachen = Promise.resolve(anazhRealm.init());
+    anazhRealm.erwacht = erwachen.then(
+        () => true,
+        () => false
+    );
     // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
-    Promise.resolve(anazhRealm.init()).catch((e) => {
+    erwachen.catch((e) => {
         anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
         throw e;
     });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-fluss.cjs — DIE FLUSS-WAND (V18.511): der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.
+// diag-fluss.cjs — DIE FLUSS-WAND: der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.
 // Die Transport-Schale (`_foundrySchale`, im Worker VOR dem Studio) trägt Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
 // STATISCH (Node, über den EINEN Absenz-Helfer `stammLib.fehlt`) — die Wache des Gefallenen: der Asset-Store lebt NUR in der
@@ -56,7 +56,7 @@ function schaleVon() {
     return A._foundrySchale.toString();
 }
 
-// DIE KLON-LINSE (V18.527, K20-N1): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
+// DIE KLON-LINSE: die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
 // `_foundryGestaltSame`, an der geladenen Klasse) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten
 // Streu-Gitter (`_scatterRohSame`, 600 × 600 Zellen). (a) Der rohe Same: je Art trägt jede ihrer T Gestalten (die V
 // Bestand-Gestalten und der Solitär V+1 einer Baum-Art, phyto-core `solitaerGestalt`) 1/T ± 0,03, die Nachbar- sowie die
@@ -375,11 +375,10 @@ async function verhalten(schaleSrc) {
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
-                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der eine
-                // baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst nach dem
-                // Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen, wartete der Put
-                // und mit ihm der zweite Körper bis nach dem langen Bau (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
-                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Bake eines anderen Fadens).
+                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der
+                // eine baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst
+                // nach dem Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen,
+                // wartete der Put und mit ihm der zweite Körper bis nach dem langen Bau.
                 const H = neu(3, true);
                 const Wk = neu(3, true);
                 const tH0 = performance.now();
@@ -485,6 +484,7 @@ const WELT_HAKEN = () => {
 };
 const WELT_MESSEN = async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
         const r = window.anazhRealm;
         if (r) {
@@ -514,6 +514,9 @@ const WELT_MESSEN = async () => {
         await pump(20);
         if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
+    // der Ofen-Vorrat ist Boot-Arbeit (`_ofenPrefetchKreaturen`, nach dem ersten Bild): jeder Boot misst, bis er steht —
+    // sonst trägt der schnellere Zweit-Boot ihn ins Fenster, und der erste legte ihn nie auf die Platte
+    for (const weiter = window.__deckel("der Ofen-Vorrat", 600); !r._ofenVorratSteht && weiter(); ) await pump(20);
     await pump(60);
     const fl = window.__fl;
     const cfg = r.constructor._studioRenderConfig;
