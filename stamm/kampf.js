@@ -29,23 +29,76 @@ class AnazhRealm_kampf {
     }
 
     // ═══ KAMPF-GEFÜHL — DIE EINE SCHWUNG-DAUER-QUELLE ═══
-    // Dauer = dauerProSqrtI · √I (I = Σ m·r² um den Griff, aus _swingDynamics), geklemmt [min, max].
+    // Dauer = dauerProSqrtIKg · √I (I in kg·m² um den Griff), geklemmt [min, max] — für JEDES Gerät nach EINER Formel:
+    // die Studio-Klinge mit der Trägheit ihrer Messung (kampfMasze), das Eigenwerk mit der Trägheit seiner Gestalt in der
+    // Hand (`_geraetMasze`: die Teile × ρ der Stoff-Zeile in der wahren Größe). Vorher schwang das Eigenwerk eine
+    // Tag-Trägheit (Volumen × dichte [0,1]) unter einer eigenen Konstante dauerProSqrtI — eine zweite Einheit neben dem Kern.
     // gate:kampf-gefuehl hält das Verhältnis zweier Waffen auf √(I2/I1) ± 5 %.
     _swingDauerFuerBlueprint(bp) {
-        // ARENA-GEFÜHL — die Schwung-KONSTANTEN wohnen im schmiede-Gesetzbuch
-        // (ARENA.schwung, N6.6-Revision: EIN Regler für Arena UND Welt); die
-        // FORMEL bleibt Wirts-Gesetz (Ω-Φ4: dauer = dauerProSqrtI·√I, geklemmt).
         const S = AnazhRealm._arenaGesetz().schwung;
-        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return S.handDauerSec;
-        // Studio-Klingen schwingen ihre GEMESSENE Trägheit (kampfMasze, kg·m² → dauerProSqrtIKg);
-        // User-Eigenwerke behalten Ω-Φ4 (deren einzige Quelle — anderer Definitionsbereich, kein Zwilling).
-        const km = this._schmiedeKampfMasze(bp);
-        if (km && km.traegheit > 1e-9 && Number.isFinite(S.dauerProSqrtIKg)) {
-            return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtIKg * Math.sqrt(km.traegheit)));
+        if (!Number.isFinite(S.dauerProSqrtIKg))
+            return AnazhRealm._kernPflichtBruch("schmiede:ARENA.schwung.dauerProSqrtIKg");
+        const km = this._geraetMasze(bp);
+        if (!km || !(km.traegheit > 1e-9)) return S.handDauerSec;
+        return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtIKg * Math.sqrt(km.traegheit)));
+    }
+
+    // DIE MASZE DES GEHALTENEN (kg · kg·m² · m): die Messung der Schmiede (kampfMasze) für ihre Werke, sonst die Gestalt
+    // (`_eigenwerkMasze`); die Faust null. Die Leser: Schwung-Dauer, Ausdauer des Arms.
+    _geraetMasze(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        return this._schmiedeKampfMasze(bp) || this._eigenwerkMasze(bp);
+    }
+
+    // DIE SPANNE EINES BAUPLANS (Bauplan-Einheiten): die längste Achse der rotations-bewussten Hülle seiner Teile
+    // (`_partWorldExtents`, dieselbe Hülle wie der Kontakt).
+    _geraetSpanne(bp) {
+        let x0 = Infinity,
+            y0 = Infinity,
+            z0 = Infinity,
+            x1 = -Infinity,
+            y1 = -Infinity,
+            z1 = -Infinity;
+        for (const p of (bp && bp.parts) || []) {
+            const e = this._partWorldExtents(p);
+            const q = p.position || {};
+            const x = q.x || 0,
+                y = q.y || 0,
+                z = q.z || 0;
+            x0 = Math.min(x0, x - e.ex / 2);
+            x1 = Math.max(x1, x + e.ex / 2);
+            y0 = Math.min(y0, y - e.ey / 2);
+            y1 = Math.max(y1, y + e.ey / 2);
+            z0 = Math.min(z0, z - e.ez / 2);
+            z1 = Math.max(z1, z + e.ez / 2);
         }
-        const I = this._swingDynamics(bp).swingInertia;
-        if (!(I > 1e-9)) return S.handDauerSec;
-        return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtI * Math.sqrt(I)));
+        const span = Math.max(x1 - x0, y1 - y0, z1 - z0);
+        return Number.isFinite(span) ? span : 0;
+    }
+
+    // DIE WAHRE GRÖSSE EINES EIGENWERKS (m je Bauplan-Einheit, W5): seine Spanne auf die Werkzeug-Spanne der Hand
+    // (HELD_MESH.targetSpanM), geklemmt [minScale, maxScale] — die Skala, mit der die Hand es ZEIGT (`applyPlayerSoul`)
+    // und mit der es WIEGT (`_eigenwerkMasze`).
+    _geraetWeltSkala(bp) {
+        const cfg = AnazhRealm.HELD_MESH;
+        const span = this._geraetSpanne(bp);
+        return span > 1e-4 ? Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span)) : 1;
+    }
+
+    // DIE MASSE EINES EIGENWERKS (physik K1): ein Gerät ohne Messung der Schmiede wiegt nach seiner Gestalt — Masse und
+    // Trägheit um den Griff aus den Teilen (`_swingDynamics`: Volumen × ρ der Stoff-Zeile) in der wahren Größe der Hand
+    // (k = `_geraetWeltSkala`): Masse × k³, Trägheit × k⁵, Länge × k. Dieselben Felder wie kampfMasze (masseKg ·
+    // traegheit · laengeM), dieselbe Einheit.
+    _eigenwerkMasze(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        const k = this._geraetWeltSkala(bp);
+        const sw = this._swingDynamics(bp);
+        return {
+            skala: k,
+            masseKg: sw.mass * k * k * k,
+            traegheit: sw.swingInertia * k * k * k * k * k,
+            laengeM: this._geraetSpanne(bp) * k,
+        };
     }
     // die Dauer des GEHALTENEN Geräts (Faust → handDauerSec).
     _playerSwingDauer() {
@@ -663,12 +716,13 @@ class AnazhRealm_kampf {
         this._setBlueprintWear(bp, this._blueprintWear(bp) - this._wearPerStrike(bp));
     }
 
-    // Die Schwung-Energie eines Eigenwerks ohne Schmiede-Messung (Ω-Φ4: ½·I·ω², I aus _swingDynamics — deren einzige
-    // Quelle, anderer Definitionsbereich als kampfMasze); die Faust 0.
+    // Die Schwung-Energie eines Eigenwerks ohne Schmiede-Messung (½·I·ω² in Joule, I in kg·m² aus seiner Gestalt in der
+    // Hand, `_eigenwerkMasze` — dieselbe Einheit wie keRefJ der Arena); die Faust 0.
     _eigenwerkSchwungKE(bp) {
         if (!bp) return 0;
         const K = AnazhRealm._arenaGesetz().schwung;
-        const I = this._swingDynamics(bp).swingInertia;
+        const em = this._eigenwerkMasze(bp);
+        const I = em ? em.traegheit : 0;
         const sw = this.state.player && this.state.player._swing;
         const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
         const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
@@ -1999,8 +2053,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_kampf]);
 
 // ===== ATLAS · Kampf — Außen-Konstanten =====
 // ═══ KAMPF-GEFÜHL — DIE GESETZE DES SCHWUNGS ═══
-// Die EINE Schwung-Dauer-Quelle ist die gerechnete Trägheit (_swingDynamics: I = Σ m·r² um den
-// Griff), Dauer = dauerProSqrtI·√I, geklemmt; Cooldown/HUD/Werkstatt lesen sie (Kreaturen behalten
+// Die EINE Schwung-Dauer-Quelle ist die Trägheit in kg·m² um den Griff (Messung der Schmiede oder
+// Gestalt des Eigenwerks, _geraetMasze), Dauer = dauerProSqrtIKg·√I, geklemmt; Cooldown/HUD/Werkstatt lesen sie (Kreaturen behalten
 // ihr tag-emergentes attackSpeed). Dauer, Hieb-Geometrie, Reichweite, Stoß/Hit-Stop/Dip und
 // Pfeil-Flug-Physik wohnen im schmiede-Gesetzbuch (ARENA.schwung/.gefuehl/.bogen/.guete) — alle
 // Konsumenten lesen _arenaGesetz(), fail-closed. Die Mechanik hält gate:kampf-gefuehl.
@@ -2048,7 +2102,7 @@ AnazhRealm._arenaGesetz = function () {
         a.schwung &&
         a.gefuehl &&
         a.bogen &&
-        Number.isFinite(a.schwung.dauerProSqrtI) &&
+        Number.isFinite(a.schwung.dauerProSqrtIKg) &&
         Number.isFinite(a.schwung.windupFrac) &&
         Number.isFinite(a.schwung.zielKegelUntenRad) &&
         Number.isFinite(a.gefuehl.wucht) &&

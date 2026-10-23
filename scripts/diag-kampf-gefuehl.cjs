@@ -7,9 +7,9 @@
 // _tickKampfSchwung / _kampfSweepTick / damageCreature / updateCreatures),
 // headless/Null-Renderer:
 //
-//  (A) DAUER ∝ √I: die Schwung-Dauer zweier Waffen (echte _swingDynamics-
-//      Trägheiten zweier Blueprints, beide UNGEKLEMMT im [min,max]-Band)
-//      verhält sich wie √(I2/I1) ± 5 % — die EINE Quelle (Cooldown, HUD und
+//  (A) DAUER ∝ √I: ein Eigenwerk wiegt aus der Stoff-Zeile (1 m³ Holz = ρ der
+//      Schmiede in kg); verdoppelt sich ρ(holz) dort, schwingt es UNGEKLEMMT
+//      √(I2/I1) ± 5 % träger — die EINE Quelle (Cooldown, HUD und
 //      Werkstatt lesen _swingDauer*, der Klick löst nur aus).
 //  (B) KLINGEN-SWEEP: ein Ziel NEBEN dem Crosshair (0.9 m seitlich der Blick-
 //      Linie, innerhalb der Klingen-Kapsel) wird in der Strike-Phase getroffen,
@@ -651,28 +651,29 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
-            // ── (A) DAUER ∝ √I — zwei ECHTE Blueprints durch die ECHTE Quelle ──
+            // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 im Gesetzbuch der Schmiede ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
             const blu = s.blueprints;
             const leicht = {
                 name: "_kg_klinge",
                 parts: [
                     box("holz", { x: 0.15, y: 1.5, z: 0.15 }),
-                    box("eisen", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
+                    box("holz", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
                 ],
             };
-            const schwer = {
-                name: "_kg_hammer",
-                parts: [
-                    box("holz", { x: 0.15, y: 2.0, z: 0.15 }),
-                    box("eisen", { x: 0.9, y: 0.9, z: 0.9 }, { x: 0, y: 2.0, z: 0 }),
-                ],
-            };
-            const I1 = r._swingDynamics(leicht).swingInertia;
-            const I2 = r._swingDynamics(schwer).swingInertia;
-            const D1 = r._swingDauerFuerBlueprint(leicht);
-            const D2 = r._swingDauerFuerBlueprint(schwer);
-            o.dauer = { I1, I2, D1, D2 };
+            const sc = window.__schmiedeCore;
+            const rho = sc.RHO.holz;
+            const mess = () => [
+                r._swingDynamics(leicht).swingInertia,
+                r._swingDauerFuerBlueprint(leicht),
+                r._compoundCenterOfMass({ parts: [box("holz", { x: 1, y: 1, z: 1 })] }).mass,
+            ];
+            const [I1, D1, M1] = mess();
+            sc.RHO.holz = 2 * rho;
+            const [I2, D2, M2] = mess();
+            sc.RHO.holz = rho;
+            o.dauer = { I1, I2, D1, D2, M1 };
+            o.checks.aKg = M1 === rho && M2 === 2 * rho;
             const eps = 0.005;
             o.checks.aBeideUngeklemmt =
                 I2 > I1 * 1.5 &&
@@ -1006,7 +1007,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
     } else {
         const c = out.checks;
         console.log(
-            `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)})`
+            `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)}) · 1 m³ Holz ${out.dauer.M1} kg`
         );
         console.log(
             `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Hand C2 / C4 / S1 ${out.handM.map((m) => (m * 1000).toFixed(1)).join(" / ")} mm`
@@ -1024,6 +1025,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.aVerhaeltnisWurzelI,
             `(A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (${out.dauerRatio.toFixed(3)} vs ${out.dauerSoll.toFixed(3)})`
         );
+        check(c.aKg, "(A) 1 m³ Holz wiegt ρ der Stoff-Zeile in kg und folgt ihr in der Schmiede (physik K1)");
         check(c.aFaustDauer, "(A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)");
         check(c.bTrifftNeben, "(B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)");
         check(c.bDedupEinmal, `(B) dedupliziert je Schwung: GENAU EIN Treffer (${out.sweep.hits})`);

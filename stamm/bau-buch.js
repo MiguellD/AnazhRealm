@@ -1514,26 +1514,60 @@ class AnazhRealm_bau_buch {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
+    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`). Die eingebaute Zeile trägt ρ
+    // (`_defaultMaterials`, Holz und Metalle aus der Schmiede, Fleisch aus dem Gewebe der Tiere); ein eigener Stoff (DSL
+    // `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der kleinste Abstand
+    // über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rho`, `rhoVon`). Ein Teil ohne Stoff-Zeile wiegt
+    // nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 ·
+    // Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz statt 3,7, Eisen 2,25 statt 10,9.
+    _stoffRho(name) {
+        const mats = this.state.materials || {};
+        const z = mats[name];
+        if (!z) {
+            this._bruchMelden("STOFF-ZEILE fehlt: das Teil aus „" + name + "“ wiegt nichts");
+            return 0;
+        }
+        if (z.rho > 0) return z.rho;
+        const keys = AnazhRealm.MATERIAL_TAG_KEYS;
+        const t = z.tags || {};
+        let best = null,
+            bestD = Infinity;
+        for (const k of Object.keys(mats)) {
+            const b = mats[k];
+            if (!b || !b.builtIn || !(b.rho > 0)) continue;
+            let d = 0;
+            for (const a of keys) d += ((t[a] || 0) - ((b.tags && b.tags[a]) || 0)) ** 2;
+            if (d < bestD) ((bestD = d), (best = b));
+        }
+        if (!best) {
+            this._bruchMelden("STOFF-ZEILE ohne Verwandten: „" + name + "“ wiegt nichts");
+            return 0;
+        }
+        z.rho = best.rho;
+        z.rhoVon = best.name;
+        return z.rho;
+    }
+
+    // DIE MASSE EINES TEILS (kg): sein Volumen (die Box seiner Größe, m³) × ρ seiner Stoff-Zeile (`_stoffRho`) — der EINE
+    // Leser, über den Schwerpunkt, Schwung-Trägheit und Lastpfad wiegen.
+    _teilMasse(p) {
+        const s = p.size || { x: 1, y: 1, z: 1 };
+        return Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) * this._stoffRho(p.material);
+    }
+
     // ═══ Ω-PHYSIS · Ω-Φ1 — SCHWERPUNKT + MASSE ═══
-    // Der EINE Richter für Stabilität · Balance · Hebel: jedes Teil = Punktmasse am Zentrum, gewichtet mit
-    // Volumen·dichte. dichte ist [0,1]-normiert, kein kg/m³ → die Wahrheit ist RELATIV (vergleichend),
-    // nie absolute Newton. Bau-/Edit-Zeit, vom Aufrufer gecacht — nicht pro Frame.
+    // Der EINE Richter für Stabilität · Balance · Hebel: jedes Teil = Punktmasse am Zentrum, gewichtet mit seiner Masse
+    // in kg (`_teilMasse`: Volumen × ρ der Stoff-Zeile; die Bauplan-Einheit ist der Meter). Bau-/Edit-Zeit, vom Aufrufer
+    // gecacht — nicht pro Frame.
     _compoundCenterOfMass(bp) {
         const out = { com: { x: 0, y: 0, z: 0 }, mass: 0 };
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return out;
-        const mats = this.state.materials || {};
         let mx = 0,
             my = 0,
             mz = 0,
             mass = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const mat = mats[p.material];
-            const dichte = mat && mat.tags && typeof mat.tags.dichte === "number" ? mat.tags.dichte : 0.5;
-            // dichte-Floor 0.05: ein dichte-0-Material (Geist/Luft) hat trotzdem Form-
-            // Masse > 0 (sonst kollabiert der CoM einer rein-leichten Struktur auf 0).
-            const m = vol * Math.max(0.05, dichte);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             mx += (pos.x || 0) * m;
             my += (pos.y || 0) * m;
@@ -1769,13 +1803,9 @@ class AnazhRealm_bau_buch {
         const grip = gripPoint || this._inferGripPoint(bp, com);
         out.grip = grip;
         out.balance = Math.hypot(com.com.x - grip.x, com.com.y - grip.y, com.com.z - grip.z);
-        const mats = this.state.materials || {};
         let I = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const d = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5;
-            const m = vol * Math.max(0.05, d);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             I += m * ((pos.x - grip.x) ** 2 + (pos.y - grip.y) ** 2 + (pos.z - grip.z) ** 2);
         }
@@ -1836,15 +1866,10 @@ class AnazhRealm_bau_buch {
             const i = q.pop();
             for (const j of adj[i]) if (!seen[j]) ((seen[j] = true), q.push(j));
         }
-        const mats = this.state.materials || {};
         let total = 0,
             floating = 0;
         for (let i = 0; i < n; i++) {
-            const p = bp.parts[i];
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const m =
-                Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
-                Math.max(0.05, (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5);
+            const m = this._teilMasse(bp.parts[i]);
             total += m;
             if (!seen[i]) {
                 floating += m;

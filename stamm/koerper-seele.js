@@ -773,23 +773,9 @@ class AnazhRealm_koerper_seele {
             } catch (_e) {
                 /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
             }
-            // die ECHTE Geometrie-Spanne (positions + sizes + rotation), robust auch bei Ein-Part-Geräten
-            // (anders als _compoundBBox, positions-only).
-            try {
-                mesh.updateMatrixWorld(true);
-                const box = new THREE.Box3().setFromObject(mesh);
-                if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
-                    const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
-                    if (span > 1e-4) {
-                        const welt = isStudio
-                            ? 1
-                            : Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
-                        mesh.scale.setScalar(welt / ankerSkala);
-                    }
-                }
-            } catch (_e) {
-                /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
-            }
+            // die wahre Größe: die Studio-Gestalt in Metern, ein Part-Bau in der EINEN Skala, mit der er auch wiegt
+            // (`_geraetWeltSkala`: die rotations-bewusste Spanne seiner Teile auf die Werkzeug-Spanne)
+            mesh.scale.setScalar((isStudio ? 1 : this._geraetWeltSkala(bp)) / ankerSkala);
             const sx = side === "left" ? -1 : 1;
             // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
             // verschoben, dass der griffigste Part (bzw. der explizite griff-

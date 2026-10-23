@@ -2098,8 +2098,12 @@ async function WELLE_L() {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
             const zehr = [];
+            // das Eigenwerk wiegt aus der Stoff-Zeile (physik K1): Stiel und Kopf aus Holz
+            const holz = (y, a, b) => ({ material: "holz", size: { x: a, y: b, z: a }, position: { x: 0, y, z: 0 } });
+            s.blueprints._eigenwerk = { name: "_eigenwerk", parts: [holz(0, 0.15, 1.5), holz(1.5, 0.6, 0.6)] };
             for (const name of [
                 null,
+                "_eigenwerk",
                 "klinge_dolch",
                 "klinge_langschwert",
                 "klinge_grossschwert",
@@ -2111,7 +2115,7 @@ async function WELLE_L() {
                 p._swing = null;
                 p.stamina = 100;
                 const ok = r._beginPlayerSwing();
-                const km = name && s.blueprints[name] ? r._schmiedeKampfMasze(s.blueprints[name]) : null;
+                const km = name && s.blueprints[name] ? (r._geraetMasze || r._schmiedeKampfMasze).call(r, s.blueprints[name]) : null;
                 zehr.push({
                     geraet: name ? name.replace("klinge_", "") : "faust",
                     kg: km ? +km.masseKg.toFixed(3) : 0,
@@ -2120,6 +2124,7 @@ async function WELLE_L() {
                 p._swing = null;
             }
             p.stamina = 100;
+            delete s.blueprints._eigenwerk;
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });

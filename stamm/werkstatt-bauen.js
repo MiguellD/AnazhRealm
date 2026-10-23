@@ -925,13 +925,12 @@ class AnazhRealm_werkstatt_bauen {
     // DIE AUSDAUER EINER MAUS-ARM-AKTION (Welle LF 09.10., Posten 8 / K-L2): der Arm bewegt sich samt Gerät — die Kosten des
     // Gesetzbuchs (koerper fx.bewegung.aktionAusdauer: die leere Hand) wachsen mit der geschwungenen Masse,
     // (m_Arm + m_Gerät) / m_Arm; m_Arm = koerper LEIB.armAnteil × die EINE Leib-Masse des Spielers (_leibMasse), m_Gerät = die
-    // gemessene Masse des Schmiede-Geräts (kampfMasze.masseKg). Ein ungemessenes Gerät (Eigenwerk, Bogen) trägt keine Masse in
-    // kg und zehrt wie die Hand (derselbe Definitionsbereich wie Schwung-Dauer und Stoß). Vorher 5 je Hieb für Dolch und
+    // Masse des Geräts (`_geraetMasze`: die Messung der Schmiede, ein Eigenwerk seine Gestalt × ρ der Stoff-Zeile in der
+    // wahren Größe der Hand — physik K1; vorher zehrte ein Eigenwerk wie die leere Hand). Vorher 5 je Hieb für Dolch und
     // Vorschlaghammer gleich (Leben-Schau 07.10.).
     _mausAusdauer() {
         const basis = AnazhRealm._aktionAusdauer();
-        const bp = this._heldImplementBlueprint();
-        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        const km = this._geraetMasze(this._heldImplementBlueprint());
         const mG = km && km.masseKg > 0 ? km.masseKg : 0;
         if (!mG) return basis;
         const anteil = AnazhRealm.Gesetz("koerper:LEIB.armAnteil", null);

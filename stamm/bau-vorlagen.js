@@ -1429,14 +1429,52 @@ class AnazhRealm_bau_vorlagen {
     // 6 Built-ins von weich-organisch (leder, holz) über mineralisch (stein, eisen, bronze) bis kristallin
     // (quarz); mehr via DSL-Op `define_material`. Tag-Werte 0..1 = Potenzial; die Aktivierung je Form
     // macht FORM_TAG_ACTIVATION.
+    //
+    // DIE STOFF-ZEILE TRÄGT kg (physik K1): je Stoff die Dichte ρ in kg/m³ (SI) — die EINE Zahl, aus der jedes gebaute Teil
+    // und jedes Eigenwerk wiegt (`_teilMasse`: Volumen × ρ). Wo ein Gesetzbuch den Stoff schon wiegt, LIEST die Zeile es
+    // (ein Getter: die Mutation im Kern zieht die Welt): Holz und die Metalle die Schmiede (RHO.holz · MAT.eisen · MAT.bronze
+    // — dieselben Zahlen, mit denen sie ihre Klingen wiegt, Labor = Welt), Fleisch das Gewebe der Tiere (tetrapoda
+    // MASSSTAB.dichteKgM3 über `_leibGesetz`). Die übrigen sind Tafel-Werte: Granit und Quarz 2 650, Leder 860, kompakter
+    // Knochen 1 900, Keratin-Schuppen 1 300, Federkleid 50, Holzkohlen-Glut 400, Laub 300, Boden 1 500, Kraut 400, die
+    // Essenz eine Flüssigkeit wie Wasser 1 000. Die Tag-Achse `dichte` [0,1] bleibt Potenzial der Tag-Sprache (Rolle,
+    // Kampf-Stats) und wiegt nichts mehr.
     _defaultMaterials() {
-        const make = (name, label, color, tags) => ({
-            name,
-            label,
-            builtIn: true,
-            color,
-            tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
-        });
+        const schmiede = () => {
+            const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+            if (!sc || !sc.RHO || !sc.MAT) AnazhRealm._kernPflichtBruch("schmiede:RHO/MAT");
+            return sc;
+        };
+        const RHO = {
+            stein: 2650,
+            holz: () => schmiede().RHO.holz,
+            eisen: () => schmiede().MAT.eisen.rho,
+            bronze: () => schmiede().MAT.bronze.rho,
+            quarz: 2650,
+            leder: 860,
+            knochen: 1900,
+            fleisch: () => AnazhRealm._leibGesetz().tier,
+            federn: 50,
+            schuppen: 1300,
+            glut: 400,
+            laub: 300,
+            erde: 1500,
+            kraut: 400,
+            essenz: 1000,
+        };
+        const make = (name, label, color, tags) => {
+            const z = {
+                name,
+                label,
+                builtIn: true,
+                color,
+                tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+            };
+            const r = RHO[name];
+            if (typeof r === "function") Object.defineProperty(z, "rho", { get: r, enumerable: true });
+            else if (r > 0) z.rho = r;
+            else throw new Error("STOFF-ZEILE ohne Dichte: " + name);
+            return z;
+        };
         const list = [
             make("stein", "Stein", 0x7a7a7a, {
                 härte: 0.65,
