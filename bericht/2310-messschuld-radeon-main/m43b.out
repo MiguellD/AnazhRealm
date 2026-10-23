@@ -1,0 +1,15 @@
+gpu-lauf: warte auf lod-saum 2026-10-23T07:27:14+02:00 (37 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:27:14+02:00 (102 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:27:14+02:00 (166 s)
+gpu-lauf: warte auf lod-saum 2026-10-23T07:27:14+02:00 (230 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:31:52+02:00 (16 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:31:52+02:00 (81 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:31:52+02:00 (147 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T07:31:52+02:00 (212 s)
+gpu-lauf: Schloss messbahn nach 464 s
+bedient: VERSION = "18.546.72"
+start: WERKBANK bereit: Steuer 127.0.0.1:7972 · Seite :7971
+schritt 1 EXIT=0: eval "return window.anazhRealm.constructor.VERSION" |  "ms": 3 } 
+schritt 2 EXIT=0: eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/skr |  "ms": 35791 } 
+ende m43b
+m43b EXIT=0

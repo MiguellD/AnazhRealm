@@ -1,0 +1,9 @@
+{
+ "ergebnis": {
+  "fehler": "kein Felsbogen in der Welt",
+  "typen": [
+   "start_plattform"
+  ]
+ },
+ "ms": 8
+}

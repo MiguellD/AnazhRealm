@@ -1,0 +1,36 @@
+ALBEDO LABOR ↔ WELT ROT · im Soll (±10 %): 11/14 Zeilen, 0/7 Karten
+
+Zeile         Klasse        Labor Y   Welt Y     L/W  Ratsche  Soll  Labor rgb · Welt rgb
+rinde         Rinde          0.0893   0.0866    1.03    0.016  ja    0.1065/0.0869/0.0618 · 0.1037/0.0842/0.0598
+laub          Laub           0.1784   0.1680    1.06    0.057  ja    0.1268/0.2073/0.0447 · 0.0907/0.2035/0.0448
+fels          Fels           0.2444   0.2388    1.02    0.023  ja    0.2705/0.243/0.1811 · 0.2641/0.2377/0.1761
+fels-l1       Fels                –        –       –        –  nein  – · –
+fels-l2       Fels                –        –       –        –  nein  – · –
+boden         Boden          0.0832   0.0841    0.99    0.006  ja    0.1198/0.0771/0.0355 · 0.1154/0.0785/0.0471
+haus          Haus           0.1491   0.1593    0.94    0.058  ja    0.2826/0.1169/0.0754 · 0.2755/0.1319/0.0887
+haus-l1       Haus           0.1476   0.1581    0.93    0.059  ja    0.2801/0.1156/0.075 · 0.2742/0.1308/0.0871
+haus-l2       Haus           0.1476   0.1570    0.94    0.052  ja    0.2801/0.1156/0.075 · 0.2795/0.1273/0.0907
+lack          Metall/Lack    0.0059   0.0058    1.02    0.017  ja    0.005/0.0058/0.0087 · 0.005/0.0058/0.0087
+tor           Metall/Lack    0.6496   0.6493    1.00    0.000  ja    0.8196/0.6364/0.2799 · 0.8196/0.6359/0.2799
+haut          Haut/Fell      0.0606   0.0708    0.86    0.152  nein  0.1215/0.0461/0.0249 · 0.1424/0.0538/0.0292
+fell          Haut/Fell      0.1689   0.1852    0.91    0.090  ja    0.2059/0.1636/0.1123 · 0.2273/0.1791/0.1214
+klinge        Klinge         0.3322   0.3493    0.95    0.050  ja    0.3642/0.3258/0.3022 · 0.388/0.3419/0.3081
+
+Karte (18 %)         k·L /Eichung  Ratsche  Soll  Ausgabe-Pixel
+terrain           0.6760     2.14    0.761  nein  168/173/166
+garage            0.5658     1.79    0.583  nein  188/197/201
+portale           0.8006     2.54    0.929  nein  195/206/201
+schmiede          0.6427     2.04    0.711  nein  172/160/148
+fachwerk          0.4813     1.52    0.418  nein  197/194/192
+koerperstudio     0.6990     2.21    0.795  nein  169/180/177
+tetrapoda         0.8802     2.79    1.025  nein  255/255/255
+
+  [stumm] fels-l1: das Labor maß nichts (keine Zeile)
+  [stumm] fels-l1: die Welt maß nichts (das Exemplar zeigt seine Stufe 1 nicht (30 s))
+  [stufen-ton] fels-l1: Welt/fels 0
+  [stumm] fels-l2: das Labor maß nichts (keine Zeile)
+  [stumm] fels-l2: die Welt maß nichts (das Exemplar zeigt seine Stufe 2 nicht (30 s))
+  [stufen-ton] fels-l2: Welt/fels 0
+
+C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\m43-albedo-welt.json
+C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\m43-tafel

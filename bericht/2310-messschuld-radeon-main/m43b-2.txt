@@ -1,0 +1,170 @@
+{
+ "ergebnis": {
+  "version": "18.546.72",
+  "takteBisFels": 14,
+  "felsbogen": {
+   "typ": "felsturm",
+   "ort": [
+    23.8,
+    36.7
+   ],
+   "abstandGenesis": 43.7,
+   "anzahlFelsen": 1
+  },
+  "preset": "zacken",
+  "kindStages": [
+   0
+  ],
+  "klammerWunsch0bis3": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "lod": {
+   "thresh01": 12,
+   "thresh12": 26
+  },
+  "kullingRadius": 135,
+  "satzKlasse": "formationenSatz",
+  "zeilen": [
+   {
+    "d": 4,
+    "wunsch": 0,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 8,
+    "wunsch": 0,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 12,
+    "wunsch": 0,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 16,
+    "wunsch": 1,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 20,
+    "wunsch": 1,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 25,
+    "wunsch": 1,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 30,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 40,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 50,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 60,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 80,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 100,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 120,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 140,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 150,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 160,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   },
+   {
+    "d": 180,
+    "wunsch": 2,
+    "serviert": 0,
+    "gezeichnet": true,
+    "instanziert": true,
+    "typ": "felsturm"
+   }
+  ]
+ },
+ "ms": 35791
+}

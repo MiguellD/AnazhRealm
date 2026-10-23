@@ -1,0 +1,2 @@
+eval "return window.anazhRealm.constructor.VERSION"
+eval "$(cat /c/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-messmain/bericht/2310-messschuld-radeon-main/skripte/m43-stufen.js)"

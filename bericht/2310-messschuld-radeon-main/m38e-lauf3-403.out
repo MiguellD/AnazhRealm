@@ -1,0 +1,20 @@
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (77 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (145 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (214 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (281 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (346 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (412 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (478 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (545 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (609 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (674 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (742 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (811 s)
+gpu-lauf: warte auf stadt-k1 2026-10-23T08:50:00+02:00 (877 s)
+gpu-lauf: Schloss messbahn nach 823 s
+BOOT HAENGT false 300195 ms | (anonym) :63
+LOG-ENDE | Failed to load resource: the server responded with a status of 403 ()
+FEHLER Error: BOOT HAENGT
+    at oeffne (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\skripte\echt-k1.cjs:227:19)
+    at async C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-messmain\bericht\2310-messschuld-radeon-main\skripte\echt-k1.cjs:259:19
+m38e EXIT=1

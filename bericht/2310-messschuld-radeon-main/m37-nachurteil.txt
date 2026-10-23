@@ -1,0 +1,21 @@
+{"tod":"z0 idb","alterStreng":1.464,"alterTol":1.464,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z1 zufall","alterStreng":0.631,"alterTol":0.631,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z2 fest","alterStreng":0.002,"alterTol":0.002,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z3 erwachen-mitten","alterStreng":1.37,"alterTol":1.37,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1","erwachen":{"zelle":"-2,1","gangGesehen":true,"gangSchreiber":[]}}
+{"tod":"z4 platz","alterStreng":1.47,"alterTol":1.47,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z5 zufall","alterStreng":0.147,"alterTol":0.147,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z6 erwachen-idb","alterStreng":3.238,"alterTol":3.238,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1","erwachen":{"zelle":"-1,2","gangGesehen":true,"gangSchreiber":["platz@-96ms -1,2;start","idb@-3ms -1,2;start"]}}
+{"tod":"z7 zufall","alterStreng":0.271,"alterTol":0.271,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z8 fest","alterStreng":null,"alterTol":0.002,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z9 zufall","alterStreng":1.08,"alterTol":1.08,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z10 platz","alterStreng":1.359,"alterTol":1.359,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z11 erwachen-mitten","alterStreng":2.91,"alterTol":2.91,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1","erwachen":{"zelle":"-1,2","gangGesehen":true,"gangSchreiber":["platz@-105792ms -1,2;start","idb@-105699ms -1,2;start"]}}
+{"tod":"z12 idb","alterStreng":1.483,"alterTol":1.483,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z13 zufall","alterStreng":1.069,"alterTol":1.069,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z14 erwachen-platz","alterStreng":2.141,"alterTol":2.141,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1","erwachen":{"zelle":"-1,2","gangGesehen":true,"gangSchreiber":["platz@-5ms -1,2;start"]}}
+{"tod":"z15 zufall","alterStreng":0,"alterTol":0,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z16 platz","alterStreng":1.453,"alterTol":1.453,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z17 zufall","alterStreng":0.978,"alterTol":0.978,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z18 idb","alterStreng":0.515,"alterTol":0.515,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+{"tod":"z19 zufall","alterStreng":1.049,"alterTol":1.049,"verlorenBloecke":0,"verlorenEdits":0,"dorfHalb":false,"geladen":"start sc1/ok1"}
+URTEIL tol 50 mm: Tode 20, Alter max 3.238 s, über 10 s 0, halbe 0, korrupt 0, Tode im Erwachen 4
