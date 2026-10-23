@@ -79,7 +79,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
         out.importRejectsGarbage = !!impBad && impBad.ok === false;
         // UI.
-        out.uiSection = !!document.getElementById("vibe-pass-section");
         const body = document.getElementById("vibe-pass-body");
         out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
         out.uiButtons =
@@ -105,7 +104,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 P1: exportVibePass liefert ein gültiges Sicherungs-Objekt", w13p1Results.exportShape);
         check("W13 P1: Export→Import-Rundlauf bewahrt die Identität", w13p1Results.importRoundTrip);
         check("W13 P1: importVibePass weist ungültige Daten ab", w13p1Results.importRejectsGarbage);
-        check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
         check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
         check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
     } else {

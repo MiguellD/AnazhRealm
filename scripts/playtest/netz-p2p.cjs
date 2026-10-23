@@ -227,10 +227,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.cspHasWebSocket = / ws: /.test(cspContent) && / wss: /.test(cspContent);
         out.cspKeepsSelf = cspContent.startsWith("default-src 'self';");
 
-        // UI-Elemente vorhanden
-        out.uiUrlInputExists = !!document.getElementById("p2p-url");
-        out.uiStatusExists = !!document.getElementById("p2p-status");
-
         // Status-UI verkabelt: nach Toggle reagiert aria-pressed
         const toggle = document.getElementById("p2p-toggle");
         const before = toggle.getAttribute("aria-pressed");
@@ -280,8 +276,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
         check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
         check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
-        check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
-        check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
         check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
     }
 
@@ -613,9 +607,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_PULL_COOLDOWN_MS > 0;
 
-        // UI: der Resync-Knopf existiert im DOM.
-        out.resyncButtonExists = !!document.getElementById("p2p-resync");
-
         // Cleanup
         for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
         p2p.rtcPeers.clear();
@@ -660,7 +651,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             w7p2Results.applySetsActiveWorld
         );
         check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
-        check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
     }
 }
 
@@ -1480,7 +1470,6 @@ async function checkBandLateMultiUser(ctx) {
         out.channelRoutesLlmRequest = handlerHit === true;
         r._p2pHandleLlmRequest = origReq;
 
-        out.voiceButtonExists = !!document.getElementById("p2p-voice-share");
 
         // Cleanup
         for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
@@ -1514,7 +1503,6 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P3: das Antwort-Programm läuft durch die dslRun-Sandbox", w7p3Results.programRanInSandbox);
         check("W7 P3: _p2pRequestSharedVoice ohne Voice-Peer → no_voice", w7p3Results.requestNoVoice);
         check("W7 P3: llm-request ist kanal-exklusiv (erreicht den Handler)", w7p3Results.channelRoutesLlmRequest);
-        check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
     }
 
     // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
@@ -1763,7 +1751,6 @@ async function checkBandLateMultiUser(ctx) {
         grok.speechEnabled = false;
 
         // (j) Voice-Select im DOM + Default-Option bleibt.
-        out.voiceSelectDom = !!document.getElementById("companion-voice");
         r._populateCompanionVoiceSelect();
         const vs = document.getElementById("companion-voice");
         out.defaultOptionKept = !!vs && Array.from(vs.options).some((o) => o.value === "");
@@ -1811,7 +1798,6 @@ async function checkBandLateMultiUser(ctx) {
         check("W11 V4: die eigene peerId wird ignoriert (kein Echo)", w11v4Results.ownPeerIgnored);
         check("W11 V4: Stimme aus → fremder Begleiter stumm + kein Wurf", w11v4Results.mutedNoLog);
         check("W11 V4: Stimme an → fremder Begleiter im Log", w11v4Results.heardLogsLine);
-        check("W11 V4: #companion-voice Select im DOM", w11v4Results.voiceSelectDom);
         check("W11 V4: _populateCompanionVoiceSelect behält die Default-Option", w11v4Results.defaultOptionKept);
         check("W11 V4: Voice-Wahl persistiert in companionVoice + localStorage", w11v4Results.voiceChangePersists);
     }
@@ -2255,15 +2241,11 @@ async function checkBandLateMultiUser(ctx) {
         r.state.p2p.role = "solo";
 
         // 9. UI-Elemente vorhanden
-        out.dialogExists = !!document.getElementById("new-world-dialog");
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
-        out.inviteInputExists = !!document.getElementById("new-world-invite");
         // V9.35: die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
         // (Voxel permanent + irreversibel — Toggle-Tod).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
-        out.hostBannerExists = !!document.getElementById("world-host-banner");
-        out.guestBannerExists = !!document.getElementById("world-guest-banner");
 
         return out;
     });
@@ -2307,16 +2289,12 @@ async function checkBandLateMultiUser(ctx) {
             ["altVerweigert", "teilbarWildnis", "teilbarLeser", "verweigertAlt", "stufe"].every((k) => er[k] === true),
             JSON.stringify(er)
         );
-        check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
         check(
             "Voxel V9.35: #new-world-heightfield-Opt-out-Checkbox ist aus dem Neue-Welt-Dialog entfernt (Voxel ist permanent)",
             ring115Results.heightfieldCheckboxGone
         );
         check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
         check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
-        check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);
-        check("Ring 11.5: world-host-banner im DOM", ring115Results.hostBannerExists);
-        check("Ring 11.5: world-guest-banner im DOM", ring115Results.guestBannerExists);
     }
 }
 

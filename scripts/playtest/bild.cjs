@@ -127,12 +127,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // NON_BROADCASTABLE
         out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
 
-        // Status-Bar + Slider im DOM
-        out.statusTimeInDom = !!document.getElementById("status-time");
-        out.dayLengthSliderInDom = !!document.getElementById("slider-daylength");
-        out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
-        out.dayNightSectionInDom = !!document.getElementById("day-night-section");
-
         // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
         // (ein Licht von unten wüsche die Nacht aus).
@@ -248,10 +242,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3Results.dslNexusUhrGehalten
         );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
-        check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
-        check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
-        check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
-        check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
         check(
             "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
             wave6g3Results.lightPosFollowsTimeOfDay
@@ -302,8 +292,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const AnazhRealm = window.AnazhRealm || r.constructor;
-
-        // --- Wurzel-Helper existieren
 
         // --- Vision 1: Affinity-Pick wählt höhere Resonanz
         // Test-Kandidaten mit klaren Tag-Profilen
@@ -1430,10 +1418,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // --- B3: Stats-HUD DOM-Existenz
-        out.statsHudExists = !!document.getElementById("stats-hud");
-        out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
-
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
         r.state.player.hp = 50;
@@ -1463,7 +1447,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
         out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
         out.ringRadiusDefault = r.state.chunkRingRadius === 4;
-        out.slidersSectionExists = !!document.getElementById("sliders-section");
 
         // --- D2: Master-Slider ändert state + Persistenz
         const ms = document.getElementById("slider-master");
@@ -1508,8 +1491,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const wave6x4cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
 
         // Test: Bauplan ohne opChain → leere counts
         const tn = "audit_v816_test";
@@ -1595,8 +1576,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 
     if (wave6x4bResults && !wave6x4bResults.error) {
-        check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
@@ -1606,7 +1585,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
         check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
         check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
-        check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
         check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
         check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
         check(

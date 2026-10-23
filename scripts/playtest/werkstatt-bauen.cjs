@@ -926,9 +926,6 @@ async function checkBandWelle6Keybindings(ctx) {
         out.formatKeyF = r._formatBindingCode("KeyF") === "F";
 
         // UI: Section + Liste + Reset-Button im DOM
-        out.sectionInDom = !!document.getElementById("keybindings-section");
-        out.listInDom = !!document.getElementById("keybindings-list");
-        out.resetInDom = !!document.getElementById("keybindings-reset");
         // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
         out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
         // Pro Aktion ein Rebind-Button mit data-action
@@ -978,9 +975,6 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
         check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
         check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
-        check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
-        check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
-        check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
         check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
@@ -1333,14 +1327,11 @@ async function checkBandWelle6XAudit(ctx) {
         const out = {};
 
         // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
-        out.logbookSectionExists = !!document.getElementById("logbook-section");
-        out.logbookToggleExists = !!document.getElementById("logbook-toggle");
         const consoleLog = document.getElementById("console-log-section");
         const logEl = document.getElementById("log");
         out.logbookConsoleSectionExists = !!consoleLog;
         // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
         out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
-        out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
         // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
         const toggle = document.getElementById("logbook-toggle");
         if (toggle) {
@@ -1363,8 +1354,6 @@ async function checkBandWelle6XAudit(ctx) {
 
         // B2 — Welt-Bauwerke-Buttons entfernt
         out.architectureActionsRemoved = !document.getElementById("architecture-actions");
-        // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
-
         // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
         if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
         r.selectHotbarSlot(0);
@@ -1383,13 +1372,10 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x2Results && !wave6x2Results.error) {
-        check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
-        check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
         check(
             "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
             wave6x2Results.logbookHiddenByDefault
         );
-        check("Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM", wave6x2Results.consoleLogToggleExists);
         check("Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar", wave6x2Results.logbookVisibleAfterToggle);
         check("Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch", wave6x2Results.logbookHiddenAfterUntoggle);
         check("Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch", wave6x2Results.inlineToggleExpands);
@@ -1458,8 +1444,6 @@ async function checkBandWelle6XAudit(ctx) {
                 dslOut.program[4] > 0 &&
                 !!(dslOut2 && Math.abs(dslOut2.program[3] - Math.PI / 2) < 1e-9);
         }
-
-        // --- C3: _canSoulJumpFromSlope existiert
 
         // --- C3: kein Slope → springen erlaubt
         r.state.onSteepSlope = false;

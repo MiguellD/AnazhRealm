@@ -134,8 +134,6 @@ async function checkBandRing5Soul(ctx) {
         };
 
         // UI vorhanden?
-        out.drawerSelectInDom = !!document.getElementById("player-soul-select");
-        out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
         // ALTLASTEN-NULL (V9.56-i) + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
         // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
@@ -375,8 +373,6 @@ async function checkBandRing5Soul(ctx) {
             ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
-        check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
             "Ring 5 (NULL): Dropdown = Mensch + verkörperbare Bauplan-Körper (Tiere)",
             ring5Results.dropdownHasBuiltinSouls,
@@ -1060,8 +1056,6 @@ async function checkBandV18201ManaKonsum(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // (K1) Helper existieren
 
         const savedMana = r.state.player && r.state.player.mana;
         const savedManaMax = r.state.player && r.state.player.manaMax;

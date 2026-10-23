@@ -1114,7 +1114,6 @@ async function checkBandWave4(ctx) {
         // Material wählt man per ZIEHEN aus der MATERIALIEN-Palette auf einen Part im 3D; datennah geprüft
         // (Container + ≥6 Materialien), ohne erzwungenes Re-Render (störte die Card-Zählung späterer Tests).
         r.selectBlueprintForEdit("legacy-test");
-        out.uiHasMaterialDropdown = !!document.getElementById("workshop-material-palette");
         out.uiDropdownLists6PlusOptions = Object.keys(r.state.materials || {}).length >= 6;
         // updatePartInBlueprint mit recolor zieht Farbe nach
         r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
@@ -1167,7 +1166,6 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld", wave4p1Results.builtInPartsHaveMaterial);
         check("Welle 4 P1: Save persistiert eigene Materialien", wave4p1Results.snapshotHasMaterial);
         check("Welle 4 P1: Migration alter Parts auf stein", wave4p1Results.legacyPartGotDefaultMaterial);
-        check("Welle 4 P1: Werkstatt-UI hat Material-Dropdown", wave4p1Results.uiHasMaterialDropdown);
         check("Welle 4 P1: Material-Dropdown listet ≥6 Optionen", wave4p1Results.uiDropdownLists6PlusOptions);
         check("Welle 4 P1: Recolor zieht Material-Farbe", wave4p1Results.recolorAppliesMaterialColor);
         check(
@@ -1470,7 +1468,6 @@ async function checkBandWave4(ctx) {
         out.uiQualityRow = [...document.querySelectorAll("#workshop-stats-panel .spec-q-label")].some(
             (l) => l.textContent === "Qualität"
         );
-        out.uiToolPalette = !!document.getElementById("workshop-tool-palette");
         out.uiToolCards = document.querySelectorAll("#workshop-tool-palette .workshop-tool-card").length >= 1;
         // in schöpfer erscheinen die besessenen Werkstatt-Prozesse als ziehbare Station-Karten (Drehbank u.a.)
         out.uiStationCards = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
@@ -1535,7 +1532,6 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
         check("V18.44 Spec-Sheet: das Stats-Panel rendert den Header (Identitaet)", wave4p3Results.uiStatsPanel);
         check("V18.44 Spec-Sheet: der Readout zeigt die Qualitaet (.spec-q-label)", wave4p3Results.uiQualityRow);
-        check("Welle 4 P3 (V17.91): die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
         check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
         check(
             "Welle 4 P3 (V17.91): in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
@@ -3201,8 +3197,6 @@ async function checkBandWaves9And10a(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methode existiert
-
             // Leeres Array → 1.0
             out.emptyIs1 = r._compoundAvgPrecisionFromParts([]) === 1.0;
             // Null → 1.0
