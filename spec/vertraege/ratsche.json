@@ -38,17 +38,11 @@
         }
     },
     "reglerBudget": {
-        "zweck": "Ein Regler, dessen Rand-Wert (min oder max) die Stufe über ihre Budget-Zeile treibt (Studio-Vertrag B2c: PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]): der Bau steht, das Gesetz bricht — die Brücke meldet budgetBruch, der Host-Ofen BUDGET-BRUCH. gate:asset-contract baut nur die Rezepte ohne ov; diese Ratsche hält, was der Regler-Rand zeigt (gesehen an den Rezepten, die gate:regler-wirkt baut, bis die Zeile wirkt). Schlüssel kern:art:id, Wert = der Befund.",
+        "zweck": "Ein Regler, dessen Rand-Wert (min oder max) eine Stufe über ihre Budget-Zeile treibt (Studio-Vertrag B2c: PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]): der Bau steht, das Gesetz bricht. gate:asset-contract baut nur die Rezepte ohne ov; die Stufen-Probe von gate:regler-wirkt baut jede Stufe jeder Budget-Art an jedem Rezept und jedem Regler-Rand über die echte Brücke (die Ofen-Arten am Host-Ofen). staffel = die Decke der Ratsche (Karte pipeline.K3: Staffel 1 ≤ 3, Staffel 2 = 0); quote = die Stufen über ihrer Reduktion (L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke, das Höchste über Rezepte × Rand), Schlüssel art:Lstufe. Schlüssel kern:art:id, Wert = der Befund.",
         "soll": 0,
+        "staffel": 0,
         "sollQuelle": "Studio-Vertrag B2c: jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers (Heilung am Studio, Lehre 19)",
-        "bruch": {
-            "fachwerk:haus:bend": "bend=1 an alemannisch L0: tris 159946 > 132000",
-            "fachwerk:haus:doppel": "doppel=1 an alemannisch L0: tris 155208 > 132000",
-            "fachwerk:haus:storeys": "storeys=12 an alemannisch L0: tris 150162 > 132000",
-            "porta:gate:ruin": "ruin=1 an drachentor L0: draws 14 > 13",
-            "porta:gate:wMason": "wMason=1 an drachentor L0: draws 14 > 13",
-            "porta:gate:wMono": "wMono=1 an drachentor L0: draws 14 > 13",
-            "schmiede:weapon:griff": "griff=0.46 an degen L0: tris 22344 > 22000"
-        }
+        "bruch": {},
+        "quote": {}
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // gate:weltgrenze — KEIN WELT-ZUSTAND REIST ÜBER EINE WELTGRENZE.
 //
-// Die Gegenprüfung Runde 2 (10.10.) fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
+// Die Gegenprüfung Runde 2 fand den Spread `{ ...this.state.worldMeta, ...state.worldMeta }` im Restore: jede
 // Welt, die ohne Erbgut geladen wurde, behielt das Erbgut, den Anker, die Edits, die Dorf-Zellen und die Stempel der
 // Welt davor — über das Welt-Tor „Ersetzen" wurde eine Wildnis-Welt still als Insel gezeichnet und mit dem Erbgut der
 // Prüfbühne gespeichert. Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A
@@ -200,7 +200,7 @@ function seitenPruefer() {
                 // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
                 macro: { herkunft: T },
                 // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
-                voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, strength: 48, mode: "carve", herkunft: T }],
+                voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
                 genesisPortalRing: T,
                 portalPreviewFachwerk: T,
@@ -222,7 +222,7 @@ function seitenPruefer() {
             r._portalPreviewFertig = Object.assign(Object.create(null), { fachwerk: true });
             r._autoSettlementRejected = new Set([T]);
             r._autoSettlementStartHopeless = true;
-            r._autoSettlementQueue = { plan: { slots: [], name: T }, origin: { x: 0, z: 0 }, idx: 0, cellKey: T };
+            r._autoSettlementQueue = r._dorfZug({ slots: [], name: T }, { x: 0, z: 0 }, T);
             r._stlWegeKeys = new Set([T]);
             // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
             // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
@@ -311,16 +311,9 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        while (performance.now() - t0 < 120000) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function" && r.state && r.state.worldMeta) {
-                const welt = r.state.worldMeta.worldId;
-                return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
-            }
-            await new Promise((res) => setTimeout(res, 50));
-        }
-        const r = window.anazhRealm;
-        return { ok: false, haengt: true, welt: r && r.state && r.state.worldMeta ? r.state.worldMeta.worldId : null };
+        const r = await window.__weltDa((w) => w.state && w.state.worldMeta);
+        const welt = r.state.worldMeta.worldId;
+        return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);
 }
 
@@ -592,7 +585,6 @@ async function fahreWeg(browser, weg, schein) {
         verzoegerung = 0;
         const b = await bereit(page, ziel);
         rep.boot.push(b.ms);
-        if (b.haengt) throw new Error(`die Seite erwachte nicht in 120 s (aktiv: ${b.welt})`);
         const start = await page.evaluate(() => window.__grenzeStart);
         if (tuer) {
             if (start.id !== ziel)

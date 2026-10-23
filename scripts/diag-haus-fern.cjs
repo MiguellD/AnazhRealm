@@ -1,18 +1,14 @@
 #!/usr/bin/env node
 // diag-haus-fern.cjs — DIE LINSE DES HAUS-FERNKÖRPERS (S3 haus, Plan §3.3 1a; gate:haus-fern, in `npm run check`).
-// Befund (Kern 78d66a63, Späher haus): der fachwerk-Bau wirft mit der Stufe, die er zeichnet (L0 31 660–101 716, L1
-// 2 464–31 000 Dreiecke je Kaskade), die L2 wirft gar nicht (der Schatten springt bei 26 m weg), und sein Fernkörper
-// (`lod2Koerper`) las die Massen-Hülle `B.ext` statt des Grundrisses: 32/32 Kulturen im Ein-Quader-Modus, aufgebläht
-// (Tiefe Median +1,8 m, max +10,0 m marokkanisch), der First auf der langen Achse statt auf x (30/62 quer), Wurf-IoU zu L0
-// Median 0,785, Umriss L1↔L2 Median 0,829 (min 0,566 pueblo). Die Linse misst je Kultur (32) × Samen (1, 7) und je
-// Ausstattung (3 × ihre Gestalten) direkt am Gesetzbuch (Node, worlds/terrain/lib/three-r128.min.js + fachwerk-core.js):
+// Die Linse misst je Kultur (32) × Samen (1, 7) und je Ausstattung (3 × ihre Gestalten) direkt am Gesetzbuch (Node,
+// worlds/terrain/lib/three-r128.min.js + fachwerk-core.js):
 //
 //   W  WURF-DECKUNG: der Werfer jeder gezeigten Stufe (B2c `schatten`) gegen die L0 — IoU der Schatten-Fußabdrücke
 //      (Projektion entlang der Sonne auf y = 0, Raster 10 cm) unter drei Sonnen (25° · 40° · 60° Höhe, drei Azimute):
 //      Haus je Fall ≥ 0,87, Median ≥ 0,92 · Ausstattung ≥ 0,85 (das Soll unten, mit Grund); eine Stufe ohne Werfer ist rot
 //      (der Schatten springt weg)
 //   K  WURF-KOSTEN: der Werfer jeder Stufe ≤ seiner Budget-Zeile (Haus Stufe 3 ≤ 96 · Ausstattung ≤ 48, die Feuerstelle
-//      ≤ 32) — vorher warf jede Stufe sich selbst (~70k je Haus und Kaskade)
+//      ≤ 32)
 //   S  SPRUNG-DECKUNG: der Umriss L1 ↔ L2 entlang x und z (Orthoprojektion, Raster 5 cm, über dem Boden) ≥ 0,84 je Achse,
 //      Median ≥ 0,90 — kein Umriss-Sprung beim Stufenwechsel (26 m)
 //   F  FIRST-ACHSE: das Dach der Stufen 2 und 3 trägt seinen First auf x (das Haus-Gesetz: die Traufen laufen längs x,
@@ -21,17 +17,15 @@
 //   I  INNEN: der Fernkörper liegt im Haus — jede Wand ≥ 1,5 cm hinter der Grundriss-Ebene (Haupt, Flügel, Anbau,
 //      Kamin), das Hauptdach ≥ 3 cm unter der Dachhaut (`roofY` des Gesetzbuchs − 0,13 = die Sparren-Ebene); sonst
 //      Akne und Peter-Panning (Risiko 2)
-//   T  TÜRBLATT (K08, Auge 05 „freistehende Türblätter vor zwei Fachwerk-Fassaden"): jedes Türblatt sitzt an seinem
+//   T  TÜRBLATT: jedes Türblatt sitzt an seinem
 //      Scharnier in der Fassade — L0: der Flügel, wie ihn der Extraktor liest (`__extractAssetMesh`: matrixWorld, das
 //      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
 //      der Scharnier-Ebene; L1: das Blatt, das der Bau an Ort und Stelle bakt; die L2 trägt keins (DESTNUR). Abstand
-//      ≤ 0,05 m je Tür. Vorher (Kern 7e182557): 192 von 192 L0-Blättern 2,19–5,33 m vor ihrem Scharnier (Median 4,18) —
-//      `buildStufe` bakt das Blatt haus-lokal und setzte die Hülle noch einmal aufs Scharnier.
+//      ≤ 0,05 m je Tür.
 //
 // Die Linse misst die deklarierte Stufe 3 (`buildInstance(…, 3)`, dieselbe Funktion wie das Vogel des Labors
-// `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Vorher (Kern
-// 736e1e8f, die Stufe 3 nicht deklariert, das Vogel des Labors gemessen): Wurf-IoU Median 0,785 · min 0,629, Umriss L1↔L2
-// Median 0,829 · min 0,566, First quer 30/62, Aufblähung Median +1,8 m · max +10,0 m. Rot nennt jede Kultur beim Namen.
+// `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Rot nennt jede
+// Kultur beim Namen.
 // SELBSTTEST (--selftest, im Lauf): ein aufgeblähter, quer gedeckter Körper (die Massen-Hülle als Quader, der First auf
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
@@ -51,7 +45,7 @@ const ZEILEN = ARG.includes("--zeilen");
 // das Raster der Hülle (N5): jede Zahl der Liste liegt auf 2^-12 — der Abstand innen trägt ein Raster-Korn Spiel
 const RASTER = 1 / 4096;
 // DAS SOLL (Plan §3.3: Wurf-IoU ≥ 0,92 je Fall und Median ≥ 0,95, Umriss ≥ 0,92 je Achse) hielt im Spike nicht und steigt
-// OFFEN mit Wert und Grund (Entscheid E8; gemessen am Kopf des Kern-Akts, 64 Häuser + 7 Ausstattungen):
+// OFFEN mit Wert und Grund:
 //   Wurf Haus   min 0,879 (viktorianisch) · Median 0,926 → Soll je Fall ≥ 0,87, Median ≥ 0,92. Grund: der Körper liegt INNEN
 //               (Wand −1,5 cm, Dach −3 cm unter der Ebene — Risiko 2, Akne/Peter-Panning), die L0 trägt darüber Dachhaut
 //               und Firstziegel (+0,12 bis +0,27 m) und den Ortgang-Überstand (ovX 0,32 m; ein Ortgang-Keil schwärzte den
@@ -471,8 +465,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
 //    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
-//    Schritte. Vorher (Kern c5a4d0f8): die L2 legte Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,25;
-//    die L1 würfelte den Schlaf allein, ihr Raum war Putz für jeden Stil.
+//    Schritte.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;
@@ -766,7 +759,7 @@ function selbsttest() {
     const z2 = hausFall("holzhuette", 1);
     LOD.budget.haus[2].schatten = alt;
     if (!hausUrteil(z2).some((x) => /L2 wirft nicht/.test(x))) fehler.push("W: eine Stufe ohne Werfer ist nicht rot");
-    // T: das Blatt noch einmal aufs Scharnier gesetzt (der Befund vor K08: haus-lokal gebakt + Hülle am Scharnier)
+    // T: das Blatt noch einmal aufs Scharnier gesetzt
     const doppelt = (g0) => {
         for (const w of g0.children)
             if (w.userData && typeof w.userData.side === "number")
@@ -774,7 +767,7 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
         fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
-    // G: die Band-Fassade vor dem Akt (K38) — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
+    // G: die Band-Fassade vor dem Akt — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
     const band = (g, H) => {
         const dunkel = FC.materials().dunkel;
         const glas = [];

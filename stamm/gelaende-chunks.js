@@ -41,16 +41,19 @@ class AnazhRealm_gelaende_chunks {
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         if (msg.empty) {
-                            pending.resolve({ empty: true, lod: msg.lod | 0 });
+                            pending.resolve({ empty: true, lod: msg.lod | 0, vonPlatte: !!msg.vonPlatte });
                         } else {
                             pending.resolve({
                                 empty: false,
                                 lod: msg.lod | 0,
                                 positions: new Float32Array(msg.positions),
-                                // das Ziel der gröberen Stufe je Vertex (K51-2, Geomorph), null in der gröbsten Stufe
+                                // das Ziel der gröberen Stufe je Vertex (K51-2, Geomorph), null in der gröbsten Stufe; das
+                                // Morph-Ziel (das der Geomorph beschreibt) und in der gröbsten Stufe Normalen- und Farb-Ziel
+                                // sind eigene Kopien des Fadens (Karte hydro-faden: der Haupt-Faden kopiert nie)
                                 stufeZiel: msg.stufeZiel ? new Float32Array(msg.stufeZiel) : null,
-                                normalZiel: msg.normalZiel ? new Float32Array(msg.normalZiel) : null,
-                                farbeZiel: msg.farbeZiel ? new Float32Array(msg.farbeZiel) : null,
+                                morphZiel: new Float32Array(msg.morphZiel),
+                                normalZiel: new Float32Array(msg.normalZiel),
+                                farbeZiel: new Float32Array(msg.farbeZiel),
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
@@ -59,6 +62,8 @@ class AnazhRealm_gelaende_chunks {
                                 schutt: new Float32Array(msg.schutt),
                                 felsFeuchte: msg.felsFeuchte,
                                 waterCells: new Uint8Array(msg.waterCells),
+                                zid: msg.zid || null, // die Zellen behält der Faden unter dieser Nummer (das Wasser-Sheet)
+                                vonPlatte: !!msg.vonPlatte, // ein Treffer der Platte des Fadens (der Warm-Start)
                                 // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                                 hoehle: msg.hTri
                                     ? {
@@ -81,7 +86,9 @@ class AnazhRealm_gelaende_chunks {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
-                        if (msg.empty) {
+                        if (msg.fehlt) {
+                            pending.resolve({ fehlt: true }); // ein Verweis traf keine Zellen des Fadens (`_workerBuildWaterSheet`)
+                        } else if (msg.empty) {
                             pending.resolve({ empty: true });
                         } else {
                             pending.resolve({
@@ -105,6 +112,13 @@ class AnazhRealm_gelaende_chunks {
                             stoff: new Uint8Array(msg.stoff),
                             hoechste: new Float32Array(msg.hoechste),
                         });
+                    }
+                } else if (msg.type === "hydro-result" && msg.requestId) {
+                    // die Region aus dem Faden (Karte hydro-faden): ihre Felder per Transfer, der Empfang ist `_hydroAn`
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(msg);
                     }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
@@ -132,7 +146,9 @@ class AnazhRealm_gelaende_chunks {
             // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
             // trägt dieser init schon die Welt: der Strom darf ihn fragen.
             worker.zusage = this._voxelWorkerSyncState({ op: "init" });
-            if (this._voxelWeltWartet) this.state.voxelWorkerWorldgenSynced = true;
+            // die Bestellungen der Weltgen, die auf den Faden warteten (der Blob-Weg), reisen hinter seinem init
+            if (this._voxelWeltWartet) for (const post of this._hydroWarte || []) post();
+            this._hydroWarte = null;
             return worker;
         } catch (e) {
             this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
@@ -172,15 +188,9 @@ class AnazhRealm_gelaende_chunks {
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
             voxelEdits: this._snapshotVoxelEdits(),
-            hydroComputing: !!this._hydroComputing,
-            // der Fluss-Kanal (Welle L): Freibord und das Gesetz der Bank reisen mit — der Worker baut dasselbe Bett
-            spiegelFreibord: AnazhRealm.HYDROSPHERE.spiegelFreibord,
-            bankNeigung: AnazhRealm.HYDROSPHERE.bankNeigung,
-            bankKruemmung: AnazhRealm.HYDROSPHERE.bankKruemmung,
-            bankWeite: AnazhRealm.HYDROSPHERE.bankWeite,
-            bankRundung: AnazhRealm.HYDROSPHERE.bankRundung,
-            dammBreite: AnazhRealm.HYDROSPHERE.dammBreite,
-            dammFreibord: AnazhRealm.HYDROSPHERE.dammFreibord,
+            // DAS GESETZ DER HYDROSPHÄRE reist mit (Karte hydro-faden): der Faden rechnet mit ihm die Regionen (gelaende-core
+            // `hydrosphaere`) und baut dasselbe Bett (Welle L: Freibord und die Bank)
+            hydroGesetz: AnazhRealm.HYDROSPHERE,
             // die Kachel-Kante der Hydro-Regionen: das Gelände-Gesetzbuch rechnet den Kachel-Schlüssel aus der Lage
             regionSize: AnazhRealm.HYDROSPHERE.regionSize,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
@@ -199,6 +209,8 @@ class AnazhRealm_gelaende_chunks {
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
+            // DIE PLATTE DES BODENS (Karte hydro-faden): der Faden führt den Warm-Start — ob er gilt, sein Stempel, sein Deckel
+            platte: this._chunkPlatte(),
             // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`)
             fern: {
                 forest: AnazhRealm.FOREST,
@@ -339,13 +351,13 @@ class AnazhRealm_gelaende_chunks {
     // (`empty` = kein Iso). Density/Iso/Cells/Colors (~145 ms) laufen off-thread; der Main baut nur
     // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach. Der Auftrag trägt die Flut-Saat der Nachbarn
     // (`_flutSaat`, null ohne Carve im 3×3) — der Worker flutet damit wie der Sync-Bau.
-    _voxelWorkerComputeChunkMesh(cx, cz, lod) {
+    _voxelWorkerComputeChunkMesh(cx, cz, lod, platte = null) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         // die Saat am Stand der Bestellung — ändert ein Edit den Stand vor der Antwort, verwirft sie der Stand-Filter
         // (`_fetchOrRequestChunkMesh`, `_voxelStand`)
         const saat = this._flutSaat(cx, cz);
-        return this._voxelFadenAuftrag(worker, { type: "chunk-mesh", cx, cz, lod: lod | 0, saat });
+        return this._voxelFadenAuftrag(worker, { type: "chunk-mesh", cx, cz, lod: lod | 0, saat, platte });
     }
 
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
@@ -416,8 +428,9 @@ class AnazhRealm_gelaende_chunks {
         );
     }
 
-    // Wasser-Sheet off-thread: der 3×3-Zell-Block (`entry.waterCells`, KOPIERT — der Main braucht ihn
-    // weiter) geht an den Worker, der byte-identisch zu `_computeWaterSheetData` rechnet → {empty:true}
+    // Wasser-Sheet off-thread: der 3×3-Zell-Block geht an den Worker — als Verweis auf seine eigenen Zellen, wo der Main sie
+    // unverändert trägt (Karte hydro-faden: bis dahin ein Klon von neun Blöcken je Bestellung, 79,7 MB je Minute Fahrt), sonst
+    // als Klon (der Main braucht ihn weiter); der Worker rechnet byte-identisch zu `_computeWaterSheetData` → {empty:true}
     // oder die Geometrie-Arrays. Nur für CA-freie Nachbarschaften (`_waterSheetCaFree`), sonst sync im
     // Main. smoothPasses MUSS exakt `_mainWaterSheetCtx` entsprechen, sonst bricht die byte-Parität.
     _workerBuildWaterSheet(cx, cz) {
@@ -425,23 +438,27 @@ class AnazhRealm_gelaende_chunks {
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
-        const cells = new Array(9).fill(null);
-        for (let dz = -1; dz <= 1; dz++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                if (dx === 0 && dz === 0) {
-                    cells[4] = entry.waterCells;
-                    continue;
+        // je Chunk des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt sie samt der Liste
+        // seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (`ganz`, und wenn ein Verweis den Faden verfehlt)
+        const zellen = (ganz) => {
+            const cells = new Array(9).fill(null);
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    const e = dx === 0 && dz === 0 ? entry : this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                    if (e && e.waterCells)
+                        cells[(dz + 1) * 3 + (dx + 1)] =
+                            !ganz && e.zellenId ? { zid: e.zellenId, fest: e.zellenFest } : e.waterCells;
                 }
-                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                if (nb && nb.waterCells) cells[(dz + 1) * 3 + (dx + 1)] = nb.waterCells;
-            }
-        }
+            return cells;
+        };
         const smoothRaw =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
                 ? Math.round(this.state.atmosphere.waterSheetSmooth)
                 : 4;
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
-        return this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells });
+        const auftrag = (ganz) =>
+            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) });
+        return auftrag(false).then((r) => (r && r.fehlt ? auftrag(true) : r));
     }
 
     // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und
@@ -510,118 +527,29 @@ class AnazhRealm_gelaende_chunks {
     }
 
     // ===== DER WARM-START =====
-    // Der ROHE Worker-Reply (VOR Architektur-Stempel/surfMap, structured-clone-sicher) reist unverändert
-    // in IndexedDB ("anazhChunkMesh"/"chunks"); der zweite Boot liest den Ring von der Platte. Stempel-
-    // Mismatch → clear, Fehler → Worker-only (`_idbDead`), Headless → AUS. EINE Naht:
-    // `_fetchOrRequestChunkMesh`. window.__anazhChunkIdb: true → an (diag-warm-start), false → aus.
-    _chunkIdbInit() {
-        if (!this._chunkIdb) this._chunkIdb = {};
-        const c = this._chunkIdb;
-        if (c._idbReady) return c._idbReady;
-        const off = () => {
-            c._idbDead = true;
-            return null;
-        };
+    // Der ROHE Reply des Fadens (VOR Architektur-Stempel/surfMap) liegt in IndexedDB ("anazhChunkMesh"/"chunks"); der zweite
+    // Boot liest den Ring von der Platte. DIE PLATTE LEBT IM FADEN (Karte hydro-faden, Lehre 24: ein IDB-Put klont synchron im
+    // Aufrufer) — bis dahin klonte der Haupt-Faden jeden Reply hinein und jeden Treffer heraus (38 MB je Minute Fahrt). Hier
+    // nur, was der Faden über sie wissen muss: ob sie gilt (headless AUS; window.__anazhChunkIdb: true → an, diag-warm-start,
+    // false → aus), ihr Stempel (AnazhRealm.VERSION — jeder Release bustet — + genVersion + der Hash des Erbguts: ein fremdes
+    // Erbgut liest nie alte Bytes + die Form des Replys `CHUNK_IDB_FORM`; Mismatch → der Faden leert sie) und ihr Deckel.
+    // Der SEED lebt im KEY (`_chunkIdbKey`).
+    _chunkPlatte() {
         const hook = typeof window !== "undefined" ? window.__anazhChunkIdb : undefined;
-        if (
-            typeof indexedDB === "undefined" ||
-            hook === false ||
-            (hook !== true && this.state.renderer && this.state.renderer._isHeadlessNull)
-        ) {
-            c._idbReady = Promise.resolve(null);
-            c._idbDead = true;
-            return c._idbReady;
-        }
-        // Stempel = AnazhRealm.VERSION (jeder Release bustet — bewusst statt SHA über den Stamm) + genVersion
-        // + die Form des Replys (CHUNK_IDB_FORM);
-        // Mismatch → clear. Der SEED lebt im
-        // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
+        const an =
+            typeof indexedDB !== "undefined" &&
+            hook !== false &&
+            (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull));
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        // + der Hash des Erbguts (seine Terme und die Regler der Landform formen jeden Chunk: ein fremdes Erbgut darf nie
-        // alte Bytes lesen).
-        const stamp =
+        const stempel =
             AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
-        c._stamp = stamp;
-        c._idbReady = new Promise((resolve) => {
-            try {
-                const req = indexedDB.open("anazhChunkMesh", 1);
-                req.onupgradeneeded = () => {
-                    req.result.createObjectStore("chunks");
-                };
-                req.onerror = () => resolve(off());
-                req.onsuccess = () => {
-                    const db = req.result;
-                    const tx = db.transaction("chunks", "readwrite");
-                    const st = tx.objectStore("chunks");
-                    const g = st.get("__stamp");
-                    g.onsuccess = () => {
-                        if (g.result !== stamp) {
-                            // Gesetz-Version/Erbgut geändert → der GANZE Cache
-                            // ist potenziell Drift → leeren (Foundry-Disziplin).
-                            st.clear();
-                            st.put(stamp, "__stamp");
-                            c._count = 1; // nur der Stempel-Eintrag
-                        } else {
-                            // Zähler-Basis fürs Überlauf-Ventil (inkl. __stamp — grob genügt).
-                            const cn = st.count();
-                            cn.onsuccess = () => {
-                                c._count = cn.result | 0;
-                            };
-                        }
-                    };
-                    tx.oncomplete = () => {
-                        c._idbDb = db;
-                        resolve(db);
-                    };
-                    tx.onerror = () => resolve(off());
-                };
-            } catch (_e) {
-                resolve(off());
-            }
-        });
-        return c._idbReady;
+        return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX };
     }
     // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
-    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkIdbInit).
+    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
     _chunkIdbKey(cx, cz, lod) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         return `${seed}|${cx},${cz}|${lod}`;
-    }
-    _chunkIdbGet(key) {
-        const c = this._chunkIdb;
-        if (!c || c._idbDead || !c._idbDb) return Promise.resolve(null);
-        return new Promise((resolve) => {
-            try {
-                const g = c._idbDb.transaction("chunks", "readonly").objectStore("chunks").get(key);
-                g.onsuccess = () => resolve(g.result != null ? g.result : null);
-                g.onerror = () => resolve(null);
-            } catch (_e) {
-                resolve(null);
-            }
-        });
-    }
-    _chunkIdbPut(key, payload) {
-        const c = this._chunkIdb;
-        if (!c || c._idbDead || !c._idbDb || !payload) return;
-        try {
-            const tx = c._idbDb.transaction("chunks", "readwrite");
-            const st = tx.objectStore("chunks");
-            // Grobes Überlauf-Ventil statt LRU: der Zähler approximiert (Überschreiben zählt doppelt → räumt eher
-            // zu früh); bei Überlauf wird der GANZE Store geleert — Korrektheit hängt nie am Cache.
-            if ((c._count | 0) >= AnazhRealm.CHUNK_IDB_MAX) {
-                st.clear();
-                st.put(c._stamp, "__stamp");
-                c._count = 1;
-            }
-            // st.put KLONT SOFORT (synchron) — die ROHEN Worker-Bytes, bevor
-            // der Konsument den Architektur-Stempel in waterCells brennt.
-            st.put(payload, key).onerror = () => {
-                c._idbDead = true; // Quota/Fehler → still auf den Worker-only-Pfad (Foundry-Vorbild)
-            };
-            c._count = (c._count | 0) + 1;
-        } catch (_e) {
-            c._idbDead = true;
-        }
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
@@ -651,8 +579,8 @@ class AnazhRealm_gelaende_chunks {
 
     // Cache-First-Mesh für den Streaming-Pfad: {empty, positions, …} = Cache-Hit (`empty` = kein Iso),
     // null = Worker-Request läuft, undefined = kein Worker → sync. Ändert ein Edit den Stand des Chunks (`_voxelStand`) im
-    // Roundtrip → Result verworfen. Warm-Start: VOR dem Worker-Zweig fragt ein edit-freier Footprint
-    // die IndexedDB (pending-Semantik), der resolve füllt denselben `voxelMeshCache`-Pfad.
+    // Roundtrip → Result verworfen. Warm-Start: ein edit-freier Footprint trägt seinen Platten-Schlüssel in den Auftrag — der
+    // Faden liest ihn zuerst von seiner Platte und legt jeden frischen Bau dort ab (Karte hydro-faden).
     _fetchOrRequestChunkMesh(cx, cz, lod) {
         const cacheKey = `${cx},${cz},${lod}`;
         if (this.state.voxelMeshCache && this.state.voxelMeshCache.has(cacheKey)) {
@@ -665,52 +593,15 @@ class AnazhRealm_gelaende_chunks {
         if (!this.state.voxelMeshPending) this.state.voxelMeshPending = new Set();
         if (!this.state.voxelMeshGenAtRequest) this.state.voxelMeshGenAtRequest = new Map();
         if (this.state.voxelMeshPending.has(cacheKey)) return null;
-        // Warm-Start-Hit: IDB bereit + 3×3-Footprint edit-frei + kein gemerkter Store-Miss → async get,
-        // pending vermerken, null (exakt die pending-Semantik). Der resolve füllt `state.voxelMeshCache` —
-        // derselbe Konsum-Pfad + Gen-Stale-Filter wie der Worker-Zweig. Init lazy beim ersten Fetch.
-        if (!this._chunkIdb) this._chunkIdbInit();
-        const cIdb = this._chunkIdb;
-        if (
-            cIdb &&
-            cIdb._idbDb &&
-            !cIdb._idbDead &&
-            (!this.state._chunkIdbMiss || !this.state._chunkIdbMiss.has(cacheKey)) &&
-            this._chunkFootprintEditFrei(cx, cz)
-        ) {
-            const genAtIdbRequest = this._voxelStand(cx, cz);
-            this.state.voxelMeshPending.add(cacheKey);
-            this.state.voxelMeshGenAtRequest.set(cacheKey, genAtIdbRequest);
-            this._chunkIdbGet(this._chunkIdbKey(cx, cz, lod)).then((payload) => {
-                this.state.voxelMeshPending.delete(cacheKey);
-                this.state.voxelMeshGenAtRequest.delete(cacheKey);
-                // Derselbe Stale-Filter wie der Worker-Zweig: änderte ein Edit
-                // den Stand während des Platten-Roundtrips, ist der Payload
-                // gegen alten State — verwerfen (der Pump resubmittet frisch).
-                if (this._voxelStand(cx, cz) !== genAtIdbRequest) return;
-                // ein Payload ohne Stufen-Ziel (K51-2) ist das alte Format: ein Fehlgriff, der Worker baut frisch
-                if (payload && !payload.empty && (payload.lod | 0) < 3 && !(payload.stufeZiel && payload.farbeZiel))
-                    payload = null;
-                if (payload) {
-                    if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
-                    this.state.voxelMeshCache.set(cacheKey, payload);
-                    // Diagnose-Zähler (Linse diag-warm-start), keine Spiel-Logik.
-                    this.state._chunkIdbHits = (this.state._chunkIdbHits | 0) + 1;
-                    if (!this.state._chunkIdbHitByKey) this.state._chunkIdbHitByKey = new Map();
-                    this.state._chunkIdbHitByKey.set(cacheKey, (this.state._chunkIdbHitByKey.get(cacheKey) | 0) + 1);
-                } else {
-                    // Store-MISS gemerkt: der nächste Pump-Tick nimmt direkt
-                    // den Worker (sonst fragte der Tick die Platte endlos).
-                    // Die Stiftung räumt den Merker wieder.
-                    if (!this.state._chunkIdbMiss) this.state._chunkIdbMiss = new Set();
-                    this.state._chunkIdbMiss.add(cacheKey);
-                }
-            });
-            return null;
-        }
         this.state.voxelMeshPending.add(cacheKey);
         const expectedStateGen = this._voxelStand(cx, cz);
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
-        this._voxelWorkerComputeChunkMesh(cx, cz, lod)
+        // die Platte NUR für edit-freie Footprints bei stehender Worldgen-Wahrheit (Lesen und Stiften, auch `empty:true`)
+        const platte =
+            this.state.voxelWorkerWorldgenSynced && this._chunkFootprintEditFrei(cx, cz)
+                ? this._chunkIdbKey(cx, cz, lod)
+                : null;
+        this._voxelWorkerComputeChunkMesh(cx, cz, lod, platte)
             .then((meshData) => {
                 this.state.voxelMeshPending.delete(cacheKey);
                 if (this._voxelStand(cx, cz) !== expectedStateGen) {
@@ -720,12 +611,11 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelMeshGenAtRequest.delete(cacheKey);
                 if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
                 this.state.voxelMeshCache.set(cacheKey, meshData);
-                // Warm-Start-Stiftung NUR für edit-freie Footprints bei stehender Worldgen-Wahrheit; auch
-                // `empty:true` stiften (spart Retries). Der Put klont die rohen Worker-Bytes SOFORT, VOR dem
-                // Architektur-Stempel des Konsumenten.
-                if (this.state.voxelWorkerWorldgenSynced && this._chunkFootprintEditFrei(cx, cz)) {
-                    this._chunkIdbPut(this._chunkIdbKey(cx, cz, lod), meshData);
-                    if (this.state._chunkIdbMiss) this.state._chunkIdbMiss.delete(cacheKey);
+                if (meshData.vonPlatte) {
+                    // Diagnose-Zähler (Linse diag-warm-start), keine Spiel-Logik
+                    this.state._chunkIdbHits = (this.state._chunkIdbHits | 0) + 1;
+                    if (!this.state._chunkIdbHitByKey) this.state._chunkIdbHitByKey = new Map();
+                    this.state._chunkIdbHitByKey.set(cacheKey, (this.state._chunkIdbHitByKey.get(cacheKey) | 0) + 1);
                 }
             })
             .catch((err) => {
@@ -745,10 +635,11 @@ class AnazhRealm_gelaende_chunks {
         // V18.263 — der Worker LIEFERTE einen fertigen Mesh (der gesunde Pfad);
         // das Perf-Overlay zählt die Rate (0/s beim Laufen ⇒ Worker kommt nicht nach).
         this._perfMark("workerMesh");
-        // DIE BYTES DES FADENS SIND DIE ATTRIBUTE (Lehre 24, B-K2): der Faden überträgt jedes Array (Transfer), die Platte
-        // klont beim Put vor diesem Bau — der Bau übernimmt sie, statt sie zu kopieren (`Float32BufferAttribute` kopiert jedes
-        // Array; bis B-K2 elf Kopien je Chunk). Eine eigene Kopie trägt nur das Morph-Ziel: der Geomorph beschreibt es
-        // (`_applyCrossLodGeomorph`) und setzt es aus `userData.stufeZiel` bzw. der Position zurück.
+        // DIE BYTES DES FADENS SIND DIE ATTRIBUTE (Lehre 24, B-K2): der Faden überträgt jedes Array (Transfer) — der Bau
+        // übernimmt sie, statt sie zu kopieren (`Float32BufferAttribute` kopiert jedes Array; bis B-K2 elf Kopien je Chunk).
+        // Eine eigene Kopie trägt das Morph-Ziel (der Geomorph beschreibt es, `_applyCrossLodGeomorph`, und setzt es aus
+        // `userData.stufeZiel` bzw. der Position zurück), in der gröbsten Stufe auch Normalen- und Farb-Ziel — der Faden
+        // macht sie (`chunkAntwort`, Karte hydro-faden), nie der Haupt-Faden.
         const attr = (a, n) => new THREE.BufferAttribute(a, n);
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", attr(meshData.positions, 3));
@@ -760,26 +651,20 @@ class AnazhRealm_gelaende_chunks {
         // Fail-closed: eine Stufe unter der gröbsten ohne Ziel spränge am Wechsel.
         const nVm = meshData.positions.length / 3;
         const zielDa = (z) => z && z.length === meshData.positions.length;
-        if ((lod | 0) < 3 && !(zielDa(meshData.stufeZiel) && zielDa(meshData.normalZiel) && zielDa(meshData.farbeZiel)))
+        if (
+            !(zielDa(meshData.morphZiel) && zielDa(meshData.normalZiel) && zielDa(meshData.farbeZiel)) ||
+            ((lod | 0) < 3 && !zielDa(meshData.stufeZiel))
+        )
             throw new Error(
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert kein Stufen-Ziel (L${lod})`
             );
-        geom.setAttribute(
-            "aMorphTarget",
-            attr(new Float32Array((lod | 0) < 3 ? meshData.stufeZiel : meshData.positions), 3)
-        );
+        geom.setAttribute("aMorphTarget", attr(meshData.morphZiel, 3));
         geom.setAttribute("aMorphWeight", attr(new Float32Array(nVm).fill(this._morphCode(lod, 0)), 1));
         geom.userData.stufeZiel = (lod | 0) < 3 ? meshData.stufeZiel : null;
         // Normale und Stoff-Farbe wandern mit (der Stoff mischt sie mit demselben Faktor) — die gröbste Stufe trägt ihre eigenen
-        // (als eigene Kopie: das Ziel bleibt das Bild des Baus, was immer später an Normale oder Farbe schreibt)
-        geom.setAttribute(
-            "aNormalZiel",
-            attr((lod | 0) < 3 ? meshData.normalZiel : new Float32Array(meshData.normals), 3)
-        );
-        geom.setAttribute(
-            "aFarbeZiel",
-            attr((lod | 0) < 3 ? meshData.farbeZiel : new Float32Array(meshData.colors), 3)
-        );
+        // (als eigene Kopie des Fadens: das Ziel bleibt das Bild des Baus, was immer später an Normale oder Farbe schreibt)
+        geom.setAttribute("aNormalZiel", attr(meshData.normalZiel, 3));
+        geom.setAttribute("aFarbeZiel", attr(meshData.farbeZiel, 3));
         // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
         // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
         const H = meshData.hoehle;
@@ -807,8 +692,11 @@ class AnazhRealm_gelaende_chunks {
         // bis die letzten Leser entfallen.
         const hasBVH = false;
         // Architektur-Stempel auf waterCells (Main-only, der Worker kennt keine Architekturen);
-        // Cells sind IMMER LOD 0 → Stempel-Indizierung mit lod=0.
+        // Cells sind IMMER LOD 0 → Stempel-Indizierung mit lod=0. Die Zellen des Chunks sind die des Fadens (`zellenId`) samt
+        // der Zellen, die der Stempel fest machte (`zellenFest`): das Wasser-Sheet nimmt sie per Verweis (Karte hydro-faden).
         let waterCells = null;
+        let zellenId = null;
+        let zellenFest = null;
         if (meshData.waterCells && meshData.waterCells.length > 0) {
             waterCells = meshData.waterCells;
             const lod0Cfg = this._voxelChunkConfig(0);
@@ -816,22 +704,21 @@ class AnazhRealm_gelaende_chunks {
             const ox = cx * lod0Cfg.span;
             const oz = cz * lod0Cfg.span;
             const oy = base - lod0Cfg.floorDrop;
-            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
+            const fest = [];
+            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0, fest);
+            zellenId = meshData.zid || null;
+            if (fest.length) zellenFest = new Int32Array(fest);
         }
         // die Karte liest die FERTIGE Farbe (nach dem Stein unter Fels), wie der synchrone Bau — vorher die rohe des
         // Workers: am Spawn-Chunk 27 Grün-Zellen anders als der Sync-Bau (playtest Perf-3.c Boden-Karte)
-        const karte = this._bodenKarteAusMesh(
-            meshData.positions,
-            meshData.indices,
-            geom.attributes.color.array,
-            cx,
-            cz,
-            lod
-        );
+        // über der Naht (`_bodenKarteNaht`): die Basis des Inneren bleibt für jeden Naht-Morph der Geometrie
+        const karte = this._bodenKarteNaht(geom, cx, cz, lod, meshData.positions, "lage");
         return {
             mesh,
             kind: "filled",
             waterCells,
+            zellenId,
+            zellenFest,
             lod,
             hasBVH,
             surfMap: karte && karte.hoehe,
@@ -859,21 +746,61 @@ class AnazhRealm_gelaende_chunks {
     // Wachstum über dem Budget still um: auf der Radeon (Werkbank, Dorf) war das Budget in 60 von 60 und 160 von 160
     // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
     // stand, entschied allein der frei laufende Boot.
+    // DIE RUHE IST DER FIXPUNKT (feld.K3): liegt nach einem Gang kein wartender Chunk im Radius, schläft der Wuchs, bis der
+    // Spieler um den Abstand des nächsten (`frei`) weiterging, der Radius oder die Chunk-Menge sich regt (`_wuchsSchlaf`) —
+    // vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
-        if (!pending || pending.size === 0 || this._bepflanzungWartet()) return;
+        if (!pending || pending.size === 0) return;
+        const pm = this.state.playerMesh;
+        const s = this._wuchsSchlaf;
+        if (
+            s &&
+            s.n === pending.size &&
+            s.welt === (this._weltRegung | 0) &&
+            s.karte === (this._karteRegung | 0) &&
+            s.fr === this.state.foliageRadius &&
+            pm &&
+            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei
+        )
+            return;
+        this._wuchsSchlaf = null;
+        if (this._bepflanzungWartet()) return;
+        // der Abstand des nächsten wartenden Chunks jenseits des Radius: so weit kann der Spieler gehen, ohne dass einer
+        // hineinwächst; geht ein Gang ohne Wuchs zu Ende, schläft der Takt
+        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const { span } = this._voxelChunkConfig();
+        let frei = Infinity;
+        const draussen = (cx, cz) => {
+            if (!pm) return;
+            const d = Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z) - fr;
+            if (d < frei) frei = d;
+        };
+        const schlafe = () => {
+            if (!pm || !(frei > 0)) return;
+            this._wuchsSchlaf = {
+                n: pending.size,
+                welt: this._weltRegung | 0,
+                karte: this._karteRegung | 0,
+                fr: this.state.foliageRadius,
+                x: pm.position.x,
+                z: pm.position.z,
+                frei,
+            };
+        };
         if (this.state._frameOverBudget) {
             const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
             if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
-            const pm = this.state.playerMesh;
-            const { span } = this._voxelChunkConfig();
             let naechster = null;
             let naechsterD = Infinity;
             for (const key of pending) {
                 const ci = key.indexOf(",");
                 const cx = parseInt(key.slice(0, ci), 10),
                     cz = parseInt(key.slice(ci + 1), 10);
-                if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+                if (!this._foliageChunkInRadius(cx, cz)) {
+                    draussen(cx, cz); // noch zu fern → warten
+                    continue;
+                }
                 const d = pm
                     ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
                     : 0;
@@ -882,7 +809,10 @@ class AnazhRealm_gelaende_chunks {
                     naechster = { key, cx, cz };
                 }
             }
-            if (!naechster) return;
+            if (!naechster) {
+                schlafe();
+                return;
+            }
             this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
             pending.delete(naechster.key);
             if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
@@ -891,18 +821,26 @@ class AnazhRealm_gelaende_chunks {
         }
         // zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
         let n = 0;
+        let ganz = true;
         for (const key of pending) {
-            if (!this._kappeOffen(n, 2)) break;
+            if (!this._kappeOffen(n, 2)) {
+                ganz = false;
+                break;
+            }
             const ci = key.indexOf(",");
             const cx = parseInt(key.slice(0, ci), 10),
                 cz = parseInt(key.slice(ci + 1), 10);
-            if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+            if (!this._foliageChunkInRadius(cx, cz)) {
+                draussen(cx, cz); // noch zu fern → warten
+                continue;
+            }
             pending.delete(key);
             if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
                 this._populateVoxelChunkVegetation(cx, cz);
                 n++;
             }
         }
+        if (ganz && n === 0) schlafe();
     }
 
     // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Die Karte trägt ihn nach — die
@@ -913,7 +851,7 @@ class AnazhRealm_gelaende_chunks {
         if (!this.state.voxelWorker) return;
         const k = this._voxelEditKarte();
         const span = k.span;
-        const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+        const r = globalThis.__gelaendeCore.editReich(ed); // die Reichweite seiner Form, wie die Karte sie legt
         const cx0 = Math.floor((ed.x - r) / span) - 2;
         const cx1 = Math.floor((ed.x + r) / span) + 2;
         const cz0 = Math.floor((ed.z - r) / span) - 2;
@@ -928,7 +866,7 @@ class AnazhRealm_gelaende_chunks {
             this._voxelZustandPost({
                 type: "state-update",
                 delta: {
-                    voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },
+                    voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, mode: ed.mode },
                 },
             });
         } catch (e) {
@@ -943,9 +881,9 @@ class AnazhRealm_gelaende_chunks {
         // neue Erosion/Tarn/Noise/Hydro → alte Basis ungültig). Worker-
         // unabhängig, daher VOR dem Worker-Early-Return.
         if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
-        // Hier wird der Voxel-Worker gebootstrappt (NACH dem Hydrosphäre-Build, init-sync mit fertigem
-        // Snapshot) — sonst spawnt ihn nichts und jeder Chunk baut sync (~71 ms Main-Block pro Chunk).
-        // Ab hier fragt der Strom den Faden (`_voxelFadenTraegt`), schon vor dem Ack (B-K2).
+        // Hier wird der Voxel-Worker gebootstrappt (VOR der Hydrosphäre: er rechnet sie, Karte hydro-faden) — sonst spawnt
+        // ihn nichts. Der Strom fragt den Faden erst, wenn die Heimat im Main steht (`_worldgenComputeAndBuildHydrosphere`),
+        // dann schon vor dem Ack (B-K2).
         const neu = !this.state.voxelWorker;
         const worker = this._getVoxelWorker();
         if (!worker) {
@@ -959,7 +897,6 @@ class AnazhRealm_gelaende_chunks {
         // Streaming-Pump traut dem Worker; Edits filtern je Chunk (`_voxelStand`). Ein eben geborener Faden trägt diese Welt
         // schon in seinem init — ein state-set dahinter wäre derselbe volle Klon ein zweites Mal (Lehre 24, B-K2).
         if (!neu) this._voxelWorkerSyncState({ op: "state-set" });
-        this.state.voxelWorkerWorldgenSynced = true;
     }
 
     // ### Welten-Generierung ### V7.56
@@ -1010,23 +947,25 @@ class AnazhRealm_gelaende_chunks {
         this.state.terrainBaseHeight = baseHeight;
 
         this._worldgenBuildVoxelChunkCache();
-        this._worldgenComputeAndBuildHydrosphere();
-
-        // Kreaturen sind deferierte Boot-Arbeit: `spawnCreatures(10)` (~3 s Skin-Isoflächen) gehört nicht
-        // auf den kritischen Pfad — `_bootDeferCreatures` spawnt progressiv NACH der Kontrolle
-        // (`_tickBootPhase3`), headless sofort (gate-treu).
-        this._bootDeferCreatures(10);
-
-        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
-        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
-        // (sieht von erhöhter Warte die Welt, fällt nicht blind in ein Tal).
-        if (wasFirstSpawn) {
-            try {
-                this._ensureGenesisPlatform();
-            } catch (e) {
-                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+        // die Heimat entsteht im Faden (Karte hydro-faden): was das Wasser liest, folgt ihr — das Versprechen trägt es
+        return this._worldgenComputeAndBuildHydrosphere().then((hydro) => {
+            if (!hydro) return false; // eine neuere Welt kam ihr zuvor
+            // Kreaturen sind deferierte Boot-Arbeit: `spawnCreatures(10)` (~3 s Skin-Isoflächen) gehört nicht
+            // auf den kritischen Pfad — `_bootDeferCreatures` spawnt progressiv NACH der Kontrolle
+            // (`_tickBootPhase3`), headless sofort (gate-treu).
+            this._bootDeferCreatures(10);
+            // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
+            // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
+            // (sieht von erhöhter Warte die Welt, fällt nicht blind in ein Tal).
+            if (wasFirstSpawn) {
+                try {
+                    this._ensureGenesisPlatform();
+                } catch (e) {
+                    this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+                }
             }
-        }
+            return true;
+        });
     }
 
     // Alle alten Welt-Objekte abräumen: groundMesh, floatingIslands, ufos, creatures (+ creatureEmotions),
@@ -1125,7 +1064,7 @@ class AnazhRealm_gelaende_chunks {
         } else {
             // V12.0-perf.b — base-gecachter Sync-Pfad. Statt ~126 ms
             // `_terrainDensityAt`-Grid-Sample wird die worldgen-frozen Basis
-            // gecacht; nur der billige voxelEdit-Delta wird neu aufgelegt.
+            // gecacht; nur die billige Form der Edits wird neu aufgelegt.
             terrainDensity = this._voxelEditedDensityGrid(
                 `${cx},${cz},${lod}`,
                 ox - step,
@@ -1206,14 +1145,7 @@ class AnazhRealm_gelaende_chunks {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
         }
-        const karte = this._bodenKarteAusMesh(
-            geom.attributes.position.array,
-            geom.index ? geom.index.array : null,
-            geom.attributes.color ? geom.attributes.color.array : null,
-            cx,
-            cz,
-            lod
-        );
+        const karte = this._bodenKarteNaht(geom, cx, cz, lod, geom.attributes.position.array, "lage");
         return { mesh, kind: "filled", waterCells, lod, surfMap: karte && karte.hoehe, gruenMap: karte && karte.gruen };
     }
 
@@ -1222,14 +1154,10 @@ class AnazhRealm_gelaende_chunks {
     // Rückgabe: "pending" · null (Fail/degeneriert) · {mesh, kind, waterCells, lod, hasBVH?}.
     // `forceSync` (Spieler-Chunk + Test-Naht) springt direkt zu Stufe 3 (kein Worker-Roundtrip).
     _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
-        // Harte Kachel-Garantie am EINEN Build-Eingang: vor jedem Chunk-Bau steht die Hydro/Erosions-
-        // Kachel seines Footprints (+64 m Pad für Reads über die Grenze). Eine NEUE Kachel re-synct den
-        // Worker VOR dem Request (Nachrichten-Ordnung) → Main und Worker bauen aus derselben Kachel.
-        {
-            const { span } = this._voxelChunkConfig(0);
-            const half = span / 2;
-            this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
-        }
+        // Harte Kachel-Garantie am EINEN Build-Eingang: vor jedem Chunk-Bau steht die Hydrosphäre seines Footprints (+64 m Pad
+        // für Reads über die Grenze), im Faden entstanden (Karte hydro-faden) — fehlt sie, ist sie bestellt und der Bau wartet.
+        // Der Faden trägt sie vor jedem Auftrag dahinter (Nachrichten-Ordnung) → Main und Worker bauen aus derselben Kachel.
+        if (!this._hydroSteht(cx, cz)) return "pending";
         if (opts.forceSync === true) {
             // V18.263 — der Player-Chunk-Sync-Build ist der Freeze-Verdächtige
             // (~239 ms, blockiert den Main-Thread). Der Perf-Sense misst ihn IMMER
@@ -1303,6 +1231,8 @@ class AnazhRealm_gelaende_chunks {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
+            zellenId: fresh.zellenId || null, // die Zellen des Fadens (das Wasser-Sheet nimmt sie per Verweis)
+            zellenFest: fresh.zellenFest || null, // … samt der Zellen, die der Architektur-Stempel fest machte
             // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Stand, Gras und Streu
             // lesen sie über den EINEN Leser `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn).
             surfMap: fresh.surfMap || null,
@@ -1398,17 +1328,126 @@ class AnazhRealm_gelaende_chunks {
         // neue Stufe gröber ist als seine (die Naht folgt dem neuen Netz) oder dessen alte (`altLod`: die alte Naht fällt).
         // Jeder andere behält seinen Morph; bis K51-3 morphte jeder Wechsel alle acht neu (OMEN 1410-boden gehend: die
         // Folge-Neubauten des Stufen-Wechsels, Frame p95 28,7 → 41,6 ms; Radeon je Neubau ~9 Morphs à 1,2–1,5 ms).
+        // Der Chunk selbst morpht sofort (sein erstes Netz); die Folge seiner Nachbarn geht in die Folge-Schlange
+        // (`_tickMorphFolge`), die sein eigener Morph für ihn schließt.
+        if (this.state._morphFolge) this.state._morphFolge.delete(key);
+        this._applyCrossLodGeomorph(cx, cz);
         for (let dx = -1; dx <= 1; dx++)
             for (let dz = -1; dz <= 1; dz++) {
-                if (dx !== 0 || dz !== 0) {
-                    const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                    if (!nb || nb.empty || !nb.mesh) continue;
-                    const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
-                    if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
-                }
-                this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                if (dx === 0 && dz === 0) continue;
+                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                if (!nb || nb.empty || !nb.mesh) continue;
+                const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
+                if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
+                const F = this.state._morphFolge || (this.state._morphFolge = new Map());
+                const nk = `${cx + dx},${cz + dz}`;
+                if (!F.has(nk)) F.set(nk, this._schedFrameNo | 0);
             }
         return entry;
+    }
+
+    // DIE FOLGE DES WECHSELS IM TAKT (fahrt-takt, profiband.K1, Lehre 25): ein Nachbar, den ein Stufen-Wechsel neu morphen
+    // lässt, wartet in der EINEN Folge-Schlange (Chunk → Takt der ersten Bitte) und morpht EINMAL gegen den letzten Stand
+    // seiner Nachbarn — ein Ring-Wechsel baut seine Reihe Chunk für Chunk (je Takt einer), bis fahrt-takt morphte der Nachbar
+    // nach jedem neu (Radeon in Fahrt 20 m/s: 648 von 1 119 Folge-Morphs wiederholten sich binnen 10 Takten, 481 von 762 ms).
+    // Nah zuerst (Ring-Abstand, dann die ältere Bitte), im Takt ohne Chunk-Einbau bis `ms`, mindestens einer; nie verhungert:
+    // eine Bitte, älter als MORPH_FOLGE_FRIST Takte, morpht in jedem Takt. Der Morph liest die Nachbarn, wie sie dann stehen —
+    // byte-gleich mit dem Morph nach jedem Wechsel (der letzte gewinnt, `_applyCrossLodGeomorph` ist ein Zustand der Netze).
+    _tickMorphFolge(ms) {
+        const F = this.state._morphFolge;
+        if (!F || F.size === 0) return 0;
+        const takt = this._schedFrameNo | 0;
+        const p = this.state.lastPlayerVoxelChunk;
+        const reihe = [];
+        for (const [key, seit] of F) {
+            const k = key.indexOf(",");
+            const cx = Number(key.slice(0, k)),
+                cz = Number(key.slice(k + 1));
+            reihe.push({ key, cx, cz, seit, d: p ? Math.max(Math.abs(cx - p.cx), Math.abs(cz - p.cz)) : 0 });
+        }
+        reihe.sort((a, b) => a.d - b.d || a.seit - b.seit || (a.key < b.key ? -1 : 1));
+        const t0 = performance.now();
+        let n = 0;
+        for (const e of reihe) {
+            const faellig = takt - e.seit >= AnazhRealm.MORPH_FOLGE_FRIST;
+            if (!faellig && (ms <= 0 || (n > 0 && performance.now() - t0 >= ms))) continue;
+            F.delete(e.key);
+            this._applyCrossLodGeomorph(e.cx, e.cz);
+            n++;
+        }
+        return n;
+    }
+
+    // DIE NAHT DES CHUNKS (gehen-takt, Lehre 25): was ein Naht-Morph berühren KANN, steht mit dem Netz fest — die Rand-Vertices
+    // (bis zum Morph-Band, 2 Schritte, an einer Kante: nur sie zieht `_applyCrossLodGeomorph` an einen Nachbarn), die Rand-
+    // Dreiecke (≥ 1 Rand-Vertex: nur sie tragen Stitch-Kanten) und je Seite (x−, x+, z−, z+) die Dreiecke, die ein FEINERER
+    // Nachbar als grobe Fläche liest (eine Ecke ≤ 1,5 Schritte an der Kante), dazu je lesender Richtung ihre Kandidaten
+    // (`kand`, der Morph legt sie an). Einmal je Geometrie (ihre Lage ist unveränderlich, ein Edit baut neu); bis gehen-takt
+    // ging jeder Morph alle Vertices des Chunks und alle Dreiecke jedes gröberen Nachbarn (je Ecke ein Math.hypot) und
+    // rasterte die ganze Boden-Karte — Radeon gehend 4,9 ms in den Spitzen-Takten (`werkbank takt`), in der Mitte 0. Die
+    // Listen sind Obermengen (EPS): der Morph prüft jede Stelle exakt.
+    _bodenNaht(geom, cx, cz, lod) {
+        const u = geom.userData;
+        if (u.naht) return u.naht;
+        const { span: S, step } = this._voxelChunkConfig(lod);
+        const P = geom.attributes.position.array;
+        const idx = geom.index.array;
+        const ox = cx * S,
+            oz = cz * S;
+        const EPS = 1e-3; // die Rundung zwischen `i · span − x` (der Morph) und `x − cx · span` (hier)
+        const mb = 2 * step + EPS,
+            bnd = 1.5 * step + EPS;
+        const n = P.length / 3;
+        const rand = [];
+        const randSeite = [[], [], [], []]; // die Rand-Vertices je Seite x−, x+, z−, z+ (≤ Morph-Band an der Kante)
+        const seiteV = new Uint8Array(n); // 16 = Rand-Vertex, dazu die Seiten-Bits 1 x− · 2 x+ · 4 z− · 8 z+ (≤ bnd)
+        for (let v = 0; v < n; v++) {
+            const lx = P[v * 3] - ox,
+                lz = P[v * 3 + 2] - oz;
+            const an = [lx <= mb, lx >= S - mb, lz <= mb, lz >= S - mb];
+            if (!an.includes(true)) continue;
+            rand.push(v);
+            for (let s = 0; s < 4; s++) if (an[s]) randSeite[s].push(v);
+            seiteV[v] =
+                16 | (lx <= bnd ? 1 : 0) | (lx >= S - bnd ? 2 : 0) | (lz <= bnd ? 4 : 0) | (lz >= S - bnd ? 8 : 0);
+        }
+        const nT = Math.floor(idx.length / 3);
+        const randTri = [];
+        const seite = [[], [], [], []];
+        for (let q = 0; q < nT; q++) {
+            const f = seiteV[idx[q * 3]] | seiteV[idx[q * 3 + 1]] | seiteV[idx[q * 3 + 2]];
+            if (!f) continue;
+            randTri.push(q * 3);
+            for (let s = 0; s < 4; s++) if (f & (1 << s)) seite[s].push(q * 3);
+        }
+        u.naht = {
+            rand: Int32Array.from(rand),
+            randSeite: randSeite.map((l) => Int32Array.from(l)),
+            randTri: Int32Array.from(randTri),
+            seite: seite.map((l) => Int32Array.from(l)),
+            seiteV, // je Vertex die Seiten-Bits (das Naht-Band liest seine Kanten-Kandidaten daraus, `_rebuildLodStitchBand`)
+            kanten: null,
+            kand: [], // je lesender Richtung (dx, dz) die Kandidaten eines feineren Nachbarn (`_applyCrossLodGeomorph`)
+            treffer: [], // je Richtung der Treffer dieses Netzes auf dem gröberen Nachbarn, mit dessen Geometrie
+            gesetzt: false, // der erste Morph setzt das ganze Netz auf das Ziel seiner Stufe, jeder weitere nur den Rand
+            lage: null, // die letzte Karte je Art samt ihrer Lage (`_bodenKarteNaht`)
+            ziel: null,
+        };
+        return u.naht;
+    }
+
+    // DIE BODEN-KARTE ÜBER DER NAHT (gehen-takt): die erste Karte je Geometrie rastert ganz, jede weitere nur die Zellen, über
+    // denen ein Dreieck gegen die vorige seine Lage ändert (`_bodenKarteAusMesh` mit `basis`); die Karte ist danach unveränderlich
+    // und hält ihre Lage. `art` "lage": die gezeichnete Lage samt Grün (Bau und Naht-Morph, je Ruf ein neuer Puffer), "ziel": die
+    // Morph-Ziele, nur die Höhe (`_bodenStufeMisch`; der Attribut-Puffer, darum eine Kopie).
+    _bodenKarteNaht(geom, cx, cz, lod, lage, art) {
+        if (!geom.index) return null;
+        const naht = this._bodenNaht(geom, cx, cz, lod);
+        const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
+        const ref = art === "lage" ? lage : new Float32Array(lage);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art], naht);
+        naht[art] = k && Object.assign(k, { ref });
+        return k;
     }
 
     // Zieht die Boundary-Vertices dieses Chunks auf die GROBE Oberfläche jedes gröberen Achsen-
@@ -1448,158 +1487,388 @@ class AnazhRealm_gelaende_chunks {
         // der Abstand zum Eck-Punkt; derselbe Wert in jedem Chunk, der den Punkt trägt
         const quadratAbstand = (x, z, i, j) =>
             Math.hypot(Math.max(i * span - x, 0, x - (i + 1) * span), Math.max(j * span - z, 0, z - (j + 1) * span));
+        // `quadratAbstand(x, z, i, j) > g`, ohne Wurzel, wo das Quadrat (mit Rundungs-Rand) schon entscheidet (gehen-takt)
+        const jenseits = (x, z, i, j, g) => {
+            const a = Math.max(i * span - x, 0, x - (i + 1) * span),
+                b = Math.max(j * span - z, 0, z - (j + 1) * span);
+            const q = a * a + b * b;
+            return q > g * g * (1 + 1e-9) ? true : q < g * g * (1 - 1e-9) ? false : Math.hypot(a, b) > g;
+        };
         // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
         if (coarseFaces.length === 0 && !entry.hasMorph && !entry.lodStitchMesh) return;
         const n = pos.count;
+        const P = pos.array;
         const tArr = tgtAttr.array;
         const wArr = wAttr.array;
-        // der Fingerabdruck des alten Morphs (die Karte zieht nur nach, wenn er sich ändert)
-        const abdruck = () => {
+        // DIE NAHT (`_bodenNaht`): nur die Rand-Vertices kann ein Morph ziehen — das Innere steht nach dem ersten Morph für immer
+        // auf dem Ziel seiner Stufe (Naht 0, Beitrag 0 im Abdruck); der erste Morph je Geometrie geht das ganze Netz
+        const saum = this._bodenNaht(geom, cx, cz, myLod);
+        const R = saum.rand;
+        const alle = !saum.gesetzt;
+        // der Fingerabdruck des Morphs (die Karte zieht nur nach, wenn er sich ändert): je Vertex mit Naht ein Beitrag
+        const beitrag = (w, x, y, z, v) => {
+            const f = this._morphNaht(w);
+            return f > 0 ? f * (x * 1.31 + y * 1.73 + z * 1.13 + v) : 0;
+        };
+        const abdruck = (ganz) => {
             let s = 0;
-            for (let v = 0; v < n; v++) {
-                const w = this._morphNaht(wArr[v]);
-                if (w > 0) s += w * (tArr[v * 3] * 1.31 + tArr[v * 3 + 1] * 1.73 + tArr[v * 3 + 2] * 1.13 + v);
+            for (let q = 0, m = ganz ? n : R.length; q < m; q++) {
+                const v = ganz ? q : R[q];
+                s += beitrag(wArr[v], tArr[v * 3], tArr[v * 3 + 1], tArr[v * 3 + 2], v);
             }
             return s;
         };
-        const abdruckAlt = abdruck();
         // Basis = das Ziel der Stufe (K51-2, `stufeZiel`; die gröbste Stufe: die Position), Naht 0
-        const basis = geom.userData.stufeZiel || pos.array;
+        const basis = geom.userData.stufeZiel || P;
         const code0 = this._morphCode(myLod, 0);
-        for (let v = 0; v < n * 3; v++) tArr[v] = basis[v];
-        wArr.fill(code0);
-        // das Naht-Ziel je Vertex (der gröbere Nachbar) — das Naht-Band brückt dorthin, auch wo der Cap den Morph stoppt
-        const nahtZiel = coarseFaces.length ? new Float32Array(n * 3) : null;
-        let touched = false;
-        const bestDist = coarseFaces.length ? new Float32Array(n).fill(Infinity) : null;
-        // A1/N1 (gigant-plan §5 · Naht §12.2) — die Grenz-Zeilen-Vertices für das
-        // Stitch-Band sammeln (Index → hat ein echtes Morph-Target in tArr).
-        const bandVerts = new Set();
         const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
-        for (const face of coarseFaces) {
-            const nbGeom = face.nbGeom;
-            const nbPos = nbGeom.attributes.position;
-            const nbIdx = nbGeom.index ? nbGeom.index.array : null;
-            if (!nbPos || !nbIdx) continue;
-            const coarseStep = this._voxelChunkConfig(face.nbLod).step;
+        // DER TREFFER EINER RICHTUNG: je Vertex im Band des Nachbarn (`randSeite`, im Morph-Band) der nächste Punkt der groben
+        // Fläche, sein Abstand und sein Ebenen-Abstand, in der Reihe der Rand-Liste.
+        const trefferVon = (face, nbGeom, coarseStep) => {
+            const nbPos = nbGeom.attributes.position,
+                nbIdx = nbGeom.index.array;
             const ni = cx + face.dx,
                 nj = cz + face.dz;
+            const morphBand = fineStep * 2.0;
+            const fk = (face.dx + 1) * 3 + face.dz + 1;
+            const nbNaht = this._bodenNaht(nbGeom, ni, nj, face.nbLod);
+            const ab = face.dx === 0 ? 0 : 4; // die Hülle längs der Kante: x an einer z-Kante, sonst z
+            const quer = 4 - ab, // quer zur Kante (die Ecke: x)
+                vor = face.dx || face.dz; // der Nachbar liegt quer in + oder −
             // Grobe Boundary-DREIECKE (≥1 Vertex nahe diesem Chunk) als flaches Array: gemorpht wird Punkt→Dreieck
             // auf die grobe OBERFLÄCHE, nie auf den nächsten groben VERTEX (sparse; 3D-nearest greift die
-            // falsche Höhlen-Branche und lässt ~11 m Spalt).
-            const tris = [];
-            const bnd = coarseStep * 1.5;
-            for (let t = 0; t < nbIdx.length; t += 3) {
-                const i0 = nbIdx[t],
-                    i1 = nbIdx[t + 1],
-                    i2 = nbIdx[t + 2];
-                if (
-                    quadratAbstand(nbPos.getX(i0), nbPos.getZ(i0), cx, cz) > bnd &&
-                    quadratAbstand(nbPos.getX(i1), nbPos.getZ(i1), cx, cz) > bnd &&
-                    quadratAbstand(nbPos.getX(i2), nbPos.getZ(i2), cx, cz) > bnd
-                )
-                    continue;
-                tris.push(
-                    nbPos.getX(i0),
-                    nbPos.getY(i0),
-                    nbPos.getZ(i0),
-                    nbPos.getX(i1),
-                    nbPos.getY(i1),
-                    nbPos.getZ(i1),
-                    nbPos.getX(i2),
-                    nbPos.getY(i2),
-                    nbPos.getZ(i2)
+            // falsche Höhlen-Branche und lässt ~11 m Spalt). Kandidaten: die Seite des Nachbarn, die diesem Chunk zugewandt ist
+            // (`_bodenNaht`; die Ecke liest seine x-Seite), in der Reihe seines Netzes; `box` die Hülle je Dreieck. Sie hängen nur
+            // an der Nachbar-Geometrie und der Richtung: einmal angelegt (`kand`), liest sie jeder weitere Morph von hier.
+            if (!nbNaht.kand[fk]) {
+                const nbP = nbPos.array;
+                const tris = [];
+                const box = [];
+                const bnd = coarseStep * 1.5;
+                for (const t of nbNaht.seite[face.dx === 1 ? 0 : face.dx === -1 ? 1 : face.dz === 1 ? 2 : 3]) {
+                    const i0 = nbIdx[t] * 3,
+                        i1 = nbIdx[t + 1] * 3,
+                        i2 = nbIdx[t + 2] * 3;
+                    if (
+                        jenseits(nbP[i0], nbP[i0 + 2], cx, cz, bnd) &&
+                        jenseits(nbP[i1], nbP[i1 + 2], cx, cz, bnd) &&
+                        jenseits(nbP[i2], nbP[i2 + 2], cx, cz, bnd)
+                    )
+                        continue;
+                    tris.push(
+                        nbP[i0],
+                        nbP[i0 + 1],
+                        nbP[i0 + 2],
+                        nbP[i1],
+                        nbP[i1 + 1],
+                        nbP[i1 + 2],
+                        nbP[i2],
+                        nbP[i2 + 1],
+                        nbP[i2 + 2]
+                    );
+                    for (let k = 0; k < 3; k++)
+                        box.push(
+                            Math.min(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k]),
+                            Math.max(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k])
+                        );
+                }
+                const nT = tris.length / 9;
+                let u0 = Infinity,
+                    u1 = -Infinity;
+                for (let q = 0; q < nT; q++) {
+                    u0 = Math.min(u0, box[q * 6 + ab]);
+                    u1 = Math.max(u1, box[q * 6 + ab + 1]);
+                }
+                const W = coarseStep;
+                const eimer = Array.from({ length: nT ? Math.floor((u1 - u0) / W) + 1 : 0 }, () => []);
+                for (let q = 0; q < nT; q++)
+                    for (
+                        let e = Math.floor((box[q * 6 + ab] - u0) / W), e1 = Math.floor((box[q * 6 + ab + 1] - u0) / W);
+                        e <= Math.min(e1, eimer.length - 1);
+                        e++
+                    )
+                        eimer[e].push(q);
+                // der Abstand der Hülle von der Kante, quer: die nahe Seite (Minimum bei +, Maximum bei −)
+                const schl = Float64Array.from({ length: nT }, (_, q) =>
+                    vor > 0 ? box[q * 6 + quer] : -box[q * 6 + quer + 1]
                 );
+                nbNaht.kand[fk] = {
+                    tris: Float64Array.from(tris),
+                    box: Float64Array.from(box),
+                    schl,
+                    u0,
+                    eimer: eimer.map((l) => Int32Array.from(l.sort((x, y) => schl[x] - schl[y] || x - y))),
+                };
             }
-            if (tris.length === 0) continue;
-            // Grenz-ZEILE (dPlane < flat) morpht voll (w=1), danach Falloff bis morphBand (kein interner
-            // Sprung). flat = 0.7·fineStep deckt die Surface-Nets-Offset-Streuung (~fineStep/2) ab.
-            const flat = fineStep * 0.7;
-            const morphBand = fineStep * 2.0;
+            const { tris, box, schl, u0, eimer } = nbNaht.kand[fk];
+            const out = { nb: nbGeom, v: [], d3: [], ziel: [], eben: [] };
+            if (tris.length === 0) return out;
+            // DIE EIMER (gehen-takt): die Dreiecke nach ihrer Hülle längs der Kante (je ein grober Schritt). Ein Vertex fragt die
+            // Eimer von seinem aus nach außen, bis die Lücke längs der Kante weiter ist als sein bester Treffer; ein Dreieck,
+            // dessen Hülle weiter liegt, fällt ohne Rechnung (mit Rundungs-Rand: es könnte nie gleichziehen). Der Treffer ist das
+            // kleinste (Abstand, Dreieck) — wie in der Reihe des Netzes, bei gleichem Abstand das frühere: byte-gleich. Im Eimer
+            // stehen die Dreiecke nach ihrem Abstand von der Kante (`schl`): liegt die Hülle quer weiter als der Treffer, liegen
+            // es alle folgenden auch.
+            const nT = tris.length / 9;
+            const W = coarseStep;
+            const nE = eimer.length;
+            const besucht = new Int32Array(nT).fill(-1);
+            const nahe = saum.randSeite[face.dx === 1 ? 1 : face.dx === -1 ? 0 : face.dz === 1 ? 3 : 2];
+            // der Treffer des vorigen Vertex zuerst (die Reihe des Netzes ist räumlich): der beste Abstand ist früh klein.
+            // `best` = [Abstand², Dreieck, x, y, z] des laufenden Vertex `pv`
+            const best = new Float64Array(5);
+            const pv = new Float64Array(4);
+            const kandidat = (q) => {
+                if (besucht[q] === pv[3]) return;
+                besucht[q] = pv[3];
+                const px = pv[0],
+                    py = pv[1],
+                    pz = pv[2];
+                const b = q * 6;
+                const ax = box[b] - px,
+                    bx = px - box[b + 1],
+                    ay = box[b + 2] - py,
+                    by = py - box[b + 3],
+                    az = box[b + 4] - pz,
+                    bz = pz - box[b + 5];
+                const ex = ax > 0 ? ax : bx > 0 ? bx : 0,
+                    ey = ay > 0 ? ay : by > 0 ? by : 0,
+                    ez = az > 0 ? az : bz > 0 ? bz : 0;
+                if (ex * ex + ey * ey + ez * ez > best[0] * (1 + 1e-9) + 1e-9) return;
+                this._closestPtTri(px, py, pz, tris, q * 9, cp);
+                const ddx = px - cp[0],
+                    ddy = py - cp[1],
+                    ddz = pz - cp[2];
+                const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                if (d2 < best[0] || (d2 === best[0] && q < best[1])) {
+                    best[0] = d2;
+                    best[1] = q;
+                    best[2] = cp[0];
+                    best[3] = cp[1];
+                    best[4] = cp[2];
+                }
+            };
+            let vorQ = -1;
+            for (const v of nahe) {
+                const px = P[v * 3],
+                    py = P[v * 3 + 1],
+                    pz = P[v * 3 + 2];
+                if (jenseits(px, pz, ni, nj, morphBand)) continue;
+                const dPlane = quadratAbstand(px, pz, ni, nj);
+                pv[0] = px;
+                pv[1] = py;
+                pv[2] = pz;
+                pv[3] = v;
+                best[0] = Infinity;
+                best[1] = -1;
+                best[2] = px;
+                best[3] = py;
+                best[4] = pz;
+                if (vorQ >= 0) kandidat(vorQ);
+                // dann der eigene Eimer und nach beiden Seiten, bis die Lücke zur Eimer-Kante weiter ist als der beste Treffer
+                const pu = ab === 0 ? px : pz;
+                const e0 = Math.max(0, Math.min(nE - 1, Math.floor((pu - u0) / W)));
+                const weit = (luecke) => luecke > 0 && luecke * luecke > best[0] * (1 + 1e-9) + 1e-9;
+                const sp = vor * (quer === 0 ? px : pz);
+                const gehe = (e) => {
+                    for (const q of eimer[e]) {
+                        if (weit(schl[q] - sp)) break;
+                        kandidat(q);
+                    }
+                };
+                gehe(e0);
+                for (let e = e0 - 1; e >= 0 && !weit(pu - (u0 + (e + 1) * W)); e--) gehe(e);
+                for (let e = e0 + 1; e < nE && !weit(u0 + e * W - pu); e++) gehe(e);
+                vorQ = best[1];
+                out.v.push(v);
+                out.d3.push(Math.sqrt(best[0]));
+                out.ziel.push(best[2], best[3], best[4]);
+                out.eben.push(dPlane);
+            }
+            return out;
+        };
+        // Grenz-ZEILE (dPlane < flat) morpht voll (w=1), danach Falloff bis morphBand (kein interner
+        // Sprung). flat = 0.7·fineStep deckt die Surface-Nets-Offset-Streuung (~fineStep/2) ab.
+        const flat = fineStep * 0.7;
+        const morphBand = fineStep * 2.0;
+        // DER TREFFER JE RICHTUNG (gehen-takt): je Vertex im Band der nächste Punkt der groben Fläche hängt nur an diesem Netz
+        // und dem des Nachbarn — liest der Morph dieselbe Nachbar-Geometrie wie zuletzt, liest er ihn von hier (`treffer`).
+        const richtungen = [];
+        const an = new Array(9).fill(null);
+        for (const face of coarseFaces) {
+            const nbGeom = face.nbGeom;
+            if (!nbGeom.attributes.position || !nbGeom.index) continue;
+            const coarseStep = this._voxelChunkConfig(face.nbLod).step;
+            const fk = (face.dx + 1) * 3 + face.dz + 1;
+            if (!saum.treffer[fk] || saum.treffer[fk].nb !== nbGeom)
+                saum.treffer[fk] = trefferVon(face, nbGeom, coarseStep);
+            an[fk] = saum.treffer[fk];
             // Morph-Cap: an Cliffs divergieren feine + grobe Fläche vertikal (bis ~28 m); dorthin ziehen zerrt
             // die Wand. Jenseits des Caps bleibt w=0 und das Stitch-Band überbrückt den Spalt.
-            const snapCap = coarseStep * 2.5;
-            for (let v = 0; v < n; v++) {
-                const px = pos.getX(v),
-                    py = pos.getY(v),
-                    pz = pos.getZ(v);
-                const dPlane = quadratAbstand(px, pz, ni, nj);
-                if (dPlane > morphBand) continue;
-                let bd = Infinity,
-                    bx = px,
-                    by = py,
-                    bz = pz;
-                for (let t = 0; t < tris.length; t += 9) {
-                    this._closestPtTri(px, py, pz, tris, t, cp);
-                    const ddx = px - cp[0],
-                        ddy = py - cp[1],
-                        ddz = pz - cp[2];
-                    const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
-                    if (d2 < bd) {
-                        bd = d2;
-                        bx = cp[0];
-                        by = cp[1];
-                        bz = cp[2];
-                    }
+            richtungen.push({ tr: an[fk], achse: face.dx === 0 || face.dz === 0, snapCap: coarseStep * 2.5 });
+        }
+        // DER MORPH JE NACHBAR-SEITE (fahrt-takt, profiband.K1): ein Vertex des Rands hängt nur an den Treffern der Richtungen,
+        // die ihn tragen. Der Morph merkt je Richtung den Treffer, den er anlegte (`an`), und je Vertex Abstand, Grenz-Zeile und
+        // Naht-Ziel; der nächste rechnet nur die Vertices der Richtungen neu, deren Treffer wechselte (der Nachbar wechselte
+        // Stufe oder Netz) — jeder andere Vertex sähe dieselben Treffer in derselben Reihe: byte-gleich mit dem ganzen Morph.
+        // Wechselte keine, steht der Morph; was sich nicht ändert, zieht nicht nach (Hochladen, Karte, Naht-Band). Bis
+        // fahrt-takt rechnete jeder Wechsel jeden feineren Nachbarn ganz (Radeon in Fahrt 20 m/s: 1 231 Morphs in 30 s,
+        // `_applyCrossLodGeomorph` 2,9–4,4 ms je Takt ab p95, `werkbank takt --wandern fahrt`; je Seite 2,2–2,4, ABAB 22.10.).
+        let M = saum.morph;
+        let A = null;
+        let inA = null;
+        if (alle || !M || M.entry !== entry || M.netz !== entry.lodStitchMesh)
+            M = saum.morph = {
+                entry,
+                an,
+                abst: new Float32Array(n).fill(Infinity), // der Abstand des gewinnenden Treffers je Vertex
+                band: new Uint8Array(n), // 1 = in der Grenz-Zeile (das Naht-Band hängt an ihr)
+                ziel: new Float32Array(n * 3), // das Naht-Ziel (der gröbere Nachbar) — das Band brückt dorthin, auch hinter dem Cap
+                netz: null,
+            };
+        else {
+            inA = new Uint8Array(n);
+            A = [];
+            for (let fk = 0; fk < 9; fk++) {
+                if (M.an[fk] === an[fk]) continue;
+                for (const tr of [M.an[fk], an[fk]])
+                    if (tr)
+                        for (const v of tr.v)
+                            if (!inA[v]) {
+                                inA[v] = 1;
+                                A.push(v);
+                            }
+            }
+            M.an = an;
+            if (A.length === 0) return;
+        }
+        const { abst, band, ziel } = M;
+        // der Stand vor dem Teil-Morph (was er ändert, entscheidet, was nachzieht)
+        const alt = A && {
+            t: new Float32Array(A.length * 3),
+            w: new Float32Array(A.length),
+            b: new Uint8Array(A.length),
+            z: new Float32Array(A.length * 3),
+        };
+        if (A)
+            for (let q = 0; q < A.length; q++) {
+                const v = A[q];
+                for (let k = 0; k < 3; k++) {
+                    alt.t[q * 3 + k] = tArr[v * 3 + k];
+                    alt.z[q * 3 + k] = ziel[v * 3 + k];
+                    ziel[v * 3 + k] = 0;
                 }
-                const d3 = Math.sqrt(bd);
-                // A1 — die Band-Sammlung VOR dem bestDist-Skip (idempotentes Set):
+                alt.w[q] = wArr[v];
+                alt.b[q] = band[v];
+                abst[v] = Infinity;
+                band[v] = 0;
+            }
+        const abdruckAlt = A ? 0 : abdruck(alle);
+        if (alle) {
+            for (let v = 0; v < n * 3; v++) tArr[v] = basis[v];
+            wArr.fill(code0);
+            saum.gesetzt = true;
+        } else
+            for (const v of A || R) {
+                tArr[v * 3] = basis[v * 3];
+                tArr[v * 3 + 1] = basis[v * 3 + 1];
+                tArr[v * 3 + 2] = basis[v * 3 + 2];
+                wArr[v] = code0;
+            }
+        for (const { tr, achse, snapCap } of richtungen)
+            for (let m = 0; m < tr.v.length; m++) {
+                const v = tr.v[m],
+                    d3 = tr.d3[m],
+                    dPlane = tr.eben[m];
+                if (inA && !inA[v]) continue;
+                // A1 — die Band-Sammlung VOR dem Abstands-Skip (idempotente Maske):
                 // ein KORNER-Vertex zwischen zwei groben Faces gehört in die Border-Row,
                 // auch wenn das nähere Target von der ANDEREN Face kam. Das Band hängt an den ACHSEN-Kanten — der
                 // Eck-Nachbar trägt nur den Morph (sein Band liegt an der Kante der beiden Achsen-Nachbarn).
-                if (dPlane <= flat && (face.dx === 0 || face.dz === 0)) bandVerts.add(v);
-                if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
-                bestDist[v] = d3;
-                tArr[v * 3] = nahtZiel[v * 3] = bx;
-                tArr[v * 3 + 1] = nahtZiel[v * 3 + 1] = by;
-                tArr[v * 3 + 2] = nahtZiel[v * 3 + 2] = bz;
+                if (dPlane <= flat && achse) band[v] = 1;
+                if (d3 >= abst[v]) continue; // ein näheres Face gewann diesen Vertex schon
+                abst[v] = d3;
+                tArr[v * 3] = ziel[v * 3] = tr.ziel[m * 3];
+                tArr[v * 3 + 1] = ziel[v * 3 + 1] = tr.ziel[m * 3 + 1];
+                tArr[v * 3 + 2] = ziel[v * 3 + 2] = tr.ziel[m * 3 + 2];
                 // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand.
                 // A1 — jenseits des Caps KEIN Naht-Morph (Naht 0): das Ziel bleibt das der Stufe (das Naht-Ziel trägt das Band),
                 // sonst zöge das Stufen-Gewicht die Cliff-Wand an den Nachbarn.
                 const naht = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
                 wArr[v] = this._morphCode(myLod, naht);
                 if (naht === 0) for (let k = 0; k < 3; k++) tArr[v * 3 + k] = basis[v * 3 + k];
-                touched = true;
             }
-        }
-        entry.hasMorph = touched;
         // die gekappten Naht-Vertices (Cliff: das Naht-Ziel weiter als der Cap, der Vertex trägt das Ziel seiner Stufe) — das
         // Naht-Band brückt sie (Leser: die Naht-Probe des Playtests)
+        let touched = false;
         let gekappt = 0;
-        if (bestDist)
-            for (let v = 0; v < n; v++) if (bestDist[v] < Infinity && this._morphNaht(wArr[v]) === 0) gekappt++;
+        for (const v of R)
+            if (abst[v] < Infinity) {
+                touched = true;
+                if (this._morphNaht(wArr[v]) === 0) gekappt++;
+            }
+        entry.hasMorph = touched;
         entry.nahtGekappt = gekappt;
-        entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenKarteZiel`)
-        this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
+        // was der Teil-Morph änderte: die Lage (Hochladen), der Abdruck (Karte), die Grenz-Zeile (Naht-Band)
+        let lage = !A,
+            karte = false,
+            nahtNeu = !A;
+        if (A)
+            for (let q = 0; q < A.length; q++) {
+                const v = A[q],
+                    o = v * 3,
+                    p = q * 3;
+                const gleich =
+                    wArr[v] === alt.w[q] &&
+                    tArr[o] === alt.t[p] &&
+                    tArr[o + 1] === alt.t[p + 1] &&
+                    tArr[o + 2] === alt.t[p + 2];
+                if (!gleich) {
+                    lage = true;
+                    if (
+                        beitrag(wArr[v], tArr[o], tArr[o + 1], tArr[o + 2], v) !==
+                        beitrag(alt.w[q], alt.t[p], alt.t[p + 1], alt.t[p + 2], v)
+                    )
+                        karte = true;
+                }
+                if (
+                    band[v] !== alt.b[q] ||
+                    (band[v] &&
+                        (!gleich ||
+                            ziel[o] !== alt.z[p] ||
+                            ziel[o + 1] !== alt.z[p + 1] ||
+                            ziel[o + 2] !== alt.z[p + 2]))
+                )
+                    nahtNeu = true;
+            }
+        else karte = abdruck(false) !== abdruckAlt;
+        if (lage) {
+            entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenStufeMisch`)
+            this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"], R);
+        }
         // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
         // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
         // Nah-Zone 3×3 liegt die Naht 43–65 m vor dem Auge, wo Tiere stehen (gate:koerper-stand K6: 346 von 772 Punkten mehr
         // als 25 cm neben dem gezeichneten Boden, die Karte las die rohe Lage).
-        if (abdruck() !== abdruckAlt) {
+        // das Innere liegt auf seiner Lage (Naht 0): nur der Rand trägt einen Morph, die Karte rastert nur seine Dreiecke neu
+        if (karte) {
             const U = this.state.atmoUniforms;
-            const A = this.state.atmosphere;
-            const gm = U && U.geomorph ? U.geomorph.value : A && Number.isFinite(A.geomorph) ? A.geomorph : 1;
-            const P = pos.array;
-            const lage = new Float32Array(P.length);
-            for (let v = 0; v < n; v++) {
+            const At = this.state.atmosphere;
+            const gm = U && U.geomorph ? U.geomorph.value : At && Number.isFinite(At.geomorph) ? At.geomorph : 1;
+            const L = new Float32Array(P);
+            for (const v of R) {
                 const f = this._morphNaht(wArr[v]) * gm;
-                lage[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
-                lage[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
-                lage[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
+                L[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
+                L[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
+                L[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
             }
-            const karte = this._bodenKarteAusMesh(
-                lage,
-                geom.index ? geom.index.array : null,
-                geom.attributes.color ? geom.attributes.color.array : null,
-                cx,
-                cz,
-                myLod
-            );
-            entry.surfMap = karte && karte.hoehe;
-            entry.gruenMap = karte && karte.gruen;
+            const k = this._bodenKarteNaht(geom, cx, cz, myLod, L, "lage");
+            entry.surfMap = k && k.hoehe;
+            entry.gruenMap = k && k.gruen;
             this._streuFussNeu(cx, cz);
         }
-        this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`, nahtZiel);
+        if (nahtNeu) this._rebuildLodStitchBand(entry, band, `${cx},${cz}`, ziel, saum);
+        M.netz = entry.lodStitchMesh;
     }
 
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
@@ -1609,14 +1878,14 @@ class AnazhRealm_gelaende_chunks {
     // Toons (WebGPU-strikt): color vom Quell-Vertex, die feine Kante Morph-Ziel und -Code ihres Quell-Vertex, sonst fest.
     // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
     // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
-    _rebuildLodStitchBand(entry, bandVerts, key, nahtZiel) {
+    _rebuildLodStitchBand(entry, bandVerts, key, nahtZiel, saum) {
         // Der Band-Bereich gehört dem Chunk-Key (nicht dem Eintrag): auch ein Neubau räumt ein altes Band.
         this._chunkSatzAus("boden", "stitch:" + key);
         if (entry.lodStitchMesh) {
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
-        if (!bandVerts || bandVerts.size === 0 || !entry.mesh || !entry.mesh.geometry) return;
+        if (!bandVerts || !bandVerts.includes(1) || !entry.mesh || !entry.mesh.geometry) return;
         const geom = entry.mesh.geometry;
         const pos = geom.attributes.position;
         const tgt = geom.attributes.aMorphTarget;
@@ -1636,25 +1905,13 @@ class AnazhRealm_gelaende_chunks {
         // der Catch-all für Rest-Spalten (Streaming-Transienten, Ecken/Diagonalen, LOD2/3-Bänder). Liegt
         // normal unterm Terrain, sichtbar nur, wo sonst ein Loch wäre. Render-only.
         const SKIRT = 6.0;
-        const P = [],
-            N = [],
-            C = [],
-            HS = [],
-            SC = [],
-            MT = [],
-            MW = [],
-            I = [];
         // die feine Kante der Brücke folgt der gezeichneten Kante (K51-2): ihre Ecken tragen Morph-Ziel und -Code des Quell-
         // Vertex (der Stoff zeichnet sie, wo er die Kante zeichnet — im Übergangs-Band wandert sie mit), die grobe Seite und der
         // Skirt stehen fest (Code 0, Ziel = Lage)
         const tA = tgt.array,
-            wA = wgt.array;
-        const fest = (x, y, z) => {
-            MT.push(x, y, z);
-            MW.push(0);
-        };
+            wA = wgt.array,
+            pA = pos.array;
         // die Ecken der feinen Kante und ihre Quell-Vertices: Normale und Stoff-Farbe wandern mit wie die Lage
-        const quelle = [];
         const nZiel = geom.attributes.aNormalZiel,
             fZiel = geom.attributes.aFarbeZiel;
         if (!nZiel || !fZiel)
@@ -1663,87 +1920,131 @@ class AnazhRealm_gelaende_chunks {
             );
         const sch = geom.attributes.aSchutt;
         if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
-        const seen = new Set();
-        for (let t = 0; t < idx.length; t += 3) {
-            const i0 = idx[t],
-                i1 = idx[t + 1],
-                i2 = idx[t + 2];
-            for (let e = 0; e < 3; e++) {
-                const a = e === 0 ? i0 : e === 1 ? i1 : i2;
-                const b = e === 0 ? i1 : e === 1 ? i2 : i0;
-                if (!bandVerts.has(a) || !bandVerts.has(b)) continue;
-                const k = a < b ? a * 200000 + b : b * 200000 + a;
-                if (seen.has(k)) continue;
-                seen.add(k);
-                const ax = pos.getX(a),
-                    ay = pos.getY(a),
-                    az = pos.getZ(a);
-                const bx = pos.getX(b),
-                    by = pos.getY(b),
-                    bz = pos.getZ(b);
-                const tax = nahtZiel[a * 3],
-                    tay = nahtZiel[a * 3 + 1],
-                    taz = nahtZiel[a * 3 + 2];
-                const tbx = nahtZiel[b * 3],
-                    tby = nahtZiel[b * 3 + 1],
-                    tbz = nahtZiel[b * 3 + 2];
-                const spanA = Math.hypot(tax - ax, tay - ay, taz - az);
-                const spanB = Math.hypot(tbx - bx, tby - by, tbz - bz);
+        // DIE KANTEN-KANDIDATEN (fahrt-takt): jede Kante der Grenz-Zeile liegt in einem Rand-Dreieck (`_bodenNaht`: die Grenz-
+        // Zeile ist Rand) zwischen zwei Vertices an einer Seite (≤ 1,5 Schritte, die Grenz-Zeile liegt ≤ 0,7 an der Kante) — einmal
+        // je Geometrie, jede Kante einmal in der Reihe des Netzes; bis fahrt-takt ging jedes Band alle Rand-Dreiecke samt Menge
+        if (!saum.kanten) {
+            const seen = new Set();
+            const K = [];
+            for (const t of saum.randTri)
+                for (let e = 0; e < 3; e++) {
+                    const a = idx[t + e],
+                        b = idx[t + ((e + 1) % 3)];
+                    if (!(saum.seiteV[a] & 15) || !(saum.seiteV[b] & 15)) continue;
+                    const k = a < b ? a * 200000 + b : b * 200000 + a;
+                    if (seen.has(k)) continue;
+                    seen.add(k);
+                    K.push(a, b);
+                }
+            saum.kanten = Int32Array.from(K);
+        }
+        // erst die Kanten (a, b, Brücke), dann die Puffer in ihrer Größe (gehen-takt: kein Umweg über wachsende Listen)
+        const kanten = [];
+        {
+            const K = saum.kanten;
+            for (let q = 0; q < K.length; q += 2) {
+                const a = K[q],
+                    b = K[q + 1];
+                if (!bandVerts[a] || !bandVerts[b]) continue;
+                const spanA = Math.hypot(
+                    nahtZiel[a * 3] - pA[a * 3],
+                    nahtZiel[a * 3 + 1] - pA[a * 3 + 1],
+                    nahtZiel[a * 3 + 2] - pA[a * 3 + 2]
+                );
+                const spanB = Math.hypot(
+                    nahtZiel[b * 3] - pA[b * 3],
+                    nahtZiel[b * 3 + 1] - pA[b * 3 + 1],
+                    nahtZiel[b * 3 + 2] - pA[b * 3 + 2]
+                );
                 if (Math.max(spanA, spanB) < MIN_SPAN) continue;
                 // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schliesst (K51): trägt er beide
                 // Enden ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche — die Brücke wäre eine Finne
                 // zur unsichtbaren rohen Lage (14.10., Mess-Wiese: zwei von drei Naht-Dreiecken, in jedem Pass gezeichnet).
-                if (!(this._morphNaht(wgt.getX(a)) >= 1 && this._morphNaht(wgt.getX(b)) >= 1)) {
-                    const base = P.length / 3;
-                    P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
-                    MT.push(tA[a * 3], tA[a * 3 + 1], tA[a * 3 + 2], tA[b * 3], tA[b * 3 + 1], tA[b * 3 + 2]);
-                    MW.push(wA[a], wA[b]);
-                    quelle.push(base, a, base + 1, b);
-                    fest(tbx, tby, tbz);
-                    fest(tax, tay, taz);
-                    for (const v of [a, b, b, a]) {
-                        N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
-                        C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
-                        HS.push(him.getX(v));
-                        SC.push(sch.getX(v));
-                    }
-                    I.push(base, base + 1, base + 2, base, base + 2, base + 3);
-                }
-                // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
-                // Normale ~horizontal-auswärts; DoubleSide → kein Backface-Loch.
-                const sBase = P.length / 3;
-                P.push(tax, tay, taz, tbx, tby, tbz, tbx, tby - SKIRT, tbz, tax, tay - SKIRT, taz);
-                for (let q = P.length - 12; q < P.length; q += 3) fest(P[q], P[q + 1], P[q + 2]);
-                for (let s = 0; s < 4; s++) {
-                    N.push(0, 0.2, 0); // grob nach oben/aussen — der Vorhang ist meist verdeckt
-                    const cv = s === 1 || s === 2 ? b : a;
-                    C.push(col ? col.getX(cv) : 0.5, col ? col.getY(cv) : 0.5, col ? col.getZ(cv) : 0.5);
-                    HS.push(him.getX(cv));
-                    SC.push(sch.getX(cv));
-                }
-                I.push(sBase, sBase + 1, sBase + 2, sBase, sBase + 2, sBase + 3);
+                kanten.push(a, b, this._morphNaht(wA[a]) >= 1 && this._morphNaht(wA[b]) >= 1 ? 0 : 1);
             }
         }
-        if (I.length === 0) return;
+        if (kanten.length === 0) return;
+        let nV = 0;
+        for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
+        const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
+        const [MW, HS, SC] = Array.from({ length: 3 }, () => new Float32Array(nV));
+        // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
+        const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
+        let o = 0,
+            oi = 0;
+        const nA = nrm && nrm.array,
+            cA = col && col.array,
+            hA = him.array,
+            sA = sch.array;
+        // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); \`morph\`: Ziel, Code, Ziel-
+        // Normale und -Farbe des Quell-Vertex (die feine Kante wandert mit), sonst fest (Ziel = Lage, Code 0)
+        const ecke = (x, y, z, v, morph, vorhang) => {
+            const o3 = o * 3;
+            P[o3] = x;
+            P[o3 + 1] = y;
+            P[o3 + 2] = z;
+            MT[o3] = morph ? tA[v * 3] : x;
+            MT[o3 + 1] = morph ? tA[v * 3 + 1] : y;
+            MT[o3 + 2] = morph ? tA[v * 3 + 2] : z;
+            MW[o] = morph ? wA[v] : 0;
+            N[o3] = vorhang || !nA ? 0 : nA[v * 3];
+            N[o3 + 1] = vorhang ? 0.2 : nA ? nA[v * 3 + 1] : 1;
+            N[o3 + 2] = vorhang || !nA ? 0 : nA[v * 3 + 2];
+            C[o3] = cA ? cA[v * 3] : 0.5;
+            C[o3 + 1] = cA ? cA[v * 3 + 1] : 0.5;
+            C[o3 + 2] = cA ? cA[v * 3 + 2] : 0.5;
+            for (let k = 0; k < 3; k++) {
+                NZ[o3 + k] = morph ? nZiel.array[v * 3 + k] : N[o3 + k];
+                FZ[o3 + k] = morph ? fZiel.array[v * 3 + k] : C[o3 + k];
+            }
+            HS[o] = hA[v];
+            SC[o] = sA[v];
+            o++;
+        };
+        const quad = () => {
+            I[oi++] = o - 4;
+            I[oi++] = o - 3;
+            I[oi++] = o - 2;
+            I[oi++] = o - 4;
+            I[oi++] = o - 2;
+            I[oi++] = o - 1;
+        };
+        for (let k = 0; k < kanten.length; k += 3) {
+            const a = kanten[k],
+                b = kanten[k + 1];
+            const tax = nahtZiel[a * 3],
+                tay = nahtZiel[a * 3 + 1],
+                taz = nahtZiel[a * 3 + 2],
+                tbx = nahtZiel[b * 3],
+                tby = nahtZiel[b * 3 + 1],
+                tbz = nahtZiel[b * 3 + 2];
+            if (kanten[k + 2]) {
+                ecke(pA[a * 3], pA[a * 3 + 1], pA[a * 3 + 2], a, true, false);
+                ecke(pA[b * 3], pA[b * 3 + 1], pA[b * 3 + 2], b, true, false);
+                ecke(tbx, tby, tbz, b, false, false);
+                ecke(tax, tay, taz, a, false, false);
+                quad();
+            }
+            // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
+            // Normale ~horizontal-auswärts (der Vorhang ist meist verdeckt); DoubleSide → kein Backface-Loch.
+            ecke(tax, tay, taz, a, false, true);
+            ecke(tbx, tby, tbz, b, false, true);
+            ecke(tbx, tby - SKIRT, tbz, b, false, true);
+            ecke(tax, tay - SKIRT, taz, a, false, true);
+            quad();
+        }
         const bg = new THREE.BufferGeometry();
         bg.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
         bg.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
         bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
         bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(MT, 3));
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(MW, 1));
-        const NZ = new Float32Array(N),
-            FZ = new Float32Array(C);
-        for (let q = 0; q < quelle.length; q += 2)
-            for (let k = 0; k < 3; k++) {
-                NZ[quelle[q] * 3 + k] = nZiel.array[quelle[q + 1] * 3 + k];
-                FZ[quelle[q] * 3 + k] = fZiel.array[quelle[q + 1] * 3 + k];
-            }
         bg.setAttribute("aNormalZiel", new THREE.Float32BufferAttribute(NZ, 3));
         bg.setAttribute("aFarbeZiel", new THREE.Float32BufferAttribute(FZ, 3));
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
-        bg.setIndex(I);
+        bg.setIndex(new THREE.BufferAttribute(I, 1));
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);
         entry.lodStitchMesh = mesh;
@@ -1888,7 +2189,8 @@ class AnazhRealm_gelaende_chunks {
             (this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key)) ||
             (this.state.dirtyVoxelChunks && this.state.dirtyVoxelChunks.has(key));
         const stufe = altLod !== null && lod !== null && lod !== altLod && !formWartet;
-        const forceSync = opts.forceSync === true;
+        // synchron nur über stehender Wahrheit (`_hydroSteht`): fehlt die Hydrosphäre, wartet auch der Neubau des Fußabdrucks
+        const forceSync = opts.forceSync === true && this._hydroSteht(cx, cz);
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
         // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
         // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
@@ -1957,6 +2259,9 @@ class AnazhRealm_gelaende_chunks {
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         this._chunkSatzAus("boden", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
+        // der Faden gibt die Zellen frei, die nur dieser Chunk trug (Karte hydro-faden)
+        if (entry && entry.zellenId && this.state.voxelWorker)
+            this.state.voxelWorker.postMessage({ type: "zellen-frei", keys: [key], zids: [entry.zellenId] });
         if (entry && entry.mesh) {
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
@@ -2006,7 +2311,7 @@ class AnazhRealm_gelaende_chunks {
         // höher bauen → `_voxelEditsFillTop()` hebt die Grenze; Macro nicht endlich → Voll-Scan.
         // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
         // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
-        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta). Die Makro-Höhe der Garantie
+        // Kollision, bit-identisch zu `_terrainDensityAt` (`_mitEdits` über base == über baseCol). Die Makro-Höhe der Garantie
         // ist die des Kontexts (`surf`, dieselbe `hoehe` derselben Spalte) — bis K60-2 rechnete die Spalte sie zweimal
         // (Radeon kalt 0,7 s bis zum ersten Weltbild, jeder Wald-Dart fragt fünf Spalten).
         const colCtx = this._terrainColumnContext(x, z);
@@ -2041,12 +2346,12 @@ class AnazhRealm_gelaende_chunks {
     // Schritt-Hinweis, der Gradient gibt die Richtung, 2–3× iteriert (collide-and-slide). `ctx` =
     // `_terrainColumnContext(x,z)`: eine vertikale Probe teilt EINEN Spalten-Kontext über alle y.
 
-    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) + Edit-Delta.
+    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) mit den Edits (`_mitEdits`, die Form des Kerns).
     // > 0 solide, ≤ 0 Luft/Wasser. Liest die Edits → ein gecarvter Tunnel ist SOFORT
     // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
     _fieldDensityAt(x, y, z, ctx) {
         const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
-        const d = base + this._voxelEditDeltaAt(x, y, z);
+        const d = this._mitEdits(base, x, y, z);
         // der Keller ist hohl (S4, `erdbauHohl`) — dieselbe Dichte wie `_terrainDensityAt`; ob die Spalte über einem Keller
         // steht, trägt ihr Kontext (`keller`, EINMAL je Spalte gefragt): die Probe des Heiß-Pfads `_voxelSurfaceY` zahlt einen
         // Blick (gemessen: getTerrainHeightAt 1,40 → 2,10 µs, als jede Probe die Lage des Erdbaus fragte)
@@ -2209,6 +2514,7 @@ class AnazhRealm_gelaende_chunks {
                 qz0 = Math.min(sz, ez) - M,
                 qz1 = Math.max(sz, ez) + M;
             const Z = AnazhRealm.BLOCKER_ZELLE;
+            let spannen = null; // die Kugel: je berührte Box ihre Spanne (`_segmentKugelBox`)
             const ix0 = Math.floor(qx0 / Z),
                 iz0 = Math.floor(qz0 / Z);
             const nx = Math.floor(qx1 / Z) - ix0 + 1;
@@ -2240,10 +2546,12 @@ class AnazhRealm_gelaende_chunks {
                             bx.minZ > qz1
                         )
                             continue;
-                        const hitInfo =
-                            rad > 0
-                                ? this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad)
-                                : this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
+                        if (rad > 0) {
+                            const k = this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad);
+                            if (k) (spannen || (spannen = [])).push(k);
+                            continue;
+                        }
+                        const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
                         if (
                             hitInfo &&
                             (hitInfo.t < structHitT ||
@@ -2256,6 +2564,26 @@ class AnazhRealm_gelaende_chunks {
                         }
                     }
                 }
+            }
+            // DIE STELLE DER KUGEL (K4): die Mitte hält vor jeder Box, die der dünne Strahl kreuzt, und vor der ersten Haut (der
+            // um r aufgeblasenen Box), die die Strecke betritt. Eine Haut AM START (die Mitte steht schon an ihr, binnen 1 mm:
+            // die Schulter an der Wand, der Abstieg neben dem GT) hält sie nur, wenn die Stelle noch in ihr läge — verlässt die
+            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt.
+            if (spannen) {
+                let st = 1;
+                for (const k of spannen) {
+                    const halt = Math.min(k.roh, k.t * len > 1e-3 ? k.t : Infinity);
+                    if (halt < st) {
+                        st = halt;
+                        sFace = k;
+                    }
+                }
+                for (const k of spannen)
+                    if (k.t * len <= 1e-3 && k.t < st && st < k.aus) {
+                        st = k.t;
+                        sFace = k;
+                    }
+                if (sFace) structHitT = st;
             }
         }
         // (2) TERRAIN — DDA durchs Dichtefeld: erster solider Punkt, dann Bisektion + Gradient. Der Gradient liest den Punkt
@@ -2397,10 +2725,11 @@ class AnazhRealm_gelaende_chunks {
         return out;
     }
 
-    // DIE BOX FÜR DIE KUGEL (K06, `_fieldRaycast` mit `radius`): der Schnitt der Strecke mit der Box, um r aufgeblasen — die
-    // Mitte der Kugel betritt sie, wo die Kugel die Box berührt (an Kanten und Ecken hält sie etwas früher als die runde
-    // Hülle). Beginnt die Strecke schon in der aufgeblasenen Box (die Kugel streift sie am Start), hält die Mitte r vor der Box
-    // selbst, entlang der Strecke — der Weg von ihr fort ist frei, an ihr entlang endet er nie auf ihrer Fläche.
+    // DIE BOX FÜR DIE KUGEL (K06 · K4, `_fieldRaycast` mit `radius`): die Spanne der Strecke in der um r aufgeblasenen Box —
+    // `t` Eintritt (0, wenn die Kugel schon am Start in ihrer Haut steht), `aus` Austritt — und `roh` der Eintritt des dünnen
+    // Strahls in die Box selbst (Infinity ohne Schnitt). Bis K4 hielt ein Start in der Haut die Mitte r ENTLANG der Strecke vor
+    // der Box: im flachen Winkel stand die Kugel in der Wand (gate:kamera-leib K4 am Haus: 49 von 1096 Bildern, die Linse
+    // 0,14 m vor der Fläche); ohne die Haut-Regel fiel der Arm beim Abstieg neben dem GT in das Blickziel (gate:fahr-leben T4).
     _segmentKugelBox(sx, sy, sz, dx, dy, dz, b, r) {
         const q =
             this._kugelBox ||
@@ -2430,16 +2759,11 @@ class AnazhRealm_gelaende_chunks {
             q.ob.hz = ob.hz + r;
             q.obb = q.ob;
         } else q.obb = null;
-        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
-        // DER START IN BERÜHRUNG (F1 b, 19.10.): eine Mitte, die die aufgeblasene Box erst nach weniger als 1 mm betritt, steht
-        // schon an ihr (die Schulter der 3rd-Kamera rückt bis r vor eine Wand, `_fieldRaycast` mit `radius`) — sie gilt als
-        // Start in der Box. Bis hier hielt ihr Arm dort bei t = 0: neben dem geparkten GT schnappte die Kamera in die Brust
-        // und flatterte (2,4–6,9 m je Bild, gate:fahr-leben T4), wo der Strahl nur einen Splitter der Hülle streifte.
-        if (!h || h.t * len > 1e-3) return h;
+        if (!h) return null;
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
-        if (g) g.t = Math.max(0, g.t - r / len);
-        return g;
+        h.roh = g ? g.t : Infinity;
+        return h;
     }
 
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
@@ -2508,14 +2832,15 @@ class AnazhRealm_gelaende_chunks {
         const t = tmin < 0 ? 0 : tmin;
         return {
             t,
+            aus: tmax, // der Austritt (die Spanne der Kugel, `_segmentKugelBox`)
             nx: axis === 0 ? sign : 0,
             ny: axis === 1 ? sign : 0,
             nz: axis === 2 ? sign : 0,
         };
     }
 
-    // Höchste Oberkante aller FILL-Edits (y + r): darüber hebt der `_voxelSurfaceY`-Envelope-Skip seine
-    // Grenze. Cache per Identität+Länge des Edit-Arrays (push via `_addVoxelEdit`; Welt-Wechsel/Regen
+    // Höchste Oberkante aller FILL-Edits (gelaende-core `editKrone`): darüber hebt der `_voxelSurfaceY`-Envelope-Skip
+    // seine Grenze. Cache per Identität+Länge des Edit-Arrays (push via `_addVoxelEdit`; Welt-Wechsel/Regen
     // tauscht oder leert es). Keine Fill-Edits → −Infinity.
     _voxelEditsFillTop() {
         const meta = this.state.worldMeta;
@@ -2523,14 +2848,7 @@ class AnazhRealm_gelaende_chunks {
         const len = edits ? edits.length : 0;
         const cache = this._editFillTopCache;
         if (cache && cache.edits === edits && cache.len === len) return cache.top;
-        let topY = -Infinity;
-        for (let i = 0; i < len; i++) {
-            const e = edits[i];
-            if (e && e.mode === "fill") {
-                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
-                if (t > topY) topY = t;
-            }
-        }
+        const topY = globalThis.__gelaendeCore.editKrone(edits);
         this._editFillTopCache = { edits, len, top: topY };
         return topY;
     }
@@ -2591,14 +2909,17 @@ class AnazhRealm_gelaende_chunks {
             this._tickFoliageGrowth();
             return 0;
         }
-        const tStart = performance.now();
         // DAS BILD DER ANKUNFT ZUERST (B-Blick): unter dem Ladeschirm geht der Ring erst die Stücke im Bild (`_rangImBild`, mit der
-        // halben Diagonale wie der Boden-Term) mit der Frist des Lade-Frames, danach die übrigen nur mit der Kappe des Spiels (ohne
-        // Frist, `_kappeOffen(…, false)`) — die Frist gehört dem Bild, der Ring steht trotzdem rundum, wie lange der Ladeschirm auch
-        // steht. Bis B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        // halben Diagonale wie der Boden-Term) mit der Frist des Lade-Frames, danach die übrigen mit der Kappe des Spiels (ohne
+        // Frist, `_kappeOffen(…, false)`) — die Frist gehört dem Bild. JEDE HÄLFTE TRÄGT IHRE EIGENE KAPPE: Zähler und Uhr beginnen
+        // mit ihr, und wie die Hälfte im Bild endet, nimmt der Hälfte außer Bild nie ihren Takt — der Ring steht rundum, wie lange
+        // der Ladeschirm auch steht. Bis dahin teilten beide Zähler und Uhr (jeder Neu-Ruf eines Stücks im Flug zählt), und nach
+        // dem Umstellen verhungerte der Ring hinter dem Spieler (integ-CI 39514723735: wiese Ring 0 von 2 nach 2224 Takten). Bis
+        // B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        let [haelfte, n, t0, satt] = [null, 0, 0, false];
         const weiter = (frist) =>
-            this._kappeOffen(built, MAX_PER_FRAME, frist) &&
-            this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS, frist);
+            this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
+            this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist);
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
         for (let r = 0; r <= ringRadius; r++)
             for (let dz = -r; dz <= r; dz++)
@@ -2610,7 +2931,8 @@ class AnazhRealm_gelaende_chunks {
                 }
         if (lade) zellen.sort((a, b) => b[2] - a[2]); // stabil: im Bild zuerst, je Hälfte in Ring-Reihe
         for (const [cx, cz, bild] of zellen) {
-            if (!bild && !weiter(false)) break; // außer Bild nur mit der Kappe des Spiels
+            if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
+            if (satt) continue;
             const key = `${cx},${cz}`;
             // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
             // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
@@ -2625,15 +2947,15 @@ class AnazhRealm_gelaende_chunks {
                 if (currentLod !== desiredLod && !existing.empty) {
                     this._rebuildVoxelChunk(cx, cz, desiredLod);
                     built++;
-                    if (!weiter(bild)) break;
+                    satt = !weiter(bild);
                 }
                 continue;
             }
             this._ensureVoxelChunkAt(cx, cz, desiredLod);
             built++;
             // Soft-Budget nach jedem Build (inkl. des letzten `_ensureVoxelChunkAt`): mindestens ein Chunk je
-            // Frame auch über Budget — sonst friert das Streaming ein.
-            if (!weiter(bild)) break;
+            // Frame und Hälfte auch über Budget — sonst friert das Streaming ein.
+            satt = !weiter(bild);
         }
         this._pruneDistantVoxelChunks(playerPos);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
@@ -2649,9 +2971,10 @@ class AnazhRealm_gelaende_chunks {
     }
 
     // ### Voxel-Edits: 3D-Graben + Aufschütten ###
-    // `carveVoxelSphere` schnitzt eine Kugel Luft, `fillVoxelSphere` schüttet eine Kugel Fest — beide
-    // über `_addVoxelEdit`. Der Edit landet in worldMeta.voxelEdits (persistiert), `_terrainDensityAt`
-    // zieht ab/addiert (Loch/Tunnel/Hügel); die betroffenen Chunks werden neu gemesht.
+    // `carveVoxel` nimmt eine Säule heraus, `fillVoxel` vereinigt sie mit dem Boden (die Form des Kerns, gelaende-core
+    // `editForm`: Radius r, halbe Höhe r, oben und unten eben) — beide über `_addVoxelEdit`. Der Edit landet in
+    // worldMeta.voxelEdits (persistiert), `_terrainDensityAt` trägt ihn (Grube/Schacht/Turm); die betroffenen Chunks werden neu
+    // gemesht.
     _addVoxelEdit(x, y, z, r, mode) {
         if (!this.state.worldMeta) return false;
         if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return false;
@@ -2669,10 +2992,13 @@ class AnazhRealm_gelaende_chunks {
         const Y_MAX = ceilY + radius + 8;
         if (y < Y_MIN || y > Y_MAX) return false;
         const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
-        const newEdit = { x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" };
+        const newEdit = { x, y: yClamped, z, r: radius, mode: mode === "fill" ? "fill" : "carve" };
         // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
         // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
+        // DIE REICHWEITE DES EDITS (gelaende-core `editReich`): so weit ändert seine Form die Dichte — jeder Neubau, jede
+        // Wasser-Kappe, jede Weckung unten deckt sie (der Radius allein ließ die Kehle der Vereinigung im Nachbar-Chunk alt).
+        const reich = globalThis.__gelaendeCore.editReich(newEdit);
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
@@ -2682,27 +3008,27 @@ class AnazhRealm_gelaende_chunks {
         // Skirt-Nachbarn behalten ihr Gras.
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
         const { span } = this._voxelChunkConfig();
-        const fcx0 = Math.floor((x - radius) / span);
-        const fcx1 = Math.floor((x + radius) / span);
-        const fcz0 = Math.floor((z - radius) / span);
-        const fcz1 = Math.floor((z + radius) / span);
+        const fcx0 = Math.floor((x - reich) / span);
+        const fcx1 = Math.floor((x + reich) / span);
+        const fcz0 = Math.floor((z - reich) / span);
+        const fcz1 = Math.floor((z + reich) / span);
         for (let fcx = fcx0; fcx <= fcx1; fcx++) {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
-        this._remeshVoxelChunksAround(x, z, radius);
+        this._remeshVoxelChunksAround(x, z, reich);
         // Die direkt berührten FOOTPRINT-Chunks SYNCHRON im Edit-Frame heilen (nicht 1/Frame verteilt) —
         // sonst ~2 Frames sichtbare Abbau-Naht zwischen Nachbarn. Die Skirt-Nachbarn (nur das 1-Zell-Pad
-        // sah die Kugel, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
-        this._syncRebuildEditFootprint(x, z, radius);
+        // sah die Säule, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
+        this._syncRebuildEditFootprint(x, z, reich);
         // NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan
         // muss die FRISCHEN Zellen sehen (ein Fill kann Damm sein, ein Carve ihn öffnen), und der Lazy-Neubau
         // legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
-        this._invalidateWaterCapsAround(x, z, radius);
+        this._invalidateWaterCapsAround(x, z, reich);
         // Gebackene Region-Felder im Footprint dirty markieren (Region-Raster 256 m → 1–2 Regionen).
         // Lazy-Rebake im nächsten Tick; bis dahin gelten die stale Daten.
-        this._invalidateBakedRegionsAround(x, z, radius);
+        this._invalidateBakedRegionsAround(x, z, reich);
         // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
         // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
         if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
@@ -2710,10 +3036,10 @@ class AnazhRealm_gelaende_chunks {
         // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
         {
             const { span } = this._voxelChunkConfig();
-            const minCX = Math.floor((x - radius) / span) - 1;
-            const maxCX = Math.floor((x + radius) / span) + 1;
-            const minCZ = Math.floor((z - radius) / span) - 1;
-            const maxCZ = Math.floor((z + radius) / span) + 1;
+            const minCX = Math.floor((x - reich) / span) - 1;
+            const maxCX = Math.floor((x + reich) / span) + 1;
+            const minCZ = Math.floor((z - reich) / span) - 1;
+            const maxCZ = Math.floor((z + reich) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
         // Persistenz debounced (~1.2 s nach dem letzten Hit): `saveState()` baut den VOLLEN Snapshot +
@@ -2723,11 +3049,11 @@ class AnazhRealm_gelaende_chunks {
         return true;
     }
 
-    carveVoxelSphere(x, y, z, r) {
+    carveVoxel(x, y, z, r) {
         return this._addVoxelEdit(x, y, z, r, "carve");
     }
 
-    fillVoxelSphere(x, y, z, r) {
+    fillVoxel(x, y, z, r) {
         return this._addVoxelEdit(x, y, z, r, "fill");
     }
 
@@ -2781,7 +3107,7 @@ class AnazhRealm_gelaende_chunks {
         return false;
     }
 
-    // Markiert jeden Chunk, den die Schnitz-Kugel berührt (±`skirt` Chunks), als dirty;
+    // Markiert jeden Chunk, den die Reichweite r eines Edits berührt (±`skirt` Chunks), als dirty;
     // `_tickDirtyVoxelChunks` baut sie verteilt (≤1/Frame, nächster zuerst) statt 9 Sync-Rebuilds im
     // selben Frame. Tests drainen per `_drainDirtyVoxelChunks()`. skirt=1 für Density-Edits (Pad+Crop
     // liest 1 Cell in den Nachbarn → sonst Naht); skirt=0 für Architektur (nur Cell-Stempel, keine
@@ -2804,7 +3130,7 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // Heilt die FOOTPRINT-Chunks (skirt=0, die die Kugel wirklich überdeckt) SYNCHRON im Edit-Frame —
+    // Heilt die FOOTPRINT-Chunks (skirt=0, die die Reichweite wirklich überdeckt) SYNCHRON im Edit-Frame —
     // derselbe Pfad wie `_drainDirtyVoxelChunks` (forceSync, dispose-before-build, Wasser-Iso sync).
     // Skirt-Nachbarn bleiben async (Oberfläche unverändert). Billig (~2 ms/Chunk über den Base-
     // Density-Cache) → 2–4 Chunks ≈ sub-Frame.
@@ -2921,17 +3247,17 @@ class AnazhRealm_gelaende_chunks {
         // Bibliothek, während Main die Welt rechnet. Billig (Worker + Posts); das Boot-Gate prüft
         // `_ensureAssetFoundry` selbst (foundry-aus → null) — der Aufrufer dupliziert es nicht.
         if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
-        this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-        return true;
+        // das Versprechen der Welt: es erfüllt sich, wenn ihre Heimat aus dem Faden steht (Karte hydro-faden)
+        return this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_gelaende_chunks]);
 
 // ===== ATLAS · Gelaende/chunks — Außen-Konstanten =====
-// Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
+// Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil der Platte im voxel-worker, `platteLege`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
-// Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
+// Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkPlatte`): ändert sich, was der Worker liefert,
 // liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
 // Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
 // Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
@@ -2941,8 +3267,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief; seit K17-2
 // trägt die Antwort den Stoff (Himmels-Sicht, Schutt, die Feuchte des Mooses, der Fels in `colors`): ein alter Chunk trüge die
 // Säulen-Farbe ohne Stoff; seit K17-2 NB1 wellt EIN Gradienten-Rauschen die Bänke und das Geröll streut wie die Referenz:
-// ein alter Chunk trüge die Welle aus dem Wert-Rauschen.
-AnazhRealm.CHUNK_IDB_FORM = "fels-rausch-atlas";
+// ein alter Chunk trüge die Welle aus dem Wert-Rauschen; seit der Karte hydro-faden legt der Faden seinen rohen Reply ab (die
+// Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel.
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply";
 // FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
@@ -2957,6 +3284,10 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// DIE FOLGE-SCHLANGE der Nachbar-Morphs (`_tickMorphFolge`, fahrt-takt): je Takt ohne Chunk-Einbau so viele ms (mindestens
+// ein Morph), eine Bitte älter als die Frist (Takte) morpht in jedem Takt.
+AnazhRealm.MORPH_FOLGE_MS = 0.5;
+AnazhRealm.MORPH_FOLGE_FRIST = 6;
 // DAS WACHSTUM ÜBER BUDGET (`_tickFoliageGrowth`, Lehre 13): je WUCHS_DROSSEL_MS wächst EIN Chunk (der nächste) —
 // das Budget drosselt das Tempo, nie die Existenz (dieselbe Garantie wie der Bau über Budget, `_handBauErlaubt`).
 AnazhRealm.WUCHS_DROSSEL_MS = 250;

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // ============================================================================
-// DIE RÜCKKEHR-WAND — gate:altlasten (ALTLASTEN-NULL W4, 11.07.2026)
+// DIE RÜCKKEHR-WAND — gate:altlasten (ALTLASTEN-NULL W4)
 //
 // Gesetz #0: Struktur statt Wachsamkeit. Jeder vollzogene Abschied hinterlässt
 // hier seine Zeile — ein gefallener Name kann strukturell nicht in den Stamm
 // zurückkehren (grep = 0 auf dem KOMMENTAR-BEREINIGTEN Code; Kommentare dürfen
 // die Geschichte erzählen, der CODE darf das Wort nicht mehr tragen — die
-// V18.267-Disziplin). Wächst mit jedem künftigen Abschied: eine Zeile je Name.
+// Disziplin). Wächst mit jedem künftigen Abschied: eine Zeile je Name.
 //
 // Selbst-Test: --selftest injiziert einen verbotenen Namen in eine Kopie und
 // beweist, dass die Linse feuert (kein vakuöses Grün).
@@ -15,12 +15,10 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { scanWarteWand } = require("./lib/welt-boot.cjs");
 
-// Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
-// fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
-// THREE.Sprite-falsch-positiv; die Seelen-Schlüssel sterben über die
-// CREATURE_SOULS-Schlüssel-Prüfung unten).
-// Je Eintrag der gefallene Name und EINE Zeile, was ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
+// Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
+// ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
@@ -54,7 +52,52 @@ const FORBIDDEN = [
     { token: "applyChunkDelta", fiel: "V9.36" },
     { token: "CHUNK_DELTA_OPS_CAP", fiel: "V9.36" },
     { token: "chunkDeltas", fiel: "V9.36 — Edits sind EINE Karte je Chunk (_voxelEditKarte)" },
+    ...[
+        "generateChunk",
+        "addTerrainPhysics",
+        "extendTerrain",
+        "caveData",
+        "volcanoData",
+        "setVoxelTerrainActive",
+        "_setHeightfieldDormant",
+        "_restoreVoxelTerrain",
+        "calculateTerrainSteepness",
+        "ensureChunkAt",
+        "_buildChunkGrass",
+        "_disposeChunkGrass",
+        "_terrainHeightAtWorld",
+        "_disposeChunkPhysics",
+        "pruneDistantChunks",
+        "_chunkGeometry",
+        "_buildVoxelChunkWaterfalls",
+        "_disposeVoxelChunkWaterfalls",
+        "voxelChunkWaterfalls",
+        "_buildHydroWaterfall",
+        "_waterfallIsRealWall",
+        "setWaterfallSteep",
+        "_setVoxelWaterIsoVisible",
+        "_ensureHorizonMantle",
+        "_disposeHorizonMantle",
+        "_ensureCanopyShell",
+        "_buildCanopyShell",
+        "_disposeCanopyShell",
+    ].map((token) => ({ token, fiel: "V9.30–V9.39 — das Heightfield fiel, der Boden ist Voxel" })),
+    ...["_buildIslandCollision", "_disposeStaticCollision", "_buildTreeCollision", "spawnTreeAt"].map((token) => ({
+        token,
+        fiel: "Welle 6.G — die Kollision ist feld-nativ, der Baum ein Bauplan",
+    })),
+    ...["initIntroDialog", "_introPages", "createDynamicAbility", "codeParser", "developAdvancedPhysics", "developAdvancedRenderer"].map(
+        (token) => ({ token, fiel: "UI-Putz und Phase 5 — kein Anleitungs-Modal, kein Laufzeit-Code, der Nexus spricht DSL" })
+    ),
+    ...["_equipAppendHeldRow", "_equipAppendWeaponRow", "_workshopRenderActions"].map((token) => ({
+        token,
+        fiel: "V17.91/V18.66 — der EINE Halte-Pfad (wieldBlueprint), der EINE FERTIGEN-Akt",
+    })),
+    ...["_chatTryWorldCommand", "_chatTrySystemCommand", "_chatTryAbilityCommand", "_chatTryPersistenceCommand"].map(
+        (token) => ({ token, fiel: "E1 — der Chat-Dispatch ist die EINE Tabelle (chatSystemPatterns)" })
+    ),
     { token: "tickPlayerAura", fiel: "V18.448" },
+    { token: "_auraHueOut", fiel: "V18.448 — kein Aura-Cache am Spieler" },
     { token: "_ensureAuraSkinShells", fiel: "V18.448" },
     { token: "AURA_TAG_HUE", fiel: "V18.448 (CREATURE_TASK_AURA_HUE lebt — anderes System)" },
     { token: "_buildCreatureSkinGeometry", fiel: "KONVERGENZ III — der Baum trägt die Gestalt" },
@@ -75,6 +118,8 @@ const FORBIDDEN = [
     { token: "GRASS_MAX_BLADES", fiel: "V18.492" },
     { token: "_grassStudioGeometry", fiel: "V18.492 — die Studio-Halm-Geometrie" },
     { token: "_tickGrassStage", fiel: "V18.492 — der Stufen-Tick lief ins Leere" },
+    { token: "GRASS_TUFT_BLADES", fiel: "N7.4 — die Wiese ist Boden-Funktion" },
+    { token: "voxelChunkGrassDensity", fiel: "N7.4" },
     { token: "voxelChunkGrassStage", fiel: "V18.492" },
     { token: "_buildTierBaum", fiel: "DIE EINE PIPE — der Stamm-Inline-Baum-Tunnel" },
     { token: "_tierFernTeile", fiel: "DIE EINE PIPE — das Stamm-eigene Fern-System (lod1 kommt aus der Pipe)" },
@@ -357,10 +402,13 @@ const FORBIDDEN = [
     { token: "_detailViewDistance", fiel: "V18.530" },
     { token: "hazeFar", fiel: "V18.530 — kein Höhen-Melt neben der Luft" },
     { token: "hazeNear", fiel: "V18.530" },
+    { token: "heightWeight", fiel: "V18.530 — kein Höhen-Melt in AERIAL" },
+    { token: "heightCap", fiel: "V18.530" },
     { token: "setFogDistance", fiel: "V18.530 — der tote Fog-Distanz-Regler" },
     { token: "fogDistance", fiel: "V18.530" },
     { token: "slider-fog", fiel: "V18.530" },
     { token: "uFogNear", fiel: "V18.530 — kein Wasser-eigener Nebel" },
+    ...["uIrr", "_feldLichtSync", "_feldEnvIrradianz"].map((token) => ({ token, fiel: "Licht K3 — Wasser, Feld und Panorama lesen das Licht der Welt (_weltLicht)" })),
     { token: "_fernRingFarbe", fiel: "V18.530 — die Fern-Farbe liest die Boden-Farbe + den Wald (_fernFarbeAt)" },
     { token: "_buildSkyPlanets", fiel: "V18.530 — die Wandelsterne leben im Sternfeld" },
     { token: "_loopSkyboxPlanets", fiel: "V18.530 — _loopSkyboxZeit" },
@@ -983,7 +1031,7 @@ const FORBIDDEN = [
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
-// baum_mammut — nie mehr die Buche (die Buche ist eine eigene Studio-Art, Waldboden 04.10.).
+// baum_mammut — nie mehr die Buche (die Buche ist eine eigene Studio-Art).
 function checkAliasArten(core) {
     if (!core) require("../phyto-core.js");
     const pc = core || globalThis.__phytoCore;
@@ -1001,6 +1049,7 @@ function checkAliasArten(core) {
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
 const stripComments = stammLib.ohneKommentare;
+const { kinder } = stammLib;
 
 // `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
 // trägt eigene Namen, die im Stamm gefallen sind).
@@ -1146,7 +1195,7 @@ const ZWILLINGE = [
         verboten: [...STAMM],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
-    // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
+    // K09a — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
     // Makro-Anker samt Grat-Strom und Massiv-Maske, Erosions- und Tarn-Delta samt Mulden-Form, die Rauheits-Maske, die
     // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
     // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
@@ -1218,7 +1267,7 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
-    // W1 (16.10., Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
+    // W1 (Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
     ...["L * 1.08 - rk * 0.85 + m * 0.22", "lit * 0.5 + (1 - wet) * 0.5"].map((fingerprint) => ({
         fingerprint,
         gesetzbuch: "foundry-core.js",
@@ -1240,6 +1289,14 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
         fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
     },
+    // Licht K3 — DAS LICHT DER WELT als MUSTER: kein Pass rechnet sein Lambert-Licht selbst (der Faktor 1/π im WGSL, die Neigung
+    // gegen die Sonnenhöhe im TSL) — Feld-March und Panorama reichen Albedo und Normale an den EINEN Baustein (`_weltLicht`).
+    {
+        muster: /\b1\.0\s*\/\s*PI\b|0\.31830988|max\(\s*[\w.]+\.y\s*,\s*0\.2\s*\)/,
+        gefallen: true,
+        verboten: STAMM,
+        fiel: "Licht K3 — Spiegel, Panorama, Feld-March und Wasser rufen den EINEN Baustein weltLicht (_weltLicht)",
+    },
     // ein Array-Bereich geht EINMAL in die Queue (`einmal`: der erste Fund im Gesetzbuch ist das Gesetz)
     {
         muster: /\.writeBuffer\([^;]*\.byteOffset\s*\+/,
@@ -1252,8 +1309,8 @@ const ZWILLINGE = [
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
 // Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
-// (worlds/gelaende: das Panel und sein Makro-Worker — bis K16b außerhalb der Wand). Diese Wand trägt die Muster selbst
-// als Proben und steht nicht in der Liste.
+// (worlds/gelaende: das Panel und sein Makro-Worker). Diese Wand trägt die Muster selbst als Proben und steht nicht in
+// der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
     // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
@@ -1318,9 +1375,9 @@ function scanZwillinge(ersatz = {}) {
 
 // ULTRAGUSS U3 — DIE BUSTER-LINSE (Lehre 10 als Klasse): JEDER Lab-Kern-Script-
 // Tag trägt die AKTUELLE Version — ein stale ?v= serviert den Studios altes
-// Gesetz aus dem HTTP-Cache (gemessen 11.07.: alle acht Labs stale).
+// Gesetz aus dem HTTP-Cache.
 function scanLabBuster() {
-    // V18.461: die Wand deckt JEDEN Buster (Kern UND Shell UND Wurzel-Seite) —
+    // die Wand deckt JEDEN Buster (Kern UND Shell UND Wurzel-Seite) —
     // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
     // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
@@ -1339,7 +1396,7 @@ function scanLabBuster() {
             if (m[1] !== version) errs.push(`${path.relative(root, idx)} trägt stale ?v=${m[1]} (aktuell ${version})`);
         }
     }
-    // V18.472 (Perf-Panel-Linse fing es): AnazhRealm.VERSION driftete vier Wellen lang
+    // AnazhRealm.VERSION driftete vier Wellen lang
     // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
@@ -1364,13 +1421,12 @@ function scanLabBuster() {
     return errs;
 }
 
-// DIE INSTANZ-WAND (V18.510): jede InstancedMesh der Welt entsteht im EINEN Chokepoint
+// DIE INSTANZ-WAND: jede InstancedMesh der Welt entsteht im EINEN Chokepoint
 // `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
-// (gemessen 02.10.: 756 Vertex- auf 60 Fragment-Programme). Erlaubt: genau EIN `new THREE.InstancedMesh(`
+//. Erlaubt: genau EIN `new THREE.InstancedMesh(`
 // (der Chokepoint selbst). Gezählt wird JEDER Bau, auch über einen Alias (`const T = THREE; new T.InstancedMesh(`):
-// bis 05.10. sah die Wand nur die THREE-Schreibweise — der Feld-Cull-Konsument und die Werkstatt-Vorschau bauten an
-// ihr vorbei.
+// keine Schreibweise baut an der Wand vorbei.
 const INSTANZ_BAU = /new\s+(?:[A-Za-z_$][\w$]*\.)?InstancedMesh\(/g;
 function scanInstanzWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -1390,17 +1446,13 @@ function scanInstanzWand(srcRoh) {
     return errs;
 }
 
-// DIE ENTSORGUNGS-WAND (Frost-Nachbesserung 08.10., AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines
-// Objekts entsorgt, muss ihr BESITZER sein. Befund: vier Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die
-// die Geteilt-Markierung überging — 3 Seelenwechsel legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung; die
-// Text-Wand der dritten Nachbesserung sah nur `.traverse(` + direktes `x.geometry` und verfehlte Kind-Schleifen
-// (`for…of`, `children.forEach`), Zwischen-Variablen (`const g = o.geometry; g.dispose()`) und reine Stoff-Schleifen
-// (`o.material.forEach((m) => m.dispose())`). Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
-// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt, über
-// eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der Besitzer-Liste mit
-// genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der Besitzer entsorgt die
-// Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen Zeilen sind die Besitzer
-// eigener frischer Objekte.
+// DIE ENTSORGUNGS-WAND (AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines Objekts entsorgt, muss ihr
+// BESITZER sein. Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
+// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt,
+// über eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der
+// Besitzer-Liste mit genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der
+// Besitzer entsorgt die Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen
+// Zeilen sind die Besitzer eigener frischer Objekte.
 const ENTSORGUNG_BESITZER = {
     _disposeSoulGroup: {
         arten: ["geometry"],
@@ -1421,6 +1473,7 @@ const ENTSORGUNG_BESITZER = {
     _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
+    _gangSatzAbschied: { arten: ["geometry", "material"], grund: "die Gang-Sätze (`_gangSatz`, je Satz frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
         arten: ["material"],
@@ -1449,15 +1502,6 @@ const ENTSORGUNG_BESITZER = {
 function entsorgungen(srcRoh) {
     const acorn = require("acorn");
     const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n, f) => {
-        for (const k in n) {
-            if (k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const c of v) if (c && typeof c.type === "string") f(c);
-            } else if (v && typeof v.type === "string") f(v);
-        }
-    };
     const ueberall = (n, f) => {
         f(n);
         kinder(n, (c) => ueberall(c, f));
@@ -1614,7 +1658,7 @@ function scanKartenWand(srcRoh) {
     return errs;
 }
 
-// DIE ABSENZ-ERBSCHAFT (V1 Prüf-Diät N1, 15.10.): die Diät strich im Playtest 297 Präsenz-Textproben (Lehre 6); 20 davon
+// DIE ABSENZ-ERBSCHAFT (V1 Prüf-Diät N1): die Diät strich im Playtest 297 Präsenz-Textproben (Lehre 6); 20 davon
 // trugen neben dem Präsenz-Muster ein Absenz-Glied über den Rumpf EINER Methode — das Absenz-Urteil bleibt, hier je Methode.
 const METHODEN_OHNE = [
     ["_tickCreatureDrink", ["PING_FREQ"]], // die Stimme des Tiers, kein Sinus-Ping
@@ -1652,10 +1696,9 @@ function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
     return errs;
 }
 
-// DIE NORMAL-WAND (06.10.): ein normalNode ist VIEW-space (r184 NodeMaterial.setupNormal → normalView). Welt/Lokal →
+// DIE NORMAL-WAND: ein normalNode ist VIEW-space (r184 NodeMaterial.setupNormal → normalView). Welt/Lokal →
 // Sicht ist MATRIX.transformDirection(n) (= M·n, three's transformNormalToView); n.transformDirection(MATRIX) rechnet
-// Mᵀ·n (three's normalWorld: Sicht → Welt). So standen Boden, Karte und Laub bis 06.10.: von Süden gesehen lag der Boden
-// ohne Sonne (Boden-Licht-Sonde Sonne/Umgebung 1,12 statt 2,16), die Krone drehte ihr Licht mit dem Blick.
+// Mᵀ·n (three's normalWorld: Sicht → Welt) — das Licht der Krone dreht sonst mit dem Blick.
 function scanNormalWand(srcRoh) {
     const code = stripComments(srcRoh);
     const errs = [];
@@ -1666,7 +1709,7 @@ function scanNormalWand(srcRoh) {
             `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
-    // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
+    // DIE QUELLE: ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
     // normalNode (NORMAL-Stufe) sie zuerst, lasen Schatten-Lookup (normalBias), Halbkugel- und Umgebungslicht ihre
     // NORMAL-Fassung (die Geometrie-Normale mit Flächen-Vorzeichen: am Boden nach unten, der Boden lag im eigenen
     // Schatten). Die Geometrie-Normale heißt im Graphen `normalWorldGeometry` (× `faceDirection`). Geprüft wird der
@@ -1716,9 +1759,7 @@ function scanNormalWand(srcRoh) {
     return errs;
 }
 
-// DIE STOFF-WAND (K22, 12.10.): kein stiller Fang im Render- und Stoff-Bau. Bis 1110-11b gab die LOD-Blende bei einem
-// fehlenden Glied still null zurück, und jeder Stoff zeichnete ohne seine Maske weiter (`_blendeBruch` heilte die Blende);
-// dieselbe Klasse lebte daneben in jedem Stoff. Ein FANG ist:
+// DIE STOFF-WAND (K22): kein stiller Fang im Render- und Stoff-Bau. Ein FANG ist:
 //   (a) ein catch im Stoff- oder Render-Bau, der weder wirft noch ERROR meldet (der Fehler verschwindet, das Bild zeichnet
 //       byte-alt weiter);
 //   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
@@ -1734,37 +1775,21 @@ function scanNormalWand(srcRoh) {
 // Grund und Bild-Leser in STOFF_ZWEIGE (eine tote Zeile ist rot). Im Stoff ist auch jede stille Frage ein Fang: `"x" in T`,
 // `!!T.x` frei, `T.x?.(…)`, ein aus TSL gezogenes Glied (`const { pass } = TSL; if (!pass)`), das Ergebnis eines
 // Stoff-Bauers (`if (_su)`).
-// DIE NACHBESSERUNG (13.10., am Kopf f1528195 ROT mit 29: F22 · N7): die Wand maß den Render-Bau am Rumpf-Text (blind für
-// vier ihrer eigenen Schnitte) und kannte den Render-Lauf nicht. Laut brechen jetzt _loopRender (der Render-Lauf der
-// Post-Kette, r184 baut sie dort) · _tickBootFernDeko · _fernRingGpuMal · _feldPanoramaMal · verifyComputeContribution ·
-// _tickWornArmorVisual · _heldFoundryGroup ×3 · _feedPreviewShow · _studioUebergabeEmpfang · _buildArchMeshMerged ·
-// _tickBlueprintPrebake · _foundryIngestRecipes · _nachDorfOrientieren ×2 · _foundryBarkNormalTexture · _foundryBuildGroup ·
-// _foundryPrefetchLibrary · _tryWorkerWaterSheet · _workshopBuildSkeletonPreviewGroup · _workshopStudioPreviewFrom; die
-// Fragen an Stoff-Bauer fallen (_buildPbrNodeMaterial Saison · Tag-Licht · Flatten, _applyVegetationResponse LOD-Satz).
-// Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
-// DIE NACHBESSERUNG 2 (13.10., am Kopf 23d29378 ROT mit 8 Fängen + 2 der Drossel): die Hülle endete nach zwei Ruf-Gliedern
-// und lief zugleich über Abgelegtes (UI-Räume, Hörer: der Chat und P2P „bauten" über die Kreatur-Aura); „laut" hieß
-// „irgendein Satz bricht". Jetzt: die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt
-// (`_ensureAssetFoundry` startet ihn, seine Antwort baut), und JEDER Pfad muss brechen. Laut brechen jetzt
-// _buildHumanGroup (Not-Körper) · _foundryPrefetchLibrary (Karte) · _ensurePortalPreview · _portalApproachPrefetch ·
-// _ensureAssetFoundry ×2 (es gibt keinen Alt-Pfad); generateNewWorld und der Loop fangen ihren Ruf nicht mehr; die Drossel
-// des Loops (`_loopErrorBoundary`) meldet jeden NEUEN Fehler und steht als Zweig mit ihrem Bild.
-// DER HÖRER DES FADENS (Nachbesserung 2, Fortsetzung, an 23d29378 ROT mit 10: die 8 und zwei stille Hörer): der Fehler
-// eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
+// Die Wand misst den Render-Bau am Versuch, nie am Rumpf-Text, samt dem Render-Lauf (`_loopRender`: r184 baut die Post-Kette
+// dort). Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
+// Die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt (`_ensureAssetFoundry` startet ihn,
+// seine Antwort baut), und JEDER Pfad muss brechen; die Drossel des Loops (`_loopErrorBoundary`) meldet jeden NEUEN
+// Fehler und steht als Zweig mit ihrem Bild.
+// DER HÖRER DES FADENS: der Fehler eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
 // dessen Antwort einen Bauer ruft oder im Leser eines Studio-Fadens landet (der Bäcker über `_foundryAntwort`); er trägt
 // einen Hörer, dessen jeder Pfad bricht. Die Klang-Werkstatt baut nichts und bleibt draußen.
-// DIE NACHBESSERUNG 3 (13.10., am Kopf bb9c1179 ROT mit 7 Fängen + dem fehlenden Melder): der Zweig des Loops hing an einem
-// KOMMENTAR (ein leerer catch mit dem Kommentar blieb grün), die Drossel des Loops durfte INFO melden, vier `.catch(… "INFO")`
-// hingen an r184s synchronem render() (der catch an einem Namen zählte nicht als Versuch), und eine Kette aus fremder Quelle
-// stieg still aus (`if (!manifest.length) return;` im Foundry-Boot). Jetzt: ein Fund ist Code (Kommentare geschwärzt), der
+// Ein Fund ist Code (Kommentare geschwärzt), der
 // EINE Melder `_bruchMelden` (STOFF_MELDER) ist laut, wenn er nur ERROR meldet und jeder Pfad meldet oder zählt — die Fänge
 // des Loops rufen ihn über `_loopErrorBoundary` und brauchen keinen Zweig; ein catch an einem Namen misst, was der Name
 // bindet; ein `.then`-Glied, das den gelieferten Wert prüft und ohne Wert zurückkehrt, ist ein Fang (für eine Kette aus
 // einer Methode des Stamms spricht die Methode).
-// DIE NACHBESSERUNG 4 (13.10., am Kopf 53b2c1d7 ROT mit 2 Uhr-Deckeln): ein Bau, der in einer Schleife auf die Uhr wartet,
-// geht nach dem Deckel mit halben Daten weiter — `_foundryPrefetchLibrary` wartete 2 s auf das Studio-Buch und wärmte danach
-// ohne Rezepte (gate:post-kette rot mit FOUNDRY WARM, je nach Takt), `_foundryAwaitBook` pollte. Beide warten jetzt auf das
-// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es) — gate:post-kette danach 2/2 ohne FOUNDRY WARM.
+// Ein Bau, der in einer Schleife auf die Uhr wartet, geht nach dem Deckel mit halben Daten weiter — er wartet auf das
+// EREIGNIS (das Buch: `buchDa`, `_foundryIngestBook` erfüllt es).
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
@@ -1842,15 +1867,6 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         locations: true,
         onComment: (_block, _text, start, end) => kommentare.push({ start, end }),
     });
-    const kinder = (n, f) => {
-        for (const k in n) {
-            if (k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const c of v) if (c && typeof c.type === "string") f(c);
-            } else if (v && typeof v.type === "string") f(v);
-        }
-    };
     const gehe = (n, f, eltern = null) => {
         f(n, eltern);
         kinder(n, (c) => gehe(c, f, n));
@@ -2872,7 +2888,7 @@ function markerDateien(root) {
     return out;
 }
 
-// DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
+// DIE STUFEN-WAND: eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
 // deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
@@ -2902,22 +2918,30 @@ function scanStufenWand(srcRoh) {
     return errs;
 }
 
-// DIE PORT-WAND (Integration W6, 06.10.): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
+// DIE PORT-WAND (Integration W6): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
 // Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
 // übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
-function scanPortWand(dateien) {
+// K-WANDUHR: kein Gate steht auf den Ports der Server des Schöpfers (4312, 4313) außer im ANSCHLUSS (die Werkzeuge an seiner
+// offenen Welt; die Liste schrumpft nur) — der eigene Port ist welt-boot `eigenePorte`.
+const ANSCHLUSS = ["scripts/werkbank.cjs", "scripts/omen-messfolge.cjs", "scripts/leuchtturm.cjs"];
+const SCHOEPFER = [/\|\|\s*431[23]\b/, /(?:127\.0\.0\.1|localhost):431[23](?:\/index\.html|\/?["'`])/, /wss?:\/\/(?:127\.0\.0\.1|localhost):431[23]\b/];
+function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     const errs = [];
-    for (const [name, src] of dateien)
-        if (/process\.env\.DIAG_PORT\b/.test(stripComments(src)))
+    for (const [name, src] of dateien) {
+        const code = stripComments(src);
+        if (/process\.env\.DIAG_PORT\b/.test(code))
             errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
+        const m = SCHOEPFER.map((re) => code.match(re)).find(Boolean);
+        if (!m !== !anschluss.includes(name)) errs.push(`Port-Wand: ${name} ${m ? "steht auf " + m[0] : "steht im ANSCHLUSS ohne Port"}`);
+    }
     return errs;
 }
-// DIE BOOT-WAND (Z2b-1, 14.10.): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
-// starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
-// ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
-// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(`, Kommentare und Texte zählen
-// nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
-// nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
+// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser
+// · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
+// Namen macht. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
+// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit
+// Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei nicht mehr
+// selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
     // die Werkbank: ihr Steuer-Server ist der JSON-Kanal einer offenen Mess-Welt (kein Statik-Boot), ihre Seiten-Fehler sind das
     // Urteil der Wache der Mess-Folge (omen-messfolge `wachenUrteil`) — der Zug in den Fehler-Sammler schärft dieses Urteil
@@ -2926,30 +2950,19 @@ const BOOT_REST = [
 ];
 // Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {
-    const acorn = require("acorn");
     const startet = (src) => {
-        if (!/\b(?:launch|createServer)\b/.test(src)) return false;
-        let ast;
+        if (!/\b(?:launch|createServer|spawn)\b/.test(src)) return false;
+        let ja = false;
         try {
-            ast = acorn.parse(src.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
+            stammLib.wandere(stammLib.ast(src), (n) => {
+                const c = n.callee || {};
+                const [o, p] = [c.object && c.object.name, c.property && c.property.name];
+                if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) ja = true;
+                if (/spawn/.test(c.name || p) && /(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) ja = true;
+            });
         } catch (_e) {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
-        let ja = false;
-        const geh = (n) => {
-            if (ja || !n || typeof n.type !== "string") return;
-            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed) {
-                const o = n.callee.object.name;
-                const p = n.callee.property.name;
-                if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) return (ja = true);
-            }
-            for (const k in n) {
-                const v = n[k];
-                if (Array.isArray(v)) v.forEach(geh);
-                else if (v && typeof v.type === "string") geh(v);
-            }
-        };
-        geh(ast);
         return ja;
     };
     return dateien.filter(([name, src]) => name !== "scripts/lib/welt-boot.cjs" && startet(src)).map(([name]) => name);
@@ -3011,7 +3024,7 @@ function scanHuellenFormWand(dateien) {
     }
     return errs;
 }
-// DIE ORTS-WAND (K16, Koordinator 13.10.): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
+// DIE ORTS-WAND (K16): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
 // einen Ort der Welt, in der sie geschrieben wurde — die Landform des Kerns verschob ihn, und drei Gruppen der CI wurden rot
 // (der Biss am Hang, der Baum im Haus, die Ankunft im Ursprung). Der Ort kommt aus der Welt (die nächste ebene Stelle, der
 // nächste See, `_weltBetreten`), oder die Zeile ist als Bühnen-Station deklariert: `// BÜHNE: <Grund>` auf ihr oder in den
@@ -3079,11 +3092,11 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
-// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das Dorf) steht
-// NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und ein gefallener Platz
-// nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne Kommentare), sind eine Abschrift,
-// gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`, `const X = x, Z = z`, die Blick-Tabelle einer
-// Linse. Bis K55 trugen 14 Proben die Mess-Wiese −900/−850 als Zahlen; K16 hob den Boden dort in einen Nadelwald-Hang.
+// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das
+// Dorf) steht NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und
+// ein gefallener Platz nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne
+// Kommentare), sind eine Abschrift, gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`,
+// `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
     const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
@@ -3146,6 +3159,11 @@ function wirtsDateien(root, files) {
     }
     return aus;
 }
+// die Kapitel des Playtests (scripts/playtest) — die Warte-Wand liest sie mit
+function playtestDateien(root) {
+    const d = "scripts/playtest";
+    return fs.readdirSync(path.join(root, d)).filter((f) => /\.cjs$/.test(f)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(root, d, f), "utf8")]);
+}
 function gateDateien(root) {
     const aus = [];
     for (const d of ["scripts", "scripts/lib"])
@@ -3154,7 +3172,7 @@ function gateDateien(root) {
     return aus;
 }
 
-// DIE LINSEN TRAGEN DIE WAND MIT (Welle G, 06.10.): eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
+// DIE LINSEN TRAGEN DIE WAND MIT: eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
 // gefallener Name dort ist ein toter Aufruf, den erst ein Lauf findet (`werkbank fernwald` rief `_weltSeiteDirty` nach dem
 // Abschied der Seiten-Ebene; vier weitere Reste älterer Abschiede lagen dort). Die Gates in scripts/ bleiben draußen: ihre
 // Absenz-Proben tragen die gefallenen Namen als Suchtext.
@@ -3166,7 +3184,7 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
-// DIE STAMM-LESER-WAND (Stamm-Zerlegung, plan 13.10. §7.5): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
+// DIE STAMM-LESER-WAND (Stamm-Zerlegung): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
 // Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
 // scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
 // · dateiMit · ort): ein Leser am Namen vorbei sähe nach dem Schnitt nur den Kern (vakuum-grün) oder bräche erst im
@@ -3245,9 +3263,9 @@ function scanStammLeser(root, ersatz = {}) {
 
 function main() {
     const root = path.join(__dirname, "..");
-    // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
+    // AUGEN-GLUT-SCHNITT: foundry-core (der Ofen/Bäcker) steht mit in
     // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
-    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
+    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad; die Rückkehr-Wand ist die EINE).
     const files = [...STAMM, "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
@@ -3366,7 +3384,7 @@ function main() {
             process.exit(1);
         }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
-        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
+        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld`, transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
         const quelleAlt = stammLib.ersetze(stamm, "_buildPbrNodeMaterial",
             "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
@@ -3384,7 +3402,7 @@ function main() {
             console.log("❌ SELBST-TEST: die Normal-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
-        // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab (der Fall vom 05.10.), und emitTree
+        // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab, und emitTree
         // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
         const kern = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
         const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
@@ -3414,7 +3432,30 @@ function main() {
         const portFeuert =
             scanPortWand(gates).length === 0 &&
             scanPortWand([["scripts/diag-x.cjs", `const PORT = Number(${geteilt} || 4400);\n`]]).length === 1 &&
-            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0;
+            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0 &&
+            scanPortWand([["scripts/diag-z.cjs", "const PORT = Number(process.env.Z_PORT || 4" + "312);\n"]]).length === 1 &&
+            scanPortWand([["scripts/werkbank.cjs", "const s = 1;\n"]]).length === 1;
+        // Die Warte-Wand muss feuern: die Bau-Schleife von gate:fahr-leben bis K-WANDUHR, ein eigener Server-Start; still bleibt das EINE Warten
+        // und die Frist: eine neue Frist-Schleife ist rot, der REST steht genau auf seiner Zahl (darunter: senken), ein Zähler auf Takte still
+        const warte = (src, rest = {}) => scanWarteWand([["scripts/diag-w.cjs", src]], rest).length;
+        const frist = "async () => { const dl = performance.now() + 30000; while (!e.fertig && performance.now() < dl) await tick(); };";
+        const warteFeuert =
+            scanWarteWand(gates.concat(playtestDateien(root))).length === 0 &&
+            warte("async () => { for (let i = 0; i < 60 && !e.instanced && !e.mesh; i++) await sleep(50); };") === 1 &&
+            warte("for (let s = 0; s < g.mesh.count; s++) n++;") === 0 &&
+            warte(frist) === 1 &&
+            warte("async () => { while (Date.now() - t0 < FRIST) await sleep(150); };") === 1 &&
+            warte("async () => { for (;;) { if (Date.now() - t0 > 9000) break; await tick(); } };") === 1 &&
+            warte('async () => { await window.__gebautNach("x").catch(() => {}); };') === 1 &&
+            ["8000 }).catch(() => {})", "0 }).catch(() => {})", "9 }).catch((e) => { throw e; })"].map((f) => warte(`page.waitForFunction(() => 1, { timeout: ${f};`)).join() === "1,0,0" &&
+            warte(frist, { "scripts/diag-w.cjs": 1 }) === 0 &&
+            warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&
+            warte("async () => { for (let n = 0; !e.fertig && n < 120; n++) await tick(); };") === 0 &&
+            eigenBoots([["scripts/diag-s.cjs", 'spawn("node", ["save-server.js"]);']]).length === 1;
+        if (!warteFeuert) {
+            console.log("❌ SELBST-TEST: die Warte-Wand feuert nicht (oder steht heute rot)", scanWarteWand(gates));
+            process.exit(1);
+        }
         if (!portFeuert) {
             console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", scanPortWand(gates));
             process.exit(1);
@@ -3531,7 +3572,7 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
         );
-        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
+        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
         const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
         const tmpLinse = path.join(require("os").tmpdir(), "altlasten-selftest-linse.cjs");
@@ -3560,7 +3601,7 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
         );
-        // Die Stoff-Wand muss feuern (K22, Nachbesserung 13.10.): (1) JEDER laute Bruch des Stamms, wieder still gemacht
+        // Die Stoff-Wand muss feuern (K22): (1) JEDER laute Bruch des Stamms, wieder still gemacht
         // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,
         // gleich ob der Versuch TSL liest, ein Render-Objekt baut, den Graphen läuft oder einen Bauer ruft (bis hierher
         // prüfte der Selbsttest drei Methoden, und vier Schnitte fielen still aus der Wand); (2) je Art ein eingeschmuggelter
@@ -3600,13 +3641,7 @@ function main() {
                 }
                 if (k && /this\._(stoffBruch|blendeBruch)\(/.test(stamm.slice(k.start, k.end)))
                     brueche.push({ k, zeile: ort.loc.start.line });
-                for (const key in n) {
-                    if (key === "loc") continue;
-                    const v = n[key];
-                    if (Array.isArray(v)) {
-                        for (const c of v) if (c && typeof c.type === "string") geh(c);
-                    } else if (v && typeof v.type === "string") geh(v);
-                }
+                kinder(n, geh);
             };
             geh(ast);
             // nur die äußeren Rümpfe: ein innerer Bruch fällt mit seinem äußeren
@@ -3870,10 +3905,12 @@ function main() {
             feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske) &&
-            feuert(WORT_BUCH, "q.writeBuffer(b, 0, a.buffer, a.byteOffset + 0, 4);".repeat(2), "neben 2 .*Wort-Schrift");
+            feuert(WORT_BUCH, "q.writeBuffer(b, 0, a.buffer, a.byteOffset + 0, 4);".repeat(2), "neben 2 .*Wort-Schrift") &&
+            feuert(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"', "weltLicht") &&
+            still(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"');
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift, der Lambert-Zwilling im Panorama — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
@@ -3920,6 +3957,7 @@ function main() {
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))

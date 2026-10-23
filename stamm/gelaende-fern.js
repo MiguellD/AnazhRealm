@@ -67,8 +67,9 @@ class AnazhRealm_gelaende_fern {
         }
         if (s._frameOverBudget && m) return; // der Rebuild wartet auf einen gesunden Frame
         const t0 = performance.now();
-        // Kachel-Atlanten fürs Sicht-Fenster (lazy, deterministisch, einmalig pro Kachel).
-        if (typeof this._ensureHydroTilesAround === "function") this._ensureHydroTilesAround(pm.x, pm.z, outR);
+        // Kachel-Atlanten fürs Sicht-Fenster (lazy, deterministisch, einmalig pro Kachel): fehlt eine, ist sie im Faden
+        // bestellt und das Sheet wartet auf sie (Karte hydro-faden) — ein Bau ohne sie bliebe bis zum nächsten Anker stehen.
+        if (this._ensureHydroTilesAround(pm.x, pm.z, outR)) return;
         const waterLevel = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
         const step = span / 4;
         const pcx = Math.floor(pm.x / span);
@@ -911,7 +912,7 @@ class AnazhRealm_gelaende_fern {
     // Feld-Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
     _fernNass(x, z, law, wl, aus) {
         const h = this.state.hydrosphere;
-        if (!h || !h.ready || this._hydroComputing) {
+        if (!h || !h.ready) {
             aus.y = law;
             aus.spiegel = wl;
             return law < wl;
@@ -924,11 +925,11 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
-    // des Wasser-Stoffs (`hydroSurfaceUniforms`, EIN Schreiber `_dayNightApplyWaterMaterials`). Ohne Wasser-Stoff bricht er laut.
+    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`). Ohne Wasser-Stoff bricht er laut.
     _fernWasserBlickNode(_T) {
         this._ensureHydroSurfaceMaterial();
         const U = this.state.hydroSurfaceUniforms;
-        if (!U || !U.irr || !U.sunCol || !U.sunDir || !U.light)
+        if (!U || !U.sunCol || !U.sunDir || !U.light)
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
@@ -938,7 +939,7 @@ class AnazhRealm_gelaende_fern {
             viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
             T: _T.float(0.0),
             koerper: _T.vec3(...this._fernWasserKoerper()),
-            irr: U.irr,
+            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0)),
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
@@ -970,30 +971,102 @@ class AnazhRealm_gelaende_fern {
         if (fr.wasserTiefe === tiefe) return 0;
         fr.wasserTiefe = tiefe;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const dirty = [false, false, false];
+        const bewegt = [[], [], []];
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
         for (let g = 0; g < bis; g++) {
             if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             this._fernRingSetzVertex(fr, p, wl);
-            dirty[p.s] = true;
+            bewegt[p.s].push(p.li);
             n++;
         }
-        this._fernRingHoch(fr, dirty);
+        this._fernRingHoch(fr, bewegt);
         return n;
     }
 
-    // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je bewegte Schale Lage, Farben und die Normalen (das Licht braucht sie)
-    // — über das VOLLE Index-Muster der Schale (`fr.geos`; die Teile der Schale 0 teilen dieselben Attribute).
-    _fernRingHoch(fr, dirty) {
+    // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je Schale die bewegten Punkte (`bewegt[s]`, lokale Indizes) — Lage, Farben
+    // und die Normalen (das Licht braucht sie) NUR an den Ecken der Dreiecke um einen bewegten Punkt (`_fernRingNormalen`).
+    _fernRingHoch(fr, bewegt) {
         for (let s = 0; s < fr.geos.length; s++) {
-            if (!dirty[s]) continue;
+            if (!bewegt[s] || !bewegt[s].length) continue;
             const geo = fr.geos[s];
             geo.attributes.position.needsUpdate = true;
             AnazhRealm._fernRingAttributeHoch(geo);
-            geo.computeVertexNormals();
+            AnazhRealm._fernRingNormalen(geo, bewegt[s]);
         }
+    }
+
+    // DIE NORMALEN DER BEWEGTEN PUNKTE (fahrt-takt, Lehre 25: der Takt kostet, was ihn betrifft): die Normale einer Ecke ist die
+    // Summe der Flächen-Kreuze ihrer Dreiecke, normiert — dieselbe Rechnung wie three `computeVertexNormals` (je Dreieck in Index-
+    // Folge (C − B) × (A − B), je Schritt in Float32 abgelegt, × 1/Länge): byte-gleich, aber nur für die Ecken, deren Dreiecke einen
+    // bewegten Punkt tragen. Die Dreiecke je Ecke stehen mit dem Index-Muster der Schale fest (einmal je Index). Bis fahrt-takt
+    // rechnete jedes Einhängen einer Scheibe (512 Punkte) und jede bewegte Saum-Ecke die GANZE Schale nach (GT-Fahrt 20 m/s an der
+    // Radeon an der Mess-Wiese: computeVertexNormals 4,75 ms je Takt ab p95).
+    static _fernRingNormalen(geo, bewegt) {
+        const idx = geo.index.array,
+            P = geo.attributes.position.array,
+            nA = geo.attributes.normal;
+        const nV = geo.attributes.position.count;
+        let ad = geo.userData.fernEcken;
+        if (!ad || ad.idx !== idx) {
+            // je Ecke ihre Dreiecke (Index-Start), aufsteigend; eine Ecke, die ein Dreieck zweimal trägt, zählt es einmal (wie
+            // three: die drei Ecken lesen vor dem Schreiben)
+            const zahl = new Int32Array(nV + 1);
+            const jede = (f) => {
+                for (let t = 0; t < idx.length; t += 3) {
+                    const a = idx[t],
+                        b = idx[t + 1],
+                        c = idx[t + 2];
+                    f(a, t);
+                    if (b !== a) f(b, t);
+                    if (c !== a && c !== b) f(c, t);
+                }
+            };
+            jede((v) => zahl[v + 1]++);
+            for (let v = 0; v < nV; v++) zahl[v + 1] += zahl[v];
+            const tri = new Int32Array(zahl[nV]),
+                fuell = zahl.slice(0, nV);
+            jede((v, t) => (tri[fuell[v]++] = t));
+            ad = geo.userData.fernEcken = { idx, von: zahl, tri, mark: new Uint8Array(nV), liste: new Int32Array(nV) };
+        }
+        const { von, tri, mark, liste } = ad;
+        let n = 0;
+        for (const v of bewegt)
+            for (let q = von[v]; q < von[v + 1]; q++)
+                for (let k = 0; k < 3; k++) {
+                    const u = idx[tri[q] + k];
+                    if (!mark[u]) ((mark[u] = 1), (liste[n++] = u));
+                }
+        const N = nA.array,
+            f = Math.fround;
+        for (let m = 0; m < n; m++) {
+            const u = liste[m];
+            mark[u] = 0;
+            let x = 0,
+                y = 0,
+                z = 0;
+            for (let q = von[u]; q < von[u + 1]; q++) {
+                const t = tri[q],
+                    a = idx[t] * 3,
+                    b = idx[t + 1] * 3,
+                    c = idx[t + 2] * 3;
+                const lx = P[c] - P[b],
+                    ly = P[c + 1] - P[b + 1],
+                    lz = P[c + 2] - P[b + 2];
+                const mx = P[a] - P[b],
+                    my = P[a + 1] - P[b + 1],
+                    mz = P[a + 2] - P[b + 2];
+                x = f(x + (ly * mz - lz * my));
+                y = f(y + (lz * mx - lx * mz));
+                z = f(z + (lx * my - ly * mx));
+            }
+            const s = 1 / (Math.sqrt(x * x + y * y + z * z) || 1);
+            N[u * 3] = x * s;
+            N[u * 3 + 1] = y * s;
+            N[u * 3 + 2] = z * s;
+        }
+        nA.needsUpdate = true;
     }
 
     // Die Teile in die drei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung), aNass = der Anteil
@@ -1028,7 +1101,7 @@ class AnazhRealm_gelaende_fern {
     // Die Kronenfarbe reist sRGB-kodiert in 8 Bit (linear lägen 0,03–0,1 in 8–25 Stufen), die Deckung linear im Alpha.
     // Die Karte füllt sich im Fern-Farb-Budget und tauscht erst, wenn sie ganz steht (`bereit`); bis dahin mischt nichts.
     static get FERN_KRONE_NAH() {
-        return Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 });
+        return this._einmal("FERN_KRONE_NAH", Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 }));
     }
     _fernKroneNahEnsure() {
         const st = this.state;
@@ -1211,7 +1284,7 @@ class AnazhRealm_gelaende_fern {
     _fernRingEinhaengen(fr) {
         if (!fr.einhaengen.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const dirty = [false, false, false];
+        const bewegt = [[], [], []];
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
         while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
@@ -1229,12 +1302,12 @@ class AnazhRealm_gelaende_fern {
                 if (v === v) fr.vollY[von + k] = v;
                 const p = this._fernRingPunkt(fr, von + k);
                 this._fernRingSetzVertex(fr, p, wl);
-                dirty[p.s] = true;
+                bewegt[p.s].push(p.li);
             }
             fr.cursor = von + n;
             done += n;
         }
-        this._fernRingHoch(fr, dirty);
+        this._fernRingHoch(fr, bewegt);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
@@ -1260,11 +1333,11 @@ class AnazhRealm_gelaende_fern {
                 rows++;
             fr.zoneVerts = rows * F.winkel;
         }
-        if (!fr.zoneVerts) return;
         // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
-        // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
-        // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
-        // Cursor +0), und weckte sie später ein Chunk-Wechsel, löschte sie alle 1 081 Rand-Flächen.
+        // (`_fernRingFeldY`) fällt nur an den Ecken in der Reichweite des neuen Edits (gelaende-core `editReich`, die seiner
+        // Form; bis editform-kern Radius + 4 m), und die Edit-Generation weckt die Wache. Vorher stand die Prüfung hinter der
+        // Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-Cursor +0), und weckte sie später ein Chunk-Wechsel,
+        // löschte sie alle 1 081 Rand-Flächen.
         const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         const edN = Array.isArray(ed) ? ed.length : 0;
         if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
@@ -1273,10 +1346,10 @@ class AnazhRealm_gelaende_fern {
                 for (let k = fr.feldEditsN | 0; k < edN; k++) {
                     const e = ed[k];
                     if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
-                    const r2 = ((Number(e.r) || 0) + 4) ** 2;
+                    const r2 = globalThis.__gelaendeCore.editReich(e) ** 2;
                     for (let i = 0; i < fr.zoneVerts; i++) {
                         const p = this._fernRingPunkt(fr, i);
-                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 <= r2) fr.feldY[p.g] = NaN;
+                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < r2) fr.feldY[p.g] = NaN;
                     }
                 }
             } else fr.feldY.fill(NaN);
@@ -1287,13 +1360,14 @@ class AnazhRealm_gelaende_fern {
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
         // schläft die Wache.
+        // ohne Saum-Punkt ist die Runde 0 und gegangen (`_standRuht`) — auch der leere Saum geht durch die Wache
         if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS kommt aus dem Fern-Faden (B2, `fr.law` · `fr.vollY`, einmal je Anker): die Wache rechnet keine
         // Höhe, sie fragt nur, ob die Naht den Punkt jetzt anders legt.
         const pos = fr.geos[0].attributes.position;
-        let neu = false;
+        const bewegt = [];
         let feldMessungen = 0;
         let offen = false;
         for (let n = 0; n < 128; n++) {
@@ -1309,13 +1383,12 @@ class AnazhRealm_gelaende_fern {
             }
             if (Math.fround(this._fernRingY(fr, p, wl)) !== pos.getY(p.li)) {
                 this._fernRingSetzVertex(fr, p, wl);
-                neu = true;
+                bewegt.push(p.li);
             }
             fr.deckCursor++;
         }
-        this._standMeldet("deckWache", 128, neu, offen);
-        if (!neu) return;
-        this._fernRingHoch(fr, [true]);
+        this._standMeldet("deckWache", 128, bewegt.length > 0, offen);
+        this._fernRingHoch(fr, [bewegt]);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_gelaende_fern]);

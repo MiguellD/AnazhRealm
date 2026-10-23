@@ -189,13 +189,13 @@ class AnazhRealm_werkstatt_hof {
             }
             const base = chip.getAttribute("data-base") || "✺ Boost";
             const next = `${base} (${rest}s)`;
-            if (chip.textContent !== next) chip.textContent = next;
+            this._hudSchreib(chip, next);
         }
     }
 
     // Rezeptbuch: craftbare Baupläne nach Verwendung gruppiert, je Zeile Kosten + rollen-gerechter
     // Fertigen-Knopf (disabled ohne Material). Signatur = wovon der INHALT abhängt (Bauplan-Namen +
-    // Inventar-Materialien + Part-Edit-Tick + Spielmodus — `_recipeRow` gibt den Knopf in schöpfer frei; bis 06.10.
+    // Inventar-Materialien + Part-Edit-Tick + Spielmodus + Hotbar (die Reihe des Katalogs, bauen.K1) — `_recipeRow` gibt den Knopf in schöpfer frei; bis 06.10.
     // fehlte der Modus, Befund V-D5: in schöpfer blieb „Es fehlt: 44× holz, 50× laub" gesperrt stehen), NICHT die
     // Slot-Auswahl (`_recipeRow` liest sie nicht) — sonst Voll-Rebuild bei jeder Slot-Wahl.
     _recipeBookSignature() {
@@ -210,7 +210,15 @@ class AnazhRealm_werkstatt_hof {
             .map((m) => m + have[m])
             .join(",");
         return (
-            Object.keys(bps).join("|") + "#" + matSig + "#" + (this.state._bpEditTick || 0) + "#" + this.getGameMode()
+            Object.keys(bps).join("|") +
+            "#" +
+            matSig +
+            "#" +
+            (this.state._bpEditTick || 0) +
+            "#" +
+            this.getGameMode() +
+            "#" +
+            (this.state.hotbar || []).join("|")
         );
     }
 
@@ -226,15 +234,18 @@ class AnazhRealm_werkstatt_hof {
         const bps = this.state.blueprints || {};
         // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
         // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
+        // Griffbereit zuerst (`_katalogReihe`, bauen.K1): die eigenen Werke und die der Hotbar stehen oben, je mit ihrer Art.
+        const griff = [];
         const groups = { hold: [], wear: [], drink: [], vehicle: [], place: [] };
         const groupLabel = {
+            griff: "Griffbereit",
             hold: "In die Hand",
             wear: "Rüstung",
             drink: "Trank",
             vehicle: "Fahrzeug",
             place: "Bauwerk",
         };
-        for (const name of Object.keys(bps)) {
+        for (const name of this._katalogReihe(Object.keys(bps))) {
             const bp = bps[name];
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
             // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
@@ -242,18 +253,20 @@ class AnazhRealm_werkstatt_hof {
             if (!this._katalogSichtbar(name, bp)) continue;
             const kind = this._blueprintUseKind(bp);
             const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
-            if (groups[slot]) groups[slot].push(name);
+            if (!groups[slot]) continue;
+            if (this._katalogRang(name) < (this.state.hotbar || []).length) griff.push([name, slot]);
+            else groups[slot].push(name);
         }
         let any = false;
-        for (const kind of ["hold", "wear", "drink", "vehicle", "place"]) {
-            const names = groups[kind].sort();
-            if (!names.length) continue;
+        for (const kind of ["griff", "hold", "wear", "drink", "vehicle", "place"]) {
+            const rows = kind === "griff" ? griff : groups[kind].sort().map((n) => [n, kind]);
+            if (!rows.length) continue;
             any = true;
             const g = document.createElement("div");
             g.className = "recipe-group";
             g.textContent = groupLabel[kind];
             host.appendChild(g);
-            for (const name of names) host.appendChild(this._recipeRow(name, kind));
+            for (const [name, art] of rows) host.appendChild(this._recipeRow(name, art));
         }
         if (!any) {
             const empty = document.createElement("p");
@@ -356,11 +369,13 @@ class AnazhRealm_werkstatt_hof {
         status.title = isWerk
             ? "Gefertigt — die Präzision ist eingefroren, der Gebrauch ist frei."
             : bauwerk
-              ? "Fertigen führt in den Bau-Modus — das Setzen in der Welt zieht das Material (Frieden und Pfad), frei ist nur Schöpfer."
+              ? "Fertigen setzt das Werk, wohin du blickst — das Setzen zieht das Material (Frieden und Pfad), frei ist nur Schöpfer."
               : "Reine Information — das Fertigen zieht das Material (Frieden und Pfad), dann ist der Gebrauch frei.";
         status.style.opacity = "0.75";
         status.style.fontStyle = "italic";
-        info.appendChild(status);
+        // in der Kosten-Zeile (bauen.K1): eine Zeile weniger je Rezept, das Griffbereite steht ganz im Bild
+        status.textContent = ` · ${status.textContent}`;
+        cost.appendChild(status);
         row.appendChild(info);
         const btn = document.createElement("button");
         btn.type = "button";
@@ -375,7 +390,9 @@ class AnazhRealm_werkstatt_hof {
                   : kind === "place" || kind === "vehicle"
                     ? "Fertigen"
                     : "In die Hand";
-        if (bauwerk) btn.title = "Fertigen — das Phantom steht vor dir, Rechtsklick oder F setzt es.";
+        if (bauwerk)
+            btn.title =
+                "Fertigen — das Werk steht, wohin du blickst; trägt der Ort nicht, zielt das Phantom (F setzt).";
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const free = mode === "schöpfer" || isWerk;
         btn.disabled = !free && !check.ok;
@@ -467,6 +484,9 @@ class AnazhRealm_werkstatt_hof {
             this.state.inventoryOpen = true;
             document.body.classList.add("inventory-open");
             this.renderInventoryUI();
+            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1)
+            const rezepte = document.getElementById("inventory-recipes");
+            if (rezepte) rezepte.scrollTop = 0;
             // V18.57 Ich-Bogen — die Selbst-Bühne + das Spec-Sheet (das Werkstatt-/Hof-Muster auf das Selbst).
             if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(true);
             // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
@@ -763,10 +783,12 @@ class AnazhRealm_werkstatt_hof {
     _hofHandleDrawerChange(name) {
         const stage = this.state.hofStage;
         if (name === "kreaturen") {
-            // On-Open-Render: die Liste wird beim Öffnen SYNCHRON frisch gerendert (so darf die Insel
-            // `isOpen`-skippen, ohne dass das hidden-DOM stale wird). Bewusst ohne typeof-Guard — die
+            // On-Open-Render: die Listen werden beim Öffnen SYNCHRON frisch gerendert — Gesten und Gesetze schreibt
+            // der Status-Takt nur bei offenem Hof (`updateStatusPanel`, K2 Belegung). Bewusst ohne typeof-Guard — die
             // Grep-Wand zählt nur die geguardete Mechanik-Signatur.
             this._renderCreatureListUI();
+            this.renderAbilitiesList();
+            this.renderWorldRulesList();
             const s = this._hofEnsureStage();
             if (!s) return;
             s.active = true;
@@ -1432,7 +1454,14 @@ class AnazhRealm_werkstatt_hof {
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
     static get HOF_SECTION_LABELS() {
-        return { wesen: "Hirsche", wolf: "Wölfe", fuchs: "Füchse", baer: "Bären", gather: "Sammler", build: "Bauer" };
+        return this._einmal("HOF_SECTION_LABELS", {
+            wesen: "Hirsche",
+            wolf: "Wölfe",
+            fuchs: "Füchse",
+            baer: "Bären",
+            gather: "Sammler",
+            build: "Bauer",
+        });
     }
 
     // Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat): Chips aus den LEBENDEN Profilen
@@ -1774,7 +1803,7 @@ class AnazhRealm_werkstatt_hof {
                         /* defensive */
                     }
                 }
-                this.toggleInventoryOverlay();
+                this._verbTaste("inventory", true); // der EINE Auslöser (das Pad öffnet es ebenso)
             },
             true
         );

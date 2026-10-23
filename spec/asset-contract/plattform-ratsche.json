@@ -63,18 +63,18 @@
         "v6": {
             "kern": "fachwerk-core.js",
             "faelle": 32,
-            "probe": "Samen 7 x Stufen 0/1/2/3 x jede vierte Kultur (8 von 32; die Stufe 3 - NUR-WURF, S3 haus - ist gerastert und kippt nie)",
+            "probe": "Samen 7 x Stufen 0/1/2/3 x jede vierte Kultur (8 von 32). Gehoben am Stufen-Ton (S8, material.K3): die L2 und die Huelle tragen den GEMESSENEN Ton der Stufe 1 (fachwerk-core sichtTon, Faktor je Blick-Klasse auf 2^-10) - wo eine Drift die L1 kippt (Ziegel-Schritt, Neigung, First), kippt jetzt auch ihre L2 und je Faktor-Sprung die Huelle: cos 16 -> 24, sin 16 -> 18, atan 11 -> 16, tan 8 -> 11; pow bleibt 0 (die GEMESSENE Klasse), cos/sin/atan/tan rundeten in beiden V8 gleich (Kopf dieser Datei)",
             "kippt": {
-                "cos": 16,
-                "sin": 16,
-                "atan": 11,
-                "tan": 8
+                "cos": 24,
+                "sin": 18,
+                "atan": 16,
+                "tan": 11
             },
             "taeter": {
-                "cos": "fachwerk-core.js:181 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
-                "sin": "fachwerk-core.js:226 sin (rotation.set -> Quaternion -> Float64-Matrix)",
-                "atan": "fachwerk-core.js:177 atan (th, die Dach-Neigung der Eindeckung)",
-                "tan": "fachwerk-core.js:164 tan (ridgeY, die First-Hoehe)"
+                "cos": "fachwerk-core.js:197 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
+                "sin": "fachwerk-core.js:249 sin (rotation.set -> Quaternion -> Float64-Matrix)",
+                "atan": "fachwerk-core.js:193 atan (th, die Dach-Neigung der Eindeckung)",
+                "tan": "fachwerk-core.js:176 tan (ridgeY, die First-Hoehe)"
             },
             "soll": "0 - das Raster (heute nur die Ausstattung, ausRaster) kommt mit dem v6-Akt der W5 (Haus-Raster vor dem Farb-Akt, Kritik B5)"
         },
@@ -94,15 +94,15 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 460,
-            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut)",
+            "faelle": 526,
+            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut; mensch.K1: die Mengen-Stufe mensch-L2 bringt 36 Klassen, davon kippen cos 10 und sin 12 - die 460 alten Klassen stehen byte-gleich; mensch.K1 Staffel 2: die ferne Mengen-Stufe mensch-L3 bringt 30 Klassen, davon kippen cos 10 und sin 12 - die 496 alten stehen byte-gleich)",
             "kippt": {
-                "cos": 253,
-                "sin": 202
+                "cos": 273,
+                "sin": 226
             },
             "taeter": {
-                "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",
-                "sin": "tetrapoda-core.js:2018 sin (femVec, der Oberschenkel-Winkel)"
+                "cos": "tetrapoda-core.js:2209 cos (frontYReach, die Reichweite des Vorderlaufs)",
+                "sin": "tetrapoda-core.js:2505 sin (femVec, der Oberschenkel-Winkel)"
             },
             "soll": "0 - EIN Byte-Raster am Ofen-Ausgang; es kommt mit dem W3c-Akt (Kreatur-Grobstufe geskinnt), pow ist seit S1 an skullR und legMuscle gerastert"
         }

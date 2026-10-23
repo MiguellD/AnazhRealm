@@ -105,8 +105,8 @@ class AnazhRealm_werkstatt_hud {
         // sauber. Headless steht die Bühne sofort.
         if (!this._buehneSteht()) return;
         const grok = this.state.grok;
-        const keys = this.state.keys || {};
-        const moving = !!(keys["w"] || keys["a"] || keys["s"] || keys["d"] || keys[" "]);
+        const T = this.state.verbTafel;
+        const moving = T.vor !== 0 || T.quer !== 0 || T.sprung;
         if (moving) {
             grok.idleSince = null;
         } else if (grok.idleSince === null) {
@@ -1298,11 +1298,11 @@ class AnazhRealm_werkstatt_hud {
         if (currentTime - this._statusRefs.lastTick < 0.4) return;
         this._statusRefs.lastTick = currentTime;
         const r = this._statusRefs;
-        if (r.weather) r.weather.textContent = this.state.weather || "—";
-        if (r.slug) r.slug.textContent = this.state.worldMeta.slug || "—";
-        if (r.position && this.state.playerMesh) {
+        this._hudSchreib(r.weather, this.state.weather || "—");
+        this._hudSchreib(r.slug, this.state.worldMeta.slug || "—");
+        if (this.state.playerMesh) {
             const p = this.state.playerMesh.position;
-            r.position.textContent = `${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`;
+            this._hudSchreib(r.position, `${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`);
         }
         if (r.fps) {
             // V18.390 — die Trias SYNERGETISCH in die bestehende Status-Bar (FPS · Bauten · Position),
@@ -1315,35 +1315,39 @@ class AnazhRealm_werkstatt_hud {
                 const szenePct = Math.round(this._szeneSkalaWirk() * 100);
                 extra = ` · ${dc}dc · ${trisK}k▲ · Szene ${szenePct}%`;
             }
-            r.fps.textContent = String(this.state.fps || 0) + extra;
+            this._hudSchreib(r.fps, String(this.state.fps || 0) + extra);
         }
-        if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
+        this._hudSchreib(r.creatures, this.state.creatures.length);
         if (r.soul) {
             // ALTLASTEN-NULL: die EINE Auflösungs-Quelle (_getSoulDef) — auch ein
             // getragener Tier-Körper (Custom-Seele bp_koerper_*) zeigt sein Label.
             const def = this._getSoulDef(this.state.player.soul || "human");
-            r.soul.textContent = (def && def.label) || "—";
+            this._hudSchreib(r.soul, (def && def.label) || "—");
         }
         if (r.architectures) {
             const counts = this.countArchitecturesNearPlayer(60);
-            r.architectures.textContent = `${counts.near} nah / ${counts.total}`;
+            this._hudSchreib(r.architectures, `${counts.near} nah / ${counts.total}`);
         }
         // Welle 6.G3 — Tageszeit-Anzeige (zusätzlich zum 10-Hz-Refresh in
         // tickDayNight; diese Schleife läuft 0.4 s und ist Backup für die
         // Fälle wo tickDayNight pausiert ist).
         if (r.time) {
             const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            r.time.textContent = this._timeOfDayLabel(t);
+            this._hudSchreib(r.time, this._timeOfDayLabel(t));
         }
         const e = this.state.player.emotions;
         for (const axis of Object.keys(r.emotions)) {
             const v = Math.max(0, Math.min(1, e[axis] || 0));
             r.emotions[axis].fill.style.width = `${(v * 100).toFixed(0)}%`;
-            r.emotions[axis].value.textContent = v.toFixed(2);
+            this._hudSchreib(r.emotions[axis].value, v.toFixed(2));
         }
         this._updateEmotionFeedback();
-        this.renderAbilitiesList();
-        this.renderWorldRulesList();
+        // Gesten und Gesetze leben im Hof-Drawer: geschlossen schreibt niemand hinein, das Öffnen rendert sie frisch
+        // (`_hofHandleDrawerChange`).
+        if (this._uiSchubladeOffen("kreaturen")) {
+            this.renderAbilitiesList();
+            this.renderWorldRulesList();
+        }
     }
 
     // Emotion-Feedback: färbt das Leisten-WORT in der Farbe der dominanten Emotion (EINE Quelle
@@ -1360,14 +1364,14 @@ class AnazhRealm_werkstatt_hud {
                 this._emotionLabelHideTimer = null;
             }
             if (item) item.style.display = "";
-            lab.textContent = es.label;
+            this._hudSchreib(lab, es.label);
             lab.style.color = css;
             lab.style.opacity = "0.8";
         } else {
             lab.style.opacity = "0";
             // Nach dem 1.4-s-Fade verlässt das Item den Leisten-Flow (display:none) — mit opacity 0 bliebe
             // ein Loch und der Flex-Gap verdoppelte sich um ein unsichtbares Mitglied.
-            if (item && !this._emotionLabelHideTimer) {
+            if (item && item.style.display !== "none" && !this._emotionLabelHideTimer) {
                 this._emotionLabelHideTimer = setTimeout(() => {
                     this._emotionLabelHideTimer = null;
                     if (lab.style.opacity === "0") item.style.display = "none";
@@ -2248,8 +2252,8 @@ class AnazhRealm_werkstatt_hud {
         }
     }
 
-    // Keybindings-UI: je Aktion Label, aktuelle Taste, „Ändern"-Button → Rebind-Capture (die nächste
-    // Taste oder Maus-Taste bindet); Reset stellt die Defaults her.
+    // Keybindings-UI: je Aktion Label, aktuelle Taste und Pad-Knopf, je ein „Ändern"-Button → Rebind-Capture (die nächste
+    // Taste, Maus-Taste oder der nächste Pad-Knopf bindet, leib.K5); Reset stellt die Defaults beider Schichten her.
     keybindingsInitDOM() {
         if (typeof document === "undefined") return;
         const section = document.getElementById("keybindings-section");
@@ -2258,26 +2262,31 @@ class AnazhRealm_werkstatt_hud {
         const resetBtn = section.querySelector("#keybindings-reset");
         if (!list) return;
         list.innerHTML = "";
-        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
+        const aktionen = new Set([...AnazhRealm.KEYBINDING_ACTIONS, ...Object.keys(AnazhRealm.PAD_BELEGUNG)]);
+        for (const action of aktionen) {
             const row = document.createElement("div");
             row.className = "keybind-row";
             row.dataset.action = action;
             const label = document.createElement("span");
             label.className = "keybind-label";
             label.textContent = AnazhRealm.KEYBINDING_LABELS[action] || action;
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "keybind-rebind";
-            btn.dataset.action = action;
-            btn.addEventListener("click", () => {
-                if (this.state.keybindRebind && this.state.keybindRebind.action === action) {
-                    this.cancelKeybindRebind();
-                } else {
-                    this.beginKeybindRebind(action);
-                }
-            });
             row.appendChild(label);
-            row.appendChild(btn);
+            for (const art of ["keybind-rebind", "keybind-rebind keybind-pad"]) {
+                const pad = art !== "keybind-rebind";
+                if (!pad && !(action in AnazhRealm.DEFAULT_KEYBINDINGS)) continue;
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = art;
+                btn.dataset[pad ? "pad" : "action"] = action;
+                btn.addEventListener("click", () => {
+                    if (this.state.keybindRebind && this.state.keybindRebind.action === action) {
+                        this.cancelKeybindRebind();
+                    } else {
+                        this.beginKeybindRebind(action);
+                    }
+                });
+                row.appendChild(btn);
+            }
             list.appendChild(row);
         }
         if (resetBtn) {
@@ -2302,6 +2311,7 @@ class AnazhRealm_werkstatt_hud {
         if (code.startsWith("Digit")) return code.slice(5);
         if (code.startsWith("Arrow"))
             return "↑↓←→".charAt(["Up", "Down", "Left", "Right"].indexOf(code.slice(5))) || code;
+        if (/^Pad\d+$/.test(code)) return "Pad " + (AnazhRealm.PAD_KNOPF_NAMEN[+code.slice(3)] || code.slice(3));
         return code;
     }
 
@@ -2310,14 +2320,15 @@ class AnazhRealm_werkstatt_hud {
         const section = document.getElementById("keybindings-section");
         if (!section) return;
         const rb = this.state.keybindRebind;
-        for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
-            const btn = section.querySelector(`button.keybind-rebind[data-action="${action}"]`);
-            if (!btn) continue;
+        for (const btn of section.querySelectorAll("button.keybind-rebind")) {
+            const action = btn.dataset.action || btn.dataset.pad;
             if (rb && rb.action === action) {
-                btn.textContent = "Drücke Taste…";
+                btn.textContent = btn.dataset.pad ? "Drücke Knopf…" : "Drücke Taste…";
                 btn.classList.add("rebinding");
             } else {
-                btn.textContent = this._formatBindingCode(this.state.keybindings[action]);
+                btn.textContent = this._formatBindingCode(
+                    (btn.dataset.pad ? this.state.padBelegung : this.state.keybindings)[action]
+                );
                 btn.classList.remove("rebinding");
             }
         }
@@ -2472,9 +2483,9 @@ class AnazhRealm_werkstatt_hud {
         };
         const gStudio = document.createElement("optgroup");
         gStudio.label = "Studio-Wesen";
-        // (1) mensch — die gegebene Identität (koerperstudio); die Studio-Übergabe
-        // (state.studioUebergabe.koerper) ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
-        const ueK = this.state.studioUebergabe && this.state.studioUebergabe.koerper;
+        // (1) mensch — die gegebene Identität (koerperstudio); die Prägung des Mensch-Rezepts (der Übergabe-Kanal, ws.studioOv)
+        // ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
+        const ueK = this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
         addOpt(
             gStudio,
             "human",
@@ -2600,15 +2611,30 @@ class AnazhRealm_werkstatt_hud {
     }
 
     // Ist eine Schublade offen? Die DOM-Wahrheit (ein sichtbarer .drawer), nicht ein Merker — der Werkstatt-, Hof- oder
-    // Bibliotheks-Drawer gehört der UI, nie der Welt (Welle L, Q9).
-    _uiSchubladeOffen() {
+    // Bibliotheks-Drawer gehört der UI, nie der Welt (Welle L, Q9). `name` fragt nach EINER Schublade.
+    _uiSchubladeOffen(name) {
         if (typeof document === "undefined" || typeof document.querySelector !== "function") return false;
-        return !!document.querySelector(".drawer[data-drawer]:not([hidden])");
+        return !!document.querySelector(`.drawer[data-drawer${name ? `="${name}"` : ""}]:not([hidden])`);
+    }
+
+    // DER EINE HUD-SCHREIBER (K2 Belegung, 21.10.): ein Wert, der sich nicht ändert, berührt das DOM nie. Blink ersetzt
+    // bei jedem textContent den Text-Knoten, jedes setAttribute invalidiert auch bei gleichem Wert, und `body:has(…)`
+    // prüft jede Mutation — die Takt-Schreiber (Status-Leiste 2,5 Hz, Lebens-HUD und Uhr 10 Hz) trugen so Stil, Layout
+    // und Paint in jedes vierte Bild (Radeon, Mess-Wiese stehend). `attr`: ein Attribut-Name, "html" = innerHTML, sonst
+    // textContent.
+    _hudSchreib(el, wert, attr) {
+        if (!el) return;
+        const s = String(wert);
+        if (attr === "html") {
+            if (el.innerHTML !== s) el.innerHTML = s;
+        } else if (attr) {
+            if (el.getAttribute(attr) !== s) el.setAttribute(attr, s);
+        } else if (el.textContent !== s) el.textContent = s;
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
     _uiZeigerFrei() {
-        if (this.state.player) this.state.player.breakHeld = false;
+        this.state.verbTafel.gehalten.break = false;
         if (typeof document !== "undefined" && document.pointerLockElement && document.exitPointerLock) {
             try {
                 document.exitPointerLock();

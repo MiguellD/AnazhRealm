@@ -2400,12 +2400,15 @@
     // V18.491.230 Lab Garage Lack-Swatches; seit W5 trägt die Welt sie je Gestalt (`lackIndex`/`lackStoff`, LACK_VIS.host).
     // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`); das vierte Feld ist die
     // LACK-ART (`LACK_ART`: uni pigmentiert · metallic geflockt), Labor und Welt lesen denselben Stoff (`lackStoff`).
+    // DAS REALE BAND (material.K1, Re-Mint 23.10.): ein uni-Lack ist ein Dielektrikum — seine Albedo liegt in sRGB 30–240
+    // (Frostbite, Lagarde & de Rousiers 2014; linear 0,0123–0,871). Tiefschwarz 0x111319 las 0,006 (Tafel lack, beide Seiten),
+    // 0x22252c liest 0,0185 und bleibt das tiefe Blau-Schwarz.
     const LACK_GESETZ = [
         ["Clay", 0x8d9499, 1, "uni"],
         ["Signalrot", 0xc4181b, 0, "uni"],
         ["Racing-Grün", 0x1d4a30, 0, "uni"],
         ["Silber", 0xb6babf, 0, "metallic"],
-        ["Tiefschwarz", 0x111319, 0, "uni"],
+        ["Tiefschwarz", 0x22252c, 0, "uni"],
         ["Azurblau", 0x1c5190, 0, "metallic"],
         ["Solargelb", 0xe2b21e, 0, "uni"],
         ["Kupfer-Orange", 0xc8641a, 0, "metallic"],
@@ -2926,7 +2929,11 @@
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
             // ── Reifen-SEITENKRAEFTE: Schlupf × Steifigkeit, gesaettigt am Reibkreis × Achslast ──
-            const cap = G.maxGrip * G.grip;
+            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab kennt keine Naesse): e.haft (0..1) = der Boden-Faktor
+            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (die Naesse der Welt) — nass greift der Reifen
+            // seitlich und laengs schwaecher, der Bremsweg waechst um 1 / haft.
+            const haft = e && e.haft > 0 && e.haft < 1 ? e.haft : 1;
+            const cap = G.maxGrip * G.grip * haft;
             let FlatF = -Math.max(-cap, Math.min(cap, G.CA_F * slipF)) * Wf;
             let FlatR = -Math.max(-cap, Math.min(cap, G.CA_R * slipR)) * Wr;
             if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
@@ -3495,11 +3502,31 @@
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
-        _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
-        try {
-            return baueFahrzeug(rezeptId, seed, P, st, werk);
-        } finally {
-            _vd = FAHRZEUG_DETAIL;
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): trägt der Bau mehr Dreiecke als die
+        // Budget-Zeile der Stufe, fällt das Detail-Gesetz `teil` um das Verhältnis und der Bau steht neu (höchstens vier
+        // Mal); ein Bau auf seiner Zeile bleibt byte-gleich. Die Teilungen wachsen mit der Größe (Blech hd · 30), die
+        // Zeile nicht — so reduziert die Stufe aus der Größe, nie aus dem Regler-Wert.
+        const zeile = PORTAL_RENDER_CONFIG.lod.budget.vehicle[st].tris;
+        const w = werk || {};
+        const n0 = [w.doors, w.corners].map((l) => (l ? l.length : 0));
+        let vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
+        for (let i = 0; ; i++) {
+            _vd = vd;
+            let g;
+            try {
+                g = baueFahrzeug(rezeptId, seed, P, st, werk);
+            } finally {
+                _vd = FAHRZEUG_DETAIL;
+            }
+            let n = 0;
+            g.traverse((o) => {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+            if (n <= zeile || i === 4) return g;
+            g.traverse((o) => o.geometry && o.geometry.dispose());
+            if (w.doors) w.doors.length = n0[0];
+            if (w.corners) w.corners.length = n0[1];
+            vd = { k: vd.k * Math.min(0.97, zeile / n) };
         }
     }
     function baueFahrzeug(rezeptId, seed, P, st, werk) {

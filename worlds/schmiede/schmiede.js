@@ -59,7 +59,7 @@ controls.target.set(0,0.30,0);controls.minDistance=0.5;controls.maxDistance=4.5;
 // ════════════════════════════════════════════════════════════════════
 const SC=window.__schmiedeCore;
 const M=SC.materials();   // die geteilten Materialien (byte-treu im Kern; nie disposen)
-const {box,cyl,B,sectionAt,sectionMoments,curveY,RHO,hnoise,
+const {box,cyl,B,sectionAt,sectionMoments,curveY,RHO,MAT,metallRho,hnoise,
        buildPommel,buildGuard,buildGrip,buildHaft,buildHead,buildBogen,
        stations,measure,evalLehren,befund,
        PARAMS_BLADE,PARAMS_IMPACT,GATTUNGEN,TRADITIONEN,snapBases,shapeByTradition,
@@ -237,18 +237,18 @@ function buildSectionCard(P){const g=new THREE.Group();const S=stations(P);if(S.
 // ════════════════════════════════════════════════════════════════════
 // MASSE-STREIFEN (die verborgene Wahrheit) — λ(x) als Linie unter der Waffe
 // ════════════════════════════════════════════════════════════════════
-function buildMassStrip(P){const g=new THREE.Group();const S=stations(P);const y0=-0.16, sc=0.9;
+function buildMassStrip(P){const g=new THREE.Group();const S=stations(P);const y0=-0.16, sc=0.9, rhoM=metallRho(P);
   // λ(x) abtasten
   const N=120, xs=[], lam=[];let lmax=1e-9;
   function lambdaAt(x){
     if(!S.impact){
-      if(x>=S.xBlade0 && x<=S.xPoint){const t=(x-S.xBlade0)/P.klinge;return RHO.stahl*sectionMoments(sectionAt(t,P)).A;}
-      if(x>=S.xGuard-S.gThk && x<=S.xGuard+S.gThk)return RHO.stahl*(P.parier*2*0.010*0.016)/(2*S.gThk);
+      if(x>=S.xBlade0 && x<=S.xPoint){const t=(x-S.xBlade0)/P.klinge;return rhoM*sectionMoments(sectionAt(t,P)).A;}
+      if(x>=S.xGuard-S.gThk && x<=S.xGuard+S.gThk)return rhoM*(P.parier*2*0.010*0.016)/(2*S.gThk);
       if(x>=S.xGrip0 && x<=S.xGripEnd)return RHO.griff*Math.PI*0.013*0.013;
-      if(x<S.xGrip0+0.01)return RHO.bronze*(4/3)*Math.PI*Math.pow(P.knaufR,3)*0.72/0.04;
+      if(x<S.xGrip0+0.01)return MAT.bronze.rho*(4/3)*Math.PI*Math.pow(P.knaufR,3)*0.72/0.04;
       return 0;
     } else {
-      if(x>=S.xHead0)return (P.kopfTyp==='keule'?RHO.holz:RHO.stahl)*Math.PI*P.socketR*P.socketR*0.55;
+      if(x>=S.xHead0)return (P.kopfTyp==='keule'?RHO.holz:rhoM)*Math.PI*P.socketR*P.socketR*0.55;
       if(x>=S.xGrip0)return RHO.holz*Math.PI*P.schaftR*P.schaftR;
       return 0;
     }}
@@ -1634,6 +1634,15 @@ P._kBase=P.kruemmung;basisP=Object.assign({},P);buildSliders();rebuild();appendA
         },
         esc: function () {
             return !(typeof arena !== "undefined" && arena && arena.active); /* Esc = Pointer-Lock im Prüfstand */
+        },
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): die Gattung mit Same 1, den Werten ihrer Regler-Zeilen und
+           der Tradition (die Welt-Gestalt der Kosten-Leiste) — das nächste gesetzte Werk der Gattung trägt es. */
+        werk: function () {
+            var ov = { __tradition: tradName(currentTrad) };
+            SC.PARAMS_BY_KIND.weapon.forEach(function (z) {
+                if (typeof P[z.id] === "number") ov[z.id] = P[z.id];
+            });
+            return { kind: "weapon", preset: rezeptDerGattung(), seed: 1, ov: ov };
         },
     });
 })();

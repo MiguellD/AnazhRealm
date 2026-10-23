@@ -118,74 +118,74 @@
       "sha256": "990d5085c33939a081858ba94d50245d52b5e77b93eb11c5154cd2af4d0c4f77"
     },
     "drachentor-s7-L1": {
-      "objects": 329,
-      "vertices": 17909,
-      "sha256": "5983204f4d5141b3134a3a31b1ac6e5cd7da36aac0cf7f7a9b7efdda35f0292f"
+      "objects": 201,
+      "vertices": 14351,
+      "sha256": "2968a9f47b709ef27968d8508516f60a3b369ca2c57da81c1468e72f8d5af693"
     },
     "kathedrale-s7-L1": {
-      "objects": 517,
-      "vertices": 22292,
-      "sha256": "18cd276fe4c88ea5f3d7e382893b44ce9a901170433ce72a41451de3a723e230"
+      "objects": 357,
+      "vertices": 10484,
+      "sha256": "7bef0eba7d573ecbf049d0cbd23eb4831d73f5d508c009be1388adfaca90077b"
     },
     "maschine-s7-L1": {
-      "objects": 326,
-      "vertices": 13445,
-      "sha256": "0562077fb10210a4abb31dfe50e38004f325a8ff9b2189b79232d5ee5aa69081"
+      "objects": 202,
+      "vertices": 9999,
+      "sha256": "cd0b78faf5efb58c07d26b52fe900c703e1b92fdbd8a5ec666dc5a5d8e07ab09"
     },
     "geisttor-s7-L1": {
-      "objects": 170,
-      "vertices": 4776,
-      "sha256": "add219be5b2ba59e9053b97dc482ad7f24e24153c02c7ef31873f81b9b51af68"
+      "objects": 130,
+      "vertices": 3453,
+      "sha256": "8e127d7a572d7e62df114eba7d4fe8294679cbb0f6594f9d15ff5cde830fbb5e"
     },
     "verkalkt-s7-L1": {
-      "objects": 434,
-      "vertices": 24404,
-      "sha256": "a6bfb25b32ebe61b1cf2e4fd0a8fb05ec34ef88cf042a3479a6dca6f05f12f7a"
+      "objects": 306,
+      "vertices": 16068,
+      "sha256": "85f7fc57469180b696292b126a6e2687bd9904f17168db7dd3f9b721921a70ec"
     },
     "ruine-s7-L1": {
-      "objects": 373,
-      "vertices": 13527,
-      "sha256": "8748b5757abb3d29ffcb79be8509513fb1e36ba3c970dcea8d3d0e0cfa8fefa2"
+      "objects": 237,
+      "vertices": 6743,
+      "sha256": "46fdbfc5bcc24f9ea9d14aa58ba56a3b38d61e6c3c5098bdaafae8cf2c37c3a0"
     },
     "maurentor-s7-L1": {
-      "objects": 486,
-      "vertices": 23782,
-      "sha256": "33bcd4595929a63b0f740a2f9a10d1e13489ad6968e72c637fc8b1fb72c58858"
+      "objects": 326,
+      "vertices": 15046,
+      "sha256": "5d9f169a3e918cc20ef500b89a3e59c766da8d494c2097c7d70be4869e3b8130"
     },
     "drachentor-s7-L2": {
-      "objects": 139,
-      "vertices": 6522,
-      "sha256": "304e7444039257a826d876f9ff8f3fc61e729ca11abc091fde4b4ae73a9c506a"
+      "objects": 127,
+      "vertices": 6207,
+      "sha256": "e3322c935b9faa70d0f0b028e52634087fa61b7b442fc21d685c3b3446ee921d"
     },
     "kathedrale-s7-L2": {
-      "objects": 293,
-      "vertices": 8960,
-      "sha256": "eae831da26d46b791205e6991be0872a38959ace0deb37c864fac9787ad63f0d"
+      "objects": 132,
+      "vertices": 3948,
+      "sha256": "1b20d2f203961d7740ba443ebe3611678b1e9e9440c4e85b10de041c614a101f"
     },
     "maschine-s7-L2": {
-      "objects": 140,
-      "vertices": 5076,
-      "sha256": "c3357906fcc956256e899c58d2cf703bbd0b68b8b68c72571d4e28ad68f69319"
+      "objects": 121,
+      "vertices": 3935,
+      "sha256": "2823b8142aeb8607e5015cf233e98d48cf2c0c7738468473af12083e51de5d75"
     },
     "geisttor-s7-L2": {
-      "objects": 130,
-      "vertices": 3018,
-      "sha256": "d7e26be346dd0beb6eadb40eea7b5a0e7a57e4c39e81b8e5784f7aa99fe1de4b"
+      "objects": 35,
+      "vertices": 820,
+      "sha256": "a1f4d7f8b4ec7a334d1cf4f2f26a8364e7715663213b87b8f78a91b94b1b0058"
     },
     "verkalkt-s7-L2": {
-      "objects": 244,
-      "vertices": 9596,
-      "sha256": "cd137aee53be83da32429d7fb8325c1b8f6fad6e74076f251e3af6f3865db031"
+      "objects": 135,
+      "vertices": 5456,
+      "sha256": "8731bade9dcf05e957061e5a90fec5b900a0d37e523e7c44fcba4eca3e877764"
     },
     "ruine-s7-L2": {
-      "objects": 189,
-      "vertices": 5360,
-      "sha256": "7ccd71a01002c830ae15b0cef478c3bd0718092b7b1eb313fad4e99cf9585b17"
+      "objects": 93,
+      "vertices": 2664,
+      "sha256": "6658b319438b81f4c4397fecb326db3992ff51684593c142558f2ed9d9932b91"
     },
     "maurentor-s7-L2": {
-      "objects": 248,
-      "vertices": 9100,
-      "sha256": "074309bb0513965a8f6e75bc7194b978c6fc5acaee4d85e6ae63f04d373d3c7f"
+      "objects": 145,
+      "vertices": 5160,
+      "sha256": "9abf0a77ecbde983d2de8fa197b515587c6bda1cc737b196bd775f6a7b519d69"
     }
   }
 }

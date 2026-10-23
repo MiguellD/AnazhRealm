@@ -214,7 +214,7 @@ class AnazhRealm_speicher_welten {
     // ensureWorldMeta laufen, sonst feuert der Frisch-Welt-Pfad (UUID + Genesis-Eintrag) für eine
     // existierende Welt. Rein lesend. DER PLATZ IST DIE IDENTITÄT: liegt auf dem Platz der aktiven Welt ein Save ohne
     // worldId oder ohne worldMeta (ein Legacy-Save, ein Bruchstück, abgelegt vor der Tür `_weltBetreten`), ist er die Welt
-    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`: Platz → .bak → IndexedDB) —
+    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`: IndexedDB ⇄ Abbild → .bak) —
     // bis 10.10. las sie nur den Platz, und ensureWorldMeta vergab einer Welt, die korrupt mit gültigem .bak oder nur in
     // IndexedDB lag, eine neue Id samt Aktiv-Zeiger, bevor loadState retten konnte. Findet die Kette nichts, merkt sie den
     // Befund (`_bootLeer`): die frische Welt erwacht LAUT (init).
@@ -236,10 +236,11 @@ class AnazhRealm_speicher_welten {
     }
 
     // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge), Leser: die Vorlade des Boots und loadState. Für die Welt
-    // `id`: (1) der Platz; ist er lesbar, gewinnt IndexedDB nur, wenn er nachweislich frischer ist (saveState stempelt
-    // beide, der Index trägt lastPlayed — wie bisher); (2) fehlt der Platz oder ist er korrupt, der .bak (ein Stand zurück,
-    // die Rotation in saveState); (3) sonst IndexedDB. `idb` = {state, at} des Boot-Vorlaufs oder null. Liefert {state,
-    // quelle, befund} — state null nur, wenn alle drei leer oder unlesbar sind, der Befund nennt jedes Glied.
+    // `id`: (1) IndexedDB, wenn ihr Stempel nicht älter ist als der des Abbilds (saveState und die Tür stempeln beide gleich,
+    // der Index trägt lastPlayed); (2) sonst das Abbild im localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt);
+    // (3) sonst der .bak der Transaktion (ein Stand zurück). Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem
+    // harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
+    // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied.
     _weltRettungsKette(id, idb) {
         const befund = [];
         const lies = (roh, name) => {
@@ -257,27 +258,21 @@ class AnazhRealm_speicher_welten {
             return null;
         };
         let ls = null;
-        let bak = null;
         try {
             ls = localStorage.getItem(this.worldStorageKey(id));
-            bak = localStorage.getItem(this.worldStorageKey(id) + ".bak");
         } catch (e) {
             befund.push(`localStorage nicht lesbar (${e.message})`);
         }
+        const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
+        const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
+        if (idb && idb.state && (ls == null || idb.at >= lsAt))
+            return { state: idb.state, quelle: "IndexedDB", befund };
+        if (idb && !idb.state && idb.kaputt !== "leer") befund.push(`IndexedDB korrupt (${idb.kaputt})`);
         const platz = lies(ls, "Platz");
-        if (platz) {
-            const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
-            const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
-            // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im selben Zug; kleiner Takt-Skew soll den
-            // Spiegel nicht entthronen) — nur ECHT frischer.
-            if (idb && idb.state && idb.at > lsAt + 1500)
-                return { state: idb.state, quelle: "IndexedDB (frischer als der Platz)", befund };
-            return { state: platz, quelle: "Platz", befund };
-        }
-        const gerettet = lies(bak, ".bak");
-        if (gerettet) return { state: gerettet, quelle: ".bak (ein Stand zurück)", befund };
+        if (platz) return { state: platz, quelle: "Platz", befund };
         if (idb && idb.state) return { state: idb.state, quelle: "IndexedDB", befund };
-        befund.push(idb ? `IndexedDB korrupt (${idb.kaputt || "kein Zustand"})` : "IndexedDB leer");
+        if (idb && idb.bak && idb.bak.state) return { state: idb.bak.state, quelle: ".bak (ein Stand zurück)", befund };
+        befund.push(idb ? `.bak ${idb.bak ? idb.bak.kaputt : "leer"}` : "IndexedDB leer");
         return { state: null, quelle: null, befund };
     }
 
@@ -501,13 +496,7 @@ class AnazhRealm_speicher_welten {
                 this.log(`Save vor Welt-Wechsel fehlgeschlagen: ${err.message}`, "WARN");
             }
         }
-        // Index-lastPlayed der Ziel-Welt aktualisieren.
-        const idx = this.worldsIndexLoad();
-        const target = idx.find((e) => e.worldId === worldId);
-        if (target) {
-            target.lastPlayed = Date.now();
-            this.worldsIndexSave(idx);
-        }
+        // lastPlayed ist der Stempel des Abbilds (die Rettungs-Kette wählt an ihm) — der erste Takt der Ziel-Welt setzt ihn.
         this.activeWorldSet(worldId);
         this.log(`Welt-Wechsel: aktiv ist nun ${worldId.slice(0, 8)}…`, "INFO");
         if (reload) this._weltWechselNeuLaden(worldId);
@@ -810,6 +799,8 @@ class AnazhRealm_speicher_welten {
             // Snapshot und erwacht nie beim Reload.
             creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
             creatureEmotions: this.state.creatureEmotions,
+            // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
+            pfeileStecken: this._pfeileSteckenAbdruck(),
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
@@ -869,18 +860,10 @@ class AnazhRealm_speicher_welten {
             wetterWort: this.state.wetterWort || null,
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
-            // Die Studio-Übergabe überlebt den Reload (sonst still zurück auf die gefrorenen Kern-Presets).
-            // Am Empfänger Taille-gedeckelt (≤ TAILLE_UNKNOWN_FIELD_MAX); der Restore läuft durch DENSELBEN
-            // Validator (_studioUebergabeValidate).
-            studioUebergabe: (() => {
-                const u = this.state.studioUebergabe;
-                return u && typeof u === "object"
-                    ? {
-                          koerper: u.koerper && typeof u.koerper === "object" ? u.koerper : null,
-                          kreatur: u.kreatur && typeof u.kreatur === "object" ? u.kreatur : {},
-                      }
-                    : { koerper: null, kreatur: {} };
-            })(),
+            // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)
+            // überlebt den Reload — sonst still zurück auf die gefrorenen Kern-Presets. Der Restore läuft durch DENSELBEN Prüfer
+            // (`_studioWerkPruefen`, Taille-gedeckelt je Werk).
+            studioOv: JSON.parse(JSON.stringify((this.state.workshop && this.state.workshop.studioOv) || {})),
             // Die vier Perf-Regler reisen im Snapshot (sonst setzt jeder Reload sie still zurück):
             // perfTargetMs · lodRef (Quelle von Subsystem A) · szeneSkala · chunkRingRadius.
             perfTargetMs: Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : 17,
@@ -1015,6 +998,8 @@ class AnazhRealm_speicher_welten {
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
                 // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
                 ...(a.feldWurf === true ? { feldWurf: true } : {}),
+                // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
+                ...(a.werk === true ? { werk: true } : {}),
                 // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                 // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                 ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
@@ -1099,9 +1084,9 @@ class AnazhRealm_speicher_welten {
     }
 
     // ===== IndexedDB-Persistenz =====
-    // Große Welt-Snapshots leben in IndexedDB (localStorage-Wand ~5 MB je Origin); der winzige Index
-    // (anazhRealmWorlds/Active) bleibt synchron in localStorage, das weiter als Spiegel geschrieben wird.
-    // Beim LESEN gewinnt der neuere Stand (IDB-Stempel vs. worldsIndex.lastPlayed). Ohne IndexedDB trägt
+    // Große Welt-Snapshots leben in IndexedDB (localStorage-Wand ~5 MB je Origin, atomar je Transaktion); der winzige Index
+    // (anazhRealmWorlds/Active) bleibt synchron in localStorage, dazu das Abbild des Stands mit demselben Stempel.
+    // Beim LESEN gewinnt IndexedDB, wenn ihr Stempel nicht älter ist (`_weltRettungsKette`). Ohne IndexedDB trägt
     // localStorage allein; wirft localStorage QUOTA, trägt IndexedDB allein.
 
     // Lazy-Open der EINEN DB (Promise gecacht; null = nicht verfügbar).
@@ -1128,14 +1113,21 @@ class AnazhRealm_speicher_welten {
         return this._idbPromise;
     }
 
-    // Einen Welt-Snapshot (JSON-String) ablegen. {at} stempelt die Frische.
-    async _idbPutWorld(worldId, json) {
+    // Einen Welt-Snapshot (JSON-String) ablegen, ATOMAR wie der save-server (tmp + Tausch + .bak): EINE Transaktion liest den
+    // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — ein Tod mitten darin lässt beide, wie
+    // sie waren (nie ein halber Platz, nie ein leerer .bak). {at} stempelt die Frische (= lastPlayed des Abbilds).
+    async _idbPutWorld(worldId, json, at = Date.now()) {
         const db = await this._idb();
         if (!db || !worldId) return false;
         return new Promise((resolve) => {
             try {
                 const tx = db.transaction("worlds", "readwrite");
-                tx.objectStore("worlds").put({ at: Date.now(), json }, worldId);
+                const store = tx.objectStore("worlds");
+                store.get(worldId).onsuccess = (e) => {
+                    const vor = e.target.result;
+                    if (vor && typeof vor.json === "string") store.put(vor, worldId + ".bak");
+                    store.put({ at, json }, worldId);
+                };
                 tx.oncomplete = () => resolve(true);
                 tx.onerror = () => resolve(false);
                 tx.onabort = () => resolve(false);
@@ -1170,6 +1162,7 @@ class AnazhRealm_speicher_welten {
             try {
                 const tx = db.transaction("worlds", "readwrite");
                 tx.objectStore("worlds").delete(worldId);
+                tx.objectStore("worlds").delete(worldId + ".bak");
                 tx.oncomplete = () => resolve(true);
                 tx.onerror = () => resolve(false);
             } catch {
@@ -1186,13 +1179,17 @@ class AnazhRealm_speicher_welten {
         this._idbPreloadedState = null;
         const activeId = this.activeWorldGet();
         if (!activeId) return;
-        const rec = await this._idbGetWorld(activeId);
-        if (!rec) return;
-        try {
-            this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json), at: rec.at };
-        } catch (e) {
-            this._idbPreloadedState = { worldId: activeId, state: null, at: rec.at, kaputt: e.message };
-        }
+        const [rec, bak] = await Promise.all([this._idbGetWorld(activeId), this._idbGetWorld(activeId + ".bak")]);
+        if (!rec && !bak) return;
+        const lies = (r) => {
+            if (!r) return { state: null, at: 0, kaputt: "leer" };
+            try {
+                return { state: JSON.parse(r.json), at: r.at };
+            } catch (e) {
+                return { state: null, at: r.at, kaputt: e.message };
+            }
+        };
+        this._idbPreloadedState = { worldId: activeId, ...lies(rec), bak: lies(bak) };
     }
 
     triggerStateDownload(stateToSave, suggestedName) {
@@ -1977,7 +1974,7 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
 //   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug, der
-//                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`),
+//                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`), die Siedlungen der Bewohner (`_bewohnerSiedlungen`),
 //                die Lichter: das wache Tor, der Licht-Pool, der die Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
@@ -1993,6 +1990,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
         "_ortPlaene",
+        "_bewohnerSiedlungen",
         "_portalLeuchte",
         "_leuchtPool",
     ]),

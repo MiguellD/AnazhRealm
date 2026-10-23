@@ -576,8 +576,9 @@ class AnazhRealm_wasser_zellen {
     // und Stau-Felder bauen faul aus den Zellen, die dieser Bau gleich ablegt. Befunde: nach dem Reload stand der Damm
     // −937/−1064 im fließenden Fluss (3 574 nasse Punkte davor, 1 557 danach — die Frage las die geladenen Zellen, beim Reload
     // keine); danach weckte ein Haus am Seerand den Automaten (die Frage las das Gesetz samt Rand-Füllung, die Zellen fluten
-    // den Rand nur, wo er mit der Quelle verbunden ist).
-    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
+    // den Rand nur, wo er mit der Quelle verbunden ist). `fest` (optional) sammelt die Zellen, die der Stempel fest machte — die
+    // Zellen des Fadens samt dieser Liste sind die des Chunks (`_buildVoxelChunkDataFromWorkerMesh`, das Wasser-Sheet).
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0, fest = null) {
         if (lod === 0) this._stauFeldVorlaeufig(ox, oz);
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
         const { dim, dimY, step } = this._voxelChunkConfig(lod);
@@ -612,6 +613,7 @@ class AnazhRealm_wasser_zellen {
                             }
                             const idx = i + baseK + baseJ;
                             if (cells[idx] === STATE.WATER) nass = true;
+                            if (fest && cells[idx] !== STATE.SOLID) fest.push(idx);
                             cells[idx] = STATE.SOLID;
                         }
                     }
@@ -926,14 +928,17 @@ class AnazhRealm_wasser_zellen {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
         this._disposeVoxelChunkWaterIso(key);
-        const positions = data.positions;
+        // die Arrays des Fadens SIND die Attribute (Lehre 24, Karte hydro-faden): übernommen, nie kopiert — der Sync-Bau
+        // liefert Zahlen-Listen, die erst hier ihr Typ-Array bekommen
+        const f32 = (a) => (a instanceof Float32Array ? a : new Float32Array(a));
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(data.aFlow, 2));
-        geom.setAttribute("aWave", new THREE.Float32BufferAttribute(data.aWave, 1));
-        geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(data.aDepth, 1));
-        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(data.aSlope, 1));
-        geom.setIndex(Array.from(data.indices));
+        geom.setAttribute("position", new THREE.BufferAttribute(f32(data.positions), 3));
+        geom.setAttribute("aFlow", new THREE.BufferAttribute(f32(data.aFlow), 2));
+        geom.setAttribute("aWave", new THREE.BufferAttribute(f32(data.aWave), 1));
+        geom.setAttribute("aDepth", new THREE.BufferAttribute(f32(data.aDepth), 1));
+        geom.setAttribute("aSlope", new THREE.BufferAttribute(f32(data.aSlope), 1));
+        const ix = data.indices;
+        geom.setIndex(new THREE.BufferAttribute(ix instanceof Uint32Array ? ix : new Uint32Array(ix), 1));
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
             this._queueGeometryDispose(geom);
@@ -2475,9 +2480,12 @@ class AnazhRealm_wasser_zellen {
                 // Der Settle-Final-Mesh teilt den Fluss-Throttle: ein perpetueller Fluss ping-pongt zwischen moved >
                 // 0.5 und < SETTLE — ohne Throttle re-meshte dieser Zweig jeden Zyklus. Solange das Intervall nicht um
                 // ist, BLEIBT die Region aktiv (kein delete) → der Final-Mesh kommt binnen ≤ INT Frames.
+                // DER FIXPUNKT SCHLÄFT (feld.K3): die Drossel hält nur einen Chunk wach, dessen Dach vom gezeichneten abweicht
+                // (sein Final-Mesh kommt nach ihr) — wer kein neues Dach trägt, ruht sofort. Bis feld.K3 hielt sie jeden Chunk
+                // bis zu INT Takte (am Fluss nach zwei Werk-Setzungen ohne Bewegung 9 Chunks 3 Takte, gate:stand-takt WS).
                 const e = this.state.voxelChunks.get(a.key);
                 const last = e && Number.isFinite(e._caRemeshTick) ? e._caRemeshTick : -Infinity;
-                if (caTick - last < REMESH_INT) continue;
+                if (caTick - last < REMESH_INT && this._caRoofChanged(a, dim, dimY, true)) continue;
                 activeSet.delete(a.key);
                 // das finale RUHE-Mesh — ABER auch hier durchs Dach-Gate
                 // (V18.121): ist der FP unverändert, IST der letzte sichtbare
@@ -2495,8 +2503,9 @@ class AnazhRealm_wasser_zellen {
     // Zeile mit Pegel > 0,5, j + Füllgrad). Bis F3 zählte er jede Zeile über 0,05 — ein Film, der am Rand eines Grabens um
     // 0,05 pendelte, sprang den Fingerprint um 89 Zeilen und baute das Sheet samt acht Nachbarn neu, ohne dass sich ein
     // Dreieck änderte. Vergleicht gegen `entry._caMeshFp` und schreibt bei Überschreiten (oder force=true, Settle) fort.
-    // Scratch wiederverwendet (alloc-frei), band-beschränkt (außerhalb des Bands kein Wasser).
-    _caRoofChanged(a, dim, dimY) {
+    // Scratch wiederverwendet (alloc-frei), band-beschränkt (außerhalb des Bands kein Wasser). `nurPruefen`: die Frage ohne
+    // Fortschreiben (der Settle hinter der Drossel).
+    _caRoofChanged(a, dim, dimY, nurPruefen) {
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(a.key) : null;
         if (!entry) return true;
         const dimSq = dim * dim;
@@ -2518,15 +2527,10 @@ class AnazhRealm_wasser_zellen {
             fp[c] = v;
         }
         const old = entry._caMeshFp;
-        if (!old || old.length !== dimSq) {
-            entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
-            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
-            entry._caDachOffen = true;
-            return true;
-        }
+        const neu = !old || old.length !== dimSq;
         let maxAbs = 0;
         let sumAbs = 0;
-        for (let c = 0; c < dimSq; c++) {
+        for (let c = 0; !neu && c < dimSq; c++) {
             const d = fp[c] - old[c];
             const ad = d < 0 ? -d : d;
             if (ad > maxAbs) maxAbs = ad;
@@ -2535,13 +2539,13 @@ class AnazhRealm_wasser_zellen {
             // unverändertes Bild. Breite Drift triggert weiter; maxAbs (0.25) fängt jede sichtbare Einzel-Spalte.
             if (ad > 0.12) sumAbs += ad;
         }
-        if (maxAbs > 0.25 || sumAbs > 1.0) {
-            old.set(fp.subarray(0, dimSq));
-            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
-            entry._caDachOffen = true;
-            return true;
-        }
-        return false;
+        const anders = neu || maxAbs > 0.25 || sumAbs > 1.0;
+        if (!anders || nurPruefen) return anders;
+        if (neu) entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
+        else old.set(fp.subarray(0, dimSq));
+        entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
+        entry._caDachOffen = true;
+        return true;
     }
 
     // DAS GEZEICHNETE DACH eines Chunks: je Spalte die oberste nicht-solide Zeile mit Pegel > 0,5 plus ihr Füllgrad

@@ -74,7 +74,7 @@ class AnazhRealm_vegetation_wiese {
                 if (y === null) continue;
                 const gruen = grund.gruen;
                 if (!(gruen > 0)) continue;
-                if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
+                if (this._nassAt(x, z, 0.1, y)) continue; // nie im Wasser: das EINE Urteil (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
                 // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
@@ -303,11 +303,7 @@ class AnazhRealm_vegetation_wiese {
             a.mesh = null;
         }
         nw.senken.delete(a.key);
-        const src = a.quelle;
-        if (src) {
-            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
-        }
+        this._foundryLoslassen(a.quelle);
     }
 
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
@@ -419,19 +415,25 @@ class AnazhRealm_vegetation_wiese {
     // seines Stoffs, das Frustum jedes Passes wählt je Pflanze (`_streuSatzArt`). Jenseits des Rings trägt der Boden
     // (Boden-Farbe) und die Strauch-/Blumen-Schicht der Streu-Regionen.
     static get NAH_STREU() {
-        return Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 });
+        return this._einmal(
+            "NAH_STREU",
+            Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 })
+        );
     }
 
     // Was eine Boden-Art beim Pflücken gibt — Spieler-Ökonomie, keine Gestalt: je Studio-kind.
     static get STREU_ERNTE() {
-        return Object.freeze({
-            fern: "kraut",
-            reed: "kraut",
-            brush: "kraut",
-            flower: "kraut",
-            rock: "stein",
-            deadwood: "holz",
-        });
+        return this._einmal(
+            "STREU_ERNTE",
+            Object.freeze({
+                fern: "kraut",
+                reed: "kraut",
+                brush: "kraut",
+                flower: "kraut",
+                rock: "stein",
+                deadwood: "holz",
+            })
+        );
     }
 
     // Die Arten der Nah-Streu: die Boden-Zeilen mit ring "nah", deren Preset das LIVE-Buch trägt, nach Namen
@@ -551,7 +553,7 @@ class AnazhRealm_vegetation_wiese {
                         const ordnung = w();
                         const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
-                        if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
+                        if (!A.zeile.ufer && this._nassAt(px, pz, 0.1, py)) continue;
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }
@@ -658,9 +660,11 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
-    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich.
+    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich — ein neuer Block derselben Kachel tritt in den stehenden
+    // Bereich (er legt nur die geänderten Slots, `_streuNahSatz`).
     _streuNahEin(a, kachelKey, matrizen, farben, ids) {
-        if (a.bloecke.has(kachelKey)) this._streuNahAus(a, kachelKey);
+        const alt = a.bloecke.get(kachelKey);
+        if (alt) a.anzahl -= alt.n;
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
@@ -682,42 +686,47 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage
-    // (`_satzBlock`), je Pflanze eine Zelle; ein leerer Block verlässt den Satz.
+    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage, je Pflanze
+    // eine Zelle; ein leerer Block verlässt den Satz. DER EINE LEGER DER STOFF-SÄTZE (Lehre 25, stadt-takt): der Block legt
+    // über den Bau-Satz (`_bauSatzLege`, die Senke ist seine Gruppe) — steht sein Bereich, legen nur die Slots, deren Stempel
+    // (Matrix, Farbe) sich änderten (`_bauSatzSlots`); vorher legte jede Ernte und jeder Neubau der Kachel den ganzen Block.
     _streuNahSatz(a, kachelKey, b) {
         const key = a.key + "@" + kachelKey;
         if (!b || b.n === 0) {
             this._chunkSatzAus(a.satz, key);
             return;
         }
-        const span = this._voxelChunkConfig().span;
-        const attr = this.state.satzStoffe.get(a.satz).attr;
-        this._chunkSatzEin(
-            a.satz,
-            key,
-            this._satzBlock(a.geo, b.matrizen, b.farben, b.n, attr, a.name + "@" + kachelKey),
-            Math.floor(b.matrizen[12] / span) + "," + Math.floor(b.matrizen[14] / span)
-        );
+        const g = {
+            geom: a.geo,
+            satz: a.satz,
+            key: a.name + "@" + kachelKey,
+            liveCount: b.n,
+            mesh: {
+                material: a.geo,
+                instanceMatrix: { array: b.matrizen },
+                instanceColor: b.farben && { array: b.farben },
+            },
+        };
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(a.satz) : null;
+        this._bauSatzLege(key, a.satz, g, s ? s.bloecke.get(key) : null, Infinity);
     }
 
-    // Die Ernte: n Pflanzen ab Block-Index i treten aus dem Block der Kachel aus — der Block schrumpft, sein Bereich legt
-    // sich neu (eine geerntete Pflanze zeichnet nie). Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
-    _streuNahLuecke(a, kachelKey, i, n) {
+    // Die Ernte: die Pflanze am Block-Index i tritt aus dem Block der Kachel aus — die letzte rückt an ihren Platz, der Block
+    // schrumpft um eine (eine geerntete Pflanze zeichnet nie), der Bereich legt den einen Slot neu und gibt den letzten frei.
+    // Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
+    _streuNahLuecke(a, kachelKey, i) {
         const b = a.bloecke.get(kachelKey);
-        const rest = b.n - n;
-        const m = new Float32Array(rest * 16);
-        m.set(b.matrizen.subarray(0, i * 16));
-        m.set(b.matrizen.subarray((i + n) * 16), i * 16);
-        b.matrizen = m;
+        const z = b.n - 1;
+        b.matrizen.copyWithin(i * 16, z * 16, z * 16 + 16);
+        b.matrizen = b.matrizen.subarray(0, z * 16);
         if (b.farben) {
-            const f = new Float32Array(rest * 3);
-            f.set(b.farben.subarray(0, i * 3));
-            f.set(b.farben.subarray((i + n) * 3), i * 3);
-            b.farben = f;
+            b.farben.copyWithin(i * 3, z * 3, z * 3 + 3);
+            b.farben = b.farben.subarray(0, z * 3);
         }
-        b.ids.splice(i, n);
-        b.n = rest;
-        a.anzahl -= n;
+        b.ids[i] = b.ids[z];
+        b.ids.length = z;
+        b.n = z;
+        a.anzahl -= 1;
         this._streuNahSatz(a, kachelKey, b);
     }
 
@@ -1063,7 +1072,10 @@ class AnazhRealm_vegetation_wiese {
             jeKachel = new Map();
             this.state.scatterHarvested.set(pick.key, jeKachel);
         }
-        jeKachel.set(pick.id, performance.now());
+        const t = performance.now();
+        jeKachel.set(pick.id, t);
+        // der Nachwuchs schläft bis zur ersten fälligen Ernte (`_tickScatterRegrow`, feld.K3)
+        this._nachwuchsFaellig = Math.min(this._nachwuchsFaellig ?? Infinity, t + AnazhRealm.FORAGE.regrowMs);
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
         // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
         for (const sk of kachel.senken) {
@@ -1071,7 +1083,7 @@ class AnazhRealm_vegetation_wiese {
             const b = s ? s.bloecke.get(pick.key) : null;
             const i = b ? b.ids.indexOf(pick.id) : -1;
             if (i < 0) continue;
-            this._streuNahLuecke(s, pick.key, i, 1);
+            this._streuNahLuecke(s, pick.key, i);
         }
         const got = this.addMaterialToInventory(a.ernte, 1);
         this.log(
@@ -1083,19 +1095,22 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Der Regrow-Tick (~0.1 Hz): abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand
-    // fällt, der Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder.
+    // Der Regrow-Tick: abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand fällt, der
+    // Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder. DIE RUHE IST DER FIXPUNKT (feld.K3): er schläft bis
+    // zur ersten fälligen Ernte (`_nachwuchsFaellig`, die Ernte setzt sie), nie im 10-s-Takt der Wanduhr über das Gedächtnis
+    // (bis feld.K3: in 60 s Ruhe nach einer Ernte ging er sie bei jedem Blick auf die Uhr durch).
     _tickScatterRegrow(now) {
-        const last = this._lastScatterRegrowCheck ?? -Infinity;
-        if (now - last < 10000) return;
-        this._lastScatterRegrowCheck = now;
+        if (!(now >= this._nachwuchsFaellig)) return;
         const sh = this.state.scatterHarvested;
-        if (!sh || sh.size === 0) return;
         const ttl = AnazhRealm.FORAGE.regrowMs;
         const ns = this.state.nahStreu;
-        for (const [key, jeKachel] of sh) {
+        let naechste = Infinity;
+        for (const [key, jeKachel] of sh || []) {
             const alt = [];
-            for (const [id, t] of jeKachel) if (now - t > ttl) alt.push(id);
+            for (const [id, t] of jeKachel) {
+                if (now - t >= ttl) alt.push(id);
+                else if (t + ttl < naechste) naechste = t + ttl;
+            }
             if (!alt.length) continue;
             this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
             for (const id of alt) jeKachel.delete(id);
@@ -1103,6 +1118,7 @@ class AnazhRealm_vegetation_wiese {
             const k = ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
         }
+        this._nachwuchsFaellig = naechste;
     }
 
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
@@ -1481,7 +1497,8 @@ class AnazhRealm_vegetation_wiese {
             const hit = memo.get(memoKey);
             if (hit) return hit;
             const C = AnazhRealm.FOREST.cell;
-            this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C);
+            // fehlt die Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
+            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C)) memo = null;
         }
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
@@ -1738,10 +1755,12 @@ class AnazhRealm_vegetation_wiese {
             const zellen = [];
             for (let b = a; b < Math.min(liste.length, a + N); b++) {
                 const g = liste[b][2];
-                this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C);
+                // fehlt ihre Kachel, ist sie im Faden bestellt (Karte hydro-faden): die Zelle wartet in der Schlange
+                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C)) continue;
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
+            if (!zellen.length) continue;
             this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0]).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {

@@ -1,11 +1,10 @@
-// kreatur-proben.cjs — DIE KREATUR-PROBEN (Welle L, Leben-Prüfung 06.10.): jede Probe ruft den ECHTEN Kreatur-Takt
-// (`updateCreatures`, der EINE Chokepoint) und misst, was das Fenster der Leben-Prüfung zeigte — Krebsgang, Hüpf-Sturm,
-// Geister, Geburt im Blick, Beute ohne Flucht, Bewegung am Frustum, Strahl je Frame. Derselbe Seiten-Code läuft headless
-// (gate:kreatur-takt, Null-Renderer, Produktions-Boot) und im sichtbaren Fenster der echten GPU (die Werkbank:
-// `node scripts/diag-kreatur-takt.cjs --werkbank <port>`); dort ruht der Spiel-Loop (Lehre 17, die Werkbank-Regel). Gestubbt
-// wird nichts: die Selbsttests spielen den alten Defekt als Täter ein (`taeter`) und erwarten Rot.
-// Je Band beschreibt sein Kopf (`// ── <name> (Klasse): …`), was es misst; das Soll trägt `urteil`, das Gate GATE_PROBEN.
+// kreatur-proben.cjs — DIE KREATUR-PROBEN: jede Probe ruft den ECHTEN Kreatur-Takt (`updateCreatures`) und misst, was
+// das Fenster zeigt — headless (gate:kreatur-takt, Null-Renderer) und im Fenster der echten GPU
+// (`node scripts/diag-kreatur-takt.cjs --werkbank <port>`, der Spiel-Loop ruht, Lehre 17). Die Selbsttests spielen den
+// alten Defekt als Täter ein (`taeter`) und erwarten Rot; das Soll trägt `urteil`.
 "use strict";
+// DIE LEBENS-PROBEN wohnen in scripts/diag-kreatur-leben.cjs (Datei-Decke 4 000), ihr Stück steht an der Marke LEBEN_BUEHNEN
+const LEBEN = require("../diag-kreatur-leben.cjs");
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
 async function kreaturProben(r, T, opts) {
@@ -41,22 +40,16 @@ async function kreaturProben(r, T, opts) {
         s.creatures = [];
         s.creatureEmotions = [];
         s.maxCreatures = 64;
-        // DIE UHR DER BÜHNE (K07): jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts und mit frischen
-        // Fauna-Strömen (_faunaRng, aus dem Seed der Welt), der Blick vom Spieler nach Norden (der Schirm wählt, wessen Gang
-        // ausgewertet wird: die Raten-Leiter, _creatureAnimDiv) — gleich, wie lange die Welt einschwang (performance.now: ihre
-        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief. Vorher hielt nur jede zweite Probe ihre Uhr
-        // selbst (sieben Abschriften); gier lief ab der Uhr des Einschwingens (9,73 oder 9,77 s), der Fuchs wechselte von
-        // Lauf zu Lauf 15- bis 32,5-mal je Minute zwischen Gas und Bremse.
+        // DIE UHR DER BÜHNE: jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts, mit frischen Fauna-Strömen
+        // und dem Blick nach Norden — gleich, wie lange die Welt einschwang und welche Probe vorher lief.
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
         const altStroeme = r._faunaStroeme;
         const altFelder = [s.lifeField, s.emotionField];
         const altSpieler = Object.assign({}, s.player);
         const altTempo = [s.speed, s.sprintSpeed, s.jumpPower];
-        // DER LEIB DES SPIELERS (K07): sein Lauf (`playerVel`, den der Leib-Löser im Stoß liest, `_stossKoerper`), seine
-        // Lage des Vor-Takts (`_spielerLageAlt`, der Lauf, vor dem ein Jäger hetzt) und der Herden-Takt beginnen je Probe
-        // in Ruhe — der Sprinter der Jagd-Probe hinterließ dem Rudel einen Spieler, der mit 0,24 m/s lief (Lücke 186° statt
-        // 151°, allein gemessen).
+        // DER LEIB DES SPIELERS: sein Lauf (`playerVel`), seine Lage des Vor-Takts (`_spielerLageAlt`) und der Herden-Takt
+        // beginnen je Probe in Ruhe.
         const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
         const altLage = r._spielerLageAlt;
         const altHerde = s._herdContagionAcc;
@@ -115,16 +108,8 @@ async function kreaturProben(r, T, opts) {
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
-    // Ein Ort auf Land ohne Bauwerks-Hülle und ohne Wasser im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand
-    // gleitet ein Leib längs der Box-Kante (achsparallel), im Wasser schwimmt er in einer Himmelsrichtung ans Ufer
-    // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
-    // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
-    // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
-    // DIE HÜLLE IM WEG (K16, die Klasse der Ortssuche): eine Hülle des Bestands, die den Leib-Raum über dem Grund h (von der
-    // Stufen-Höhe bis 2 m) näher als R an (x, z) schneidet — dieselbe Nachbarschaft und Box-Probe wie der Leib
-    // (`_blockerUmPlatz` + `_boxAbstand2`, `_kreaturHuellenKontakt`). Jede Ortssuche der Proben liest sie; vorher lasen
-    // frei() und der Querhang nur die Positionen von `architectures` (± 4 m) und sahen keinen Stamm des Bestands: am Querhang
-    // stand die Eiche baum_eiche@-66,-37 in der Gasse, der Wolf schlupfte 0,365 statt 0,19.
+    // DIE HÜLLE IM WEG: eine Hülle des Bestands, die den Leib-Raum über dem Grund h (Stufen-Höhe bis 2 m) näher als R an
+    // (x, z) schneidet — dieselbe Nachbarschaft und Box-Probe wie der Leib (`_blockerUmPlatz` + `_boxAbstand2`).
     const huelleKand = [];
     const huelleNah = (x, z, h, R) => {
         huelleKand.length = 0;
@@ -139,32 +124,34 @@ async function kreaturProben(r, T, opts) {
     const imUmkreisLand = (x, z, R) => {
         for (const f of [0.5, 1])
             for (let q = 0; q < 8; q++) {
-                const a = (q / 8) * Math.PI * 2;
+                const a = (q / 8) * TAU;
                 if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
             }
         return true;
     };
-    const frei = (dx, dz, R) => {
-        for (let ring = 0; ring < 40; ring++) {
+    // DIE SPIRALE der Ortssuche um den Spieler + (dx, dz): Ring k im Abstand k × schritt trägt 6k Orte; der erste, dem
+    // `nimm(x, z)` einen Ort gibt
+    const spirale = (dx, dz, ringe, schritt, nimm) => {
+        for (let ring = 0; ring < ringe; ring++) {
             const n = Math.max(1, ring * 6);
             for (let q = 0; q < n; q++) {
-                const a = (q / n) * Math.PI * 2;
-                const x = P0.x + dx + Math.cos(a) * ring * 8,
-                    z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
-                const h = r.getTerrainHeightAt(x, z);
-                if (!Number.isFinite(h) || huelleNah(x, z, h, R)) continue;
-                return { x, y: h + 0.5, z };
+                const a = (q / n) * TAU;
+                const o = nimm(P0.x + dx + Math.cos(a) * ring * schritt, P0.z + dz + Math.sin(a) * ring * schritt);
+                if (o) return o;
             }
         }
         return null;
     };
-    // DIE FREIE BAHN des Sprinters (K16): die Probe trägt den Läufer ohne Physik geradeaus längs +x, durch jeden Stamm und
-    // über jede Kante; der Jäger hinter ihm hält am Stamm (der Hüllen-Kontakt seines Leibs). Die Bahn liest die Probe darum
-    // aus der Welt: Land ohne Wasser 8 m quer, ebener Grund (Spanne ≤ 3 m, die Dorfplatz-Grenze), kein Fels über ihr und
-    // keine Hülle des Bestands in der Gasse (`_blockerUmPlatz` + `_boxAbstand2`, dieselbe Nachbarschaft und Box-Probe wie
-    // `_kreaturHuellenKontakt`). Vorher stand der Ort als Versatz der alten Welt (frei(-50, 60, 30): 30 m Umkreis um den
-    // Start, die Bahn 43 m lang): im neuen Gelände lag eine Tanne in der Gasse, der Wolf hielt am Stamm, der Sprinter entkam.
+    // Ein Ort auf Land ohne Hülle und ohne Wasser im Umkreis R (an einer Wand gleitet ein Leib längs der Box-Kante, im
+    // Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
+    const frei = (dx, dz, R) =>
+        spirale(dx, dz, 40, 8, (x, z) => {
+            if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) return null;
+            const h = r.getTerrainHeightAt(x, z);
+            return Number.isFinite(h) && !huelleNah(x, z, h, R) ? { x, y: h + 0.5, z } : null;
+        });
+    // DIE FREIE BAHN des Sprinters: die Probe trägt den Läufer ohne Physik geradeaus längs +x, der Jäger hinter ihm hält
+    // am Stamm — Land ohne Wasser 8 m quer, ebener Grund (Spanne ≤ 3 m), kein Fels über ihr, keine Hülle in der Gasse
     const freieBahn = (dx, dz, laenge, vor) => {
         const gasse = 1.5; // halbe Breite der Gasse: Radius und halbe Länge des Wolf-Leibs mit Rand
         const bahnFrei = (x0, z0) => {
@@ -181,21 +168,12 @@ async function kreaturProben(r, T, opts) {
             }
             return true;
         };
-        for (let ring = 0; ring < 40; ring++) {
-            const n = Math.max(1, ring * 6);
-            for (let q = 0; q < n; q++) {
-                const a = (q / n) * Math.PI * 2;
-                const x = P0.x + dx + Math.cos(a) * ring * 8,
-                    z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (bahnFrei(x, z)) return { x, y: r.getTerrainHeightAt(x, z) + 0.5, z };
-            }
-        }
-        return null;
+        return spirale(dx, dz, 40, 8, (x, z) =>
+            bahnFrei(x, z) ? { x, y: r.getTerrainHeightAt(x, z) + 0.5, z } : null
+        );
     };
-    // DAS FELD OHNE HÖHLE (Leben-Schau 2): ein Ort, unter dessen Umkreis (der Weg des Spielers und der Folger, x −10…+35,
-    // z −8…+35) 15 m tief keine Höhle liegt — die Wand hält ein Tier jetzt in jeder Höhle, in die es läuft (ein Folger ohne
-    // Wegfindung bleibt darin; vorher sprang er beim ersten Wand-Kontakt durch das Dach auf die Wiese). Die Gang-Probe misst
-    // den freien Lauf: am Hang von land(0, 0) lief der Fuchs in einen 1,2-m-Stollen unter dem Hügel.
+    // DAS FELD OHNE HÖHLE: unter dem Weg des Spielers und der Folger (x −10…+35, z −8…+35) liegt 15 m tief keine Höhle —
+    // die Wand hält ein Tier in jeder Höhle, in die es läuft; die Gang-Probe misst den freien Lauf
     const ohneHoehle = (x0, z0, x1, z1) => {
         for (let x = x0; x <= x1; x += 3)
             for (let z = z0; z <= z1; z += 3) {
@@ -205,24 +183,14 @@ async function kreaturProben(r, T, opts) {
             }
         return true;
     };
-    const feldOhneHoehle = (dx, dz) => {
-        for (let ring = 0; ring < 30; ring++) {
-            const n = Math.max(1, ring * 6);
-            for (let q = 0; q < n; q++) {
-                const a = (q / n) * Math.PI * 2;
-                const x = P0.x + dx + Math.cos(a) * ring * 10,
-                    z = P0.z + dz + Math.sin(a) * ring * 10;
-                if (r._nassAt(x, z)) continue; // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
-                if (!ohneHoehle(x - 10, z - 8, x + 35, z + 35)) continue;
-                const h = r.getTerrainHeightAt(x, z);
-                return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
-            }
-        }
-        return null;
-    };
-    // DER ORT NEBEN DEM SPIELER auf dem Land (Leben-Schau 2): die Höhe des Spielers ist am Hang nicht die des Tiers — 8 m
-    // daneben lag sie unter der Wiese in einer Höhle (gate:kreatur-takt gier: der Fuchs 8 m unter dem Gras; vorher sprang er
-    // beim ersten Wand-Kontakt durch das Dach hinauf, jetzt hält ihn die Wand).
+    const feldOhneHoehle = (dx, dz) =>
+        spirale(dx, dz, 30, 10, (x, z) => {
+            // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
+            if (r._nassAt(x, z) || !ohneHoehle(x - 10, z - 8, x + 35, z + 35)) return null;
+            const h = r.getTerrainHeightAt(x, z);
+            return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
+        });
+    // DER ORT NEBEN DEM SPIELER auf dem Land: die Höhe des Spielers ist am Hang nicht die des Tiers
     const neben = (x, z) => {
         const h = r.getTerrainHeightAt(x, z);
         return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
@@ -234,6 +202,12 @@ async function kreaturProben(r, T, opts) {
     };
     const ruhig = (c) => {
         c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+    };
+    // der Spieler ruhig (oder im Gefühl e), je Takt: ein zorniger verschreckt jedes Tier, die Ansteckung im Kreatur-Takt trägt
+    // die Furcht der Beute zu ihm
+    const ruhigSpieler = (e) => {
+        if (s.player.emotions)
+            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
     const kamera = (blickX, blickZ) => {
         const cam = s.camera;
@@ -248,6 +222,16 @@ async function kreaturProben(r, T, opts) {
         const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         return new T.Frustum().setFromProjectionMatrix(m).containsPoint(new T.Vector3(x, y, z));
     };
+    // DER PLATZ EINES SATZ-TIERS: die Instanz der Tier-Senke `teil` (fell · wurf …), deren Lage c trägt
+    const satzPlatz = (c, teil) => {
+        for (const m of s.scene.children) {
+            if (!m.isInstancedMesh || m.userData.inventar !== "tier" || m.userData.teil !== teil) continue;
+            const e = m.instanceMatrix.array;
+            for (let i = 0; i < m.count; i++)
+                if (Math.hypot(e[i * 16 + 12] - c.position.x, e[i * 16 + 14] - c.position.z) < 1e-3) return { m, i };
+        }
+        return null;
+    };
     // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen zurück.
     const decke = (restore, name, fn) => {
         const hatte = Object.prototype.hasOwnProperty.call(r, name);
@@ -258,21 +242,106 @@ async function kreaturProben(r, T, opts) {
             else delete r[name];
         });
     };
-    // DER TAKT WIE IM SPIEL: erst der feste Sim-Schritt der Leiber (`_stepFixedSim`: der gestoßene Leib
-    // `_kreaturStossSchritt` und LEIB AN LEIB `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`) — die
-    // Folge von `_gameLoopTick` (`_loopFixedStep` vor `_loopWeatherAndGrowth`). Gemessen wird, was der Frame zeigt.
+    // DER TAKT WIE IM SPIEL (die Folge von `_gameLoopTick`): erst der feste Sim-Schritt der Leiber (`_kreaturStossSchritt`,
+    // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`).
     const takt = (dt) => {
         r._kreaturStossSchritt(dt);
         r._leibKontakte();
         r.updateCreatures(dt);
     };
-    // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der Hüllen-Kontakt des Tiers läuft unverändert, die Linse
-    // merkt nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
-    // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse). Die Basis kennt den Kontakt nicht: dort bleibt die
-    // Menge leer und jeder Takt zählt als freier Lauf.
+    // DER GANG IM SATZ (Schlupf wie gate:tier-gang): je Senke mit Gang-Puffer die Füße der Vorlage (`fuesse(geo)`, je Fuß
+    // seine Ecken) an Band, Phase und Gewicht ihrer Instanz (`aGang`) × Instanz-Matrix, wie die GPU sie zeichnet; `leib(x, z)`
+    // nennt den Leib der Instanz. Gezählt wird der eingeschwungene Gang geradeaus in einem Band; Stand = unterste 5 % des Beins.
+    const satzGang = (fuesse, leib) => {
+        const memo = new WeakMap();
+        const spuren = new Map();
+        const m4 = new T.Matrix4();
+        const vL = new T.Vector3();
+        let n = 0;
+        const lokal = (m, inst, v) => {
+            const G = m.userData.gang;
+            const a = m.geometry.attributes;
+            const x = a.aGang.getX(inst);
+            const w = a.aGang.getY(inst);
+            const r0 = Math.floor(x) * G.n;
+            const f = (x - Math.floor(x)) * G.n;
+            const k0 = Math.floor(f);
+            const zs = G.baender * G.n;
+            const z0 = r0 + k0;
+            const z1 = r0 + ((k0 + 1) % G.n);
+            // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)
+            const el = (z, j, r, c) => G.puffer[((z * G.J + j) * 3 + r) * 4 + c];
+            const roh = [a.aRoh.getX(v), a.aRoh.getY(v), a.aRoh.getZ(v), 1];
+            const o = [0, 0, 0];
+            for (let c = 0; c < 4; c++) {
+                const g = a.aGewicht.getComponent(v, c);
+                if (g === 0) continue;
+                const j = a.aKnochen.getComponent(v, c);
+                for (let r = 0; r < 3; r++)
+                    for (let s = 0; s < 4; s++) {
+                        const lauf = el(z0, j, r, s) + (f - k0) * (el(z1, j, r, s) - el(z0, j, r, s));
+                        o[r] += g * roh[s] * (el(zs, j, r, s) + w * (lauf - el(zs, j, r, s)));
+                    }
+            }
+            return vL.set(o[0], o[1], o[2]);
+        };
+        const messen = (senken) => {
+            n++;
+            for (const m of senken) {
+                if (!m.userData.gang || !(m.count > 0)) continue;
+                if (!memo.has(m.geometry)) memo.set(m.geometry, fuesse(m.geometry));
+                const F = memo.get(m.geometry);
+                const IM = m.instanceMatrix.array;
+                const aG = m.geometry.attributes.aGang;
+                for (let inst = 0; F && inst < m.count; inst++) {
+                    const L = leib(IM[inst * 16 + 12], IM[inst * 16 + 14]);
+                    const key = L && m.uuid + "|" + L.key;
+                    if (L && !spuren.has(key)) spuren.set(key, { reihe: [], bein: L.bein });
+                    if (!L || spuren.get(key).reihe.length >= 1800) continue;
+                    m4.fromArray(IM, inst * 16);
+                    const fuss = F.map((vs) =>
+                        vs.map((v) => {
+                            const y = lokal(m, inst, v).y;
+                            const w = vL.applyMatrix4(m4);
+                            return { y, x: w.x, z: w.z };
+                        })
+                    );
+                    const b = Math.floor(aG.getX(inst));
+                    spuren.get(key).reihe.push({ fuss, x: L.x, z: L.z, ry: L.ry, w: aG.getY(inst), b, n });
+                }
+            }
+        };
+        const schlupf = () => {
+            let wegFuss = 0;
+            let wegLeib = 0;
+            for (const sp of spuren.values()) {
+                const R = sp.reihe;
+                for (let j = 0; j < R[0].fuss.length; j++) {
+                    let ymin = Infinity;
+                    for (const e of R) for (const p of e.fuss[j]) ymin = Math.min(ymin, p.y);
+                    for (let i = 1; i < R.length; i++) {
+                        const [a0, a1] = [R[i - 1], R[i]];
+                        if (a1.n !== a0.n + 1 || Math.abs(a1.ry - a0.ry) > 1e-3) continue;
+                        if (Math.min(a0.w, a1.w) < 0.99 || a0.b !== a1.b) continue;
+                        let k = 0;
+                        for (let q = 1; q < a1.fuss[j].length; q++) if (a1.fuss[j][q].y < a1.fuss[j][k].y - 1e-4) k = q;
+                        const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
+                        if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
+                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
+                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                    }
+                }
+            }
+            const schlupf = wegLeib > 0 ? Math.round((wegFuss / wegLeib) * 1000) / 1000 : null;
+            return { schlupf, wegLeib: Math.round(wegLeib * 10) / 10, spuren: spuren.size };
+        };
+        // eine Lücke (ein neues Gang-Fenster): kein Paar über sie hinweg
+        return { messen, schlupf, luecke: () => n++ };
+    };
+    // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: die Linse merkt nur, wessen Lage der Hüllen-Kontakt
+    // schob; freier Lauf und Anprall zählen getrennt.
     const kontaktZaehler = (restore) => {
         const geschoben = new Set();
-        if (typeof r._kreaturHuellenKontakt !== "function") return geschoben;
         decke(
             restore,
             "_kreaturHuellenKontakt",
@@ -287,22 +356,21 @@ async function kreaturProben(r, T, opts) {
         );
         // DER EINE LEIB-LÖSER im Sim-Schritt (`_leibKontakte`): ein Leib, den er aus einem anderen oder aus dem Spieler
         // schiebt, prallt — derselbe Anprall wie an der Wand.
-        if (typeof r._leibKontakte === "function")
-            decke(
-                restore,
-                "_leibKontakte",
-                (alt) =>
-                    function (...a) {
-                        const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
-                        const o = alt.apply(this, a);
-                        for (const [p, x, z] of vor) if (p.x !== x || p.z !== z) geschoben.add(p);
-                        return o;
-                    }
-            );
+        decke(
+            restore,
+            "_leibKontakte",
+            (alt) =>
+                function (...a) {
+                    const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
+                    const o = alt.apply(this, a);
+                    for (const [p, x, z] of vor) if (p.x !== x || p.z !== z) geschoben.add(p);
+                    return o;
+                }
+        );
         return geschoben;
     };
 
-    // ── geister (Q12): clearCreatures räumt jedes Tier ──
+    // ── geister: clearCreatures räumt jedes Tier ──
     await buehne("geister", async () => {
         if (taeter === "geister")
             r.clearCreatures = function () {
@@ -323,58 +391,7 @@ async function kreaturProben(r, T, opts) {
         }
     });
 
-    // ── geburt (Q12 + G4a): jedes Tier fern und außerhalb des Blicks; der Wurf ist die GRUPPE (tetrapoda herde.wurf) ──
-    await buehne("geburt", async (restore) => {
-        // die alten Defekte: die Geburt 15 m vor dem Spieler (Q12) · EIN Tier je Wurf, nie ein Raubtier (bis G4a)
-        const alt = {
-            geburt: () => ({ x: pm.x + 15, z: pm.z }),
-            "geburt-einzeln": (w) => w._kreaturGeburtsOrt(w._faunaRng()),
-        };
-        if (alt[taeter])
-            decke(
-                restore,
-                "_creatureNaturalBirth",
-                () =>
-                    function () {
-                        const o = alt[taeter](this);
-                        return !!o && !!this.spawnCreatureAt(o.x, pm.y, o.z, "happy", "wesen");
-                    }
-            );
-        kamera(1, 0);
-        const d = [];
-        const z = { gruppen: [], rudel: 0, herden: 0, fensterMax: 0, imBlick: 0, journal: 0 };
-        for (let k = 0; k < 16; k++) {
-            const vor = s.creatures.length;
-            r._creatureNaturalBirth();
-            const neu = s.creatures.slice(vor);
-            if (!neu.length) continue;
-            z.gruppen.push(neu[0].userData.gattung + " " + neu.length);
-            if (neu.length > 1) z[neu[0].userData.gattung === "wolf" ? "rudel" : "herden"]++;
-            const j = s.worldJournal.entries[s.worldJournal.entries.length - 1]; // der Eintrag nennt die Gruppe
-            if (j && j.type === "growth" && j.ctx && j.ctx.gruppe === neu.length) z.journal++;
-            // der Paar-Raum der Gattung (zwei Tiere der Größe 1) — der nächste der Gruppe steht im Fenster der Herde
-            const paar = (2 * r._kreaturRaum(neu[0])) / neu[0].userData.bodySize;
-            for (const c of neu) {
-                d.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
-                if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
-                let nn = Infinity;
-                for (const o of neu) if (o !== c) nn = Math.min(nn, c.position.distanceTo(o.position) / paar);
-                if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
-            }
-            for (const c of neu) r.removeCreature(c);
-        }
-        const H = A._verhaltenGesetz().herde;
-        return Object.assign(z, {
-            geburten: z.gruppen.length,
-            gruppen: z.gruppen.join(" · "),
-            fensterRaum: H.fensterRaum,
-            minM: d.length ? +Math.min(...d).toFixed(1) : null,
-            maxM: d.length ? +Math.max(...d).toFixed(1) : null,
-            fernMin: A.CREATURE_SPAWN_FAR_MIN,
-        });
-    });
-
-    // ── sattel (Q12): der Tod im Sattel steigt ab ──
+    // ── sattel: der Tod im Sattel steigt ab ──
     await buehne("sattel", async (restore) => {
         const KS = A.KIND_SUBSTANCE || {};
         if (!KS.fahrzeug_wagen) return { fehler: "KIND_SUBSTANCE.fahrzeug_wagen fehlt" };
@@ -414,9 +431,8 @@ async function kreaturProben(r, T, opts) {
         return { aufgestiegen: auf, nachTod: s.player.mountedArch == null ? null : s.player.mountedArch };
     });
 
-    // ── huepfer (Q1/Q2 + das Sprung-Gesetz): jeder Sprung aus einer Aktion, über das EINE Sprung-Gesetz (creatureJump),
-    // auf die Höhe des Freude-Gesetzes (VERHALTEN.freude: ein frohes Wesen hopHochM, sonst hopBasisM), und die Flugzeit
-    // hängt nie am Takt ──
+    // ── huepfer: jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), auf die Höhe des Freude-Gesetzes
+    // (VERHALTEN.freude), und die Flugzeit hängt nie am Takt ──
     await buehne("huepfer", async (restore) => {
         r.setGameMode("frieden");
         // Die Kreatur-Uhr fest (die Aktions-Wahl hasht Index × Zeit): jeder Lauf wählt dieselben Aktionen — sonst hing die
@@ -462,7 +478,7 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        // Der Zwilling: die Aktion zündet den Hüpfer mit ihrem eigenen Abflug in m/s (der alte `def.hop`, 3,2 m/s),
+        // Der Zwilling: die Aktion zündet den Hüpfer mit ihrem eigenen Abflug in m/s,
         // am Sprung-Gesetz vorbei.
         if (taeter === "huepfer-zwilling")
             decke(
@@ -557,7 +573,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── wachsen (Q2): 3600 Wachstums-Takte am Loop-Pfad ──
+    // ── wachsen: 3600 Wachstums-Takte am Loop-Pfad ──
     await buehne("wachsen", async (restore) => {
         const c = tier(land(95, -40), "wesen");
         r.assignCreatureTask(c, "wait", {}, { silent: true });
@@ -577,7 +593,7 @@ async function kreaturProben(r, T, opts) {
                             if (Math.floor(t) % 20 === 0) k.scale.multiplyScalar(1.01);
                     }
             );
-        // 3600 Spiel-Sekunden am Loop-Pfad (je Aufruf eine Sekunde weiter — das alte Wachsen würfelte je Sekunde)
+        // 3600 Spiel-Sekunden am Loop-Pfad (je Aufruf eine Sekunde weiter)
         const t0 = 1e6;
         for (let k = 0; k < 3600; k++) {
             s.weatherEffectTime = 0;
@@ -586,7 +602,7 @@ async function kreaturProben(r, T, opts) {
         return { skala: +(c.scale.x / s0).toFixed(4) };
     });
 
-    // ── gier (Q3): die Tiere folgen dem Spieler im Quadrat ──
+    // ── gier: die Tiere folgen dem Spieler im Quadrat ──
     await buehne("gier", async (restore) => {
         r.setGameMode("frieden");
         const arten = ["wesen", "wolf", "fuchs"];
@@ -609,7 +625,7 @@ async function kreaturProben(r, T, opts) {
                         for (const c of this.state.creatures) c.rotation.y = 0;
                     }
             );
-        // R-D17 Folgen als Gas oder Bremse: jenseits des Halts das volle Tempo, davor 0 (am Ankunfts-Gesetz vorbei).
+        // Folgen als Gas oder Bremse: jenseits des Halts das volle Tempo, davor 0 (am Ankunfts-Gesetz vorbei).
         if (taeter === "gier-folgen")
             decke(
                 restore,
@@ -681,7 +697,7 @@ async function kreaturProben(r, T, opts) {
                             const a = (sp - vorher[i].v) / dt;
                             z.beschl.push(Math.abs(a));
                             z.freiT += dt;
-                            // GAS ODER BREMSE (R-D17): wie oft der Folger zwischen Anfahren und Bremsen umschlägt — das
+                            // GAS ODER BREMSE: wie oft der Folger zwischen Anfahren und Bremsen umschlägt — das
                             // Ankunfts-Gesetz lässt ihn im Tempo des Spielers einlaufen, ein 4-oder-0-Wunsch pumpt.
                             const ph = a > 1.5 ? 1 : a < -1.5 ? -1 : 0;
                             if (ph && z.phase && ph !== z.phase) z.wechsel++;
@@ -709,11 +725,8 @@ async function kreaturProben(r, T, opts) {
                 geschoben.clear();
             }
         }
-        // DER STAND-SCHLUPF: im STAND einer Pfote (ihre Gang-Phase in [π, 2π), gangFuss: der Fuß wandert dort am Boden)
-        // darf ihr Aufsetz-Punkt nicht mit dem Leib wandern — Weg des Stand-Fußes / Weg des Leibs. Zerlegt nach der Gier des
-        // Leibs: QUER (seitlich zur Laufrichtung — die Signatur des Krebsgangs, Q3) und LÄNGS (längs der Laufrichtung — am
-        // Hang die Schrittlänge des Gangs in XZ gegen den geneigten Leib, Q4 R-D10/R-D11: das Gang-Gesetz misst die Lage nur
-        // in XZ). Geurteilt wird QUER; LÄNGS und die Summe stehen als Zahl.
+        // DER STAND-SCHLUPF: im STAND einer Pfote (Gang-Phase in [π, 2π)) wandert ihr Aufsetz-Punkt nicht mit dem Leib —
+        // Weg des Stand-Fußes / Weg des Leibs, QUER (der Krebsgang, geurteilt) und LÄNGS zur Laufrichtung (als Zahl).
         const TAU2 = Math.PI * 2;
         const imStand = (ph, j) => {
             if (!ph) return false;
@@ -767,7 +780,7 @@ async function kreaturProben(r, T, opts) {
         return o;
     });
 
-    // ── jagd (Q3 + Q11): die Witterungs-Jagd folgt dem Geruch, die Beute flieht vor dem Jäger ──
+    // ── jagd: die Witterungs-Jagd folgt dem Geruch, die Beute flieht vor dem Jäger ──
     await buehne("jagd", async (restore) => {
         r.setGameMode("pfad");
         const w0 = frei(-60, 50, 30);
@@ -785,7 +798,7 @@ async function kreaturProben(r, T, opts) {
             c.userData.hp = 9999;
             return c;
         });
-        // R-D12: die Richtung der Jagd auf eine Himmelsachse gerastet (der Jagd-Weg ist seit Welle LF _kreaturJagdZug)
+        // die Richtung der Jagd auf eine Himmelsachse gerastet (am Jagd-Weg _kreaturJagdZug)
         if (taeter === "jagd")
             decke(
                 restore,
@@ -801,24 +814,10 @@ async function kreaturProben(r, T, opts) {
                         return o;
                     }
             );
-        // R-D4/K-D11: die Beute wittert nur den Spieler — der jagende Jäger ist keine Bedrohung.
-        if (taeter === "jagd-flucht")
-            decke(
-                restore,
-                "_creatureWariness",
-                () =>
-                    function (c) {
-                        const ud = c.userData || {};
-                        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-                        return this._creatureWarinessSpieler(c, A._verhaltenGesetz().furcht, von);
-                    }
-            );
         const dt = 1 / 60;
-        const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
-        // DIE PEILUNG DES ZIELS LIEST DEN ZUSTAND (K13): die Körper, die die Probe selbst kennt — die drei Beutetiere und den
-        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt. Vorher war sie das Argument des geprüften Jagd-Wegs
-        // (_kreaturJagdZug tx/tz): ein Raster, das schon das Ziel auf eine Achse legt, ginge als „auf dem Ziel" durch.
+        // DIE PEILUNG DES ZIELS LIEST DEN ZUSTAND: die Körper, die die Probe selbst kennt — die drei Beutetiere und den
+        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt.
         const peilKoerper = [...beute, s.playerMesh];
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
         // Himmelsachse liegt (gleicher Abstand); ein Lauf darauf ist ein Raster, auch wenn er „auf sein Ziel" geht
@@ -846,13 +845,10 @@ async function kreaturProben(r, T, opts) {
             achs = 0,
             achs5 = 0,
             achsWasser = 0,
-            bedroht = 0,
-            fort = 0,
             imWasser = 0;
         const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
         let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
-        const bv = beute.map((c) => ({ x: c.position.x, z: c.position.z }));
         for (let k = 0; k < 1800; k++) {
             takt(dt);
             const dx = wolf.position.x - wv.x,
@@ -867,18 +863,9 @@ async function kreaturProben(r, T, opts) {
                 const h = Math.atan2(dx, dz);
                 let m = Infinity;
                 for (let q = 0; q < 4; q++) m = Math.min(m, Math.abs(wrap(h - (q * Math.PI) / 2)));
-                // Die Achsen-Signatur ist die QUANTISIERUNG: das Argmax aus vier Proben setzte die Richtung exakt auf eine
-                // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
-                // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
-                // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
-                // DER LAUF AUF SEIN ZIEL (Nachbesserung 4, der Täter der zwei CI-Ausschläge 38,4 % / 16,2 %): eine gerade Hetze
-                // hinter einer Beute, die genau längs einer Himmelsachse flieht (sie flieht vom Jäger fort, er läuft auf sie zu —
-                // die Linie hält ihre Richtung), oder ein gerader Lauf auf ein Ziel, das auf einer Achse liegt, ist kein Raster.
-                // Welche Linie entsteht, hängt am Zustand der Welt beim Start der Probe (Bauten 1 121–1 258 je Boot, die
-                // Kreatur-Uhr nach einem Einschwingen auf der Wand-Uhr). 169 Orte, Kreatur-Uhr und Wind fest: die alte Zählung
-                // bis 15,0 % (83 Achsen-Takte, jeder auf sein Ziel), diese höchstens 1,9 %. Das Raster (R-D12) dreht den Lauf von
-                // der Peilung fort (Täter jagd: 22–28 %) — gezählt wird nur der Achsen-Takt, dessen Lauf mehr als 1° neben der
-                // Peilung des Ziels liegt.
+                // Die Achsen-Signatur ist die QUANTISIERUNG (ein Lauf exakt auf einer Himmelsachse, 0,25°); ein gerader Lauf
+                // auf ein Ziel, das auf einer Achse liegt, ist kein Raster — gezählt wird nur der Achsen-Takt, dessen Lauf mehr
+                // als 1° neben der Peilung jedes Ziels liegt.
                 const aufZiel = peilKoerper.some(
                     (c) =>
                         Math.abs(wrap(h - Math.atan2(c.position.x - wv.x, c.position.z - wv.z))) < (1 * Math.PI) / 180
@@ -886,9 +873,8 @@ async function kreaturProben(r, T, opts) {
                 if (grad(m) < 0.25 && aufZiel) achsZiel++;
                 else if (grad(m) < 0.25) {
                     achs++;
-                    // DER ORT DES ACHSEN-TAKTS (Bericht, die Linse nennt die Quelle): im Wasser (die Ufer-Scheu sucht das Ufer
-                    // in vier Himmelsrichtungen), die Gier selbst auf einer Achse (der Leib läuft längs seiner Gier), ein
-                    // reiner Achsen-Schritt (dx oder dz exakt 0), im Ansprung, mit getragenem Stoß; dazu drei Beispiele
+                    // DER ORT DES ACHSEN-TAKTS (die Linse nennt die Quelle): Wasser, Gier auf der Achse, reiner Achsen-Schritt,
+                    // Ansprung, getragener Stoß; dazu drei Beispiele
                     const ud = wolf.userData;
                     const gier = ud._steuer ? ud._steuer.gier : wolf.rotation.y;
                     let mg = Infinity;
@@ -911,25 +897,6 @@ async function kreaturProben(r, T, opts) {
                 }
                 if (grad(m) < 5) achs5++;
             }
-            // Die Beute, die den Jäger bemerkt (Zustand flucht — ein pirschender Jäger bleibt bis jagd.pirschSichtM
-            // unbemerkt, Welle LF), läuft von ihm fort.
-            beute.forEach((c, i) => {
-                const vx = c.position.x - bv[i].x,
-                    vz = c.position.z - bv[i].z;
-                const rx = bv[i].x - wv.x,
-                    rz = bv[i].z - wv.z;
-                const d = Math.hypot(rx, rz);
-                if (
-                    jagt &&
-                    c.userData._motionZustand === "flucht" &&
-                    d < NAT.noticeRadius &&
-                    Math.hypot(vx, vz) / dt > 0.3
-                ) {
-                    bedroht++;
-                    if (vx * rx + vz * rz > 0) fort++;
-                }
-                bv[i] = { x: c.position.x, z: c.position.z };
-            });
             wv = { x: wolf.position.x, z: wolf.position.z };
         }
         return {
@@ -941,17 +908,13 @@ async function kreaturProben(r, T, opts) {
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
             achsImWasser: achsWasser,
             achsOrt,
-            bedrohtFrames: bedroht,
-            fortAnteil: bedroht ? +(fort / bedroht).toFixed(3) : null,
             bisse: beute.filter((c) => c.userData.hp < 9999).length,
         };
     });
 
-    // ── herde (Q11, S6): der Verband des ECHTEN Wurfs (`_kreaturWurf`, fünf scheue Hirsche aus dem Strom „verband"; beim
-    // Wurf steht der Spieler 140 m fort und blickt fort) hält beim Wandern (der Spieler 45 m fern, jenseits der Witterung)
-    // und auf der Flucht (er treibt die Herde mit 1,4 m/s durch ihren Wurf-Ort): je Takt der Anteil der Glieder binnen
-    // fensterRaum × Paar-Raum vom Mittel, ab 10 s bzw. solange ein Glied flieht. Ein fremder Verband derselben Art (ein
-    // zweiter Wurf, 30 m fort) zieht nie, und die Bewegung hängt nie am Blick (gleiche Lage nach 20 s) ──
+    // ── herde: der Verband des ECHTEN Wurfs (`_kreaturWurf`, fünf scheue Hirsche) hält beim Wandern und auf der Flucht
+    // (Anteil der Glieder binnen fensterRaum × Paar-Raum vom Mittel); ein fremder Verband derselben Art zieht nie, und die
+    // Bewegung hängt nie am Blick ──
     await buehne("herde", async (restore) => {
         r.setGameMode("frieden");
         if (taeter === "herde")
@@ -964,7 +927,7 @@ async function kreaturProben(r, T, opts) {
                         for (const c of this.state.creatures) if (this.isInFrustum(c)) c.position.x += 0.01;
                     }
             );
-        // die Herden-Form vor S6: die Glieder sind jedes Tier DERSELBEN Gattung — zwei fremde Herden einer Art verschmelzen
+        // die alte Herden-Form: die Glieder sind jedes Tier DERSELBEN Gattung — zwei fremde Herden einer Art verschmelzen
         if (taeter === "herde-artfremd")
             decke(
                 restore,
@@ -990,7 +953,7 @@ async function kreaturProben(r, T, opts) {
                 art === "fremd"
                     ? r._kreaturWurf({ x: heim.x, z: heim.z + 30 }, "wesen", "happy", r._faunaRng("fremd"), 7)
                     : [];
-            // der alte Defekt (vor S6): derselbe Wurf (Orte, Seele, Anker), aber jedes Tier für sich geboren, ungebunden
+            // der alte Defekt: derselbe Wurf (Orte, Seele, Anker), aber jedes Tier für sich geboren, ungebunden
             if (taeter === "herde-zerfall")
                 glieder = glieder.map((c) => {
                     const { x, y, z } = c.position;
@@ -1042,7 +1005,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── hindernis (Q11 + Lehre 25): kein Feld-Strahl je Tier und Takt, die Wand wird umgangen ──
+    // ── hindernis (Lehre 25): kein Feld-Strahl je Tier und Takt, die Wand wird umgangen ──
     await buehne("hindernis", async (restore) => {
         r.setGameMode("frieden");
         let strahlen = 0,
@@ -1119,23 +1082,20 @@ async function kreaturProben(r, T, opts) {
         const c = tier({ x: mx + 0.3, y: wo.y, z: mz - 8 }, "wesen");
         ruhig(c);
         r.assignCreatureTask(c, "follow_player", {}, { silent: true });
-        // DER LEIB DES TIERS (D2): EINE benannte Größe (_kreaturLeib), die der Hüllen-Kontakt liest — gezählt, durchgereicht.
-        // Die Probe selbst liest den Leib am Prototyp (zählt nicht mit) und misst, wie weit die vordere Leib-Achse (die
-        // Schnauze) vor dem Stein bleibt.
-        // gezählt werden nur die Rufe AUS dem Hüllen-Kontakt (der Leib-Löser der Welle LF liest den Leib auch)
+        // DER LEIB DES TIERS: EINE benannte Größe (_kreaturLeib), die der Hüllen-Kontakt liest — gezählt werden nur seine
+        // Rufe; die Probe misst, wie weit die Schnauze vor dem Stein bleibt.
         let leibRufe = 0,
             imKontakt = 0;
-        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
-        if (typeof r._kreaturLeib === "function")
-            decke(
-                restore,
-                "_kreaturLeib",
-                (alt) =>
-                    function (...a) {
-                        if (imKontakt > 0) leibRufe++;
-                        return alt.apply(this, a);
-                    }
-            );
+        const leibVon = A.prototype._kreaturLeib;
+        decke(
+            restore,
+            "_kreaturLeib",
+            (alt) =>
+                function (...a) {
+                    if (imKontakt > 0) leibRufe++;
+                    return alt.apply(this, a);
+                }
+        );
         decke(
             restore,
             "_kreaturHuellenKontakt",
@@ -1205,12 +1165,11 @@ async function kreaturProben(r, T, opts) {
         });
     });
 
-    // ── gedreht (D5): das Tier am GEDREHTEN Haus — die Hülle der Stufe reist als gedrehte Box (`_hausHuelleSetzen` →
-    // `_hausObb`, derselbe Weg wie der Beipack `__huelle` der Foundry); der Leib löst im Rahmen der Box und meldet seinen
-    // Kontakt an sich, nie an die Parkour-Wand des Spielers (state._wandKontakt*) ──
+    // ── gedreht: das Tier am GEDREHTEN Haus (`_hausHuelleSetzen` → `_hausObb`) — der Leib löst im Rahmen der Box und meldet
+    // seinen Kontakt an sich, nie an die Parkour-Wand des Spielers (state._wandKontakt*) ──
     await buehne("gedreht", async (restore) => {
         r.setGameMode("frieden");
-        // Täter 1: der OBB-Zweig reicht den Kontakt-Empfänger des Tiers nicht weiter (der Integrations-Stand vor D5).
+        // Täter 1: der OBB-Zweig reicht den Kontakt-Empfänger des Tiers nicht weiter.
         if (taeter === "gedreht-kontakt")
             decke(
                 restore,
@@ -1246,7 +1205,7 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_haus;
         });
         if (!e) return { fehler: "Haus nicht gesetzt" };
-        // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+        // die EINE Hüllen-Form: die Wand als Kasten c ± h, rolle "fest"
         r._hausHuelleSetzen(e, {
             stufe: 0,
             teile: [{ art: "box", c: [0, -0.25, 0], h: [4, 2.75, 0.4], rolle: "fest" }],
@@ -1269,7 +1228,7 @@ async function kreaturProben(r, T, opts) {
         ruhig(c);
         r.assignCreatureTask(c, "follow_player", {}, { silent: true });
         const geschoben = kontaktZaehler(restore);
-        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
+        const leibVon = A.prototype._kreaturLeib;
         let drin = 0,
             kontaktFrames = 0,
             spielerWand = 0,
@@ -1317,7 +1276,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── nacht (Q11, Kritik §2.3): die Ruhe-Aktion hält den Leib an ──
+    // ── nacht: die Ruhe-Aktion hält den Leib an ──
     await buehne("nacht", async (restore) => {
         r.setGameMode("frieden");
         const altTod = s.timeOfDay;
@@ -1347,8 +1306,7 @@ async function kreaturProben(r, T, opts) {
         });
         const dt = 1 / 60;
         const vor = tiere.map((c) => ({ x: c.position.x, z: c.position.z }));
-        // die Ruhe einer Aktion zählt in Takten seit ihrem Stempel (dieselbe Uhr wie der Spieler sie sieht — die Aktion
-        // trug vor Welle L die Wand-Uhr, die Linse misst unabhängig davon)
+        // die Ruhe einer Aktion zählt in Takten seit ihrem Stempel (dieselbe Uhr, wie der Spieler sie sieht)
         const gesehen = tiere.map(() => ({ va: null, k0: 0 }));
         let ruhFrames = 0,
             ruhBewegt = 0;
@@ -1370,7 +1328,7 @@ async function kreaturProben(r, T, opts) {
         return { ruhFrames, ruhBewegt, bewegtAnteil: ruhFrames ? +(ruhBewegt / ruhFrames).toFixed(3) : null };
     });
 
-    // ── reload (Q12): ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
+    // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
     await buehne("reload", async (restore) => {
         const c = tier(land(30, 12), "wesen");
         const hpMax = c.userData.hpMax;
@@ -1386,7 +1344,7 @@ async function kreaturProben(r, T, opts) {
                         const o = alt.call(this, cr);
                         if (o) {
                             delete o.hp;
-                            delete o.hpAnteil; // die Wunde reist als Anteil des Lebens (Welle LF kampf Nachbesserung 2)
+                            delete o.hpAnteil; // die Wunde reist als Anteil des Lebens
                             delete o.gier;
                         }
                         return o;
@@ -1404,11 +1362,8 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── zufall (Q2, Lehre 7): kein Math.random im Kreatur-Leben ──
-    // Gelesen wird der LEBENDE Code jeder Methode (r[name] — die Instanz vor dem Prototyp, was die Welt ruft) über
-    // window.__codeOf (Kommentare gestrippt: sie zitieren den gefallenen Würfel). Die Klasse: jede Methode der Welt, deren
-    // Name ein Tier trägt (creature · kreatur · fauna · tier), dazu die benannten Wurf-Stellen der Leben-Prüfung ohne
-    // Tier im Namen. Eine benannte Methode, die fehlt, ist rot (die Liste veraltet nie still).
+    // ── zufall (Lehre 7): kein Math.random im Kreatur-Leben — der LEBENDE Code (r[name]) über window.__codeOf je Methode
+    // mit Tier im Namen, dazu die benannten Wurf-Stellen; eine benannte Methode, die fehlt, ist rot ──
     await buehne("zufall", async (restore) => {
         const BENANNT = [
             "_spawnOneInitialCreature",
@@ -1452,13 +1407,12 @@ async function kreaturProben(r, T, opts) {
         return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
     });
 
-    // ── peer (Q3): die Sicht-Kopie beim Mitspieler dreht und geht ──
+    // ── peer: die Sicht-Kopie beim Mitspieler dreht und geht ──
     await buehne("peer", async (restore) => {
         const remote = s.p2p && s.p2p.remoteCreatures;
         if (!remote) return { fehler: "kein p2p-Zustand" };
-        // Der Täter: die Kopie geht nicht (der alte Defekt — kein Gang je Sicht-Kopie). Er läuft am lebenden Chokepoint
-        // (Q0, wie jeder andere Täter): der echte Takt zieht Lage und Gier nach, nur der Gang der Kopie ruht. Die alte
-        // Methoden-Kopie samt harter Gier-Zeile trug einen gefallenen Namen in die Linse (Rückkehr-Wand, D12).
+        // Der Täter: die Kopie geht nicht — am lebenden Chokepoint: der echte Takt zieht Lage und Gier nach, nur der Gang
+        // der Kopie ruht.
         if (taeter === "peer")
             decke(
                 restore,
@@ -1499,12 +1453,8 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── nexus (Leben-Schau 07.10. Neu 1): kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
-    // 4–12 und Sprungkraft 8–20 zu (gemessen 11,1 m/s, Sprint 45 m/s, Sprung 18,6 statt 2,6), blähte jedes Tier um ×1,11
-    // ohne die bodySize-Achse auf, und `spawn_creature at_player` setzte Geburten in den Blick. Gemessen werden der Würfel
-    // (ein fester Strom über den Kompositions-Pool), die Ops selbst (die Werte des Würfels, Quelle nexus: das Ergebnis liegt
-    // im Gesetz-Band des Körpers, koerper fx.bewegung), die Größe (nur die bodySize-Achse in den Bändern VERHALTEN.groessen),
-    // der Tempo-Hauch der Tiere (gelesen und im Band wandern.speedMulMin..Max) und die Nexus-Geburt (fern, nie im Blick) ──
+    // ── nexus: kein Würfel schreibt ein Körper-Gesetz — der Würfel (fester Strom), die Ops (im Gesetz-Band des Körpers),
+    // die Größe (nur die bodySize-Achse), der Tempo-Hauch der Tiere (im Band wandern) und die Nexus-Geburt (nie im Blick) ──
     await buehne("nexus", async (restore) => {
         const KOERPER = ["player_speed", "player_jump_power", "creatures_speed_mul", "creatures_size_mul"];
         const eff = r.dslEffects;
@@ -1519,6 +1469,9 @@ async function kreaturProben(r, T, opts) {
         // Die alten Ops als Täter (der Stand vor dem Schnitt, wörtlich): ein absoluter Wert, eine Skala ohne Achse, ein
         // Tempo ohne Leser, die Geburt im Ring um den Ziel-Punkt.
         if (taeter === "nexus-gesetz") {
+            const W = A.DSL_WERTE; // das Band hält dslEval — der Täter nimmt es mit
+            A.DSL_WERTE = { ...W, player_jump_power: null, player_speed: null };
+            restore.push(() => (A.DSL_WERTE = W));
             eff.player_jump_power = ([v]) => {
                 s.jumpPower = r.dslClamp(v, 5, 40);
             };
@@ -1650,11 +1603,8 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── temperament (D16 / K-D12, Leben-Schau 07.10.): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
-    // Tiere sind tag-gleich) — Hirsch und Fuchs blieben „wehrhaft" (aus den Tags), alle Hirsche Wariness −1,0 (neugierig),
-    // die Herde drängte auf 0,6 m heran. Gemessen: das Temperament je Seele und Größe, die Wariness vor einem ruhigen
-    // Spieler in frieden, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und dass der Kampf dasselbe
-    // Temperament liest (die Furcht-Dauer nach einem Treffer = furcht.fearSec × fleeMul des Temperaments) ──
+    // ── temperament (Lehre 8): das Temperament aus Gattung und Größe — je Seele und Größe, die Wariness vor einem ruhigen
+    // Spieler, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und der Kampf liest dasselbe Temperament ──
     await buehne("temperament", async (restore) => {
         if (taeter === "temperament")
             decke(
@@ -1666,7 +1616,7 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         if (taeter === "temperament-masse")
-            // der Zwilling der Vereinigung (Welle LF auf V18.533): das Gemüt aus der Dial-Masse size × Größe
+            // der Zwilling der Vereinigung: das Gemüt aus der Dial-Masse size × Größe
             decke(
                 restore,
                 "_creatureTemperament",
@@ -1703,9 +1653,7 @@ async function kreaturProben(r, T, opts) {
             ["baer", 0.7],
         ])
             art[seele + "@" + bs] = probe(seele, bs);
-        // DIE EINE MASSE (V18.536): Temperament und Beute lesen die Masse des Leibs, die auch der Stoß liest (`_leibMasse`,
-        // Volumen der Gestalt × Dichte des Kerns) — nie eine zweite (die Dial-Masse size × Größe fiel mit der Vereinigung).
-        // Beweis am Ruf: `_leibMasse` zählt, was das Gemüt eines frischen Leibs und das Beute-Urteil lesen.
+        // DIE EINE MASSE: Temperament und Beute lesen die Masse, die auch der Stoß liest (`_leibMasse`) — Beweis am Ruf.
         const leibRufe = (fn) => {
             const alt = r._leibMasse;
             let n = 0;
@@ -1727,36 +1675,14 @@ async function kreaturProben(r, T, opts) {
         delete frisch.userData._temperament;
         const masseQuelle =
             leibRufe(() => r._creatureTemperament(frisch)) > 0 &&
-            leibRufe(() => r._kreaturIstBeute(wolfB, hirschB)) >= 2 &&
-            typeof r._kreaturMasse !== "function";
+            leibRufe(() => r._kreaturIstBeute(wolfB, hirschB)) >= 2;
         const beute = {
             hirsch: r._kreaturIstBeute(wolfB, hirschB),
             kitz: r._kreaturIstBeute(wolfB, tier(land(36, 38), "wesen", 0.6)),
             baer: r._kreaturIstBeute(wolfB, tier(land(40, 30), "baer", 1)),
         };
         for (const c of s.creatures.slice()) r.removeCreature(c);
-        // Die Wariness 6 m vor dem ruhigen Spieler und was der Leib daraus macht (600 Takte, frei).
-        const start = land(0, 0);
-        pm.set(start.x, start.y, start.z);
-        const ring = (seele) =>
-            [0, 1, 2, 3].map((k) => {
-                const a = (k / 4) * Math.PI * 2 + 0.4;
-                const c = tier(neben(pm.x + Math.cos(a) * 6, pm.z + Math.sin(a) * 6), seele, 1);
-                ruhig(c);
-                return c;
-            });
-        const dMit = (cs) =>
-            cs.reduce((acc, c) => acc + Math.hypot(c.position.x - pm.x, c.position.z - pm.z), 0) / cs.length;
-        const hirsche = ring("wesen");
-        const wHirsch = r._creatureWariness(hirsche[0]);
-        for (let k = 0; k < 600; k++) takt(1 / 60);
-        const hirschM = dMit(hirsche);
-        for (const c of hirsche) r.removeCreature(c);
-        const baeren = ring("baer");
-        const wBaer = r._creatureWariness(baeren[0]);
-        for (let k = 0; k < 600; k++) takt(1 / 60);
-        const baerM = dMit(baeren);
-        for (const c of baeren) r.removeCreature(c);
+        // (Hirsch und Bär vor dem ruhigen Spieler misst die Furcht-Probe in der Welt: der Hirsch flieht, der Bär naht)
         // Der Kampf liest dasselbe Temperament: die Furcht-Dauer eines getroffenen Wesens.
         const VG = A._verhaltenGesetz();
         const furcht = (seele) => {
@@ -1774,22 +1700,13 @@ async function kreaturProben(r, T, opts) {
             kg,
             masseQuelle,
             beute,
-            wHirsch: +wHirsch.toFixed(3),
-            wBaer: +wBaer.toFixed(3),
-            hirschAbstandM: +hirschM.toFixed(1),
-            baerAbstandM: +baerM.toFixed(1),
-            fleeThreshold: VG.furcht.fleeThreshold,
-            curiousThreshold: VG.furcht.curiousThreshold,
             kampfHirsch: furcht("wesen"),
             kampfBaer: furcht("baer"),
         };
     });
 
-    // ── abstand (Leben-Schau 07.10., D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
-    // Modus frieden kroch auf 0,7 m zusammen (Paar-Abstand 0,66–0,96 m), die Leiber durchdrangen sich und den Spieler. Der
-    // Leib ist die EINE benannte Größe (_kreaturLeib: Achse längs der Gier ± halb, Radius); gemessen je Takt die Lücke
-    // zwischen zwei Leibern (Kapsel gegen Kapsel in XZ) und zwischen Leib und Spieler-Kapsel (PLAYER_WALL_RADIUS), am Ende
-    // der Abstand der Mitten gegen die Körper-Kugeln (halb + Radius) ──
+    // ── abstand: der persönliche Raum je Leib (`_kreaturLeib`) — je Takt die Lücke zwischen zwei Leibern und zwischen Leib
+    // und Spieler-Kapsel, am Ende der Abstand der Mitten gegen die Körper-Kugeln ──
     await buehne("abstand", async (restore) => {
         r.setGameMode("frieden");
         if (s.player.emotions)
@@ -1810,24 +1727,23 @@ async function kreaturProben(r, T, opts) {
                 return o;
             };
             restore.push(() => (K.verbandZug = alt));
-            decke(restore, "_leibKontakte", () => function () {});
+            decke(restore, "_leibPaar", () => () => false);
         }
-        if (taeter === "abstand-spieler")
-            // die Separation ohne den Spieler (V18.536): nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
-            decke(
-                restore,
-                "_applyCreatureSeparation",
-                (alt) =>
-                    function (...a) {
-                        const p = this.state.playerMesh;
-                        this.state.playerMesh = null;
-                        try {
-                            return alt.apply(this, a);
-                        } finally {
-                            this.state.playerMesh = p;
-                        }
+        if (taeter === "abstand-spieler") {
+            // die Separation und der Weg des Gangs ohne den Spieler: ein Nachbar drückt das vordere Tier in ihn
+            const ohne = (alt) =>
+                function (...a) {
+                    const p = this.state.playerMesh;
+                    this.state.playerMesh = null;
+                    try {
+                        return alt.apply(this, a);
+                    } finally {
+                        this.state.playerMesh = p;
                     }
-            );
+                };
+            decke(restore, "_applyCreatureSeparation", ohne);
+            decke(restore, "_leibGegenLeiber", ohne);
+        }
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
         pm.set(start.x, start.y, start.z);
@@ -1883,10 +1799,8 @@ async function kreaturProben(r, T, opts) {
             return Math.min(pS(a.ax, a.az, b), pS(a.bx, a.bz, b), pS(b.ax, b.az, a), pS(b.bx, b.bz, a));
         };
         const RP = A.PLAYER_WALL_RADIUS;
-        // DER LÖSER LEBT IM SIM-SCHRITT (`_leibKontakte`), der Frame zeigt den Steuer-Schritt danach: eine Lücke zweier Leiber
-        // unter null darf nur so tief sein, wie beide in DIESEM Frame liefen und wendeten (der Weg der Mitte + die Wende an
-        // der Achsen-Spitze, |Δgier| · halb) — tiefer ERBTE sie eine Durchdringung, die der Sim-Schritt nicht löste. Den
-        // Spieler meidet schon der Schritt (die Separation hält seinen Raum): dort zählt jede Lücke unter −2 cm.
+        // DER LÖSER LEBT IM SIM-SCHRITT (`_leibKontakte`): eine Lücke zweier Leiber unter null darf nur so tief sein, wie
+        // beide in DIESEM Frame liefen und wendeten; am Spieler zählt jede Lücke unter −2 cm.
         const vorher = tiere.map(() => ({ x: 0, z: 0, g: 0 }));
         const schritt = tiere.map(() => 0);
         let minLeib = Infinity,
@@ -1963,18 +1877,10 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── jagdkreis (Leben-Schau 07.10., Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
-    // stand still (ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten) und holte keinen Sprinter ein (der
-    // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) der Riss (unten); (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
-    // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
+    // ── jagdkreis: der Kreislauf Jäger–Beute schließt sich, zwei Bühnen am ECHTEN Takt: (A) der Riss; (B) der Sprinter —
+    // der Wolf startet 6 m hinter dem sprintenden Spieler: der Abstand schrumpft, ein Biss trifft ──
     await buehne("jagdkreis", async (restore) => {
         r.setGameMode("pfad");
-        // ein ruhiger Spieler, je Takt (ein zorniger verschreckt den Wolf — seine Wariness schlägt die Jagd; die Ansteckung
-        // der Gefühle im Kreatur-Takt trägt die Furcht der Beute zu ihm)
-        const ruhigSpieler = () => {
-            if (s.player.emotions)
-                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
-        };
         ruhigSpieler();
         // Die alten Wege als Täter: der Gradient des Geruchs-Felds (vier Proben, die vor dem Schnitt die Richtung gaben)
         // und der Jagd-Weg im Schritt-Tempo geradewegs auf das Ziel (kein Platz im Rudel, keine Hetze).
@@ -2035,59 +1941,101 @@ async function kreaturProben(r, T, opts) {
             );
         if (taeter === "jagd-duft") decke(restore, "_kreaturAasZug", () => () => false);
         const dt = 1 / 60;
-        // (A) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3): drei Wölfe gegen einen GESUNDEN Hirsch (Tiere K2: ~20
-        // Bisse, jeder jagt ihn in die Flucht) an zehn Orten (die Mitte, ein Ring von 70 m) — die Riss-Quote. Der erste Riss
-        // trägt die Kette: der Leib wird Kadaver (Fleisch in kg), Fressen verbraucht ihn, sein Geruch (`_scentAt`) ruft Fuchs
-        // und Bär, 35 m fern beim Riss. Der Spieler steht 150 m fern (nah jagte das Rudel IHN, jagd.radius).
-        const R = { fensterS: 600, zeiten: [], rissS: null, fleisch0: null, fleischEnde: null, gaeste: [] };
-        for (let ort = 0; ort < 10; ort++) {
-            const w = (2 * Math.PI * (ort - 1)) / 9,
-                rO = ort ? 70 : 0;
-            s.creatureAnimationTime = 100;
-            r._creatureAiFrame = 0;
-            const o4 = frei(-60 + Math.cos(w) * rO, 40 + Math.sin(w) * rO, 25) || land(-60, 40);
-            pm.set(o4.x + 150, pm.y, o4.z + 20);
-            const beute = tier({ x: o4.x, y: o4.y, z: o4.z }, "wesen", 1);
-            ruhig(beute);
-            if (taeter === "jagd-hp") beute.userData.hp *= 0.1; // der alte Schleichweg: die verwundete Beute
-            R.hp0 = Math.round(beute.userData.hp);
-            for (let i = 0; i < 3; i++)
-                ruhig(
-                    tier(
-                        { x: o4.x - Math.cos(i * 0.6 - 0.6) * 20, y: o4.y, z: o4.z + Math.sin(i * 0.6 - 0.6) * 20 },
-                        "wolf"
-                    )
-                );
-            r._kreaturVerbinden(s.creatures.filter((c) => c !== beute));
-            const kette = R.rissS === null;
-            const zuK = (c) => Math.hypot(c.position.x - beute.position.x, c.position.z - beute.position.z);
-            R.zeiten.push(null);
-            for (let k = 0, ende = R.fensterS * 60; k < ende; k++) {
-                ruhigSpieler();
-                takt(dt);
-                if (R.zeiten[ort] === null && s.leichname.includes(beute)) {
-                    R.zeiten[ort] = +(k * dt).toFixed(1);
-                    if (!kette) break;
-                    R.rissS = R.zeiten[ort];
-                    R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
-                    for (const [seele, dz] of [
-                        ["fuchs", 18],
-                        ["baer", -18],
-                    ]) {
-                        const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
-                        ruhig(g);
-                        R.gaeste.push({ seele, c: g, d0: +zuK(g).toFixed(1), dMin: Infinity, frissS: 0 });
+        // (A) DIE QUOTE JE JAGD (Tiere K2, MacNulty): ein Wolf und vier gegen den Hirsch, vier gegen ein Kitz, in 20 · 60 · 20
+        // Saaten; die Jagd endet mit dem Riss oder der Erschöpfung (JAGD_GESETZ). Der erste Riss der vier trägt die Kette: Kadaver,
+        // das Rudel frisst, Fuchs und Bär kommen. Jede Jagd auf frischem Feld.
+        if (taeter === "jagd-flucht")
+            decke(
+                restore,
+                "_creatureWariness",
+                () =>
+                    function (c) {
+                        const ud = c.userData || {};
+                        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
+                        return this._creatureWarinessSpieler(c, A._verhaltenGesetz().furcht, von);
                     }
-                    ende = k + 7200;
+            );
+        if (taeter === "jagd-ohne-ende") decke(restore, "_kreaturJagdEndet", () => () => false);
+        if (taeter === "jagd-ohne-wunde")
+            decke(restore, "_kreaturSprint", () => (c, L) => A._steuerGesetz().sprintTempo(L));
+        const R = {
+            quote: {},
+            rissS: null,
+            fleisch0: null,
+            fleischEnde: null,
+            fressS: 0,
+            gaeste: [],
+        };
+        for (const [szene, nW, gr, n] of [
+            ["einWolf", 1, 1, 20],
+            ["rudel", 4, 1, taeter ? 20 : 60],
+            ["kitz", 4, 0.6, 20],
+        ]) {
+            const Q = (R.quote[szene] = { jagden: 0, risse: 0, erschoepft: 0 });
+            for (let o = 0; o < n; o++) {
+                s.creatureAnimationTime = 100;
+                r._creatureAiFrame = 0;
+                s.emotionField = undefined;
+                const w = (2 * Math.PI * o) / n;
+                const ort = frei(-60 + Math.cos(w) * 80, 40 + Math.sin(w) * 80, 25) || land(-60, 40);
+                pm.set(ort.x + 150, pm.y, ort.z + 20);
+                const beute = tier(ort, "wesen", gr);
+                ruhig(beute);
+                if (taeter === "jagd-hp") beute.userData.hp *= 0.1; // der alte Schleichweg: die verwundete Beute
+                Q.hp0 = Math.round(beute.userData.hp);
+                const woelfe = [];
+                for (let i = 0; i < nW; i++) {
+                    const a = Math.PI + (i - (nW - 1) / 2) * 0.5 + o * 0.7;
+                    woelfe.push(tier({ x: ort.x + Math.cos(a) * 25, y: ort.y, z: ort.z + Math.sin(a) * 25 }, "wolf"));
                 }
-                for (const G of kette ? R.gaeste : []) {
-                    G.dMin = Math.min(G.dMin, +zuK(G.c).toFixed(1));
-                    if (G.c.userData._motionZustand === "fressen") G.frissS = +(G.frissS + dt).toFixed(3);
+                woelfe.forEach(ruhig);
+                r._kreaturVerbinden(woelfe);
+                const kette = szene === "rudel" && R.rissS === null;
+                const zuK = (c) => Math.hypot(c.position.x - beute.position.x, c.position.z - beute.position.z);
+                const hetzer = new Set();
+                let riss = false;
+                for (let k = 0, ende = 5400; k < ende; k++) {
+                    ruhigSpieler();
+                    takt(dt);
+                    for (const c of woelfe) if (c.userData._motionZustand === "hetzen") hetzer.add(c);
+                    if (!riss && s.leichname.includes(beute)) {
+                        riss = true;
+                        if (!kette) break;
+                        R.rissS = +(k * dt).toFixed(1);
+                        R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
+                        for (const [seele, dz] of [
+                            ["fuchs", 18],
+                            ["baer", -18],
+                        ]) {
+                            const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
+                            ruhig(g);
+                            R.gaeste.push({ seele, c: g, kommtS: null, frissS: 0 });
+                        }
+                        ende = k + 7200;
+                    }
+                    if (
+                        !riss &&
+                        hetzer.size &&
+                        [...hetzer].every((c) => r._kreaturErschoepft(c) || !c.userData._motionZustand)
+                    ) {
+                        Q.erschoepft++;
+                        break;
+                    }
+                    if (!riss || !kette) continue;
+                    if (woelfe.some((c) => c.userData._motionZustand === "fressen"))
+                        R.fressS = +(R.fressS + dt).toFixed(2);
+                    for (const G of R.gaeste)
+                        if (G.c.userData._motionZustand === "fressen") {
+                            G.frissS = +(G.frissS + dt).toFixed(2);
+                            if (G.kommtS === null) G.kommtS = +(k * dt - R.rissS).toFixed(1);
+                        }
                 }
+                if (hetzer.size) Q.jagden++;
+                if (riss) Q.risse++;
+                if (kette && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
+                for (const G of R.gaeste) delete G.c;
+                for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
             }
-            if (kette && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
-            for (const G of R.gaeste) delete G.c;
-            for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
         }
         // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn — auf einer freien Bahn aus der Welt
         // (die Länge seines Laufs, der Wolf 6 m dahinter); keine freie Bahn ist ein Fehler, kein Ersatz-Ort
@@ -2104,7 +2052,7 @@ async function kreaturProben(r, T, opts) {
             s.player.respawnGraceUntil = altGnade;
         });
         s.player.hp = 1e9;
-        // gezählt wird der Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf) — nicht der Ansprung
+        // gezählt wird der Biss, der den Spieler trifft (das Maul am Leib) — nicht der Ansprung
         let spielerBisse = 0;
         decke(
             restore,
@@ -2120,7 +2068,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 600; k++) {
             pm.x += sprint * dt;
             // die Füße des Läufers bleiben auf dem Boden (die Probe trägt ihn ohne Physik; der Biss braucht den Kopf am
-            // Leib, auch in der Höhe — Welle LF kampf)
+            // Leib, auch in der Höhe)
             const hS = r.getTerrainHeightAt(pm.x, pm.z);
             if (Number.isFinite(hS)) pm.y = hS + 0.5;
             ruhigSpieler();
@@ -2143,17 +2091,10 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── rudel (Leben-Schau 07.10., Kampf: „Rudel gegen Spieler"): ein Rudel umstellt. Drei Wölfe, die von einer Seite
-    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau; 239° am 06.10.). Gemessen am
-    // echten Takt: drei Wölfe in 15 m auf einer Seite des stehenden Spielers (Modus pfad); in jedem Takt, in dem alle drei
-    // näher als 2 × jagd.hetzM stehen, die größte Winkel-Lücke ihrer Richtungen um den Spieler, dazu die Lücke beim ersten
-    // Biss ──
+    // ── rudel: ein Rudel umstellt — drei Wölfe von einer Seite des stehenden Spielers; je Takt, in dem alle näher als
+    // 2 × jagd.hetzM stehen, die größte Winkel-Lücke um den Spieler, dazu die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
-        const ruhigSpieler = () => {
-            if (s.player.emotions)
-                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
-        };
         if (taeter === "rudel")
             decke(
                 restore,
@@ -2184,7 +2125,7 @@ async function kreaturProben(r, T, opts) {
             return c;
         });
         r._kreaturVerbinden(woelfe); // das Rudel ist EIN Verband (S6) — wie aus dem Wurf
-        // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf)
+        // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
         let ersterBiss = null;
         decke(
             restore,
@@ -2219,26 +2160,20 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── sockel (Leben-Schau 07.10., D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
-    // durchs Dorf, 7,6 % ihrer Takte lagen in einer Hüllen-Box, p50 73 cm tief; ein Hirsch stand 0,35 m tief im Sockel, auf
-    // dem der Spieler stand (Bild ls-09) — das Tier las nur den Boden (_standSicht ohne Struktur). Gemessen am echten Takt:
-    // ein Sockel aus Stein, seine Oberkante 0,35 m über dem Boden seiner Mitte (wie der Sockel des Hauses), ein Hirsch steht
-    // auf ihm und folgt dem Spieler, der auf dem Sockel hin und her geht; je Takt, wie tief die Sohle unter der Oberkante
-    // liegt ──
+    // ── sockel: das Tier steht auf der Auflage der Bauten wie der Spieler — ein Hirsch folgt dem Spieler auf einem Sockel
+    // (0,35 m über dem Boden); je Takt, wie tief die Sohle unter der Oberkante liegt ──
     await buehne("sockel", async (restore) => {
         r.setGameMode("frieden");
         if (taeter === "sockel") decke(restore, "_kreaturAuflage", () => () => -Infinity);
-        // der Sockel 4 × 4 m an einem Ort ohne Bau im Umkreis, seine Oberkante 0,35 m über dem Boden seiner Mitte, nach unten
-        // tief genug für jede Mulde. Gezählt wird nur, wo er eine STUFE ist (Oberkante 5 cm bis PLAYER_STEP_UP über dem
-        // Boden unter dem Hirsch): dort trägt er den Spieler — und das Tier.
+        // der Sockel 4 × 4 m ohne Bau im Umkreis, Oberkante 0,35 m über dem Boden; gezählt wird nur, wo er eine STUFE ist
+        // (5 cm bis PLAYER_STEP_UP über dem Boden unter dem Hirsch).
         const wo = frei(-40, -60, 6) || land(-40, -60);
         wo.y = r.getTerrainHeightAt(wo.x, wo.z);
         const hs = [-2, 0, 2].flatMap((dx) => [-2, 0, 2].map((dz) => r.getTerrainHeightAt(wo.x + dx, wo.z + dz)));
         const unten = Math.min(...hs) - 0.3 - wo.y;
         const oben = 0.35;
-        // Der Sockel ist die HÜLLE eines Hauses (wie im Dorf: die gedrehte Box der Studio-Stufe, _hausHuelleSetzen) — ein
-        // Bauplan-Teil würde den Boden unter sich einebnen (der Fußabdruck des Baus), die Haus-Hülle tut es nicht. Der Bau
-        // selbst ist ein Kiesel in der Mitte. spawnArchitecture legt die Basis 0,5 m unter den Ort (die at_player-Eichung).
+        // Der Sockel ist die HÜLLE eines Hauses (`_hausHuelleSetzen`, sie ebnet den Boden nicht ein), der Bau ein Kiesel;
+        // spawnArchitecture legt die Basis 0,5 m unter den Ort.
         s.blueprints._t_linse_sockel = {
             name: "_t_linse_sockel",
             parts: [
@@ -2299,12 +2234,8 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── querhang (Leben-Schau 07.10., D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
-    // Beine 20–31° aus dem Lot (sie kippten mit dem Leib, Bild ls-10), der Stand-Schlupf im Lauf lag bei 0,56–1,27 (Soll
-    // ≤ 0,2). Gemessen am echten Takt wie in der Leben-Schau: ein Hang von 20–30° nahe dem Spieler; Wolf und Hirsch stehen
-    // QUER zur Fall-Linie (warten, 120 Takte): je Bein der Winkel Hüfte → Pfote gegen das Lot und die Sohle über dem Boden
-    // unter ihr; dann folgen beide dem Spieler, der längs der Höhenlinie geht (600 Takte): der Stand-Schlupf — eine Pfote,
-    // deren Sohle höchstens 3 cm über dem Boden unter ihr liegt, steht; ihr Weg in solchen Takten je Weg des Leibs ──
+    // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
+    // (je Bein Winkel gegen das Lot, Sohle über dem Boden), dann längs der Höhenlinie: der Stand-Schlupf ──
     await buehne("querhang", async (restore) => {
         r.setGameMode("frieden");
         if (taeter === "querhang")
@@ -2367,10 +2298,8 @@ async function kreaturProben(r, T, opts) {
                 }
             return { hang: { x, z, ux, uz, grad: grad0 } };
         };
-        // DER ORT (K16-Q): in der Welt der erste Hang von 20–30° nahe dem Spieler — welcher, entscheidet die Welt (im
-        // K16-Gelände fand die CI 22,2°, lokal fand dieselbe Suche je nach Bestand 22,2° oder 25,5°); auf der Prüfbühne die
-        // feste Rampe ihrer Station (`opts.hangOrt`, spec/pruefbuehne/stationen.json): ihre Neigung ≤ 1° an der Spec, sonst
-        // trägt die Bühne nicht, was die Probe misst — ein Fehler, nie ein Ausweichen auf einen anderen Hang
+        // DER ORT: der erste Hang von 20–30° nahe dem Spieler; auf der Prüfbühne die feste Rampe ihrer Station
+        // (`opts.hangOrt`) — ihre Neigung ≤ 1° an der Spec, sonst ein Fehler
         const ort = (opts && opts.hangOrt) || null;
         let hang = null;
         if (ort) {
@@ -2401,7 +2330,7 @@ async function kreaturProben(r, T, opts) {
         };
         pm.set(hang.x + hang.ux * 5, h(hang.x + hang.ux * 5, hang.z + hang.uz * 5) + 0.5, hang.z + hang.uz * 5);
         const tiere = [stelle("wolf", -1.6), stelle("wesen", 1.6)];
-        // die Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (die Kalibrierung der Leben-Schau in der Stand-Pose)
+        // die Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (in der Stand-Pose)
         const kalib = tiere.map((cr) => {
             const tb = cr.userData._tierBaum;
             if (!tb || !tb.teile) return null;
@@ -2502,15 +2431,9 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
-    // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
-    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Seit S3 trägt jenseits der Stufen-Grenze (`ab` × Größe)
-    // die gelenkige Grobstufe das Bild, an die Knochen der feinen gebunden (EIN Skelett, `_gelenkGestalt`). Gemessen am
-    // echten Takt: 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er
-    // steht, der Blick liegt auf ihnen); je laufendem Takt (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER
-    // Leib die Beine nicht bewegt: trägt die Grobstufe, zählen die Gelenke, an die ihre Haut gebunden ist (eine Grobstufe
-    // ohne Haut-Gelenke ist ein Standbild — sie gleitet immer), sonst die der feinen; gleiten heißt, die Hüft-Winkel der
-    // vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet dreimal aus) in 0,02 rad ──
+    // ── ferngang: ferne Tiere gehen, sie gleiten nie — 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone
+    // (70–90 m) folgen dem Spieler im Blick; je laufendem Takt GLEITET ein Tier, wenn sein SICHTBARER Leib (Satz,
+    // Grobstufe oder feine Stufe) die Hüft-Winkel der vier Beine über 24 Takte in 0,02 rad hält ──
     await buehne("ferngang", async (restore) => {
         r.setGameMode("frieden");
         if (taeter === "ferngang")
@@ -2528,7 +2451,7 @@ async function kreaturProben(r, T, opts) {
                 "_gelenkGestalt",
                 (orig) =>
                     function (...arg) {
-                        // der Täter: die Grobstufe trägt ihre EIGENEN Knochen (das Fern-Bild vor S3 ohne Spiegel) — sie
+                        // der Täter: die Grobstufe trägt ihre EIGENEN Knochen — sie
                         // bindet nie an die animierten Knochen der feinen
                         const g = orig.apply(this, arg);
                         if (g && g.fern) {
@@ -2570,8 +2493,15 @@ async function kreaturProben(r, T, opts) {
                 tiere.push({ c, zone, spur: [], lage: null });
             });
         const BEINE = ["legFL", "legFR", "legHL", "legHR"];
-        // der sichtbare Leib: die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
+        // der sichtbare Leib: der Satz seiner Gestalt (Phase × Gewicht seiner Instanz im Wurf, der jedes Satz-Tier trägt —
+        // `_tickTierSatz`), die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
+        const imSatz = (c) => {
+            const p = satzPlatz(c, "wurf");
+            const a = p && p.m.geometry.attributes.aGang;
+            return p ? BEINE.map(() => (a.getX(p.i) % 1) * a.getY(p.i) * TAU) : null;
+        };
         const sichtbar = (c) => {
+            if (c.userData._satz) return { fern: true, beine: imSatz(c) };
             const tb = c.userData._tierBaum;
             const gl = c.userData._gelenk;
             if (!tb || !gl) return { fern: false, beine: null };
@@ -2596,6 +2526,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 420; k++) {
             pm.copy(P0);
             takt(dt);
+            r._ruheImBild(); // der Blick des Bilds schreibt den Satz (`_tierSatzImBild`)
             for (const t of tiere) {
                 const c = t.c;
                 const p = { x: c.position.x, z: c.position.z };
@@ -2642,10 +2573,8 @@ async function kreaturProben(r, T, opts) {
         return aus2;
     });
 
-    // DIE GESTALT AUS DER RUHE (K07): die Treffer-Kapseln einer Gattung (_kreaturTrefferGlieder, der Biss liest sie über
-    // _kreaturMaul) sind EINE Passung — gleich, an welchem Tier, an welcher Lage, in welcher Pose und Größe sie zuerst
-    // entsteht. Zwei Wölfe an zwei Orten, der zweite größer und gedreht, beide mitten im Schritt (jedes Glied ausgelenkt):
-    // jede Kapsel muss bit-gleich sein, und die laufende Pose steht danach unverändert.
+    // DIE GESTALT AUS DER RUHE: die Treffer-Kapseln einer Gattung (_kreaturTrefferGlieder) sind EINE Passung — zwei Wölfe,
+    // der zweite größer und gedreht, beide mitten im Schritt: jede Kapsel bit-gleich, die laufende Pose danach unverändert.
     await buehne("gestalt", async (restore) => {
         const altK = r._gliedKapseln,
             altN = r._trefferGliedNamen;
@@ -2720,13 +2649,718 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── bewohner (mensch.K1/K2): das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; je Haus die Leiber gegen
+    // `leuteVon`, am Dorfplatz die Menschen im Blick (höchstens `nahLeiber` als Leib); DER TAG im Zeitraffer: je Bewohner
+    // die Treffer seiner Soll-Orte (`tagesPlan`), die Schmiede um 10 und 2 Uhr, die Sprung-Wand.
+    await buehne("bewohner", async (restore) => {
+        const W = window;
+        const altHook = W.__anazhAutoSettlement;
+        restore.push(() => {
+            if (altHook === undefined) delete W.__anazhAutoSettlement;
+            else W.__anazhAutoSettlement = altHook;
+        });
+        W.__anazhAutoSettlement = true;
+        const schlaf = (ms) => new Promise((z) => setTimeout(z, ms));
+        const FC = globalThis.__fachwerkCore;
+        const wm = s.worldMeta;
+        const t0 = performance.now();
+        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
+        for (
+            const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
+            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
+        )
+            await schlaf(50);
+        for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
+            r._tickAutoSettlement(pm);
+            await schlaf(0);
+        }
+        const zelle = wm.settlementCells && wm.settlementCells.start;
+        if (!zelle) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
+        const plan = [...(r._ortPlaene || new Map()).values()].find(
+            (v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5
+        );
+        if (!plan) return { fehler: "der Plan v2 des Start-Dorfs fehlt (_ortPlaene)" };
+        const steht = (sl) =>
+            s.architectures.some(
+                (e) =>
+                    e &&
+                    e.seed >>> 0 === sl.seed >>> 0 &&
+                    Math.hypot(e.position.x - (plan.ort.x + sl.x), e.position.z - (plan.ort.z + sl.z)) < 1
+            );
+        const hausE = s.architectures.filter(
+            (e) => e && e.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
+        );
+        const haeuser = plan.slots.filter(steht).map((sl) => ({
+            seed: sl.seed >>> 0,
+            rolle: sl.rolle,
+            kultur: sl.kultur,
+            soll: FC.leuteVon(sl.ov),
+        }));
+        // der Spieler am Rand des Dorfplatzes (Lehre 17: Enden der langen Achse, Seiten, Diagonalen — frei von Grundrissen)
+        const pz = plan.platz;
+        const pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
+        const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
+        let stand = null;
+        for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
+            for (const plus of [2, 5, 9]) {
+                if (stand) break;
+                const da = (k * Math.PI) / 4;
+                const a = (pz.phi || 0) + lang + da;
+                const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
+                const x = pc.x - Math.cos(a) * ex;
+                const z = pc.z + Math.sin(a) * ex;
+                const g = r._imGrundriss(x, z, 0.5);
+                if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
+            }
+        if (!stand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
+        const sl0 = Math.hypot(pc.x - stand.x, pc.z - stand.z) || 1;
+        const ax = (pc.x - stand.x) / sl0;
+        const az = (pc.z - stand.z) / sl0;
+        const hS = r.getTerrainHeightAt(stand.x, stand.z);
+        pm.set(stand.x, (Number.isFinite(hS) ? hS : pm.y) + A.PLAYER_FOOT_OFFSET, stand.z);
+        const leiber = () =>
+            s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
+        const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
+        let stall = null;
+        try {
+            // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios
+            const offen = () =>
+                leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle);
+            for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && offen();) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    /* der Takt meldet selbst */
+                }
+                await schlaf(16);
+            }
+        } catch (e) {
+            stall = String((e && e.message) || e).slice(0, 160);
+        }
+        // Täter (Selbsttest): ein Haus ohne seine Bewohner — die Leiber des ersten bewohnten Hauses fallen aus der Szene
+        if (taeter === "bewohner-haus") {
+            const h = haeuser.find((x) => x.soll > 0);
+            for (const b of leiber()) if (h && b.userData.heim === h.seed) s.scene.remove(b);
+        }
+        const L = leiber();
+        // Täter (Selbsttest): die Menge als Leib — jeder Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
+        if (taeter === "bewohner-menge") for (const b of L) b.visible = true;
+        const jeHaus = new Map();
+        for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
+        const leer = haeuser
+            .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
+            .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
+        const alsLeibStart = L.filter((b) => b.visible).length;
+        const cam = s.camera;
+        const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
+        const blickZaehlen = (sicht, zaehlt) => {
+            const auge =
+                sicht === "ego"
+                    ? new T.Vector3(pm.x, pm.y + 0.9, pm.z)
+                    : new T.Vector3(pm.x - ax * 4.5, pm.y + 2.6, pm.z - az * 4.5);
+            cam.position.copy(auge);
+            cam.lookAt(pc.x, pm.y + 0.6, pc.z);
+            cam.updateMatrixWorld(true);
+            if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+            const fr = new T.Frustum().setFromProjectionMatrix(
+                new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
+            );
+            const imBild = [];
+            for (const b of zaehlt) {
+                if (!gezeichnet(b)) continue;
+                const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
+                if (!fr.containsPoint(brust)) continue;
+                const d = auge.distanceTo(brust);
+                if (d > cam.far) continue;
+                let frei = true;
+                for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) {
+                    const k = t / d;
+                    const x = auge.x + (brust.x - auge.x) * k;
+                    const z = auge.z + (brust.z - auge.z) * k;
+                    if (r._imGrundriss(x, z, 0) === "haus") frei = false;
+                }
+                if (frei) imBild.push(b);
+            }
+            return imBild;
+        };
+        // ── DER TAG (mensch.K2): je Ereignis 0,1 Spielstunden auf der Uhr des Spieler-Worts, dazwischen so viele Takte, wie
+        // die Welt-Uhr in 0,1 h läuft; je Ereignis die Soll-Orte (`tagesPlan`) gegen jeden Leib, je Takt Sprung-Wand und Weg.
+        const KC = window.__koerperCore;
+        const planFn = KC && typeof KC.tagesPlan === "function" ? KC.tagesPlan : null;
+        const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((x) => x.liste && x.plan.seed === plan.seed);
+        const liste = S ? S.liste.filter((b) => L.includes(b.leib)) : [];
+        const tag0 = s.timeOfDay;
+        restore.push(
+            () => r._uhrSetzen(tag0, "regler"),
+            () => delete r._bewohnerStrecke
+        );
+        // Täter (Selbsttest): der Weg geradeaus zum Ziel, durch jedes Haus
+        if (taeter === "bewohner-wand") r._bewohnerStrecke = (S0, von, ziel) => [ziel];
+        const DT = 0.1;
+        const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
+        const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
+        const weg = new Map(L.map((g) => [g, 0]));
+        const lage = new Map(L.map((g) => [g, { x: g.position.x, z: g.position.z }]));
+        const treffer = new Map();
+        const vorher = new Map();
+        const z = { sprungN: 0, alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
+        let blick10 = null;
+        let planGleich = !!planFn;
+        const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte.werk).map((b) => b.orte.werk);
+        const anStation = () =>
+            L.filter(
+                (g) => gezeichnet(g) && stationen.some((o) => Math.hypot(g.position.x - o.x, g.position.z - o.z) < 1.5)
+            ).length;
+        // DER GANG IM SATZ: der Fuß jedes gehenden Satz-Bewohners (`satzGang`) — jede Senke `bewohner-satz` mit Sohle, Ferse
+        // und Ballen je Seite
+        const saetze = () => s.scene.children.filter((o) => o && o.name === "bewohner-satz" && o.isInstancedMesh);
+        const fussIx = (geo) => {
+            const P = geo.attributes.position;
+            const ix = {
+                ymin: Infinity,
+                fuss: [
+                    [-1, -1],
+                    [-1, -1],
+                ],
+            };
+            for (let v = 0; v < P.count; v++) ix.ymin = Math.min(ix.ymin, P.getY(v));
+            for (let v = 0; v < P.count; v++) {
+                if (P.getY(v) > ix.ymin + 0.03) continue;
+                const f = ix.fuss[P.getX(v) < 0 ? 0 : 1];
+                if (f[0] < 0 || P.getZ(v) < P.getZ(f[0])) f[0] = v;
+                if (f[1] < 0 || P.getZ(v) > P.getZ(f[1])) f[1] = v;
+            }
+            // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs — die Haut endet am Knöchel
+            return ix.ymin > -A.PLAYER_FOOT_OFFSET + 0.03 ? null : ix.fuss;
+        };
+        let gehend = [];
+        const gang = satzGang(fussIx, (x, z) => {
+            const b = gehend.find((q) => Math.hypot(x - q.leib.position.x, z - q.leib.position.z) <= 1e-3);
+            const g = b && b.leib;
+            return b
+                ? {
+                      key: b.same,
+                      bein: (b.beinL || 0.9) / (b.groesse || 1),
+                      x: g.position.x,
+                      z: g.position.z,
+                      ry: g.rotation.y,
+                  }
+                : null;
+        });
+        const gangMessen = (SZ) => {
+            gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
+            if (gehend.length) gang.messen(SZ);
+        };
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort — die Drehung des Leibs, die der
+        // Satz zeichnet; dazu die Streuung (der größte Anteil in einem Sektor von 30 Grad)
+        const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
+        const blickMessen = () => {
+            for (const b of liste) {
+                const g = b.leib;
+                if (!g || !b.da || b.drinnen || !gezeichnet(g) || !b.ziel) continue;
+                if (taeter === "bewohner-nord") g.rotation.y = 0;
+                const o = b.orte;
+                const th = g.rotation.y;
+                blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                const soll =
+                    b.ziel === o.platz
+                        ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
+                        : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
+                          ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
+                          : null;
+                if (soll === null) continue;
+                blicke.n++;
+                const d = th - soll;
+                if (Math.abs(d - 2 * Math.PI * Math.round(d / (2 * Math.PI))) <= 1.3) blicke.treffer++;
+            }
+        };
+        // DER PLATZ (mensch.K2): wem das Gesetz den Platz gibt, der hat dort einen Stand — am Platz,
+        // seinem Rand oder dem Rand seiner Gassen (bis 12 m über den Platz hinaus), nie daheim statt dort
+        if (taeter === "bewohner-daheim") for (const b of liste.slice(0, 6)) b.orte.platz = null;
+        const platzR = Math.hypot(pz.ex, pz.ez) + 12;
+        const ohnePlatz = liste.filter(
+            (b) => !(b.orte.platz && Math.hypot(b.orte.platz.x - pc.x, b.orte.platz.z - pc.z) <= platzR)
+        );
+        // ── DIE WEGE (mensch.K3): je Takt jeder Bewohner draußen als Spieler-Kapsel gegen das Blocker-Netz (eine Box =
+        // Durchdringung beim Namen des Baus), der Weg ins Haus durch eine Tür, die Gangzeit auf Wegen (`_aufWeg`).
+        const RW = A.PLAYER_WALL_RADIUS;
+        const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0 };
+        const wSpur = new Map();
+        const kandW = [];
+        const nameVon = (e) => `${e.type} #${e.seed >>> 0}`;
+        const kernVon = (e) => (e && e.tuer && e.tuer.W > 1.5 && e.tuer.D > 1.5 ? e.tuer : null);
+        const hausLage = (e, x, z) => {
+            const [c, sn, k] = [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0), e.scale > 0 ? e.scale : 1];
+            const [dx, dz] = [x - e.position.x, z - e.position.z];
+            return { x: (dx * c - dz * sn) / k, z: (dx * sn + dz * c) / k };
+        };
+        const durchTuer = (e, ax, az, ex, ez) => {
+            const [t, p, q] = [kernVon(e), hausLage(e, ax, az), hausLage(e, ex, ez)];
+            return [[t.z, t.x, t.w], t.hinten ? [-t.z, t.hinten.x, t.hinten.w] : []].some(([zF, xT, wT]) => {
+                const [u, v] = [p.z - zF, q.z - zF];
+                if (!(wT > 0) || (u * v > 0 && Math.abs(u) > 1e-3 && Math.abs(v) > 1e-3)) return false;
+                const k = Math.abs(u - v) > 1e-9 ? Math.max(0, Math.min(1, u / (u - v))) : 1;
+                return Math.abs(p.x + (q.x - p.x) * k - xT) <= wT / 2 + 0.05;
+            });
+        };
+        const wegeMessen = () => {
+            for (const b of liste) {
+                const [x, z] = [b.leib.position.x, b.leib.position.z];
+                if (!wSpur.has(b))
+                    wSpur.set(b, { x, z, innen: b.drinnen ? b.orte.tuer.haus : null, weg: null, m: 0, n: 0 });
+                const sp = wSpur.get(b);
+                kandW.length = 0;
+                r._blockerUmPlatz(x, z, 4, kandW);
+                let innen = b.drinnen ? b.orte.tuer.haus : null;
+                for (const e of b.drinnen ? [] : kandW) {
+                    const [t, l] = [kernVon(e), hausLage(e, x, z)];
+                    if (t && Math.abs(l.x) < t.W / 2 - 1e-3 && Math.abs(l.z) < t.D / 2 - 1e-3) innen = e;
+                }
+                for (const e of innen === sp.innen ? [] : [sp.innen, innen].filter(Boolean)) {
+                    WG.durch++;
+                    if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
+                    else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
+                }
+                const fuss = b.leib.position.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
+                const imLeib = (box) => box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 1.7 * (b.groesse || 1);
+                const wand = b.drinnen
+                    ? null
+                    : kandW.find((e) =>
+                          (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
+                      );
+                if (wand) WG.wand.set(nameVon(wand), (WG.wand.get(nameVon(wand)) || 0) + 1);
+                if (b.weg && !b.drinnen && (x !== sp.x || z !== sp.z)) {
+                    WG.geh++;
+                    if (r._aufWeg(x, z, 0)) WG.aufWeg++;
+                }
+                if (sp.weg) sp.m += Math.hypot(x - sp.x, z - sp.z);
+                if (b.weg !== sp.weg) {
+                    if (sp.weg && !b.weg && b.da && sp.m >= 2) sp.n++;
+                    [sp.weg, sp.m] = [b.weg, 0];
+                }
+                Object.assign(sp, { x, z, innen });
+            }
+        };
+        // der Takt (seine Kosten im Spieltakt, den Gang-Fenstern) und je Takt die Wege
+        const zeiten = [];
+        let quer = null;
+        const takt = (dt) => {
+            const t = performance.now();
+            r._tickBewohner(dt);
+            if (dt < 0.05) zeiten.push(performance.now() - t);
+            wegeMessen();
+            if (taeter === "bewohner-quer" && !quer) quer = querSetzen();
+        };
+        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, der die Wand nach ihm nie prüft
+        const querSetzen = () => {
+            const vorbild = s.architectures.find((e) => kernVon(e) && liste.some((b) => b.orte.tuer.haus === e));
+            const t = kernVon(vorbild);
+            const voraus = t.W / 2 + 1.5;
+            for (const b of liste) {
+                if (!b.weg || b.drinnen || !(b.wegRest > voraus + t.W + 2)) continue;
+                let p = { x: b.leib.position.x, z: b.leib.position.z };
+                let rest = voraus;
+                for (let i = b.wi; i < b.weg.length; p = b.weg[i++]) {
+                    const q = b.weg[i];
+                    const d = Math.hypot(q.x - p.x, q.z - p.z);
+                    if (d < rest) {
+                        rest -= d;
+                        continue;
+                    }
+                    const [ux, uz] = [(q.x - p.x) / d, (q.z - p.z) / d];
+                    const [x, y] = [p.x + ux * rest, p.z + uz * rest];
+                    r._bewohnerWegPruefen = () => {};
+                    restore.push(() => delete r._bewohnerWegPruefen);
+                    const e = r.spawnArchitecture(
+                        vorbild.type,
+                        { x, y: r.getTerrainHeightAt(x, y) + 0.5, z: y },
+                        { seed: 4242, rotationY: Math.atan2(-uz, ux), silent: true, tuer: t }
+                    );
+                    if (e) restore.push(() => r.removeArchitecture(e));
+                    return e;
+                }
+            }
+            return null;
+        };
+        const tTag = performance.now();
+        for (let i = 1; i <= 240; i++) {
+            const stunde = (s.timeOfDay * 24 + 0.1) % 24;
+            r._uhrSetzen(stunde / 24, "regler");
+            const SZ = saetze();
+            for (let k = 0; k < takte; k++) {
+                takt(DT);
+                // Täter (Selbsttest): der Teleport an den Soll-Ort
+                if (taeter === "bewohner-sprung")
+                    for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
+                for (const g of L) {
+                    const v = lage.get(g);
+                    const d = Math.hypot(g.position.x - v.x, g.position.z - v.z);
+                    weg.set(g, weg.get(g) + d);
+                    if (
+                        d > 2 &&
+                        Math.min(
+                            Math.hypot(v.x - pm.x, v.z - pm.z),
+                            Math.hypot(g.position.x - pm.x, g.position.z - pm.z)
+                        ) < nahR
+                    )
+                        z.sprungN++;
+                    v.x = g.position.x;
+                    v.z = g.position.z;
+                }
+            }
+            // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause — 10 s im Takt des Spiels (1/60 s)
+            if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
+                gang.luecke(); // das Fenster beginnt jede Spur neu
+                for (let k = 0; k < 600; k++) {
+                    takt(1 / 60);
+                    // Täter (Selbsttest): der Satz gleitet — jede Instanz steht in der Phase 0 (die Pose friert ein)
+                    if (taeter === "bewohner-gleiten")
+                        for (const m of SZ) {
+                            const a = m.geometry.attributes.aGang;
+                            if (a) for (let q = 0; q < a.count; q++) a.setX(q, 0);
+                        }
+                    gangMessen(SZ);
+                }
+                for (const g of L) lage.set(g, { x: g.position.x, z: g.position.z }); // das Fenster ist kein Sprung
+            }
+            z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
+            // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür, ungezeichnet) · unterwegs: sein Weg zu DIESEM
+            // Soll begann seit dem letzten Ereignis oder schrumpfte um die Hälfte dessen, was sein Tempo in der Zeit trägt
+            for (const b of planFn ? liste : []) {
+                const o = b.orte;
+                const sh = (stunde + (taeter === "bewohner-plan6" ? 6 : 0)) % 24;
+                const soll = planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz);
+                if (JSON.stringify(soll) !== JSON.stringify(planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz)))
+                    planGleich = false;
+                const ziel = soll.drinnen ? o.tuer : soll.ort;
+                const g = b.leib;
+                const alt = vorher.get(b);
+                const rest = b.ziel === ziel && Number.isFinite(b.wegRest) ? b.wegRest : null;
+                const unterwegs =
+                    rest !== null && (!alt || alt.ziel !== ziel || alt.rest - rest >= 0.5 * b.tempo * takte * DT);
+                const da =
+                    Math.hypot(g.position.x - ziel.x, g.position.z - ziel.z) < 1.5 && gezeichnet(g) !== soll.drinnen;
+                treffer.set(b, (treffer.get(b) || 0) + (da || unterwegs ? 1 / 240 : 0));
+                vorher.set(b, { ziel: b.ziel, rest });
+            }
+            if (Math.abs(stunde - 10) < 0.05) {
+                z.schmiede10 = anStation();
+                blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
+            }
+            if (Math.abs(stunde - 10) < 0.05 || Math.abs(stunde - 12.5) < 0.05 || Math.abs(stunde - 19) < 0.05)
+                blickMessen();
+            if (Math.abs(stunde - 2) < 0.05) z.schmiede2 = anStation();
+        }
+        // gezählt: ein Leib mit Rig, der im Tag ging
+        const gegangen = (g) => weg.get(g) > 0.5 && !!g.userData.rig;
+        const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
+        const q3 = (v) => Math.round(v * 1000) / 1000;
+        return Object.assign(z, {
+            dorf: plan.name,
+            haeuser: haeuser.length,
+            sollSumme,
+            leiber: L.length,
+            quote: sollSumme > 0 ? q3(L.length / sollSumme) : null,
+            leer: leer.slice(0, 6),
+            leerN: leer.length,
+            imBlick: {
+                ego: blick10 ? blick10[0].filter(gegangen).length : 0,
+                third: blick10 ? blick10[1].filter(gegangen).length : 0,
+            },
+            nahLeiber: A.BEWOHNER.nahLeiber,
+            plan: !!planFn,
+            planGleich,
+            tagSek: Math.round((performance.now() - tTag) / 100) / 10,
+            bewohner: liste.length,
+            trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
+            unter: unter
+                .slice(0, 5)
+                .map((b) => `${b.rolle}/${b.beruf} #${b.heim}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
+            unterN: unter.length,
+            stationen: stationen.length,
+            satzGang: gang.schlupf(),
+            blick: {
+                n: blicke.n,
+                quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
+                sektorMax: q3(
+                    Math.max(...blicke.sektor) /
+                        Math.max(
+                            1,
+                            blicke.sektor.reduce((a, x) => a + x, 0)
+                        )
+                ),
+            },
+            ohnePlatz: ohnePlatz.length,
+            ohnePlatzWer: ohnePlatz.slice(0, 4).map((b) => `${b.rolle}/${b.beruf} #${b.heim}`),
+            takt: {
+                n: zeiten.length,
+                p95: q3(quantil(zeiten, 0.95)),
+                mittel: q3(zeiten.reduce((a, t) => a + t, 0) / zeiten.length),
+            },
+            huellen: hausE.filter((e) => e._hausHuelle).length,
+            wege: (() => {
+                const zahl = liste.map((b) => {
+                    const [o, sp] = [b.orte, wSpur.get(b) || { n: 0 }];
+                    const soll = o.platz ? 2 * Math.hypot(o.tuer.x - o.platz.x, o.tuer.z - o.platz.z) : Infinity;
+                    return {
+                        wer: `${b.rolle}/${b.beruf} #${b.heim}`,
+                        n: sp.n,
+                        m: Math.round(weg.get(b.leib) || 0),
+                        soll,
+                    };
+                });
+                const [ausser, kurz] = [zahl.filter((q) => q.n < 4 || q.n > 10), zahl.filter((q) => !(q.m >= q.soll))];
+                return {
+                    wandN: [...WG.wand.values()].reduce((a, n) => a + n, 0),
+                    wand: [...WG.wand]
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 4)
+                        .map(([n, k]) => `${n}: ${k}`),
+                    durch: WG.durch,
+                    tuer: WG.tuer,
+                    falsch: WG.falsch.slice(0, 4),
+                    aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
+                    wegeMin: Math.min(...zahl.map((q) => q.n)),
+                    wegeMax: Math.max(...zahl.map((q) => q.n)),
+                    ausserN: ausser.length,
+                    ausser: ausser.slice(0, 4).map((q) => `${q.wer}: ${q.n}`),
+                    streckeMin: Math.min(...zahl.map((q) => q.m)),
+                    kurzN: kurz.length,
+                    kurz: kurz.slice(0, 3).map((q) => `${q.wer}: ${q.m} von ${Math.round(q.soll)} m`),
+                };
+            })(),
+            stall,
+            sek: Math.round((performance.now() - t0) / 100) / 10,
+        });
+    });
+
+    // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
+    // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung und gleitet nicht (`satzGang`).
+    await buehne("tiersatz", async (restore) => {
+        const SM = A.TETRAPODA_SOUL_MAP;
+        const seelen = ["wolf", "fox", "bear", "deer"].map((g) => Object.keys(SM).find((k) => SM[k] === g));
+        const sichtbar = (o) => {
+            for (let x = o; x; x = x.parent) if (!x.visible) return false;
+            return true;
+        };
+        const saetze = () => s.scene.children.filter((o) => o && o.isInstancedMesh && o.userData.inventar === "tier");
+        const befehle = () => {
+            let haupt = 0,
+                wurf = 0,
+                leiber = 0,
+                satz = 0,
+                satzW = 0;
+            for (const c of s.creatures) {
+                let n = 0;
+                c.traverse((o) => {
+                    if (!o.isMesh || !sichtbar(o)) return;
+                    if (o.layers.mask & 1) (haupt++, n++);
+                    if (o.castShadow) wurf++;
+                });
+                if (n > 0) leiber++;
+            }
+            for (const o of saetze())
+                if (o.count > 0 && o.visible) {
+                    if (o.layers.mask & 1) (haupt++, satz++);
+                    if (o.castShadow) (wurf++, satzW++);
+                }
+            return { haupt, wurf, leiber, satz, satzW };
+        };
+        // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl) · der Satz geht schneller, als der Leib läuft
+        if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
+        // · das Auge trägt jedes Satz-Tier (kein Blick) · der Takt schreibt jeden Platz, ob sich etwas rührte oder nicht
+        if (taeter === "tiersatz-blick") decke(restore, "_kreaturAusserBlick", () => () => false);
+        if (taeter === "tiersatz-schreiben") decke(restore, "_tierSatzStempel", () => () => true);
+        // · die Sicht-Kopien der Mitspieler stehen nicht in der Menge des Satzes (jede Kopie ein Leib)
+        if (taeter === "tiersatz-kopie")
+            decke(
+                restore,
+                "_tickTierSatz",
+                (alt) =>
+                    function (...a) {
+                        const k = s.p2p.remoteCreatures;
+                        s.p2p.remoteCreatures = new Map();
+                        try {
+                            return alt.apply(this, a);
+                        } finally {
+                            s.p2p.remoteCreatures = k;
+                        }
+                    }
+            );
+        if (taeter === "tiersatz-gleiten")
+            decke(
+                restore,
+                "_tierSatzSchritt",
+                (alt) =>
+                    function (u, weg, ...rest) {
+                        return alt.call(this, u, weg * 1.5, ...rest);
+                    }
+            );
+        const ring = (n, rMin, rMax, saat) => {
+            let k = 0;
+            for (let i = 0; i < 400 && k < n; i++) {
+                const w = ((saat + i) * 2.39996) % TAU,
+                    d = rMin + (rMax - rMin) * (((saat + i) * 0.618034) % 1);
+                const o = land(Math.cos(w) * d, Math.sin(w) * d);
+                if (Math.hypot(o.x - P0.x, o.z - P0.z) < rMin - 1) continue;
+                tier(o, seelen[s.creatures.length % 4], 1);
+                k++;
+            }
+        };
+        // der Takt samt dem Blick des Bilds (`_ruheImBild`, im Render-Pfad): dort schreibt das Auge des Satzes
+        const bildTakt = (dt) => {
+            takt(dt);
+            r._ruheImBild();
+        };
+        const laufen = (n) => {
+            for (let i = 0; i < n; i++) bildTakt(1 / 60);
+        };
+        ring(10, 15, 30, 1);
+        laufen(240);
+        const B10 = befehle();
+        ring(40, 15, 55, 101);
+        laufen(240);
+        const B50 = befehle();
+        // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich
+        // rührten; im Blick nach +x trägt das Auge jedes Satz-Tier im Frustum (keines fehlt) und nicht alle, der Wurf ebenso.
+        const schreibe = A._gangSatzInstanz;
+        let schriebe = 0;
+        A._gangSatzInstanz = function (...a) {
+            schriebe++;
+            return schreibe.apply(this, a);
+        };
+        restore.push(() => (A._gangSatzInstanz = schreibe));
+        const lage = (c) => [
+            c.position.x,
+            c.position.y,
+            c.position.z,
+            c.quaternion.x,
+            c.quaternion.y,
+            c.quaternion.z,
+            c.quaternion.w,
+        ];
+        let ruehrte = 0;
+        for (let i = 0; i < 4; i++) {
+            const vor = new Map(s.creatures.filter((c) => c.userData._satz).map((c) => [c, lage(c)]));
+            bildTakt(0);
+            for (const [c, a] of vor) if (lage(c).some((x, k) => x !== a[k])) ruehrte++;
+        }
+        A._gangSatzInstanz = schreibe;
+        const ruhe = { schriebe, ruehrte, senken: saetze().length };
+        kamera(1, 0);
+        laufen(2);
+        const imSatz = s.creatures.filter((c) => c.userData._satz);
+        const gesehen = imSatz.filter((c) => imBlick(c.position.x, c.position.y, c.position.z));
+        const zahlVon = (teil) =>
+            saetze()
+                .filter((m) => m.userData.teil === teil)
+                .reduce((n, m) => n + m.count, 0);
+        const blick = {
+            satz: imSatz.length,
+            imBlick: gesehen.length,
+            fehlt: gesehen.filter((c) => !satzPlatz(c, "fell")).length,
+            fell: zahlVon("fell"),
+            wurf: zahlVon("wurf"),
+        };
+        // DER PUFFER GEHÖRT DEM SKELETT (Lehre 19): je Gestalt der Gang-Puffer gegen die Ecken ihrer Senken; je Senke die
+        // Vertex-Puffer ihrer Pipeline (WebGPU sagt über 8 die Pipeline ab)
+        const vertexPuffer = Math.max(
+            ...saetze().map(
+                (m) =>
+                    new Set(
+                        Object.values(m.geometry.attributes).map((a) => (a.isInterleavedBufferAttribute ? a.data : a))
+                    ).size
+            )
+        );
+        const puffer = saetze()
+            .filter((m) => m.userData.teil === "fell")
+            .map((m) => ({
+                puffer: m.userData.gang.puffer.byteLength,
+                ecken: [
+                    ...new Set(
+                        Object.values(m.geometry.attributes)
+                            .filter((a) => !a.isInstancedBufferAttribute)
+                            .map((a) => (a.isInterleavedBufferAttribute ? a.data.array : a.array))
+                    ),
+                ].reduce((n, a) => n + a.byteLength, 0),
+            }));
+        // DER GANG IM SATZ (`satzGang`): je Senke `fell` die tiefste Ecke je Bein (Seite × vorn/hinten der stehenden Vorlage)
+        const fuesse = (geo) => {
+            const P = geo.attributes.position;
+            let zM = 0;
+            for (let v = 0; v < P.count; v++) zM += P.getZ(v) / P.count;
+            const ix = [[-1], [-1], [-1], [-1]];
+            for (let v = 0; v < P.count; v++) {
+                const f = ix[(P.getX(v) < 0 ? 0 : 1) + (P.getZ(v) < zM ? 0 : 2)];
+                if (f[0] < 0 || P.getY(v) < P.getY(f[0])) f[0] = v;
+            }
+            return ix;
+        };
+        const gang = satzGang(fuesse, (x, z) => {
+            const c = s.creatures.find((k) => Math.hypot(k.position.x - x, k.position.z - z) < 1e-3);
+            return c
+                ? {
+                      key: c.userData.netId,
+                      bein: c.userData._tierBaum.beinL,
+                      x: c.position.x,
+                      z: c.position.z,
+                      ry: c.rotation.y,
+                  }
+                : null;
+        });
+        for (let i = 0; i < 360; i++) {
+            bildTakt(1 / 60);
+            gang.messen(saetze().filter((m) => m.userData.teil === "wurf"));
+        }
+        const G = gang.schlupf();
+        // DIE SICHT-KOPIEN (dieselbe Klasse): 8 Kopien eines Mitspielers im Ring 20–40 m stehen in der Menge — als Leib zeichnen
+        // höchstens die `nahLeiber` Nächsten aller Tiere, eigene und Kopien zusammen
+        const remote = s.p2p.remoteCreatures;
+        restore.push(() => {
+            for (const [key, rc] of remote) if (rc.peerId === "linse-satz") r._disposeRemoteCreature(key, rc);
+        });
+        const kopien = [];
+        for (let i = 0; i < 8; i++) {
+            const o = land(Math.cos(i * 0.785 + 0.3) * (20 + 2.5 * i), Math.sin(i * 0.785 + 0.3) * (20 + 2.5 * i));
+            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, soul: seelen[i % 4] });
+        }
+        for (let k = 0; k < 120; k++) {
+            r._p2pHandleCreaturePos("linse-satz", { list: kopien });
+            r._p2pTickRemoteCreatures(200 + k / 60, 1 / 60);
+            bildTakt(1 / 60);
+        }
+        const kopieLeib = [...remote.values()].filter((rc) => {
+            let n = 0;
+            rc.mesh.traverse((o) => o.isMesh && sichtbar(o) && o.layers.mask & 1 && n++);
+            return rc.peerId === "linse-satz" && n > 0;
+        }).length;
+        const kopieSatz = [...remote.values()].filter(
+            (rc) => rc.peerId === "linse-satz" && rc.mesh.userData._satz
+        ).length;
+        const eigenLeib = befehle().leiber;
+        return {
+            kopie: { leib: kopieLeib, satz: kopieSatz, eigenLeib },
+            b10: B10,
+            b50: B50,
+            nahLeiber: A.KREATUR_SATZ ? A.KREATUR_SATZ.nahLeiber : null,
+            senken: saetze().length,
+            satzTiere: G.spuren,
+            schlupf: G.schlupf,
+            wegLeib: G.wegLeib,
+            ruhe,
+            blick,
+            puffer,
+            vertexPuffer,
+        };
+    });
+
+    /* LEBEN_BUEHNEN */
     return aus;
 }
 
 // ═══ DAS URTEIL (Node): Zahl → grün/rot mit Grund ═══
 const PROBEN = [
     "geister",
-    "geburt",
     "sattel",
     "reload",
     "huepfer",
@@ -2748,6 +3382,8 @@ const PROBEN = [
     "querhang",
     "ferngang",
     "gestalt",
+    "bewohner",
+    "tiersatz",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2756,15 +3392,103 @@ function urteil(name, z) {
     const soll = (bed, text) => {
         if (!bed) f.push(text);
     };
-    if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
-    if (name === "geburt") {
-        soll(z.geburten >= 10, `nur ${z.geburten} Geburten`);
-        soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
-        soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
-        soll(z.rudel > 0 && z.herden > 0, `keine Gruppe: ${z.rudel} Rudel, ${z.herden} Herden (${z.gruppen})`);
-        soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
-        soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
+    if (name === "tiersatz") {
+        soll(
+            z.b50.haupt - z.b50.satz === z.b10.haupt - z.b10.satz &&
+                z.b50.wurf - z.b50.satzW === z.b10.wurf - z.b10.satzW &&
+                z.b50.satz + z.b50.satzW <= z.senken,
+            `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild + ${z.b10.wurf} Wurf (Satz ${z.b10.satz} + ${z.b10.satzW}), 50 Tiere ${z.b50.haupt} + ${z.b50.wurf} (${z.b50.satz} + ${z.b50.satzW}) (Soll: die Leiber gleich, je Senke höchstens ein Befehl — ${z.senken} Senken)`
+        );
+        soll(
+            z.nahLeiber != null && z.b50.leiber <= z.nahLeiber,
+            `${z.b50.leiber} von 50 Tieren als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber})`
+        );
+        soll(
+            z.satzTiere >= 10 && z.wegLeib >= 20 && z.schlupf !== null && z.schlupf <= 0.05,
+            `der Satz gleitet: Schlupf ${z.schlupf} über ${z.wegLeib} m Gang von ${z.satzTiere} Satz-Tieren (Soll ≤ 0,05 über ≥ 20 m, ≥ 10 Tiere)`
+        );
+        const Rh = z.ruhe;
+        soll(
+            Rh.schriebe <= Rh.ruehrte * 4,
+            `der Satz schreibt ohne Änderung: 4 Takte ohne Zeit schrieben ${Rh.schriebe} Instanzen, ${Rh.ruehrte}× rührte sich ein Satz-Tier (Soll ≤ 4 je Rühren)`
+        );
+        const B = z.blick;
+        soll(
+            B.satz >= 10 && B.fell < B.satz && B.fell <= B.wurf && B.wurf < B.satz,
+            `das Auge zeichnet den Satz außer Blick: ${B.fell} Fell-Instanzen bei ${B.imBlick} von ${B.satz} Satz-Tieren im Blick, Wurf ${B.wurf} (Soll Auge ≤ Wurf < alle)`
+        );
+        soll(B.fehlt === 0, `dem Auge fehlen ${B.fehlt} von ${B.imBlick} Satz-Tieren im Blick (Soll 0)`);
+        const Kp = z.kopie;
+        soll(
+            Kp.satz >= 4 && Kp.leib + Kp.eigenLeib <= z.nahLeiber,
+            `die Sicht-Kopien zeichnen als Leib: ${Kp.leib} von 8 Kopien als Leib, ${Kp.satz} im Satz, dazu ${Kp.eigenLeib} eigene Leiber (Soll ≥ 4 im Satz, Leiber zusammen ≤ nahLeiber ${z.nahLeiber})`
+        );
+        const P = z.puffer || [];
+        soll(
+            P.length > 0 && P.every((p) => p.puffer <= p.ecken) && z.vertexPuffer <= 8,
+            `der Gang-Puffer gehört den Ecken: ${P.map((p) => Math.round(p.puffer / 1024) + " KB gegen " + Math.round(p.ecken / 1024) + " KB Ecken").join(" · ")} ; Vertex-Puffer je Senke höchstens ${z.vertexPuffer} (Soll je Gestalt ≤ die Ecken ihrer Senke, ≤ 8 Vertex-Puffer)`
+        );
+        return { ok: !f.length, grund: f.join(" · ") };
     }
+    if (name === "bewohner") {
+        soll(z.leiber > 0, `0 Bewohner im Start-Dorf ${z.dorf} (${z.haeuser} Häuser, Σ leute ${z.sollSumme})`);
+        soll(
+            z.quote !== null && Math.abs(z.quote - 1) <= 0.05,
+            `Bewohner-Quote ${z.quote} (${z.leiber} Leiber ÷ Σ leute ${z.sollSumme}; Soll 1,0 ±0,05)`
+        );
+        soll(z.leerN === 0, `${z.leerN} Haus ohne Bewohner: ${z.leer.join(" · ")}`);
+        soll(
+            z.imBlick.ego >= 10 && z.imBlick.third >= 10,
+            `Dorfplatz um 10 Uhr: ${z.imBlick.ego} (Ego) / ${z.imBlick.third} (Third) Menschen im Blick, die im Tag gingen (Soll ≥ 10)`
+        );
+        soll(
+            z.alsLeib <= z.nahLeiber,
+            `${z.alsLeib} Leiber als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber}: die Menge steht im Satz)`
+        );
+        // DER TAG (mensch.K2): das Gesetz der Uhr, jeder Leib geht, trifft seine Soll-Orte, springt nie im Nahbereich
+        soll(z.plan, "kein Tagesplan: koerper-core trägt kein tagesPlan (VERHALTEN) — der Bewohner kennt keinen Tag");
+        soll(z.planGleich, "der Tagesplan ist bei gleichem Samen nicht bit-gleich");
+        soll(
+            z.trefferMin !== null && z.trefferMin >= 0.9,
+            `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9 je Bewohner; ${z.unterN} darunter: ${z.unter.join(" · ")})`
+        );
+        soll(z.stationen > 0, "keine Station Schmiede im Start-Dorf (kein Bewohner mit Rolle schmiede)");
+        soll(z.schmiede10 > 0, `Station Schmiede um 10 Uhr leer (${z.schmiede10} am Werk)`);
+        soll(z.schmiede2 === 0, `Station Schmiede um 2 Uhr besetzt (${z.schmiede2} am Werk)`);
+        soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte mit > 2 m je Frame`);
+        // DER GANG IM SATZ, DER BLICK, DER PLATZ
+        const sg = z.satzGang || {};
+        soll(
+            sg.schlupf !== null && sg.schlupf <= 0.05 && sg.wegLeib >= 10,
+            `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m Weg (${sg.spuren} Spuren; Soll ≤ 0,05 über ≥ 10 m wie gate:tier-gang)`
+        );
+        soll(
+            z.blick.n >= 10 && z.blick.quote >= 0.9 && z.blick.sektorMax <= 0.5,
+            `der Blick der Stehenden: ${z.blick.quote} von ${z.blick.n} schauen auf ihr Ziel (Soll ≥ 0,9), ${z.blick.sektorMax} in einer Richtung (Soll ≤ 0,5)`
+        );
+        soll(
+            z.ohnePlatz === 0,
+            `ohne Platz: ${z.ohnePlatz} Bewohner ohne Stand am Platz, seinem Rand oder seinen Gassen (${z.ohnePlatzWer.join(" · ")})`
+        );
+        // DIE WEGE (mensch.K3): keine Kapsel in einer Wand, jeder Durchgang durch die Tür, jeder geht seinen Tag
+        const w = z.wege || {};
+        soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} von ${z.haeuser} Häusern ohne die Hülle ihres Studios`);
+        soll(w.wandN === 0, `Durchdringung: ${w.wandN} Takte eines Leibs in einer Wand (${w.wand})`);
+        soll(
+            w.durch > 0 && w.tuer === w.durch,
+            `nicht über die Tür: ${w.durch - w.tuer} von ${w.durch} Ein- und Austritten (${w.falsch})`
+        );
+        soll(
+            w.ausserN === 0,
+            `Wege am Tag: ${w.ausserN} Bewohner außerhalb 4–10 (${w.wegeMin}–${w.wegeMax}: ${w.ausser})`
+        );
+        soll(
+            w.kurzN === 0,
+            `Strecke am Tag: ${w.kurzN} Bewohner unter zweimal der Luftlinie Tür–Platz (min ${w.streckeMin} m: ${w.kurz})`
+        );
+        soll(w.aufWeg >= 0.85, `Gangzeit auf Wegen ${w.aufWeg} (Soll ≥ 0,85)`);
+    }
+    if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "sattel") {
         soll(z.aufgestiegen === true, "nicht aufgestiegen (Probe vakuös)");
         soll(z.nachTod === null, `nach dem Tod im Sattel: mountedArch ${z.nachTod}`);
@@ -2818,13 +3542,11 @@ function urteil(name, z) {
             z.achsAnteil !== null && z.achsAnteil < 0.1,
             `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; auf das Ziel ${(z.achsZielAnteil * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
         );
-        soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
-        soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
     }
     if (name === "herde") {
         soll(z.artFremdZugM < 0.01, `ein fremder Verband verschmilzt: die Herde liegt ${z.artFremdZugM} m anders`);
         soll(z.blickDiffM < 1e-6, `Bewegung hängt am Blick: ${z.blickDiffM} m Unterschied`);
-        // höchstens ein Nachzügler je fünf Glieder (S6)
+        // höchstens ein Nachzügler je fünf Glieder
         const { wander: W, flucht: F, fensterRaum: FR } = z.verband;
         soll(
             Math.min(W.n, F.n, z.fremdN) >= 3 && F.fluchtAnteil >= 0.1 && W.fluchtAnteil === 0,
@@ -2942,16 +3664,6 @@ function urteil(name, z) {
             z.beute && z.beute.hirsch === true && z.beute.kitz === true && z.beute.baer === false,
             `das Beute-Urteil des Wolfs: Hirsch ${z.beute && z.beute.hirsch}, Kitz ${z.beute && z.beute.kitz}, Bär ${z.beute && z.beute.baer} (Soll true · true · false)`
         );
-        soll(
-            z.wHirsch >= z.fleeThreshold,
-            `Hirsch 6 m vor dem ruhigen Spieler: Wariness ${z.wHirsch} (Soll ≥ ${z.fleeThreshold}, ein Fluchttier)`
-        );
-        soll(z.wBaer <= z.curiousThreshold, `Bär 6 m vor dem ruhigen Spieler: Wariness ${z.wBaer} (Soll neugierig)`);
-        soll(
-            z.hirschAbstandM >= 10,
-            `die Hirsche stehen nach 10 s ${z.hirschAbstandM} m am Spieler (Soll ≥ 10 m, Flucht)`
-        );
-        soll(z.baerAbstandM <= 6, `die Bären stehen nach 10 s ${z.baerAbstandM} m am Spieler (Soll ≤ 6 m, Neugier)`);
         for (const [wer, k] of [
             ["Hirsch", z.kampfHirsch],
             ["Bär", z.kampfBaer],
@@ -2963,8 +3675,7 @@ function urteil(name, z) {
     }
     if (name === "abstand") {
         soll(z.tiere >= 6, "keine neugierige Schar (vakuös)");
-        // Der EINE Leib-Löser im Sim-Schritt (`_leibKontakte`): keine Durchdringung überlebt ihn — im Frame steht höchstens,
-        // was die beiden Leiber in diesem Frame liefen und wendeten (erbeMaxM: die Tiefe darüber).
+        // Der EINE Leib-Löser im Sim-Schritt (`_leibKontakte`): keine Durchdringung überlebt ihn (erbeMaxM: geerbte Tiefe).
         soll(
             z.durchFrames === 0,
             `Durchdringung: in ${z.durchFrames} Takten durchdringen sich zwei Leiber über ihren Frame-Schritt hinaus (tiefste ${-z.minLeibLueckeM} m, geerbt ${z.erbeMaxM} m)`
@@ -2974,7 +3685,7 @@ function urteil(name, z) {
             `Leib im Spieler: in ${z.spielerFrames} Takten (tiefste ${-z.minSpielerLueckeM} m)`
         );
         // Der persönliche Raum über die zweite Hälfte des Laufs (je Tier und Takt der nächste Nachbar in Körper-Kugeln):
-        // die Schar steht im Mittel mindestens Kugel an Kugel, kaum enger (die Leben-Schau maß 0,33–0,48 bei den Hirschen).
+        // die Schar steht im Mittel mindestens Kugel an Kugel, kaum enger.
         soll(
             z.nachbarRaumP50 >= 1 && z.nachbarRaumP10 >= 0.85,
             `kein persönlicher Raum: der nächste Nachbar p50 ${z.nachbarRaumP50} / p10 ${z.nachbarRaumP10} der Körper-Kugeln (Soll ≥ 1 / 0,85; zuletzt zwei Mitten ${z.paarMinM} m)`
@@ -2996,14 +3707,28 @@ function urteil(name, z) {
             `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
         );
         const R = z.riss;
+        // DAS BAND DER NATUR (MacNulty et al. 2012): ein Wolf reißt den gesunden Hirsch selten, vier ein Fünftel bis zwei
+        // Fünftel der Jagden, das Kitz meist
+        for (const [sz, lo, hi] of [
+            ["einWolf", 0, 0.1],
+            ["rudel", 0.2, 0.4],
+            ["kitz", 0.6, 1],
+        ]) {
+            const Q = R.quote[sz],
+                v = Q.jagden ? +(Q.risse / Q.jagden).toFixed(2) : null;
+            soll(
+                Q.jagden >= 10 && v >= lo && v <= hi,
+                `${v > hi ? "Beute ohne Leben" : "die Jagd reißt zu selten"} (${sz}): Riss-Quote ${Q.risse}/${Q.jagden} = ${v} außerhalb ${lo}–${hi} je Jagd (Beute ${Q.hp0} HP)`
+            );
+        }
         soll(
             R.rissS !== null,
-            `kein Riss: das Rudel fällt den gesunden Hirsch (${R.hp0} HP) an keinem der ${R.zeiten.length} Orte in ${R.fensterS} s`
+            `kein Riss: das Rudel fällt den gesunden Hirsch in keiner von ${R.quote.rudel.jagden} Jagden`
         );
-        const erst = Math.min(...R.zeiten.filter((x) => x !== null));
+        const Q = R.quote.rudel;
         soll(
-            !(erst < 60),
-            `Beute ohne Leben: der erste Riss nach ${erst} s (ein gesunder Hirsch trägt ~20 Bisse, Tiere K2)`
+            Q.jagden - Q.risse === Q.erschoepft,
+            `die Jagd hat kein Ende: ${Q.jagden - Q.risse - Q.erschoepft} von ${Q.jagden - Q.risse} enden nie`
         );
         if (R.rissS !== null) {
             soll(R.fleisch0 > 0, "kein Kadaver: der gerissene Leib trägt kein Fleisch (_kreaturFaellt)");
@@ -3012,10 +3737,7 @@ function urteil(name, z) {
                 `Fressen verbraucht den Kadaver nicht: Fleisch ${R.fleisch0} → ${R.fleischEnde} kg in 120 s nach dem Riss bei ${R.rissS} s`
             );
             for (const G of R.gaeste)
-                soll(
-                    G.frissS > 0,
-                    `kein Geruch: der ${G.seele} folgt dem Kadaver nicht (${G.d0} → nächst ${G.dMin} m, frisst ${G.frissS} s)`
-                );
+                soll(G.frissS > 0, `kein Geruch: der ${G.seele} folgt dem Kadaver nicht (frisst ${G.frissS} s)`);
         }
     }
     if (name === "rudel") {
@@ -3049,8 +3771,7 @@ function urteil(name, z) {
         }
     }
     if (name === "querhang") {
-        // ZWEI ORTE (K16-Q): der Hang, den die Welt nahe dem Spieler trägt, UND die feste Rampe der Prüfbühne (z.rampe, der
-        // Lauf auf der Bühne) — das Urteil hängt nie am Zufall der Welt; fehlt die Rampe, ist die Probe nicht gemessen
+        // ZWEI ORTE: der Hang der Welt UND die feste Rampe der Prüfbühne (z.rampe); fehlt die Rampe, ist nichts gemessen
         const orte = [["am Querhang", z]];
         if (!z.rampe) soll(false, "die Rampe der Prüfbühne ist nicht gemessen (der Querhang hängt am Zufall der Welt)");
         else if (z.rampe.fehler) soll(false, z.rampe.fehler);
@@ -3074,6 +3795,7 @@ function urteil(name, z) {
                     `Stand-Schlupf ${wo} (${Z.hangGrad}°): ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`
                 );
     }
+    LEBEN.urteil(name, z, soll);
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -3081,10 +3803,6 @@ function urteil(name, z) {
 // nennt — rot aus dem falschen Grund ist blind für den richtigen.
 const TAETER = {
     geister: [["geister", /Geister/]],
-    geburt: [
-        ["geburt", /vor dem Spieler/],
-        ["geburt-einzeln", /keine Gruppe/],
-    ],
     sattel: [["sattel", /mountedArch/]],
     reload: [["reload", /geheilt|Gier/]],
     huepfer: [
@@ -3099,12 +3817,11 @@ const TAETER = {
     jagd: [
         ["jagd", /Achsen/],
         ["jagd-ziel", /Achsen/],
-        ["jagd-flucht", /Beute fort/],
     ],
     herde: [
         ["herde", /am Blick/],
         ["herde-artfremd", /fremder Verband verschmilzt/],
-        // S6: der Wurf ohne Bindung (jedes Glied für sich geboren) — der Verband zerfällt beim Wandern UND auf der Flucht
+        // der Wurf ohne Bindung — der Verband zerfällt beim Wandern UND auf der Flucht
         ["herde-zerfall", /Verband zerfällt beim Wandern[\s\S]*Verband zerfällt auf der Flucht/],
     ],
     hindernis: [
@@ -3138,6 +3855,9 @@ const TAETER = {
         ["jagd-aas", /kein Kadaver/],
         ["jagd-duft", /kein Geruch/],
         ["jagd-hp", /Beute ohne Leben/],
+        ["jagd-flucht", /Beute ohne Leben \(rudel\)/],
+        ["jagd-ohne-ende", /die Jagd hat kein Ende/],
+        ["jagd-ohne-wunde", /reißt zu selten \(rudel\)/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],
@@ -3151,6 +3871,29 @@ const TAETER = {
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
     gestalt: [["gestalt", /hängt am ersten Tier/]],
+    tiersatz: [
+        ["tiersatz-kopf", /hängen an der Kopfzahl/],
+        ["tiersatz-gleiten", /der Satz gleitet/],
+        ["tiersatz-blick", /Satz außer Blick/],
+        ["tiersatz-schreiben", /schreibt ohne Änderung/],
+        ["tiersatz-kopie", /Sicht-Kopien zeichnen als Leib/],
+    ],
+    bewohner: [
+        ["bewohner-haus", /Haus ohne Bewohner/],
+        ["bewohner-menge", /Leiber als Leib gezeichnet/],
+        ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
+        ["bewohner-sprung", /Sprung im Nahbereich/],
+        ["bewohner-wand", /Durchdringung: [1-9]/],
+        ["bewohner-quer", /Durchdringung: [1-9]\d* Takte[^)]*#4242/],
+        ["bewohner-gleiten", /der Satz gleitet/],
+        ["bewohner-nord", /der Blick der Stehenden/],
+        ["bewohner-daheim", /ohne Platz/],
+    ],
 };
 
-module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };
+module.exports = {
+    KREATUR_PROBEN_SRC: kreaturProben.toString().replace("/* LEBEN_BUEHNEN */", () => LEBEN.BUEHNEN),
+    PROBEN: [...PROBEN, ...LEBEN.PROBEN],
+    TAETER: Object.assign(TAETER, LEBEN.TAETER),
+    urteil,
+};

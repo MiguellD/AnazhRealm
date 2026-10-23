@@ -6,8 +6,7 @@
 // serialisierbar durch die page.evaluate-Grenze (Float32Array übersteht sie sonst nicht).
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
-// Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann. Die WORKER_SCRIPTS
-// sind identisch zu diag-foundry-parity.cjs (dort 720/720 byte-bewiesen).
+// Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
 const { statikServer, starteBrowser } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -16,7 +15,7 @@ const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-// V18.470 (Konsum-Matrix) — der Boot ist MANIFEST-GETRIEBEN wie die Produktion
+// der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
 // self.__anazhCores): die lib der Kerne → alle Kern-Skripte in Manifest-Reihenfolge
 // → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES
@@ -40,6 +39,46 @@ const WORKER_BOOT =
     ') + ";" + "importScripts(" + ' +
     JSON.stringify(WORKER_SCRIPTS) +
     '.map((p) => JSON.stringify(location.origin + p)).join(",") + ");"';
+
+// DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
+// Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
+// SHA-256 über jedes gelieferte Byte jedes Teils, die Felder in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize,
+// Bytes), Index (Bytes), alles andere als JSON (Teil-Art, Stoff, Wurf, Tür-Scharnier, Gelenk, Seh-Klasse …); der Beipack
+// (kind "__…" ohne Positions-Puffer) zählt nicht. Dazu `teile`, `bytes` und `nichtEndlich` (NaN/Inf in den
+// Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen). Bis zur Kette V18.534 trugen zwei
+// Zweige je einen Hasher (SHA-256 über Art · Stoff · Wurf · Puffer, FNV-1a über alle Felder) — zwei Wahrheiten über
+// „derselbe Bau".
+async function bauAbdruck(meshes) {
+  const enc = new TextEncoder();
+  const stuecke = [];
+  let teile = 0, bytes = 0, nichtEndlich = 0;
+  const text = (x) => stuecke.push(enc.encode(String(x) + String.fromCharCode(0)));
+  const puffer = (arr) => {
+    const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+    stuecke.push(u);
+    bytes += u.length;
+    if (arr instanceof Float32Array || arr instanceof Float64Array)
+      for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
+  };
+  for (const m of meshes || []) {
+    if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array))) continue;
+    teile++;
+    for (const k of Object.keys(m).sort()) {
+      const v = m[k];
+      text(k);
+      if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
+      else if (k === "index" && v && v.buffer) puffer(v);
+      else text(JSON.stringify(v === undefined ? null : v));
+    }
+  }
+  let n = 0;
+  for (const t of stuecke) n += t.length;
+  const alles = new Uint8Array(n);
+  let o = 0;
+  for (const t of stuecke) { alles.set(t, o); o += t.length; }
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
+  return { hash: Array.from(h, (b) => b.toString(16).padStart(2, "0")).join(""), teile, bytes, nichtEndlich };
+}
 
 function pageHtml() {
     return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
@@ -69,7 +108,7 @@ function pageHtml() {
     for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
     return btoa(s);
   };
-  // DER ATLAS-STECKBRIEF gegen den MALER (04.10.): der Kern-Maler malt den EINEN Blatt-Atlas hier im
+  // DER ATLAS-STECKBRIEF gegen den MALER: der Kern-Maler malt den EINEN Blatt-Atlas hier im
   // Seiten-Kontext — je Zelle (0..2 Breitblatt, 3 Nadel) die Ausdehnung von Alpha>0 um die Zellmitte (Anteil
   // der halben Zelle) und die mittlere Alpha-Deckung der ganzen Zelle.
   window.__atlas = () => {
@@ -102,7 +141,7 @@ function pageHtml() {
     for (let i = 0; i < a.length; i++) a[i] = b.daten[i * 4 + 3];
     return { w: b.breite, h: b.hoehe, b64: b64(a) };
   };
-  // DAS ATLAS-BILD ganz (05.10., gate:pflanzen-nah F): jede Mip-Stufe (rgba, Textur-Ordnung) und der Wert — der
+  // DAS ATLAS-BILD ganz (gate:pflanzen-nah F): jede Mip-Stufe (rgba, Textur-Ordnung) und der Wert — der
   // Aufrufer macht daraus die Fracht des Wirts (phyto-core blattAtlasFracht) und misst Labor gegen Welt je Format.
   window.__atlasBild = () => {
     const b = window.__phytoCore.bakeLeafAtlasBild(document);
@@ -155,45 +194,7 @@ function pageHtml() {
     const a = (msg) => new Promise((res) => { const reqId = "d" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); });
     return fertigP.then(() => a);
   };
-  // DER BAU-FINGERABDRUCK — die EINE Quelle im Seiten-Kontext für jeden Bau über die echte Brücke: die Plattform-Probe
-  // (\`__probeLauf\`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (\`__bauHashListe\`, bewegt ein Regler den Bau?).
-  // SHA-256 über jedes gelieferte Byte jedes Teils, die Felder in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize,
-  // Bytes), Index (Bytes), alles andere als JSON (Teil-Art, Stoff, Wurf, Tür-Scharnier, Gelenk, Seh-Klasse …); der Beipack
-  // (kind "__…" ohne Positions-Puffer) zählt nicht. Dazu \`teile\`, \`bytes\` und \`nichtEndlich\` (NaN/Inf in den
-  // Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen). Bis zur Kette V18.534 trugen zwei
-  // Zweige je einen Hasher (SHA-256 über Art · Stoff · Wurf · Puffer, FNV-1a über alle Felder) — zwei Wahrheiten über
-  // „derselbe Bau".
-  const bauAbdruck = async (meshes) => {
-    const enc = new TextEncoder();
-    const stuecke = [];
-    let teile = 0, bytes = 0, nichtEndlich = 0;
-    const text = (x) => stuecke.push(enc.encode(String(x) + String.fromCharCode(0)));
-    const puffer = (arr) => {
-      const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-      stuecke.push(u);
-      bytes += u.length;
-      if (arr instanceof Float32Array || arr instanceof Float64Array)
-        for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
-    };
-    for (const m of meshes || []) {
-      if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array))) continue;
-      teile++;
-      for (const k of Object.keys(m).sort()) {
-        const v = m[k];
-        text(k);
-        if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
-        else if (k === "index" && v && v.buffer) puffer(v);
-        else text(JSON.stringify(v === undefined ? null : v));
-      }
-    }
-    let n = 0;
-    for (const t of stuecke) n += t.length;
-    const alles = new Uint8Array(n);
-    let o = 0;
-    for (const t of stuecke) { alles.set(t, o); o += t.length; }
-    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
-    return { hash: Array.from(h, (b) => b.toString(16).padStart(2, "0")).join(""), teile, bytes, nichtEndlich };
-  };
+  const bauAbdruck = ${bauAbdruck.toString()};
   window.__probeLauf = async (liste, d, welche, bis, fangen) => {
     if (!probeAsk) probeAsk = probeBoot();
     const a = await probeAsk;
@@ -208,6 +209,8 @@ function pageHtml() {
   // DERSELBEN Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen); die Brücken-Antwort trägt ihren Budget-
   // Bericht mit. Die Liste läuft über einen Arbeits-Pool (dieselbe Boot-Kette je Worker; der erste ist der Haupt-Worker).
   const pool = [ask];
+  // je Kern ein Worker, höchstens 4 (pipeline.K3: die Hälfte der Kerne ließ am CI-Läufer mit 4 Kernen zwei leer, Haus 220 s)
+  const POOL_N = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 2));
   const poolMehr = (n) => {
     while (pool.length < n) {
       const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
@@ -221,7 +224,7 @@ function pageHtml() {
   // fährt (kein Zweitbau). \`mitTeilen\` (DARF): je Stufe die Teile, wie der Wurf des Wirts sie liest — Art, Seh-Klasse,
   // Deckkraft (das Wurf-Recht \`_teilWirft\` des Stamms) und Dreiecke (budgetSippen je Teil); gate:regler-wirkt WURF.
   window.__kostenListe = async (liste, mitAbdruck, mitTeilen) => {
-    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
@@ -239,6 +242,7 @@ function pageHtml() {
         if (mitAbdruck && mitAbdruck[i]) {
           const a = await bauAbdruck(r.meshes || []);
           out[i].abdruck = a.teile > 0 ? a.hash : null;
+          out[i].bau = a;
         }
       }
     }));
@@ -247,7 +251,7 @@ function pageHtml() {
   // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
   // Regler-Kanal der Werkstatt), je Stufe der EINE Bau-Fingerabdruck (\`bauAbdruck\`) — kein Puffer-Transport.
   window.__bauHashListe = async (liste) => {
-    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
@@ -270,7 +274,7 @@ function pageHtml() {
 async function runWithWorker(port, cb) {
     const server = statikServer({ seiten: { "/": pageHtml, "/__aw.html": pageHtml } });
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     try {
         const page = await browser.newPage();
         const pageErrors = [];
@@ -367,14 +371,11 @@ const DATEN_KANAELE = [
     ["renderConfig", "render-config"],
 ];
 
-// DER UMSCHLAG OHNE BROWSER (K64-n2): die drei Daten-Kanäle sind reine Daten — DIESELBEN Dateien wie der Worker
-// (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal
-// (`foundryKanal` "get-book") antwortet. Die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber: der Atlas
-// reist neben den drei Kanälen. Gemessen K64-n2: recipes 74 838 und world-params 38 Byte byte-gleich mit dem Worker, ~0,6 s
-// statt eines Browser-Boots — die Statik (gate:studio-vertrag U) fängt im Puls jede Kern-Änderung, die den eingefrorenen
-// Umschlag verlässt (bis K64-n2 fiel sie erst in der vollen Batterie, Gruppe 5 Schritt 37, ohne Namen). `quellen`:
-// { "<datei>": "<quelltext>" } ersetzt eine Datei (der Selbsttest).
-function umschlagImVm(quellen = {}) {
+// DER KANAL OHNE BROWSER (K64-n2): DIESELBEN Dateien wie der Worker (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die
+// Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
+// gate:studio-vertrag U) und jeder Bau (build-asset, gate:studio-uebergabe), ~0,6 s statt eines Browser-Boots. Die Leinwand
+// des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei.
+function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const absorber = () => {
         const a = new Proxy(function () {}, {
@@ -401,10 +402,11 @@ function umschlagImVm(quellen = {}) {
             : fs.readFileSync(path.join(ROOT, f), "utf8");
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });
     }
-    vm.runInContext('foundryKanal({ type: "get-book", reqId: "umschlag" })', ctx, { timeout: 60000 });
-    const r = posts.find((p) => p && p.type === "book");
-    if (!r) throw new Error("der Kanal get-book antwortete im vm nicht");
-    return { book: r.book, worldParams: r.worldParams, renderConfig: r.renderConfig };
+    return (msg) => {
+        ctx.__frage = Object.assign({ reqId: "vm" + posts.length }, msg);
+        vm.runInContext("foundryKanal(__frage)", ctx, { timeout: 60000 });
+        return posts.find((p) => p && p.reqId === ctx.__frage.reqId && p.type !== "blatt-atlas") || null;
+    };
 }
 
 // DIE ERSTE ABWEICHUNG zweier JSON-Werte beim Pfad: eine Linse, die nur „divergiert" sagt, nennt den Täter nicht — diese
@@ -436,6 +438,7 @@ module.exports = {
     WORKER_SCRIPTS,
     WORKER_BOOT,
     DATEN_KANAELE,
-    umschlagImVm,
+    kanalImVm,
+    bauAbdruck,
     ersteAbweichung,
 };

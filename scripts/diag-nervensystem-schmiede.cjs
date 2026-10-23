@@ -34,13 +34,11 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const server = statikServer();
 
-// ── H-F (W5 Gegenstände, 05.10.) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
+// ── H-F (W5 Gegenstände) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
 // Studio-Klinge in der Hand des Studio-Menschen, gemessen in WELT-Metern:
-//   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (vorher 0,14: das Langschwert 1,228 m maß 0,17 m — die Hand
-//                       skalierte im Anker-Raum, das Handgelenk misst 0,27 Welt je Studio-Einheit)
+//   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (die Hand skaliert nie im Anker-Raum)
 //   versatz ≤ 0,03 m  — die Griff-Mitte gegen die Hand-Mitte (Schwerpunkt der Haut-Vertices am Handgelenk-Gelenk)
-//   winkel  50–130°   — Griff-Achse gegen den Unterarm: eine Faust greift quer (vorher stand die Klinge mit 0,5 rad Kipp
-//                       den Unterarm hinauf — ein um 160° überstrecktes Handgelenk)
+//   winkel  50–130°   — Griff-Achse gegen den Unterarm: eine Faust greift quer
 const FAUST = { laenge: [0.95, 1.05], versatzM: 0.03, winkel: [50, 130] };
 function faustVerdict(h) {
     if (!h || !Number.isFinite(h.laenge)) return ["probe"];
@@ -106,29 +104,19 @@ function staticLaws(q) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, d: {}, p: {}, e: {}, f: {}, h: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipes.langschwert && rc && rc.lod && rc.lod.kindStages) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.langschwert && rc && rc.lod && rc.lod.kindStages; });
         const rc = A._studioRenderConfig;
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
@@ -246,9 +234,7 @@ function staticLaws(q) {
                 };
             };
             // Welt-bereit (Spieler-Mesh baut parallel zum Foundry-Handshake).
-            const dlh = performance.now() + 60000;
-            while ((!r.state.playerMesh || !r.state.player) && performance.now() < dlh)
-                await new Promise((r2) => setTimeout(r2, 150));
+            await window.__weltDa(() => !(!r.state.playerMesh || !r.state.player));
             const pm = r.state.playerMesh;
             res.h.playerReady = !!(pm && r.state.player);
             if (res.h.playerReady) {
@@ -263,8 +249,7 @@ function staticLaws(q) {
                     hm0.children.length > 0 &&
                     !(hm0.userData && hm0.userData.foundryHeld)
                 );
-                const dls = performance.now() + 45000;
-                while (performance.now() < dls) {
+                for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -273,8 +258,7 @@ function staticLaws(q) {
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
                 // (2) WARM: langschwert equipen, auf die Studio-Gestalt warten, Zahlen messen.
                 r.equipHeld("klinge_langschwert");
-                const dlw = performance.now() + 45000;
-                while (performance.now() < dlw) {
+                for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -384,8 +368,7 @@ function staticLaws(q) {
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
-                const dlp = performance.now() + 45000;
-                while (probe === "pending" && performance.now() < dlp) {
+                for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
                     await new Promise((r2) => setTimeout(r2, 150));
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }
@@ -415,7 +398,7 @@ function staticLaws(q) {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();

@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Welle K, Lehre 25, Gebot 7). Befund 07.10. (OMEN, GTX 1060,
-// Mess-Wiese, Regler voll, der Spieler STEHT): `_loopVoxelStreaming` 3,27 ms je Frame, dazu `tickArchitectureCulling`,
-// `_tickArchitectureLOD`, `_lodTreeVisHeight` und noise2D im Selbstzeit-Top — gezählt an der Radeon (eingeschwungen):
-// je Frame ~6 060 Einheiten (Ring 83, Stufen-Wahl 1 710, Cull 3 512, Streu 480, Nah-Streu 138, Nah-Wiese 6, Saum 128) und
-// 0 Änderungen. Die Wand fährt die Fege-Takte an der Mess-Wiese (Null-Renderer, der Fern-Ring über seinen Haken, die
+// diag-stand-takt.cjs — IM STAND KOSTET DIE WELT NICHTS (Lehre 25, Gebot 7).
+// Die Wand fährt die Fege-Takte an der Mess-Wiese (Null-Renderer, der Fern-Ring über seinen Haken, die
 // Foundry an — der Produktions-Pfad) und zählt mit der Stand-Linse (scripts/lib/stand-linse.cjs, dieselbe wie `werkbank
 // stand`) je Frame die Blatt-Rufe jedes Fege-Takts:
 //   (R) RUHE — die Welt steht (der Spieler, das Auge, keine Ankunft): 0 Einheiten in jedem Frame der Ruhe;
-//   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie, jeder Takt geht wie vor der
-//       Welle): jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
-//       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`; bis 07.10. 6 Frames: die Streu
-//       ging 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten — für den Rest der Runde war die Treue blind), und die
-//       Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
+//   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie):
+//       jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
+//       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`), und die Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
 //   (X) TÄTER — je Takt, dessen Runde mehrere Gänge braucht (Stufen-Wahl, Streu, Saum), steht in der zweiten Hälfte seiner
 //       Runde eine still verstellte Einheit: die Treue-Phase findet jede;
 //   (W) WECKEN — ein Baum entsteht im Stand: Cull und Stufen-Wahl gehen, der Baum trägt danach seine Stufe, die Wache
@@ -21,11 +16,14 @@
 //   (G) GEHEN — W gehalten: Stufen-Wahlen, Cull und Nah-Streu arbeiten, der Spieler kommt voran — und Gehen kostet nur
 //       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
+//   (B) BAKE-SCHULD — solange die Bake-Uhr Fits abweist, steht die Welt nicht, und ihr Grund nennt die Felder;
+//   (D) DORF — die Welt steht erst nach dem letzten Haus eines Dorf-Akts (`spawnSettlement`); der Nexus ruht;
 //   (P) kein Page-Error. Dass jeder Takt die Wache fragt und seinen Gang meldet, beweisen (S) und (X) am Verhalten (ein
 //       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext (D3c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
-// Gehen, verhungernder Strom, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
+// Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
+// Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
 //   node scripts/diag-stand-takt.cjs [--selftest]   (npm run gate:stand-takt; Port STAND_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -55,6 +53,15 @@ function selbsttest() {
         nahWiese: [1, 14],
         deckWache: [1728, 1792],
     };
+    // eine Sim-Phase: `je` Einheiten je Frame (nur die Sim `nur`, sonst jede), ihr Täter `_x`
+    const simPh = (je, frames, nur) => ({
+        frames,
+        spielS: 60,
+        akt: 0,
+        sims: Object.fromEntries(
+            Object.keys(STAND.SIMS).map((n) => [n, { summe: !nur || nur === n ? je * frames : 0, mitArbeit: frames, je: [["_x", je]] }])
+        ),
+    });
     const treuPhase = (je) => {
         const ph = phase(je, 14);
         for (const n of namen) Object.assign(ph.takte[n], { runde: RUNDE[n][0], gang: RUNDE[n][1] });
@@ -142,6 +149,24 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
+        dorf: { steht: 41, placed: 12 },
+        wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
+        schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
+        simRuhe: Object.assign(simPh(0, 3600), { vorher: { ernte: {}, leben: 9 } }),
+        simWecken: {
+            saison: { wach: simPh(3, 5), nachher: simPh(0, 60) },
+            regen: { wach: simPh(6, 5), nachher: simPh(0, 60) },
+            wuchs: { offen: 2, wach: simPh(9, 5), nachher: simPh(0, 60) },
+            nachwuchs: { wach: simPh(2, 1), nachgewachsen: true, nachher: simPh(0, 60) },
+            feld: { lebend: 626, tot: 2160, max: 1143, welle: Object.assign(simPh(0, 1), { akt: 1650 }) },
+            // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+            wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
+        },
+        fixWach: false,
+        fix: [
+            { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
+            { takte: 44, wirkte: 8, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
+        ],
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -271,7 +296,7 @@ function selbsttest() {
             /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
         ],
         [
-            "der Erdbau wirft das Dart-Gedächtnis der Welt (bis K69)",
+            "der Erdbau wirft das Dart-Gedächtnis der Welt",
             (b) =>
                 Object.assign(b.ort, {
                     standNach: 3,
@@ -297,7 +322,7 @@ function selbsttest() {
             /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
         ],
         [
-            "jeder Abbau speichert die Welt synchron (bis K69)",
+            "jeder Abbau speichert die Welt synchron",
             (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
             /ORT: der Abbau von 5 Natur-Stücken speicherte die Welt 5× synchron \(`removeArchitecture › saveState`, Σ 420 ms\)/,
         ],
@@ -319,7 +344,7 @@ function selbsttest() {
             /LEER: die Ort-Phase setzte kein Solo-Haus/,
         ],
         [
-            "der Satz-Block legt die Ecken eines Hauses frisch an (bis K69)",
+            "der Satz-Block legt die Ecken eines Hauses frisch an",
             (b) => Object.assign(b.ort.satzHaus, { frischKB: 2048 }),
             /ORT: das Haus im Satz \(alemannisch, 26800 Ecken in 7 Gruppen\) legte beim Wieder-Eintritt 2\.0 MB frisch an .*_tickBauSatz › _bauSatzBlock › _satzBlock/,
         ],
@@ -329,7 +354,7 @@ function selbsttest() {
             /LEER: die Ort-Phase brachte kein Haus in den Bau-Satz \(alemannisch, 0 Gruppen, 0 Ecken nach 600 Takten\)/,
         ],
         [
-            "der Baum in frischem Wald plant seine Zellen synchron (bis K69)",
+            "der Baum in frischem Wald plant seine Zellen synchron",
             (b) => Object.assign(b.ort.wald, { synchron: 169, ms: 271.4, takte: 0, imTakt: 0, maxTaktZellen: 0 }),
             /ORT: der Baum in frischem Wald bei \(-182,-618\) plante 169 Wald-Zellen synchron .*_ortGestaltSame.*planForestCell.*271\.4 ms/,
         ],
@@ -349,7 +374,7 @@ function selbsttest() {
             /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
         ],
         [
-            "der Neubau unter dem Spieler baut seinen Chunk synchron (bis K69-2)",
+            "der Neubau unter dem Spieler baut seinen Chunk synchron",
             (b) =>
                 b.ort.amSpieler.sync.push(
                     {
@@ -379,7 +404,7 @@ function selbsttest() {
             /LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler/,
         ],
         [
-            "der Pflanz-Gang plant frische Zellen am Stück (bis K69)",
+            "der Pflanz-Gang plant frische Zellen am Stück",
             (b) =>
                 Object.assign(b.strom.wald, {
                     aussen: 96,
@@ -399,11 +424,59 @@ function selbsttest() {
         ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         [
-            "die Streu wartet nach geleerter Schlange des Walds (K69-2, CI 38736568849)",
+            "die Streu wartet nach geleerter Schlange des Walds",
             (b) => (b.nachschub.warten = ["-3,-5 wartet auf ihr Asset"]),
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
+        ["das Dorf fliegt (die Basis)", (b) => delete b.dorf.placed, /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
+        ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
+        ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
+        [
+            "die Welt steht mitten in der Runde der Stufen-Wahl",
+            (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
+            /FIXPUNKT: die Welt stand nach 1 Takten, danach ging archLod \(_tickArchitectureLOD\) ohne Eingabe noch 2048 Einheiten/,
+        ],
+        ["der Regler-Schritt wirkt nicht", (b) => b.fix.forEach((f) => (f.wirkte = 0)), /LEER: der Regler-Schritt wirkte nicht/],
+        ["keine Fixpunkt-Phase", (b) => delete b.fix, /LEER: keine Fixpunkt-Phase/],
+        [
+            "der Wuchs prüft in Ruhe je Frame die wartenden Chunks (die Basis)",
+            (b) => (b.simRuhe.sims.wuchs = simPh(9, 3600).sims.wuchs),
+            /RUHE-SIM: wuchs \(_tickFoliageGrowth\) arbeitet in Ruhe nach einer Tat — 32400 Einheiten in 3600 von 3600 Frames \(60 s; _x 9\)/,
+        ],
+        [
+            "ein Takt, der in Ruhe einmal zählt (der Nachwuchs über die Wanduhr)",
+            (b) => Object.assign(b.simRuhe.sims.nachwuchs, { summe: 1, mitArbeit: 1 }),
+            /RUHE-SIM: nachwuchs \(_tickScatterRegrow\) arbeitet in Ruhe .* 1 Einheiten in 1 von 3600/,
+        ],
+        ["die Sim-Ruhe geht 20 s", (b) => (b.simRuhe.spielS = 20), /LEER: die Sim-Ruhe ging 20 s/],
+        ["vor der Sim-Ruhe keine Ernte", (b) => (b.simRuhe.vorher.ernte = null), /LEER: vor der Sim-Ruhe fehlt die Tat/],
+        ["keine Sim-Ruhe", (b) => delete b.simRuhe, /LEER: keine Sim-Ruhe/],
+        [
+            "nach dem Saison-Wort malt die Jahres-Uhr weiter (die Basis)",
+            (b) => (b.simWecken.saison.nachher = simPh(3, 60)),
+            /WECKEN-SIM: nach dem Ereignis schläft saison nicht wieder — 180 Einheiten \(_x 3\)/,
+        ],
+        ["das Wort Regen weckt den Regen nicht", (b) => (b.simWecken.regen.wach = simPh(0, 5)), /STUMPF: das Wort Regen weckt regen/],
+        ["kein Chunk wartet auf seinen Wuchs", (b) => (b.simWecken.wuchs.offen = 0), /LEER: keine Weck-Probe für wuchs/],
+        ["die Ernte wächst nicht nach", (b) => (b.simWecken.nachwuchs.nachgewachsen = false), /NACHWUCHS: die Ernte wuchs/],
+        [
+            "das Feld räumt nur im Takt (die Basis)",
+            (b) => (b.simWecken.feld.max = 2246),
+            /FELD: die Taten hoben das Feld auf 2246 Zellen \(lebend höchstens 626\)/,
+        ],
+        [
+            "der Automat geht am Fixpunkt 4 Takte (die Basis)",
+            (b) => Object.assign(b.simWecken.wasser, { takte: [1, 4], gehalten: [0, 9] }),
+            /FIXPUNKT-WASSER: am Fluss \(-396,-878\), Wecken 2 ging der Automat 4 Takte, 9 Chunks blieben ohne Bewegung wach/,
+        ],
+        ["am Fluss kein Chunk", (b) => (b.simWecken.wasser.chunks = 0), /LEER: am Fluss weckt die Werk-Setzung keinen Chunk/],
+        ["das Wasser bewegt sich", (b) => (b.simWecken.wasser.bewegt = [0, 3.2]), /LEER: am Fluss .* bewegte der Automat 3.2/],
+        [
+            "ein Weckruf ohne Wirkung lässt die Welt stehen",
+            (b) => (b.fixWach = true),
+            /FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend/,
+        ],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -458,7 +531,7 @@ const server = statikServer();
                 let t = performance.now();
                 const takt = () => {
                     t += 1000 / 60;
-                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still: bis K69-2 schluckte die Linse ihn
+                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still
                     try {
                         r._gameLoopTick(t);
                     } catch (e) {
@@ -470,12 +543,21 @@ const server = statikServer();
                 // PID Frame für Frame ohne die Grenzzyklus-Wand des Spiels (`_nexusPerfActuate`) — ein atmender Radius ist
                 // eine echte Eingabe der Wache (er weckt sie, Phase W prüft es), aber kein Stand.
                 st.perfRegulator = false;
+                st.nexusEvolutionInterval = Infinity;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
                 await window.__weltStehtNach(takt);
                 const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
+                // (W) WACH: ein kalter Bau, den der Cull meldet (Offenes), hält die Welt wach — beim Namen des Fege-Takts. Den atmenden
+                // Regler hält das Einschwingen (welt-boot Selbsttest REGLER).
+                const R0 = st.architectureCullingRadius;
+                r._foundryRewarmColdTrees = () => 1;
+                st.architectureCullingRadius = R0 + 2e-3;
+                aus.wach = await window.__weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
+                delete r._foundryRewarmColdTrees;
+                st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -504,7 +586,31 @@ const server = statikServer();
                 aus.bisRuhe = await bisRuhe(900);
                 // (R) RUHE
                 aus.ruhe = await phase(30);
-                // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie, jeder Takt geht wie vor der Welle), so lange,
+                // (F) FIXPUNKT: die Welt steht erst, wenn jeder geweckte Fege-Takt seine Runde zu Ende ging. Ein Weckruf ohne Wirkung
+                // (1 mm): nach einem Takt stehen Stufen-Wahl und Streu mitten in der Runde. L1→L2 × 0,8 und zurück: nach dem Stand
+                // gehen 150 Takte ohne Eingabe keinen Fege-Takt mehr.
+                st.architectureCullingRadius += 1e-3;
+                takt();
+                aus.fixWach = r._weltSteht();
+                st.architectureCullingRadius -= 1e-3;
+                const LD = r.constructor.LOD_DISTANCES;
+                const d12 = LD.thresh12;
+                const fixpunkt = async (d) => {
+                    const wach = [];
+                    LD.thresh12 = d;
+                    const f = { takte: await window.__weltStehtNach(() => (takt(), wach.push(L.frame()))) };
+                    f.wirkte = Object.values(window.__standPhase(wach).takte).reduce((a, t) => a + t.wirkt, 0);
+                    f.nach = await phase(150);
+                    return f;
+                };
+                try {
+                    aus.fix = [await fixpunkt(d12 * 0.8), await fixpunkt(d12)];
+                } catch (e) {
+                    aus.fix = [{ fehler: String(e.message).slice(0, 200) }];
+                    LD.thresh12 = d12;
+                    await window.__weltStehtNach(takt);
+                }
+                // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie), so lange,
                 // bis JEDER Takt eine volle Runde ging — die Runde nennt der Takt selbst (`_standRuht(name, runde, …)`), gegangen
                 // ist, was er `_standMeldet` (die Arbeit der Wache). `jeFrame(f, gang)` sieht jeden Frame.
                 const ruheRuf = P._standRuht;
@@ -520,7 +626,7 @@ const server = statikServer();
                     const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
-                        const r = Math.max(1, a[1] | 0);
+                        const r = a[1] | 0;
                         if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
                             rundeVon[a[0]] = runden[a[0]];
                         runden[a[0]] = r;
@@ -686,14 +792,12 @@ const server = statikServer();
                     await bisRuhe(600);
                     aus.wecken = W;
                 }
-                // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (K55-2: an der Mess-Wiese
-                // −278/−1038 lag die Grenze 1,2 m voraus, der Gang trat hinüber, die Chunks wechselten ihre Stufe, und der Saum ging
-                // zu Recht — die Linse prüfte nicht, was sie meint; verlässt er sie doch, ist die Phase LEER)
+                // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (verlässt er sie doch, ist
+                // die Phase LEER)
                 {
                     // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache.
                     // Ihre Fächer sind je Achse 0,8–7,4 m breit (die Grenzen aus BODEN_STUFEN wie `_stufenZelle`), der Gang läuft
-                    // ~6 m: er beginnt in der Ecke des breitesten Fachs seines Chunks und geht diagonal hindurch (~9 m frei). Der
-                    // Gang zur Fach-Mitte trat an der Mess-Wiese −278/−1038 aus einem 2-m-Fach (CI 38584912499 voll 9).
+                    // ~6 m: er beginnt in der Ecke des breitesten Fachs seines Chunks und geht diagonal hindurch (~9 m frei).
                     const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const span = r._voxelChunkConfig(0).span;
                     const B = r.constructor.BODEN_STUFEN;
@@ -731,13 +835,13 @@ const server = statikServer();
                     aus.gehen.zelleGleich = zelle(p1) === z0;
                     aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
                 }
-                // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
+                // (U) STUFE: aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
                     // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
                     // deren Vegetation wartet (`pendingFoliageChunks`, der Wuchs-Takt je Wanduhr gedrosselt); füllt sie der Wuchs
                     // oder der Neubau des Ziels (`_populateVoxelChunkVegetation` → `_weltRegt()`) mitten in der Phase, regt sich
-                    // die Menge — nicht die Stufe (CI 38609556864: archLod · archCull · streuLod wach, die Boden-Takte nicht).
+                    // die Menge — nicht die Stufe.
                     // Der offene Wuchs im Radius fällt darum VOR der Ruhe, synchron; das Ziel trägt keine wartende Form.
                     let wuchs = 0;
                     if (st.pendingFoliageChunks)
@@ -826,7 +930,7 @@ const server = statikServer();
                     }
                     aus.stufe = U;
                 }
-                // (O) ORT (K69): aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
+                // (O) ORT: aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
                 // der Dorf-Zug das nächste Dorf legt, während der Spieler ins erste geht). Es fällt nur, was er ändern kann: gezählt
                 // die Gedächtnisse FERN von ihm (über `fern` m) vorher und nachher — der Stand des Walds (`_forestDartStand`, an ihm
                 // hängt die Gestalt jedes Orts), die Wald-Zellen (dieselben Objekte im Dart-Gedächtnis), die Chunk-Gedächtnisse
@@ -979,7 +1083,7 @@ const server = statikServer();
                         }
                         O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
                     }
-                    // DER BAUM IN FRISCHEM WALD (K69): ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
+                    // DER BAUM IN FRISCHEM WALD: ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
                     // `_spawnSettlementErlebnis`) an einem Ort, dessen Wald nie geplant wurde — gezählt die Wald-Zellen, die
                     // sein Setzen SYNCHRON plant (`planForestCell` im Aufrufer), dann die Takte, bis seine Gestalt steht, und
                     // die längste Plan-Arbeit eines Takts (die Schlange des Walds, `_tickWaldPlan`)
@@ -1055,10 +1159,9 @@ const server = statikServer();
                         }
                         O.wald = Wd;
                     }
-                    // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
-                    // _satzBlock`), dann ein zweites Mal, jede Gruppe markiert wie bei jedem Stufen-Wechsel — gezählt die Bytes,
-                    // die der Block dabei FRISCH anlegt. Bis K69 legte jeder Eintritt seine Ecken neu im Heap an (ein Haus der
-                    // Stufe 0: 142k Ecken, ~10 MB), die volle Sammlung fiel in den Takt (Null-Gang ins Dorf: 137 ms)
+                    // DAS HAUS IM SATZ: ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
+                    // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
+                    // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
                         const recs = (r._foundry && r._foundry.recipes) || {};
                         const kultur = Object.keys(recs).find((k) => {
@@ -1134,8 +1237,8 @@ const server = statikServer();
                                     }
                                 };
                                 try {
-                                    for (const g of gs) r._bauSatzMarke(g.key, g.satz);
-                                    r._tickBauSatz();
+                                    for (const g of gs) r._chunkSatzAus(g.satz, g.key) && r._bauSatzMarke(g.key, g.satz);
+                                    r._tickBauSatz(Infinity);
                                 } finally {
                                     delete r._satzBlock;
                                     globalThis.Float32Array = T.F;
@@ -1147,7 +1250,7 @@ const server = statikServer();
                         }
                         O.satzHaus = SH;
                     }
-                    // DER ERDBAU UNTER DEM SPIELER (K69-2): ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
+                    // DER ERDBAU UNTER DEM SPIELER: ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
                     // das Dorf um ihn legt) — die Chunks seines Umkreises werden neu gebaut. Gezählt jeder Chunk-Bau, der in
                     // einem Takt SYNCHRON im Haupt-Faden läuft (`_buildVoxelChunkData`, der Bau ohne Worker), mit der Kette
                     // seiner Rufer und seiner Zeit, und die Takte, bis kein Chunk mehr auf seinen Neubau wartet (der Boden heilt).
@@ -1220,7 +1323,7 @@ const server = statikServer();
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     const span = r._voxelChunkConfig(0).span;
                     const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
-                    // DER WALD AM FREMDEN ORT (K69): jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
+                    // DER WALD AM FREMDEN ORT: jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
                     // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
                     const core = globalThis.__phytoCore;
                     const roh = core.planForestCell;
@@ -1237,7 +1340,7 @@ const server = statikServer();
                             tiefe--;
                         }
                     };
-                    // der Rechner der Schlange ist der Wald-Faden (K60-4): seine Lieferungen (`_waldDartsAn`) plante die
+                    // der Rechner der Schlange ist der Wald-Faden: seine Lieferungen (`_waldDartsAn`) plante die
                     // Schlange — sie zählen wie ihre Zellen im Job
                     const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
                     const anRoh = r._waldDartsAn;
@@ -1301,9 +1404,8 @@ const server = statikServer();
                 L.aus();
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
-                // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
-                // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu. Bis K69-2
-                // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
+                // (N) DER NACHSCHUB DES WALDS: wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
+                // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu.
                 {
                     const p = st.playerMesh.position;
                     const o = () => r._weltOffen(); // was die Welt noch baut (A9): die Schlange des Walds und die Foundry
@@ -1316,6 +1418,145 @@ const server = statikServer();
                     const warten = [];
                     r._streuWartet(p, warten);
                     aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
+                }
+                // (B) BAKE-SCHULD: 24 Fits fragen je Takt — solange die Bake-Uhr abweist, steht die Welt nicht
+                await window.__weltStehtNach(takt);
+                const schuld = new Set(Array.from({ length: 24 }, (_, i) => i));
+                const B = (aus.schuld = { abgewiesen: 0 });
+                B.takte = await window
+                    .__weltStehtNach(() => {
+                        for (const i of schuld) r._weltBakeErlaubt(i) ? schuld.delete(i) : B.abgewiesen++;
+                        takt();
+                        if (schuld.size) B.grund = r._weltStand.grund;
+                    }, 60)
+                    .catch((x) => x.message);
+                B.rest = schuld.size;
+                const D = (aus.dorf = {});
+                r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x && x.placed));
+                D.steht = await window.__weltStehtNach(takt).catch((x) => x.message);
+                // (RS) DIE SIMS IN RUHE (feld.K3): an der Mess-Wiese 60 s Spielzeit nach einer Tat (eine Ernte der Nah-Streu über
+                // den echten Schreiber, ein Leben am Spieler), Wetter und Saison ruhen; danach (WS) je Sim ihr Ereignis
+                {
+                    const pm = st.playerMesh.position;
+                    pm.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+                    await window.__weltStehtNach(takt);
+                    const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
+                    st.weatherEffectTime = -1e9;
+                    st.autoSeason = false;
+                    const S = window.__simLinseAn();
+                    const simPhase = async (n, schritt) => {
+                        const fs = [];
+                        const z0 = st.spielZeit;
+                        S.frame();
+                        for (let i = 0; i < n; i++) {
+                            if (schritt) schritt(i);
+                            takt();
+                            fs.push(S.frame());
+                            if (i % 20 === 0) await pause(2);
+                        }
+                        return window.__simPhase(fs, st.spielZeit - z0);
+                    };
+                    const W = (aus.simWecken = {});
+                    try {
+                        const vorher = { ernte: null };
+                        const ns = st.nahStreu;
+                        for (const s of ns ? ns.senken.values() : [])
+                            for (const [key, bl] of s.ernte && !vorher.ernte ? s.bloecke : []) {
+                                const pick = { key, senke: s.key, id: bl.ids[0] };
+                                const k = ns.kacheln.get(key);
+                                if (!bl.n || !k || !k.items.some((it) => it.id === pick.id)) continue;
+                                if (r._harvestScatterPick(pick)) vorher.ernte = pick;
+                                break;
+                            }
+                        r._depositLife(pm.x, pm.z);
+                        vorher.leben = st.lifeField.size;
+                        await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
+                        aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
+                        const weck = async (n, ereignis) => {
+                            ereignis();
+                            W[n] = Object.assign(W[n] || {}, { wach: await simPhase(5), nachher: await simPhase(60) });
+                        };
+                        await weck("saison", () => r.setSeason("herbst"));
+                        r.setSeason("sommer");
+                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
+                        const wort = (w) => {
+                            st.weatherEffectTime = 0;
+                            r._setWeather(w, "human");
+                            st.weatherEffectTime = -1e9;
+                            st.weatherTransition = null;
+                        };
+                        wort("rainy");
+                        W.regen = { wach: await simPhase(5) };
+                        wort("sunny");
+                        r._naesseTakt(1e6);
+                        await simPhase(5);
+                        W.regen.nachher = await simPhase(60);
+                        const fr = st.foliageRadius;
+                        W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
+                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : r.constructor.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
+                        st.foliageRadius = fr;
+                        // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
+                        S.frame();
+                        r._tickScatterRegrow(performance.now() + r.constructor.FORAGE.regrowMs + 1);
+                        const E = vorher.ernte;
+                        const jeKachel = E && st.scatterHarvested && st.scatterHarvested.get(E.key);
+                        W.nachwuchs = {
+                            wach: window.__simPhase([S.frame()], 0),
+                            nachgewachsen: !!E && !(jeKachel && jeKachel.has(E.id)),
+                            nachher: await simPhase(60),
+                        };
+                        // das Feld: vier Wellen zu 60 Taten fern, jede danach gealtert (wie die Probe des Playtests)
+                        const fern = MESS.x + 3900;
+                        const F = (W.feld = { lebend: st.lifeField.size + 540, tot: 0, max: 0 });
+                        S.frame();
+                        for (let w = 0; w < 4; w++) {
+                            for (let i = 0; i < 60; i++) r._depositLife(fern + 100 + i * 64, MESS.z + 4000 + w * 64);
+                            F.max = Math.max(F.max, st.lifeField.size);
+                            for (const [key, e] of st.lifeField)
+                                if (+key.split(",")[0] * r.constructor.LIFE_FIELD.cell >= fern && e.t >= st.spielZeit - 1) {
+                                    e.t -= 3000;
+                                    F.tot++;
+                                }
+                        }
+                        F.welle = window.__simPhase([S.frame()], 0);
+                    } finally {
+                        S.aus();
+                        st.weatherEffectTime = uhr;
+                        st.autoSeason = jahr;
+                    }
+                    // (WS) DER AUTOMAT AM FIXPUNKT: am Fluss nächst der Mess-Wiese zweimal eine Werk-Setzung, die kein Wasser
+                    // verdrängt (`_invalidateWaterCapsAround`) — je Wecken seine Takte, die Chunks danach wach, die Bewegung
+                    let p = null;
+                    const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
+                    for (const rv of (st.hydrosphere && st.hydrosphere.rivers) || [])
+                        for (const q of rv.points) if (!q.inLake && (!p || d(q) < d(p))) p = q;
+                    const A = (W.wasser = { ort: p && [Math.round(p.x), Math.round(p.z)], takte: [], gehalten: [], bewegt: [] });
+                    const aktiv = () => (st.waterCAActive ? st.waterCAActive.size : 0);
+                    if (p) {
+                        pm.set(p.x, r._voxelSurfaceY(p.x, p.z) + 1.8, p.z);
+                        await window.__weltStehtNach(takt);
+                        for (let i = 0; i < 900 && aktiv(); i++) takt();
+                        const roh = r._tickWorldWaterCA;
+                        let bewegt = 0;
+                        r._tickWorldWaterCA = function () {
+                            const m = roh.call(this);
+                            bewegt = Math.max(bewegt, m);
+                            return m;
+                        };
+                        for (let w = 0; w < 2; w++) {
+                            r._invalidateWaterCapsAround(p.x, p.z, 2);
+                            A.chunks = Math.max(A.chunks | 0, aktiv());
+                            bewegt = 0;
+                            let t = 0;
+                            for (; t < 120 && aktiv(); t++) {
+                                takt();
+                                if (t === 0) A.gehalten.push(aktiv());
+                            }
+                            A.takte.push(t);
+                            A.bewegt.push(+bewegt.toFixed(3));
+                        }
+                        delete r._tickWorldWaterCA;
+                    }
                 }
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
@@ -1423,12 +1664,33 @@ const server = statikServer();
                     : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
+    const simZeile = (ph) =>
+        Object.entries(ph.sims)
+            .map(([n, t]) => `${n} ${t.summe}${t.summe ? ` (${t.je.map((x) => x.join(" ")).join(", ")})` : ""}`)
+            .join(" · ") + ` · Taten ${ph.akt}`;
+    if (befund.simRuhe) console.log(`  Sim-Ruhe ${befund.simRuhe.spielS} s: ${simZeile(befund.simRuhe)}`);
+    for (const [n, w] of Object.entries(befund.simWecken || {}))
+        console.log(
+            `  Sim-Wecken ${n}: ` +
+                (n === "wasser"
+                    ? JSON.stringify(w)
+                    : n === "feld"
+                      ? `${w.tot} gealtert, höchstens ${w.max} Zellen (lebend ${w.lebend}) — ${simZeile(w.welle)}`
+                      : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
+        );
+    console.log(`  Wach (ein kalter Bau): ${befund.wach} · Dorf ${JSON.stringify(befund.dorf)}`);
+    if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
+    for (const [i, F] of (befund.fix || []).entries())
+        console.log(
+            `  Fixpunkt ${i ? "L1→L2 zurück" : "L1→L2 × 0,8"}: ${F.fehler || `${F.wirkte} Wirkungen, die Welt steht nach ${F.takte} ` +
+                `Takten, danach in ${F.nach.frames} Takten ${F.nach.summe} Einheiten`}`
+        );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ STAND-TAKT ROT:\n  " + v.join("\n  "));
         process.exit(1);
     }
     console.log(
-        "\n✅ STAND-TAKT GRÜN — im Stand geht kein Fege-Takt, die gebrochene Wache findet nichts Verschlafenes, ein Bau weckt, Gehen und Strom arbeiten."
+        "\n✅ STAND-TAKT GRÜN — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten."
     );
 })();

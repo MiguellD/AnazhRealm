@@ -1,9 +1,5 @@
-// diag-boot-foliage-ring.cjs — V18.414-BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
-// Schöpfer-Befund: „es wird ein riesiger ferner Ring mit Billboards bepflückt, statt erst den ersten
-// Chunk zu beenden und DANN zu erweitern." WURZEL (gemessen): `foliageRadius` raste per perf-headroom
-// (leere Boot-Frames) auf MAX (240 m), während der gebaute Terrain-Ring erst 1 Chunk (43 m) war → die
-// Vegetation lag weit VOR dem Boden = der ferne Billboard-Ring. FIX: den Radius auf die gebaute Ring-
-// Kante kappen. Diese Linse treibt den NICHT-headless-Ramp-Pfad (Null-Renderer, `_isHeadlessNull=false`
+// diag-boot-foliage-ring.cjs — BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
+// Diese Linse treibt den NICHT-headless-Ramp-Pfad (Null-Renderer, `_isHeadlessNull=false`
 // erzwungen → perf-headroom auf ~0-frameMs, genau die Boot-Situation) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
@@ -14,14 +10,12 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
-    const browser = await starteBrowser({ art: "webgl", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
+    const browser = await starteBrowser({ art: "null", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
-        while ((!window.anazhRealm || !window.anazhRealm.state || typeof window.anazhRealm._gameLoopTick !== "function" || !window.anazhRealm.state.blueprints) && performance.now() < dl)
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.blueprints);
     });
     const S = await page.evaluate(async () => {
         const r = window.anazhRealm, st = r.state;

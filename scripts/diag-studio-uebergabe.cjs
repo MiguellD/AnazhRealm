@@ -1,454 +1,413 @@
-// diag-studio-uebergabe.cjs — STUDIO-ÜBERGABE (Auftrag D): DIE LIVE-BEARBEITUNG REIST IN DIE WELT.
-// Der tiefste gemessene Naht-Riss: KEIN Studio trug die Schöpfer-Bearbeitung in die Welt —
-// die Welt las nur die GEFRORENEN Kern-Presets (get-book); der Welt-Avatar backte IMMER den
-// START_PARAMS-Default (T-Shirt navy · Hose charcoal · Sneaker white), die 5 Tetrapoda-Dials
-// reisten nie. Jetzt posten koerperstudio/tetrapoda additiv {type:"uebergabe"} über die
-// bestehende W12-Brücke (das settlement/event-Zusatz-Kanal-Muster), der EINE Host-Empfänger
-// (_studioUebergabeEmpfang) validiert fail-closed (kind-Positivliste · Kern-Buch-Clamps ·
-// Kern-Tabellen-Wahlen · Taille-Cap · must-ignore), und die EINEN Leser-Nähte konsumieren:
-// _koerperStudioDials (Avatar-Vorrang-Quelle + Live-Neu-Guss) · _tetrapodaStudioDials
-// (künftige Kreatur-Spawns; Guss-Semantik: Bestand bleibt). Diese Linse hält die Naht:
-//
-//   (S) SELBST-TEST (nicht vakuös): mit GESTRIPPTER Übergabe erkennt der Vergleicher den
-//       Default-Zustand (Guss-Fingerabdruck == Default) — d. h. die Linse KANN Gleichheit
-//       sehen; zusammen mit (N) ist die Differenz-Messung bewiesen nicht-blind.
-//   (N) NAHT: ein uebergabe-Payload (headless direkt an den Host-Empfänger gereicht) ⇒ der
-//       Avatar-Neu-Guss trägt MESSBAR andere Gestalt (Geometrie-Fingerabdruck ≠ Default UND
-//       Farb-Fingerabdruck: topColor rot [CLOTH_COLORS.red] erscheint, navy-only fällt;
-//       der LIVE playerMesh wurde neu gegossen) und ein Kreatur-Spawn der übergebenen
-//       Gattung trägt die Dials (size 3.5 ⇒ messbar größere Gestalt als der 2.4-Default).
-//   (W) WÄNDE: kaputte Payloads (falsches kind · NaN-only · Riesen-String > Taille ·
-//       fremde Felder · erfundene Farb-/Gattungs-Namen) fallen fail-closed OHNE Wurf,
-//       der Default bleibt; Zahlen werden auf die Kern-PARAMS-Grenzen geclampt.
-//   (R) ROUNDTRIP: die Übergabe überlebt buildStateSnapshot → Restore
-//       (_loadStateRestoreSoulAndAtmosphere), und der Restore läuft durch DENSELBEN
-//       Validator (vergifteter Snapshot wird geclampt/gesiebt).
-//   (B) BYTE-IDENTITÄT ohne Übergabe: _koerperStudioDials liefert die BUCH-REFERENZ
-//       (===, kein Merge-Klon), der Guss-Fingerabdruck ist byte-identisch zum Default,
-//       und der Default-Memo-Eintrag des Ofens bleibt UNVERGIFTET (eigener Key je Übergabe).
-//
-//   node scripts/diag-studio-uebergabe.cjs
+// diag-studio-uebergabe.cjs — DER EINE ÜBERGABE-KANAL (pipeline.K1, gate:studio-uebergabe): die Hülle schickt das Werk eines
+// Studios (`AnazhHuelle.bruecke().werk`: Art · Rezept · Same · Prägung), die Welt schreibt es in den EINEN Prägungs-Speicher
+// ws.studioOv (`_studioUebergabeEmpfang`), der Leser der Art baut daraus dasselbe Werk.
+//   (K) im vm (`npm run check`): je Art aus PARAMS_BY_KIND ein Rezept, Same und jede Regler-Zeile zufällig (`--saat N`
+//       wiederholt), der Leser der Welt bis an den Bäcker (`_studioStampFor` → `_foundryRequest` · `_buildHumanGroup` ·
+//       `_ofenKreaturDials`), der Bau-Hash (`bauAbdruck`, Kanal build-asset) gleicht dem des Studio-Baus; Klang: jede Zeile
+//       im Genre der Welt (`_klangStudioPreset`). (S) nur die Hülle postet eine Übergabe, EIN Empfänger. (W) kaputte Werke
+//       fallen, der Kern klemmt. SELBSTTEST: ein Empfänger mit Sonderweg und ein Studio, das selbst postet, sind ROT.
+//   --welt (Browser): der lebende Avatar gießt neu, ein Kreatur-Spawn trägt die Größe, der Snapshot trägt den Speicher.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
-
-const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
-const server = statikServer();
-
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const stammLib = require("./lib/stamm.cjs");
+const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+const ROOT = path.resolve(__dirname, "..");
+const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
+const SAAT = Number(argNach("--saat")) >>> 0 || Date.now() >>> 0;
+
+// ── die Studio-Seite: die Hülle in ihrem Fenster, der Eltern-Rahmen fängt, was sie postet ──
+function studioSeite() {
+    const gepostet = [];
+    const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(JSON.parse(JSON.stringify(m))) } };
+    vm.runInNewContext(fs.readFileSync(path.join(ROOT, "worlds/huelle/huelle.js"), "utf8"), f);
+    return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
+}
+const zufall = studioSeite().H.zufall(SAAT);
+const wahl = (liste) => liste[Math.floor(zufall() * liste.length)];
+function huelleSendet(werk) {
+    const { B, gepostet } = studioSeite();
+    if (typeof B.werk !== "function") return { fehlt: "die Hülle trägt keinen werk-Kanal (bruecke().werk)" };
+    gepostet.length = 0;
+    B.werk(werk.kind, werk.preset, werk.seed, werk.ov);
+    const msg = gepostet.filter((m) => m && m.type === "uebergabe");
+    return msg.length === 1 ? { msg: msg[0] } : { fehlt: `die Hülle postet ${msg.length} Übergaben statt einer` };
+}
+
+// ── die Welt: die Klasse aus dem Stamm im vm, ein Zustand ohne Szene; der Faden ist der Kanal im vm ──
+function welt(buch, teile) {
+    const { AnazhRealm, ctx } = stammLib.ladeKlasse(ROOT, teile ? { teile } : {});
+    AnazhRealm._studioRenderConfig = buch.renderConfig;
+    const r = Object.create(AnazhRealm.prototype);
+    r.state = { blueprints: {}, player: { soul: "human" } };
+    r._foundry = { ready: true, worker: {}, recipes: buch.book, paramsByKind: buch.paramsByKind };
+    r.log = r.applyPlayerSoul = r._stoffBruch = () => {}; // der Avatar ohne Szene: --welt gießt ihn
+    // der Weg in den Faden: was `_foundryRequest` beauftragt, hält die Probe fest (gebaut wird es im Kanal)
+    r._foundryWorkerRequest = (presetId, seed, lod, ov) =>
+        (r.auftrag = { presetId, seed, lod, ov }) && Promise.resolve(null);
+    r._foundryIngestTakt = (e) => e;
+    return { r, AnazhRealm, ctx };
+}
+
+// Der Bau, den die Welt aus ihrem Speicher bestellt — je Art ihr Leser bis an die Grenze zum Bäcker.
+function weltBau(w, kind, preset, weltSame) {
+    const { r, AnazhRealm } = w;
+    if (kind === "koerper") {
+        let fang = null;
+        r._ofenMenschTemplate = (dials, skinColor, hairColor, lod) => (
+            (fang = fang || { dials, skinColor, hairColor, lod }),
+            null
+        );
+        try {
+            r._buildHumanGroup();
+        } catch (_e) {
+            /* der Not-Körper hinter dem Ofen braucht eine Szene — der Fang steht davor */
+        }
+        return (
+            fang && {
+                presetId: preset,
+                seed: 0,
+                lod: fang.lod,
+                ov: { dials: fang.dials, skinColor: fang.skinColor, hairColor: fang.hairColor },
+            }
+        );
+    }
+    if (kind === "kreatur") {
+        const d = r._ofenKreaturDials(preset, null);
+        return d && { presetId: preset, seed: 0, lod: 0, ov: d.dials };
+    }
+    const pol = AnazhRealm.KIND_POLICY[kind];
+    const name = (pol && pol.prefix) || "";
+    const stempel = r._studioStampFor(name + preset);
+    const g = r._foundryGestaltFor({ seed: weltSame, studioOv: stempel }, preset);
+    r.auftrag = null;
+    r._foundryRequest(preset, g, 0, stempel, 0);
+    return r.auftrag;
+}
+
+// Der Bau, den die Studio-Seite zeigt: buildInstance(Rezept, Same, Stufe, Regler); die Ofen-Studios gießen mit Saat 0 —
+// das Körper-Studio `gussOv()` (alle Wahlen, die Farben aus den Kern-Tafeln), tetrapoda die Dials der Gattung.
+function studioBau(kind, werk, KC) {
+    if (kind === "koerper") {
+        const p = Object.assign({}, KC.START_PARAMS, werk.ov);
+        const ov = {
+            dials: p,
+            skinColor: KC.SKIN_TONES[p.skinTone].hex >>> 0,
+            hairColor: KC.HAIR_COLORS[p.hairColor].base >>> 0,
+        };
+        return { presetId: werk.preset, seed: 0, lod: 0, ov };
+    }
+    if (kind === "kreatur") return { presetId: werk.preset, seed: 0, lod: 0, ov: Object.assign({}, werk.ov) };
+    return { presetId: werk.preset, seed: werk.seed, lod: 0, ov: werk.ov };
+}
+
+// Ein zufälliges Werk der Art: das erste Rezept, ein Same 1..64, jede Regler-Zeile auf ihrem Raster, ein Charakter der Art
+// (KIND_CHARAKTER: Tradition, Kultur) und beim Körper jede Farbe aus den Kern-Tafeln.
+function werkDerArt(kind, buch, KC, w) {
+    const preset = Object.keys(buch.book).find((id) => buch.book[id].kind === kind);
+    const ov = {};
+    for (const z of buch.paramsByKind[kind]) {
+        const n = z.step > 0 ? Math.floor((z.max - z.min) / z.step + 1e-9) : 0;
+        const v = n > 0 ? z.min + Math.floor(zufall() * (n + 1)) * z.step : z.min + zufall() * (z.max - z.min);
+        ov[z.id] = Number(Math.min(z.max, v).toFixed(6));
+    }
+    const achse = w.AnazhRealm.KIND_CHARAKTER[kind];
+    const tab = achse && w.ctx[achse.ns][achse.tabelle];
+    if (tab) Object.assign(ov, achse.ov(wahl(Object.keys(tab)), tab));
+    if (kind === "koerper") {
+        ov.skinTone = wahl(Object.keys(KC.SKIN_TONES));
+        ov.hairColor = wahl(Object.keys(KC.HAIR_COLORS));
+        for (const k of ["topColor", "bottomColor", "shoeColor"]) ov[k] = wahl(Object.keys(KC.CLOTH_COLORS));
+    }
+    return { kind, preset, seed: 1 + Math.floor(zufall() * 64), ov };
+}
+
+// Der Bau-Auftrag als Text mit geordneten Schlüsseln (die Reihenfolge eines Objekts ist kein Bau-Parameter).
+const kanonisch = (v) =>
+    v && typeof v === "object" && !Array.isArray(v)
+        ? "{" +
+          Object.keys(v)
+              .sort()
+              .map((k) => JSON.stringify(k) + ":" + kanonisch(v[k]))
+              .join(",") +
+          "}"
+        : JSON.stringify(v);
+
+// Eine Art durch den Kanal: Hülle → Empfang → Leser → Bau-Hash. Rückgabe { ok, info }.
+async function artDurchKanal(kind, ctxK) {
+    const { kanal, buch, KC, w } = ctxK;
+    const werk = werkDerArt(kind, buch, KC, w);
+    const h = huelleSendet(werk);
+    if (h.fehlt) return { ok: false, info: h.fehlt };
+    if (w.r._studioUebergabeEmpfang(h.msg) !== true)
+        return { ok: false, info: `die Welt nimmt das Werk nicht an (${werk.preset})` };
+    if (kind === "klang") {
+        const G = w.r._klangStudioPreset();
+        const KK = w.ctx.__klangCore;
+        const fehl = buch.paramsByKind.klang.filter(
+            (z) => (z.id === "bpm" ? G.bpm : G.dna && G.dna[z.id]) !== werk.ov[z.id]
+        );
+        const skala = KK.scaleFor(werk.ov.darkness);
+        if (G.scaleName !== skala) fehl.push({ id: `Skala ${G.scaleName} ≠ ${skala}` });
+        return {
+            ok: !fehl.length,
+            info: fehl.length
+                ? `das Genre der Welt verfehlt ${fehl.map((z) => z.id).join(", ")}`
+                : `${werk.preset}: ${buch.paramsByKind.klang.length} Zeilen im Genre der Welt`,
+        };
+    }
+    const aW = weltBau(w, kind, werk.preset, 1 + Math.floor(zufall() * 1e6));
+    if (!aW) return { ok: false, info: `der Leser der Welt bestellt keinen Bau (${werk.preset})` };
+    const aS = studioBau(kind, werk, KC);
+    // derselbe Auftrag baut dasselbe (G2.3, gate:asset-contract): gleicht der Auftrag der Welt dem des Studios kanonisch, trägt
+    // EIN Bau beide Hashes — sonst baut jede Seite ihren
+    const bau = async (a) => bauAbdruck((kanal(Object.assign({ type: "build-asset" }, a)) || {}).meshes);
+    const hS = await bau(aS);
+    const gleich = kanonisch(aS) === kanonisch(aW);
+    const hW = gleich ? hS : await bau(aW);
+    const ok = hS.teile > 0 && hS.hash === hW.hash;
+    return {
+        ok,
+        info: `${werk.preset} Same ${werk.seed}: Studio ${hS.hash.slice(0, 10)} (${hS.teile} Teile) ${ok ? "=" : "≠"} Welt ${hW.hash.slice(0, 10)} (${hW.teile} Teile, Gestalt ${aW.seed}${gleich ? ", derselbe Auftrag" : ""})`,
+    };
+}
+
+// (S) Die Sonderweg-Wand: wer außer der Hülle postet eine Übergabe?
+const UEBERGABE_POST = /type\s*:\s*["']uebergabe["']/;
+function sonderwege(dateien) {
+    const out = [];
+    for (const d of dateien)
+        d.text.split("\n").forEach((z, i) => {
+            if (UEBERGABE_POST.test(z)) out.push(`${d.pfad}:${i + 1}`);
+        });
+    return out;
+}
+function studioDateien() {
+    const out = [];
+    for (const welt of fs.readdirSync(path.join(ROOT, "worlds"))) {
+        const dir = path.join(ROOT, "worlds", welt);
+        if (welt === "huelle" || !fs.statSync(dir).isDirectory()) continue;
+        for (const f of fs.readdirSync(dir))
+            if (/\.(js|html)$/.test(f))
+                out.push({ pfad: `worlds/${welt}/${f}`, text: fs.readFileSync(path.join(dir, f), "utf8") });
+    }
+    return out;
+}
+
+async function kanalPruefen() {
+    const kanal = kanalImVm();
+    const r = kanal({ type: "get-book" });
+    const buch = { book: r.book, paramsByKind: r.paramsByKind, renderConfig: r.renderConfig };
+    const w = welt(buch);
+    const KC = w.ctx.__koerperCore;
+    const arten = Object.keys(buch.paramsByKind);
+    const ctxK = { kanal, buch, KC, w };
+    console.log(`\n=== (K) KANAL — Saat ${SAAT}, ${arten.length} Arten aus PARAMS_BY_KIND ===`);
+    let tragen = 0;
+    for (const kind of arten) {
+        const e = await artDurchKanal(kind, ctxK);
+        if (e.ok) tragen++;
+        check(`${kind}: das Werk des Studios steht byte-gleich in der Welt`, e.ok, e.info);
+    }
+    console.log(`      ${tragen}/${arten.length} Arten über den EINEN Kanal`);
+
+    console.log("\n=== (S) SONDERWEG-WAND ===");
+    const sw = sonderwege(studioDateien());
+    check(
+        "nur die Hülle postet eine Übergabe — kein Studio hat einen eigenen Weg",
+        !sw.length,
+        sw.join(" · ") || "0 Studio-Posts"
+    );
+    const stamm = stammLib.text(ROOT);
+    const routen = stamm.match(/msg\.type === "uebergabe"[^\n]*/g) || [];
+    check(
+        "die Heimat leitet die Übergabe an genau EINEN Empfänger (_studioUebergabeEmpfang)",
+        routen.length === 1 && /this\._studioUebergabeEmpfang\(/.test(routen[0]),
+        `${routen.length} Route(n)`
+    );
+
+    console.log("\n=== (W) WÄNDE ===");
+    const E = (m) => w.r._studioUebergabeEmpfang(m);
+    const ws = () => (w.r.state.workshop && w.r.state.workshop.studioOv) || {};
+    const koerper = Object.keys(buch.book).find((id) => buch.book[id].kind === "koerper");
+    const tor = Object.keys(buch.book).find((id) => buch.book[id].kind === "gate");
+    const hoehe = buch.paramsByKind.koerper.find((z) => z.id === "height");
+    const kaputt = [
+        { kind: "drache", preset: tor }, // fremde Art
+        { kind: "gate", preset: koerper }, // Rezept einer anderen Art
+        { kind: "gate", preset: tor, ov: { x: "y".repeat(9000) } }, // Riesen-Payload
+        "uebergabe",
+        [1, 2],
+    ].filter((m) => E(m) !== false);
+    check(
+        "kaputte Werke fallen (fremde Art · fremdes Rezept · Riesen-Payload · Nicht-Objekt)",
+        !kaputt.length,
+        JSON.stringify(kaputt).slice(0, 120)
+    );
+    const ov = { height: 99, zusatz: 5, __x: 1, topColor: "neonpink", skinTone: "ebenholz" };
+    const klemm =
+        E({ kind: "koerper", preset: koerper, seed: 1.5, ov }) &&
+        ws()[koerper].height === hoehe.max &&
+        ws()[koerper].skinTone === "ebenholz" &&
+        !["zusatz", "__x", "topColor", "__gestalt"].some((k) => k in ws()[koerper]);
+    check(
+        "der Kern klemmt (height 99 → max), fremde Schlüssel · Passagiere · erfundene Wahlen · ein krummer Same fallen",
+        klemm,
+        JSON.stringify(ws()[koerper] || null)
+    );
+
+    console.log("\n=== SELBSTTEST — ein Sonderweg ist ROT ===");
+    const teile = stammLib.dateien(ROOT).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(ROOT, p), "utf8") }));
+    const kopf = /\n {4}_studioUebergabeEmpfang\([^)]*\) \{/;
+    const np = teile.find((t) => kopf.test(t.text));
+    let stRot = false;
+    if (np) {
+        const umweg =
+            '\n        const m = arguments[0];\n        if (m && m.kind === "flower") return (this.state.blumenSpeicher = m), true;';
+        np.text = np.text.replace(kopf, (k) => k + umweg);
+        const e = await artDurchKanal("flower", Object.assign({}, ctxK, { w: welt(buch, teile) }));
+        stRot = !e.ok;
+    }
+    check("SELBST-TEST: der Empfänger leitet die Blume in einen eigenen Speicher → die Blume ist ROT", stRot);
+    const stS = sonderwege([
+        { pfad: "worlds/probe/probe.js", text: 'B.post({ type: "uebergabe", kind: "koerper", s: {} });' },
+    ]);
+    check(
+        "SELBST-TEST: ein Studio, das selbst postet, ist ROT bei Datei:Zeile",
+        stS.join() === "worlds/probe/probe.js:1",
+        stS.join()
+    );
+}
+
+// --welt: der Konsum im echten Spiel (Null-Renderer, Foundry warm) — das Werk über den Empfänger, die Leser der Welt bauen.
+async function weltPruefen() {
+    const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+    const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
+    const server = statikServer();
+    await new Promise((ok) => server.listen(PORT, "127.0.0.1", ok));
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-
     const out = await page.evaluate(async () => {
-        const res = { warm: {}, s: {}, n: {}, w: {}, r: {}, b: {} };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
-        // FNV-1a-Fingerabdruck über die Positions-Arrays (die praegung-welt-Sonde).
-        const fnv = (h, f32) => {
-            const u8 = new Uint8Array(f32.buffer, f32.byteOffset, f32.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
-        // Farb-Sonde: die Pipe trägt Farben als VERTEX-Daten auf geteilten
-        // Materialien (Render-Diät) — gelesen wird das color-Attribut (Vertex 0
-        // je Mesh; der Mensch-Guss füllt jedes Teil uniform aus m.mat.color).
-        const colorsOf = (g) => {
+        const res = {};
+        await window.__weltDa();
+        const r = window.anazhRealm;
+        const f = r._ensureAssetFoundry();
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
+        const KC = window.__koerperCore;
+        const lin = (hx) =>
+            [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
+                .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
+                .join(",");
+        const farben = (g) => {
             const set = new Set();
             g.traverse((o) => {
                 const c = o.geometry && o.geometry.attributes && o.geometry.attributes.color;
-                if (c && c.array && c.array.length >= 3) {
+                if (c && c.array && c.array.length >= 3)
                     set.add([c.array[0], c.array[1], c.array[2]].map((v) => v.toFixed(3)).join(","));
-                }
             });
             return set;
         };
-        const lin = (hx) => {
-            const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-            return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)]
-                .map((v) => v.toFixed(3))
-                .join(",");
-        };
-        const hoeheVon = (g) => {
+        const hoehe = (g) => {
             const bb = new THREE.Box3().setFromObject(g);
             return bb.max.y - bb.min.y;
         };
-
-        // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_vorrat =====
-        const dl0 = performance.now() + 150000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._studioUebergabeEmpfang !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
-        const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat) break;
-            await sleep(120);
-        }
-        res.warm.ready = !!(f && f.ready);
-        res.warm.mensch = !!(f && f.recipes && f.recipes.mensch);
-        res.warm.wolf = !!(f && f.recipes && f.recipes.wolf);
-        res.warm.kerne = !!(window.__koerperCore && window.__tetrapodaCore && globalThis.BAKERS_BY_KIND);
-        res.warm.player = !!(r.state.playerMesh && r.state.playerMesh.userData);
-        if (!res.warm.ready || !res.warm.mensch || !res.warm.wolf || !res.warm.kerne) return res;
-        const KC = window.__koerperCore;
-        const TC = window.__tetrapodaCore;
-        const memo = r.constructor._tierOfenMemo;
-
-        // ===== DEFAULT-WAHRHEITEN (vor jeder Übergabe) =====
-        const ueInit = r.state.studioUebergabe;
-        res.warm.stateFeld = !!(ueInit && typeof ueInit === "object" && "koerper" in ueInit && "kreatur" in ueInit);
-        const gDef = r._buildHumanGroup();
-        res.b.fpDefault = gDef ? fpGroup(gDef) : null;
-        const colsDef = gDef ? colorsOf(gDef) : new Set();
-        res.n.defaultHatRot = colsDef.has(lin(KC.CLOTH_COLORS.red.hex));
-        res.n.defaultHatNavy = colsDef.has(lin(KC.CLOTH_COLORS.navy.hex));
-        const cDef = r._buildCreatureGroup("wolf");
-        res.b.fpKreaturDefault = cDef ? fpGroup(cDef) : null;
-        res.b.refIdent = r._koerperStudioDials() === f.recipes.mensch.s; // Referenz, kein Klon
-        res.b.tetraRefIdent = r._tetrapodaStudioDials("wolf") === f.recipes.wolf.s;
-        const memoKeysDef = memo ? Array.from(memo.keys()) : [];
-        const defaultMenschKeys = memoKeysDef.filter((k) => k.indexOf("mensch|") === 0);
-        // Der ECHTE Spawn-Pfad (die Welt-Größe = bodySize-Wurf × Übergabe-Faktor):
-        // Höhe je Wurf normalisiert (h / _creatureBodySize(netId) — deterministisch
-        // aus der netId re-berechenbar), damit der Zufalls-Wurf herausfällt.
         const spawnNorm = () => {
-            const alt = s2.maxCreatures;
-            s2.maxCreatures = Math.max(alt || 0, s2.creatures.length + 2);
-            const c = r.spawnCreatureAt(pm0.x + 30, pm0.y + 1, pm0.z, "happy", "wolf", { precise: true });
-            s2.maxCreatures = alt;
+            const s = r.state;
+            const pm = (s.playerMesh && s.playerMesh.position) || { x: 0, y: 5, z: 0 };
+            const alt = s.maxCreatures;
+            s.maxCreatures = Math.max(alt || 0, s.creatures.length + 2);
+            const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });
+            s.maxCreatures = alt;
             if (!c) return null;
-            const roll = r._creatureBodySize(c.userData.netId);
-            const norm = hoeheVon(c) / (roll || 1);
-            const bodySize = c.userData.bodySize;
+            const n = hoehe(c) / (r._creatureBodySize(c.userData.netId) || 1);
             r.removeCreature(c);
-            return { norm, roll, bodySize };
+            return n;
         };
-        const s2 = r.state;
-        const pm0 = (s2.playerMesh && s2.playerMesh.position) || { x: 0, y: 5, z: 0 };
-        const spDef = spawnNorm();
-        res.b.spawnNormDefault = spDef ? spDef.norm : null;
-        res.b.spawnFaktorDefault = spDef ? spDef.bodySize / spDef.roll : null;
-
-        // ===== (N) NAHT: Übergabe → Avatar-Neu-Guss + Kreatur-Dials =====
-        const fpLiveVorher = r.state.playerMesh ? fpGroup(r.state.playerMesh) : null;
-        let threw = 0;
-        try {
-            res.n.okKoerper = r._studioUebergabeEmpfang({
-                type: "uebergabe",
-                kind: "koerper",
-                s: { height: 1.15, mass: 0.9, tone: 0.8, age: 0.3, gender: 0.2, hairLen: 1.2, hairVol: 1.1, arms: 0.1 },
-                gestalt: {
-                    skinTone: "ebenholz",
-                    hairStyle: "lang",
-                    hairColor: "blond",
-                    top: "tshirt",
-                    topColor: "red",
-                    bottom: "shorts",
-                    bottomColor: "sand",
-                    shoes: "boot",
-                    shoeColor: "black",
-                },
-            });
-        } catch (_e) {
-            threw++;
-            res.n.okKoerper = false;
-        }
-        // der EINE Leser trägt die Übergabe als Vorrang-Quelle (kein zweiter Leser am Leser vorbei): Dials und Größen-Faktor
-        const dK = r._koerperStudioDials();
-        res.n.koerperLeser = !!dK && dK.height === 1.15 && r._humanDialSizeFactor() !== 1;
-        const gUe = r._buildHumanGroup();
-        res.n.fpUe = gUe ? fpGroup(gUe) : null;
-        const colsUe = gUe ? colorsOf(gUe) : new Set();
-        res.n.ueHatRot = colsUe.has(lin(KC.CLOTH_COLORS.red.hex)); // topColor rot ≠ navy
-        res.n.ueHatHaut = colsUe.has(lin(KC.SKIN_TONES.ebenholz.hex)); // skinTone reist als Guss-Farbe
-        const fpLiveNachher = r.state.playerMesh ? fpGroup(r.state.playerMesh) : null;
-        res.n.liveNeuGuss = !!(fpLiveVorher && fpLiveNachher && fpLiveVorher !== fpLiveNachher);
-        try {
-            res.n.okKreatur = r._studioUebergabeEmpfang({
-                type: "uebergabe",
-                kind: "kreatur",
-                gattung: "wolf",
-                s: { size: 3.5, neck: 0.263, leg: 0.22, diet: 1.0, build: 0.42 },
-            });
-        } catch (_e) {
-            threw++;
-            res.n.okKreatur = false;
-        }
-        res.n.dialsLeser = r._tetrapodaStudioDials("wolf") && r._tetrapodaStudioDials("wolf").size === 3.5;
-        const cUe = r._buildCreatureGroup("wolf");
-        res.n.fpKreaturUe = cUe ? fpGroup(cUe) : null;
-        // Die WELT-GRÖSSE am echten Spawn-Chokepoint: die Template-Höhe folgt
-        // dem size-Dial durch die EINE Pipe (kein Zweit-Faktor) — gemessen als
-        // wurf-normalisierte Box3-Höhe; der bodySize-Wurf selbst bleibt byte-alt.
-        const spUe = spawnNorm();
-        res.n.spawnNormUe = spUe ? spUe.norm : null;
-        res.n.spawnFaktorUe = spUe ? spUe.bodySize / spUe.roll : null;
-        // Memo-Key-Disziplin: die Übergabe prägt EIGENE Keys (Dials im JSON), die
-        // Default-Keys bleiben unangetastet (kein Gift im Ofen).
-        const memoKeysUe = memo ? Array.from(memo.keys()) : [];
-        res.n.memoNeuKreatur = memoKeysUe.some((k) => k.indexOf("wolf|") === 0 && k.indexOf('"size":3.5') >= 0);
-        res.n.memoDefaultBleibt = defaultMenschKeys.every((k) => memo.has(k));
-
-        // ===== (S) SELBST-TEST: gestrippte Übergabe ⇒ der Default-Zustand ist ERKENNBAR =====
-        r.state.studioUebergabe.koerper = null;
-        r.state.studioUebergabe.kreatur = {};
-        const gStrip = r._buildHumanGroup();
-        res.s.fpStripped = gStrip ? fpGroup(gStrip) : null;
-        res.s.erkanntGleich = !!(res.s.fpStripped && res.b.fpDefault && res.s.fpStripped === res.b.fpDefault);
-        const spStrip = spawnNorm();
-        res.s.spawnNormStripped = spStrip ? spStrip.norm : null;
-        // (B)-Hälfte: Referenz-Identität kehrt zurück (kein Merge-Klon ohne Übergabe).
-        res.b.refIdentNachher = r._koerperStudioDials() === f.recipes.mensch.s;
-        res.b.tetraRefIdentNachher = r._tetrapodaStudioDials("wolf") === f.recipes.wolf.s;
-
-        // ===== (W) WÄNDE: kaputte Payloads fallen fail-closed ohne Wurf =====
-        const wCalls = [
-            ["kindFremd", { type: "uebergabe", kind: "haus", s: { height: 2 } }],
-            ["nanOnly", { type: "uebergabe", kind: "koerper", s: { height: "quark", mass: NaN }, gestalt: {} }],
-            [
-                "riesenString",
-                { type: "uebergabe", kind: "koerper", s: { height: 1.0 }, gestalt: { top: "x".repeat(9000) } },
-            ],
-            ["gattungFremd", { type: "uebergabe", kind: "kreatur", gattung: "drache", s: { size: 3 } }],
-            ["keinObjekt", "uebergabe"],
-            ["arrayPayload", { type: "uebergabe", kind: "koerper", s: [1, 2, 3] }],
-        ];
-        res.w.abgelehnt = {};
-        for (const [tag, payload] of wCalls) {
-            try {
-                res.w.abgelehnt[tag] = r._studioUebergabeEmpfang(payload) === false;
-            } catch (_e) {
-                threw++;
-                res.w.abgelehnt[tag] = false;
-            }
-        }
-        res.w.defaultBleibt = r.state.studioUebergabe.koerper === null;
-        // Clamp + must-ignore: height 99 → PARAMS-max; fremde Felder + erfundene Farbe fallen still.
-        try {
-            res.w.okClamp = r._studioUebergabeEmpfang({
-                type: "uebergabe",
-                kind: "koerper",
-                s: { height: 99, zusatz: 5 },
-                gestalt: { topColor: "neonpink", evil: "x" },
-            });
-        } catch (_e) {
-            threw++;
-            res.w.okClamp = false;
-        }
-        const rowH = (KC.PARAMS_BY_KIND.koerper || []).find((x) => x && x.id === "height");
-        const ueK = r.state.studioUebergabe.koerper;
-        res.w.clampMax = !!(ueK && rowH && ueK.s.height === rowH.max);
-        res.w.mustIgnore = !!(ueK && !("zusatz" in ueK.s) && !("topColor" in ueK.gestalt) && !("evil" in ueK.gestalt));
-        res.w.threw = threw;
-        // aufräumen für (R):
-        r.state.studioUebergabe.koerper = null;
-
-        // ===== (R) ROUNDTRIP: Snapshot → Restore (durch DENSELBEN Validator — KONSUM: Spion am Validator) =====
-        const val0 = r._studioUebergabeValidate;
-        let nVal = 0;
-        r._studioUebergabeValidate = (...a) => (nVal++, val0.apply(r, a));
-        try {
-            r._studioUebergabeEmpfang({
-                type: "uebergabe",
-                kind: "koerper",
-                s: { height: 1.15, mass: 0.9 },
-                gestalt: { topColor: "red" },
-            });
-            res.r.empfangValidiert = nVal > 0;
-            r._studioUebergabeEmpfang({
-                type: "uebergabe",
-                kind: "kreatur",
-                gattung: "wolf",
-                s: { size: 3.5 },
-            });
-            const snap = r.buildStateSnapshot();
-            res.r.snapKoerper = !!(
-                snap.studioUebergabe &&
-                snap.studioUebergabe.koerper &&
-                snap.studioUebergabe.koerper.s.height === 1.15 &&
-                snap.studioUebergabe.koerper.gestalt.topColor === "red"
-            );
-            res.r.snapKreatur = !!(
-                snap.studioUebergabe &&
-                snap.studioUebergabe.kreatur.wolf &&
-                snap.studioUebergabe.kreatur.wolf.s.size === 3.5
-            );
-            r.state.studioUebergabe.koerper = null;
-            r.state.studioUebergabe.kreatur = {};
-            nVal = 0;
-            r._loadStateRestoreSoulAndAtmosphere({
-                studioUebergabe: JSON.parse(JSON.stringify(snap.studioUebergabe)),
-            });
-            res.r.restoreValidiert = nVal > 0;
-            const ue2 = r.state.studioUebergabe;
-            res.r.restoreKoerper = !!(
-                ue2.koerper &&
-                ue2.koerper.s.height === 1.15 &&
-                ue2.koerper.gestalt.topColor === "red"
-            );
-            res.r.restoreKreatur = !!(ue2.kreatur.wolf && ue2.kreatur.wolf.s.size === 3.5);
-            // Vergifteter Snapshot: der Restore clampt + siebt (DERSELBE Validator).
-            r.state.studioUebergabe.koerper = null;
-            r.state.studioUebergabe.kreatur = {};
-            r._loadStateRestoreSoulAndAtmosphere({
-                studioUebergabe: {
-                    koerper: { s: { height: 99 }, gestalt: { topColor: "neonpink" } },
-                    kreatur: { drache: { s: { size: 99 } }, wolf: { s: { size: 99 } } },
-                },
-            });
-            const ue3 = r.state.studioUebergabe;
-            const rowS = (TC.PARAMS_BY_KIND.kreatur || []).find((x) => x && x.id === "size");
-            res.r.giftClamp = !!(ue3.koerper && rowH && ue3.koerper.s.height === rowH.max);
-            res.r.giftSieb = !!(
-                ue3.koerper &&
-                !("topColor" in ue3.koerper.gestalt) &&
-                !ue3.kreatur.drache &&
-                ue3.kreatur.wolf &&
-                rowS &&
-                ue3.kreatur.wolf.s.size === rowS.max
-            );
-        } catch (e) {
-            res.r.err = (e && e.message) || String(e);
-        } finally {
-            delete r._studioUebergabeValidate;
-        }
-        // End-Reinigung: die Welt verlässt die Linse im Default.
-        r.state.studioUebergabe.koerper = null;
-        r.state.studioUebergabe.kreatur = {};
+        // (B) ohne Prägung liefern die Leser die BUCH-REFERENZ (kein Merge-Klon) — der Guss-Pfad bleibt byte-alt
+        res.refVorher =
+            r._koerperStudioDials() === f.recipes.mensch.s && r._tetrapodaStudioDials("wolf") === f.recipes.wolf.s;
+        const cVorher = farben(r.state.playerMesh);
+        const normVorher = spawnNorm();
+        const werk = (kind, preset, ov) =>
+            r._studioUebergabeEmpfang({ type: "uebergabe", world: "probe", kind, preset, seed: 0, ov });
+        res.koerperAn = werk("koerper", "mensch", {
+            height: 1.15,
+            mass: 0.9,
+            skinTone: "ebenholz",
+            topColor: "red",
+            shoes: "boot",
+        });
+        const cAvatar = farben(r.state.playerMesh);
+        res.rot = cAvatar.has(lin(KC.CLOTH_COLORS.red.hex)) && !cVorher.has(lin(KC.CLOTH_COLORS.red.hex));
+        res.haut = cAvatar.has(lin(KC.SKIN_TONES.ebenholz.hex));
+        res.groesse = r._humanDialSizeFactor() !== 1;
+        res.kreaturAn = werk("kreatur", "wolf", { size: 3.5 });
+        const normWerk = spawnNorm();
+        res.spawnFaktor = normVorher && normWerk ? normWerk / normVorher : null;
+        // (R) der Snapshot trägt den Speicher, der Restore läuft durch DENSELBEN Prüfer und klemmt einen vergifteten
+        const snap = r.buildStateSnapshot();
+        res.snap = snap.studioOv.mensch.topColor === "red" && snap.studioOv.wolf.size === 3.5;
+        const echt = r._studioWerkPruefen;
+        let geprueft = 0;
+        r._studioWerkPruefen = function (...a) {
+            geprueft++;
+            return echt.apply(this, a);
+        };
+        r._loadStateRestoreSoulAndAtmosphere({
+            studioOv: { mensch: { height: 99, topColor: "neonpink" }, wolf: snap.studioOv.wolf, drache: { size: 3 } },
+        });
+        delete r._studioWerkPruefen;
+        const ws = r.state.workshop.studioOv;
+        const hoeheMax = KC.PARAMS_BY_KIND.koerper.find((z) => z.id === "height").max;
+        res.restore =
+            geprueft >= 3 &&
+            ws.mensch.height === hoeheMax &&
+            !("topColor" in ws.mensch) &&
+            !ws.drache &&
+            ws.wolf.size === 3.5;
+        // aufräumen: die Welt verlässt die Linse ohne Prägung
+        r.state.workshop.studioOv = {};
+        res.refNachher = r._koerperStudioDials() === f.recipes.mensch.s;
         return res;
     });
-
     await browser.close();
     server.close();
+    console.log("\n=== --welt — der Konsum im echten Spiel ===");
+    check("ohne Prägung liefern die Leser die Buch-Referenz (vor und nach der Linse)", out.refVorher && out.refNachher);
+    check("die Welt nimmt das Werk des Körper-Studios an", out.koerperAn === true);
+    check(
+        "der LEBENDE Avatar gießt neu und trägt die Gestalt (rot nur mit Prägung · Haut ebenholz · Größen-Faktor ≠ 1)",
+        out.rot && out.haut && out.groesse,
+        JSON.stringify(out)
+    );
+    check(
+        "ein Kreatur-Spawn trägt das Werk der Gattung (size 3.5 ⇒ Welt-Gestalt ×3.5/2.4, wurf-normalisiert)",
+        out.kreaturAn === true && Number.isFinite(out.spawnFaktor) && Math.abs(out.spawnFaktor - 3.5 / 2.4) < 0.05,
+        `Faktor ${out.spawnFaktor}`
+    );
+    check("der Snapshot trägt den Prägungs-Speicher", out.snap === true);
+    check(
+        "der Restore läuft durch DENSELBEN Prüfer: height 99 → max, erfundene Farbe und fremdes Rezept fallen",
+        out.restore === true
+    );
+}
 
-    if (out.fatal) {
-        console.error("FATAL:", out.fatal);
-        process.exit(2);
-    }
-    console.log("\n=== WARM-ANKER ===");
-    check(
-        "Foundry warm (Buch trägt mensch + wolf, Kerne + Bäcker-Tisch geladen, state-Feld deklariert)",
-        out.warm.ready && out.warm.mensch && out.warm.wolf && out.warm.kerne && out.warm.stateFeld,
-        JSON.stringify(out.warm)
-    );
-
-    console.log("\n=== (S) SELBST-TEST — der Default-Zustand ist ERKENNBAR (nicht vakuös) ===");
-    check(
-        "gestrippte Übergabe ⇒ EXAKT der Default-Guss-Fingerabdruck (Gleichheit ist sichtbar)",
-        out.s.erkanntGleich === true,
-        `stripped=${out.s.fpStripped} vs default=${out.b.fpDefault}`
-    );
-    check(
-        "gestrippte Kreatur-Übergabe ⇒ Spawn-Größe zurück auf Default (Gleichheit ist sichtbar)",
-        Number.isFinite(out.s.spawnNormStripped) &&
-            Number.isFinite(out.b.spawnNormDefault) &&
-            Math.abs(out.s.spawnNormStripped / out.b.spawnNormDefault - 1) < 1e-6,
-        `normStripped=${out.s.spawnNormStripped} normDefault=${out.b.spawnNormDefault}`
-    );
-
-    console.log("\n=== (N) NAHT — die Übergabe formt Avatar UND Kreatur messbar ===");
-    check("der Empfänger nimmt die koerper-Übergabe an", out.n.okKoerper === true);
-    check(
-        "Avatar-Neu-Guss trägt andere GEOMETRIE (Dials height/mass/… treffen morphAuf)",
-        !!out.n.fpUe && !!out.b.fpDefault && out.n.fpUe !== out.b.fpDefault,
-        `ue=${out.n.fpUe} default=${out.b.fpDefault}`
-    );
-    check(
-        "Farb-Fingerabdruck: topColor ROT erscheint (Default trägt navy, nie rot)",
-        out.n.defaultHatRot === false && out.n.defaultHatNavy === true && out.n.ueHatRot === true,
-        `defaultRot=${out.n.defaultHatRot} defaultNavy=${out.n.defaultHatNavy} ueRot=${out.n.ueHatRot}`
-    );
-    check("skinTone-Wahl (ebenholz) reist als Guss-Farbe der Haut", out.n.ueHatHaut === true);
-    check(
-        "der LIVE-Avatar (state.playerMesh) wurde NEU GEGOSSEN (applyPlayerSoul-Chokepoint)",
-        out.n.liveNeuGuss === true
-    );
-    check("der Empfänger nimmt die kreatur-Übergabe an (gattung wolf)", out.n.okKreatur === true);
-    check("die EINE Kreatur-Dial-Quelle liefert die Übergabe (size 3.5)", out.n.dialsLeser === true);
-    check("die EINE Körper-Dial-Quelle liefert die Übergabe (height 1.15, Größen-Faktor ≠ 1)", out.n.koerperLeser === true);
-    check(
-        "der Kreatur-Guss formt anders (Baker-Dials ⇒ Proportions-Fingerabdruck ≠ Default)",
-        !!out.n.fpKreaturUe && !!out.b.fpKreaturDefault && out.n.fpKreaturUe !== out.b.fpKreaturDefault,
-        `ue=${out.n.fpKreaturUe} default=${out.b.fpKreaturDefault}`
-    );
-    check(
-        "Kreatur-SPAWN trägt die Größe: size 3.5 ⇒ Welt-Gestalt ×(3.5/2.4) durch die EINE Pipe (Box3, wurf-normalisiert; der bodySize-Wurf bleibt byte-alt)",
-        Math.abs(out.b.spawnFaktorDefault - 1) < 1e-9 &&
-            Math.abs(out.n.spawnFaktorUe - 1) < 1e-9 &&
-            Number.isFinite(out.n.spawnNormUe) &&
-            Number.isFinite(out.b.spawnNormDefault) &&
-            Math.abs(out.n.spawnNormUe / out.b.spawnNormDefault - 3.5 / 2.4) < 0.05,
-        `bodySizeFaktor=${out.n.spawnFaktorUe} normUe=${out.n.spawnNormUe} normDefault=${out.b.spawnNormDefault}`
-    );
-    check(
-        "Ofen-Memo-Disziplin: Übergabe prägt EIGENE Keys (Dials im JSON), Default-Keys unangetastet",
-        out.n.memoNeuKreatur === true && out.n.memoDefaultBleibt === true
-    );
-
-    console.log("\n=== (W) WÄNDE — fail-closed ohne Wurf, Default bleibt ===");
-    const ab = out.w.abgelehnt || {};
-    check(
-        "kaputte Payloads fallen (kind fremd · NaN-only · Riesen-String · Gattung fremd · Nicht-Objekt · Array)",
-        ab.kindFremd && ab.nanOnly && ab.riesenString && ab.gattungFremd && ab.keinObjekt && ab.arrayPayload,
-        JSON.stringify(ab)
-    );
-    check("kein Wurf auf dem gesamten Wand-Pfad", out.w.threw === 0, `threw=${out.w.threw}`);
-    check("nach den Ablehnungen bleibt der Default (koerper null)", out.w.defaultBleibt === true);
-    check("Zahlen-Clamp auf die Kern-PARAMS-Grenze (height 99 → max)", out.w.clampMax === true);
-    check(
-        "must-ignore: fremde s-/gestalt-Felder + erfundene Farbe fallen still, der Rest reist",
-        out.w.okClamp === true && out.w.mustIgnore === true
-    );
-
-    console.log("\n=== (R) ROUNDTRIP — Snapshot → Restore durch DENSELBEN Validator ===");
-    check(
-        "buildStateSnapshot trägt die Übergabe (koerper s+gestalt · kreatur je Gattung)",
-        out.r.snapKoerper === true && out.r.snapKreatur === true,
-        out.r.err
-    );
-    check("der Restore bringt sie zurück (Feld-genau)", out.r.restoreKoerper === true && out.r.restoreKreatur === true);
-    check("Empfang und Restore laufen durch DENSELBEN Validator (Konsum _studioUebergabeValidate)", out.r.empfangValidiert === true && out.r.restoreValidiert === true);
-    check(
-        "ein VERGIFTETER Snapshot wird am Restore geclampt + gesiebt (Chokepoint-Validator)",
-        out.r.giftClamp === true && out.r.giftSieb === true
-    );
-
-    console.log("\n=== (B) BYTE-IDENTITÄT ohne Übergabe ===");
-    check(
-        "_koerperStudioDials liefert die BUCH-REFERENZ (===) vor UND nach der Übergabe-Episode",
-        out.b.refIdent === true && out.b.refIdentNachher === true
-    );
-    check(
-        "_tetrapodaStudioDials liefert die BUCH-REFERENZ (===) vor UND nach der Übergabe-Episode",
-        out.b.tetraRefIdent === true && out.b.tetraRefIdentNachher === true
-    );
-
+(async () => {
+    const t0 = Date.now();
+    await kanalPruefen();
+    console.log(`      (K) ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    if (process.argv.includes("--welt")) await weltPruefen();
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DIE STUDIO-ÜBERGABE TRÄGT: die Live-Bearbeitung des Schöpfers reist über die W12-Brücke in die Welt (Avatar-Neu-Guss mit Gestalt + Farben, Kreatur-Spawns mit Dials), die Wände stehen fail-closed, der Snapshot trägt sie, und ohne Übergabe ist der Guss-Pfad byte-identisch."
+        "\n✅ GRÜN — DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich."
     );
     process.exit(0);
 })().catch((e) => {

@@ -2,10 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-ego-schatten.cjs — DIE EGO-SCHATTEN-WAND (gate:ego-schatten, 0910-5)
 //
-// Befund (Gegenprüfung 0710-12): in der Ego-Sicht, dem Standard-Blick (`cameraMode: "first"`), warf der Spieler KEINEN
-// Schatten. `_applyEgoSicht` blendete Kopf und Haut mit `visible = false` aus — und nahm damit den Wurf. Der Schnitt:
-// EIN Ebenen-Schalter. Im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf SHADOW_TWIN_LAYER; die
-// Kaskaden sehen ihn ganz, das Auge nie (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz).
+// In der Ego-Sicht wirft der Spieler: im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf SHADOW_TWIN_LAYER;
+// die Kaskaden sehen ihn ganz, das Auge nie (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz).
 //
 // Die Linse fährt den ECHTEN Renderer (swiftshader, kienspan) an einer eigenen Bühne: der ECHTE Leib des Spielers
 // (`state.playerMesh`, der Mensch aus dem Ofen) in BEIDEN Stufen, die er trägt (je Lauf `grob` vor dem Bild, `fein` nach
@@ -256,7 +254,7 @@ function buehne(arg) {
             licht.shadow.camera.layers.mask = dl.shadow.camera.layers.mask;
             licht.shadow.camera.updateProjectionMatrix();
             szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 1.5));
-            const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
+            const diaet = (m) => r._materialObserverDiaet(m);
             const boden = new T.Mesh(
                 new T.PlaneGeometry(16, 16),
                 diaet(new T.MeshStandardNodeMaterial({ color: 0xb0b0b0 }))
@@ -544,12 +542,7 @@ function buehne(arg) {
                     pm.userData._gelenk.nahStufe === stufe &&
                     (stufe === 1 || !!st._weltbildDa) &&
                     pm.children.some((c) => c.userData && c.userData._creatureSkin);
-                let r = window.anazhRealm;
-                while (!(r && r._gameLoopTick && r.state.rendererReady && r.state.renderer.backend)) {
-                    if (performance.now() - t0 > 240000) return { ok: false };
-                    await new Promise((res) => setTimeout(res, 50));
-                    r = window.anazhRealm;
-                }
+                let r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer.backend);
                 const st = r.state;
                 const ok = await new Promise((res) => {
                     const frist = setTimeout(() => res(false), 240000);

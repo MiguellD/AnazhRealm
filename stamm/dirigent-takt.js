@@ -23,6 +23,9 @@ class AnazhRealm_dirigent_takt {
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
+            // DIE EINGABE je Bild (leib.K5): das Gamepad in die Verb-Tafel, der Blick in die Kamera-Kugel — auch bei offenem Portal,
+            // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
+            this._eingabeTakt(delta);
             if (this._portalOverlay) return;
             this.state.spielZeit += delta; // DIE SPIEL-ZEIT: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
@@ -142,6 +145,8 @@ class AnazhRealm_dirigent_takt {
                 let _pt = performance.now();
                 this._loopFixedStep(delta, currentTime);
                 this._perfSenseLap("physics", _pt);
+                // das Rumble aus dem Zustand dieses Takts (Fahrt, Treffer), nach der Sim
+                if (!ruht) this._rumbleTakt(delta, currentTime);
 
                 // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
                 // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
@@ -151,8 +156,8 @@ class AnazhRealm_dirigent_takt {
                 // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
                 if (!ruht) {
-                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
-                    // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch die gehaltene Abbau-Aktion der
+                    // Verb-Tafel; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
                     this._tickHarvest();
 
                     // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
@@ -210,9 +215,9 @@ class AnazhRealm_dirigent_takt {
                 this._updateDorfRauch(delta);
 
                 if (!ruht) {
-                    // ### Fähigkeiten ###
+                    // ### Fähigkeiten ### (rule) — gehalten über die Verb-Tafel: ihre Taste oder ihr Pad-Knopf (`_verbTaste`)
                     Object.keys(this.state.abilities).forEach((ability) => {
-                        if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
+                        if (this.state.verbTafel.gehalten[ability]) this.state.abilities[ability](this, this.state);
                     });
 
                     // ### Speichern ### (V9.44-f → _loopAutoSave)
@@ -325,32 +330,25 @@ class AnazhRealm_dirigent_takt {
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
-    // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr — und kein Fege-Takt der Stand-Wache geht noch (ihre Arbeit
-    // steht: ein Takt, der auf ein Budget wartet, hält sich wach, ohne die Welt zu regen; A9 Zweit-Boot an der Mess-Wiese: die
-    // Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh, als die Stempel schon 30 Takte standen — boden-nah 2,418 statt
-    // 1,830). Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
+    // blieben, nichts mehr baut (`_weltOffen`: kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr, keine Karte wartet auf ihren Bake) und jeder geweckte Fege-Takt der Stand-Wache seine Runde
+    // zu Ende ging (`_standGeht`; A9 Zweit-Boot an der Mess-Wiese: die Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh,
+    // als die Stempel schon 30 Takte standen — boden-nah 2,418 statt 1,830). So ist „steht" ein FIXPUNKT: ohne Eingabe wirkt
+    // danach nichts mehr (gate:stand-takt FIXPUNKT; K-WANDUHR zählte kurz nur die Wirkung — nach einem Dichte-Schritt stand die
+    // Welt nach 1 Takt, mitten in der Runde der Stufen-Wahl 256 von 2 304, und wirkte danach noch 4×). Ein atmender Regler weckt
+    // die Takte ohne Ende: wer auf das Wort wartet, hält ihn (`__weltStehtNach`; unter Last stand die Welt am Genesis-Ring sonst
+    // nie, CI 39439645378 · 39449804810 · 39452595795).
+    // Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
     // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
-    // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen, das Offene) — wer auf das Wort wartet
-    // und es nicht bekommt, bricht beim Namen des Täters.
+    // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen samt Runde, das Offene) — wer auf das
+    // Wort wartet und es nicht bekommt, bricht beim Namen des Täters.
     _weltStandTakt() {
-        const W =
-            this._weltStand ||
-            (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, je: new Map(), ruhe: 0, takte: 0 });
+        const W = this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, ruhe: 0, takte: 0 });
         W.takte++;
         const welt = this._weltRegung | 0,
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
-        let arbeit = 0,
-            geht = null;
-        if (this._standWache)
-            for (const [n, t] of this._standWache.takte) {
-                arbeit += t.arbeit;
-                if (W.je.get(n) !== t.arbeit) {
-                    W.je.set(n, t.arbeit);
-                    geht = geht ? `${geht}, ${n}` : n;
-                }
-            }
+        const geht = this._standGeht();
         const o = this._weltOffen();
         const grund =
             welt !== W.welt
@@ -359,7 +357,7 @@ class AnazhRealm_dirigent_takt {
                   ? "Bau-Regung"
                   : karte !== W.karte
                     ? "Karten-Regung"
-                    : arbeit !== W.arbeit
+                    : geht
                       ? `Fege-Takt ${geht}`
                       : o.foundry
                         ? `Foundry offen ${o.foundry}`
@@ -367,23 +365,43 @@ class AnazhRealm_dirigent_takt {
                           ? `Chunks offen ${o.chunks}`
                           : o.wald
                             ? `Wald offen ${o.wald}`
-                            : null;
+                            : o.karten
+                              ? `Karten offen ${o.karten}`
+                              : o.felder
+                                ? `Felder offen ${o.felder}`
+                                : o.dorf
+                                  ? `Dorf offen ${o.dorf}`
+                                  : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
-            W.arbeit = arbeit;
             W.grund = grund;
             W.ruhe = 0;
         } else W.ruhe++;
     }
+    // Die Fege-Takte mitten in ihrer Runde, beim Namen (`wartet`: auf ein Budget oder ein Asset, sonst gegangen/Runde) — null,
+    // wenn jeder schläft.
+    _standGeht() {
+        let geht = null;
+        if (this._standWache)
+            for (const [n, t] of this._standWache.takte)
+                if (t.leer < t.runde)
+                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? "wartet" : `${t.leer}/${t.runde}`}`;
+        return geht;
+    }
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
-    // Pflanz-Gänge, die wartenden Pflanzungen, K69) — jede Linse liest SIE, nie die Marken.
+    // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
+    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`) und die Leiber der Bewohner,
+    // deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist — `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie
+    // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
-        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0 }); // je Takt, ohne Müll
+        const o =
+            this._weltOffenWert ||
+            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -397,6 +415,14 @@ class AnazhRealm_dirigent_takt {
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
+        o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        o.felder = this._weltBakeSchuld();
+        o.dorf = this._dorfOffen();
+        o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
+        o.leiber = 0;
+        if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
+            for (const S of this._bewohnerSiedlungen.values())
+                for (const b of S.liste || []) if (b.leib && !b.drinnen && !b.leib.userData._kzVersuch) o.leiber++;
         return o;
     }
     _weltSteht() {
@@ -406,7 +432,8 @@ class AnazhRealm_dirigent_takt {
         if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
             return false;
         const o = this._weltOffen();
-        return o.foundry + o.chunks + o.wald === 0;
+        for (const k in o) if (o[k]) return false; // jedes Feld, ohne Müll je Takt
+        return !this._standGeht();
     }
 
     // ═══ DIE GPU-LEINE ═══
@@ -423,7 +450,15 @@ class AnazhRealm_dirigent_takt {
     _gpuLeineFrei() {
         const L =
             this._gpuLeine ||
-            (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, sammelMs: 0, versuch: false });
+            (this._gpuLeine = {
+                imFlug: 0,
+                gerendert: 0,
+                ausgesetzt: 0,
+                sammelMs: 0,
+                versuch: false,
+                erledigt: 0,
+                erledigtMs: null,
+            });
         L.versuch = false;
         if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
@@ -461,10 +496,12 @@ class AnazhRealm_dirigent_takt {
         const L = this._gpuLeine;
         if (!L) return;
         L.gerendert++;
-        this._gpuLeineBinden();
+        this._gpuLeineBinden(true);
     }
-    // Eine abgeschickte GPU-Arbeit an die Leine (das Bild, die Karte): unterwegs, bis die Queue sie abgearbeitet hat.
-    _gpuLeineBinden() {
+    // Eine abgeschickte GPU-Arbeit an die Leine (das Bild, die Karte): unterwegs, bis die Queue sie abgearbeitet hat. Ein
+    // abgearbeitetes BILD zählt mit Zeitpunkt (`erledigt`, `erledigtMs` — der Takt der GPU; `werkbank lauf` liest ihn, statt
+    // je Bild eine zweite Abfrage an die Queue zu stellen).
+    _gpuLeineBinden(bild) {
         const L = this._gpuLeine;
         const q = this._gpuLeineQueue();
         if (!L || !q) return;
@@ -472,8 +509,13 @@ class AnazhRealm_dirigent_takt {
         const los = () => {
             L.imFlug = Math.max(0, L.imFlug - 1);
         };
+        const erledigt = () => {
+            los();
+            L.erledigt++;
+            L.erledigtMs = performance.now();
+        };
         try {
-            q.onSubmittedWorkDone().then(los, los);
+            q.onSubmittedWorkDone().then(bild ? erledigt : los, los);
         } catch (_e) {
             los();
         }
@@ -709,13 +751,15 @@ class AnazhRealm_dirigent_takt {
     // (alpha). EIN Sim-Schritt = `_loopPhysicsSync` + `_loopPlayerMovement(simTime, FIXED_DT)`
     // (+ Replay-Capture) = reine Funktion (state, input, FIXED_DT); `replayRun` reicht kein dtOverride.
 
-    // Der EINE Sim-Schritt (deterministisch, fixed-dt). Physik LIEST die Velocity, die Bewegung
-    // SETZT sie (dieselbe Ordnung wie der variable Loop: physics → movement → 1-Frame-Input-Latenz).
+    // Der EINE Sim-Schritt (deterministisch, fixed-dt). Die Bewegung SETZT die Velocity aus der Eingabe dieses Schritts, die
+    // Physik integriert sie im SELBEN Schritt (leib.K1: die Ordnung Physik → Bewegung trug die Taste erst einen Schritt später
+    // in die Lage — 16,7 ms jeder Anfahrt; die Folge der Schritte ist dieselbe, die Eingabe greift einen Schritt früher).
     _stepFixedSim(simTime, dt) {
+        this._verbTafelSammeln(); // die Eingabe dieses Schritts: Tastatur und Pad → die Verb-Tafel (leib.K5)
         // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
-        this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
+        this._loopPhysicsSync(dt, simTime);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
@@ -752,7 +796,10 @@ class AnazhRealm_dirigent_takt {
             }
         }
         // prev = die Sim-Position VOR DEM LETZTEN SCHRITT (Fiedler: das Bild liegt zwischen den zwei jüngsten Zuständen, um den
-        // Rest des Akkumulators). Ein Bild ohne Schritt behält sein Paar und gleitet weiter; ein Teleport beginnt ohne Schweif.
+        // Rest des Akkumulators). DIE SIM LÄUFT VORAUS (leib.K1): sie schreitet, solange die Wanduhr vor ihr liegt, und steht
+        // danach bis zu einem Schritt vor ihr — das Bild liegt zwischen prev und cur genau auf der Wanduhr. Vorher stand die Sim
+        // bis zu einem Schritt hinter der Wanduhr und das Bild noch einen Schritt dahinter: der eigene Leib zeigte jede Taste
+        // 16,7 ms zu spät (Radeon, Mess-Wiese, Taste bis 1 cm im Bild: Ego p95 78,2 ms, Third 72,2 ms). Ein Bild ohne Schritt behält sein Paar und gleitet weiter; ein Teleport beginnt ohne Schweif.
         // F1 (Befund des Schöpfers 17.10.: „Third ruckelt horizontal"): prev war die Lage VOR DEM BILD — mit zwei Schritten
         // lag das Bild um zwei Schritte zurück, ohne Schritt sprang es auf den Zustand; der gezeichnete Wagen lief je Bild
         // 0,56–2,3-mal so weit, wie die Physik ihn trug (Spielgang, Null-Renderer, p95 der Abweichung).
@@ -761,7 +808,7 @@ class AnazhRealm_dirigent_takt {
         st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
         let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
         let steps = 0;
-        while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
+        while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
@@ -769,9 +816,10 @@ class AnazhRealm_dirigent_takt {
             steps++;
         }
         // bei hartem Cap den Rest-Akkumulator verwerfen (Zeit fallen lassen statt einholen → kein Spiral)
-        if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator >= FIXED_DT) st._fixedAccumulator = 0;
+        if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
-        st._fixedAlpha = FIXED_DT > 0 ? st._fixedAccumulator / FIXED_DT : 0;
+        // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
+        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
         return steps;
     }
 
@@ -800,7 +848,7 @@ class AnazhRealm_dirigent_takt {
     // bit-identisches Ergebnis. Die bit-Gleichheit zweier Läufe IST der Beweis; Lockstep-MP baut darauf.
 
     // Hält den Input dieses Frames fest (im Loop nach `_loopPlayerMovement`). Genau die
-    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die WASD/Shift/Space-Tasten,
+    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die Leib-Felder der Verb-Tafel (analog),
     // der Blick-Yaw und das Zeit-Delta.
     _replayCaptureFrame(delta) {
         const rec = this.state._replayRec;
@@ -809,16 +857,14 @@ class AnazhRealm_dirigent_takt {
             this.state._replayRec = null; // Sicherheits-Cap gegen unbegrenztes Wachstum
             return;
         }
-        const k = this.state.keys || {};
+        const T = this.state.verbTafel;
         rec.frames.push({
             dt: delta,
             yaw: this.state.yaw,
-            w: !!k["w"],
-            a: !!k["a"],
-            s: !!k["s"],
-            d: !!k["d"],
-            shift: !!k["shift"],
-            space: !!k[" "],
+            vor: T.vor,
+            quer: T.quer,
+            sprint: T.sprint,
+            sprung: T.sprung,
         });
     }
 
@@ -871,29 +917,45 @@ class AnazhRealm_dirigent_takt {
         s.playerVel.setValue(rec.start.vx, rec.start.vy, rec.start.vz);
         s._fieldVy = rec.start.fieldVy;
         s.yaw = rec.start.yaw;
-        // Die Bewegungs-/Erdungs-Hilfszustände auf einen sauberen Start setzen, damit
-        // zwei Replays vom selben Start wirklich bit-gleich laufen (kein Carry-over).
-        const savedKeys = s.keys;
-        const savedLastMove = s._lastMoveT;
-        const savedWasGrounded = s._fieldWasGrounded;
-        s._fieldWasGrounded = false;
+        // Die Bewegungs-/Erdungs-Hilfszustände auf den Start eines frischen Leibs (die Werte des Konstruktors), damit zwei
+        // Replays vom selben Start bit-gleich laufen (kein Carry-over): die Bewegung liest sie VOR dem ersten Feld-Schritt
+        // (leib.K1) — der Sprung-Puffer des Vor-Replays sprang sonst im ersten Schritt des nächsten.
+        const frisch = {
+            verbTafel: Object.assign({}, s.verbTafel, { rutsch: false, gehalten: {} }),
+            _lastMoveT: 0,
+            _fieldWasGrounded: false,
+            isInAir: false,
+            onSteepSlope: false,
+            groundNormalY: 1,
+            lastGroundedTime: 0,
+            isJumping: false,
+            _jumpPressedAt: undefined,
+            _spaceWasDown: undefined,
+            _cWasDown: false,
+            _parkourSlide: null,
+            _parkourKletter: 0,
+            _wandKontaktAt: null,
+            playerUnderwater: false,
+            playerEyesUnderwater: false,
+            _groundedCache: undefined,
+            _groundedCachedAt: undefined,
+        };
+        const gerettet = {};
+        for (const k in frisch) ((gerettet[k] = s[k]), (s[k] = frisch[k]));
         let t = 0;
-        s._lastMoveT = 0;
         for (let i = 0; i < rec.frames.length; i++) {
             const f = rec.frames[i];
-            s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
+            Object.assign(s.verbTafel, { vor: f.vor, quer: f.quer, sprint: !!f.sprint, sprung: !!f.sprung });
             s.yaw = f.yaw;
             t += f.dt;
-            // Loop-Reihenfolge: erst der Feld-Schritt (integriert die Velocity des
-            // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
-            this._stepCharacter(f.dt, t);
+            // die Ordnung des Sim-Schritts (`_stepFixedSim`): erst die Bewegung (setzt die Intent-Velocity dieses
+            // Schritts), dann der Feld-Schritt (integriert sie + Kollision).
             this._loopPlayerMovement(t);
+            this._stepCharacter(f.dt, t);
             this._rittSchritt(f.dt);
         }
         const end = this._replaySnapshotState();
-        s.keys = savedKeys;
-        s._lastMoveT = savedLastMove;
-        s._fieldWasGrounded = savedWasGrounded;
+        Object.assign(s, gerettet);
         return end;
     }
 
@@ -957,6 +1019,7 @@ class AnazhRealm_dirigent_takt {
         // zurück).
         const _ct = performance.now();
         this.updateCreatures(delta);
+        this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
         // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
@@ -1087,7 +1150,7 @@ class AnazhRealm_dirigent_takt {
     }
 
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
-    // eigenen Takt (die Ort-Wahl `_ortPlanWarten` per setTimeout) eine andere; gestellt beim ersten Leser, gelöscht am Ende
+    // eigenen Takt (per setTimeout; bis K5 die Ort-Wahl, heute im Ort-Faden) eine andere; gestellt beim ersten Leser, gelöscht am Ende
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
     // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
     // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
@@ -1122,6 +1185,13 @@ class AnazhRealm_dirigent_takt {
                 prio: 0, // HEILIG — Terrain/Bewegung wird NIE vom Render-/Deko-Druck verhungert
                 run: () => {
                     st._frameChunksBuilt = !!this._tickVoxelChunkStreaming(playerPos);
+                },
+            },
+            {
+                name: "morphFolge",
+                prio: 1, // Welt-Substanz: die Naht eines Nachbarn, dessen Stufe wechselte (`_tickMorphFolge`), nach dem Strom
+                run: (ms) => {
+                    this._tickMorphFolge(st._frameChunksBuilt ? 0 : Math.min(ms, AnazhRealm.MORPH_FOLGE_MS));
                 },
             },
             {
@@ -1306,22 +1376,36 @@ class AnazhRealm_dirigent_takt {
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 
+    // DAS SPEICHERN IM LEERLAUF (fahrt-takt, Lehre 14): der Takt entscheidet nur, dass ein Stand fällig ist; Schnappschuss,
+    // JSON und die Schreiber laufen im nächsten Leerlauf-Fenster des Haupt-Fadens (`requestIdleCallback`, Frist 2 s — das
+    // Alter eines Stands bleibt ≤ saveInterval + 2 s), nie im Takt. Bis fahrt-takt trug der Takt beides (Radeon GT-Fahrt
+    // 20 m/s: _loopAutoSave 5,8 ms an der Mess-Wiese, 9,2 ms am Genesis-Ring je Takt ab p95).
     _loopAutoSave(currentTime) {
-        // ### Speichern ###
-        if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
-            this.saveState();
-            this.state.lastSaveUpdate = currentTime;
+        const st = this.state;
+        const lokal = currentTime - st.lastSaveUpdate >= st.saveInterval;
+        const server = !st.isServerSaveInFlight && currentTime - st.lastServerSaveUpdate >= st.serverSaveInterval;
+        if (lokal) st.lastSaveUpdate = currentTime;
+        if (server) {
+            st.lastServerSaveUpdate = currentTime;
+            st.isServerSaveInFlight = true;
         }
-        if (
-            !this.state.isServerSaveInFlight &&
-            currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
-        ) {
-            this.state.isServerSaveInFlight = true;
-            this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                this.state.isServerSaveInFlight = false;
-            });
-            this.state.lastServerSaveUpdate = currentTime;
-        }
+        if (!lokal && !server) return;
+        this._imLeerlauf(() => {
+            if (lokal) this.saveState();
+            if (server)
+                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                    st.isServerSaveInFlight = false;
+                });
+        }, 2000);
+    }
+
+    // DER LEERLAUF DES HAUPT-FADENS (Lehre 14): `f` läuft im nächsten Leerlauf-Fenster (`requestIdleCallback`), spätestens
+    // nach `fristMs` — nie im Takt; ohne die API im nächsten Task. Leser: das Speichern (`_loopAutoSave`), die Leck-Probe des
+    // Flugschreibers (`_flightRecorderTick`).
+    _imLeerlauf(f, fristMs) {
+        const ric = globalThis.requestIdleCallback;
+        if (typeof ric === "function") ric.call(globalThis, f, { timeout: fristMs });
+        else setTimeout(f, 0);
     }
 
     _loopRender() {
@@ -1356,6 +1440,8 @@ class AnazhRealm_dirigent_takt {
             this.state.skyboxUniforms.time.value = bildZeit;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time)
             this.state.hydroSurfaceUniforms.time.value = bildZeit;
+        // DAS LICHT DER WELT am Bild (`_weltLicht`): Spiegel, Wasser, Feld und Panorama lesen die Lichter dieses Bilds
+        this._weltLichtTakt();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
         // Kontinuierlicher Böen-Drift (Math.random-frei): layered-sine auf der Bild-Uhr (~±18 % um die Wort-Basis), ein

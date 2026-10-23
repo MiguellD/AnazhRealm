@@ -16,10 +16,6 @@ async function checkBandV1757HeldSlot(ctx) {
         const p = r.state.player;
         const savedHeld = p.equipped ? p.equipped.held : null;
 
-        // (0) der held-Slot + HELD_STAT_WEIGHT
-        out.slotExists = !!p.equipped && "held" in p.equipped;
-        out.weightExists = r.constructor.HELD_STAT_WEIGHT > 0;
-
         // (1) ein hartes Gerät konstruieren (härteste Form × Material)
         const FTA = r.constructor.FORM_TAG_ACTIVATION;
         let hardShape = "box";
@@ -66,7 +62,7 @@ async function checkBandV1757HeldSlot(ctx) {
         r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
         out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        // Welle L (K-D15): die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
+        // die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
         out.heldKeinPanzer = armed.defense === base.defense && armed.hpMax === base.hpMax;
 
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
@@ -82,12 +78,6 @@ async function checkBandV1757HeldSlot(ctx) {
         const snap = r.buildStateSnapshot();
         out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
 
-        // (8) UI: kein Rollen-Schloss — der gehaltene Bauplan geht durch den EINEN merged Pfad (wieldBlueprint),
-        // keine getrennte Waffen-Zeile. V18.66 Ich-J2: der „In der Hand"-DROPDOWN ist geschnitten (Parallel-Pfad
-        // zur Hotbar); das Wechseln läuft in der Hand (Hotbar) + Rezeptbuch (wieldBlueprint). Test wandert mit.
-        out.heldDropdownCut = typeof r._equipAppendHeldRow !== "function";
-        out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
-
         // cleanup
         r.equipHeld(null);
         delete r.state.blueprints[wName];
@@ -95,7 +85,6 @@ async function checkBandV1757HeldSlot(ctx) {
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.57 W2-B: der held-Equip-Slot + HELD_STAT_WEIGHT existieren", res.slotExists && res.weightExists);
     check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
     check(
         "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
@@ -117,15 +106,11 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldDrivesHarvest
     );
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
-    check(
-        "V18.66 Ich-J2: kein Rollen-Schloss — keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
-        res.noWeaponRow && res.heldDropdownCut
-    );
 }
 
-// V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
+// das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
-// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
 async function checkBandV1761ForgeImplement(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -226,7 +211,7 @@ async function checkBandV1761ForgeImplement(ctx) {
     check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
 }
 
-// V17.62 S3-B (kampf-plan §11.7) — der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
+// der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
 // geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
 // geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
 async function checkBandV1762ForgeMeaningful(ctx) {
@@ -325,9 +310,9 @@ async function checkBandV1762ForgeMeaningful(ctx) {
     );
 }
 
-// V17.63 S4 (kampf-plan §11.7) — Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
+// Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
-// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+// routet nach Rolle. KONSUM (nicht Existenz).
 async function checkBandV1763ForgeArmor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -445,9 +430,9 @@ async function checkBandV1763ForgeArmor(ctx) {
     );
 }
 
-// V17.65 S6 (kampf-plan §11.7, §11.3-Faden 6) — Trank brauen: der Werk-Akt zieht die Zutaten (die
+// Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
-// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
 async function checkBandV1765BrewConsumable(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -557,12 +542,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
-        // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
-        out.stationLabel = typeof r._stationLabelForDomain === "function";
-
-        // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
-        // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
-        out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -575,7 +554,7 @@ async function checkBandV1766FertigenFlow(ctx) {
                 { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
-        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
+        // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
         // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
@@ -637,11 +616,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
-    check(
-        "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
-        res.oldButtonsGone
-    );
     check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
         "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
@@ -798,7 +772,7 @@ async function checkBandV1772Library(ctx) {
         out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
 
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
-        //     Snapshot des Player-States, danach restauriert (V17.66).
+        //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
@@ -968,7 +942,7 @@ async function checkBandV1773HeldMesh(ctx) {
     );
 }
 
-// V17.84 U6 (resonanz-system §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
+// die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
 // Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
 // Form). NUR Custom-Avatare — die Built-in-Seele (human) bleibt neutral (kein Balance-Bruch).
 async function checkBandV1784AvatarFormFit(ctx) {
@@ -1050,8 +1024,6 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1068,11 +1040,10 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         if (!C || !C.STAT_FROM_TAGS) return null;
         const out = {};
-        out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
-        // V18.61 Ich-F — die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
+        // die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
 
-        // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
+        // Seele = Bauplan aus Körper-Teilen
         const defs = r.playerSoulDefs;
         // ALTLASTEN-NULL: die Built-in-Def-Menge ist der Mensch; die Tier-Körper
         // leben als koerper_-Baupläne (derselbe bodyParts-Vertrag).
@@ -1113,7 +1084,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.computedStatsHasAll =
             computed &&
             computed.stats &&
-            // V17.51 Kampf Phase A — das Kampf-Trio fließt durch DIESELBE Pipeline.
+            // das Kampf-Trio fließt durch DIESELBE Pipeline.
             [
                 "hpMax",
                 "damage",
@@ -1202,7 +1173,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-        // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
+        // UI im DOM (Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
@@ -1228,7 +1199,6 @@ async function checkBandWelle6DSoul(ctx) {
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
 
         // (2) Chat-Pattern für damage
@@ -1240,23 +1210,11 @@ async function checkBandWelle6DSoul(ctx) {
         const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
         out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-        // (3) Die Avatar-Aura ist gefallen: Probe auf ABWESENHEIT (Tick, Haut-Shells, Hue-Map,
-        // Loop-Aufruf, p2p-Senden). Der p2p-Empfangs-Stub bleibt must-ignore-tolerant (Alt-Peers senden
-        // aura weiter).
+        // (3) Die Avatar-Aura ist gefallen (ihre Namen bewacht gate:altlasten): eine aura-Nachricht eines Alt-Peers ist
+        // ein UNBEKANNTER Typ, der Dispatcher verwirft sie still (kein Crash, kein Handler, kein State).
         r.applyPlayerSoul("human");
-        const sub = r.state.playerMesh.children[0];
-        out.subMeshExists = !!sub && !!sub.material;
-        out.auraTickGone = typeof r.tickPlayerAura !== "function";
-        out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
-        out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
-        out.auraLoopGone = window.__fehlt(r.startEternalLoop, /tickPlayerAura/);
-        out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
-        // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
-        // Nachricht ist ein UNBEKANNTER Typ und wird vom Dispatcher generisch
-        // still verworfen (kein Crash, kein Handler, kein State).
         out.auraStubTolerant = (() => {
             try {
-                if (typeof r._p2pMsgAura === "function") return false;
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
             } catch (_e) {
@@ -1284,7 +1242,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul("human"); // restore
 
         // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
-        r.dslRun(["player_speed", 20], { source: "test" });
+        r.dslRun(["player_speed", r._koerperGesetzBand("speed").max], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
         // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
@@ -1326,8 +1284,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.humanSpeedRaised = humanResult.stats.speed >= speedBaseReflex - 1e-9;
 
         // (4) Tod-Wunde persistent + regeneriert
-        out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
-        out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
         r.state.player.deathWoundIntensity = 0;
         r.state.player.respawnGraceUntil = -Infinity;
         r.state.player.hp = 1;
@@ -1355,10 +1311,8 @@ async function checkBandWelle6DSoul(ctx) {
         // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
         r.state.player.deathWoundIntensity = 0;
         r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
-        out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
-        out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
-        // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
+        // Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
         r.setGameMode("pfad");
         r.state.blueprints.wound_test_bp = {
@@ -1438,19 +1392,13 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
         check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
-        // (3) SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN (das Band wandert, V9.56-i):
-        check("Reflex 3 SYNERGIE: tickPlayerAura ist PHYSISCH raus", reflexResults.auraTickGone);
-        check("Reflex 3 SYNERGIE: die Fresnel-Haut-Shells sind PHYSISCH raus", reflexResults.auraShellsGone);
-        check("Reflex 3 SYNERGIE: AURA_TAG_HUE-Map ist gefallen", reflexResults.auraMapGone);
-        check("Reflex 3 SYNERGIE: der Loop ruft keine Aura mehr", reflexResults.auraLoopGone);
-        check("Reflex 3 SYNERGIE: die p2p-Sende-Seite ist gefallen", reflexResults.auraSendGone);
         check(
             "Reflex 3 (NULL): aura ist dem Dispatcher unbekannt und wird still verworfen",
             reflexResults.auraStubTolerant
         );
         check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
         check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
-        // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
+        // Drache-Orientierung: KEIN
         // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
         check(
             "Compound-Körper: kein Inner-π-Flip (Avatar schaut vom Spieler weg in 3rd-Person)",
@@ -1474,8 +1422,6 @@ async function checkBandWelle6DSoul(ctx) {
             `speed=${(reflexResults.humanSpeed || 0).toFixed(2)} base=${(reflexResults.humanSpeedBase || 0).toFixed(2)}`
         );
         // (4) Wunde
-        check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
-        check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
         check("Reflex 4: _playerDeathRespawn setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
         check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
         check("Reflex 4: tickPlayerVitals regeneriert Wunde linear", reflexResults.woundRegens);
@@ -1488,8 +1434,6 @@ async function checkBandWelle6DSoul(ctx) {
             reflexResults.deathDepositsLife
         );
         // (5) Werkzeug-Kosten
-        check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
-        check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
         check(
             "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
             reflexResults.applyOpOkWithStamina,
@@ -1521,8 +1465,6 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         // Konstanten + Methoden
-        out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
-        out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
         out.hasEquippedState =
@@ -1606,7 +1548,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // V17.57 W2-B — ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
         // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
@@ -1625,9 +1567,6 @@ async function checkBandWelle6DSoul(ctx) {
             snap.playerEquipped.held === "test_armor_eisen";
         r.equipHeld(null);
 
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: kein Tick, kein Tint (V9.56-i).
-        out.auraSubMeshTinted = typeof r.tickPlayerAura !== "function";
-
         // Cleanup
         r.equipArmor(null);
         r.equipTool(null);
@@ -1639,8 +1578,6 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (wave6d3bResults && !wave6d3bResults.error) {
-        check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
-        check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1688,10 +1625,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
         );
-        check(
-            "Welle 6.D 3b/SYNERGIE: der Aura-Tint ist mit der Avatar-Aura gefallen (kein Tick mehr)",
-            wave6d3bResults.auraSubMeshTinted
-        );
     } else if (wave6d3bResults && wave6d3bResults.error) {
         check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
     }
@@ -1702,15 +1635,15 @@ async function checkBandWelle6DSoul(ctx) {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
-        // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
+        // Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
         r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
+        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
-        out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
+        out.hasPhoenixState = "respawnGraceUntil" in r.state.player;
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
         // Setup
@@ -1801,7 +1734,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
 
         // --- Konsumables ---
-        out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
         // define_consumable via DSL
         r.dslRun(
             ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
@@ -1849,7 +1781,7 @@ async function checkBandWelle6DSoul(ctx) {
     if (wave6d3aResults && !wave6d3aResults.error) {
         // Tod-Behandlung
         check(
-            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt, phoenixUntil ist gefallen",
+            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt",
             wave6d3aResults.hasPhoenixState
         );
         check(
@@ -1890,7 +1822,6 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3aResults.twoStepAboveMin
         );
         // Konsumables
-        check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
         check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
         check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
         check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
@@ -1922,7 +1853,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasBoostsField = Array.isArray(r.state.player.boosts);
         out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
         out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
-        out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
 
         // Setup: Save initial state für Vergleich
         r.state.player.boosts = [];
@@ -2057,7 +1987,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
             wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
         );
-        check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
         check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
         check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
         check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
@@ -2107,10 +2036,7 @@ async function checkBandWelle6DSoul(ctx) {
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
-        // DSL-Op define_soul ist im Interpreter
-        const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
-        out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
-        // Fallback: prüfen via dslRun
+        // define_soul über dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
         const testParts = [
             {
@@ -2213,7 +2139,7 @@ async function checkBandWelle6DSoul(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // V18.62 Ich-H — der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
+        // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
         // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
         // Datenschicht (define_soul + die Brücke lesen sie).
         // Der parallele Ich-Soul-Editor existiert NICHT mehr (in die Werkstatt gewandert)
@@ -2241,7 +2167,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
-        // V18.101 (Test wandert, V9.56-i): dynamisch gegen die def-Länge —
+        // dynamisch gegen die def-Länge —
         // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
             r.state.customSouls.test_clone_a &&
@@ -2381,11 +2307,10 @@ async function checkBandWelle6DSoul(ctx) {
     }
 
     if (wave6dResults) {
-        check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
-            // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
+            // STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
-            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            // Die feste Satz-Assertion wandert mit.
             "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
@@ -2455,10 +2380,10 @@ async function checkBandWelle6DSoul(ctx) {
     }
 }
 
-// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+// PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
@@ -2472,14 +2397,12 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
-        out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
-        // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
-        // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
-        // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
-        // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
-        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz
-        // für je ein Probe-Wesen: die Obergrenze, die die Bänder davor füllten, urteilt nie mit.
+        // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
+        // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
+        // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
+        // ist sanft). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
+        // seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz für je ein Probe-Wesen: die
+        // Obergrenze, die die Bänder davor füllten, urteilt nie mit.
         const cap4 = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 1;
         out.d4Temperament = (() => {
@@ -2532,7 +2455,7 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
+        // E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
         // steht neben der Hotbar + der Tausch-Key ist gebunden.
         out.e8Swap = (() => {
@@ -2614,19 +2537,11 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_phoenix &&
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
-        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
-        out.a4PlaneCut =
-            typeof r._buildHydroWaterfall === "undefined" &&
-            typeof r._buildHydroWaterfallPool === "undefined" &&
-            typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "undefined" &&
-            typeof r.setWaterfallSteep === "undefined";
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
         // Gebaut wird das Sheet eines Meeres-Chunks dreimal: ruhig (Wogen), unter voller Strömung (Fluss) und als See.
-        out.a4MouthWave = (() => {
-            const key = window.__wasserChunk("meer");
+        out.a4MouthWave = await (async () => {
+            const key = await window.__wasserChunk("meer");
             if (!key) return false;
             const [cx, cz] = key.split(",").map(Number);
             const wctx = r._mainWaterSheetCtx(cx, cz, r.state.voxelChunks.get(key));
@@ -2745,7 +2660,7 @@ async function checkBandPhasenBF(ctx) {
         // B6: DACH-GATE des Wasser-Re-Mesh — es entscheidet die SICHTBARE Spalten-Dach-Änderung, nicht
         // Brutto-moved (ein stationärer Fluss re-meshte sonst jeden Frame). Behavioral: erster Call true ·
         // unverändert false · sichtbare Änderung true · danach false; + KONSUM (Welt-Tick ruft es).
-        out.b6RoofGate = (() => {
+        out.b6RoofGate = await (async () => {
             const key = "__fp_test__";
             const saved = r.state.voxelChunks.get(key);
             try {
@@ -2770,7 +2685,7 @@ async function checkBandPhasenBF(ctx) {
                 const fourth = r._caRoofChanged(a, dim, dimY);
                 const dachNachDritt = e._caDachNeu[0];
                 // KONSUM: der Welt-Tick eines bewegten See-Chunks fragt das Dach-Gate (der Stub macht moved > 0,5)
-                const wk = window.__wasserChunk("see");
+                const wk = await window.__wasserChunk("see");
                 const we = wk && r.state.voxelChunks.get(wk);
                 let tickRuft = false;
                 if (we) {
@@ -2872,12 +2787,6 @@ async function checkBandPhasenBF(ctx) {
         // if-else-Handler); behavioral: „liste welten“ läuft durch die Tabelle; KONSUM: chatSuggest liest
         // BEIDE Tabellen (der Tippfehler „speichre zustand“ bekommt den System-Vorschlag).
         out.e1OneGate = (() => {
-            const oldHandlersGone =
-                typeof r._chatTryWorldCommand !== "function" &&
-                typeof r._chatTrySystemCommand !== "function" &&
-                typeof r._chatTryAbilityCommand !== "function" &&
-                typeof r._chatTryPersistenceCommand !== "function";
-            if (!oldHandlersGone) return "alte if-else-Handler leben noch";
             const pLw = r.chatSystemPatterns.find((q) => q.re.test("liste welten"));
             if (!pLw) return "Tabelle trägt liste welten nicht";
             const out0 = document.getElementById("chat-output");
@@ -2905,7 +2814,7 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
@@ -2947,7 +2856,6 @@ async function checkBandPhasenBF(ctx) {
         })();
         // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
         // Material-Probe wandert zur Abwesenheit (der Schnitt bleibt geschnitten).
-        out.b3Mantle = typeof r._ensureHorizonMantle === "undefined";
         // A4-SCHELF, KÜSTEN-AQUIFER — synthetisch auf präpariertem preDensity-Grid (atlas-frei, in-region):
         // (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER; (b) Land über dem Spiegel bleibt
         // trocken; (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (_skyOpenWaterFilter trennt).
@@ -3043,7 +2951,6 @@ async function checkBandPhasenBF(ctx) {
         return;
     }
     check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
-    check("C6/SYNERGIE: die Avatar-Aura (Tick + Haut-Shells) ist PHYSISCH gefallen", res.c6Src);
     check(
         "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
@@ -3059,7 +2966,6 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
         "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
@@ -3080,7 +2986,6 @@ async function checkBandPhasenBF(ctx) {
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
-    check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,
@@ -3277,7 +3182,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // Disziplin — die meisten Bauplane sind voll, ein Save trägt nur die echt
         // gebrauchten). Float-tolerant (Math.max/min kann minimal driften).
         if (heldBp) {
-            // RE-FETCH (V18.180-Lehre, V9.82): zwischen W6-W11 wurde forge/strike/
+            // RE-FETCH (Lehre): zwischen W6-W11 wurde forge/strike/
             // repair gerufen — jeder Pfad MAG state.blueprints[heldName] durch
             // Restore/Snapshot-Tanz neu referenzieren. Frische Referenz holen.
             heldBp = r.state.blueprints[heldName];
@@ -3374,7 +3279,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
+// Γ1-LESART-5 Ψ2-NASE Foundation:
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
 // als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
@@ -3439,64 +3344,9 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
-// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
-// Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
-async function checkBandV18209Konsolidierung(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
-
-        // (K2) die R5-Konstante steht (Mana-Drain, Geruch und Baum-Grammatik fahren ihre Bänder am Verhalten)
-        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-
-        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
-        out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
-        // KONSUM: die Boden-Farbe fragt die Schneegrenze des Gelände-Kerns (der Kern ist eingefroren → offene Kopie)
-        const G = window.__gelaendeCore;
-        window.__gelaendeCore = Object.assign({}, G);
-        try {
-            const p = r.state.playerMesh.position;
-            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
-        } finally {
-            window.__gelaendeCore = G;
-        }
-        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
-        out.gammaMLichen = !!A.LICHEN;
-        out.gammaMIronBands = !!A.IRON_BANDS;
-        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
-        out.gamma3Char = !!A.FIELD_CHARACTER;
-        out.gammaBogenKomplett =
-            out.gamma4Anker &&
-            out.gamma6Snowband &&
-            out.gammaMStrata &&
-            out.gammaMLichen &&
-            out.gammaMIronBands &&
-            out.gamma2Totholz &&
-            out.gamma3Char;
-
-        // (K5) MANA-SYMMETRIE Foundation:
-        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
-
-        return out;
-    });
-
-    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
-    check(
-        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
-        res.gammaBogenKomplett === true
-    );
-    check(
-        "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
-        res.manaMaxFn && res.manaRegenConst
-    );
-}
-
 module.exports = {
     checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
     checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
     checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
-    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld, checkBandV18209Konsolidierung,
+    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld,
 };

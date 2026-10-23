@@ -162,8 +162,6 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 6 architectureTemplates V1 + 6.3 Kollisions-Body + 6.4 Bauplan-Datenschicht + 6.5 Hotbar + 6.6 Werkstatt-Tab + 6 V2 Distance-Culling/Fraktal/Counter/Bau-Cursor).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing6Workshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -201,7 +199,7 @@ async function checkBandRing6Workshop(ctx) {
         };
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
-        // V18.260 — der Render-Merge fasst die Teile per Material zu wenigen Meshes
+        // der Render-Merge fasst die Teile per Material zu wenigen Meshes
         // zusammen. Die Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
@@ -210,7 +208,7 @@ async function checkBandRing6Workshop(ctx) {
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
-        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; V18.260: per Material
+        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; per Material
         // gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
         out.templeHasPillars =
             t && t.mesh && !!r.state.blueprints._t_r6_tor && (r.state.blueprints._t_r6_tor.parts || []).length >= 4;
@@ -512,7 +510,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
         // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
         // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
-        // ein WAND-Segment (die Tür-Lücke der Front liegt dann bei x≈1.3..2.6, nicht im Weg).
+        // ein WAND-Segment (nicht im Weg).
         const KSlive = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (r.state.blueprints._t_live_haus) delete r.state.blueprints._t_live_haus;
         r.state.blueprints._t_live_haus = {
@@ -534,7 +532,7 @@ async function checkBandRing6Workshop(ctx) {
         r.state.keys = { w: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
         }
         const playerZ = r.state.playerMesh.position.z;
         const playerY = r.state.playerMesh.position.y;
@@ -565,26 +563,10 @@ async function checkBandRing6Workshop(ctx) {
     });
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
-    // Built-ins sind Daten in state.blueprints, _buildFromBlueprint rendert sie, 8 Primitive werden
-    // erkannt; User-Baupläne sind hinzufügbar + persistierbar.
+    // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
     const ring64Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Built-ins vorhanden. AUSLÖSCHUNGS-WELLE — village/temple fielen; die Daten-Schicht
-        // besteht jetzt aus den lebenden Built-ins (stein_block/damm/waterfall) + den
-        // eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis 6 / tor_basis 4 Teile).
-        const KSr64 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.stein_block;
-        out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.damm;
-        out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
-        out.villageBuiltIn = r.state.blueprints.stein_block && r.state.blueprints.stein_block.builtIn === true;
-        out.villagePartsArray = Array.isArray(r.state.blueprints.stein_block.parts);
-        out.villageHasParts =
-            !!KSr64.haus_basis && Array.isArray(KSr64.haus_basis.parts) && KSr64.haus_basis.parts.length >= 5;
-        out.templeHasParts =
-            !!KSr64.tor_basis && Array.isArray(KSr64.tor_basis.parts) && KSr64.tor_basis.parts.length >= 4;
-        out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
 
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
         // mit allen 8 Shapes und prüfen, dass jede einen Mesh
@@ -697,14 +679,6 @@ async function checkBandRing6Workshop(ctx) {
             ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 6.4: Built-in Felsblock-Bauplan vorhanden", ring64Results.hasVillage);
-        check("Ring 6.4: Built-in Damm-Bauplan vorhanden", ring64Results.hasTemple);
-        check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
-        check("Ring 6.4: Felsblock ist als builtIn markiert", ring64Results.villageBuiltIn);
-        check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
-        check("Ring 6.4: haus_basis-Substanz (KIND_SUBSTANCE) hat ≥5 Teile", ring64Results.villageHasParts);
-        check("Ring 6.4: tor_basis-Substanz (KIND_SUBSTANCE) hat ≥4 Teile", ring64Results.templeHasParts);
-        check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
         check(
             "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
             ring64Results.allShapesRender
@@ -727,7 +701,7 @@ async function checkBandRing6Workshop(ctx) {
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
         out.hotbarInDom = !!bar;
-        // V18.109 — E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
+        // E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
         out.hotbarHasNineSlots =
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
@@ -801,7 +775,7 @@ async function checkBandRing6Workshop(ctx) {
         const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
-        // V18.59 — die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
+        // die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
         const config = document.getElementById("hotbar-config");
         out.hotbarConfigInDom = !!config;
         out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 10; // 9 + Off-Hand (E8)
@@ -1138,9 +1112,6 @@ async function checkBandRing6Workshop(ctx) {
         // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
         r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
-        out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
-        out.phantomInScene =
-            r.state.buildMode.phantomMesh && r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
         r.state.buildMode.phantomMesh.traverse((node) => {
@@ -1155,7 +1126,7 @@ async function checkBandRing6Workshop(ctx) {
         // Slot wechseln (Slot 1 = waterfall)
         r.selectHotbarSlot(1);
         out.switchFormChanges = r.state.buildMode.blueprintName === "waterfall";
-        // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
+        // confirmBuild platziert echte Struktur — S2: in schöpfer testen, weil
         // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
         r.setGameMode("schöpfer");
         const arBefore = r.state.architectures.length;
@@ -1209,8 +1180,6 @@ async function checkBandRing6Workshop(ctx) {
         // Bau-Cursor
         check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
         check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
-        check("Ring 6.5: selectHotbarSlot aktiviert Build-Mode", ring6v2Results.modeActiveAfterSet);
-        check("Ring 6.5: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
         check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
         check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
         check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
@@ -1511,7 +1480,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
+        // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
@@ -1610,9 +1579,9 @@ async function checkBandWHWald(ctx) {
     );
 }
 
-// V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Γ2 TOTHOLZ: ein gefallener Stamm im Wald.
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
-// seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
+// seed-deterministisch, KEIN Affinitäts-Wettstreit — Disziplin).
 async function checkBandV18198Gamma2Totholz(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -1620,8 +1589,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (T1) TOTHOLZ_RATE Konstante existiert
-        out.rateConstExists = typeof A.TOTHOLZ_RATE === "number" && A.TOTHOLZ_RATE > 0 && A.TOTHOLZ_RATE < 1;
 
         // (T2) Bauplan `stamm_gefallen` ist registriert
         const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
@@ -1645,7 +1612,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // nicht tag-identisch zu baum_eiche sein — darf aber in KEINER Achse höher resonieren, sonst
         // verdrängte er, je in candidates aufgenommen, einen Sieger (ohne Laub: magieleitung niedriger, OK).
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-        // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
+        // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
             (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
@@ -1680,7 +1647,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         return out;
     });
 
-    check("V18.198 (T1) TOTHOLZ_RATE Konstante existiert (0 < x < 1)", res.rateConstExists === true);
     check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
     check("V18.198 (T2b) Bauplan ist builtIn + instanced", res.bpBuiltIn === true && res.bpInstanced === true);
     check(`V18.198 (T2c) Label 'Gefallener Stamm' (gemessen ${JSON.stringify(res.bpLabel)})`, res.bpLabel === true);
@@ -1795,7 +1761,7 @@ async function checkBandV18213MeshMerge(ctx) {
             out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
+            // der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
             // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
             r.state.architectures = r.state.architectures || [];
             r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });

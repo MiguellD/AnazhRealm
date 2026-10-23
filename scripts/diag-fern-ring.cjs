@@ -14,11 +14,10 @@
 //       neuen Ort.
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
-//   (6) SICHT-BESITZ (SELBST GESPIELT 16.07.) — mit bereitem Ring weitet die
-//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); DIE LUFT trägt
-//       (V18.530: scene.fogNode, Sichtweite am Boden ≥ 5 km, mit der Höhe weiter);
+//   (6) SICHT-BESITZ — mit bereitem Ring weitet die
+//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die Luft misst gate:luft-tiefe:echt im Bild;
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
-//   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
+//   (9) DIE NAHT — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
 //       Gesetz (Bias ≤ 0,15 m, p95 ≤ √(Sehne² + Abweichung des Chunks²) + 0,1 m: die Sehne des Rings und das Gitter des Chunks
 //       sind unabhängige Fehler — die Summe hielt an der Stufe-2-Kante (K51, Abweichung 1,39 m) das 2-m-Tauchen nicht mehr
@@ -28,9 +27,9 @@
 //       senkrechte Strahl ein gezeichnetes Deck (gemorpht, mit Stich-Band), an jeder Kante in Voxel-Kanten der Stufe, innen
 //       und außen. Selbsttests: das alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch, die alte Zellen-Regel
 //       zeigt Löcher.
-//   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
+//   (10) DIE FERN-FARBE OHNE STREIFEN — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
-//   (11) DAS DACH IST DER BESTAND (K16) — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
+//   (11) DAS DACH IST DER BESTAND — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
 //       Generator auf 192 × 192 m um den Spieler stehen lässt (0,8–1,25); Selbsttest: die Geburt als Deckung fällt rot.
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
@@ -54,17 +53,11 @@ const server = statikServer();
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
+        await window.__weltDa(() => !(!window.anazhRealm ||
                 !window.anazhRealm.state ||
                 !window.anazhRealm.state.scene ||
                 !window.anazhRealm.state.playerMesh ||
-                !window.anazhRealm.state.worldMeta) &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+                !window.anazhRealm.state.worldMeta));
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.scene) return { fatal: "anazhRealm/scene kam nie" };
         const F = r.constructor.FERN_RING;
@@ -94,12 +87,12 @@ const server = statikServer();
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         const sleepT = (ms) => new Promise((rs) => setTimeout(rs, ms));
-        // DER TAKT DES RINGS bis zur Bedingung (höchstens `ms`): je Takt die Zahl der eingehängten Punkte
+        // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
         const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
             let takte = 0;
             let maxD = 0;
             let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
-            for (const dl = performance.now() + ms; performance.now() < dl; await sleepT(16)) {
+            for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleepT(16)) {
                 takt();
                 takte++;
                 const f = r.state.fernRing;
@@ -161,7 +154,7 @@ const server = statikServer();
         });
         res.visible = fr.meshes.every((m) => m.visible === true);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
-        // DER LOCH-DECKEL (20.07.): Schale 1 beginnt DIREKT am Spieler (0.5·span)
+        // DER LOCH-DECKEL: Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
         // verdeckt); gebaute Chunks decken ihn per Depth. deckZoneRad trägt die
         // Chunk-Ziel-Zone, in der die Reihen das VOLLE Gesetz gesenkt tragen.
@@ -182,7 +175,7 @@ const server = statikServer();
             const row = (li / F.winkel) | 0;
             const ai = li - row * F.winkel;
             const sh = fr.schalen[s];
-            // GEOMETRISCHE Reihen + NAHT-VEREDELUNG (20.07.) — die Erwartung
+            // GEOMETRISCHE Reihen + NAHT-VEREDELUNG — die Erwartung
             // spiegelt das LIVE-Layout (nah dicht, fern weit; Innen-Reihen der
             // ersten Schale tragen das volle Gesetz leicht gesenkt).
             const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (reihenSoll[s] - 1));
@@ -233,7 +226,7 @@ const server = statikServer();
                 if (c > 0 && fl.spiegel === fl.spiegel) expY += (fl.spiegel - expY) * c;
             }
             if (row === 0) expY -= F.saumDrop;
-            // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
+            // Im Gebauten taucht der Ring nicht mehr: er trägt dort das volle Gesetz und verwirft sein Fragment (die
             // Masken-Karte, Band 9).
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
@@ -269,7 +262,7 @@ const server = statikServer();
         // EINE Naht (`_fernRingWasserNeu`). Der Hub liest die Wind-Zeile des Gesetzes (Konsum: ein anderer Wind im Gesetz
         // ändert ihn im Verhältnis). Selbsttest: die alte Regel (Spiegel − wasserDrop) MUSS rot fallen.
         {
-            // DER SPIEGEL DER PROBE AUS DER WELT (K16): trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
+            // DER SPIEGEL DER PROBE AUS DER WELT: trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
             // über dem Spiegel — die Probe war leer), hebt die Probe den Spiegel auf das 10-%-Quantil seiner Höhen (die Regel ist
             // eine Funktion des Spiegels) und legt danach jeden so genässten Punkt mit dem alten Spiegel zurück.
             const wl0 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
@@ -428,41 +421,6 @@ const server = statikServer();
             r.state.camera.far === camFarWide &&
             Number.isFinite(r._fernRingCamFarAlt) &&
             r._fernRingCamFarAlt < camFarWide;
-        // Die HÖHEN-ÖFFNUNG durch den ECHTEN Loop (der Spieler-Hub reist per
-        // V18.356-Teleport-Adoption; die Kamera folgt in _loopCamera; die
-        // Umgebungs-Proben sind takt-gecacht). `_gameLoopTick` wird erst bei
-        // Renderer-Ready zugewiesen — erst darauf warten, dann DETERMINISTISCH
-        // pumpen BIS die Bedingung steht (kein Ritt auf dem ~1-Hz-Headless-RAF).
-        const dlLoop = performance.now() + 30000;
-        while (typeof r._gameLoopTick !== "function" && performance.now() < dlLoop) await sleep(200);
-        if (typeof r._gameLoopTick !== "function") res.loopFehler = "_gameLoopTick kam nie (Renderer-Ready)";
-        // DIE LUFT TRÄGT (V18.530): kein Wald-Nebel mehr — die Sichtweite (Koschmieder 2 %) ist am Boden ≥ 5 km
-        // und wächst mit der Höhe (Dunst-Skalenhöhe). Gelesen nach echten Loop-Takten (Tag-Nacht schreibt die Luft).
-        const sichtBei = (y) => {
-            r.state.playerMesh.position.y = y;
-            for (let i = 0; i < 3; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (e) {
-                    res.loopFehler = String(e && e.message);
-                }
-            }
-            return Math.round(r._luftSichtM(r.state.camera.position.y));
-        };
-        const px = r.state.playerMesh.position.x;
-        const pz = r.state.playerMesh.position.z;
-        const hy = r.getTerrainHeightAt(px, pz);
-        const boden = Number.isFinite(hy) ? hy : 0;
-        res.sichtBoden = sichtBei(boden + 1);
-        res.sichtHoch = sichtBei(boden + 300);
-        res.sichtZurueck = sichtBei(boden + 1);
-        res.luftKnoten = !!r.state.scene.fogNode && !r.state.scene.fog;
-        res.oeffnungOk =
-            !res.loopFehler &&
-            res.luftKnoten &&
-            res.sichtBoden >= 5000 &&
-            res.sichtHoch > res.sichtBoden &&
-            Math.abs(res.sichtZurueck - res.sichtBoden) <= res.sichtBoden * 0.01; // der Spieler setzt sich neu
         // Die RÜCKNAHME: der Dispose stellt das alte far wieder her (Ring-Besitz).
         const altVorDispose = r._fernRingCamFarAlt;
         r._fernRingDispose();
@@ -482,12 +440,11 @@ const server = statikServer();
         // Render-Probe: ein WebGPURenderer zeichnet den Fullscreen-Raymarch —
         // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
         const P8 = r.constructor.FELD_PASS;
-        const dl8 = performance.now() + 90000;
         let fp8 = r.state.feldPass;
-        // SCHATTIERUNGS-PERSISTENZ (20.07.): sichtbar erst mit gebackenem
+        // SCHATTIERUNGS-PERSISTENZ: sichtbar erst mit gebackenem
         // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
         // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
-        while ((!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && performance.now() < dl8) {
+        for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
             r._tickFernRing(r.state.playerMesh.position);
             fp8 = r.state.feldPass;
             await sleep7(100);
@@ -605,7 +562,7 @@ const server = statikServer();
         } catch (e8b) {
             res.einErr = String((e8b && e8b.message) || e8b);
         }
-        // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff (K16) =====
+        // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff =====
         // Der Bestand steht still (2 s ohne neuen Chunk), dann baut der Ring SYNCHRON neu (kein await: kein Chunk kommt
         // dazwischen) und die Linse misst, was gezeichnet wird: je Kante zwischen gebautem und freiem Chunk alle 3 m die Höhe
         // des Rings 0,3 m draußen gegen die des Chunks 0,3 m drinnen (Strahl von oben auf die Meshes), im Gebauten auf einem
@@ -629,9 +586,8 @@ const server = statikServer();
             r.state.chunkRingRadius = ziel9;
             r.state._activeRingRadius = ziel9;
             let n9 = -1;
-            let still9 = performance.now();
-            const dl9 = performance.now() + 90000;
-            for (let t = 0; performance.now() < dl9; t++) {
+            let still9 = 0;
+            for (let t = 0, weiter = window.__deckel("die Naht-Stufen im Ring 3", 20000); weiter(); t++) {
                 r.state._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
@@ -642,8 +598,8 @@ const server = statikServer();
                 const n = gebaut9();
                 if (n !== n9) {
                     n9 = n;
-                    still9 = performance.now();
-                } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && performance.now() - still9 > 3000)) break;
+                    still9 = t;
+                } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && t - still9 > 60 && !r._weltOffen().chunks)) break;
             }
             res.nahtStufen = [...r.state.voxelChunks.values()].reduce((a, e) => {
                 if (e && !e.empty && e.mesh) a[e.lod || 0] = (a[e.lod || 0] || 0) + 1;
@@ -666,7 +622,7 @@ const server = statikServer();
             const pos9 = r.state.playerMesh.position;
             r._tickFernRing(pos9);
             await pumpe(pos9, (f) => f.cursor >= f.totalVerts, 120000);
-            // DIE DECK-WACHE SCHWINGT EIN (K16): der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
+            // DIE DECK-WACHE SCHWINGT EIN: der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
             // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
             // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
             {
@@ -882,8 +838,7 @@ const server = statikServer();
                 // 2 verworfen, 1 Saum — der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe —, 0 frei), an den vier
                 // Kanten (innen UND außen, 0,05–1,5 m) und im Inneren:
                 //   DAS LOCH — die Regel verwirft, und kein Deck (Chunk oder Stich-Band der 3 × 3 Nachbarn) trifft den senkrechten
-                //   Strahl: dort zeichnet niemand (Befund der Prüfung 12.10.: die Zelle verwarf, das Deck lag eine halbe Voxel-Kante
-                //   versetzt — 47 von 52 Punkten 5 cm innen an der −X-Kante, im Bild eine blaue Linie über die Bau-Kante).
+                //   Strahl: dort zeichnet niemand (im Bild eine blaue Linie über die Bau-Kante).
                 //   DER DURCHSTICH — der Ring zeichnet (Saum oder frei), ein Deck liegt darunter, und der Ring (im Saum um die
                 //   Weiche gesenkt) steht über ihm.
                 // Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) MUSS Löcher zeigen; ohne Karte sticht die Sehne durch.
@@ -932,7 +887,7 @@ const server = statikServer();
                         punkte.push([cx * span9 + u, (cz + 1) * span9 - d, "+Z"]);
                     }
                 for (const [x, z, seite] of punkte) {
-                    const regel = typeof r._fernRingRegel === "function" ? r._fernRingRegel(fr9, x, z) : -1;
+                    const regel = r._fernRingRegel(fr9, x, z);
                     proben13.push(x, z);
                     const yc = deckY(x, z);
                     if (regel === 2) {
@@ -957,9 +912,7 @@ const server = statikServer();
                     const weicheP9 =
                         regel !== 1
                             ? 0
-                            : typeof r._fernRingWeiche === "function"
-                              ? r._fernRingWeiche(fr9, x, z, rN.x, rN.y, rN.z)
-                              : weiche9;
+                            : r._fernRingWeiche(fr9, x, z, rN.x, rN.y, rN.z);
                     weicheMax9 = Math.max(weicheMax9, weicheP9);
                     const ueber = yr - weicheP9 - yc;
                     const gesetz9 = r._terrainMacroSurfaceY(x, z, true);
@@ -974,8 +927,8 @@ const server = statikServer();
                     if (tief9 && feld9 !== null && feld9 >= gesetz9 - 2) {
                         muendungLuecke9++;
                         // DIE LÜCKE UNTER DER WEICHE (gezählt, beim Ort genannt): steht der tiefere Boden näher als die Weiche,
-                        // gewinnt er — ein Deck steht dort (13.10. an der Stufen-Naht 11|12 das gröbere Deck der Stufe 1 unter dem
-                        // Sockel-Rand), das Gesetz des Saums: wo das Deck fehlt, trägt der Ring, wo es steht, gewinnt es
+                        // gewinnt er — ein Deck steht dort, das Gesetz des Saums: wo das Deck fehlt, trägt der Ring, wo es
+                        // steht, gewinnt es
                         if (yr - weicheT9 < yc - 0.05) {
                             lueckeOffen9++;
                             if (lueckeOrte9.length < 4)
@@ -1029,7 +982,6 @@ const server = statikServer();
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
             res.maskNode = !!(stoffNaht9 && stoffNaht9.maskNode);
-            res.regel = typeof r._fernRingRegel === "function";
             res.loch = loch9;
             res.lochZelle = lochZelle;
             res.lochSeite = lochSeite;
@@ -1287,7 +1239,6 @@ const server = statikServer();
             const core = globalThis.__phytoCore;
             const fbm = (px, pz) => r._forestFbm(px, pz);
             const wl = r.state.waterLevel;
-            const t = new Float32Array(8);
             let g = 0;
             let ng = 0;
             let a = 0;
@@ -1569,11 +1520,6 @@ const server = statikServer();
         out.camWidened === true,
         `far=${out.camFar} soll=${out.camFarWide} alt=${out.camFarAlt}`
     );
-    check(
-        "6: DIE LUFT TRÄGT — scene.fogNode statt Nebel, Sichtweite am Boden ≥ 5 km, aus 300 m weiter (Höhen-Dunst)",
-        out.oeffnungOk === true,
-        `boden=${out.sichtBoden} hoch=${out.sichtHoch} zurueck=${out.sichtZurueck} knoten=${out.luftKnoten}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
-    );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check(
         "7: nach dem Dispose entsteht der Ring aus dem Fern-Faden wieder ganz (Cursor voll, sichtbar)",
@@ -1630,16 +1576,12 @@ const server = statikServer();
     );
     check(
         "9: DIE NAHT — kein Loch: wo der maskNode verwirft (`_fernRingRegel` 2), trifft der senkrechte Strahl ein Deck (Chunk oder Stich-Band), an allen vier Kanten innen und außen und im Inneren; Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) zeigt Löcher",
-        out.regel === true &&
-            !!out.loch &&
+        !!out.loch &&
             out.loch[1] >= 500 &&
             out.loch[0] === 0 &&
             !!out.lochZelle &&
             out.lochZelle[0] > 0,
-        `regel=${out.regel} verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}` +
-            (out.regel === true
-                ? ""
-                : " — TÄTER: der maskNode hat keinen CPU-Spiegel (`_fernRingRegel`), die ganze Zelle verwirft")
+        `verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}`
     );
     check(
         "9: DIE NAHT — kein Durchstich: wo der Ring zeichnet, liegt er nicht über dem Deck (im Saum um die Weiche gesenkt — er weicht dem Chunk in die Tiefe); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",

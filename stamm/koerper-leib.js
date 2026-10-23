@@ -1,28 +1,51 @@
 class AnazhRealm_koerper_leib {
     // ===== ATLAS · Koerper/leib — Rig · Gang und IK · Ofen-Guss · Tier-Animation =====
     // Genom-Roller: aus EINEM Seed ein deterministisches Körper-Genom (Geschlecht · Statur · Muskel ·
-    // Kopf-Verhältnis · Größe · Haut/Haar-Ton) — gleicher Seed → gleicher Körper auf allen Peers.
+    // Kopf-Verhältnis · Größe · Haut · Haar · Kleid) — gleicher Seed → gleicher Körper auf allen Peers.
+    // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core SKIN_TONES · HAIR_COLORS · CLOTH_COLORS): der Roller
+    // PICKT ihre SCHLÜSSEL, die Dials tragen sie in den EINEN Farb-Münzer (`_menschGussFarben`) und den Guss — kein Hex-Zwilling.
+    // Das Haar der Natur: die Töne, deren Farbton im Braun-Orange liegt (≤ 50°) oder die kaum gesättigt sind (Schwarz, Grau,
+    // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Bewohner
+    // (`_bewohnerGestalt`). Kalter Kern → lauter Bruch (fail-closed).
     _rollHumanoidGenome(seed) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
-        // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core.SKIN_TONES/
-        // HAIR_COLORS): der Roller PICKT aus der Lab-Wahrheit, kein Zwilling mehr.
         const core = typeof window !== "undefined" && window.__koerperCore;
-        const skinTones =
-            core && core.SKIN_TONES ? Object.keys(core.SKIN_TONES).map((k) => core.SKIN_TONES[k].hex) : [0xc48566];
-        const hairTones =
-            core && core.HAIR_COLORS ? Object.keys(core.HAIR_COLORS).map((k) => core.HAIR_COLORS[k].base) : [0x2a1a10];
+        if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS)
+            return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS");
+        const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
+            const c = core.HAIR_COLORS[k].base >>> 0;
+            const r = (c >> 16) & 255,
+                gr = (c >> 8) & 255,
+                b = c & 255;
+            const hi = Math.max(r, gr, b),
+                lo = Math.min(r, gr, b);
+            const d = hi - lo;
+            const hell = (hi + lo) / 510;
+            if (d === 0 || d / 255 / (1 - Math.abs(2 * hell - 1)) < 0.2) return true;
+            const ton =
+                hi === r
+                    ? (((gr - b) / d) * 60 + 360) % 360
+                    : hi === gr
+                      ? ((b - r) / d) * 60 + 120
+                      : ((r - gr) / d) * 60 + 240;
+            return ton <= 50;
+        });
         return {
             sex: g.axis("sex"),
             build: g.axis("build"),
             muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
             headRatio: g.range("head", 0.92, 1.16),
             kh: g.range("height", 0.195, 0.235), // Welt-Höhe ~1.56–1.88 m
-            skinColor: g.pick("skin", skinTones),
-            hairColor: g.pick("hair", hairTones),
+            skinTone: g.pick("skin", Object.keys(core.SKIN_TONES)),
+            hairColor: g.pick("hair", natur),
+            topColor: g.pick("top", Object.keys(core.CLOTH_COLORS)),
+            bottomColor: g.pick("bottom", Object.keys(core.CLOTH_COLORS)),
+            shoeColor: g.pick("schuh", Object.keys(core.CLOTH_COLORS)),
         };
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
-    // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit.
+    // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit; die Paletten-Schlüssel des
+    // Genoms (Haut, Haar, Kleid) reisen als die String-Wahlen des Studios.
     _dialsAusGenom(g) {
         const core = typeof window !== "undefined" && window.__koerperCore;
         const start = core.START_PARAMS;
@@ -37,6 +60,8 @@ class AnazhRealm_koerper_leib {
                 d[row.dial] = (g[row.axis] - row.base) / row.mul;
             }
         }
+        for (const k of ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor"])
+            if (typeof g[k] === "string") d[k] = g[k];
         return d;
     }
 
@@ -958,14 +983,11 @@ class AnazhRealm_koerper_leib {
         // WELCHES Rezept eine Seele liest, pinnt TETRAPODA_SOUL_MAP (Daten) — hier nur
         // die Form-Wache (must-ignore, kein kind-Literal: das klang-Leser-Muster).
         const s = rec && rec.s && typeof rec.s === "object" ? rec.s : null;
-        // STUDIO-ÜBERGABE = VORRANG-Quelle je Gattung: validiert am EINEN Empfänger _studioUebergabeEmpfang,
-        // mischen die fünf allometrischen Dials ÜBER das Buch. Beide Konsumenten folgen: _ofenKreaturDials
-        // (Memo-Key trägt die Dials) und _tetrapodaSoulParts. Nur KÜNFTIGE Spawns lesen hier; bestehende
-        // Kreaturen bleiben wie gegossen.
-        const ue = this.state && this.state.studioUebergabe && this.state.studioUebergabe.kreatur;
-        const ueS = ue && ue[recId] && ue[recId].s;
-        if (ueS && typeof ueS === "object") return Object.assign({}, s || {}, ueS);
-        return s;
+        // DIE PRÄGUNG DER GATTUNG = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den Werkstatt-
+        // Reglern): die fünf allometrischen Dials ÜBER das Buch. Beide Konsumenten folgen: _ofenKreaturDials (Memo-Key trägt die
+        // Dials) und _tetrapodaSoulParts. Nur KÜNFTIGE Spawns lesen hier; bestehende Kreaturen bleiben wie gegossen.
+        const p = this._studioPraegung(recId);
+        return p ? Object.assign({}, s || {}, p) : s;
     }
     // ═══ DER KREATUR-OFEN ═══
     // Die Gattung reist als ASSET durch dieselbe Foundry wie die Pflanzen (BAKERS_BY_KIND.kreatur, Worker
@@ -1577,6 +1599,9 @@ class AnazhRealm_koerper_leib {
     // Uhr; `_ofenVorratSteht` sagt Boot-Phase 3, dass jede Gattung im Memo liegt (oder laut fehlt).
     async _ofenPrefetchKreaturen() {
         await this._weltbildKommt();
+        // ohne Bild steht es vor der Welt (`_weltbildSteht` im Boot des Null-Renderers): der Vorrat wartet auf das Erwachen (die
+        // Heimat aus dem Faden, die Kreaturen des Boots) — sonst rennt er gegen ihren Guss, und jeder Boot bestellt andere Gattungen
+        if (this.erwacht) await this.erwacht;
         const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
@@ -1612,7 +1637,8 @@ class AnazhRealm_koerper_leib {
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
     // (alle Gelenke 0) in der Sagittal-Ebene (y, z) des Rumpfs vermessen — a = Bein-Gelenk → Unterglied-Gelenk (Kette[2]),
-    // b = Unterglied-Gelenk → Pfoten-Gelenk (Kette[3]), c = Pfoten-Gelenk → Aufsetz-Punkt (am Boden darunter), phi0 =
+    // b = Unterglied-Gelenk → Pfoten-Gelenk (Kette[3]), c = Pfoten-Gelenk → Aufsetz-Punkt (die Sohle DIESER Pfote, ihr tiefster
+    // Haut-Vertex — vorher die Sohle der ganzen Gestalt: die Vorderpfote des GIGANTEN schwebte 3,6 cm über der Wiese), phi0 =
     // Ruhe-Winkel von a nach b, zr = Aufsetz-Punkt vor dem Bein-Gelenk, h = Gelenk-Höhe über dem Boden. In Metern (× f),
     // memoisiert an der Vorlage.
     static _tierBeinMass(t0, f) {
@@ -1626,7 +1652,20 @@ class AnazhRealm_koerper_leib {
         ];
         t0.root.updateMatrixWorld(true);
         const lage = (o) => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
-        const mass = ketten.map((K) => {
+        const sohle = ketten.map(() => Infinity);
+        const v = new THREE.Vector3();
+        t0.root.traverse((n) => {
+            const A = n.isSkinnedMesh && n.geometry.attributes;
+            if (!A || A.aSchale) return; // die Haut, nie das Fell (wie minY)
+            const bi = ketten.map((K) => n.skeleton.bones.indexOf(K[3]));
+            for (let i = 0; i < A.skinIndex.count; i++)
+                for (let k = 0; k < 4; k++) {
+                    const j = bi.indexOf(A.skinIndex.getComponent(i, k));
+                    if (j < 0 || !(A.skinWeight.getComponent(i, k) > 0.5)) continue;
+                    sohle[j] = Math.min(sohle[j], v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld).y);
+                }
+        });
+        const mass = ketten.map((K, j) => {
             const p0 = lage(K[0]),
                 p1 = lage(K[2]),
                 p2 = lage(K[3]);
@@ -1639,7 +1678,7 @@ class AnazhRealm_koerper_leib {
                 p0: [p0w.x * f, p0w.y * f, p0w.z * f],
                 a: [ay, az],
                 b: [by, bz],
-                c: [(t0.minY - p2.y) * f, 0],
+                c: [((Number.isFinite(sohle[j]) ? sohle[j] : t0.minY) - p2.y) * f, 0],
                 phi0: Math.atan2(ay * bz - az * by, ay * by + az * bz),
                 zr: (p2.z - p0.z) * f,
                 h: (p0.y - t0.minY) * f,
@@ -1647,6 +1686,38 @@ class AnazhRealm_koerper_leib {
         });
         t0._beinMass = mass;
         return mass;
+    }
+    // DIE KÖRPER-KUGEL TRÄGT DIE BEINE (K3): die Kugel der Hüllen (`_ofenAssembleAsset`, Bind-Hülle × 1,25) reichte nicht
+    // an das gestreckte Bein — am Hirsch lag die hintere Pfote im vorwärts gehenden Schritt bis 0,18 m außerhalb (die Probe
+    // gate:kreatur-kosten (R)). Je Bein das Hüft-Gelenk und die gestreckte Kette (Glieder und Sohle, die Länge, über die
+    // die IK nie streckt): die Kugel wächst, bis sie jede umschließt (die Senke zieht die Hüfte zur Mitte, nie fort).
+    // Einmal je Vorlage, vor dem ersten Klon (Klone und die Grobstufe erben die Kugel).
+    static _tierReichKugel(t0) {
+        if (t0._reichKugel) return;
+        t0._reichKugel = true;
+        const T = t0.teile;
+        t0.root.updateMatrixWorld(true);
+        const meshes = [];
+        t0.root.traverse((n) => {
+            if (n.isSkinnedMesh && n.boundingSphere) meshes.push(n);
+        });
+        if (!meshes.length) return;
+        const kugel = meshes[0].boundingSphere.clone().applyMatrix4(meshes[0].matrixWorld);
+        const lage = (o) => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
+        for (const K of [
+            [T.legFL, T.flL, T.flP],
+            [T.legFR, T.frL, T.frP],
+            [T.legHL, T.hlC, T.hlP],
+            [T.legHR, T.hrC, T.hrP],
+        ]) {
+            const p0 = lage(K[0]),
+                p1 = lage(K[1]),
+                p2 = lage(K[2]);
+            const kette = p0.distanceTo(p1) + p1.distanceTo(p2) + (p2.y - t0.minY);
+            kugel.radius = Math.max(kugel.radius, kugel.center.distanceTo(p0) + kette);
+        }
+        const inv = new THREE.Matrix4();
+        for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
     }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
@@ -2094,10 +2165,12 @@ class AnazhRealm_koerper_leib {
                 // mit nachlaufender Phase bis 0,96 m hinter der Hüfte). Das Maß ist die Kette selbst — eine Schätzung vor
                 // der IK lag 4–9 cm neben ihr —, um den Weg des Leibs in einem Bild (1/60 s) vorausgedacht: der Fuß hebt,
                 // bevor er schleift, nicht ein Bild danach (nie um den Weg einer Raten-Stufe: der Stand schrumpfte dort
-                // auf ein Drittel).
-                if (!stand && dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
+                // auf ein Drittel). Im STAND tritt er (K8 huf, Schritt 1), ohne auf eine andere Pfote zu warten: vorher hielt der
+                // Anker ihn, wo der Lauf endete — der GIGANT, der aus 0,9 m/s anhielt, schwebte 9,9 cm über der Wiese.
+                if (dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
                     const u = ((g.ph[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    if (u >= 0.7 * sw) g.ph[i] += 2 * Math.PI - u;
+                    if (!stand && u >= 0.7 * sw) g.ph[i] += 2 * Math.PI - u;
+                    else if (stand) [fl[i].tritt, fl[i].ax, fl[i].az, tritt] = [0, fl[i].x, fl[i].z, true];
                 }
                 const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
@@ -2245,6 +2318,7 @@ class AnazhRealm_koerper_leib {
             // der Wolf steht mit 0,8 m am Widerrist. Vorher maß die Gestalt sich an der Scheitel-Höhe der Seelen-Teile,
             // und die Allometrie-Schleife überschrieb diese Skala mit 1: die Welt zeigte Lab-Einheiten als Meter.
             const f2 = window.__tetrapodaCore.MASSSTAB.meterJeEinheit;
+            AnazhRealm._tierReichKugel(t0);
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {
@@ -2765,18 +2839,15 @@ class AnazhRealm_koerper_leib {
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
-        // STUDIO-ÜBERGABE = VORRANG-Quelle: validiert am EINEN Empfänger _studioUebergabeEmpfang, mischen
-        // ihre Dials ÜBER das Buch; die Gestalt-Wahlen reisen im selben Objekt (bmDials → Mensch-Ofen-Memo-
-        // Key → bakeMenschInstance). Beim Peer-Avatar-Guss FÜHRT die Übergabe des SENDERS: _p2pApplyPeerSoul
-        // setzt sie transient in this._activePeerUebergabe (try/finally) — derselbe Merge, andere Quelle.
+        // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
+        // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
+        // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
+        // this._activePeerUebergabe (try/finally; {} = der Peer ohne Prägung) — derselbe Merge, andere Quelle.
         const ue =
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
-                : this.state && this.state.studioUebergabe && this.state.studioUebergabe.koerper;
-        if (ue && ue.s && typeof ue.s === "object") {
-            return Object.assign({}, s || {}, ue.s, ue.gestalt && typeof ue.gestalt === "object" ? ue.gestalt : {});
-        }
-        return s;
+                : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
+        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in

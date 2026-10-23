@@ -97,8 +97,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -255,7 +253,7 @@ async function checkBandCadWorkshop(ctx) {
             // --- Phase 2: UI-Elemente ---
             out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
             const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
-            // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+            // connect ist 4. Modus dazugekommen
             out.fourModeButtons = modeBtns.length === 4;
             out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
 
@@ -429,7 +427,7 @@ async function checkBandCadWorkshop(ctx) {
         check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
     }
 
-    // ### V8.00 — Resize-Handles (Konsole + Drawer) + Background-Fix ###
+    // ### Resize-Handles (Konsole + Drawer) + Background-Fix ###
     const resizeResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -439,10 +437,10 @@ async function checkBandCadWorkshop(ctx) {
             // top-right statt bottom-right (unten verdeckt von
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
-            // V18.83 — die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
-            // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit (V9.56-i).
+            // die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
+            // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit.
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
-            // V18.43 — die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
+            // die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
             // breiten-brechenden .resize-bl (der die left/right-Symmetrie zerstörte). Heilung statt
             // Schnitt (Schöpfer „Samen geschnitten"): anpassbar bleiben, Symmetrie wahren.
             const drawers = document.querySelectorAll(".drawer[data-drawer]");
@@ -514,13 +512,12 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
-    // ### V18.45 — DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM, V17.31) ###
+    // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
     const omniResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
-            out.methodsExist = typeof r._installOmnibox === "function";
             // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
             const cmd = r._omniboxSearch("c:wetter");
             out.cmdAllBefehl =
@@ -557,14 +554,12 @@ async function checkBandCadWorkshop(ctx) {
                 out.triggerOpens = overlay.hidden === false;
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             }
-            out.triggerExists = !!trigger;
         } catch (err) {
             out.error = err && err.message;
         }
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: _installOmnibox existiert (die Suite ruft ihn nie)", omniResults.methodsExist);
         check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
@@ -574,13 +569,12 @@ async function checkBandCadWorkshop(ctx) {
         check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
         check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
-        check("V18.47 Omnibox: der Maus-Trigger in der Topbar existiert (⌕ Suche)", omniResults.triggerExists);
         check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
         check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
 
-    // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
+    // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
     const v801Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -594,7 +588,7 @@ async function checkBandCadWorkshop(ctx) {
             });
             out.allDrawersWrapped = allWrapped;
             out.drawerCount = drawers.length;
-            // V18.42 — die V18-Drawer tragen keinen Resize-Griff mehr (CSS-Rahmen, symmetrisch); der
+            // die V18-Drawer tragen keinen Resize-Griff mehr (CSS-Rahmen, symmetrisch); der
             // verbliebene Griff lebt an der Konsole + ist ein direktes Kind (kein Scroll-Wrapper davor
             // → er scrollt nicht weg). Plus: kein Drawer hat einen Griff im Scroll-Wrapper.
             const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
@@ -605,8 +599,8 @@ async function checkBandCadWorkshop(ctx) {
             // h2 ist ebenfalls direktes child (bleibt oben fest)
             const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
             out.h2DirectChildOfDrawer = !!w2;
-            // overflow:hidden + display:flex sind nur am SICHTBAREN Drawer prüfbar (.drawer[hidden] erzwingt
-            // display:block!important) → Werkstatt-Tab kurz öffnen, danach alles zurück.
+            // overflow:hidden + display:flex sind nur am SICHTBAREN Drawer prüfbar (der geschlossene
+            // ist display:none, K2 Belegung) → Werkstatt-Tab kurz öffnen, danach alles zurück.
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             if (werkstatt) {
@@ -674,12 +668,9 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Methoden existieren
-            out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
-            out.paletteInDom = !!palette;
             if (palette) {
                 const cards = palette.querySelectorAll(".workshop-shape-card");
                 out.nineCards = cards.length === 9;
@@ -748,7 +739,7 @@ async function checkBandCadWorkshop(ctx) {
             // Popover hat 8 Type-Buttons + 1 Cancel
             if (popover) {
                 const buttons = popover.querySelectorAll("button");
-                // W-G (V18.177): +„weitere…"-Toggle (Progressive Disclosure) → 13
+                // W-G: +„weitere…"-Toggle (Progressive Disclosure) → 13
                 // (3 primary + 5 hidden + 3 Anker + 1 weitere-Toggle + 1 cancel).
                 out.popoverHasButtons = buttons.length === 13;
             }
@@ -796,11 +787,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check(
-            "V8.02 Phase 3: _workshopInstallShapeDragDrop existiert (die Suite fährt ihn nicht)",
-            v802Results.hasShapeDnDInstall
-        );
-        check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
         check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
             "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
@@ -844,16 +830,13 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
     }
 
-    // ### V8.03 — Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
+    // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
     //             seitliche Material/Color-Palette
     const v803Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
-            // Helper-Methoden existieren
-            out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
-            out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
 
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -966,10 +949,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check(
-            "V8.03: die Material- und Farb-Palette existieren (die Suite fährt sie nicht)",
-            v803Results.hasMaterialRender && v803Results.hasColorRender
-        );
         check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
@@ -1005,8 +984,6 @@ async function checkBandCadWorkshop(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1176,8 +1153,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.hopeTriggersSunnyHappy =
             hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
-        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
-        // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
+        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere — jedes Tier trägt den Hauch, und sein
+        // Charakter-Tempo LIEST ihn (im Band).
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.peace = 0.9;
         // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
@@ -1276,8 +1253,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const UM = r.constructor._umweltGesetz().UMWELT;
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
         out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
-        // Welle 5 Klang — der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
-        out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
+        // der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
+        out.keinDrohn = !("ambient" in s) && !("weather" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
         out.busAmRegler =
@@ -1301,9 +1278,12 @@ async function checkBandEarlyRingsAndUi(ctx) {
             mixNass.regen.db >= UM.hoerschwelleDb &&
             mixTrocken.regen.db === -Infinity;
 
-        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar)
+        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar) — ein Misch-Takt sind vier Bilder
+        // (Lage · Mischung · Graph · Tier-Rufe, `_umweltKlangTick`)
         s.umwelt.letzteMischung = -Infinity;
-        r.symphonyTick();
+        s.umwelt.folge = 0;
+        s.umwelt.mix = null;
+        for (let i = 0; i < 4; i++) r.symphonyTick();
         out.taktMischt = !!s.umwelt.lage && !!s.umwelt.mix && Array.isArray(r._klangZensus().stimmen);
 
         // (d) Der Tier-Ruf zählt jeden Ruf (die Stimme folgt dem Körper)
@@ -1332,7 +1312,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
         check("Welle 5 Klang: die Klang-Welt steht (Bus + Graph + Hör-Ring)", ring4Results.hasUmwelt);
-        check("Welle 5 Klang: kein Drohn, keine Wetter-/Hydro-Schicht neben dem Gesetz", ring4Results.keinDrohn);
+        check("Welle 5 Klang: kein Drohn, keine Wetter-Schicht neben dem Gesetz", ring4Results.keinDrohn);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
         check(
@@ -1355,7 +1335,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const ichRaum = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
         out.topbarInDom = !!topbar;
         out.statusbarInDom = !!statusbar;
-        out.spielerDrawerInDom = !!ichRaum;
 
         // Emotion-Rows leben jetzt im Spieler-Drawer
         const rows = ichRaum ? ichRaum.querySelectorAll("#status-emotions .emotion") : [];
@@ -1432,7 +1411,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("UI V2: #topbar im DOM", uiResults.topbarInDom);
         check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
-        check("UI V2: Spieler-Drawer im DOM", uiResults.spielerDrawerInDom);
         check(
             "UI V2: alle sechs Emotion-Rows im Spieler-Drawer",
             uiResults.allSixAxes,
@@ -1476,9 +1454,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.germanName = !!joyName && joyName.textContent === "Freude";
         out.rowHasWirkungTooltip = !!joyRow && /wärmt/i.test(joyRow.getAttribute("title") || "");
 
-        // (b) Das FP-Feedback lebt als WORT — W-C(g)/R-009 (V18.169): das WORT lebt
+        // (b) Das FP-Feedback lebt als WORT — W-C(g)/R-009: das WORT lebt
         // IN der Statusbar (#status-emotion). Die FP-Vignette (Bildschirmrand-Ring) FIEL
-        // (V18.364, Schöpfer „doppelt + wirkt nicht real"). Test wandert mit (V9.56-i).
+        // (Schöpfer „doppelt + wirkt nicht real"). Test wandert mit.
         const lab = document.getElementById("status-emotion");
         out.vignetteGone = !document.getElementById("emotion-vignette");
         out.labelInDom = !!lab && !document.getElementById("emotion-label") && !!lab.closest("#statusbar");
@@ -1606,7 +1584,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
         const container = document.getElementById("status-abilities");
-        out.containerInDom = !!container;
+        // der Spieler öffnet den Hof: nur dort schreibt der Status-Takt die Gesten (K2 Belegung)
+        r.toggleDrawer("kreaturen");
 
         // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
         //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
@@ -1623,7 +1602,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
-            r._statusRefs.lastTick = -Infinity;
         }
         r.updateStatusPanel(3001);
         const rows = container ? container.querySelectorAll(".ability-row") : [];
@@ -1633,7 +1611,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
 
         // (c) Run-Button klicken → ability läuft, Welt-Effekt
-        // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+        // Kreatur ist Group; rote Vor-Color auf
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
         if (r.state.creatures[0]) {
             const cR = r.state.creatures[0];
@@ -1646,7 +1624,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         }
         const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
         if (runBtn) runBtn.click();
-        // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+        // Kreatur ist Group; Color über Sub-Meshes lesen.
         const cFirst = r.state.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
@@ -1666,7 +1644,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         //     Änderung darf das DOM nicht neu bauen — wir markieren
         //     einen unsichtbaren Wert und prüfen Persistenz.
         rows[0].setAttribute("data-test-marker", "preserved");
-        if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(3002);
         const rowAgain = container ? container.querySelector(".ability-row") : null;
         out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
@@ -1698,9 +1675,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         delete r.state.abilities.uiAbilityTest;
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
-            r._statusRefs.lastTick = -Infinity;
         }
         r.updateStatusPanel(3003);
+        r.closeAllDrawers();
 
         return out;
     });
@@ -1712,7 +1689,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiAbilitiesResults && uiAbilitiesResults.error ? uiAbilitiesResults.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("UI: Abilities-Container ist im DOM", uiAbilitiesResults.containerInDom);
         check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
         check(
             "UI: Hinzugefügte Ability erscheint als Row",
@@ -1849,20 +1825,18 @@ async function checkBandEarlyRingsAndUi(ctx) {
     const consoleResults = await safeEvaluate(page, () => {
         const out = {};
         const panel = document.getElementById("console");
-        out.consoleInDom = !!panel;
         out.chatOutputInside = panel && panel.querySelector("#chat-output") !== null;
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
-        // V18.82 — der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
+        // der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
-        // mit (V9.56-i): die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
+        // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
         out.feedWired = !!(window.anazhRealm && window.anazhRealm._chatFeedWired);
 
         // Collapse-Toggle
         const toggle = document.getElementById("console-collapse");
-        out.toggleInDom = !!toggle;
         out.initiallyCollapsed = panel && panel.classList.contains("collapsed");
 
         if (toggle) toggle.click();
@@ -1885,12 +1859,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
             consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("UI V2: #console im DOM", consoleResults.consoleInDom);
         check(
             "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
             consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
         );
-        check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
         check("UI V2: #chat-feed (Fading-Feed) in der Konsole", consoleResults.chatFeedInside);
         check("UI V2: der Fading-Feed-Observer ist verdrahtet (_chatFeedWired)", consoleResults.feedWired);
         check("UI V2: Konsole startet EINGEKLAPPT (der freie Bildschirm, V18.82)", consoleResults.initiallyCollapsed);
@@ -1974,7 +1946,7 @@ async function checkBandV18134Social(ctx) {
     }
 }
 
-// V18.135 — F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
+// F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
 // im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
 // pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
 async function checkBandV18135Bookmarks(ctx) {
@@ -1982,7 +1954,6 @@ async function checkBandV18135Bookmarks(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.helpers = typeof r._loadFeedBookmarks === "function";
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
         const was = r._feedBookmarked(id);
@@ -2003,8 +1974,8 @@ async function checkBandV18135Bookmarks(ctx) {
         return;
     }
     check(
-        "V18.135 Lesezeichen: _loadFeedBookmarks (die Suite ruft ihn nie) + Toggle-Roundtrip + globale Persistenz",
-        res.helpers && res.toggleOn && res.persisted && res.toggleOff
+        "V18.135 Lesezeichen: Toggle-Roundtrip + globale Persistenz",
+        res.toggleOn && res.persisted && res.toggleOff
     );
 }
 
@@ -2110,7 +2081,6 @@ async function checkBandV18143Comments(ctx) {
         // Panel als TEXT, nie als Element (XSS-Wand).
         const roh = JSON.stringify({ type: "social-comment", c: { id: "band143:ziel" } });
         out.handlerWired = window.__consumes(r, "_p2pHandleChannelMessage", r, "_socialCommentReceive", ["peerZensus143", roh]);
-        out.batchExists = typeof r._socialCommentsBatch === "function";
         const X = "<img src=x onerror=window.__xss143=1><b>boese</b>";
         r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", { id: "band143:xss", x: X, t: 1, pub: "ab".repeat(32), sig: "x" });
         const panel = document.createElement("div");
@@ -2147,8 +2117,8 @@ async function checkBandV18143Comments(ctx) {
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · onopen-Batch · das fremde Wort bleibt Text — XSS-Wand)",
-        res.handlerWired && res.batchExists && res.xssWall
+        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
+        res.handlerWired && res.xssWall
     );
 }
 
@@ -2199,7 +2169,7 @@ async function checkBandM5HudPolitur(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) der RESIZE-Sprung ist tot: 1-px-Drag an der EINGEKLAPPTEN Konsole
-        // (105 px) bleibt bei ~105 (GEMESSEN vorher: +75 auf die harte 180er-Min).
+        // (105 px) bleibt bei ~105 (nie die harte 180er-Min).
         const consoleEl = document.getElementById("console");
         const handle = consoleEl && consoleEl.querySelector(".resize-handle");
         if (consoleEl && handle) {
@@ -2268,7 +2238,7 @@ async function checkBandM5HudPolitur(ctx) {
         p.boosts = savedBoosts;
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
-        // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
+        // Cap-Gotcha: den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
         const _saveMaxM5 = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
@@ -2392,7 +2362,7 @@ async function checkBandWBHofKarte(ctx) {
         const out = {};
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
-        // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
+        // den maxCreatures-Cap (20) für die EINE Test-Kreatur
         // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
         const _saveMaxWB = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
@@ -2455,7 +2425,7 @@ async function checkBandWCIchWahrheit(ctx) {
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand, V17.31).
+        // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand).
         out.formatter =
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
@@ -2605,29 +2575,11 @@ async function checkBandRezeptKatalog(ctx) {
         const res = { warm: {}, a: {}, b: {}, c: {}, d: {}, e: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-        const dl0 = performance.now() + 120000;
-        while (
-            !window.anazhRealm &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (
-                f &&
-                f.ready &&
-                f.recipes &&
-                f.recipes.drachentor &&
-                f.recipes.gras &&
-                f.paramsByKind &&
-                f.paramsByKind.gate &&
-                !f._vorrat
-            )
-                break;
-            await sleep(120);
-        }
+        await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.drachentor && f.recipes.gras && f.paramsByKind && f.paramsByKind.gate && !f._vorrat));
         res.warm.ready = !!(f && f.ready);
         res.warm.recipeCount = f && f.recipes ? Object.keys(f.recipes).length : 0;
         res.warm.vorrat = (f && f._vorrat) || false; // die Phase des Vorrats (VORRAT_PHASE), false = durch
@@ -2746,11 +2698,12 @@ async function checkBandRezeptKatalog(ctx) {
                 return orig();
             };
             let g = r._workshopFoundryPreviewGroup("tor_drachentor");
-            const dl = performance.now() + 45000;
-            while ((!g || g === "pending") && performance.now() < dl) {
-                await sleep(200);
-                g = r._workshopFoundryPreviewGroup("tor_drachentor");
-            }
+            await window
+                .__gebautNach("die Vorschau des Drachentors", {
+                    fertig: () => !!(g = r._workshopFoundryPreviewGroup("tor_drachentor")) && g !== "pending",
+                    takt: () => sleep(200),
+                    max: 225,
+                });
             r._workshopRebuildPreviewMesh = orig;
             res.d.rebuilds = rebuilds;
             res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;

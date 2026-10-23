@@ -22,7 +22,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const t0 = Date.now();
@@ -31,22 +31,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget)
-                break;
-            await sleep(80);
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
         const PC = globalThis.__phytoCore;
         const L = A._studioRenderConfig.lod;
         res.kinds = Object.keys(L.budget).filter((k) => k !== "gestalten");
@@ -56,9 +45,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // ===== F: der Flatten — Gesetz gegen die Leaves des Wirts =====
         const flatMessen = async (preset, lod) => {
             const entry = { seed: 1, position: { x: 0, y: 0, z: 0 } };
-            const ende = performance.now() + 90000;
             let flat = null;
-            while (performance.now() < ende) {
+            for (const weiter = window.__deckel("das Flat der Sippe", 1500); weiter(); ) {
                 flat = r._foundryFlattenFor(entry, preset, lod);
                 if (flat !== null) break;
                 await sleep(60);
@@ -71,7 +59,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             if (!Array.isArray(meshes)) return { fehler: "keine Antwort" };
             const g = PC.budgetSippen(meshes);
             const teile = meshes.filter((m) => m && m.position && m.position.array).length;
-            // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Welle L, Q13 F-D8) sind vier
+            // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Q13 F-D8) sind vier
             // Instanzen EINER Gruppe — ein Draw, vier Mal die Dreiecke. Jede andere Art trägt je Leaf ihren eigenen Schlüssel.
             const wd = new Set(eigen.map((lf) => lf.leafKey)).size;
             return { gd: g.draws, gt: g.tris, wd, wt, teile, stufe: flat.lod };
@@ -155,6 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         if (ziel) {
             const v = r._foundryVariantFor(1, ziel.preset);
             const key = r._foundryKoerperKey(ziel.preset, v, ziel.lod);
+            await flatMessen(ziel.preset, ziel.lod); // eine untätige Stufe räumte der Ruhe-Deckel: sie reist wieder an
             const grp = r._foundryCacheGet(key);
             const orig = r._foundryFlatVerschmelzen;
             try {

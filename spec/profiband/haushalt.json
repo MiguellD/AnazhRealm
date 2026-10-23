@@ -42,7 +42,7 @@
     "messorte": [
         {
             "id": "wiese",
-            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene (bis T2 nach −z, seither nach WSW). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf (am alten Ort 12 Häuser: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle, 07.10.).",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene (bis T2 nach −z, seither nach WSW). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf.",
             "spieler": [
                 -280.4,
                 -1045.6
@@ -76,7 +76,7 @@
         },
         {
             "id": "genesis",
-            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0, seit Welle L V-D1 steht der Ring um die Plattform statt um den Ursprung), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (unter vier Blicken der teuerste: am Kopf der Welle L 243 Befehle und 2,30 M Dreiecke, +x 225 / 2,09 M, +z 224 / 2,25 M, −z 234 / 2,03 M). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab (der Ring zog am 07.10. 36 m um, die Messung stand 36 m daneben). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
+            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0, seit Welle L V-D1 steht der Ring um die Plattform statt um den Ursprung), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (unter vier Blicken der teuerste: am Kopf der Welle L 243 Befehle und 2,30 M Dreiecke, +x 225 / 2,09 M, +z 224 / 2,25 M, −z 234 / 2,03 M). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
             "spieler": [
                 0,
                 0
@@ -104,7 +104,7 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 80 m weiter auf −812,7/−819,0 — am Wunsch lief der Fluss 18 m neben dem Anker, vier Häuser fielen ins Bett; seit die Würfe des Felds dem Ort weichen (`_weichtDemBau`), wählt das Spiel denselben Ort wie gate:settlement (vorher schob eine Feuerstelle des Glut-Felds im Grundriss eines Hauses die Wahl auf 96 m) —, die Mitte −802,8/−821,0 liegt 55 m nordöstlich (Achse 0,690/0,723; bis K10-6 Ostsüdost 0,953/−0,304, bis K10 Nordost 45°), die 16 Häuser zwischen 25 und 95 m. Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 80 m weiter auf −812,7/−819,0, die Mitte −802,8/−821,0 liegt 55 m nordöstlich (Achse 0,690/0,723), die 16 Häuser zwischen 25 und 95 m. Im Bild (Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
             "spieler": [
                 -841,
                 -861
@@ -188,7 +188,7 @@
         },
         {
             "id": "buehne",
-            "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms (gemessen 11.10. GTX 1060: drei Welt-Instanzen 13,50–13,64 ms, Mittel je Sitzung in 0,085 ms; das Licht des Auges 0,47 ms). Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
+            "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms. Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
             "welt": "pruefbuehne/welt.json",
             "spieler": [
                 300,
@@ -263,6 +263,57 @@
                 "je": 2,
                 "soll": 0.1
             }
+        },
+        {
+            "id": "stadt",
+            "titel": "Die Stadt (Profiband K1): der Spieler sagt am Platz „dorf 7 120“ (nH 120, die Klemme des Kerns), die Großstadt steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse (`--wandern bahn`). 111 von 127 Slots stehen, das Gelände nimmt den Rest.",
+            "spieler": [
+                552.2,
+                416
+            ],
+            "blick": [
+                609.1,
+                419
+            ],
+            "dorfZug": true,
+            "ortTakt": [],
+            "gruendung": {
+                "wort": "dorf 7 120",
+                "platz": [
+                    400,
+                    400
+                ],
+                "blick": [
+                    462.9,
+                    403.4
+                ],
+                "anker": [
+                    663,
+                    423
+                ]
+            },
+            "bahn": [
+                [
+                    552.2,
+                    416
+                ],
+                [
+                    609.1,
+                    419
+                ],
+                [
+                    663,
+                    422.9
+                ],
+                [
+                    716.7,
+                    416.9
+                ],
+                [
+                    775.8,
+                    407.4
+                ]
+            ]
         }
     ],
     "klassen": [
@@ -409,12 +460,26 @@
         },
         {
             "id": "tier",
-            "titel": "Tier",
+            "titel": "Tier (die KREATUR_SATZ.nahLeiber Nächsten als Leib, jedes andere Tier im Nah-Kreis im Satz `tier-satz` seiner Gestalt: Fell · Glimmen · Rest der Grobstufe L1 und ihr Wurf — die Befehle hängen nie an der Kopfzahl)",
             "befehle": 30,
             "dreiecke": 60000,
             "regeln": [
                 {
                     "muster": "^tier:"
+                },
+                {
+                    "muster": "^tier-satz$"
+                }
+            ]
+        },
+        {
+            "id": "bewohner",
+            "titel": "Bewohner (die Menschen der Siedlungen: je Gestalt ein Instanz-Satz `bewohner-satz` Haut · Rest aus der Mengen-Stufe koerper L2 (1 695 Dreiecke), der Wurf aus der NUR-WURF-Stufe L3 (736); die Befehle hängen nie an der Kopfzahl — 16 am Start-Dorf −4,−4, haupt 8 · k0 4 · k1 4; gemessen Radeon 22.10.: 242k → 72k Dreiecke, Ego und Third)",
+            "befehle": 16,
+            "dreiecke": 80000,
+            "regeln": [
+                {
+                    "muster": "^bewohner-satz$"
                 }
             ]
         },
@@ -448,7 +513,7 @@
                     "muster": "^bau:"
                 },
                 {
-                    "muster": "^siedlung-zaun$"
+                    "muster": "^siedlung-(zaun|mauer)$"
                 },
                 {
                     "muster": "^bauSatz$"
@@ -516,7 +581,7 @@
         {
             "id": "reserve",
             "titel": "Reserve",
-            "befehle": 19,
+            "befehle": 3,
             "dreiecke": 4000,
             "regeln": []
         }

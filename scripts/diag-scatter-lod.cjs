@@ -1,4 +1,4 @@
-// diag-scatter-lod.cjs — V18.464 DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
+// diag-scatter-lod.cjs — DER FERNWALD FOLGT DER LIVE-DISTANZ (baum-D1/D2).
 // Beweist im echten Boot (foundry-ON, Null-Renderer), dass die Scatter-Stufen
 // NICHT mehr auf der Bau-Zeit-Distanz eingefroren sind:
 //
@@ -12,9 +12,9 @@
 //     jetzt ALLE geschnittenen Regionen — der 2×2-Fächer um den Spieler wird
 //     abgedeckt (Quell-Probe: der Block walkt rx0..rx1/rz0..rz1, nicht nur
 //     die Home-Region).
-//   F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): platzierte Fern-Leaves
+//   F: platzierte Fern-Leaves
 //     (Impostor-Quads) über ein 4×4-Region-Raster, A/B durch DIESELBE Pipe:
-//     S=1 (per-Region-Keying, die V18.300/V18.303-Welt) vs S=SCATTER_FERN_
+//     S=1 vs S=SCATTER_FERN_
 //     SUPERREGION (Super-Region). Erwartung ≥4× weniger lod2-Gruppen, Slot-
 //     Bilanz dicht (Empty-Dispose räumt beide Welten restlos), und die EINE
 //     Key-Funktion (_archFernRegionKey) ist der einzige Konstanten-Leser.
@@ -22,9 +22,7 @@
 //     und zeichnet selbst; je Pass ordnet die Wahl (`_instanzWahlPass`, das EINE Gesetz der Pass-Wahl) genau die Karten nach
 //     vorn, die das Frustum der Pass-Kamera treffen — eine Linsen-Kamera über den 16 Karten sieht alle 16, eine in den Himmel
 //     keine, eine über der Westhälfte die 8 der Westhälfte; jede gezeichnete Instanz ist eine Karte der Fixtur, jede Marke
-//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Befund (echte GPU, Mess-Wiese): die Gruppe im
-//     @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
-//     Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
+//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
@@ -52,30 +50,21 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
 
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 60000;
-        while (performance.now() < dl1) {
-            if (f && f.ready) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
-        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
+        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
         const pm = r.state.playerMesh.position;
         // DER TAKT DER STREU ist beides, was sie liest: die Schlange des Walds (`_tickWaldPlan`, K69 — die Gestalt jedes
@@ -85,16 +74,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             r._tickWaldPlan(Infinity);
             r._tickScatterStreaming(pm);
         };
-        const dl2 = performance.now() + 45000;
         let cells = 0;
-        while (performance.now() < dl2) {
-            streuTakt();
+        const zellen = () => {
             const map = r.state.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
-            if (cells > 40 && r._streuWartet(pm) === 0) break;
-            await new Promise((r2) => setTimeout(r2, 30));
-        }
+            return cells;
+        };
+        const streuSchritt = async () => (streuTakt(), await new Promise((r2) => setTimeout(r2, 30)));
+        await window
+            .__gebautNach("die Streu um den Spieler", { fertig: () => zellen() > 40 && r._streuWartet(pm) === 0, takt: streuSchritt, max: 1500 });
         res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
         // ── P: die Promotion erreicht eine Zelle jenseits der Region-Grenze (nah 0,85·pr in der Nachbar-Region), die ferne
@@ -116,10 +105,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): die Probe MUSS eine
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
-        // BY DESIGN dem Region-Lifecycle (V18.464-B2; seit der Keying-Welle trägt
-        // JEDE Stufe der Boden-Schichten den Region-Key). Vorher war die Wahl
-        // flake-abhängig: je nach Foundry-Timing probte sie eine geschützte
-        // Boden-Zelle und maß den Guard statt des Wanderns.
+        // BY DESIGN dem Region-Lifecycle (JEDE Stufe der Boden-Schichten trägt den Region-Key).
         const map = r.state.scatterRegions;
         const b2Privat = (c) =>
             Array.isArray(c.slots) &&
@@ -145,13 +131,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // privat + B2-geschützt). Kurz warten, dann die NAH-Richtung an einer
         // echten Fern-Baum-Zelle proben — der STÄRKERE Beweis (echter Slot-Tausch).
         let probe = null;
-        const dlP = performance.now() + 10000;
-        while (!probe && performance.now() < dlP) {
-            probe = sucheProbe(true);
-            if (probe) break;
-            streuTakt();
-            await new Promise((r2) => setTimeout(r2, 60));
-        }
+        await window
+            .__gebautNach("eine Fern-Baum-Zelle", { fertig: () => !!(probe = sucheProbe(true)), takt: streuSchritt, max: 170 });
         if (!probe) probe = sucheProbe(false);
         res.probeGefunden = !!probe;
         if (!probe) return res;
@@ -162,9 +143,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         //       ferne Zelle: NAH heran (Stufe sinkt). Nah-Ziel 20 m: die
         //       Wahrnehmungs-Distanz dn ≤ raw (min(12/visH,1) ≤ 1) ⇒ raw 20 <
         //       thresh12 − hysteresis = 22.6 ⇒ der Abstieg 2→1 ist für JEDE
-        //       Sichthöhe garantiert (das alte Ziel 30 lag für visH ≤ 12-
-        //       Subjekte AUSSERHALB des Abstiegs-Bandes — nie abgedeckt, weil
-        //       die Nah-Richtung vor der Keying-Welle nie gewählt wurde). ──
+        //       Sichthöhe garantiert. ──
         const dx = probe.x - pm.x;
         const dz = probe.z - pm.z;
         const d0 = Math.hypot(dx, dz);
@@ -178,15 +157,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Foundry-Stufen-Bau nie ankommen sehen (die Nah-Richtung 2→1/0 wäre
         // strukturell unmöglich). Dieselbe 30-s-Warte-Disziplin wie der
         // F-Block (Flat lädt async, 100-ms-Polls).
-        let wandel = 0;
-        const dlW = performance.now() + 45000;
-        while (!wandel && performance.now() < dlW) {
-            for (let i = 0; i < 40 && !wandel; i++) {
-                r._tickScatterLod(pm, 8, 400);
-                if (probe.lod !== lodVorher) wandel = 1;
-            }
-            if (!wandel) await new Promise((r2) => setTimeout(r2, 150));
-        }
+        const lodTakt = (zahl, bis) => async () => {
+            for (let i = 0; i < 40 && !bis(); i++) r._tickScatterLod(pm, 8, zahl);
+            await new Promise((r2) => setTimeout(r2, 150));
+        };
+        const gewandelt = () => probe.lod !== lodVorher;
+        await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
+        const wandel = gewandelt() ? 1 : 0;
         res.l = {
             lodVorher,
             lodNachher: probe.lod,
@@ -208,7 +185,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
-        // ── D (V18.485 — DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
+        // ── D (DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
         //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
         //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
         //     leert sich und wird ge-reapt (die EINE Reap-Frage); der Ursprungs-
@@ -221,24 +198,19 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 typeof c.bpName === "string" &&
                 (c.bpName.startsWith("fscatter:strauch:") || c.bpName.startsWith("fscatter:eiche:"));
             let dz2 = null;
-            const dlD = performance.now() + 30000;
-            while (!dz2 && performance.now() < dlD) {
-                for (const reg of map.values()) {
-                    for (const c of reg.cells || []) {
-                        if (c.slots && c.bpName && c.lod < 2 && b2Privat(c) && zweiStufig(c)) {
-                            dz2 = c;
-                            break;
-                        }
-                    }
-                    if (dz2) break;
-                }
-                if (!dz2) {
-                    streuTakt();
-                    r._tickScatterLod(pm, 8, 800);
-                    await new Promise((r2) => setTimeout(r2, 60));
-                }
-            }
-            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
+            const zweiNah = () => {
+                for (const reg of map.values())
+                    for (const c of reg.cells || []) if (c.slots && c.bpName && c.lod < 2 && b2Privat(c) && zweiStufig(c)) return (dz2 = c);
+                return null;
+            };
+            await window
+                .__gebautNach("eine nahe zwei-stufige Zelle", {
+                    fertig: zweiNah,
+                    takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await new Promise((r2) => setTimeout(r2, 60))),
+                    max: 500,
+                })
+                .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
+            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT: nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
             // BODEN-Schichten (nicht die globale Baum-Schicht) und der Takt holt sie auf ihre Nah-Stufe (privat, @reg).
@@ -262,12 +234,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 if (kand) {
                     pm.x = kand.x - 8;
                     pm.z = kand.z;
-                    const dlN = performance.now() + 45000;
-                    while (!(kand.lod < 2 && b2Privat(kand)) && performance.now() < dlN) {
-                        streuTakt();
-                        for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
-                        await new Promise((r2) => setTimeout(r2, 100));
-                    }
+                    await window
+                        .__gebautNach("der Kandidat in der Nah-Stufe", {
+                            fertig: () => kand.lod < 2 && b2Privat(kand),
+                            takt: async () => {
+                                streuTakt();
+                                for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
+                                await new Promise((r2) => setTimeout(r2, 100));
+                            },
+                            max: 450,
+                        });
                     if (kand.lod < 2 && b2Privat(kand)) dz2 = kand;
                 }
             }
@@ -285,7 +261,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
                 pm.x = dz2.x + 420;
                 pm.z = dz2.z;
-                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): seit V18.527 trägt eine Art
+                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): eine Art trägt
                 // nur ihre Budget-Gestalten (strauch 1), also teilen sich alle Zellen der Region dieselbe Hülle — der
                 // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
                 const huelleLeer = () =>
@@ -293,15 +269,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
                         return !g || (g.liveCount | 0) === 0;
                     });
-                let dWandel = 0;
-                const dlW2 = performance.now() + 45000;
-                while (!dWandel && performance.now() < dlW2) {
-                    for (let i = 0; i < 40 && !dWandel; i++) {
-                        r._tickScatterLod(pm, 8, 800);
-                        if (dz2.lod === 2 && huelleLeer()) dWandel = 1;
-                    }
-                    if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
-                }
+                const fern2 = () => dz2.lod === 2 && huelleLeer();
+                await window.__gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
                 dblk.demotet = dz2.lod === 2;
                 // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
                 dblk.slotsFern =
@@ -336,7 +305,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             dblk.err = String(e && e.message);
         }
         res.d = dblk;
-        // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
+        // ── F: A/B durch DIESELBE Pipe ──
         // Gestreute Fern-Geometrie (die Gras-Fernstufe; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
         // eigene Probe) über ein 4×4-Region-Raster: S=1 reproduziert das alte
         // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
@@ -370,13 +339,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
             let flat = null,
                 karte = null;
-            const dlF = performance.now() + 30000;
-            while (performance.now() < dlF) {
-                flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
-                karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
-                if (flat && flat.instanceable && karte && karte.instanceable) break;
-                await new Promise((r2) => setTimeout(r2, 100));
-            }
+            await window
+                .__gebautNach("gras und strauch in L2", {
+                    fertig: () => {
+                        flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
+                        karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
+                        return !!(flat && flat.instanceable && karte && karte.instanceable);
+                    },
+                    takt: () => new Promise((r2) => setTimeout(r2, 100)),
+                    max: 300,
+                });
             fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
             if (fern.flat) {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.
@@ -468,7 +440,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 for (const sl of alleK) r._scatterFreeSlots(sl);
                 fern.karten.leck = lebend() - lebendVor;
                 const R = AR.ARCH_REGION_M;
-                // Welle B: der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
+                // der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
                 // streut das Fern-Flat (Name `fscatter:…:2` = Fern-Stufe) über den echten Streu-Eintritt in 4×4
                 // Regionen und räumt über den echten Streu-Austritt.
                 const PROBE = "fscatter:diaetprobe:0:2";

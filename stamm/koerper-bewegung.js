@@ -16,7 +16,9 @@ class AnazhRealm_koerper_bewegung {
 
     // Decken-Probe: freie Höhe über dem Body-Top (feld-nativer Raycast → Terrain-Dichtefeld UND
     // Struktur-AABBs); Infinity = freier Himmel. Start knapp über der Body-Box (halfExtent 0.5), damit
-    // der Strahl nicht den eigenen Körper trifft.
+    // der Strahl nicht den eigenen Körper trifft. DER STAND-FIXPUNKT (K2 Belegung): die Ego-Kamera fragt je Bild — im Stand
+    // dieselbe Decke; der Strahl marschiert das Feld nur, wenn Leib, Welt (`_weltRegung`), Edits (`_editGenZaehler`) oder
+    // Bestand (Zahl, Ordnung, Neubau des Blocker-Netzes) sich regen, nie während ein Werk wandert (`beweger`).
     _ceilingHeadroom() {
         const pm = this.state.playerMesh;
         if (!pm) return Infinity;
@@ -24,13 +26,22 @@ class AnazhRealm_koerper_bewegung {
         const x = pm.position.x,
             y0 = pm.position.y + 0.55,
             z = pm.position.z;
+        const N = this._blockerNetz(),
+            D = this._deckeStand || (this._deckeStand = {});
+        const welt = this._weltRegung | 0,
+            edit = this._editGenZaehler | 0,
+            n = N.liste ? N.liste.length : 0;
+        const steht = D.x === x && D.y === y0 && D.z === z && D.sf === sf && D.welt === welt && D.edit === edit;
+        if (steht && D.n === n && D.gen === N.gen && D.seq === N.seq && !N.beweger.size) return D.h;
         const rs = this.setVec(this.state.tmpVec1, x / sf, y0 / sf, z / sf);
         const re = this.setVec(this.state.tmpVec2, x / sf, (y0 + 4.5) / sf, z / sf);
         const hitY = this._runRaycast(rs, re, (cb, hit) => {
             if (!hit) return null;
             return cb.get_m_hitPointWorld().y() * sf;
         });
-        return hitY === null ? Infinity : Math.max(0, hitY - y0);
+        const h = hitY === null ? Infinity : Math.max(0, hitY - y0);
+        Object.assign(D, { x, y: y0, z, sf, welt, edit, n, gen: N.gen, seq: N.seq, h });
+        return h;
     }
 
     // DIE EINE DECKEN-KLEMME (für handleJump + _parkourLuftsprung): unter niedriger Decke (< 3.4 m
@@ -89,7 +100,7 @@ class AnazhRealm_koerper_bewegung {
         const s = this.state;
         if (s.playerUnderwater || !s.playerVel) return false;
         if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
-        const nowS = performance.now() / 1000;
+        const nowS = s._simZeit;
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         // Das Frische-Fenster wohnt im parkour-Gesetz (gilt auch fürs Klettern); das Feld steht in der
         // Gültigkeits-Wand von _parkourGesetz — kein lokaler Fallback.
@@ -680,8 +691,8 @@ class AnazhRealm_koerper_bewegung {
             // erschöpft (stamina 0) trägt NUR der Auftrieb den Körper zur
             // Oberfläche (kein Ertrinken — die Züge versiegen, das Wasser hebt).
             const SG = AnazhRealm._schwimmGesetz();
-            let dive = !!s.keys["shift"];
-            let rise = !!s.keys[" "];
+            let dive = s.verbTafel.sprint;
+            let rise = s.verbTafel.sprung;
             const pl = s.player;
             if (pl && (dive || rise)) {
                 if (pl.stamina > 0) pl.stamina = Math.max(0, pl.stamina - SG.ausdauerProS * dt);
@@ -953,7 +964,7 @@ class AnazhRealm_koerper_bewegung {
         s.onSteepSlope =
             grounded && groundNormalY < AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         s._groundedCache = grounded;
-        s._groundedCachedAt = performance.now();
+        s._groundedCachedAt = s._simZeit;
         s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
         // DER TRÄGER dieses Schritts — die Sicht-Schicht liest ihn (`_gaitBodenY` → `_standSicht`): die Fläche unter den
         // Füßen (Gelände, in der Höhle ihr Boden) bzw. das Bauwerk; in der Luft keiner (die Fuß-IK ruht).
@@ -1170,7 +1181,7 @@ class AnazhRealm_koerper_bewegung {
         }
         this.state._wandKontaktNx = nx;
         this.state._wandKontaktNz = nz;
-        this.state._wandKontaktAt = performance.now() / 1000;
+        this.state._wandKontaktAt = this.state._simZeit;
     }
 
     // Der waagrechte Abstand² eines Punkts zu einer Blocker-Box — im Rahmen der GEDREHTEN Box (`obb`, die Haus-Hülle und
@@ -1195,26 +1206,83 @@ class AnazhRealm_koerper_bewegung {
         return ix * ix + iz * iz;
     }
 
+    // Der waagrechte Abstand² einer STRECKE a → e zu einer Blocker-Box (derselbe Rahmen wie `_boxAbstand2`): 0, wo die Strecke
+    // die Box schneidet (Liang-Barsky), sonst das Kleinste aus ihren Enden gegen die Box und den Ecken der Box gegen sie — die
+    // Kapsel, die längs der Strecke geht. Leser: der Weg der Bewohner (`_bewohnerWand`).
+    _streckeBoxAbstand2(box, ax, az, ex, ez) {
+        const ob = box.obb;
+        let x0, x1, z0, z1, px, pz, qx, qz;
+        if (ob) {
+            x0 = -ob.hx;
+            x1 = ob.hx;
+            z0 = -ob.hz;
+            z1 = ob.hz;
+            px = (ax - ob.cx) * ob.c - (az - ob.cz) * ob.s;
+            pz = (ax - ob.cx) * ob.s + (az - ob.cz) * ob.c;
+            qx = (ex - ob.cx) * ob.c - (ez - ob.cz) * ob.s;
+            qz = (ex - ob.cx) * ob.s + (ez - ob.cz) * ob.c;
+        } else {
+            x0 = box.minX;
+            x1 = box.maxX;
+            z0 = box.minZ;
+            z1 = box.maxZ;
+            px = ax;
+            pz = az;
+            qx = ex;
+            qz = ez;
+        }
+        const dx = qx - px;
+        const dz = qz - pz;
+        let t0 = 0;
+        let t1 = 1;
+        for (let k = 0; k < 4 && t0 <= t1; k++) {
+            const p = k === 0 ? -dx : k === 1 ? dx : k === 2 ? -dz : dz;
+            const q = k === 0 ? px - x0 : k === 1 ? x1 - px : k === 2 ? pz - z0 : z1 - pz;
+            if (p === 0) {
+                if (q < 0) t0 = 2;
+            } else if (p < 0) t0 = Math.max(t0, q / p);
+            else t1 = Math.min(t1, q / p);
+        }
+        if (t0 <= t1) return 0;
+        let d2 = Infinity;
+        for (let k = 0; k < 2; k++) {
+            const x = k ? qx : px;
+            const z = k ? qz : pz;
+            const ix = x - Math.max(x0, Math.min(x, x1));
+            const iz = z - Math.max(z0, Math.min(z, z1));
+            d2 = Math.min(d2, ix * ix + iz * iz);
+        }
+        const L2 = dx * dx + dz * dz;
+        for (let k = 0; k < 4; k++) {
+            const cx = k & 1 ? x1 : x0;
+            const cz = k & 2 ? z1 : z0;
+            let t = L2 > 1e-12 ? ((cx - px) * dx + (cz - pz) * dz) / L2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const ux = px + dx * t - cx;
+            const uz = pz + dz * t - cz;
+            d2 = Math.min(d2, ux * ux + uz * uz);
+        }
+        return d2;
+    }
+
     _loopPlayerMovement(currentTime, dtOverride) {
+        this.state._simZeit = currentTime; // die Uhr des Schritts (auch Replay, Lockstep): die Parkour-Wand stempelt und liest sie
         // ### Spielerbewegung ###
         // `dtOverride` (FIXED_DT im Sim-Schritt) macht die Bewegung zur reinen Funktion von (Input, dt);
         // ohne Override dt aus der Wall-Clock. Die horizontale Intent-Velocity lebt in `state.playerVel`,
-        // `_stepCharacter` integriert. Unter Wasser ist Shift die Tauch-Geste, an Land Sprint.
-        let currentSpeed =
-            this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
+        // `_stepCharacter` integriert. Die Eingabe ist die Verb-Tafel (leib.K5): unter Wasser ist Sprint die Tauch-Geste.
+        const T = this.state.verbTafel;
+        let currentSpeed = T.sprint && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
         // Wasser bremst: das Tempo kommt aus dem Schwimm-Gesetz (speedMul, Kraul relativ zum Gehen; der Leser ist
         // fail-closed — das Literal 0,55 neben dem Gesetz 0,85 fiel, W-K3).
         if (this.state.playerUnderwater) currentSpeed *= AnazhRealm._schwimmGesetz().speedMul;
 
         this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
         this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
-        this.state.moveDirection.set(0, 0, 0);
-        if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
-        if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
         // Bewusst NICHT „intuitiv" invertieren: `state.right` ist die arithmetische Richtung
-        // (cos yaw, 0, −sin yaw) = player-anatomisch LINKS. A → +state.right, D → −state.right.
-        if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
-        if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
+        // (cos yaw, 0, −sin yaw) = player-anatomisch LINKS — die Tafel trägt quer + = links (A, der Stick nach links).
+        this.state.moveDirection.set(0, 0, 0);
+        this.state.moveDirection.addScaledVector(this.state.forward, T.vor).addScaledVector(this.state.right, T.quer);
 
         if (this.state.playerVel) {
             // Auf zu steilem Hang (onSteepSlope via isPlayerGrounded) wird der Bewegungs-Input gedrosselt
@@ -1263,8 +1331,8 @@ class AnazhRealm_koerper_bewegung {
                 slide = this.state._parkourSlide = null;
             }
             if (parkG) {
-                const cFresh = !!this.state.keys["c"] && !this.state._cWasDown;
-                this.state._cWasDown = !!this.state.keys["c"];
+                const cFresh = T.rutsch && !this.state._cWasDown;
+                this.state._cWasDown = T.rutsch;
                 if (!slide && cFresh && !this.state.isInAir) {
                     const v0 = this.state.playerVel;
                     const sp0 = Math.hypot(v0.x(), v0.z());
@@ -1310,16 +1378,16 @@ class AnazhRealm_koerper_bewegung {
                 z.vlong = v.x() * cyF - v.z() * syF;
                 z.vlat = -v.x() * syF - v.z() * cyF;
                 vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
-                const keys = this.state.keys;
-                const FT = AnazhRealm.FAHR_TASTEN; // die EINE Tafel der Fahr-Tasten (Hilfe und Tacho nennen sie)
+                // Gas, Bremse und Lenkung analog aus der Verb-Tafel (W/S/A/D/Shift oder RT/LT/Stick/B — dieselben Felder)
                 vc.fahrKraefte(
                     z,
                     {
-                        throttle: keys[FT.gas.tasten[0]] ? 1 : 0,
-                        brake: keys[FT.bremse.tasten[0]] ? 1 : 0,
-                        steer: (keys[FT.lenken.tasten[0]] ? 1 : 0) - (keys[FT.lenken.tasten[1]] ? 1 : 0),
-                        hand: !!keys[FT.handbremse.tasten[0]],
+                        throttle: T.gas,
+                        brake: T.bremse,
+                        steer: T.lenken,
+                        hand: T.handbremse,
                         tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
+                        haft: this._fahrHaft(), // die Nässe am Reibkreis (feld.K1)
                     },
                     fahrG,
                     nowDt
@@ -1339,16 +1407,18 @@ class AnazhRealm_koerper_bewegung {
                 const vSl = this.state.playerVel;
                 this.state.playerVel.setValue(slide.dx * spZiel, vSl.y(), slide.dz * spZiel);
             } else if (this.state.moveDirection.length() > 0) {
+                // der ZUG der Auslenkung (0..1): der Stick hinter der Totzone stufenlos, jede Taste und jede Diagonale voll
+                const zug = Math.min(1, this.state.moveDirection.length());
                 this.state.moveDirection.normalize();
                 const v = this.state.playerVel;
                 // ZENSUS 17.07. — die vier C5-Gefühls-Hebel wohnen im koerper-
-                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-soft
-                // byte-gleich: Boden kAcc / Luft kAccLuft).
+                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-closed:
+                // Boden kAcc / Luft kAccLuft).
                 const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
                 const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? LG.kAccLuft : LG.kAcc;
                 const f = 1 - Math.exp(-kAcc * nowDt);
-                const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
-                const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
+                const tx = this.state.moveDirection.x * currentSpeed * slopePenalty * zug;
+                const tz = this.state.moveDirection.z * currentSpeed * slopePenalty * zug;
                 this.state.playerVel.setValue(v.x() + (tx - v.x()) * f, v.y(), v.z() + (tz - v.z()) * f);
             } else if (!this.state.onSteepSlope) {
                 // Brems-Kurve statt Hard-Stop: in der Luft bleibt das Momentum (ballistischer Bogen), am Boden ein
@@ -1372,13 +1442,13 @@ class AnazhRealm_koerper_bewegung {
             // JUMP-BUFFER: ein Space-Tipp kurz VOR der Landung wird gemerkt (sprung.bufferSec, Gesetzbuch
             // fx.bewegung.sprung) und feuert beim Aufsetzen. Der Sprung läuft durch handleJump — EINE Quelle
             // (Coyote + Slope-Gate + Decken-Klemme); ein Inline-Sprung umginge die Klemme.
-            const spaceFresh = !!this.state.keys[" "] && !this.state._spaceWasDown;
+            const spaceFresh = T.sprung && !this.state._spaceWasDown;
             if (spaceFresh) this.state._jumpPressedAt = currentTime;
-            this.state._spaceWasDown = !!this.state.keys[" "];
+            this.state._spaceWasDown = T.sprung;
             const buffered =
                 currentTime - (this.state._jumpPressedAt || -Infinity) <=
                 AnazhRealm._bewegungsBlock("sprung", ["coyoteSec", "bufferSec"]).bufferSec;
-            if ((this.state.keys[" "] || buffered) && !this.state.isJumping) {
+            if ((T.sprung || buffered) && !this.state.isJumping) {
                 this.handleJump(currentTime);
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
             } else if (spaceFresh && this.state.isJumping) {
@@ -1389,11 +1459,15 @@ class AnazhRealm_koerper_bewegung {
             // PARKOUR — KLETTERN: W gegen die frische Wand (der Kontakt bleibt frisch, solange man hineindrückt)
             // zehrt Ausdauer und trägt den Körper — der Step liest _parkourKletter als Steig-vy statt
             // Schwerkraft. Erschöpft/W los/Wand weg → Fall. Frische-Fenster = kontaktFrischeSec (parkour-Gesetz).
+            // GEGEN heißt hinein: der Blick höchstens 45° neben der Wand-Normalen — wer an einer Wand entlang geht (die
+            // Türzarge, der Flur), klettert nicht (siedlung.K1: vorher stieg der Spieler an jeder gestreiften Wand auf).
             let kletterV = 0;
             if (
                 parkG &&
-                this.state.keys["w"] &&
+                T.vor > 0 &&
                 !slide &&
+                this.state.forward.x * this.state._wandKontaktNx + this.state.forward.z * this.state._wandKontaktNz <
+                    -Math.SQRT1_2 &&
                 Number.isFinite(this.state._wandKontaktAt) &&
                 currentTime - this.state._wandKontaktAt < parkG.kontaktFrischeSec
             ) {
@@ -1978,12 +2052,13 @@ class AnazhRealm_koerper_bewegung {
         // der 9-Ray-Fallback (jetzt feld-nativer `_runRaycast`) greift nur, falls der Cache fehlt.
         if (!this.state.playerMesh) return false;
 
-        // Erdungs-Cache (2-Frame-TTL, auf state): isPlayerGrounded wird mehrfach je Frame gerufen (Bewegung,
-        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat (kein Mid-Frame-Drift), 1/3 Raycasts.
-        const now = performance.now();
+        // Erdungs-Cache (2 Sim-Schritte, auf state): isPlayerGrounded wird mehrfach je Schritt gerufen (Bewegung,
+        // Sprung, Ground-Track, handleJump) — alle teilen ein Resultat, 1/3 Raycasts. Die Uhr ist die des Schritts
+        // (`_simZeit`): Replay, Lockstep und ein Nachhol-Frame treffen dieselbe Entscheidung wie der erste Lauf.
+        const now = this.state._simZeit;
         if (
             typeof this.state._groundedCachedAt === "number" &&
-            now - this.state._groundedCachedAt < 33 // ~2 Frames bei 60 fps
+            now - this.state._groundedCachedAt < 2 * AnazhRealm.FIXED_DT
         ) {
             // Side-effect bestNormalY + onSteepSlope wurden beim ersten Call
             // dieses Frames bereits gesetzt — keine Notwendigkeit zu wiederholen.
@@ -2057,6 +2132,181 @@ class AnazhRealm_koerper_bewegung {
     findSurfaceAbove(x, _currentY, z) {
         const vy = this._voxelSurfaceY(x, z);
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
+    }
+
+    // ═══ DIE VERB-TAFEL (leib.K5, Meisterkarte Leib H) ═══
+    // Jede Eingabe schreibt in die EINE Tafel `state.verbTafel`, jedes Verb liest NUR sie: die Tastatur (`state.keys` roh, der
+    // keydown-Hörer in init), die Maus (Blick und Knöpfe) und das Gamepad (`_eingabeTakt`). Analog, wo das Verb analog ist — das
+    // Gehen stufenlos aus der Stick-Auslenkung hinter der Totzone, Lenken und Gas der Fahrt, die Kamera-Kugel —, digital, wo es
+    // digital ist: jede Aktion geht durch den EINEN Auslöser `_verbTaste`. Vorher las jedes Verb `state.keys` selbst (11 Glieder,
+    // die Linse checkBandGamepadVerben nennt jedes beim Namen), und kein Glied las ein Gamepad.
+
+    // Der Sammler am Kopf jedes Sim-Schritts (`_stepFixedSim`): Tastatur und Pad dieses Bilds → die analogen und gehaltenen Verben
+    // der Tafel. Replay und Lockstep setzen die Tafel selbst und fahren denselben Schritt ohne ihn.
+    _verbTafelSammeln() {
+        const st = this.state;
+        const [T, k, p, FT] = [st.verbTafel, st.keys, st._pad, AnazhRealm.FAHR_TASTEN];
+        const g = T.gehalten;
+        const achse = (plus, minus, pad) => Math.max(-1, Math.min(1, (plus ? 1 : 0) - (minus ? 1 : 0) + pad));
+        T.vor = achse(k.w, k.s, p ? -p.ly : 0);
+        T.quer = achse(k.a, k.d, p ? -p.lx : 0);
+        T.sprint = !!(k.shift || g.sprint);
+        T.sprung = !!(k[" "] || g.jump);
+        T.rutsch = !!(k.c || g.rutschen);
+        T.gas = Math.max(k[FT.gas.tasten[0]] ? 1 : 0, p ? p.rt : 0);
+        T.bremse = Math.max(k[FT.bremse.tasten[0]] ? 1 : 0, p ? p.lt : 0);
+        T.lenken = achse(k[FT.lenken.tasten[0]], k[FT.lenken.tasten[1]], p ? -p.lx : 0);
+        T.handbremse = !!(k[FT.handbremse.tasten[0]] || g.handbremse);
+    }
+
+    // Das Gamepad je Bild, vor dem Akkumulator und auch bei offenem Portal: das erste verbundene Pad → `state._pad` (die Sticks radial
+    // hinter der Totzone auf 0..1 gedehnt, die Abzüge analog); jede Knopf-Kante geht über die freie Belegung an `_verbTaste` (im Fangen
+    // der Belegung bindet der Knopf). Dann der BLICK: was Maus und rechter Stick seit dem letzten Bild drehten, dreht die Kamera-Kugel.
+    // Unter dem Ladeschirm gehört kein Knopf der Welt (wie die Tasten): das Pad gilt dann als getrennt.
+    _eingabeTakt(dt) {
+        const st = this.state;
+        const [T, P] = [st.verbTafel, AnazhRealm.PAD_GESETZ];
+        const liste =
+            typeof navigator !== "undefined" &&
+            navigator.getGamepads &&
+            !this._ladeschirmSteht() &&
+            navigator.getGamepads();
+        let gp = null;
+        for (const g of liste || []) if (!gp && g && g.connected) gp = g;
+        const p =
+            st._pad || (gp ? (st._pad = { lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0, knoepfe: [], gp: null }) : null);
+        if (p) {
+            const ax = gp ? gp.axes : [];
+            const kn = gp ? gp.buttons : [];
+            const stick = (x, y) => {
+                const m = Math.hypot(x, y);
+                const f = m > P.totzone ? Math.min(1, (m - P.totzone) / (1 - P.totzone)) / m : 0;
+                return [x * f, y * f];
+            };
+            [p.lx, p.ly] = stick(ax[0] || 0, ax[1] || 0);
+            [p.rx, p.ry] = stick(ax[2] || 0, ax[3] || 0);
+            [p.lt, p.rt, p.gp] = [kn[6] ? kn[6].value : 0, kn[7] ? kn[7].value : 0, gp];
+            for (let i = 0; i < Math.max(kn.length, p.knoepfe.length); i++) {
+                const an = !!(kn[i] && kn[i].pressed);
+                if (an === !!p.knoepfe[i]) continue;
+                p.knoepfe[i] = an;
+                if (an && st.keybindRebind) this._completeKeybindRebind("Pad" + i);
+                else for (const a in st.padBelegung) if (st.padBelegung[a] === "Pad" + i) this._verbTaste(a, an);
+            }
+            if (!gp) st._pad = null;
+        }
+        if (this._portalOverlay) return; // die Heimat ruht — nur der Zurück-Knopf (`_verbTaste`) verlässt das Portal
+        if (gp) {
+            T.blickGier -= p.rx * P.blickRadS * dt;
+            T.blickNeig -= p.ry * P.neigRadS * dt;
+        }
+        if (T.blickGier !== 0 || T.blickNeig !== 0) {
+            st.yaw += T.blickGier;
+            st.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, st.pitch + T.blickNeig));
+            T.blickGier = T.blickNeig = 0;
+        }
+    }
+
+    // Die Taste → ihre Aktion: die freie Belegung (`state.keybindings`), die festen Tasten (TASTEN_FEST: E, Z, H, Esc), die Ziffern 1–9
+    // (Hotbar-Slots) und eine DSL-Fähigkeit unter ihrem Tasten-Namen (rule).
+    _tastenAktion(event) {
+        const name = String(event.key || "").toLowerCase();
+        return (
+            this._actionForBindingCode(event.code) ||
+            AnazhRealm.TASTEN_FEST[event.code] ||
+            (/^[1-9]$/.test(event.key) ? "slot" + (event.key - 1) : null) ||
+            (name && Object.prototype.hasOwnProperty.call(this.state.abilities, name) ? name : null)
+        );
+    }
+
+    // DER EINE AUSLÖSER jeder digitalen Aktion — Tastatur, Maus und Gamepad rufen ihn: er hält `gehalten`, löst beim Drücken das Verb
+    // und beim Lösen, was das Halten beendet (das Fernglas, das Mahlen, den gespannten Bogen). true = die Aktion griff (der Hörer
+    // verbraucht sein Ereignis). Ist ein Portal offen, ruht die Heimat: nur das Zurück verlässt es.
+    _verbTaste(aktion, an) {
+        const st = this.state;
+        st.verbTafel.gehalten[aktion] = an;
+        if (this._portalOverlay) return an && aktion === "cancelBuild" && (this.exitPortal(), true);
+        const welt = st.uiActiveDrawer !== "werkstatt";
+        if (!an) {
+            if (aktion === "zoom") this.setZoomActive(false);
+            if (aktion === "break" && st.player && st.player._bogenDraw) this._bogenRelease();
+            return false;
+        }
+        const slot = /^slot(\d)$/.exec(aktion);
+        if (slot || aktion === "slotVor" || aktion === "slotZurueck") {
+            const i = st.buildMode && st.buildMode.slotIndex >= 0 ? st.buildMode.slotIndex : 0;
+            this.selectHotbarSlot(slot ? +slot[1] : (i + (aktion === "slotVor" ? 1 : 8)) % 9);
+            return !slot;
+        }
+        const schublade = { drawerKreaturen: "kreaturen", drawerSpieler: "spieler", drawerWerkstatt: "werkstatt" };
+        schublade.drawerEinstellungen = "einstellungen";
+        if (schublade[aktion]) return !st.buildMode.active && (this.toggleDrawer(schublade[aktion]), true);
+        switch (aktion) {
+            case "jump":
+                this.handleJump(performance.now() / 1000);
+                return false;
+            case "confirmBuild":
+                return !!this.confirmBuild();
+            case "cancelBuild":
+                if (st.inventoryOpen) return (this.toggleInventoryOverlay(false), true);
+                if (st.buildMode.active) this._clearBuildMode();
+                this._updateHotbarHighlight();
+                return false;
+            case "einsteigen": // ein Portal in Reichweite schlägt das Reiten (nie im Werkstatt-Drawer: dort ist E der Dreh-Modus)
+                return welt && (this._tryEnterPortalAtPlayer() || this.toggleMountAtPlayer(), true);
+            case "zoom":
+                return welt && (this.setZoomActive(true), true);
+            case "hud": // beim Spielen gehört der Bildschirm der Welt
+                return welt && (document.body.classList.toggle("hud-hidden"), true);
+            case "swapHands":
+                return (this.swapHands(), true);
+            case "cameraToggle":
+                return (this.setCameraMode(st.cameraMode === "first" ? "third" : "first"), true);
+            case "inventory":
+                return (this.toggleInventoryOverlay(), true);
+            case "chat":
+                return this._chatOeffnen();
+            case "break": // ist die UI offen, ist die Welt taub (V-D2); das Halten mahlt in `_tickHarvest`
+                if (st.inventoryOpen || this._uiSchubladeOffen()) return false;
+                st.player.lastHarvestStrikeAt = performance.now() / 1000;
+                return (this.tryMouseBreak(), true);
+            case "place":
+                return !st.inventoryOpen && !this._uiSchubladeOffen() && (this.tryMousePlace(), true);
+        }
+        return false; // gehalten, ohne Druck-Verb: Sprint, Rutsch, Handbremse, eine DSL-Fähigkeit (die Schleife liest `gehalten`)
+    }
+
+    // DAS RUMBLE aus dem Zustand, je Takt nach der Sim: stark = der Stoß des Leibs (`player._stoss`, geschrieben vom eigenen Treffer
+    // `_kampfHitJuice` und der Wunde `damagePlayer`, verbraucht hier, klingt in Takten ab) und der Reifen-Schlupf der Fahrt samt
+    // Landung; schwach = das Tempo der Fahrt. Ein neuer Effekt geht nur bei einer Änderung oder vor dem Ablauf des laufenden.
+    _rumbleTakt(dt, t) {
+        const st = this.state;
+        const [p, R, pl] = [st._pad, AnazhRealm.PAD_GESETZ.rumble, st.player];
+        const akt = p && p.gp && p.gp.vibrationActuator; // ein Pad ohne Zwei-Motoren-Rumble (`effects`/`type`) rumpelt nicht
+        if (!akt || !pl || !(akt.effects ? akt.effects.includes("dual-rumble") : akt.type === "dual-rumble")) return;
+        let stoss = Math.max((p.stoss || 0) * Math.exp(-dt / R.abklingS), pl._stoss || 0);
+        pl._stoss = 0;
+        const e = pl.mountedArch != null ? this._mountedEntry : null;
+        const z = e && e._fahr;
+        let [schlupf, schwach] = [0, 0];
+        if (z && !z.luft) {
+            schlupf = Math.min(1, (Math.abs(z.slipF || 0) + Math.abs(z.slipR || 0)) / R.schlupfVoll);
+            schwach = Math.min(1, Math.abs(z.vlong) / R.tempoVoll) * R.fahrtSchwach;
+            if (p.luftVor) stoss = Math.max(stoss, R.landung);
+        }
+        [p.stoss, p.luftVor] = [stoss, !!(z && z.luft)];
+        const stark = Math.max(stoss, schlupf);
+        const r0 = p.rumble || (p.rumble = { stark: 0, schwach: 0, bis: 0 });
+        if (stark < R.min && schwach < R.min) {
+            if (r0.stark || r0.schwach) (([r0.stark, r0.schwach] = [0, 0]), akt.reset && akt.reset());
+            return;
+        }
+        if (Math.abs(stark - r0.stark) < R.schritt && Math.abs(schwach - r0.schwach) < R.schritt && t < r0.bis) return;
+        Object.assign(r0, { stark, schwach, bis: t + R.dauerMs / 2000 });
+        const effekt = { startDelay: 0, duration: R.dauerMs, strongMagnitude: stark, weakMagnitude: schwach };
+        akt.playEffect("dual-rumble", effekt).catch((err) =>
+            this._bruchMelden(`Rumble: das Pad lehnt dual-rumble ab (${err})`)
+        );
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_bewegung]);
@@ -2183,6 +2433,8 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// Der Stab: eine Blocker-Box, deren Grundfläche schmaler ist als ein Fuß, trägt keinen Leib (`_blockerFugen`).
+AnazhRealm.PLAYER_STAB = 0.15;
 // ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
 // Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
@@ -2223,3 +2475,65 @@ Object.defineProperties(AnazhRealm, {
     },
 });
 AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
+// DAS GAMEPAD (leib.K5): die Totzone der Sticks (radial; dahinter 0..1 gedehnt, das Tempo folgt der Auslenkung stufenlos), der Blick
+// bei vollem Stick (rad/s, Gier und Neigung) und das Rumble: Abklingen des Stoßes (s), Tempo des vollen Fahrt-Brummens (m/s) und sein
+// Anteil, Reifen-Schlupf vorn + hinten des vollen Rumpelns (rad), der Landungs-Stoß der Fahrt, die Wunde (Stoß je Anteil der
+// Lebenskraft: ein Achtel nimmt das volle Rumble — ein Hieb von 1 % der 134 HP lag sonst unter der Schwelle), Effekt-Dauer (ms), die
+// kleinste Stärke und die Stufe, ab der ein neuer Effekt geht.
+AnazhRealm.PAD_GESETZ = Object.freeze({
+    totzone: 0.15,
+    blickRadS: 3,
+    neigRadS: 2,
+    rumble: Object.freeze({
+        abklingS: 0.12,
+        tempoVoll: 30,
+        fahrtSchwach: 0.3,
+        schlupfVoll: 0.35,
+        landung: 0.6,
+        wunde: 8,
+        dauerMs: 120,
+        min: 0.02,
+        schritt: 0.05,
+    }),
+});
+// DIE BELEGUNG DES GAMEPADS (Standard-Layout: 0 A · 1 B · 2 X · 3 Y · 4 LB · 5 RB · 6 LT · 7 RT · 8 Zurück · 9 Start · 10/11 Stick-Druck ·
+// 12–15 Kreuz ↑↓←→ · 16 Home): Aktion → Knopf, frei umzubinden wie die Tastatur (`setKeybinding` mit „Pad<n>"), auch auf eine
+// DSL-Fähigkeit; ohne Standard-Knopf bleiben das Gespräch und die Schubladen (frei zu binden). Ein Knopf darf zwei Aktionen tragen, die einander nie begegnen (B: zurück zu Fuß, Handbremse in der Fahrt). Die
+// Sticks tragen Gehen und Blick, RT und LT analog Gas und Bremse (`_verbTafelSammeln`).
+AnazhRealm.PAD_BELEGUNG = Object.freeze({
+    jump: "Pad0",
+    cancelBuild: "Pad1",
+    handbremse: "Pad1",
+    einsteigen: "Pad2",
+    swapHands: "Pad3",
+    place: "Pad4",
+    break: "Pad5",
+    zoom: "Pad6",
+    cameraToggle: "Pad8",
+    inventory: "Pad9",
+    sprint: "Pad10",
+    rutschen: "Pad11",
+    confirmBuild: "Pad12",
+    hud: "Pad13",
+    slotZurueck: "Pad14",
+    slotVor: "Pad15",
+});
+AnazhRealm.PAD_KNOPF_NAMEN = Object.freeze([
+    "A",
+    "B",
+    "X",
+    "Y",
+    "LB",
+    "RB",
+    "LT",
+    "RT",
+    "Zurück",
+    "Start",
+    "L3",
+    "R3",
+    "↑",
+    "↓",
+    "←",
+    "→",
+    "Home",
+]);

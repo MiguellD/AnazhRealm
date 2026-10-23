@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Befund (OMEN 0710-6, V18.535-ABAB, verworfene Boots): die Bühne
-// hielt das Wetter (gate:wetter-wache), aber keinen anderen Zug — im Boot 4B setzte der Nexus mitten im Lauf ein Dorf (die
-// Gier sprang), in anderen Boots kamen Tiere at_player, Größen- und Tempo-Würfel, die Tageszeit. Jeder solche Zug ist ein
-// Welt-Akt der DSL, und alle laufen durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung
-// (`_messHalt`, dieselbe eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`)
-// und nennt ihn beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie
-// es ist. Die Wand (Null-Renderer, eine echte Welt):
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
+// durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung (`_messHalt`, dieselbe
+// eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`) und nennt ihn
+// beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie es ist.
+// Die Wand (Null-Renderer, eine echte Welt):
 //   (H) HALT: unter der Bühne versucht jeder Weg des Spiels die Welt zu ändern — Nexus (`_loopNexusUpdate`: Dorf far_player,
 //       Tiere at_player, Größen- und Tempo-Würfel, Tageszeit, Lauf-Tempo, Himmel), Emotion (`updatePlayerEmotions`, chaos →
 //       Tempo-Würfel), Gesetz (`_tickWorldRules`), Mensch, Mitspieler (DSL-Quelle `remote:`), ein verzögertes Programm
@@ -17,9 +15,9 @@
 //   (Q) QUELLE: jeder Op der DSL hat ein Urteil (Welt-Akt oder benannt frei, die Liste nennt nur Ops, die es gibt); jedes
 //       Programm, das der Nexus komponiert, trägt nur Welt-Akte der Liste, das Wetter und die freien Ops (dass `dslEval`
 //       Liste und Halt liest, beweisen H und F am Verhalten); (K) KI: der Prompt der Welt-KI (`llmBuildSystemPrompt`) nennt
-//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe (bis 16.10.: 40 von 70 Ops); jeder Op
+//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe; jeder Op
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
-//       (bis 16.10.: remove_architecture und sechs Kreatur-Verben tot an der Id der Welt, modify_terrain in einer Liste);
+//       (modify_terrain in einer Liste);
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
 // und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb, `formUrteil`
@@ -239,14 +237,15 @@ async function probe(GESCHICKT) {
     // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
     // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
     const K = r.constructor;
-    for (const bis = performance.now() + 60000; !st.blueprints.haus_griechisch && performance.now() < bis; )
-        await new Promise((x) => setTimeout(x, 200)); // das Studio-Buch (spawn_temple liest es)
+    await window.__weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
     const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
     const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
     // die Zahl-Id trägt jeder Bau aus Programm, Feld und Worldgen, die String-Id das Werk des Spielers (`_newArchId`)
     const bau = (art, id = r._newArchId()) => art === "number" ? st.architectures.filter((a) => a && typeof a.id === art).pop().id
         : (r.dslRun(["spawn_blueprint", "stein_block", ["far_player", 30, 40], 8, id], { source: "human" }), id);
     const JE = { weather: "rainy", set_season: "herbst", gravity: -9.8, terrain_steepness: 1, player_soul: "wesen", spawn_blueprint: "stein_block" };
+    // der Leib wiegt nur im Band seines Gesetzes (`AnazhRealm.DSL_WERTE`): die Probe nimmt den Rand des Bands
+    for (const [op, stat] of [["player_jump_power", "jumpPower"], ["player_speed", "speed"]]) JE[op] = r._koerperGesetzBand(stat).min;
     const W = (op, n) => ({
         name: JE[op] || (/^define_/.test(op) ? "wache_" + op.slice(7) : rolle(/^equip_/.test(op) ? op.slice(6) : "consumable")),
         value: JE[op] ?? (op === "terrain_base_height" ? st.terrainBaseHeight : 8), blueprintName: /boost/.test(op) ? rolle("consumable") : "wache_blueprint",
@@ -272,7 +271,9 @@ async function probe(GESCHICKT) {
             aus.form.push({ op, prog: JSON.stringify([op, ...args]).slice(0, 120), ev, blieb });
         }
     }
-    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, [...K[n]]]));
+    // eine Liste von Op-Namen oder eine Tafel je Op (DSL_WERTE: ihre Schlüssel) — jeder Name muss leben
+    const namen = (x) => (x[Symbol.iterator] ? [...x] : Object.keys(x));
+    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, namen(K[n])]));
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
@@ -363,23 +364,14 @@ function urteil(S, pageErrors) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.player ||
-                !window.anazhRealm.nexus ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.player && r.nexus);
     });
     await page.evaluate(AUSGABE_INSTALL);
     const S = await page.evaluate(probe, GESCHICKT);

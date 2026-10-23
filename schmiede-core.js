@@ -415,7 +415,10 @@
         return c * (1 - Math.cos(s * Math.PI * 0.5));
     }
 
-    const RHO = { stahl: 7850, bronze: 8600, holz: 720, griff: 2600 }; // kg/m³ — Längen in m ⇒ Masse in kg (realer Maßstab)
+    // kg/m³ — Längen in m ⇒ Masse in kg (realer Maßstab). Die Nicht-Metalle (Schaft, Griff-Wicklung); jedes Metall wiegt
+    // nach der EINEN Stoff-Zeile MAT (metallRho) — halten-gesetz 22.10.: RHO.stahl und RHO.bronze fielen, die Masse einer
+    // Bronze-Klinge (Urvolk) wog als Stahl, ihre Schneide (edgeBeta) urteilte schon als Bronze.
+    const RHO = { holz: 720, griff: 2600 };
 
     // ════════════════════════════════════════════════════════════════════
     // LOFT — die Klinge: Schnittringe entlang der (evtl. gekrümmten) Mittellinie
@@ -796,7 +799,7 @@
         for (let i = 0; i < turns; i++) {
             const xx = x0 + ((i + 0.5) / turns) * len,
                 rr = rA * 1.04 * (1 - ((xx - x0) / len) * 0.12) + 0.0016;
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.0022, 8, 22), wm);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.0022, Math.max(4, Math.round(8 * _wickelDetail)), Math.max(8, Math.round(22 * _wickelDetail))), wm);
             ring.rotation.y = Math.PI / 2;
             ring.position.set(xx, 0, 0);
             ring.rotation.z = 0.18;
@@ -1536,6 +1539,7 @@
 
     // — LAWFUL KOPF-MODELL (Masse, deckungsgleich zur Geometrie): Sockel-Hülse (Ring ums Schaftloch) + eingewurzelte Teile —
     function headModel(P, S) {
+        const rhoM = metallRho(P);
         const x0 = S.xHead0,
             L = P.kopfLen,
             sR = P.socketR,
@@ -1563,7 +1567,7 @@
                 const u = (i + 0.5) / NS,
                     r = socketR(u),
                     x = x0 + u * L,
-                    dm = RHO.stahl * Math.PI * Math.max(0, r * r - rHole * rHole) * (L / NS);
+                    dm = rhoM * Math.PI * Math.max(0, r * r - rHole * rHole) * (L / NS);
                 mS += dm;
                 mSx += dm * x;
             }
@@ -1581,47 +1585,47 @@
                     const cellA = Math.abs((b.xo - a.xo) * (cc.z - a.z) - (b.z - a.z) * (cc.xo - a.xo));
                     vol += cellA * 2 * ((a.t + b.t + cc.t + dd.t) / 4);
                 }
-            const mW = RHO.stahl * vol;
+            const mW = rhoM * vol;
             parts.push({ x: cx, m: mW, Iself: mW * P.reach * P.reach * 0.12 });
             if (P.backSpike) {
                 topo.spike = true;
                 parts.push({
                     x: cx,
-                    m: RHO.stahl * (1 / 3) * Math.PI * Math.pow(sR * 0.55, 2) * P.reach * 0.85,
+                    m: rhoM * (1 / 3) * Math.PI * Math.pow(sR * 0.55, 2) * P.reach * 0.85,
                     Iself: 0,
                 });
             } else {
                 topo.poll = true;
-                parts.push({ x: x0 - L * 0.05, m: RHO.stahl * Math.PI * Math.pow(sR * 0.72, 2) * L * 0.3, Iself: 0 });
+                parts.push({ x: x0 - L * 0.05, m: rhoM * Math.PI * Math.pow(sR * 0.72, 2) * L * 0.3, Iself: 0 });
             }
         } else if (P.kopfTyp === "hammer") {
             topo.blunt = true;
-            parts.push({ x: cx, m: RHO.stahl * Math.PI * Math.pow(sR * 0.9, 2) * P.reach * 0.55, Iself: 0 });
+            parts.push({ x: cx, m: rhoM * Math.PI * Math.pow(sR * 0.9, 2) * P.reach * 0.55, Iself: 0 });
             if (P.beak) {
                 topo.spike = true;
                 parts.push({
                     x: cx,
-                    m: RHO.stahl * (1 / 3) * Math.PI * Math.pow(sR * 0.5, 2) * P.reach * 1.15,
+                    m: rhoM * (1 / 3) * Math.PI * Math.pow(sR * 0.5, 2) * P.reach * 1.15,
                     Iself: 0,
                 });
             } else topo.poll = true;
         } else if (P.kopfTyp === "sledge") {
             topo.blunt = true;
             topo.symface = true;
-            parts.push({ x: cx, m: RHO.stahl * Math.PI * Math.pow(sR, 2) * L * 0.12 * 2, Iself: 0 });
+            parts.push({ x: cx, m: rhoM * Math.PI * Math.pow(sR, 2) * L * 0.12 * 2, Iself: 0 });
         } else if (P.kopfTyp === "kolben") {
             topo.flange = true;
             topo.blunt = true;
             const n = P.flangeN || 6,
                 plate = (P.flangeLen || L * 0.7) * Math.max(0, P.reach - sR * 0.8) * 0.006,
-                mFl = RHO.stahl * plate * n;
+                mFl = rhoM * plate * n;
             parts.push({ x: cx, m: mFl, Iself: mFl * P.reach * P.reach * 0.2 });
-            parts.push({ x: x0 + L + 0.01, m: RHO.stahl * (4 / 3) * Math.PI * Math.pow(sR * 0.5, 3), Iself: 0 });
+            parts.push({ x: x0 + L + 0.01, m: rhoM * (4 / 3) * Math.PI * Math.pow(sR * 0.5, 3), Iself: 0 });
         } else if (P.kopfTyp === "pick") {
             const pl = P.pickLen || 0.16;
             topo.blunt = true;
-            const mD = RHO.stahl * (1 / 3) * Math.PI * Math.pow(sR * 0.55, 2) * pl,
-                mC2 = RHO.stahl * (sR * 0.9 * 2) * (sR * 0.3 * 2) * (P.reach * 1.3 + 0.045) * 0.5;
+            const mD = rhoM * (1 / 3) * Math.PI * Math.pow(sR * 0.55, 2) * pl,
+                mC2 = rhoM * (sR * 0.9 * 2) * (sR * 0.3 * 2) * (P.reach * 1.3 + 0.045) * 0.5;
             parts.push({ x: cx, m: mD, Iself: mD * pl * pl * 0.1 });
             parts.push({ x: cx, m: mC2, Iself: 0 });
             if ((P.beta || 40) >= 40) topo.poll = true;
@@ -1629,7 +1633,7 @@
         } else if (P.kopfTyp === "grabeblatt") {
             topo.blunt = true;
             topo.poll = true; // Grabblatt = Werkzeug
-            const mB = RHO.stahl * (P.bladeW || 0.13) * (P.bladeLen || 0.24) * (P.bladeTh || 0.0035);
+            const mB = rhoM * (P.bladeW || 0.13) * (P.bladeLen || 0.24) * (P.bladeTh || 0.0035);
             parts.push({
                 x: cx + (P.bladeLen || 0.24) * 0.4,
                 m: mB,
@@ -1660,6 +1664,7 @@
     }
 
     function measure(P) {
+        const rhoM = metallRho(P);
         const S = stations(P);
         const strips = [];
         let topo = {
@@ -1675,7 +1680,7 @@
         if (!S.impact) {
             if (P.knaufR > 0) {
                 const rk = P.knaufR,
-                    mK = RHO.bronze * (4 / 3) * Math.PI * rk * rk * rk * (P.knaufFill || 0.72);
+                    mK = MAT.bronze.rho * (4 / 3) * Math.PI * rk * rk * rk * (P.knaufFill || 0.72);
                 strips.push({ x: S.xButt - rk * 0.25, m: mK, Iself: 0.4 * mK * rk * rk });
             }
             const NG = 90,
@@ -1692,7 +1697,7 @@
                       ? currentTrad.guard
                       : "kreuz";
             if (eg !== "keine" && P.parier > 0) {
-                const mG = RHO.stahl * (P.parier * 2 * 0.01 * 0.016);
+                const mG = rhoM * (P.parier * 2 * 0.01 * 0.016);
                 strips.push({ x: S.xGuard + S.gThk * 0.5, m: mG, Iself: (mG * (P.parier * 2) * (P.parier * 2)) / 12 });
                 topo.guard = true;
             }
@@ -1716,7 +1721,7 @@
                 const t = (i + 0.5) / NB,
                     sec = sectionMoments(sectionAt(t, P)),
                     x = S.xBlade0 + (i + 0.5) * db;
-                strips.push({ x, m: RHO.stahl * sec.A * db });
+                strips.push({ x, m: rhoM * sec.A * db });
                 sumA += sec.A;
                 sumIy += sec.Iy;
                 sumIz += sec.Iz;
@@ -1765,7 +1770,7 @@
             const E = 210e9,
                 meanIz = sumIz / NB,
                 meanA = sumA / NB,
-                mu = RHO.stahl * meanA;
+                mu = rhoM * meanA;
             f1 = (((4.73 * 4.73) / (2 * Math.PI)) * Math.sqrt((E * meanIz) / mu)) / (P.klinge * P.klinge);
         }
         const gripLen = S.impact ? S.xGripEnd : P.griff,
@@ -2514,12 +2519,13 @@
         knochen: { mu: 0.3, hart: 0.7, spalt: 0.35 },
         maille: { mu: 0.3, hart: 0.78, spalt: 0.05 },
     }; // mu=Reibung, hart=Härte, spalt=Spalt-Anisotropie (wie leicht längs spaltbar)
-    // ── WERKSTOFF des Werkzeugs: GEMESSENE Konstanten (Dichte, Härte = Fähigkeit, eine dünne Kante zu halten) ──
+    // ── WERKSTOFF des Werkzeugs: GEMESSENE Härte = Fähigkeit, eine dünne Kante zu halten. Die Dichte trägt die EINE
+    //    Stoff-Zeile MAT (halten-gesetz: die rho-Spalte hier war ihr Zwilling, byte-gleiche Zahlen) ──
     const WERKSTOFF = {
-        stahl: { rho: 7850, haerte: 0.62 },
-        eisen: { rho: 7870, haerte: 0.45 },
-        bronze: { rho: 8600, haerte: 0.38 },
-        stein: { rho: 2600, haerte: 0.25 },
+        stahl: { haerte: 0.62 },
+        eisen: { haerte: 0.45 },
+        bronze: { haerte: 0.38 },
+        stein: { haerte: 0.25 },
     };
     function tradWerkstoff(T) {
         const a = T && T.accent;
@@ -2591,6 +2597,11 @@
     function MATof(ws) {
         return MAT[ws] || MAT.stahl;
     }
+    // DIE DICHTE DES METALLS eines Werks: der Werkstoff seiner Gestalt (Tradition × Aufgabe) in der EINEN Stoff-Zeile —
+    // dieselbe Zeile, aus der die Schneide (edgeBeta) und die Härtung (hamonGesetz) urteilen.
+    function metallRho(P) {
+        return MATof((P.task && P.task.werkstoff) || P.werkstoff || "stahl").rho;
+    }
     function edgeBeta(ws, edgeLoad) {
         const m = MATof(ws),
             sN = m.sigY / MAT.stahl.sigY,
@@ -2655,7 +2666,7 @@
         const cheekMul = 1 + (1 - q) * zm.spalt * 0.65 - q * 0.5;
         // Masse — Impuls, um den KLEMMENDEN Spaltkeil durchzutreiben: wächst mit Bauch×Reibung, sinkt mit Werkstoff-Dichte.
         const bind = Math.max(0, cheekMul - 1) * zm.mu; // nur der Spaltbauch klemmt
-        const socketR = 0.02 * (1 + bind * 4.4) * Math.sqrt(7850 / ws.rho) * (klein ? 0.85 : 1);
+        const socketR = 0.02 * (1 + bind * 4.4) * Math.sqrt(MAT.stahl.rho / MATof(t.werkstoff).rho) * (klein ? 0.85 : 1);
         // Geometrische Folgen: Schneiden will lange Schneide + Tiefe (Faserkontakt/Kerbe), Spalten kompakt; Schaft = Hebel aus Schwung-Klasse.
         const edgeLen = (0.068 + q * 0.05) * sc,
             reach = (0.07 + (1 - q) * 0.03 + q * 0.018) * sc,
@@ -2992,6 +3003,29 @@
                 tp[k] = ov[k];
             }
         }
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Wicklung zählt ihre Ringe aus der
+        // Griff-Länge (ein Ring je 2,2 cm); trägt der Bau mehr Dreiecke als die Zeile, fällt die Teilung jedes Rings um das
+        // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
+        var zeile = PORTAL_RENDER_CONFIG.lod.budget.weapon[0].tris;
+        for (var versuch = 0; ; versuch++) {
+            var g = bauWaffe(tp, trad);
+            var n = 0;
+            g.traverse(function (o) {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+            if (n <= zeile || versuch === 4) break;
+            g.traverse(function (o) {
+                if (o.geometry) o.geometry.dispose();
+            });
+            _wickelDetail *= Math.min(0.97, zeile / n);
+        }
+        _wickelDetail = 1;
+        g.userData = { kind: "weapon", rezeptId: rezeptId, seed: seed, lod: 0 };
+        g.updateMatrixWorld(true);
+        return g;
+    }
+    var _wickelDetail = 1; // die Teilung der Wicklungs-Ringe (1 = das Lab-Maß; buildInstance senkt sie nur über der Zeile)
+    function bauWaffe(tp, trad) {
         var g = new THREE.Group();
         if (tp.modus === "bogen") {
             tp.drawFrac = 0;
@@ -3009,8 +3043,6 @@
                 g.add(buildHead(tp, S));
             }
         }
-        g.userData = { kind: "weapon", rezeptId: rezeptId, seed: seed, lod: 0 };
-        g.updateMatrixWorld(true);
         return g;
     }
 
@@ -3120,6 +3152,11 @@
             // saßen auf 2.2, Schaufel = Kriegshammer) und ihr Referenz-Gewicht
             // mEffRefKg (0.25).
         },
+        // halten-gesetz 22.10. (rein additiv): DAS WERK AM STOFF (werkUrteil) — buendelM: der Kontakt-Radius, bei dem
+        // eine stoßende Front die Hälfte ihrer Energie in den Sprödbruch bündelt (Auerbach: die Bruchlast wächst mit dem
+        // Radius des Eindringkörpers), zugleich die Tiefe, an der der Dorn der Hacke gemessen wird; schoepfM2: die
+        // Blatt-Fläche, bei der ein Blatt die Hälfte des Losen hebt.
+        werk: { buendelM: 0.01, schoepfM2: 0.02 },
         // DIE TREFFER-ZONEN des Prüfstands (die Fechtpuppe der Shell, aimDummy):
         // Schadens-Faktor je Zone — EINE Tafel für Puppe UND Welt-Tier (tetrapoda
         // TREFFER_ZONE ordnet jedem Glied seine Zone zu).
@@ -3193,6 +3230,8 @@
             pob: m.PoB,
             // die Messung selbst (Welle L, additiv): das Treffer-Urteil liest sie (Schneide, Knoten, Ort)
             mess: m,
+            // die Front des Werks (halten-gesetz, additiv): wie seine Gestalt auf den Stoff trifft — werkUrteil liest sie
+            front: schlagFront(tp, m),
         };
     }
 
@@ -3248,10 +3287,10 @@
                   : "kein Ort — prallt ab";
         } else {
             v = vLat;
-            var cutF = sharp ? 1.0 + ((32 - (m.edgeWinkel || 30)) / 32) * 0.9 : 0.5,
-                nd = Math.abs((m.xcopL != null ? m.xcopL : 0.7) - 0.776),
-                flex = clamp(50 / (m.f1 || 50), 0.4, 3.0),
-                nodeF = clamp(1 - 1.6 * nd * flex, 0.4, 1);
+            var kn = schwingKnoten(m),
+                cutF = sharp ? 1.0 + ((32 - (m.edgeWinkel || 30)) / 32) * 0.9 : 0.5,
+                flex = kn.flex,
+                nodeF = kn.nodeF;
             edgeQ = sharp ? clamp(t.edgeQ != null ? t.edgeQ : 1, 0.15, 1) : 1;
             KE = 0.5 * mEff * vLat * vLat * cutF * (0.55 + 0.45 * nodeF) * (sharp ? 0.25 + 0.75 * edgeQ : 1);
             art = sharp ? "SCHNITT" : "SCHLAG";
@@ -3299,6 +3338,105 @@
             eff: eff,
             ort: ort,
         };
+    }
+
+    // DER KNOTEN DES SCHLAGS (aus trefferUrteil gehoben, byte-gleich): wie weit der Stoßmittelpunkt vom Knoten der
+    // Grundschwingung liegt (flex: die biegsame Klinge schwingt weiter) — der Anteil der Energie, der nicht im Griff
+    // verschwingt. Treffer-Urteil und Werk-Urteil lesen ihn.
+    function schwingKnoten(m) {
+        var nd = Math.abs((m.xcopL != null ? m.xcopL : 0.7) - 0.776),
+            flex = Math.max(0.4, Math.min(3.0, 50 / (m.f1 || 50)));
+        return { flex: flex, nodeF: Math.max(0.4, Math.min(1, 1 - 1.6 * nd * flex)) };
+    }
+
+    // ═══ DAS WERK AM STOFF (halten-gesetz 22.10., additiv) — wie die Gestalt auf Holz, Stein, Erde wirkt ═══
+    // DIE FRONT eines Werks — gemessen an seiner Geometrie, nie an seinem Namen: eine SCHNEIDE (die echte Fase edgeWinkel
+    // — Klinge, Axt, Spaltmaul), eine STOSSENDE Front mit dem Radius ihrer Kontakt-Fläche (der Dorn der Hacke auf
+    // ARENA.werk.buendelM Tiefe nach seinem eigenen Profil spikeZ, die Bahn des Hammers, die Trommel des Vorschlag-
+    // hammers, die Flansch-Kante des Kolbens als Fläche gleichen Inhalts, der Kopf der Keule) oder ein BLATT mit seiner
+    // Fläche (grabeBlatt). Wer die Gestalt umformt (ov kopfTyp, beta, …), formt die Front.
+    function schlagFront(P, m) {
+        var ws = (P.task && P.task.werkstoff) || P.werkstoff || "stahl";
+        if (m.edgeWinkel != null) return { art: "kante", winkelDeg: m.edgeWinkel, werkstoff: ws };
+        if (P.kopfTyp === "grabeblatt") return { art: "blatt", flaecheM2: (P.bladeW || 0.16) * (P.bladeLen || 0.24) };
+        var sR = P.socketR,
+            r;
+        if (P.kopfTyp === "pick") {
+            var pl = P.pickLen || 0.16,
+                u = 1 - Math.min(1, ARENA.werk.buendelM / pl);
+            r = sR * 0.55 * Math.pow(Math.cos((u * Math.PI) / 2), 0.62) + 0.0004;
+        } else if (P.kopfTyp === "hammer") r = sR * 0.92;
+        else if (P.kopfTyp === "sledge") r = sR * 1.35;
+        else if (P.kopfTyp === "kolben") r = Math.sqrt(((P.flangeLen || P.kopfLen * 0.7) * 0.01) / Math.PI);
+        else r = sR * 1.57; // die Keule (und jeder Kopf ohne Schneide): der größte Radius ihres Profils
+        return { art: "stoss", rKontaktM: r };
+    }
+
+    // ÖFFNET DIE FORM DEN BODEN? Ein Blatt hebt ihn, eine Spitze (Kontakt unter dem Bündel-Maß) bricht ihn auf; eine
+    // Schneide, eine Bahn, ein Kolben schlagen in ihn. Der Wirt fragt es für den Klick auf den Boden (graben).
+    function oeffnetBoden(front) {
+        return !!front && (front.art === "blatt" || (front.art === "stoss" && front.rKontaktM < ARENA.werk.buendelM));
+    }
+
+    // DER ZIEL-STOFF eines Dings in der Welt: der häufigste seiner Stoffe mit eigener Zeile in ZIELMAT (stoffe = {Name:
+    // Anzahl}); trägt keiner eine Zeile, die Zeile der nächsten Härte (haerte = die Härte der Welt, 0..1).
+    function zielStoff(stoffe, haerte) {
+        var best = null,
+            n = 0;
+        for (var k in stoffe) {
+            if (Object.prototype.hasOwnProperty.call(ZIELMAT, k) && stoffe[k] > n) {
+                best = k;
+                n = stoffe[k];
+            }
+        }
+        if (best) return best;
+        var h = +haerte || 0,
+            d = Infinity;
+        for (var z in ZIELMAT) {
+            if (Math.abs(ZIELMAT[z].hart - h) < d) {
+                d = Math.abs(ZIELMAT[z].hart - h);
+                best = z;
+            }
+        }
+        return best;
+    }
+
+    // DAS WERK-URTEIL — derselbe Schlag wie im Treffer (die Energie ½·mEff·v² am Schlagpunkt, ohne den Teil, der im Griff
+    // verschwingt: Masse × Tempo), und der Stoff antwortet nach dem Weg, den die Front nimmt (km = kampfMasze, t = { vLat,
+    // ziel: Schlüssel in ZIELMAT }):
+    //   SCHNITT (Schneide): der Keil trennt, was Gefüge hat und weich ist — (1 − hart)·spalt, mit dem Keil-Vorteil
+    //     μ/(tan(α/2) + μ) gegen die Reibung des Ziels und dem HALT der Fase: die Schneide trägt die Last eines Hiebs auf
+    //     dieses Ziel (kantenLast, Hauen) nur, wenn sie so stumpf ist, wie edgeBeta es verlangt — darunter bricht sie aus
+    //     mit dem Quadrat der Dicke (das Widerstandsmoment der Fase).
+    //   BRUCH (stoßende Front): der Schlag sprengt, was hart ist und kein Gefüge hat, das ihn fängt — hart·(1 − spalt),
+    //     gebündelt nach dem Kontakt-Radius r: buendelM/(buendelM + r).
+    //   HUB (Blatt): das Blatt hebt, was weich ist und kein Gefüge hat — (1 − hart)·(1 − spalt), nach seiner Fläche.
+    // W = Energie × Wirkgrad (J, die Arbeit am Stoff). null = kein Kern-Gerät oder kein Ziel.
+    function werkUrteil(km, t) {
+        var m = km && km.mess,
+            F = km && km.front,
+            Z = t && ZIELMAT[t.ziel];
+        if (!m || !F || !Z) return null;
+        var v = Math.max(0, +t.vLat || 0),
+            mEff = Math.max(0.02, (m.mEffFrac || 0.2) * m.M),
+            E = 0.5 * mEff * v * v * (0.55 + 0.45 * schwingKnoten(m).nodeF),
+            weg,
+            grad,
+            halt = 1;
+        if (F.art === "kante") {
+            var th = Math.tan((F.winkelDeg * Math.PI) / 360),
+                noetig = edgeBeta(F.werkstoff, kantenLast({ modus: "wucht", ziel: t.ziel }));
+            halt = Math.min(1, Math.pow(th / Math.tan((noetig * Math.PI) / 360), 2));
+            weg = "schnitt";
+            grad = (Z.mu / (th + Z.mu)) * halt * (1 - Z.hart) * Z.spalt;
+        } else if (F.art === "blatt") {
+            weg = "hub";
+            grad = (F.flaecheM2 / (F.flaecheM2 + ARENA.werk.schoepfM2)) * (1 - Z.hart) * (1 - Z.spalt);
+        } else {
+            weg = "bruch";
+            grad = (ARENA.werk.buendelM / (ARENA.werk.buendelM + F.rKontaktM)) * Z.hart * (1 - Z.spalt);
+        }
+        return { weg: weg, E: E, W: E * grad, grad: grad, halt: halt, ziel: t.ziel };
     }
 
     // DER LEHREN-ANTEIL einer vorbereiteten Gestalt (pass 1, warn ½, na zählt nicht) ∈ [0, 1].
@@ -3408,6 +3546,10 @@
         gueteAnteil: gueteAnteil,
         kampfMasze: kampfMasze,
         trefferUrteil: trefferUrteil,
+        werkUrteil: werkUrteil,
+        oeffnetBoden: oeffnetBoden,
+        zielStoff: zielStoff,
+        metallRho: metallRho,
         PFEIL: PFEIL,
         buildPfeil: buildPfeil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,

@@ -13,7 +13,7 @@ class AnazhRealm_studio_bruecke {
         if (typeof Worker === "undefined") return false;
         // TEST-HOOK: Gate-Bänder, die die Grammatik-MECHANIK isoliert prüfen (Richter, LOD-Bauplan, Scatter-
         // Promotion, Understory), schalten die Foundry aus; die Foundry als Quelle beweisen
-        // foundry-warm/deadlock/parity/contract.
+        // fluss/deadlock/parity/contract.
         if (typeof window !== "undefined" && window.__anazhGateNoFoundry) return false;
         return true;
     }
@@ -208,7 +208,7 @@ class AnazhRealm_studio_bruecke {
     // must-ignore: fehlt ein Teilfeld, bleibt dieser Teil byte-alt.
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
-        this._foundryIngestRecipes(m.book, m.paramsByKind);
+        this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy);
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
@@ -278,12 +278,18 @@ class AnazhRealm_studio_bruecke {
             Number.isFinite(s.rarity) &&
             Number.isFinite(s.nHMin) &&
             Number.isFinite(s.nHSpan) &&
-            Number.isFinite(s.slopeMax)
+            Number.isFinite(s.slopeMax) &&
+            // DAS RANG-GESETZ (siedlung.K2): je Stufe ein Raster und die kleinste Größe, die Reichweite eines Orts
+            Array.isArray(s.rang) &&
+            s.rang.every((r) => r && r.zellen >= 1 && Number.isInteger(r.zellen) && r.nH >= 1) &&
+            s.reichM &&
+            Number.isFinite(s.reichM.kern) &&
+            Number.isFinite(s.reichM.jeWurzel)
         ) {
             AnazhRealm._siedlungGesetzMemo = s;
         }
     }
-    _foundryIngestRecipes(book, paramsByKind) {
+    _foundryIngestRecipes(book, paramsByKind, kindPolicy) {
         const f = this._foundry;
         if (!f || !book || typeof book !== "object") return;
         f.recipes = book;
@@ -301,7 +307,9 @@ class AnazhRealm_studio_bruecke {
         // AUTO-BLUEPRINT: jedes kind:"tree"-Preset ohne AnazhRealm-Spezies registriert sich als
         // `baum_<preset>` — Identität (Name·Tags·_grownSpecies) geklont von baum_eiche (der Physik-Richter
         // urteilt sie als Baum), der RENDER kommt ganz aus dem Studio (`_foundryPresetFor`, alle drei LODs,
-        // Werkstatt-Regler aus dem Rezept). Der Wald streut sie über `_forestExtraSpecies`. Idempotent.
+        // Werkstatt-Regler aus dem Rezept). Der Wald streut sie über `_forestExtraSpecies`. Idempotent. Davor die Wirts-Zeilen
+        // der Arten, die ihr Buch mitbringt (B7, `_kindPolicyVereinen`): eine neue Art braucht keine Zeile im Wirt.
+        AnazhRealm._kindPolicyVereinen(kindPolicy, (text, stufe) => this.log(text, stufe));
         this._foundryAutoRegisterSpecies(book);
         // Avatar zieht nach: baute der Boot den Rig-Avatar vor der Buch-Ankunft, trägt er die Konstanten-
         // Gestalt (`_koerperDials === null`). Jetzt EINMAL über den Seelen-Chokepoint applyPlayerSoul neu
@@ -319,7 +327,8 @@ class AnazhRealm_studio_bruecke {
         const bps = this.state && this.state.blueprints;
         if (!bps || !book) return 0;
         // DER EINE Register-Chokepoint läuft die KIND_POLICY-Tabelle (Tabelle vor if): eine neue Domäne ist
-        // eine Policy-Zeile + Donor, kein Zweig. Fail-closed je kind (kein Donor → Klasse übersprungen).
+        // eine Policy-Zeile + Donor (oder die Substanz ihrer Buch-Zeile, B7), kein Zweig. Fail-closed je kind (kein Donor →
+        // Klasse übersprungen).
         // `grown` trägt die Pflanzen-Identität (`_grownSpecies` = der load-bearing Name, clone.name bleibt
         // Donor), sonst clone.name; `builtIn` nur wenn die Policy es definiert. Unbekannter kind: must-ignore.
         const KP = AnazhRealm.KIND_POLICY;
@@ -332,7 +341,7 @@ class AnazhRealm_studio_bruecke {
             // N4.4 — eine RENDER-ONLY-Policy-Zeile (nur `impostor`, kein prefix/donor — heute
             // shrub) registriert KEINEN Blueprint: fail-closed ueberspringen, BEVOR ein
             // undefined-Praefix einen Namen formen koennte.
-            if (!pol.prefix || !pol.donor) continue;
+            if (!pol.prefix || !(pol.donor || pol.substanz)) continue;
             const name = pol.prefix + id;
             if (bps[name]) {
                 // Heilung persistierter Alt-Klone: ein früher registrierter Auto-Blueprint erbte donorOnly über den
@@ -355,7 +364,8 @@ class AnazhRealm_studio_bruecke {
             // Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche) ODER die eingefrorene Substanz-Zeile
             // (KIND_SUBSTANCE); donorTool (Policy-Daten): ein fx.tool-Rezept zieht die Werkzeug-Substanz.
             const dKey = pol.donorTool && rec.fx && rec.fx.tool ? pol.donorTool : pol.donor;
-            const donor = bps[dKey] || (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[dKey]) || null;
+            const donor =
+                pol.substanz || bps[dKey] || (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[dKey]) || null;
             if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
             const clone = JSON.parse(JSON.stringify(donor));
             // DIE EINE Klon-Sichtbarkeits-Regel (wie cloneBlueprint, gate:trias B10): ein Klon ist SICHTBAR —
@@ -383,9 +393,63 @@ class AnazhRealm_studio_bruecke {
             // Chunks bleiben (kein Churn). Deterministisch je (Seed, Rezept-Satz).
             this._forestDartMemo = null;
             this._forestExtraCache = null; // die Auto-Arten-Liste neu ableiten (gleiche Buch-Identität möglich)
-            this.log(`Nervensystem: ${registered} neue Studio-Baumart(en) automatisch registriert.`, "INFO");
+            this.log(`Nervensystem: ${registered} neue Studio-Art(en) automatisch registriert.`, "INFO");
         }
         return registered;
+    }
+    // DIE WIRTS-ZEILE EINER ART REIST IM BUCH (Studio-Vertrag B7, studios.K5): der Wirt kennt eine Art nicht beim Namen —
+    // ihr Gesetzbuch bringt die Zeile (`KIND_POLICY` des Kerns, die Brücke reicht sie mit der Kern-id als `kindPolicy`), der
+    // EINE Ingest vereint sie mit den Wirts-Zeilen zu `AnazhRealm.KIND_POLICY`, und jeder Leser (Register, Werkstatt,
+    // Wort-Katalog, Präfix-Auflösung) liest dieselbe Tafel. Disjunkt: eine Art mit Wirts-Zeile behält sie (die Verben des
+    // Wirts, synchron vor dem Buch — Lockstep), die Buch-Zeile fällt laut. Fail-closed je Zeile (G4.2, laut): Art-Name,
+    // Präfix `[a-z][a-z0-9]*_` (frei, nicht schon vergeben) und die Substanz (label, parts mit shape · material · position
+    // · size) — eine kaputte Zeile registriert nichts, nie halb. Nur prefix und substanz reisen, jedes andere Feld ist
+    // must-ignore. Rückgabe: die Zahl der vereinten Zeilen.
+    static _kindPolicyVereinen(buch, log) {
+        if (!buch || typeof buch !== "object") return 0;
+        const KP = AnazhRealm.KIND_POLICY;
+        const vergeben = new Set(Object.values(KP).map((z) => !z.kern && z.prefix));
+        const v3 = (v, pos) => !!v && ["x", "y", "z"].every((a) => Number.isFinite(v[a]) && (!pos || v[a] > 0));
+        const teil = (p) =>
+            !!p && typeof p.shape === "string" && typeof p.material === "string" && v3(p.position) && v3(p.size, 1);
+        const neu = {};
+        for (const kind of Object.keys(buch).sort()) {
+            const z = buch[kind] || {};
+            const s = z.substanz || {};
+            const wo = `Die Wirts-Zeile der Art „${kind}" (Gesetzbuch ${z.kern || "?"})`;
+            if (KP[kind] && !KP[kind].kern) {
+                log(`${wo} fällt: die Art trägt eine Wirts-Zeile, sie führt.`, "WARN");
+                continue;
+            }
+            const fehler = [
+                ["der Art-Name", /^[a-z][a-z0-9_]*$/.test(kind)],
+                [
+                    `das Präfix „${z.prefix}" (Form [a-z][a-z0-9]*_, frei)`,
+                    /^[a-z][a-z0-9]*_$/.test(z.prefix) && !vergeben.has(z.prefix),
+                ],
+                [
+                    "die Substanz (label, parts: shape · material · position · size)",
+                    typeof s.label === "string" && Array.isArray(s.parts) && s.parts.length > 0 && s.parts.every(teil),
+                ],
+            ].find(([, gut]) => !gut);
+            if (fehler) {
+                log(`${wo} fällt (fail-closed): ${fehler[0]}.`, "ERROR");
+                continue;
+            }
+            vergeben.add(z.prefix);
+            const substanz = JSON.parse(JSON.stringify({ label: s.label, parts: s.parts }));
+            neu[kind] = Object.freeze({
+                prefix: z.prefix,
+                substanz,
+                kern: z.kern || null,
+                grown: false,
+                builtIn: false,
+                placeExtra: null,
+            });
+        }
+        const n = Object.keys(neu).length;
+        if (n) AnazhRealm.KIND_POLICY = Object.freeze(Object.assign({}, KP, neu));
+        return n;
     }
     // Studio-Welt-Parameter (der Buch-Umschlag): die Atmosphäre-Anker. Die Boden-Palette reist NICHT hier — sie
     // liegt synchron im Terrain-Namensraum (`AnazhRealm.BODEN_FARBE`), der Voxel-Worker braucht sie vor dem ersten Chunk.
@@ -812,6 +876,7 @@ class AnazhRealm_studio_bruecke {
                 return true;
             }
             f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
+            f.ankunft = (f.ankunft | 0) + 1; // auch das Ende ohne Körper ist eine Antwort: wer auf sie schläft, fragt neu
             return false;
         });
         zug.rang = auftrag.rang;
@@ -860,6 +925,8 @@ class AnazhRealm_studio_bruecke {
     // Budget halbe Rate (der Stau schrumpft immer, kein LongTask). Ohne dt (Gate/Test): 3 unter / 1 über
     // Budget (gate:leistungs-vertrag).
     _tickFoundryIngest(dtSec) {
+        // eine Rückgabe im letzten Takt (`_foundryLoslassen`): der Ruhe-Deckel wiegt, was untätig wurde
+        if (this._foundry && this._foundry.ruheOffen) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;
@@ -1330,9 +1397,11 @@ class AnazhRealm_studio_bruecke {
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
     // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
-    // die Wörter des Programms („fachwerkhaus", „eiche").
+    // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
+    // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
     _studioWordsForPrompt(nennen = false) {
         const K = this._studioWortKatalog();
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const GRUPPE = {
             tree: "Bäume",
             rock: "Stein",
@@ -1340,6 +1409,7 @@ class AnazhRealm_studio_bruecke {
             gate: "Tore",
             vehicle: "Fahrzeuge",
             ausstattung: "Ausstattung",
+            weapon: "Klingen",
         };
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
@@ -1351,10 +1421,15 @@ class AnazhRealm_studio_bruecke {
             if (!g.includes(nenn)) g.push(nenn);
         }
         const kappe = nennen ? 5 : 8;
+        const regler = (a) =>
+            !nennen && Array.isArray(PBK[a]) && PBK[a].length
+                ? ` (Regler: ${PBK[a].map((d) => `${d.id} ${d.lab} ${d.min}–${d.max}`).join(", ")})`
+                : "";
         return Object.keys(GRUPPE)
             .filter((a) => gruppen[a] && gruppen[a].length)
             .map(
-                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
+                (a) =>
+                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
             )
             .join(" · ");
     }
@@ -1418,6 +1493,39 @@ class AnazhRealm_studio_bruecke {
             }
         }
         return null;
+    }
+    // DER VERTRAG EINES FREMDEN STEMPELS (teilen-sicher): ein studioOv aus fremder Hand (Code, Mitspieler) trägt nur, was der
+    // Kern seiner Art als Regler ausweist — jede Zeile von PARAMS_BY_KIND[kind] als Zahl in ihrem Band [min, max], dazu die
+    // Charakter-Achse (`KIND_CHARAKTER`) als genau EINE Zeile ihrer Tafel. Die Kerne lesen ov per Object.assign(P, ov): ein
+    // Schlüssel außerhalb schriebe ein inneres Bau-Feld. null = trägt; sonst der Grund beim Namen (regler:<id> · band:<id> ·
+    // buch, kaltes Buch). Leser: spawn_blueprint (Slot 6, die Engstelle fremder Stempel) und `empfangeWerk` vor jedem Schreiben.
+    _ovVertrag(name, ov) {
+        if (ov == null) return null;
+        if (typeof ov !== "object" || Array.isArray(ov)) return "regler:form";
+        const f = this._foundry;
+        if (!f || !f.ready || !f.recipes || !f.paramsByKind) return "buch";
+        const preset = this._foundryPresetForEntry({ type: name });
+        const kind = preset && f.recipes[preset] ? f.recipes[preset].kind : null;
+        const zeilen = new Map(((kind && f.paramsByKind[kind]) || []).map((z) => [z.id, z]));
+        const wort = (k) =>
+            String(k)
+                .replace(/[^\w.-]/g, "?")
+                .slice(0, 32);
+        const rest = [];
+        for (const k of Object.keys(ov)) {
+            const z = zeilen.get(k);
+            const v = ov[k];
+            if (!z) rest.push(k);
+            else if (typeof v !== "number" || !Number.isFinite(v) || v < z.min || v > z.max) return "band:" + wort(k);
+        }
+        if (!rest.length) return null;
+        const achse = kind && AnazhRealm.KIND_CHARAKTER[kind];
+        const tafel = achse && globalThis[achse.ns] ? globalThis[achse.ns][achse.tabelle] : null;
+        const soll = tafel ? Object.keys(tafel).map((n) => achse.ov(n, tafel)) : [];
+        const traegt = (s) => Object.keys(s).length === rest.length && rest.every((k) => k in s && ov[k] === s[k]);
+        if (soll.some(traegt)) return null;
+        // benannt wird der Schlüssel, den keine Zeile der Achse kennt, sonst der erste (eine Zeile, die die Tafel nicht trägt)
+        return "regler:" + wort(rest.find((k) => !soll.some((s) => k in s)) || rest[0]);
     }
     // Impostort das Preset (Fernstufe = Billboard statt L2-Geometrie)? Daten in zwei Schichten: (a) das
     // Studio klassifiziert (`PRESETS[id].kind` via `f.recipes`), (b) KIND_POLICY-Zeile `impostor: true`
@@ -2353,18 +2461,26 @@ class AnazhRealm_studio_bruecke {
     }
 
     // Der Fern-Satz einer Kreatur: je Glied EINE Kapsel im Welt-March (Ganz oder gar nicht: reicht der Atlas nicht,
-    // fällt das ganze Tier).
+    // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur das erste
+    // Tier einer Gattung zerlegt die Gestalt — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
+    // der in den Fern-Kreis trat: `_kreaturGliederGruppen` 1,75 ms je Takt ab p95, Radeon echt).
     _kreaturGliederBacken(cr, einblenden) {
-        const G = this._kreaturGliederGruppen(cr);
-        if (!G) return null;
+        const namen = this._gattungGlieder(cr);
+        if (!namen) return null;
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
         // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
+        const tb = cr.userData._tierBaum;
         const glieder = [];
-        for (const [a, g] of G.gruppen) {
+        for (const nm of namen) {
+            const a = nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
+            if (!a) {
+                for (const gl of glieder) this._weltFeldFrei(gl.handle);
+                return null;
+            }
             a.updateMatrixWorld(true);
-            const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapselMemo(key, g), einblenden);
+            const key = nm.key;
+            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -2372,6 +2488,26 @@ class AnazhRealm_studio_bruecke {
             glieder.push({ teil: a, handle });
         }
         return glieder.length ? glieder : null;
+    }
+
+    // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der
+    // Name seines Ankers ("" = die Wurzel) und der Schlüssel seiner Kapsel, gepasst beim ersten Tier der Gattung
+    // (`_kreaturGliederGruppen` + `_gliedKapselMemo`); jedes weitere löst nur die Namen an SEINEN Teilen auf. null: keine Gestalt
+    // (nie gemerkt — ein Leib ohne Teile versucht es beim nächsten Ruf neu).
+    _gattungGlieder(cr) {
+        const gattung = this._kreaturGattung(cr);
+        const memo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
+        if (memo.has(gattung)) return memo.get(gattung);
+        const G = this._kreaturGliederGruppen(cr);
+        if (!G) return null;
+        const namen = [];
+        for (const [a, g] of G.gruppen) {
+            const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
+            this._gliedKapselMemo(key, g);
+            namen.push({ name: a === G.wurzel ? "" : a.name, key });
+        }
+        memo.set(gattung, namen);
+        return namen;
     }
 
     // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
@@ -2393,29 +2529,25 @@ class AnazhRealm_studio_bruecke {
         if (!tc || typeof tc.trefferZone !== "function") AnazhRealm._kernPflichtBruch("tetrapoda:trefferZone");
         const tb = u._tierBaum;
         if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
-        const gattung = this._kreaturGattung(cr);
-        const namenMemo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
-        let namen = namenMemo.get(gattung);
-        if (!namen) {
-            const G = this._kreaturGliederGruppen(cr);
-            if (!G) return (u._trefferGlieder = null);
-            namen = [];
-            for (const [a, g] of G.gruppen) {
-                const name = a === G.wurzel ? "" : a.name;
-                const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-                if (this._gliedKapselMemo(key, g)) namen.push({ name, key });
-            }
-            namenMemo.set(gattung, namen);
-        }
+        const namen = this._gattungGlieder(cr);
+        if (!namen) return (u._trefferGlieder = null);
         const liste = [];
         for (const nm of namen) {
-            const anker = nm.name ? tb.teile && tb.teile[nm.name] : tb.wrap || cr;
+            const anker = this._gliedAnker(cr, nm.name);
             const k = this._gliedKapseln && this._gliedKapseln.get(nm.key);
             if (!anker || !k) continue;
-            liste.push({ anker, a: k.a, b: k.b, r: k.r, zone: tc.trefferZone(nm.name || "wolf") });
+            liste.push({ anker, teil: nm.name, a: k.a, b: k.b, r: k.r, zone: tc.trefferZone(nm.name || "wolf") });
         }
         u._trefferGlieder = liste.length ? liste : null;
         return u._trefferGlieder;
+    }
+
+    // Der Anker eines Glieds der Gestalt: das benannte Teil des Studio-Leibs, die Wurzel ("") die Hülle. Der Treffer
+    // (_kreaturTrefferGlieder) und der steckende Pfeil (_pfeilInsTier) fragen hier; null ohne Studio-Leib oder Teil.
+    _gliedAnker(cr, teil) {
+        const tb = cr && cr.userData && cr.userData._tierBaum;
+        if (!tb) return null;
+        return teil ? (tb.teile && tb.teile[teil]) || null : tb.wrap || cr;
     }
 
     // DIE TREFFER-GLIEDER VORGEBACKEN (Welle L, Lehre 14): die Glied-Liste einer Gattung entstand beim ERSTEN Treffer —
@@ -2456,7 +2588,9 @@ class AnazhRealm_studio_bruecke {
     // DER TREFFER gegen die Gestalt: kleinste Distanz einer Strecke (die Klinge, der Pfeil-Flug) zu jeder Glied-Kapsel
     // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
     // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
-    // des Kontakts (der Hebel der Klinge, der Ort im Flug). null = vorbei.
+    // des Kontakts (der Hebel der Klinge, der Ort im Flug) und `ein`, den Strecken-Parameter, an dem sie in dieses Glied
+    // eintritt (der Strahl des Fadenkreuzes: der Punkt auf der Haut, _pickCreatureAtCrosshair), dazu `anker` und `teil` des
+    // Glieds (der Pfeil steckt dort, _pfeilStecken). null = vorbei.
     // `flaeche` (Welle LF, Posten 2): ein Punkt der Haut (das Ziel unter dem Fadenkreuz) gehört dem Glied, auf dessen Fläche er
     // liegt — die Wahl nach |Abstand − Glied-Radius|, nie nach der Tiefe (die dicke Rumpf-Kapsel reicht in den Hals: der Kopf
     // eines Hirschs wäre Bauch).
@@ -2467,6 +2601,7 @@ class AnazhRealm_studio_bruecke {
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = null;
         let bestTiefe = Infinity;
+        const lang = Math.hypot(bx - ax, by - ay, bz - az);
         for (const g of gl) {
             const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
             const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
@@ -2499,7 +2634,8 @@ class AnazhRealm_studio_bruecke {
                 }
                 zone = brust ? "brust" : "bauch";
             }
-            best = { zone, s: st.s };
+            const ein = lang > 1e-9 ? Math.max(0, st.s - Math.sqrt(Math.max(0, rr * rr - d2)) / lang) : 0;
+            best = { zone, s: st.s, ein, anker: g.anker, teil: g.teil };
         }
         return best;
     }
@@ -2920,6 +3056,13 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
+        // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
+        // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
+        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
+        if (flat && kind === "unknown") {
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+            this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
+        }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
         // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
@@ -3034,10 +3177,9 @@ class AnazhRealm_studio_bruecke {
             for (const p of _plaetze) mat[p] = _graph[p];
         }
         mat.userData.foundrySignatur = _sig;
+        mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
         this._leuchtStoff(mat, mp);
-        mat.userData = mat.userData || {};
-        mat.userData.foundryKind = kind;
         mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen
         // Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
@@ -3070,6 +3212,16 @@ class AnazhRealm_studio_bruecke {
     static _wurfVonBilligerer(eigen, zwilling) {
         return zwilling < eigen ? "zwilling" : "selbst";
     }
+    // Die Kosten einer Foundry-Antwort (die Kosten-Leiste der Werkstatt): Dreiecke, Stoffe (je Material-Datensatz), Teile und
+    // Werfer (`_teilWirft`) — gezählt an den Teilen mit Gestalt, nie an einem Pseudo-Eintrag.
+    static _foundryKosten(meshes) {
+        const teile = (meshes || []).filter((m) => m && m.position && m.position.array);
+        const stoffe = new Set(teile.map((m) => m.kind + "|" + JSON.stringify(m.mat || null)));
+        let tris = 0;
+        for (const m of teile) tris += Math.floor((m.index ? m.index.length : m.position.array.length / 3) / 3);
+        const werfer = teile.filter((m) => AnazhRealm._teilWirft(m)).length;
+        return { tris, stoffe: stoffe.size, meshes: teile.length, werfer };
+    }
     // Die Dreiecke einer Geometrie (indiziert oder nicht).
     static _geomDreiecke(g) {
         if (!g || !g.attributes || !g.attributes.position) return 0;
@@ -3079,6 +3231,8 @@ class AnazhRealm_studio_bruecke {
 _stammZonen(AnazhRealm, [AnazhRealm_studio_bruecke]);
 
 // ===== ATLAS · Studio/bruecke — Außen-Konstanten =====
+// Die Wirts-Zeilen der Arten mit Wirts-Verben (synchron vor dem Buch, Lockstep); jede andere Art bringt ihre Zeile im Buch
+// (B7) — der Ingest vereint beide hier (`_kindPolicyVereinen`).
 AnazhRealm.KIND_POLICY = Object.freeze({
     tree: Object.freeze({ prefix: "baum_", donor: "baum_eiche", grown: true, placeExtra: "forest", impostor: true }),
     // Render-only-Zeile: shrub trägt bewusst kein prefix/donor (Auto-Register überspringt sie

@@ -1187,7 +1187,7 @@ class AnazhRealm_vegetation_streu {
     // noch, bleibt die alte Stufe (ctxNoDefer hält die Region aus dem Refill heraus).
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
-        if (!map || map.size === 0 || !playerPos) return 0;
+        if (!map || !playerPos) return 0; // eine leere Karte geht durch die Wache (Runde 0), nie an ihr vorbei
         // in der Ankunft aus der Ferne (B2) folgt der Fernwald der gleitenden Maske im selben Schritt wie die Bauten
         if (this._ankunftsFerne() > 1) {
             maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);
@@ -1215,6 +1215,7 @@ class AnazhRealm_vegetation_streu {
         if (this._standRuht("streuLod", zellen, { pos: playerPos, rand: AnazhRealm.STAND_RAND_M })) return 0;
         let regung = 0;
         let offen = 0;
+        let partner = 0;
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -1278,7 +1279,7 @@ class AnazhRealm_vegetation_streu {
             // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
             const bandWechsel =
                 !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf);
-            if (!bandWechsel && cell.halt === "wartet") offen++; // der Partner lädt: die Wahl bleibt wach
+            if (!bandWechsel && cell.halt === "wartet") offen += partner = 1; // der Partner lädt: die Wahl bleibt wach
             if (newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel) continue;
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
@@ -1344,7 +1345,10 @@ class AnazhRealm_vegetation_streu {
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
-        this._standMeldet("streuLod", scanned, regung > 0, offen > 0);
+        // wartet sie nur auf Sätze, Assets und Höhen (nie auf einen Partner, nie an der vollen Kapsel-Liste), wecken sie die
+        // Bake-Uhr und der Stempel (`_standRuht`), kein Bild
+        const wm = this.state.weltMarch;
+        this._standMeldet("streuLod", scanned, regung > 0, offen > 0 && (partner || !wm || wm.kapselVoll || "felder"));
         return realloc;
     }
 
@@ -1437,14 +1441,8 @@ class AnazhRealm_vegetation_streu {
             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
             this._archBundleSceneRemove(g.mesh);
             this._instanzAbschied(g.mesh);
-            // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
-            // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
-            // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
-            if (g._foundrySrc) {
-                g._foundrySrc._liveRefs = Math.max(0, (g._foundrySrc._liveRefs || 0) - 1);
-                if (g._foundrySrc._liveRefs <= 0 && g._foundrySrc._evicted)
-                    this._disposeFoundryGroupGeom(g._foundrySrc);
-            }
+            // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor (`_foundryLoslassen`)
+            this._foundryLoslassen(g._foundrySrc);
         }
     }
 

@@ -1,16 +1,14 @@
-// haenger-linse.cjs — DIE HÄNGER-LINSE (Welle K): jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
-// Befund OMEN V18.534 (GTX 1060, Regler voll, Mess-Wiese): Einzel-Frames von 0,4–1,7 s, öfter als in V18.533 — der
-// Flugschreiber sah sie nur als „Frame max", die Hitch-Telemetrie (gate:hitch-telemetrie) zählt LongTasks, Pipelines
-// und Upload-Bytes je SEKUNDE, nie je Hänger, und keine Linse sagte, WER den Frame trug.
+// haenger-linse.cjs — DIE HÄNGER-LINSE: jeder Frame über der Schwelle (100 ms) mit seiner URSACHE beim Namen.
+// Die Hitch-Telemetrie (gate:hitch-telemetrie) zählt je SEKUNDE, nie je Hänger — diese Linse sagt, WER den Frame trug.
 //
 // Ein Hänger ist ein Abstand zweier GERENDERTER Frames über der Schwelle (dieselbe Größe wie `werkbank lauf` frameMs,
 // die der OMEN misst). Sein Fenster läuft vom Takt-Beginn des vorigen gerenderten Frames bis zum Takt-Beginn des
 // Hänger-Frames — der vorige Takt selbst gehört dazu (trägt er 900 ms, kommt der nächste rAF 900 ms später). Die Linse
 // zerlegt das Fenster in drei Zeiten des Haupt-Threads:
 //   TAKT   — im Spiel-Takt (`_gameLoopTick`, synchron): die Engstelle ist der tiefste Rahmen des Takt-Profils, der
-//            noch die Hälfte der Takt-Proben trägt (Chrome-Profiler, 1 ms), daneben die teuersten Selbst-Funktionen;
+//            noch die Hälfte der Takt-Proben trägt (Stichproben der Spur, 1 ms), daneben die teuersten Selbst-Funktionen;
 //   NEBEN  — außerhalb des Takts, aber auf dem Haupt-Thread (Worker-Antworten, Promise-Fortsetzungen, Zeitgeber): die
-//            Engstelle wie oben aus den Neben-Proben, dazu die Long-Animation-Frame-Skripte (Aufrufer beim Namen);
+//            Engstelle wie oben aus den Neben-Proben;
 //   GC     — der Garbage-Collector (Proben „(garbage collector)");
 //   GPU    — der Haupt-Thread wartet (Proben „(idle)", oder Takte ohne Render unter der GPU-Leine): die Ursache steht
 //            auf der GPU-Seite, die Linse nennt, was der Haupt-Thread ihr im Fenster aufgetragen hat — synchrone
@@ -18,14 +16,13 @@
 //            Stoff-Namen, Shader-Module, Upload-Bytes.
 // Die größte der vier Zeiten ist die Klasse; die Tabelle zählt Hänger je Ursache (Klasse · Engstelle).
 //
-//   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken und das LoAF-Ohr laufen nur, solange ein Lauf misst)
-//              window.__haengerLauf({ sek, ein, regler, tiere, wandern, probe }) → Rohdaten (Takte, Pipelines, LoAF)
-//   Werkbank:  node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten]
-//                                               [--wandern kreis] [--schwelle ms] [--probe] [--json datei]
-//              node scripts/werkbank.cjs haenger --selbsttest     (ohne Welt: die Auswertung gegen erfundene Hänger)
-//              node scripts/werkbank.cjs haenger --erst [ABBAABBA]   (die Erst-Probe, ABBA in einer Welt — unten)
-//   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (250 ms im Takt in `__haengerProbeTakt`,
-//   250 ms neben dem Takt in `__haengerProbeNeben`) — die Linse muss beide beim Namen nennen, sonst Exit 1.
+//   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken laufen nur, solange ein Lauf misst)
+//              der Lauf ist `werkbank lauf` (`k.haenger`): je Takt Beginn, Ende, Geräte-Aufträge → Rohdaten (Takte);
+//              die Stichproben trägt die EINE Spur des Laufs (`spurProfil`), ihre Takt-Marken legen sie auf die Takte
+//   Werkbank:  `haenger` und `takt` (die Takt-Spitze, unten) — Aufruf in der Hilfe von scripts/werkbank.cjs;
+//              `--selbsttest` (ohne Welt: die Auswertung gegen erfundene Hänger und Spitzen)
+//   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (`__haengerProbe` 250 ms im Takt und 250 ms
+//   neben dem Takt) — die Linse muss beide mit ihrer Klasse beim Namen nennen, sonst Exit 1.
 const stammLib = require("./stamm.cjs");
 
 // ── Seite ───────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -41,7 +38,7 @@ function haengerAn() {
         upKB: 0,
         texKB: 0,
     });
-    const H = (window.__haengerH = { acc: leer(), namen: [], loaf: [], an: false, loafDa: false });
+    const H = (window.__haengerH = { acc: leer(), namen: [], an: false });
     // Je Pipeline der Auftraggeber: das Objekt, das der Renderer gerade zeichnet (`_renderObjectDirect`), mit Pass und
     // Täter-Klasse — eine synchrone Pipeline im Schatten-Pass heißt „k0 tier:wolf", nicht nur „ShadowMaterial".
     const name = (art, d) => {
@@ -148,201 +145,16 @@ function haengerAn() {
             return cei.apply(this, arguments);
         };
     }
-    // DAS LoAF-OHR (Long Animation Frames, Chrome ≥ 123): je langem Frame die Skripte mit Aufrufer und Funktion — die
-    // Neben-Zeit beim Namen auch dort, wo der Profiler nur „(anonym)" sähe.
-    try {
-        if (PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")) {
-            H.loafDa = true;
-            new PerformanceObserver((l) => {
-                if (!H.an) return;
-                for (const e of l.getEntries())
-                    if (H.loaf.length < 5000)
-                        H.loaf.push({
-                            start: +e.startTime.toFixed(1),
-                            dauer: +e.duration.toFixed(1),
-                            block: +(e.blockingDuration || 0).toFixed(1),
-                            skripte: (e.scripts || []).map((s) => ({
-                                aufrufer: s.invoker,
-                                art: s.invokerType,
-                                fn: s.sourceFunctionName || "",
-                                datei: String(s.sourceURL || "")
-                                    .split("/")
-                                    .pop()
-                                    .split("?")[0],
-                                start: +s.startTime.toFixed(1),
-                                dauer: +s.duration.toFixed(1),
-                            })),
-                        });
-            }).observe({ type: "long-animation-frame", buffered: false });
-        }
-    } catch (_e) {
-        H.loafDa = false;
-    }
     return H;
 }
 
-// Die Eichmarke: eine benannte Schleife fester Dauer — ihre ersten Proben im Profil legen den Profiler-Takt auf die
-// Uhr der Seite (performance.now()).
-function haengerEichmarke(ms) {
+// Die Probe-Last (`--probe`): eine bekannte Ursache mit Namen, im Takt und neben ihm — die Uhr nur je 10 000 Schritte
+// (sonst trüge `now` die Proben und hieße die Engstelle).
+function __haengerProbe(ms) {
     const t0 = performance.now();
     let x = 0;
-    while (performance.now() - t0 < ms) x += Math.sqrt(x + 1);
+    while (performance.now() - t0 < ms) for (let i = 0; i < 1e4; i++) x += Math.sqrt(x + 2);
     window.__haengerSenke = x;
-    return t0;
-}
-// Die Probe-Lasten (`--probe`): bekannte Ursachen mit Namen.
-function __haengerProbeTakt(ms) {
-    const t0 = performance.now();
-    let x = 0;
-    while (performance.now() - t0 < ms) x += Math.sqrt(x + 2);
-    window.__haengerSenke = x;
-}
-function __haengerProbeNeben(ms) {
-    const t0 = performance.now();
-    let x = 0;
-    while (performance.now() - t0 < ms) x += Math.sqrt(x + 3);
-    window.__haengerSenke = x;
-}
-
-// DER LAUF (Seiten-Kontext): der Spiel-Loop über rAF wie `werkbank lauf` (Bühne, Wetter-Wache, Ort-Takt, Regler-Decke,
-// Tiere frei oder gehalten); je Takt Beginn, Ende, gerendert, die GPU-Leine und die Geräte-Aufträge im Takt und davor.
-// `wandern: "kreis"` hält W gedrückt und dreht den Blick 0,08 rad/s (ein Kreis von ~60 m Radius um den Messort, der
-// Spieler kehrt danach zurück).
-function haengerLauf(k) {
-    return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
-        const rend = st.renderer;
-        const H = window.__haengerAn();
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        window.__buehne();
-        if (k.tiere !== "frei" && window.__tiereHalten) window.__tiereHalten();
-        const decke = st.perfTargetMs;
-        if (k.regler === "voll") st.perfTargetMs = 1000;
-        const ort = st.playerMesh.position.clone();
-        const yaw0 = st.yaw;
-        const T = { t: [], c0: [], c1: [], g: [], flug: [], innen: [], aussen: [] };
-        const diff = (a, b) => {
-            const o = {};
-            for (const x in a) {
-                const d = a[x] - (b[x] || 0);
-                if (d) o[x] = +d.toFixed(2);
-            }
-            return Object.keys(o).length ? o : 0;
-        };
-        let messen = false,
-            snap = Object.assign({}, H.acc),
-            tWand = null,
-            probeTakt = 0;
-        rend.setAnimationLoop((t) => {
-            window.__wetterHalten();
-            const c0 = performance.now();
-            const aussen = diff(H.acc, snap);
-            snap = Object.assign({}, H.acc);
-            const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
-            if (messen && k.wandern === "kreis") {
-                if (tWand == null) tWand = t;
-                st.keys.w = true;
-                st.yaw = yaw0 + ((t - tWand) / 1000) * 0.08;
-            }
-            try {
-                if (window.__ortSchritt) window.__ortSchritt();
-                if (probeTakt > 0) {
-                    window.__haengerProbeTakt(probeTakt);
-                    probeTakt = 0;
-                }
-                r._gameLoopTick(t);
-            } catch (_e) {
-                /* die Fehler-Grenze des Spiels zählt selbst; die Linse misst */
-            }
-            const c1 = performance.now();
-            const innen = diff(H.acc, snap);
-            snap = Object.assign({}, H.acc);
-            if (!messen) return;
-            T.t.push(+t.toFixed(2));
-            T.c0.push(+c0.toFixed(2));
-            T.c1.push(+c1.toFixed(2));
-            T.g.push(!r._gpuLeine || r._gpuLeine.gerendert > g0 ? 1 : 0);
-            T.flug.push(r._gpuLeine ? r._gpuLeine.imFlug : -1);
-            T.innen.push(innen);
-            T.aussen.push(aussen);
-        });
-        try {
-            await sleep((k.ein || 0) * 1000);
-            const eich0 = window.__haengerEichmarke(8);
-            H.loaf.length = 0;
-            H.namen.length = 0;
-            H.an = true;
-            messen = true;
-            const tMess0 = performance.now();
-            // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
-            const erstStand = () => {
-                const E = r._erstZeichnung;
-                return E
-                    ? { bauN: E.bauN, bauMs: E.bauMs, verschoben: E.verschoben, pipeAsync: E.pipeAsync, neubauN: E.neubauN || 0 }
-                    : null;
-            };
-            const erst0 = erstStand();
-            const probe = [];
-            if (k.probe) {
-                const dauer = k.sek * 1000;
-                setTimeout(() => {
-                    probe.push({ art: "takt", t: performance.now() });
-                    probeTakt = 250;
-                }, dauer / 3);
-                setTimeout(
-                    () => {
-                        probe.push({ art: "neben", t: performance.now() });
-                        window.__haengerProbeNeben(250);
-                    },
-                    (2 * dauer) / 3
-                );
-            }
-            await sleep(k.sek * 1000);
-            messen = false;
-            H.an = false;
-            const tMess1 = performance.now();
-            const erst1 = erstStand();
-            const eich1 = window.__haengerEichmarke(8);
-            const pm = st.playerMesh.position;
-            return {
-                takte: T,
-                namen: H.namen.slice(),
-                loaf: H.loaf.slice(),
-                loafDa: H.loafDa,
-                eich: [eich0, eich1],
-                tMess: [tMess0, tMess1],
-                probe,
-                k,
-                spielerEnde: [pm.x, pm.z].map((x) => +x.toFixed(1)),
-                kreaturen: st.creatures ? st.creatures.length : 0,
-                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
-                wetter: st.weather,
-                erst:
-                    erst0 && erst1
-                        ? {
-                              bauN: erst1.bauN - erst0.bauN,
-                              bauMs: +(erst1.bauMs - erst0.bauMs).toFixed(1),
-                              verschoben: erst1.verschoben - erst0.verschoben,
-                              pipeAsync: erst1.pipeAsync - erst0.pipeAsync,
-                              neubauN: erst1.neubauN - erst0.neubauN,
-                              offen: r._erstZeichnung.offen.size,
-                          }
-                        : null,
-            };
-        } finally {
-            messen = false;
-            H.an = false;
-            rend.setAnimationLoop(null);
-            st.keys.w = false;
-            st.perfTargetMs = decke;
-            if (k.wandern === "kreis") {
-                st.playerMesh.position.copy(ort);
-                st.yaw = yaw0;
-            }
-        }
-    })();
 }
 
 // ── Auswertung (Node, rein) ─────────────────────────────────────────────────────────────────────────────────────────
@@ -393,31 +205,56 @@ function profilLesen(p) {
         return s;
     };
     const fnName = (id) => knoten.get(id).n.callFrame.functionName || "";
-    return {
-        knoten,
-        zeiten,
-        samples: p.samples,
-        name,
-        stapel,
-        fnName,
-        intervallUs: p.samples.length > 1 ? (p.endTime - p.startTime) / p.samples.length : 1000,
-    };
+    return { zeiten, samples: p.samples, name, stapel, fnName };
 }
 
-// Die Eichung: die Proben der Eichmarke legen den Profiler-Takt (µs) auf die Seiten-Uhr (ms).
-function eichen(P, eich) {
-    const treffer = [];
-    for (let i = 0; i < P.samples.length; i++) {
-        const st = P.stapel(P.samples[i]);
-        if (st.some((id) => P.fnName(id) === "haengerEichmarke")) treffer.push(P.zeiten[i]);
+// DIE STICHPROBEN AUS DER EINEN SPUR (`lauf`, Kategorie `disabled-by-default-v8.cpu_profiler`, 1 ms; Leser: Hänger-Linse,
+// `profil`): das Profile auf dem Faden der Takt-Marken und seine ProfileChunks (Knoten mit Eltern) als EIN CDP-Profil auf der
+// Spur-Uhr, dazu die Takt-Marken (`anazh-takt`, Spur-Uhr) — je Takt eine, sie legen die Takte auf die Proben.
+function spurProfil(ev) {
+    const marken = ev.filter((e) => /user_timing/.test(e.cat) && e.name === "anazh-takt").sort((x, y) => x.ts - y.ts);
+    const kopf = marken[0] && ev.find((e) => e.name === "Profile" && e.pid === marken[0].pid && e.tid === marken[0].tid);
+    if (!kopf) return null;
+    const knoten = new Map(), samples = [], timeDeltas = [];
+    for (const e of ev.filter((x) => x.name === "ProfileChunk" && x.pid === kopf.pid && x.id === kopf.id).sort((x, y) => x.ts - y.ts)) {
+        const d = e.args.data, p = d.cpuProfile || {};
+        for (const n of p.nodes || []) knoten.set(n.id, Object.assign({ children: [] }, n));
+        for (const x of p.samples || []) samples.push(x);
+        for (const x of d.timeDeltas || []) timeDeltas.push(x);
     }
-    if (!treffer.length) return null;
-    // zwei Haufen (Anfang, Ende): der erste Treffer je Haufen
-    const erst = treffer[0];
-    const spaet = treffer.find((t) => t - erst > 1e6) || null;
-    const versatz = erst - eich[0] * 1000;
-    const drift = spaet != null && eich[1] != null ? +((spaet - eich[1] * 1000 - versatz) / 1000).toFixed(2) : null;
-    return { versatzUs: versatz, driftMs: drift, treffer: treffer.length };
+    for (const n of knoten.values()) if (knoten.has(n.parent)) knoten.get(n.parent).children.push(n.id);
+    const startTime = kopf.args.data.startTime, endTime = timeDeltas.reduce((t, x) => t + x, startTime);
+    const nodes = [...knoten.values()].sort((x, y) => x.id - y.id);
+    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts) };
+}
+
+// Der Versatz Seite → Spur: der Median über die Takte (Marke gegen Takt-Beginn); ungleiche Zahl legt keine Probe.
+function versatzVon(spur, T, P) {
+    const nT = T.t.length;
+    if (!P || spur.marken.length !== nT) return null;
+    return spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((x, y) => x - y)[nT >> 1];
+}
+// Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms; ohne Versatz keine).
+function probenIn(P, versatz, von, bis) {
+    if (versatz == null) return [];
+    const lo = von * 1000 + versatz,
+        hi = bis * 1000 + versatz;
+    let a0 = 0,
+        b0 = P.zeiten.length;
+    while (a0 < b0) {
+        const m = (a0 + b0) >> 1;
+        if (P.zeiten[m] < lo) a0 = m + 1;
+        else b0 = m;
+    }
+    const out = [];
+    for (let s = a0; s < P.zeiten.length && P.zeiten[s] < hi; s++) out.push(P.samples[s]);
+    return out;
+}
+// Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
+function quantil(werte) {
+    const s = werte.slice().sort((x, y) => x - y);
+    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
+    return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
 }
 
 // Die Engstelle einer Proben-Menge über die NAMEN der Rahmen (V8 legt dieselbe Funktion je Code-Stufe — Bytecode,
@@ -426,28 +263,26 @@ function eichen(P, eich) {
 // Renderers und der Werkbank, die Spiel-Schleife); endet er in einer Hülle, ist die Last VERTEILT und die drei
 // schwersten Zweige stehen beim Namen. Dazu die teuersten Selbst-Funktionen.
 const HUELLE = /^(loop|_gameLoopTick)$|^\(anonym\) \[werkbank[:\]]/;
+// Der Baum der Rahmen-Namen unter der Hülle (alles bis zum letzten Hüllen-Rahmen fällt: über dem Takt liegt nur
+// Verteilung), je Probe das Gewicht g, dazu die Selbst-Rahmen — die Engstelle und die Takt-Spitze lesen ihn.
+function rahmenBaum(P, ids, g = 1, wurzel = { n: 0, k: new Map() }, selbst = new Map()) {
+    for (const leaf of ids) {
+        const namen = P.stapel(leaf).map((id) => P.name(id));
+        let knot = wurzel;
+        wurzel.n += g;
+        for (let x = namen.findLastIndex((nm) => HUELLE.test(nm)) + 1; x < namen.length; x++) {
+            if (namen[x] === "(root)") continue;
+            if (!knot.k.has(namen[x])) knot.k.set(namen[x], { n: 0, k: new Map() });
+            (knot = knot.k.get(namen[x])).n += g;
+        }
+        selbst.set(namen[namen.length - 1], (selbst.get(namen[namen.length - 1]) || 0) + g);
+    }
+    return { wurzel, selbst };
+}
 function engstelle(P, ids, anteil) {
     const n = ids.length;
     if (!n) return { pfad: [], zweige: [], selbst: [] };
-    const wurzel = { n: 0, k: new Map() };
-    const selbst = new Map();
-    for (const leaf of ids) {
-        const namen = P.stapel(leaf).map((id) => P.name(id));
-        // die Hüllen-Spitze: alles bis zum letzten Hüllen-Rahmen fällt (über dem Takt liegt nur Verteilung)
-        let ab = 0;
-        for (let x = 0; x < namen.length; x++) if (HUELLE.test(namen[x])) ab = x + 1;
-        let knot = wurzel;
-        wurzel.n++;
-        for (let x = ab; x < namen.length; x++) {
-            if (namen[x] === "(root)") continue;
-            let c = knot.k.get(namen[x]);
-            if (!c) knot.k.set(namen[x], (c = { n: 0, k: new Map() }));
-            c.n++;
-            knot = c;
-        }
-        const s = namen[namen.length - 1];
-        selbst.set(s, (selbst.get(s) || 0) + 1);
-    }
+    const { wurzel, selbst } = rahmenBaum(P, ids);
     const pct = (c) => Math.round((100 * c) / n);
     const pfad = [];
     let knot = wurzel;
@@ -506,33 +341,18 @@ function geraeteIn(roh, T, von, bis, t0, t1) {
 // Das Fenster besteht aus den rAF-Abständen seiner Takte: der erste (gerendert) zerfällt in die Takt-Zeit und die Zeit
 // außerhalb (nach Proben: NEBEN · GC · leer = GPU); jeder weitere Takt hat nicht gerendert — die GPU-Leine hielt ihn —,
 // dort zählt Haupt-Thread-Arbeit nur, soweit sie den Bild-Takt (Median der rAF-Abstände) übersteigt, der Rest ist GPU.
-function haengerAuswerten(roh, profil, opts) {
+function haengerAuswerten(roh, spur, opts) {
     const o = opts || {};
     const schwelle = o.schwelle || 100;
     const T = roh.takte;
-    const P = profil ? profilLesen(profil) : null;
-    const eich = P ? eichen(P, roh.eich) : null;
+    const P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null;
     const nT = T.t.length;
+    const versatz = versatzVon(spur, T, P);
     const abst = [];
     for (let q = 1; q < nT; q++) abst.push(T.c0[q] - T.c0[q - 1]);
     abst.sort((x, y) => x - y);
     const periode = abst.length ? abst[abst.length >> 1] : 16.7;
-    // die Proben-Indizes im Seiten-Zeit-Bereich [von, bis)
-    const proben = (von, bis) => {
-        if (!P || !eich) return [];
-        const lo = von * 1000 + eich.versatzUs,
-            hi = bis * 1000 + eich.versatzUs;
-        let a0 = 0,
-            b0 = P.zeiten.length;
-        while (a0 < b0) {
-            const m = (a0 + b0) >> 1;
-            if (P.zeiten[m] < lo) a0 = m + 1;
-            else b0 = m;
-        }
-        const out = [];
-        for (let s = a0; s < P.zeiten.length && P.zeiten[s] < hi; s++) out.push(P.samples[s]);
-        return out;
-    };
+    const proben = (von, bis) => probenIn(P, versatz, von, bis);
     const gerendert = [];
     for (let i = 0; i < nT; i++) if (T.g[i]) gerendert.push(i);
     const dts = [];
@@ -553,7 +373,7 @@ function haengerAuswerten(roh, profil, opts) {
             const d = T.c0[q + 1] - T.c0[q];
             const cpu = T.c1[q] - T.c0[q];
             const teil = { TAKT: cpu, NEBEN: 0, GC: 0, GPU: Math.max(0, d - cpu) };
-            if (P && eich) {
+            if (versatz != null) {
                 const innen = proben(T.c0[q], T.c1[q]);
                 let gcInnen = 0;
                 for (const id of innen) {
@@ -625,13 +445,6 @@ function haengerAuswerten(roh, profil, opts) {
             else if (up > 4096) name = `Upload ${(up / 1024).toFixed(1)} MB`;
             else name = ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
         }
-        const loaf = (roh.loaf || [])
-            .filter((x) => x.start < w1 && x.start + x.dauer > w0)
-            .flatMap((x) => x.skripte)
-            .filter((s) => s.dauer >= 20)
-            .sort((x, y) => y.dauer - x.dauer)
-            .slice(0, 3)
-            .map((s) => `${s.aufrufer}${s.fn ? " → " + s.fn : ""} ${Math.round(s.dauer)} ms`);
         haenger.push({
             t: +(w0 - roh.tMess[0]).toFixed(0),
             dt: +dt.toFixed(1),
@@ -647,7 +460,6 @@ function haengerAuswerten(roh, profil, opts) {
             geraet: im.dev,
             geraetVorher: klasse === "GPU" ? vor.dev : null,
             pipelines: (klasse === "GPU" ? vor.pipes : im.pipes).slice(0, 12).map((x) => x.art + ":" + x.n),
-            loaf,
         });
     }
     // je Ursache: Zahl, Summe, Maximum
@@ -659,14 +471,11 @@ function haengerAuswerten(roh, profil, opts) {
         e.maxMs = Math.max(e.maxMs, h.dt);
         jeUrsache.set(h.ursache, e);
     }
-    const sortiert = dts.slice().sort((x, y) => x - y);
-    const q = (p) =>
-        sortiert.length ? +sortiert[Math.min(sortiert.length - 1, Math.floor(p * sortiert.length))].toFixed(1) : null;
     // die Probe: jede geschmuggelte Last muss als Hänger mit ihrem Namen erscheinen
     const probe = (roh.probe || []).map((p) => {
-        const soll = p.art === "takt" ? "__haengerProbeTakt" : "__haengerProbeNeben";
+        const soll = (p.art === "takt" ? "TAKT" : "NEBEN") + ": __haengerProbe";
         const tRel = p.t - roh.tMess[0];
-        const h = haenger.find((x) => Math.abs(x.t - tRel) < 2000 && x.name.indexOf(soll) >= 0);
+        const h = haenger.find((x) => Math.abs(x.t - tRel) < 2000 && soll.startsWith(x.klasse) && x.name.indexOf("__haengerProbe") >= 0);
         return { art: p.art, soll, gefunden: !!h, als: h ? h.ursache : null };
     });
     // DER ZÄHLER DER KLASSE über den ganzen Lauf (unabhängig von der Schwelle und vom Gerät): jede Pipeline, die ein Frame
@@ -714,16 +523,15 @@ function haengerAuswerten(roh, profil, opts) {
         knotenBau,
         bildTaktMs: +periode.toFixed(1),
         frames: gerendert.length,
-        frameMs: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) },
+        frameMs: quantil(dts).zahl,
         haengerN: haenger.length,
         jeKlasse: Object.fromEntries(KLASSEN.map((kl) => [kl, haenger.filter((h) => h.klasse === kl).length])),
         jeUrsache: [...jeUrsache.values()]
             .map((e) => Object.assign(e, { summeMs: Math.round(e.summeMs), maxMs: Math.round(e.maxMs) }))
             .sort((x, y) => y.n - x.n || y.summeMs - x.summeMs),
         haenger,
-        eichung: eich ? { driftMs: eich.driftMs, treffer: eich.treffer } : null,
+        marken: spur ? spur.marken.length : 0,
         profil: !!P,
-        loafDa: !!roh.loafDa,
         probe,
         lauf: {
             regler: roh.k && roh.k.regler,
@@ -738,13 +546,11 @@ function haengerAuswerten(roh, profil, opts) {
     };
 }
 
-// Die Linse prüft sich: fehlt das Profil, die Eichung, oder nennt sie eine geschmuggelte Probe nicht, ist sie blind.
+// Die Linse prüft sich: fehlen die Proben, liegen sie nicht auf den Takten, oder nennt sie eine geschmuggelte Probe nicht, ist sie blind.
 function haengerLinsenBefunde(a) {
     const b = [];
-    if (!a.profil) b.push("kein CPU-Profil — TAKT und NEBEN ohne Engstelle");
-    if (a.profil && !a.eichung) b.push("Eichmarke nicht im Profil — die Proben liegen nicht auf der Seiten-Uhr");
-    if (a.eichung && a.eichung.driftMs != null && Math.abs(a.eichung.driftMs) > 5)
-        b.push(`Eich-Drift ${a.eichung.driftMs} ms > 5 ms — die Zuordnung der Proben ist unscharf`);
+    if (!a.profil) b.push("keine Stichproben in der Spur — TAKT und NEBEN ohne Engstelle");
+    if (a.profil && a.marken !== a.takte) b.push(`${a.marken} Takt-Marken für ${a.takte} Takte — die Proben liegen nicht auf den Takten`);
     for (const p of a.probe || []) if (!p.gefunden) b.push(`Probe ${p.art} (${p.soll}) nicht beim Namen genannt`);
     return b;
 }
@@ -757,10 +563,8 @@ function haengerTabelle(a) {
             KLASSEN.map((k) => `${k} ${a.jeKlasse[k]}`).join(" · ")
     );
     z.push(
-        `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern || "aus"} · ` +
-            `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Profil ${a.profil ? "ja" : "NEIN"}` +
-            (a.eichung ? ` (Eich-Drift ${a.eichung.driftMs} ms)` : "") +
-            ` · LoAF ${a.loafDa ? "ja" : "nein"}`
+        `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern} · ` +
+            `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Proben ${a.profil ? "ja" : "NEIN"} (${a.marken} Takt-Marken)`
     );
     const pp = a.pipelines || {};
     z.push(
@@ -814,7 +618,6 @@ function haengerTabelle(a) {
                     `      Gerät${h.geraetVorher ? " (mit 3 Frames davor)" : ""}: ${g}` +
                         (h.pipelines.length ? " — " + h.pipelines.slice(0, 6).join(", ") : "")
                 );
-            if (h.loaf.length) z.push(`      LoAF: ${h.loaf.join(" · ")}`);
         }
     }
     for (const p of a.probe || [])
@@ -822,55 +625,128 @@ function haengerTabelle(a) {
     return z.join("\n");
 }
 
+// ── DIE TAKT-SPITZE (Profi-Band K1/K2 + PFLICHT E in Bewegung) ─────────────────────────────────────────────────────────
+// Die Takte des Gangs (`lauf`, Bahn) ab p95 und der Mitte (p40–p60)
+// zerfallen je Rahmen-Pfad (die Proben im Takt teilen seine CPU-Zeit). TÄTER: ein Rahmen, der ab p95 ≥ 1 ms mehr trägt als in
+// der Mitte, ohne dass ein Kind ≥ 1 ms es erklärt; ROT mit Täter oder blind. Die Zeilen ab 0,25 ms.
+// `posten` (`takt --posten a,b`; IN FAHRT `wandern: "fahrt"`, profiband.K1, die FAHRT-POSTEN der OMEN-Zerlegung 22.10., GTX GT-Fahrt
+// F95 33,5 ms): je Name seine Zeit ab p95 über jeden Pfad (je Ast einmal gezählt), ROT über der Schwelle je Takt — ein Posten, der
+// in JEDEM Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
+// In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
+const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"];
+function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
+    k.k.forEach((c, nm) => {
+        const i = namen.indexOf(nm.split(" ")[0]);
+        if (i >= 0 && i !== oben) summe[i] += c.n;
+        postenSumme(c, namen, summe, i >= 0 ? i : oben);
+    });
+    return namen.map((name, i) => ({ name, spitzeMs: +summe[i].toFixed(2) }));
+}
+function spitzenAuswerten(roh, spur, posten = roh.wandern === "fahrt" ? FAHRT_POSTEN : []) {
+    const S = roh.wandern === "fahrt" ? 0.5 : 1;
+    const T = roh.takte,
+        P = spur && spur.profil.samples.length ? profilLesen(spur.profil) : null,
+        versatz = versatzVon(spur, T, P);
+    const cpu = (i) => T.c1[i] - T.c0[i];
+    const ids = [...T.t.keys()].filter((i) => T.g[i]);
+    const q = quantil(ids.map(cpu));
+    const r2 = (x) => +x.toFixed(2);
+    const sp = ids.filter((i) => cpu(i) >= q(0.95));
+    const a = { cpuMs: q.zahl, takte: T.t.length, spitzeN: sp.length, gedeckt: 0, bahnM: roh.bahnM, zeilen: [], taeter: [] };
+    [a.marken, a.profil] = [spur ? spur.marken.length : 0, !!P];
+    const baum = (gr) =>
+        gr.reduce((w, i) => {
+            const s = probenIn(P, versatz, T.c0[i], T.c1[i]);
+            a.gedeckt += gr === sp && s.length > 0;
+            return rahmenBaum(P, s, cpu(i) / s.length / gr.length, w).wurzel;
+        }, { n: 0, k: new Map() });
+    const geh = (k, km, pfad) => {
+        let rest = k.n,
+            restM = km ? km.n : 0;
+        for (const [nm, c] of [...k.k].filter(([, c]) => c.n >= 0.25).sort((x, y) => y[1].n - x[1].n)) {
+            const cm = km && km.k.get(nm);
+            a.zeilen.push({ tiefe: pfad.length, name: nm, spitzeMs: r2(c.n), mitteMs: cm ? r2(cm.n) : 0 });
+            if (c.n >= S) [(rest -= c.n), (restM -= cm ? cm.n : 0)];
+            geh(c, cm, pfad.concat(nm));
+        }
+        const name = engstellenName({ pfad: pfad.map((n) => ({ name: n })) }) + (rest < k.n ? " (Rest)" : "");
+        if (pfad.length && rest - restM >= S) a.taeter.push({ name, spitzeMs: r2(rest), mitteMs: r2(restM) });
+    };
+    const wSp = baum(sp);
+    geh(wSp, baum(ids.filter((i) => cpu(i) >= q(0.4) && cpu(i) <= q(0.6))), []);
+    a.posten = postenSumme(wSp, posten);
+    a.taeter.sort((x, y) => y.spitzeMs - y.mitteMs - (x.spitzeMs - x.mitteMs));
+    a.befunde = haengerLinsenBefunde(a).concat(
+        a.gedeckt < 0.9 * a.spitzeN ? [`nur ${a.gedeckt}/${a.spitzeN} Spitzen-Takte mit Proben`] : [],
+        S < 1 && !(a.bahnM >= 150) ? [`die Fahrt stand: ${a.bahnM} m < 150 m Weg des Wagens`] : [],
+        S < 1 ? [] : a.taeter.map((t) => `Spitzen-Täter ${t.name}: ${t.spitzeMs} ms je Takt ab p95, Mitte ${t.mitteMs} ms`),
+        a.posten
+            .filter((p) => p.spitzeMs > S)
+            .map((p) => `${S < 1 ? "Fahrt-" : ""}Posten ${p.name}: ${p.spitzeMs} ms je Takt ab p95 (> ${S} ms)`)
+    );
+    a.tabelle = [
+        `TAKT-SPITZE: CPU-Takt ${JSON.stringify(a.cpuMs)} ms (K2 8 ms), ${a.spitzeN} Takte ab p95 (${a.gedeckt} mit Proben), ` +
+            `Weg ${a.bahnM} m`,
+        "  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms",
+        ...a.zeilen.map((e) => `${String(e.spitzeMs).padStart(8)} ${String(e.mitteMs).padStart(6)}  ${"  ".repeat(e.tiefe)}${e.name}`),
+        `${S < 1 ? "BENANNT" : "TÄTER"} (Spitze − Mitte ≥ ${S} ms): ${a.taeter.map((t) => `${t.name} ${t.spitzeMs} · ${t.mitteMs}`).join(" | ") || "keiner"}`,
+        ...(posten.length ? [`POSTEN (≤ ${S} ms je Takt ab p95): ${a.posten.map((p) => `${p.name} ${p.spitzeMs}`).join(" | ")}`] : []),
+    ].join("\n");
+    return a;
+}
+// Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
+function linseWerten(roh, spur, b) {
+    // ohne `--posten` urteilt der Weg seine Posten (der Vorgabe-Wert, `POSTEN_JE_WEG`): ein leeres [] schwieg sie still grün
+    if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
+    const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
+    return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
+}
+
 // DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit vier Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
-// GPU-Warten nach synchronen Pipelines) und einer Uhr, die gegen den Profiler versetzt ist — die Auswertung muss jeden
-// beim Namen nennen und keinen ruhigen Frame zählen.
+// GPU-Warten nach synchronen Pipelines) als Spur (Profile, zwei ProfileChunks, Takt-Marken auf einer gegen die Seite versetzten
+// Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
+// Die Takt-Spitze: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last ist allein Täter
+// (3 ms), A (in jedem Takt) keiner; ohne Last GRÜN.
 function selbsttest() {
     const f = [];
-    // Profil-Knoten
+    // Profil-Knoten der Spur (je Knoten sein Eltern-Knoten)
     const nodes = [];
-    const knoten = (id, fn, url, kinder) =>
-        nodes.push({ id, callFrame: { functionName: fn, url: url || "", lineNumber: 0 }, children: kinder || [] });
-    knoten(1, "(root)", "", [2, 6, 7, 9, 10, 12]);
-    knoten(2, "", "werkbank", [3]);
+    const knoten = (id, fn, url, parent) => nodes.push({ id, callFrame: { functionName: fn, url: url || "", lineNumber: 0 }, parent });
+    const D = "http://x/stamm/dirigent-takt.js";
+    knoten(1, "(root)", "");
+    knoten(2, "", "werkbank", 1);
     // V8 legt dieselbe Funktion je Code-Stufe als Geschwister an (13/14 neben 4/5) — die Engstelle muss sie vereinen
-    knoten(3, "_gameLoopTick", "http://x/stamm/dirigent-takt.js", [4, 11, 13, 15, 16, 17]);
-    knoten(4, "_loopRender", "http://x/stamm/dirigent-takt.js", [5]);
-    knoten(5, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(6, "(idle)", "");
-    knoten(7, "onmessage", "http://x/stamm/dirigent-takt.js", [8]);
-    knoten(8, "_nebenLast", "http://x/stamm/dirigent-takt.js");
-    knoten(9, "(garbage collector)", "");
-    knoten(10, "haengerEichmarke", "");
-    knoten(11, "_kleinImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(12, "(program)", "");
-    knoten(13, "_loopRender", "http://x/stamm/dirigent-takt.js", [14]);
-    knoten(14, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
-    knoten(15, "_teilA", "http://x/stamm/dirigent-takt.js");
-    knoten(16, "_teilB", "http://x/stamm/dirigent-takt.js");
-    knoten(17, "_teilC", "http://x/stamm/dirigent-takt.js");
-    // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Profiler-Uhr = Seite + 5 000 000 µs
-    const V = 5e9 / 1000; // 5 000 000 µs
+    knoten(3, "_gameLoopTick", D, 2);
+    knoten(4, "_loopRender", D, 3);
+    knoten(5, "_lastImTakt", D, 4);
+    knoten(6, "(idle)", "", 1);
+    knoten(7, "onmessage", D, 1);
+    knoten(8, "_nebenLast", D, 7);
+    knoten(9, "(garbage collector)", "", 1);
+    knoten(11, "_kleinImTakt", D, 3);
+    knoten(12, "(program)", "", 1);
+    knoten(13, "_loopRender", D, 3);
+    knoten(14, "_lastImTakt", D, 13);
+    for (const [id, fn] of [[15, "_teilA"], [16, "_teilB"], [17, "_teilC"], [18, "_spitzenLast"]]) knoten(id, fn, D, 3);
+    // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Spur-Uhr = Seite + 5 000 000 µs
+    const V = 5e6;
     const samples = [],
         deltas = [];
-    let letzte = 0;
+    let letzte = V + 989e3;
     const probe = (tSeiteMs, id) => {
         const us = tSeiteMs * 1000 + V;
         samples.push(id);
-        deltas.push(samples.length === 1 ? 0 : us - letzte);
+        deltas.push(us - letzte);
         letzte = us;
     };
-    const T = { t: [], c0: [], c1: [], g: [], flug: [], innen: [], aussen: [] };
+    const T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
     const namen = [];
-    // Eichmarke bei 990 ms (8 ms) und am Ende
-    for (let x = 990; x < 998; x++) probe(x, 10);
     let t = 1000;
     const takt = (dauer, idImTakt, renderiert, innen) => {
         T.t.push(t);
         T.c0.push(t);
         T.c1.push(t + dauer);
         T.g.push(renderiert === false ? 0 : 1);
-        T.flug.push(1);
         T.innen.push(innen || 0);
         T.aussen.push(0);
         const ids = Array.isArray(idImTakt) ? idImTakt : [idImTakt || 11];
@@ -930,22 +806,22 @@ function selbsttest() {
         takt(4);
         luecke(t + 16.7);
     }
+    const spitzen = [0, 3].map((last) => {
+        const von = T.t.length;
+        for (let i = 0; i < 200; i++) {
+            takt(i % 10 === 9 ? 5 + last : 5, [15, 15, 16, 17, 17, 18, 18, 18]);
+            luecke(t + 16.7);
+        }
+        return [von, T.t.length];
+    });
     const ende = t;
-    for (let x = ende + 5; x < ende + 13; x++) probe(x, 10);
-    const profil = { nodes, startTime: V + 989 * 1000, endTime: letzte, samples, timeDeltas: deltas };
-    // timeDeltas[0] relativ zu startTime
-    profil.timeDeltas[0] = 990 * 1000 + V - profil.startTime;
-    const roh = {
-        takte: T,
-        namen,
-        loaf: [],
-        loafDa: false,
-        eich: [990, ende + 5],
-        tMess: [1000, ende],
-        probe: [],
-        k: {},
-    };
-    const a = haengerAuswerten(roh, profil, { schwelle: 100 });
+    const roh = { takte: T, namen, tMess: [1000, ende], probe: [], k: {} };
+    const chunk = (von, bis, ts) => ({ name: "ProfileChunk", pid: 1, tid: 7, id: "0x1", ts, args: { data: {
+        cpuProfile: { nodes: nodes.slice(von, bis), samples: samples.slice(von * 300, bis * 300) },
+        timeDeltas: deltas.slice(von * 300, bis * 300) } } });
+    const ev = [chunk(8, 99, V + 2e6), { name: "Profile", pid: 1, tid: 1, id: "0x1", ts: V + 989e3, args: { data: { startTime: V + 989e3 } } },
+        chunk(0, 8, V + 1e6), ...T.c0.map((c) => ({ name: "anazh-takt", cat: "blink.user_timing", pid: 1, tid: 1, ts: c * 1000 + V + 40 }))];
+    const a = haengerAuswerten(roh, spurProfil(ev), { schwelle: 100 });
     const erwartet = [
         ["TAKT", "_loopRender › _lastImTakt"],
         ["NEBEN", "onmessage › _nebenLast"],
@@ -969,8 +845,8 @@ function selbsttest() {
             .join(",") !== "_teilA,_teilB,_teilC"
     )
         f.push("verteilter Takt nennt seine drei Zweige nicht: " + JSON.stringify(h5.zweige));
-    if (!a.eichung) f.push("Eichung nicht gefunden");
-    else if (Math.abs(a.eichung.driftMs) > 1) f.push(`Eich-Drift ${a.eichung.driftMs} ms im erfundenen Lauf`);
+    if (!haengerLinsenBefunde(haengerAuswerten(roh, spurProfil(ev.slice(0, -1)), { schwelle: 100 })).length)
+        f.push("eine fehlende Takt-Marke bleibt ohne Befund (die Proben lägen auf fremden Takten)");
     if (haengerLinsenBefunde(a).length) f.push("Befunde im erfundenen Lauf: " + haengerLinsenBefunde(a).join(" · "));
     // ohne Profil: die Zeiten-Zerlegung allein (Takt gegen Rest) bleibt und nennt TAKT ohne Engstelle
     const ohne = haengerAuswerten(roh, null, { schwelle: 100 });
@@ -978,203 +854,218 @@ function selbsttest() {
         f.push("ohne Profil: Takt-Hänger nicht als TAKT gezählt");
     if (!haengerLinsenBefunde(ohne).length)
         f.push("ohne Profil meldet die Linse keinen Befund (sie wäre blind und grün)");
-    // die Erst-Probe: ein sauberes ABBA ohne Befund; ein A ohne synchrone Pipeline (blind), ein B mit einer (der Bruch) und ein B
-    // mit weniger gezeichneten Teilen (verschluckt) nennt das Urteil je beim Namen
-    const d = (art, max, sync, gezeichnet) => ({ art, max, ruheMax: 20, p50: 9, sync, async: 18 - sync, gezeichnet, teile: 16, gussMs: 40 });
-    const sauber = erstUrteil([d("A", 2900, 17, 11), d("B", 130, 0, 11), d("B", 110, 0, 11), d("A", 2000, 19, 11)]);
-    if (sauber.befunde.length || sauber.medianA !== 2450 || sauber.medianB !== 120)
-        f.push("Erst-Probe: sauberes ABBA geurteilt als " + JSON.stringify([sauber.befunde, sauber.medianA, sauber.medianB]));
-    const kaputt = erstUrteil([d("A", 20, 0, 11), d("B", 900, 3, 9)]).befunde;
-    for (const w of ["blind", "kompiliert im Frame", "verschluckt"])
-        if (!kaputt.some((b) => b.includes(w))) f.push(`Erst-Probe: „${w}" nicht genannt`);
+    const sp = spurProfil(ev);
+    spitzen.forEach(([von, bis], last) => {
+        const teil = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von, bis)]));
+        const s = spitzenAuswerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) });
+        const t = s.taeter[0];
+        if (last ? s.befunde.length !== 1 || t.name !== "_spitzenLast" || Math.abs(t.spitzeMs - t.mitteMs - 3) > 0.3 : s.befunde.length)
+            f.push(`Spitze ${last ? "mit" : "ohne"} 3 ms je 10. Takt falsch geurteilt:\n${s.tabelle}`);
+        // die Posten: _teilA trägt 2/8 jedes Takts (≥ 1,25 ms ohne Spitze über der Mitte: ROT), _teilB 1/8 (GRÜN)
+        const p = spitzenAuswerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) }, ["_teilA", "_teilB"]);
+        if (p.befunde.length !== s.befunde.length + 1 || !/^Posten _teilA: /.test(p.befunde.at(-1)))
+            f.push(`Posten ${p.posten.map((x) => `${x.name} ${x.spitzeMs}`).join(" · ")} ms falsch geurteilt`);
+    });
+    // DIE FAHRT: der ruhige Lauf GRÜN; heißt _teilC (2 ms je Takt) computeVertexNormals, ROT beim Namen; ein stehender Wagen ROT
+    const [v0, b0] = spitzen[0];
+    const fahrt = (nm, bahnM) => {
+        const nodes = sp.profil.nodes.map((n) => (n.id === 17 ? { ...n, callFrame: { ...n.callFrame, functionName: nm } } : n));
+        const takte = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
+        return linseWerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }, { spitze: true }).befunde.join();
+    };
+    const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
+    if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))
+        f.push("die Fahrt falsch geurteilt: " + urteil.join(" | "));
     return f;
 }
 
-// ── DIE ERST-PROBE (Welle K): ABBA in EINER Welt ─────────────────────────────────────────────────────────────────────
-// Die Hänger-Klasse „eine erste Zeichnung trägt synchron ihren Bau" am echten Gerät, A gegen B in derselben Welt: je
-// Durchgang ein Tier aus dem echten Guss (`spawnCreatureAt`) mit frischen Stoffen (eine eigene Farb-Konstante je Durchgang:
-// neue Programme, neue Pipelines) und drei frische Würfel vor der Kamera, alle werfen Schatten. A = der Vendor-Weg (die
-// Nachbildung am Renderer-Exemplar ist entfernt: Knoten-Bau und Pipeline synchron im Frame), B = die Erst-Zeichnung
-// (`_configureRenderer`: je Render-Aufruf ein Bau, die Pipeline asynchron). Gemessen je Durchgang: der längste Abstand
-// zweier Bilder (rAF) in 5 s ab dem Auftrag gegen 2 s Ruhe davor, synchrone und asynchrone Pipelines, gezeichnete Teile.
-//   node scripts/werkbank.cjs haenger --erst [ABBAABBA]
-function erstProbe(k) {
-    return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
-        const rend = st.renderer;
-        const T = window.THREE;
-        const TSL = T.TSL;
-        const welt = st.scene;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        if (window.__buehne) window.__buehne();
-        if (window.__tiereHalten) window.__tiereHalten();
-        rend.setAnimationLoop((t) => {
-            if (window.__wetterHalten) window.__wetterHalten();
-            if (window.__ortSchritt) window.__ortSchritt();
-            r._gameLoopTick(t);
-        });
-        const Z = (window.__erstZ = window.__erstZ || { sync: 0, async: 0 });
-        if (!window.__erstHaken) {
-            const GP = GPUDevice.prototype;
-            const crp = GP.createRenderPipeline,
-                crpa = GP.createRenderPipelineAsync;
-            GP.createRenderPipeline = function (d) {
-                window.__erstZ.sync++;
-                return crp.call(this, d);
-            };
-            GP.createRenderPipelineAsync = function (d) {
-                window.__erstZ.async++;
-                return crpa.call(this, d);
-            };
-            window.__erstHaken = true;
+// DIE LATENZ (leib.K1, die Seite von `werkbank latenz`): Taste → bewegter Leib im Ausgabe-Bild. Start ist der Zeitstempel des Tasten-Ereignisses (CDP
+// Input.dispatchKeyEvent, `event.timeStamp`), Ende die Marke des präsentierten Bilds (`getCurrentTexture` am Canvas der Welt,
+// wie die Belegungs-Spur), in dem Kamera oder Leib ≥ 1 cm von der Lage des letzten Bilds vor der Taste stehen. Je Probe die
+// Zerlegung: eingabe (Ereignis → Hörer) · warten (Hörer → Beginn des Takts, der das Bild zeichnet) · takte · bild (Takt →
+// Marke) · regung (das erste Bild ≥ 1 mm: bis dahin die Kette, danach die Gang-Kurve).
+// `verzug` (Selbsttest) hält die Taste n präsentierte Bilder im Eingabe-Pfad zurück (die Leine zeichnet nicht jeden Takt); die Bewegung liest nie das Render-Signal.
+// DER HIEB (halten.K2): der Klick (CDP, Zeiger gefangen) auf ein gehaltenes Tier unter dem Fadenkreuz; Ende das Bild, in dem
+// die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
+// präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
+function latenzAn(k) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
+    window.__buehne();
+    if (window.__tiereHalten) window.__tiereHalten();
+    const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
+    const lage = () =>
+        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
+    const weg = (a, b) => (b && a.length === b.length ? Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))) : Infinity);
+    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
+    L.start = st.playerMesh.position.clone();
+    const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
+    GPUCanvasContext.prototype.getCurrentTexture = function () {
+        // ein Mess-Fehler hält nie das Bild an (bis latenz-verben warf `weg` nach hieb in jedem Bild: der Sammel-Lauf hing)
+        if (this.canvas === rend.domElement) {
+            const t = performance.now();
+            try {
+                const l = lage(), p = L.probe;
+                L.still = L.vor && weg(l, L.vor) < 0.001 ? L.still + 1 : 0;
+                if (p && p.t0 != null && p.regung == null && weg(l, p.ref) >= 0.001) p.regung = t - p.t0;
+                if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
+                    Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
+                const sw = p && p.t0 != null && st.player._swing;
+                if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
+                L.swVor = sw && sw.t;
+                L.vor = l;
+            } catch (e) {
+                L.fehler = L.fehler || String(e);
+            }
+            L.rafAmBild = L.raf;
+            L.bilder.push(t);
         }
-        const fenster = async (ms) => {
-            const t = [];
-            const t0 = performance.now();
-            while (performance.now() - t0 < ms) {
-                await new Promise((res) => requestAnimationFrame(res));
-                t.push(performance.now());
-            }
-            let max = 0;
-            const d = [];
-            for (let i = 1; i < t.length; i++) {
-                d.push(t[i] - t[i - 1]);
-                max = Math.max(max, t[i] - t[i - 1]);
-            }
-            d.sort((a, b) => a - b);
-            return { n: t.length, max: +max.toFixed(1), p50: +(d[Math.floor(d.length / 2)] || 0).toFixed(1) };
-        };
-        const aus = [];
-        try {
-            await sleep((k.ein != null ? k.ein : 15) * 1000);
-            let serie = window.__erstSerie || 0;
-            for (const art of String(k.folge || "ABBAABBA")) {
-                const vendor = art === "A";
-                const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
-                const stamm = rend._renderObjectDirect;
-                if (vendor && eigen) delete rend._renderObjectDirect;
-                const gezeichnet = new Set();
-                const drawRoh = rend.backend.draw;
-                rend.backend.draw = function (ro) {
-                    if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
-                    return drawRoh.apply(this, arguments);
-                };
-                const teile = [];
-                let tier = null;
-                let gussMs = 0;
-                try {
-                    const ruhe = await fenster(2000);
-                    Z.sync = Z.async = 0;
-                    serie++;
-                    window.__erstSerie = serie;
-                    const cam = st.camera;
-                    const dir = new T.Vector3();
-                    cam.getWorldDirection(dir);
-                    const px = cam.position.x + dir.x * 7,
-                        pz = cam.position.z + dir.z * 7;
-                    const gy = typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(px, pz) : cam.position.y;
-                    const g0 = performance.now();
-                    tier = r.spawnCreatureAt(px, gy + 0.3, pz, "happy", k.art || "wolf", { bodySize: 1, precise: true });
-                    gussMs = performance.now() - g0;
-                    if (tier)
-                        tier.traverse((o) => {
-                            if (o.isMesh && o.material && !Array.isArray(o.material)) {
-                                const m = o.material.clone();
-                                m.colorNode = TSL.vec3(0.3 + 0.00137 * serie, 0.35, 0.2);
-                                o.material = m;
-                                o.userData.__erstProbe = true;
-                                teile.push(o);
-                            }
-                        });
-                    for (let i = 0; i < 3; i++) {
-                        const m = new T.MeshStandardNodeMaterial({ roughness: 0.8 });
-                        m.colorNode = TSL.vec3(0.2 + 0.00113 * serie, 0.45, 0.25 + 0.07 * i);
-                        const w = new T.Mesh(new T.BoxGeometry(0.6, 0.6, 0.6), m);
-                        w.position.set(
-                            cam.position.x + dir.x * 4 + (i - 1) * 0.8,
-                            cam.position.y + dir.y * 4,
-                            cam.position.z + dir.z * 4
-                        );
-                        w.castShadow = true;
-                        w.userData.__erstProbe = true;
-                        welt.add(w);
-                        teile.push(w);
-                    }
-                    const f = await fenster(5000);
-                    aus.push({
-                        art,
-                        ruheMax: ruhe.max,
-                        max: f.max,
-                        p50: f.p50,
-                        bilder: f.n,
-                        sync: Z.sync,
-                        async: Z.async,
-                        gezeichnet: gezeichnet.size,
-                        teile: teile.length,
-                        gussMs: +gussMs.toFixed(1),
-                    });
-                } finally {
-                    rend.backend.draw = drawRoh;
-                    if (vendor && eigen) rend._renderObjectDirect = stamm;
-                    for (const w of teile)
-                        if (w.parent === welt) {
-                            welt.remove(w);
-                            w.geometry.dispose();
-                        }
-                    if (tier) r.removeCreature(tier);
-                }
-            }
-        } finally {
-            rend.setAnimationLoop(null);
+        return gct.call(this);
+    };
+    const hoer = (ev) => {
+        if (synth.has(ev)) return;
+        const p = L.probe, jetzt = performance.now();
+        if (ev.type.endsWith("down") && p && p.t0 == null)
+            Object.assign(p, { t0: ev.timeStamp, eingabe: jetzt - ev.timeStamp, hoerer: jetzt, takt: L.takt, ref: L.vor });
+        if (!k.verzug || ev.type === "mousedown") return;
+        ev.stopImmediatePropagation();
+        const kopie = new KeyboardEvent(ev.type, { key: ev.key, code: ev.code, bubbles: true, cancelable: true });
+        const eintrag = [ev.target, kopie];
+        synth.add(kopie), L.offen.push(eintrag);
+        (async () => {
+            for (const n = L.bilder.length + k.verzug; L.bilder.length < n && L.offen.includes(eintrag); ) await raf();
+            if (L.offen.includes(eintrag)) L.offen.splice(L.offen.indexOf(eintrag), 1), ev.target.dispatchEvent(kopie);
+        })();
+    };
+    const nach = () => L.probe && L.probe.imHoerer == null && (L.probe.imHoerer = performance.now() - L.probe.hoerer); // Taste wie Klick
+    for (const typ of ["keydown", "keyup", "mousedown"]) window.addEventListener(typ, hoer, true);
+    for (const typ of ["keydown", "mousedown"]) window.addEventListener(typ, nach);
+    rend.setAnimationLoop((t) => {
+        L.takt++;
+        L.taktAm = performance.now();
+        window.__wetterHalten();
+        r._gameLoopTick(t);
+    });
+    // die Wache der Fristen: 120 rAF ohne Bild oder ein Mess-Fehler brechen laut (eine Frist nur in Bildern wartete ewig)
+    L.raf = L.rafAmBild = 0;
+    const wache = async () => {
+        await raf();
+        if (L.fehler || ++L.raf - L.rafAmBild > 120) throw new Error(`latenz ${L.verb}: ${L.fehler || "120 rAF ohne Bild"}`);
+    };
+    // je Probe (Fristen in präsentierten Bildern, nie in Wanduhr): zurück an den Start, die Sicht, 8 ruhige Bilder, dann eine
+    // zufällige Phase gegen den Bild-Takt
+    L.bereit = async (sicht, zurueck, verb) => {
+        L.probe = null;
+        if (L.verb !== verb) (L.vor = null), (L.verb = verb); // die Lage wechselt mit dem Verb (bis latenz-verben maß gehen nach hieb die Hand)
+        if (st.player.mountedArch != null) r.dismountArchitecture(); // die Probe davor stieg ein
+        if (L.wagen && verb !== "einsteigen") r.removeArchitecture(L.wagen), (L.wagen = null); // die Bühne eines Verbs steht nie im nächsten
+        if (L.tier && verb !== "hieb") r.removeCreature(L.tier), r.equipHeld(null), (L.tier = null);
+        if (zurueck || verb === "hieb") st.playerMesh.position.copy(L.start);
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+        if (verb === "hieb" && !(await L.tierStellen())) return false;
+        if (verb === "einsteigen") await L.wagenStellen();
+        for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await wache()) if (L.bilder.length > bis) return false;
+        await new Promise((f) => setTimeout(f, Math.random() * 17));
+        return !!(L.probe = {});
+    };
+    L.treffer = async () => {
+        for (const bis = L.bilder.length + 60; !L.probe.ms && L.bilder.length < bis; ) await wache();
+        for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await wache();
+        return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
+    };
+    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
+    L.tierStellen = async () => {
+        const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
+        if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
+        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
+        for (let i = 0; i < 240 && !r._leibMitte(c); i++) await wache();
+        c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
+        c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
+        st.player.stamina = st.player.staminaMax || 100;
+        for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, await wache()) {
+            const F = r._fadenkreuzStrahl(), v = r._leibMitte(c).sub(F.o).normalize();
+            if (v.distanceTo(F.d) < 0.03) return true;
+            st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
+            st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
         }
-        return aus;
-    })();
+    };
+    // der GT des Einsteigens quer neben dem Start in der Reichweite des Gesetzes, gezeichnet — sonst mäße die Probe nur den Leib
+    L.wagenStellen = async () => {
+        const f = r._blickVorn(st.yaw, 0), d = 0.85 * r.constructor.MOUNT_RANGE_M, x = L.start.x + f.z * d, z = L.start.z - f.x * d;
+        L.wagen = L.wagen || r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: st.yaw });
+        for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await wache()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
+        if (!r._archIsRendered(L.wagen)) throw new Error("latenz einsteigen: der GT ist nicht gezeichnet");
+    };
+    L.ende = () => {
+        for (const [ziel, e] of L.offen.splice(0)) ziel.dispatchEvent(e); // keine Taste bleibt im Verzug hängen
+        GPUCanvasContext.prototype.getCurrentTexture = gct;
+        for (const typ of ["keydown", "keyup", "mousedown"]) window.removeEventListener(typ, hoer, true);
+        for (const typ of ["keydown", "mousedown"]) window.removeEventListener(typ, nach);
+        if (L.tier) r.removeCreature(L.tier);
+        if (st.player.mountedArch != null) r.dismountArchitecture();
+        if (L.wagen) r.removeArchitecture(L.wagen);
+        rend.setAnimationLoop(null);
+        st.playerMesh.position.copy(L.start);
+        r.setCameraMode(L.sicht);
+        const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
+        return d[d.length >> 1];
+    };
 }
 
-// Das Urteil der Erst-Probe (Node, rein): die Mediane je Seite, und die Linse prüft sich — ohne synchrone Pipeline in A
-// trug die Probe keine neuen Stoffe (blind), eine synchrone Pipeline in B ist der Bruch des Gesetzes, und B zeichnet in
-// jedem Durchgang mindestens die Teile, die A im Median zeichnet (nichts verschluckt).
-function erstUrteil(aus) {
-    // der Median: bei gerader Zahl das Mittel der beiden mittleren (bis zur Gegenprüfung 07.10. der untere — die ABBA-Zahl
-    // 1 676,6 / 77,9 ms war in Wahrheit 1 709,0 / 79,3 ms)
-    const med = (xs) => {
-        const s = xs.slice().sort((a, b) => a - b);
-        if (!s.length) return null;
-        const m = s.length >> 1;
-        return s.length % 2 ? s[m] : +((s[m - 1] + s[m]) / 2).toFixed(1);
-    };
-    const A = aus.filter((x) => x.art === "A"),
-        B = aus.filter((x) => x.art === "B");
-    const befunde = [];
-    if (!A.length || !B.length) befunde.push("die Folge braucht A und B");
-    for (const x of A) if (x.sync === 0) befunde.push("A ohne synchrone Pipeline (die Probe trug keine neuen Stoffe — blind)");
-    for (const x of B) if (x.sync > 0) befunde.push(`B mit ${x.sync} synchronen Pipelines (die Erst-Zeichnung kompiliert im Frame)`);
-    const gA = med(A.map((x) => x.gezeichnet));
-    for (const x of B) if (gA != null && x.gezeichnet < gA) befunde.push(`B zeichnete ${x.gezeichnet} Teile, A ${gA} (verschluckt)`);
-    const zeile = (x) =>
-        `  ${x.art}  max ${String(x.max).padStart(7)} ms (Ruhe ${x.ruheMax})  p50 ${x.p50}  synchron ${x.sync}  ` +
-        `asynchron ${x.async}  gezeichnet ${x.gezeichnet}/${x.teile}  Guss ${x.gussMs} ms`;
-    const tabelle =
-        `ERST-PROBE (ABBA in einer Welt): längster Frame-Abstand in 5 s ab dem Auftrag — Median A ${med(A.map((x) => x.max))} ms · ` +
-        `B ${med(B.map((x) => x.max))} ms; synchrone Pipelines je Durchgang A ${med(A.map((x) => x.sync))} · ` +
-        `B ${med(B.map((x) => x.sync))}\n` +
-        aus.map(zeile).join("\n");
-    return { tabelle, befunde, medianA: med(A.map((x) => x.max)), medianB: med(B.map((x) => x.max)) };
+// DAS URTEIL DER LATENZ (`werkbank latenz`; die Seite ist latenzAn oben)
+// Das Urteil der Latenz je Sicht × Verb: p50/p95 (Rang), die Zerlegung im Median, ROT über `soll` ms oder bei einer Probe
+// ohne Bewegung — beim Namen der größten Stufe (eingabe · hoerer · kette bis 1 mm · kurve 1 mm → 1 cm) und der Takte bis zur Bewegung;
+// der Hieb auch bei einem anderen Verb oder einem Hit-Stop unter 2 Bildern (im Median, ein Hieb ohne Treffer hält 0).
+// Jede gemessene Probe trägt die Pflicht-Größen, sonst ROT beim Namen (bis latenz-verben brach jede Tasten-Reihe an imHoerer).
+const PFLICHT = ["eingabe", "imHoerer", "regung", "takte"];
+function latenzUrteil(proben, bildMs, soll = 50) {
+    const rang = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
+    const reihen = {}, rot = [];
+    for (const [name, ps] of Object.entries(proben)) {
+        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]), 0.5);
+        const ohne = PFLICHT.filter((g) => ok.some((p) => !Number.isFinite(p[g])));
+        if (ohne.length) rot.push(`${name} ohne ${ohne.join(", ")}`);
+        for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
+        const z = { eingabe: med("eingabe"), hoerer: med("imHoerer"), kette: med("kette"), kurve: med("kurve") };
+        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
+        Object.assign(e, z, { takte: med("takte") });
+        if (name.endsWith("hieb")) {
+            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(ps.map((p) => p.halt || 0), 0.5));
+            if (/[^,]/.test(verben.replace(/hieb/g, "")) || !(halt >= 2)) rot.push(`${name} Verben ${verben}, Hit-Stop ${halt} Bilder`);
+        }
+        if (e.fehlt || !(e.p95 <= soll)) {
+            const taeter = Object.keys(z).sort((a, b) => z[b] - z[a])[0];
+            rot.push(`${name} p95 ${e.p95} ms > ${soll} (fehlt ${e.fehlt}) — Täter ${taeter} ${z[taeter]} ms, ${e.takte} Takte`);
+        }
+    }
+    return { urteil: rot.length ? "ROT" : "GRÜN", soll, bildMs: bildMs && +bildMs.toFixed(2), reihen, rot, proben };
+}
+// der Selbsttest (ohne Welt, check:statik): gesund GRÜN, sonst ROT beim Namen, ohne zu brechen
+function latenzSelbsttest() {
+    const reihe = (o) => Array.from({ length: 20 }, (_, i) => Object.assign({ eingabe: 0.3, imHoerer: 1, regung: 9, ms: 20 + i, takte: 2, verb: "hieb", halt: 9 }, o));
+    return [
+        [{ "ego/gehen": reihe(), "ego/hieb": reihe() }, /^$/],
+        [{ "ego/wechsel": reihe({ imHoerer: undefined }) }, /ego\/wechsel ohne imHoerer/],
+        [{ "ego/springen": reihe({ ms: 80 }) }, /p95 80 ms > 50 .*Täter kurve/],
+        [{ "ego/hieb": reihe({ halt: 0 }) }, /Hit-Stop 0/],
+        [{ "ego/gehen": [{}, {}] }, /fehlt 2/],
+    ].flatMap(([p, m]) => {
+        try {
+            const r = latenzUrteil(p, 8).rot.join(" · ");
+            return m.test(r) ? [] : [`${Object.keys(p)}: ${r || "GRÜN"}`];
+        } catch (e) {
+            return [`${Object.keys(p)} bricht: ${e.message}`];
+        }
+    });
 }
 
 module.exports = {
-    KLASSEN,
-    haengerAuswerten,
-    haengerTabelle,
-    haengerLinsenBefunde,
+    latenzAn,
+    latenzUrteil,
+    latenzSelbsttest,
+    linseWerten,
+    spurProfil,
     selbsttest,
-    erstUrteil,
     HAENGER_INSTALL:
         `window.__haengerAn = ${haengerAn.toString()};` +
-        `window.__haengerEichmarke = ${haengerEichmarke.toString()};` +
-        `window.__haengerProbeTakt = ${__haengerProbeTakt.toString()};` +
-        `window.__haengerProbeNeben = ${__haengerProbeNeben.toString()};` +
-        `window.__haengerLauf = ${haengerLauf.toString()};` +
-        `window.__erstProbe = ${erstProbe.toString()};`,
+        `window.__haengerProbe = ${__haengerProbe.toString()};`,
 };

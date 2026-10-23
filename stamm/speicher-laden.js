@@ -9,64 +9,72 @@ class AnazhRealm_speicher_laden {
             state = this._loadStateLoadFromStorage();
             if (!state) return false;
         }
-        this._loadStateRestorePlayerPosition(state);
-        this._loadStateRestoreBasicState(state);
-        this._loadStateRestoreWorldMeta(state);
-        this._loadStateRestoreSoulAndAtmosphere(state);
-        this._loadStateRestoreConsumablesAndEquipped(state);
-        this._loadStateRestoreCraftingInventory(state);
-        // Gewachsene Baupläne MÜSSEN VOR `_loadStateRestoreArchitectures` in state.blueprints landen, sonst
-        // läuft spawnArchitecture in einen unbekannten Type-Builder (jeder grown_*-Baum wäre verloren).
-        this._loadStateRestoreGrownBlueprints(state);
-        // nach der Welt (Saat, Erbgut, Gesetz) und vor den Bauten: ein Save eines alten Bodens zieht um
-        this._loadStateRestoreArchitectures(state, this._bodenUmzug(state));
-        this._loadStateRestoreHotbarAndInventory(state);
-        this._loadStateRestoreEmotionsAndDsl(state);
-        this._loadStateRestoreWorldRules(state);
-        this._loadStateRestoreMiscState(state);
-        // Portal-Hallen zurückbauen: jede läuft durch _admitForeignPortalHall — auch Selbst-Imports sind
-        // „fremd" (die R4-Wand kann einen Eintrag nach Rückruf fallen lassen). Stellt die Map-Form her.
-        if (Array.isArray(state.portalHalls)) {
-            for (const raw of state.portalHalls) {
-                const admitted = this._admitForeignPortalHall(raw);
-                if (admitted) this.state.portalHalls.set(admitted.name, admitted);
-            }
-        }
-        // Φ6 (V18.191) — Compute-Spende-Pool restaurieren. Compute-Contributions
-        // laufen durch _admitForeignComputeContribution (R4-Wand auch auf
-        // Self-Imports — ein zwischen Sessions revozierter Anbieter fällt).
-        if (Array.isArray(state.computeContributions)) {
-            for (const raw of state.computeContributions) {
-                const admitted = this._admitForeignComputeContribution(raw);
-                if (admitted) {
-                    // Status aus Snapshot zurück (verified/forged überlebt — die
-                    // Stichproben-Wahrheit ist deterministisch, sie bleibt wahr).
-                    if (raw.status === "verified" || raw.status === "forged") admitted.status = raw.status;
-                    this.state.computeContributions.set(admitted.inputHash, admitted);
+        // DIE SPERRE DES LADENS (speicher.K1): bis der letzte Restore lief, ist die Welt halb — jeder Schreiber, der in ihr
+        // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN saveState die ganze.
+        const sperre = (this._ladeSperre = { verlangt: false });
+        try {
+            this._loadStateRestorePlayerPosition(state);
+            this._loadStateRestoreBasicState(state);
+            this._loadStateRestoreWorldMeta(state);
+            this._loadStateRestoreSoulAndAtmosphere(state);
+            this._loadStateRestoreConsumablesAndEquipped(state);
+            this._loadStateRestoreCraftingInventory(state);
+            // Gewachsene Baupläne MÜSSEN VOR `_loadStateRestoreArchitectures` in state.blueprints landen, sonst
+            // läuft spawnArchitecture in einen unbekannten Type-Builder (jeder grown_*-Baum wäre verloren).
+            this._loadStateRestoreGrownBlueprints(state);
+            // nach der Welt (Saat, Erbgut, Gesetz) und vor den Bauten: ein Save eines alten Bodens zieht um
+            this._loadStateRestoreArchitectures(state, this._bodenUmzug(state));
+            this._loadStateRestoreHotbarAndInventory(state);
+            this._loadStateRestoreEmotionsAndDsl(state);
+            this._loadStateRestoreWorldRules(state);
+            this._loadStateRestoreMiscState(state);
+            // Portal-Hallen zurückbauen: jede läuft durch _admitForeignPortalHall — auch Selbst-Imports sind
+            // „fremd" (die R4-Wand kann einen Eintrag nach Rückruf fallen lassen). Stellt die Map-Form her.
+            if (Array.isArray(state.portalHalls)) {
+                for (const raw of state.portalHalls) {
+                    const admitted = this._admitForeignPortalHall(raw);
+                    if (admitted) this.state.portalHalls.set(admitted.name, admitted);
                 }
             }
-        }
-        // Playtest-Spenden: einfache Array-Wiederherstellung mit Sieb (recordPlaytestRun
-        // bricht die Sig-Wand — beim Restore vertrauen wir der lokalen Signatur, die
-        // sie initial passierte; ein revozierter Anbieter wird trotzdem ausgesiebt).
-        if (Array.isArray(state.playtestContributions)) {
-            this.state.playtestContributions = state.playtestContributions
-                .filter((e) => {
-                    if (!e || !e.commit) return false;
-                    if (e.providedBy && this.state.revokedKeys && this.state.revokedKeys.has(e.providedBy)) {
-                        return false;
+            // Φ6 (V18.191) — Compute-Spende-Pool restaurieren. Compute-Contributions
+            // laufen durch _admitForeignComputeContribution (R4-Wand auch auf
+            // Self-Imports — ein zwischen Sessions revozierter Anbieter fällt).
+            if (Array.isArray(state.computeContributions)) {
+                for (const raw of state.computeContributions) {
+                    const admitted = this._admitForeignComputeContribution(raw);
+                    if (admitted) {
+                        // Status aus Snapshot zurück (verified/forged überlebt — die
+                        // Stichproben-Wahrheit ist deterministisch, sie bleibt wahr).
+                        if (raw.status === "verified" || raw.status === "forged") admitted.status = raw.status;
+                        this.state.computeContributions.set(admitted.inputHash, admitted);
                     }
-                    return true;
-                })
-                .slice(-64);
+                }
+            }
+            // Playtest-Spenden: einfache Array-Wiederherstellung mit Sieb (recordPlaytestRun
+            // bricht die Sig-Wand — beim Restore vertrauen wir der lokalen Signatur, die
+            // sie initial passierte; ein revozierter Anbieter wird trotzdem ausgesiebt).
+            if (Array.isArray(state.playtestContributions)) {
+                this.state.playtestContributions = state.playtestContributions
+                    .filter((e) => {
+                        if (!e || !e.commit) return false;
+                        if (e.providedBy && this.state.revokedKeys && this.state.revokedKeys.has(e.providedBy)) {
+                            return false;
+                        }
+                        return true;
+                    })
+                    .slice(-64);
+            }
+            this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+            if (!externalState) this._loadStateRestoreVersionHistory();
+        } finally {
+            this._ladeSperre = null;
         }
-        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
-        if (!externalState) this._loadStateRestoreVersionHistory();
+        if (sperre.verlangt) this.saveState();
         return true;
     }
 
-    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (Platz → .bak →
-    // IndexedDB des Boot-Vorlaufs, der hier verbraucht wird; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
+    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (IndexedDB des
+    // Boot-Vorlaufs ⇄ Abbild → .bak; der Vorlauf wird hier verbraucht; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
     // Legacy-Single-Key. null, wenn nichts lesbar ist — dann sagt das Log, was die Kette fand.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
@@ -93,11 +101,9 @@ class AnazhRealm_speicher_laden {
             );
             return null;
         }
-        if (fund.quelle !== "Platz")
-            this.log(
-                `Welt aus ${fund.quelle} geladen${fund.befund.length ? ` (${fund.befund.join(", ")})` : ""}.`,
-                fund.quelle.startsWith("IndexedDB (frischer") ? "INFO" : "WARN"
-            );
+        // laut nur die Rettung: ein korruptes Glied oder der .bak (ein atomarer Schreiber hinterlässt keins von beiden)
+        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => /korrupt|unlesbar/.test(b)))
+            this.log(`Welt aus ${fund.quelle} geladen (${fund.befund.join(", ")}).`, "WARN");
         return fund.state;
     }
 
@@ -192,6 +198,7 @@ class AnazhRealm_speicher_laden {
             // Heiß-Pfad liest den Erbgut-Merker direkt.
             this.state.worldMeta = this._weltMetaWechsel(state.worldMeta);
             AnazhRealm._weltMetaHeil(this.state.worldMeta);
+            this._bewohnerFortAlle(); // die Leiber der Bewohner gehen vor ihrem Gedächtnis (`_bewohnerSiedlungen`)
             for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
         } else {
             // Ein Zustand ohne worldMeta ist keine Welt (ein Bruchstück: Baupläne, Hotbar, Seele) — er quert keine Grenze,
@@ -259,29 +266,14 @@ class AnazhRealm_speicher_laden {
             }
             this.state.customSouls = restored;
         }
-        // Studio-Übergabe VOR playerSoul restaurieren (der Seelen-Guss liest _koerperStudioDials); jeder Wert
-        // läuft durch DENSELBEN fail-closed-Validator wie der Empfang. Ohne Feld byte-alt (koerper null,
-        // kreatur {}); Müll fällt still.
-        if (state.studioUebergabe && typeof state.studioUebergabe === "object") {
-            const su = state.studioUebergabe;
-            const ziel =
-                this.state.studioUebergabe && typeof this.state.studioUebergabe === "object"
-                    ? this.state.studioUebergabe
-                    : (this.state.studioUebergabe = { koerper: null, kreatur: {} });
-            const k =
-                su.koerper && typeof su.koerper === "object"
-                    ? this._studioUebergabeValidate("koerper", su.koerper)
-                    : null;
-            if (k) ziel.koerper = { s: k.s, gestalt: k.gestalt };
-            if (su.kreatur && typeof su.kreatur === "object" && !Array.isArray(su.kreatur)) {
-                for (const g of Object.keys(su.kreatur)) {
-                    const e = su.kreatur[g];
-                    const c =
-                        e && typeof e === "object"
-                            ? this._studioUebergabeValidate("kreatur", { gattung: g, s: e.s })
-                            : null;
-                    if (c) ziel.kreatur[c.gattung] = { s: c.s };
-                }
+        // DER PRÄGUNGS-SPEICHER VOR playerSoul restaurieren (der Seelen-Guss liest _koerperStudioDials): jede Prägung läuft durch
+        // DENSELBEN fail-closed-Prüfer wie der Übergabe-Kanal (`_studioWerkPruefen`, die Art aus dem Rezept). Müll fällt still.
+        if (state.studioOv && typeof state.studioOv === "object" && !Array.isArray(state.studioOv)) {
+            const ziel = (this._ensureWorkshopState().studioOv = {});
+            for (const preset of Object.keys(state.studioOv)) {
+                const e = state.studioOv[preset];
+                const p = e && typeof e === "object" ? this._studioWerkPruefen(null, preset, e, e.__gestalt) : null;
+                if (p && Object.keys(p).length) ziel[preset] = p;
             }
         }
         if (typeof state.playerSoul === "string") {
@@ -605,6 +597,8 @@ class AnazhRealm_speicher_laden {
                 freeBorn: a.freeBorn === true,
                 // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
                 feldWurf: a.feldWurf === true,
+                // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`)
+                werk: a.werk === true,
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,
@@ -765,6 +759,8 @@ class AnazhRealm_speicher_laden {
     // Pfad-Buckets (defensiver Merge, fremde Keys ignoriert), Welt-Journal (entries + seen mit entryCap),
     // Legacy-Fähigkeiten (restoreAbility mappt drei historische Nexus-Namen auf ihre DSL-Äquivalente).
     _loadStateRestoreMiscState(state) {
+        // halten.K4 — die steckenden Pfeile der Welt ersetzen die der Seite (`_pfeileSteckenLaden`, gedeckelt, endlich)
+        this._pfeileSteckenLaden(state.pfeileStecken);
         // R6 (V18.152) — gewährte Fähigkeiten wiederherstellen, durch die
         // HEUTIGE Wand (Empfänger-Gesetz: auch Restauriertes prüft die
         // Regel-Wand + die Broadcast-Wand; Name id-förmig; bounded).
@@ -880,14 +876,16 @@ class AnazhRealm_speicher_laden {
         if (!worldId) return { ok: false, reason: "keine worldId" };
         try {
             const json = JSON.stringify(welt);
+            const at = Date.now(); // EIN Stempel für das Abbild und den atomaren Stand in IndexedDB (wie saveState)
+            this._idbPutWorld(worldId, json, at);
             localStorage.setItem(this.worldStorageKey(worldId), json);
             if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)
                 return { ok: false, reason: "der Speicher trägt andere Bytes" };
             this.worldsIndexUpsert({
                 worldId,
                 slug: m.slug || "",
-                bornAt: m.bornAt || Date.now(),
-                lastPlayed: Date.now(),
+                bornAt: m.bornAt || at,
+                lastPlayed: at,
             });
             if (aktiv && !this.activeWorldSet(worldId))
                 return { ok: false, reason: "der Aktiv-Zeiger ließ sich nicht setzen" };

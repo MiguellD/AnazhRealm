@@ -130,19 +130,13 @@ class AnazhRealm_kreatur_leben {
         // bornAt = Identitäts-Marker: persistierte Kreaturen behalten ihn über Reload, neue bekommen jetzt.
         group.userData.bornAt = Date.now();
         // Guss-Stempel der Studio-Dials: Restore-Dials kehren am Wesen zurück; sonst frieren wir die JETZT
-        // wirksame Übergabe der Gattung ein — nur wenn eine aktiv war (Default-Kreaturen bleiben feld-los).
-        // So trägt der Snapshot die Guss-Wahrheit, nicht die spätere Übergabe.
+        // wirksame Prägung der Gattung ein — nur wenn eine aktiv war (Default-Kreaturen bleiben feld-los).
+        // So trägt der Snapshot die Guss-Wahrheit, nicht die spätere Prägung.
         {
             const recIdS = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul];
             if (gussOv) {
                 group.userData.gussDials = gussOv;
-            } else if (
-                recIdS &&
-                this.state.studioUebergabe &&
-                this.state.studioUebergabe.kreatur &&
-                this.state.studioUebergabe.kreatur[recIdS] &&
-                this.state.studioUebergabe.kreatur[recIdS].s
-            ) {
+            } else if (recIdS && this._studioPraegung(recIdS)) {
                 const eff = this._tetrapodaStudioDials(recIdS);
                 if (eff && typeof eff === "object") {
                     try {
@@ -235,6 +229,8 @@ class AnazhRealm_kreatur_leben {
             gier: Number.isFinite(creature.rotation && creature.rotation.y)
                 ? +creature.rotation.y.toFixed(4)
                 : undefined,
+            // halten.K4 — die Pfeile, die im Tier stecken, reisen mit (Glied + Lage im Glied, `_pfeileDesTiers`)
+            pfeile: this._pfeileDesTiers(creature),
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -256,14 +252,14 @@ class AnazhRealm_kreatur_leben {
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {
         if (!snap || !snap.position) return null;
         // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns).
-        // Guss-Dials laufen durch DENSELBEN Validator (Kreatur-PARAMS-Clamps) — ein hand-editierter Save
+        // Guss-Dials laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save
         // schleust keine Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
         let restoreDials;
         if (snap.gussDials && typeof snap.gussDials === "object" && !Array.isArray(snap.gussDials)) {
             const recIdR = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
             if (recIdR) {
-                const clean = this._studioUebergabeValidate("kreatur", { gattung: recIdR, s: snap.gussDials });
-                if (clean && clean.s) restoreDials = clean.s;
+                const clean = this._studioWerkPruefen("kreatur", recIdR, snap.gussDials);
+                if (clean && Object.keys(clean).length) restoreDials = clean;
             }
         }
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
@@ -308,6 +304,7 @@ class AnazhRealm_kreatur_leben {
             c.rotation.y = snap.gier;
             c.userData._steuer = { gier: snap.gier, v: 0 };
         }
+        if (Array.isArray(snap.pfeile)) this._pfeileInsTierLaden(c, snap.pfeile); // halten.K4: die Pfeile stecken wieder
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
         if (snap.equipped && typeof snap.equipped === "object") {
@@ -479,6 +476,8 @@ class AnazhRealm_kreatur_leben {
             durationSeconds: meta.durationSeconds || 30,
             label: meta.label || bp.label || blueprintName,
         });
+        // DAS WESEN ERINNERT, WER ES FÜTTERTE (Ökologie K3): die Gabe senkt die Furcht vor dem Spieler (`_kreaturFurchtErinnert`)
+        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
@@ -725,6 +724,9 @@ class AnazhRealm_kreatur_leben {
         // die Kampf-Furcht läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt — auf der Wand-Uhr
         // floh ein Tier je nach Bildrate verschieden lang)
         creature.userData.fearUntil = this.state.creatureAnimationTime + VG.furcht.fearSec * tProf.fleeMul;
+        // DAS WESEN ERINNERT, WER ES SCHLUG (Ökologie K3): der Schlag des Spielers wird eine Erinnerung — das Furcht-Gesetz
+        // liest sie bei jeder Begegnung (`_kreaturFurchtErinnert`), sie reist im Speicherstand (`_serializeCreature`)
+        if (opts.source === "player") this._creatureRemember(creature, "geschlagen", { von: "spieler" });
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
@@ -816,6 +818,10 @@ class AnazhRealm_kreatur_leben {
                 this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
             }
         }
+        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
+        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`)
+        if (creature.position)
+            this._depositEmotion(creature.position.x, creature.position.z, AnazhRealm._furchtGesetz().F.riss);
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
@@ -1268,7 +1274,7 @@ class AnazhRealm_kreatur_leben {
         const fullPrompt = personaPrompt + "\n\n" + eventHint;
         const name = creature.userData.name || "Wesen";
         // Async-Call ohne await — V3 lebt mit Eventual-Render
-        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt)
+        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt, { hintergrund: true })
             .then((reply) => {
                 if (!reply || reply.error) return;
                 if (reply.say) {
@@ -1373,7 +1379,8 @@ class AnazhRealm_kreatur_leben {
     // ihren Boden. Der Fahr-Schritt las die Oberkante der Säule (`getTerrainHeightAt`): unter dem Überhang des Spalts
     // (Fels 22,3–29,5 m, Luft 16–22,3 m) stand der Boden 12 m ÜBER dem Wagen, der Flug-Zweig des Kerns ließ ihn fallen —
     // −6 428 m nach 30 s, durch den Grund bei 16 m. Leser: `_creatureGroundY`, `_creatureSlopeProbe`, `_kreaturStossSchritt`,
-    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`. gate:fall-waechter (Q) nennt
+    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`, die Geburt eines Bewohners
+    // (`_bewohnerGeburt`). gate:fall-waechter (Q) nennt
     // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
     // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
     _koerperBodenUnter(x, yRef, z) {
@@ -1440,28 +1447,26 @@ class AnazhRealm_kreatur_leben {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
-    // [ATMOSPHERE] Soul-Wahl für eine neue Kreatur per Affinity-Pick: Compound-Tags · Welt-Feld
-    // (Dot-Product), höchste Resonanz gewinnt (dieselbe Logik wie spawnAffinityForBlueprint);
-    // noise 0.15 streut wiederholte Spawns (aus dem Fauna-Strom). Optionales x, z ersetzt die Spieler-Position.
+    // DIE ART WÄHLT DER ORT (Tiere K4, tetrapoda lebensraumWahl): die Boden-Klasse des Orts (`_bodenKlasseAt`) und je Gattung
+    // ihr Lebensraum (Eignung × Häufigkeit), ein Wurf aus dem Fauna-Strom; trägt der Ort keine Geburt, gibt es keine Seele
+    // (null). Vorher wählte ein Affinitäts-Pick über Tags × Feld mit 0,15 Rauschen — die Seelen sind tag-gleich (Lehre 8), es
+    // entschied das Rauschen. Ohne Ort gilt der Ort des Spielers.
     _pickFaunaSoulAtPlayer(x, z, rng = this._faunaRng()) {
         const pm = this.state.playerMesh;
-        if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
-            return this._pickCreatureSoulName(null, rng);
-        }
-        const px = x !== undefined ? x : pm.position.x;
-        const pz = z !== undefined ? z : pm.position.z;
-        const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
-        if (!field) return this._pickCreatureSoulName(null, rng);
-        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags — auch der Wolf (G4a: das Rudel kommt ambient in die Wildnis;
-        // bis dahin hielt ein predator-Filter jedes Raubtier aus der Welt, der Spieler sah ein Rudel nur, wenn er es rief)
-        const souls = AnazhRealm.CREATURE_SOULS;
-        if (!souls) return this._pickCreatureSoulName(null, rng);
-        const candidates = Object.keys(souls).map((name) => ({
-            name,
-            tags: this._creatureSoulTags(name),
-        }));
-        const { pick } = this._affinityPickFromCandidates(candidates, field, 0.15, rng);
-        return (pick && pick.name) || this._pickCreatureSoulName(null, rng);
+        const LG = AnazhRealm._lebensraumGesetz();
+        const klasse = this._bodenKlasseAt(x !== undefined ? x : pm.position.x, z !== undefined ? z : pm.position.z);
+        const g = LG.wahl(klasse, rng(), LG.L);
+        return AnazhRealm.CREATURE_SOUL_NAMES.find((n) => AnazhRealm.TETRAPODA_SOUL_MAP[n] === g) || null;
+    }
+
+    // DIE BODEN-KLASSE an (x, z) (Tiere K4, tetrapoda bodenKlasse): der Rand des nächsten Flusses (`_hydroDistAt`), der Hang
+    // des Gelände-Gesetzes (`_terrainMacroSurfaceY`, aus.hang) und die Bestandsdichte des Walds (`_forestStandDensity`).
+    _bodenKlasseAt(x, z) {
+        const LG = AnazhRealm._lebensraumGesetz();
+        const h = this._hydroDistAt(x, z);
+        const aus = this._bodenKlasseAus || (this._bodenKlasseAus = {});
+        this._terrainMacroSurfaceY(x, z, true, aus);
+        return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
     }
 
     // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
@@ -1610,13 +1615,24 @@ class AnazhRealm_kreatur_leben {
         // der Abstand der Spirale: abstandRaum × der Paar-Raum der Gattung (der Raum des ersten bei Größe 1 — die Größe
         // jedes Tiers ist seine Identität, `_creatureBodySize`); ein Platz, der nicht trägt, gibt sein Tier dem nächsten
         let abstand = 0;
-        for (let k = 0; geboren.length < n && k < 2 * n; k++) {
+        // DER LEBENSRAUM DES WURFS (Tiere K4): liegt der Wurf-Ort im Lebensraum der Gattung, steht jeder Geworfene in ihm (ein
+        // Platz am Saum, der schon Wald ist, gibt sein Tier dem nächsten); ein Akt, der anderswo wirft, wirft frei
+        const LG = AnazhRealm._lebensraumGesetz();
+        const lebt = (x, z) => LG.lebensraum(AnazhRealm.TETRAPODA_SOUL_MAP[soul], this._bodenKlasseAt(x, z), LG.L) > 0;
+        const imRaum = lebt(ort.x, ort.z);
+        // das Fenster der Herde (herde.fensterRaum Paar-Räume): jeder Geworfene steht in ihm zu einem, der schon steht
+        const fenster = AnazhRealm._verhaltenGesetz().herde.fensterRaum / W.abstandRaum;
+        for (let k = 0; geboren.length < n && k < 3 * n; k++) {
+            // der Abstand wächst mit den Geworfenen, nicht mit den Würfen: ein Platz, der nicht trägt, gibt seinen Ring dem
+            // nächsten Winkel
             const a = dreh + k * 2.39996;
-            const x = ort.x + Math.cos(a) * abstand * Math.sqrt(k);
-            const z = ort.z + Math.sin(a) * abstand * Math.sqrt(k);
+            const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
+            const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
             if (k > 0) {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
-                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z)) continue;
+                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z)))
+                    continue;
+                if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
             const gY = this.getTerrainHeightAt(x, z);
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
@@ -1657,9 +1673,10 @@ class AnazhRealm_kreatur_leben {
             if (!ort) continue; // die Wildnis trägt den Ort nicht
             const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
             const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+            if (!soul) continue; // der Lebensraum trägt hier keine Gattung (Tiere K4)
             // Resonanz-Score: Soul-Tags · Field, total
             let score = 0;
-            if (field && soul) {
+            if (field) {
                 const tags = this._creatureSoulTags(soul);
                 for (const ax of ["lebendig", "dichte", "glut", "magieleitung"]) {
                     score += (field[ax] || 0) * (tags[ax] || 0);
@@ -1786,6 +1803,372 @@ class AnazhRealm_kreatur_leben {
                 }
             }
         }
+    }
+
+    // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
+    // in Bild und Kaskade; an der GTX bei 50 Tieren +42 / +25 Befehle, Render 6,0 → 11,4–13,0 ms) ═══
+    // Im Nah-Kreis (der Ziegel: `_kzNah`; ohne Bild KREATUR_NAH_MESH) leben die `KREATUR_SATZ.nahLeiber` Nächsten als Leib (ihre Stufe
+    // wählt der Stufen-Schalter `_gelenkStufe`; die Wahl hält mit dessen Hysterese) — jedes andere
+    // Tier steht und geht im Satz seiner Gestalt (`_gangSatz`, derselbe Baustein wie der Bewohner): die gelenkige Grobstufe
+    // (L1, das Studio-Mesh) als Senken Fell · Glimmen (das Auge, das leuchtet) · Rest und der Wurf (`wurf.seh` der Kern-Zeile).
+    // Sein Leib zeichnet nicht und geht nicht (`_animateTierBaum` fällt für ihn, `_tierSatzGang`); der Satz geht das EINE
+    // Gang-Gesetz in den Bändern der Gangarten (GANG_FOLGE, `_tierSatzBacken`), die Phase rückt mit dem WEG des Leibs — kein
+    // Gleiten. Wer beißt, lebt als Leib (der Biss liest den Kopf, `_kreaturBissTakt`). Die Befehle hängen nie an der Kopfzahl.
+    _tickTierSatz(playerPos) {
+        const st = this.state;
+        const K = AnazhRealm.KREATUR_SATZ;
+        const N = AnazhRealm.KREATUR_NAH_MESH;
+        const echt = !(st.renderer && st.renderer._isHeadlessNull);
+        const M = this._tierSaetze || (this._tierSaetze = new Map());
+        const takt = (this._tierSatzTakt = (this._tierSatzTakt || 0) + 1);
+        for (const Z of M.values()) if (Z) Z.dabei = 0;
+        // ein Gefallener verlässt den Satz (er liegt als Leib, `_tickLeichname`)
+        for (const cr of st.leichname) if (cr.userData._satz) this._tierSatzAus(cr);
+        const kand = this._tierSatzKand || (this._tierSatzKand = []);
+        kand.length = 0;
+        // die Menge: die eigenen Tiere und die Sicht-Kopien der Mitspieler (`_p2pTickRemoteCreatures`; ein Gefallener nie)
+        const kopien = st.p2p && st.p2p.remoteCreatures;
+        const menge =
+            kopien && kopien.size
+                ? st.creatures.concat(Array.from(kopien.values(), (rc) => (rc.tq ? null : rc.mesh)))
+                : st.creatures;
+        for (const cr of menge) {
+            const u = cr && cr.userData;
+            if (!u || !u._gelenk) continue;
+            const d2 = (cr.position.x - playerPos.x) ** 2 + (cr.position.z - playerPos.z) ** 2;
+            // ohne Bild und für die Kopie (kein Ziegel) ist der Nah-Kreis sein Gesetz: KREATUR_NAH_MESH mit seiner Hysterese
+            const r = u._satz ? N.aus : N.ein;
+            if ((echt && !u._kopie ? u._kzNah !== true : d2 >= r * r) || u._ruht === true) {
+                if (u._satz) this._tierSatzAus(cr);
+                continue;
+            }
+            const h = u._gelenk.hyst;
+            // die Hysterese der Nah-Wahl: wer lebt, zählt um (1 − h) näher — ein Paar an gleichem Abstand tauscht nicht je Takt
+            u._satzD2 = u._satz ? d2 : d2 * (1 - h) * (1 - h);
+            kand.push(cr);
+        }
+        kand.sort((a, b) => a.userData._satzD2 - b.userData._satzD2);
+        let leiber = 0;
+        for (const cr of kand) {
+            const u = cr.userData;
+            const VA = u._verhaltenAktion;
+            const nah = leiber < K.nahLeiber || !!(VA && VA.biss);
+            const Z = nah ? null : this._tierSatzWahl(cr);
+            if (Z && Z.dabei < Z.satz.cap) {
+                if (u._satz !== Z) {
+                    this._tierSatzEin(cr, Z);
+                    Z.glieder.push(cr);
+                }
+                u._satzTakt = takt;
+                Z.dabei++;
+            } else {
+                if (nah) leiber++;
+                if (u._satz) this._tierSatzAus(cr);
+            }
+        }
+        const aus = st.creaturesHidden === true;
+        for (const [key, Z] of M) {
+            if (!Z) continue;
+            if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
+            if (Z.satz.senken[0].parent !== st.scene) for (const m of Z.satz.senken) st.scene.add(m);
+            // die Reihe hält (wer bleibt, behält seinen Platz; wer ging, fällt heraus); wer sich rührte, zählt seine Fassung
+            // hoch (`_tierSatzStempel`). Auge und Wurf schreibt der Blick des Bilds (`_tierSatzImBild`).
+            let w = 0;
+            for (const cr of Z.glieder)
+                if (cr.userData._satz === Z && cr.userData._satzTakt === takt) Z.glieder[w++] = cr;
+            Z.glieder.length = w;
+            for (const cr of Z.glieder)
+                if (this._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
+            // ein Satz ohne Tier geht nach `leerTakte` Takten (seine Gestalt kommt wieder: er backt neu)
+            Z.leer = w > 0 ? 0 : Z.leer + 1;
+            if (Z.leer > K.leerTakte) {
+                this._tierSatzFort(Z);
+                M.delete(key);
+            }
+        }
+    }
+
+    // DER BLICK DES BILDS AUF DEN SATZ (im Render-Pfad, `_ruheImBild`: der Frustum DIESES Bilds): das Auge zeichnet jedes
+    // Satz-Tier, das nicht außer Blick ist (`_kreaturAusserBlick`, die Körper-Kugel samt Saum — dieselbe Frage wie die Ruhe),
+    // der Wurf jedes, dessen Schatten den Blick treffen kann (`_kreaturWurfAusserBlick`) — kein anderes: ein Instanz-Satz
+    // cullt nicht je Instanz, weder im Auge noch in den Kaskaden (Gebot 7: die Kosten am Schirm)
+    _tierSatzImBild(fr) {
+        const M = this._tierSaetze;
+        if (!M) return;
+        const aus = this.state.creaturesHidden === true;
+        const licht = this._kreaturLicht();
+        const sicht = this._tierSatzSicht || (this._tierSatzSicht = []);
+        const wurf = this._tierSatzWurf || (this._tierSatzWurf = []);
+        for (const Z of M.values()) {
+            if (!Z) continue;
+            sicht.length = wurf.length = 0;
+            for (const cr of aus ? [] : Z.glieder) {
+                if (!this._kreaturAusserBlick(cr, fr, 0)) sicht.push(cr);
+                else if (this._kreaturWurfAusserBlick(cr, fr, licht)) continue;
+                wurf.push(cr);
+            }
+            this._tierSatzPlaetze(Z.platzB, sicht);
+            this._tierSatzPlaetze(Z.platzW, wurf);
+        }
+    }
+    // DIE PLÄTZE EINER SENKEN-ART des Satzes (Auge oder Wurf: `platz.senken`): dicht je Tier der Liste; ein Platz schreibt
+    // nur, wenn ein anderes Tier ihn nimmt oder sein Tier sich seit dem letzten Schreiben rührte (`_satzVer`), und nur, was
+    // sich schrieb, lädt neu (Gebot 7: die Kosten an der Änderung)
+    _tierSatzPlaetze(platz, liste) {
+        const m4 = this._tierSatzM4 || (this._tierSatzM4 = new THREE.Matrix4());
+        let neu = false;
+        liste.forEach((cr, i) => {
+            const u = cr.userData;
+            if (platz.tier[i] === cr && platz.ver[i] === u._satzVer) return;
+            m4.compose(cr.position, cr.quaternion, cr.scale);
+            for (const m of platz.senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
+            platz.tier[i] = cr;
+            platz.ver[i] = u._satzVer;
+            neu = true;
+        });
+        platz.tier.length = platz.ver.length = liste.length;
+        for (const m of platz.senken) {
+            AnazhRealm._instanzZahl(m, liste.length);
+            if (neu) AnazhRealm._gangSatzNeu(m);
+        }
+    }
+
+    // DER STEMPEL EINES SATZ-TIERS: rührte es sich seit dem letzten Schreiben (Lage, Drehung, Größe, Band + Phase, Gewicht)?
+    // Der Stempel wird zugleich neu gesetzt. Das Gewicht des Gangs klingt im Stand exponentiell aus (`_gaitBlendStep`): unter
+    // `KREATUR_SATZ.gewichtSaum` ist es kein Rühren.
+    _tierSatzStempel(cr) {
+        const u = cr.userData;
+        const s = u._satzS || (u._satzS = new Float64Array(10).fill(NaN));
+        const p = cr.position;
+        const q = cr.quaternion;
+        const g = u._satzBand + u._satzPh - Math.floor(u._satzPh);
+        const v = [p.x, p.y, p.z, q.x, q.y, q.z, q.w, cr.scale.x, g, u._satzW];
+        let regt = false;
+        for (let i = 0; i < 10; i++)
+            if (i === 9 ? !(Math.abs(s[i] - v[i]) < AnazhRealm.KREATUR_SATZ.gewichtSaum) : s[i] !== v[i]) {
+                s[i] = v[i];
+                regt = true;
+            }
+        return regt;
+    }
+
+    // DIE WAHL DES SATZES für ein Tier, das nicht als Leib lebt: der Satz seiner Gestalt (je Grobstufe EINER — die Gestalt ist
+    // seed-invariant, GESTALTEN_JE_REZEPT, ein Guss mit eigenen Studio-Reglern hat seine eigene), sobald sein Gang gebacken
+    // ist; bis dahin (und wenn er nicht entstehen kann) bleibt der Leib.
+    _tierSatzWahl(cr) {
+        const Z = this._tierSatzFuer(cr);
+        return Z && Z.fertig ? Z : null;
+    }
+
+    // DER SATZ EINER GESTALT entsteht an einem eigenen Back-Leib (derselbe Guss wie das Tier, `_buildCreatureGroup` — ohne
+    // Träger setzt er die Pfoten auf die Ebene seiner Lage, `_kreaturFussBoden`): die Quellen sind die Teile seiner Grobstufe,
+    // gebunden an seine Knochen. Der Stand sofort, der Gang im Takt (`_tierSatzBacken`).
+    _tierSatzFuer(cr) {
+        const u = cr.userData;
+        const key = u._gelenk.meshes[0].geometry;
+        const M = this._tierSaetze || (this._tierSaetze = new Map());
+        if (M.has(key)) return M.get(key);
+        M.set(key, null);
+        const K = AnazhRealm.KREATUR_SATZ;
+        const TC = window.__tetrapodaCore;
+        const z1 = this._ofenZeile(TC, "kreatur", 1).zeile;
+        const leib = this._buildCreatureGroup(u.soul, u.gussDials ? { dialsOv: u.gussDials } : undefined);
+        const gl = leib && leib.userData._gelenk;
+        if (!gl || gl.meshes[0].geometry !== key || !z1 || !z1.wurf) {
+            if (leib) this._disposeSoulGroup(leib);
+            this._bruchMelden(`TIER-SATZ: der Back-Leib von „${u.soul}“ trägt die Grobstufe des Tiers nicht`);
+            return null;
+        }
+        const quellen = [];
+        const teilVon = { fell: [], glimm: [], rest: [], wurf: [] };
+        const stoffVon = { fell: null, glimm: null, rest: null };
+        let groesst = 0;
+        for (const m of gl.meshes) {
+            if (!m.isSkinnedMesh) continue;
+            const seh = m.userData.__seh;
+            const q = { m, beid: m.material.side === THREE.DoubleSide };
+            quellen.push(q);
+            const tris = m.geometry.index.count / 3;
+            const k = seh === "haar" ? "fell" : m.material.emissive && m.material.emissive.getHex() ? "glimm" : "rest";
+            teilVon[k].push(q);
+            if (k !== "rest") stoffVon[k] = stoffVon[k] || m.material;
+            else if (tris > groesst) {
+                groesst = tris;
+                stoffVon.rest = m.material;
+            }
+            if (z1.wurf.seh.indexOf(seh) >= 0) teilVon.wurf.push(q);
+        }
+        stoffVon.wurf = stoffVon.fell;
+        if (!stoffVon.fell || !teilVon.wurf.length) {
+            this._disposeSoulGroup(leib);
+            this._bruchMelden(`TIER-SATZ: die Grobstufe von „${u.soul}“ trägt Fell und Wurf nicht`);
+            return null;
+        }
+        const tb = leib.userData._tierBaum;
+        const g = this._gangZeile(false).g;
+        const satz = this._gangSatz(
+            {
+                name: "tier-satz",
+                inventar: "tier",
+                n: K.phasen,
+                baender: K.baender.length,
+                quellen,
+                cap: K.cap,
+                senken: ["fell", "glimm", "rest", "wurf"]
+                    .filter((k) => teilVon[k].length)
+                    .map((k) => ({ teil: k, quellen: teilVon[k], stoff: stoffVon[k], wurf: k === "wurf" })),
+            },
+            (S) => {
+                this._tierBaumNeutralStance(leib);
+                leib.updateMatrixWorld(true);
+                this._gangSatzPose(S, S.baender * S.n, tb.teile, leib.matrixWorld);
+            }
+        );
+        const Z = {
+            satz,
+            leib,
+            fertig: false,
+            glieder: [],
+            dabei: 0,
+            // die Plätze des Auges und des Wurfs: ihre Senken, je Platz das Tier, das ihn zuletzt schrieb, und seine Fassung
+            platzB: { senken: satz.senken.filter((m) => !m.castShadow), tier: [], ver: [] },
+            platzW: { senken: satz.senken.filter((m) => m.castShadow), tier: [], ver: [] },
+            leer: 0,
+            // je Band das Tempo des Backens (die Froude-Zahl der Gangart an der Hüft-Höhe), der Schritt (m je Zyklus bei
+            // Größe 1) und die Phase des ersten Beins in Zeile 0
+            tempo: K.froude.map((fr) => Math.sqrt(fr * g * tb.beinL)),
+            schritt: K.baender.map(() => 0),
+            ph0: K.baender.map(() => 0),
+            back: { band: 0, schritt: 0, k: -1, sub: 0, t: 0, m: 1, dt: 1 / 60 },
+        };
+        M.set(key, Z);
+        return Z;
+    }
+
+    // DER GANG WIRD GEBACKEN (Lehre 14: im Takt, höchstens `je` Schritte des Gang-Gesetzes je Takt): je Band läuft der Back-Leib
+    // mit dem Tempo seiner Gangart geradeaus (`_animateTierBaum`, das EINE Gang-Gesetz der Tiere: Folge, Tastgrad, Pfoten auf
+    // dem Boden), schwingt `einschwingen` Schritte ein und legt dann über EINEN Zyklus (2π/ω) `phasen` Posen in den Puffer.
+    // Sein Weg in diesem Zyklus ist der Schritt des Bands — der Satz rückt seine Phase um Weg / Schritt. Ist das letzte Band
+    // gebacken, lädt die Textur EINMAL neu, der Satz geht, der Back-Leib fällt.
+    _tierSatzBacken(Z, je) {
+        const K = AnazhRealm.KREATUR_SATZ;
+        const S = Z.satz;
+        const B = Z.back;
+        const g = Z.leib;
+        const tb = g.userData._tierBaum;
+        const schritt = (dt) => {
+            B.t += dt;
+            g.position.z += Z.tempo[B.band] * dt;
+            g.updateMatrixWorld(true);
+            this._animateTierBaum(g, B.t, 0, true, null);
+        };
+        const pose = () => {
+            g.updateMatrixWorld(true);
+            this._gangSatzPose(S, B.band * S.n + B.k, tb.teile, g.matrixWorld);
+        };
+        for (; je > 0 && B.band < S.baender; je--) {
+            if (B.schritt === 0) {
+                this._tierBaumNeutralStance(g);
+                tb._gang = null;
+                g.position.set(0, 0, 0);
+                B.t = 0;
+                B.k = -1;
+            }
+            if (B.k < 0) {
+                schritt(1 / 60);
+                if (++B.schritt < K.einschwingen) continue;
+                const T = (2 * Math.PI) / Math.max(1e-3, tb._gang.omega);
+                B.m = Math.max(1, Math.ceil((T / S.n) * 60));
+                B.dt = T / S.n / B.m;
+                Z.schritt[B.band] = Z.tempo[B.band] * T;
+                Z.ph0[B.band] = tb._gang.ph[0];
+                B.k = 0;
+                B.sub = 0;
+                pose();
+                continue;
+            }
+            schritt(B.dt);
+            if (++B.sub < B.m) continue;
+            B.sub = 0;
+            if (++B.k < S.n) pose();
+            else {
+                B.band++;
+                B.schritt = 0;
+            }
+        }
+        if (B.band < S.baender) return;
+        S.tex.needsUpdate = true;
+        Z.fertig = true;
+        this._disposeSoulGroup(Z.leib);
+        Z.leib = null;
+    }
+
+    // EIN TIER BETRITT DEN SATZ: sein Leib zeichnet nicht mehr; Band, Phase und Gewicht übernimmt der Satz aus seinem Gang
+    // (die Phase des ersten Beins gegen die der Zeile 0 seines Bands)
+    _tierSatzEin(cr, Z) {
+        const u = cr.userData;
+        if (u._satz) this._tierSatzAus(cr);
+        const G = u._tierBaum && u._tierBaum._gang;
+        const K = AnazhRealm.KREATUR_SATZ;
+        const band = Math.max(0, K.baender.indexOf(G && G.art));
+        u._satz = Z;
+        u._satzBand = band;
+        u._satzArt = G && G.art !== "stand" ? G.art : null;
+        u._satzPh = G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
+        u._satzW = G && G.schritt > 0 ? Math.min(1, G.schritt) : 0;
+        u._satzX = cr.position.x;
+        u._satzZ = cr.position.z;
+        cr.visible = false;
+    }
+    // EIN TIER VERLÄSST DEN SATZ: der Leib steht in seiner Stand-Pose wieder im Bild (der Gang setzt neu an); trägt das Feld
+    // ihn (fern), gehört `visible` dem Ziegel
+    _tierSatzAus(cr) {
+        const u = cr.userData;
+        u._satz = null;
+        this._tierBaumNeutralStance(cr);
+        if (!this._kzBesitztFeld(cr)) cr.visible = this.state.creaturesHidden !== true;
+    }
+    // DER GANG IM SATZ je Takt (statt `_animateTierBaum`): der Weg des Leibs seit dem letzten Takt — ein Sprung der Lage ist
+    // kein Lauf (`_lageTempo`) — rückt die Phase (`_tierSatzSchritt`)
+    _tierSatzGang(cr, dt) {
+        const u = cr.userData;
+        // ein Takt ohne Zeit rückt keinen Gang (der Weg dieses Takts ist kein Schritt)
+        if (!(dt > 0)) {
+            u._satzX = cr.position.x;
+            u._satzZ = cr.position.z;
+            return;
+        }
+        const dx = cr.position.x - u._satzX;
+        const dz = cr.position.z - u._satzZ;
+        u._satzX = cr.position.x;
+        u._satzZ = cr.position.z;
+        const v = dt > 0 ? AnazhRealm._lageTempo(dx, dz, dt) : 0;
+        this._tierSatzSchritt(u, v === null ? 0 : Math.hypot(dx, dz), v || 0, dt, cr);
+    }
+    // DER SCHRITT IM SATZ: die Gangart des Gang-Gesetzes zum Tempo (das Band; wer steht, behält es), das Gewicht des Gangs
+    // (`_gaitBlendStep`) und die Phase in Zyklen um Weg / Schritt des Bands × Größe
+    _tierSatzSchritt(u, weg, v, dt, cr) {
+        const K = AnazhRealm.KREATUR_SATZ;
+        const Z = u._satz;
+        const gs = window.__tetrapodaCore.gangSchritt(
+            v,
+            u._tierBaum.beinL * (cr.scale.x || 1),
+            this._gangZeile(false),
+            u._satzArt
+        );
+        if (gs.art !== "stand") {
+            u._satzArt = gs.art;
+            u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
+        }
+        u._satzW = this._gaitBlendStep(u._satzW, v, dt);
+        u._satzPh += weg / (Z.schritt[u._satzBand] * (cr.scale.x || 1));
+    }
+    // DER ABSCHIED EINES TIER-SATZES (`_gangSatzAbschied`; ein Back-Leib, der noch backt, fällt mit)
+    _tierSatzFort(Z) {
+        for (const cr of this.state.creatures) if (cr.userData._satz === Z) this._tierSatzAus(cr);
+        if (Z.leib) this._disposeSoulGroup(Z.leib);
+        Z.leib = null;
+        this._gangSatzAbschied(Z.satz);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
@@ -1971,6 +2354,21 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
+// DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
+// Gestalt — `phasen` Posen je Band, die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
+// jeder Gangart: Schritt unter froudeTrab 0,5, Trab bis froudeGalopp 2,5, Galopp darüber); `einschwingen` Gang-Schritte vor dem
+// Zyklus, `backJeTakt` Schritte je Takt (Lehre 14), `cap` Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
+AnazhRealm.KREATUR_SATZ = Object.freeze({
+    nahLeiber: 4,
+    phasen: 16,
+    baender: Object.freeze(["schritt", "trab", "galopp"]),
+    froude: Object.freeze([0.25, 1.5, 4]),
+    einschwingen: 150,
+    backJeTakt: 40,
+    cap: 256,
+    leerTakte: 1800,
+    gewichtSaum: 1e-3,
+});
 // Die Spanne, um die der gezeichnete Boden über dem Gesetz liegen kann (Lehre 22: Surface-Nets auf 1,8 m trägt die Feinform
 // ±0,2 m): der Schritt eines Leibs (`_koerperSchritt`) verlangt über dem Grund des Gesetzes Luft bis Leib-Höhe + Spanne.
 AnazhRealm.KOERPER_SICHT_SPANNE = 0.2;

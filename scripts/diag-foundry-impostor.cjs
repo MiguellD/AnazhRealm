@@ -5,13 +5,13 @@
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
 //     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; KEIN asset-foundry-iframe im DOM; die
-//     gefallenen Methoden sind weg.
+//     gefallenen Methoden wacht gate:constitution (G3).
 //   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
-//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn keine Lieferung aus A mehr
-//     unterwegs ist (`lieferungenLanden`); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
+//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn die Welt
+//     steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
@@ -27,17 +27,7 @@ async function bootPage(browser, nullRenderer) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                typeof window.anazhRealm._foundryEnsureImpostorRecord !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
-    });
+    await page.evaluate(() => window.__weltDa((r) => r.state));
     return { page, pageErrors };
 }
 
@@ -91,14 +81,12 @@ async function installiereBacke(page) {
                 const q = r._impostorBakeQueue || [];
                 if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
                 z._weltNeu = true;
-                const bis = performance.now() + 240000;
-                for (;;) {
+                for (const weiter = window.__deckel(`der Bake von ${z.key}`, 4800); weiter(); ) {
                     if (at.fmt !== "bc" || r._karteRechner()) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
                     }
-                    if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
                     await new Promise((ok) => setTimeout(ok, 50));
                 }
             } finally {
@@ -113,11 +101,10 @@ async function installiereBacke(page) {
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const out = { ready: false, rec: null, err: null, hasIframe: null, cutMethods: null };
+        const out = { ready: false, rec: null, err: null, hasIframe: null };
         try {
             const f = r._ensureAssetFoundry();
-            const dl = performance.now() + 60000;
-            while (f && !f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+            await window.__weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
@@ -128,8 +115,7 @@ async function driveImpostor(page) {
                 rec2 = null,
                 flat1 = null,
                 flat2 = null;
-            const dl2 = performance.now() + 45000;
-            while (performance.now() < dl2) {
+            for (const weiter = window.__deckel("die Impostor-Rekorde", 1500); weiter(); ) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
@@ -173,7 +159,7 @@ async function driveImpostor(page) {
                 const g = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
-                // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline (Echt-GPU 04.10.: 10 → das Bundle starb) —
+                // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline —
                 // gezählt im schlimmsten Fall: ab 1024 Instanzen reist auch instanceMatrix als Vertex-Puffer (r184)
                 const geo = g && g.mesh.geometry;
                 const puffer = geo ? Object.keys(geo.attributes).length + (g.mesh.instanceColor ? 1 : 0) + 1 : 99;
@@ -197,7 +183,7 @@ async function driveImpostor(page) {
                     attribute: geo ? Object.keys(geo.attributes) : [],
                 };
             }
-            // DIE STRICH-WAND am Graphen (Integration W6, Echt-GPU 05.10.): steht die Peilung auf einer Ansichts-Grenze, springt
+            // DIE STRICH-WAND am Graphen (Integration W6): steht die Peilung auf einer Ansichts-Grenze, springt
             // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
             // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
             // (die Albedo je Ansicht A und B, die Normale der nächsten, S2b) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
@@ -216,22 +202,8 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            out.vereinigung = {
-                weltBake: typeof r._karteWeltBacken === "function",
-                rttNachbau: typeof r._bakeImpostorAtlasRTT,
-            };
             // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
             out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
-            // Die iframe-Methoden sind weg (der Karten-Zwilling W6 — Canvas-Atlas je Karte, Umdrehen, Silhouette,
-            // Re-Frame, Rahmen-Quad — steht in gate:altlasten).
-            out.cutMethods = {
-                requestImpostor: typeof r._foundryRequestImpostor,
-                ensureBakeIframe: typeof r._foundryEnsureBakeIframe,
-                buildImpostorRecord: typeof r._foundryBuildImpostorRecord,
-                bakeImpostorRequest: typeof r._foundryBakeImpostorRequest,
-                studioImpostorPayload: typeof r._applyStudioImpostorPayload,
-                baecker: typeof r._foundryBaecker,
-            };
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -239,18 +211,20 @@ async function driveImpostor(page) {
     });
 }
 
-// DIE RUHE VOR TEIL C (S2b-n2, CI 39023416317): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
+// DIE RUHE VOR TEIL C (S2b-n2): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
 // Teil A bestellte, legt bei ihrer Ankunft ihre Zelle in ihm an (`_foundryZug` → `nach` → `_foundryEnsureImpostorRecord`). Ab
 // der neunten wächst er, das rgba8-Ziel wächst leer und die Probe-Karten backen nie nach (der Null-Renderer der Welt backt
 // nicht): die Wand sah 0 px, je nachdem, wie viele Lieferungen der Läufer noch trug (Zelle der Eiche in A: Schicht 0 rot,
-// Schicht 10 grün). Teil C beginnt, wenn keine Lieferung mehr unterwegs ist — in Lieferungen gezählt, nie in Wanduhr.
-async function lieferungenLanden(page) {
+// Schicht 10 grün). Jede Probe leiht der Welt den echten Renderer: was sie noch baut, landet im Probe-Atlas. Teil C
+// beginnt, wenn die Welt steht (A9) — Selbsttest: eine wartende Karte hält die Ruhe.
+async function weltRuht(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const zuege = (r._foundry && r._foundry.zuege) || new Map();
-        let wellen = 0;
-        for (; zuege.size && wellen < 64; wellen++) await Promise.all([...zuege.values()]);
-        return { wellen, offen: zuege.size, foundry: r._weltOffen().foundry };
+        const takte = await window.__weltStehtNach(null, 1800);
+        const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
+        const karte = q.push("fimp:gateRuhe|1") && r._weltSteht();
+        q.pop();
+        return { takte, karte };
     });
 }
 
@@ -409,7 +383,7 @@ async function kleberProbe(page, fmtWunsch) {
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
-            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
+            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt)
             const vorlagen = () =>
                 (mesh.__renderObjekte || [])
                     .flatMap((ro) => ro.getNodeBuilderState().bindings.flatMap((g) => g.bindings))
@@ -471,7 +445,7 @@ async function kleberProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE (K20, 12.10.) =====
+// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE (K20) =====
 // Die Stufe 0 der Karte ist binär (Karten-Gesetz, BC1). Bilinear gelesen schnitt der alphaTest jede vergrößerte Krone in
 // Texel-Treppen (Werkbank, Radeon, Bestand von innen: Texel bis 3,3 px, Blöcke mit rechteckigen Löchern). Die Probe zeichnet
 // eine Karte mit einer DIAGONALEN Kante so nah, dass ein Texel ~4 px misst, und liest die Kontur je Zeile: die Treppe ist
@@ -576,7 +550,7 @@ async function vergroessertProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE (K20, 13.10.) =====
+// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE (K20) =====
 // r184 setzt den positionNode VOR die Instanz-Matrix (WGSL der Karte gelesen): las das Quad dort positionLocal und den
 // Normal-Probe, blickte es aus dem Vorlagen-Raum und die Matrix drehte es danach mit dem Baum — jede Karte stand als
 // feste Tafel in der Drehung ihrer Instanz (die Solitär-Eiche aus 22 m ein Strich, aus 70 m breit). Die Probe stellt
@@ -677,7 +651,7 @@ async function blickProbe(page) {
     }, BLICK_DREHUNGEN);
 }
 
-// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1, 13.10.) =====
+// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1) =====
 // Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
 // Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
 // Matrix danach mit jedem Baum — jeder Baum bog sich in die Richtung seiner eigenen Drehung. Die Probe stellt EINE
@@ -824,7 +798,7 @@ async function windProbe(page) {
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
-    const ruhe = await lieferungenLanden(pageA);
+    const ruhe = await weltRuht(pageA);
     const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
     const C3 = await blickProbe(pageA);
@@ -836,9 +810,7 @@ async function windProbe(page) {
     console.log(`  Atlas-Zelle: ${JSON.stringify(A.rec)}`);
     console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
-    console.log(`  Vereinigung (Kanal/Methoden/kein Nachbau): ${JSON.stringify(A.vereinigung)}`);
     console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
-    console.log(`  gefallene Methoden (erwartet undefined): ${JSON.stringify(A.cutMethods)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
     if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
@@ -882,8 +854,8 @@ async function windProbe(page) {
             if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
-    if (A.vereinigung) {
-        const s = A.strich || {};
+    if (A.strich) {
+        const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
         if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0))
             errs.push(
@@ -891,19 +863,12 @@ async function windProbe(page) {
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
-        if (!A.vereinigung.weltBake) errs.push("A: `_karteWeltBacken` fehlt");
-        if (A.vereinigung.rttNachbau !== "undefined")
-            errs.push(`A: der RTT-Nachbau ` + "`_bakeImpostorAtlasRTT`" + ` lebt noch (${A.vereinigung.rttNachbau})`);
-    } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
+    } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
     if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
-    if (A.cutMethods) {
-        for (const [k, v] of Object.entries(A.cutMethods))
-            if (v !== "undefined") errs.push(`A: die gefallene Methode ${k} existiert noch (${v})`);
-    }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
-    console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
-    if (ruhe.offen) errs.push(`C: ${ruhe.offen} Lieferungen blieben nach ${ruhe.wellen} Wellen unterwegs — die Welt kam nicht zur Ruhe`);
+    console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
+    if (ruhe.karte) errs.push("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
         console.log(

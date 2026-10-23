@@ -1,12 +1,9 @@
-// ziel-zensus.cjs — DER ZIEL-ZENSUS (Gebot 10: die Linse nennt den Täter beim Namen; Auftrag 0710-1 P2, Familie HOST-VRAM).
-// Befund 07.10. (OMEN, GTX 1060, V18.534, Mess-Wiese, 8 Boots): VRAM 149,4 MB gegen das Band 118 MB — davon tragen die
-// Bildschirm-Ziele 71,1 MB und die Kaskaden 24,0 MB, und die Behauptung „die Post-Kette ist das Minimum für TRAA unter r184"
-// stand ohne Beweis. `werkbank band` nennt den VRAM je Erzeuger, `werkbank zerlegen` die Zeit je Verbraucher — wer eine
-// Textur LIEST, nannte keine Linse. Dieser Zensus fährt n echte Frames (die gpu-bank-Runde der Zerleg-Linse) und hält jede
-// GPU-Textur des Hosts mit Name · Format · Größe · Bytes · Erzeuger (Stamm-Methode oder Vendor-Klasse) und jedem Zugriff
-// je Pass fest: Schreiben (Farb-Ziel, Kopie, Hochladen), Lesen (ein Draw oder ein Bündel bindet sie, eine Kopie liest sie,
-// ein Pass lädt ihren Inhalt), die Tiefe eines Passes (getestet · geschrieben · ungenutzt). Daraus urteilt er — Node, rein,
-// mit Selbsttest — über die Täter-Klassen:
+// ziel-zensus.cjs — DER ZIEL-ZENSUS (Gebot 10: die Linse nennt den Täter beim Namen; Auftrag 0710-1 P2, Familie
+// HOST-VRAM). Dieser Zensus fährt n echte Frames (die gpu-bank-Runde der Zerleg-Linse) und hält jede GPU-Textur des
+// Hosts mit Name · Format · Größe · Bytes · Erzeuger (Stamm-Methode oder Vendor-Klasse) und jedem Zugriff je Pass fest:
+// Schreiben (Farb-Ziel, Kopie, Hochladen), Lesen (ein Draw oder ein Bündel bindet sie, eine Kopie liest sie, ein Pass
+// lädt ihren Inhalt), die Tiefe eines Passes (getestet · geschrieben · ungenutzt). Daraus urteilt er — Node, rein, mit
+// Selbsttest — über die Täter-Klassen:
 //   OHNE LESER        ein Ziel wird geschrieben, kein Pass liest es (im Fenster von n Frames)
 //   TEILBAR           zwei Ziele derselben Form leben in keinem Frame zugleich und tragen keinen Inhalt über den Frame —
 //                     ein Ziel trüge beide (Ping-Pong-Klasse)
@@ -56,7 +53,7 @@ function zielZensus(k) {
         if (!be || be.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — der Zensus liest GPU-Befehle" };
         if (!window.__gruppeTex || !window.__viewTex || !window.__pipeTiefe || !window.__buendelInhalt)
             return { fehler: "der VRAM-Abgriff mit Zensus-Grund fehlt (scripts/lib/vram-abgriff.cjs vor dem Seiten-Skript)" };
-        // DIE RUHE DER ERST-ZEICHNUNG zuerst (Integration K haenger × host-vram, 07.10.): eine erste Zeichnung lässt ihre
+        // DIE RUHE DER ERST-ZEICHNUNG zuerst (Integration K haenger × host-vram): eine erste Zeichnung lässt ihre
         // Pipeline asynchron entstehen — ein Leser, dessen Pipeline noch offen ist, zeichnet in den n Frames nicht, und sein
         // Ziel stand „OHNE LESER" (portal-membran, geschrieben beim Hochladen, gelesen erst nach der Pipeline). Gezählt wird
         // das angekommene Bild: dieselbe Regel wie die Ausgabe-Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs).
@@ -266,7 +263,8 @@ function zielZensus(k) {
             for (const v of vendor)
                 if (new RegExp(v.muster).test(name)) return { quelle: v.quelle, methode: suche(v.such) };
             const stamm = name.split(":")[0];
-            for (const c of [name, stamm, stamm.replace(/\d+$/, "")]) {
+            // ein Name aus Stamm und Endung (`spec.name + "-gang"`, der Gang-Satz) trägt sein Literal ohne die Endung
+            for (const c of [name, stamm, stamm.replace(/\d+$/, ""), stamm.replace(/-[a-z]+$/, "")]) {
                 if (!c) continue;
                 const m = suche('"' + c) || suche("'" + c) || suche("`" + c);
                 if (m) return { quelle: "Stamm", methode: m };

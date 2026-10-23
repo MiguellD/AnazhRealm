@@ -1,43 +1,28 @@
-// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen" (V18.494, 30.09.): im
-// Analog-Pfad ist ein gesetzter Bau nur sichtbar, wenn er einen Feld-Slot bekommt
-// (_archZiegelFern). GEMESSEN vor der Heilung: eine gesetzte Eiche + ein Haus blieben
-// 300 Takte ohne jeden Versuch (Verhungern in der Listen-Reihenfolge, 4 Bakes/s über
-// Budget), und nach vorn gezogen brannte die Eiche nach 8 „leer"-Versuchen aus (das
-// Foundry-Mesh lädt asynchron) — dauerhaft unsichtbar, wie 26 von 28 Weltgen-Bauten.
-// Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
+// diag-arch-feld.cjs — DIE LINSE „gesetzte Dinge erscheinen": im Analog-Pfad ist ein gesetzter Bau nur sichtbar, wenn er
+// einen Feld-Slot bekommt (_archZiegelFern). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
 //   A  nah (10 m · 26 m): gesetzte Eiche UND Haus sind binnen 200 Takten sichtbar — das Studio-Mesh steht
-//      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; AAA nah, V18.496: nah ist das
-//      Mesh die Gestalt). Die Eiche hat seit dem Fernwald (05.10.) keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
+//      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; nah ist das Mesh die Gestalt). Die
+//      Eiche hat keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
 //      und das wartet nie hinter einem Karten-Bake (der Bäcker hat seinen Faden, gate:takt T7)
 //   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
 //      Gestalt, nicht die Brücke
 //   A' fern (jenseits der Mesh-Zone): das gesetzte Haus bekommt seinen Feld-Slot — der Feld-Bake-Takt geht
-//      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
-//      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
-//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.),
+//      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte); die
+//      gesetzte Eiche steht dort als ihre Karte (Karten-Zone),
 //      sobald der Bäcker ihre Zelle erreicht: das Karten-Buch prüft das Gesetz (keine fernere Zelle überholt die ihre,
 //      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
-//      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
-//   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
-//      selben Ort, Luminanz-Verhältnis über die gemeinsame Maske im Band 0,8–1,25
-// plus die vier D-Schüsse (artifacts/beweis-e/arch-feld-licht-*.png) aus der EINEN Aufnahme fürs Auge.
+//      gate:fernwald)
+// Das Licht des Felds misst der Lichtweg
+// (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
-const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const argOf = (k, d) => {
-    const i = process.argv.indexOf(k);
-    return i > 0 ? process.argv[i + 1] : d;
-};
 const PORT = Number(process.env.ARCH_FELD_PORT || 4467);
-const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const W = 640,
     H = 360;
 const server = statikServer();
@@ -82,7 +67,6 @@ function kartenGesetz(buch, zelleF) {
 }
 
 (async () => {
-    fs.mkdirSync(OUT, { recursive: true });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
@@ -97,16 +81,10 @@ function kartenGesetz(buch, zelleF) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 300000;
-        while (
-            (!window.anazhRealm || !window.anazhRealm.state || typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(200);
+        await window.__weltDa((r) => r.state);
         const r = window.anazhRealm;
         if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
-        const dlB = performance.now() + 90000;
-        while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
         // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
         let taktFehlerN = 0,
@@ -217,11 +195,10 @@ function kartenGesetz(buch, zelleF) {
             if (ebF && ebF._ziegelSlot) satzBF = true;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
         }
-        // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr nächster
-        // Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein Gesetz — auf
-        // CPU-Raster unter Fremdlast 65–745 Takte je Karte (gemessen 05.10.; die Grenze 1000 maß bis dahin ihn: in 3 von 6
-        // Läufen kam die Karte erst danach, in der Reihe ihrer Zelle). Die Linse wartet bis 4000 Takte und prüft, dass
-        // keine fernere Zelle die ihre überholt.
+        // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr
+        // nächster Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein
+        // Gesetz — auf CPU-Raster unter Fremdlast 65–745 Takte je Karte. Die Linse wartet bis 4000 Takte und prüft,
+        // dass keine fernere Zelle die ihre überholt.
         for (let t = 1001; t <= 4000 && karteBF == null; t++) {
             await tick(1);
             buche(t);
@@ -356,173 +333,6 @@ function kartenGesetz(buch, zelleF) {
         `${C ? "✅" : "❌"} C  die Eiche trägt keinen Feld-Satz (Satz an einer Eiche: ${res.satzBF} · ` +
             `Satz-Schlüssel eines Karten-Dings: ${res.kartenSaetze})`
     );
-    // DIE SCHÜSSE DER LINSE sind die vier D-Bilder aus der EINEN Aufnahme (arch-feld-licht-*.png). Die zwei Augen-Schüsse
-    // (Eiche, Haus) renderten bis 10.10. in ein eigenes Render-Target und waren schwarz (dc=0 — der Bundle-Replay bucht
-    // nichts ins Info); im Ausgabe-Pfad wartet ihr Blick am Boden auf swiftshader-voll über 15 min auf seine Pipelines
-    // (gemessen 10.10.: Protokoll-Frist 900 s gerissen). Sie urteilten nie und fallen.
-    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme + die Bühne für D
-    // D — DAS LICHT DER WELT (das Licht-Modell, ohne Albedo-Störer): am SELBEN Ort einmal eine Feld-Box
-    // (Kapsel-Satz, Albedo 0,5 linear), einmal eine MeshStandard-Box (color 0,5, roughness 1, metalness 0),
-    // dazu der Hintergrund. Die Pixel-Maske ist identisch; Luminanz-Mittel Feld/Mesh muss ~1 sein.
-    // Die Boxen schweben über dem Kronendach (freie Sicht); der Spiel-Loop ruht, die Bühne hält Mittag · Sonne · Sommer,
-    // die Sonne wirft keinen Schatten (das Feld hat keinen Schatten-Lookup). Gelesen wird die EINE Aufnahme (der echte,
-    // getonte Frame): bis 10.10. las D ein eigenes Render-Target — linear, ungetont, blind für die Bundle-Bürger; an der
-    // Mess-Wiese lag die Bild-Mitte dort in JEDEM Modus bei 0/0/0, im Ausgabe-Pfad Feld 136/155/164 · Mesh 137/156/164.
-    // Und der Feld-Pass muss STEHEN, bevor D schießt (gemalt und sein Panorama gebacken — vorher zeichnet er nichts, das
-    // Fern-Farb-Budget malt seinen Farb-Job über Takte, nah zuerst): sonst verglich D die Mesh-Box mit dem Hintergrund.
-    const FELD_TAKTE = 3000;
-    const schussPx = (modus) =>
-        page.evaluate(
-            async (modus, DW, DH, FELD_TAKTE) => {
-                const r = window.anazhRealm;
-                const THREE_ = window.THREE;
-                const rend = r.state.renderer;
-                rend.setAnimationLoop(null);
-                if (!window.__feldSteht) {
-                    // Existenz vor Messung: Takte, bis der Feld-Pass gemalt und sichtbar ist — sonst LAUT rot mit Stand.
-                    let n = 0;
-                    const f = () => r.state.feldPass;
-                    while (n < FELD_TAKTE && !(f() && f().laeufe > 0 && f().mesh && f().mesh.visible)) {
-                        window.__wetterHalten();
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {}
-                        n++;
-                        await new Promise((q) => setTimeout(q, 5));
-                    }
-                    const fp = f();
-                    if (!(fp && fp.laeufe > 0 && fp.mesh && fp.mesh.visible))
-                        return {
-                            fehlt:
-                                `der Feld-Pass steht nach ${n} Takten nicht (` +
-                                (fp
-                                    ? `gemalt ${fp.laeufe}× · im Flug ${fp.flug ? "ja" : "nein"} · ` +
-                                      `Panorama ${fp.panoLaeufe || 0}× · sichtbar ${!!(fp.mesh && fp.mesh.visible)}`
-                                    : "kein Feld-Pass") +
-                                ")",
-                        };
-                    window.__feldSteht = { takte: n };
-                }
-                window.__buehne();
-                if (r.state.directionalLight) r.state.directionalLight.castShadow = false;
-                let L = window.__licht;
-                if (!L) {
-                    const pm = r.state.playerMesh.position;
-                    const x = pm.x + 6,
-                        z = pm.z + 6;
-                    const y = r._voxelSurfaceY(x, z) + 45; // über dem Kronendach: freier Blick, Himmel als Grund
-                    const M = new THREE_.Matrix4().makeTranslation(x, y, z);
-                    const handle = r._weltKapselSpawn("licht-linse:box", M, () => [
-                        {
-                            box: true,
-                            c: new THREE_.Vector3(0, 0, 0),
-                            h: new THREE_.Vector3(1, 1, 1),
-                            farbe: { r: 0.5, g: 0.5, b: 0.5 },
-                        },
-                    ]);
-                    const mat = new THREE_.MeshStandardNodeMaterial({ roughness: 1, metalness: 0 });
-                    mat.color.setRGB(0.5, 0.5, 0.5);
-                    const mesh = new THREE_.Mesh(new THREE_.BoxGeometry(2, 2, 2), mat);
-                    mesh.position.set(x, y, z);
-                    mesh.castShadow = false;
-                    mesh.receiveShadow = false;
-                    r.state.scene.add(mesh);
-                    const cam = { px: x - 5, py: y + 3.2, pz: z - 6, lx: x, ly: y, lz: z };
-                    L = window.__licht = { handle, mesh, cam };
-                }
-                if (!L.handle) return { fehlt: "Feld-Box ohne Slot" };
-                r._weltFeldAktiv(L.handle, modus === "feld");
-                L.mesh.visible = modus === "mesh";
-                const cam = r.state.camera;
-                cam.position.set(L.cam.px, L.cam.py, L.cam.pz);
-                cam.lookAt(L.cam.lx, L.cam.ly, L.cam.lz);
-                cam.updateMatrixWorld(true);
-                if (r.state.playerMesh) r.state.playerMesh.visible = false;
-                try {
-                    if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
-                } catch (_e) {}
-                const u8 = (await window.__ausgabeAufnahme(DW, DH, 1)).u8;
-                const cv = document.createElement("canvas");
-                cv.width = DW;
-                cv.height = DH;
-                const ctx = cv.getContext("2d");
-                const img = ctx.createImageData(DW, DH);
-                img.data.set(u8.subarray(0, DW * DH * 4));
-                ctx.putImageData(img, 0, 0);
-                let bin = "";
-                for (let i = 0; i < u8.length; i += 0x8000)
-                    bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
-                return { b64: btoa(bin), png: cv.toDataURL("image/png") };
-            },
-            modus,
-            320,
-            180,
-            FELD_TAKTE
-        );
-    const bilder = {};
-    // Erster Schuss wärmt (Pipelines, Sichtbarkeit nach dem Umsetzen); der Hintergrund zählt zuletzt.
-    for (const modus of ["warm", "feld", "mesh", "aus"]) {
-        const t0 = Date.now();
-        const b = await Promise.race([
-            schussPx(modus),
-            new Promise((res) => setTimeout(() => res({ fehlt: `Zeit-Wand 600 s im Modus ${modus}` }), 600000)),
-        ]);
-        console.log(`  D-Schuss ${modus}: ${b.fehlt || "ok"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-        if (modus === "warm" && !b.fehlt) {
-            const w = await page.evaluate(() => window.__feldSteht);
-            console.log(`  D  der Feld-Pass stand nach ${w ? w.takte : "?"} weiteren Takten (Grenze ${FELD_TAKTE})`);
-        }
-        if (!b.fehlt) {
-            b.px = Buffer.from(b.b64, "base64");
-            fs.writeFileSync(
-                path.join(OUT, `arch-feld-licht-${modus}.png`),
-                Buffer.from(b.png.split(",")[1], "base64")
-            );
-        }
-        bilder[modus] = b;
-    }
-    await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const L = window.__licht;
-        if (L) {
-            if (L.handle) r._weltFeldFrei(L.handle);
-            r.state.scene.remove(L.mesh);
-        }
-        if (r.state.directionalLight) r.state.directionalLight.castShadow = true;
-        r.state.renderer.setAnimationLoop(r._gameLoopTick);
-    });
-    const { aus: bg, feld, mesh } = bilder;
-    let D = false;
-    if (bg.fehlt || feld.fehlt || mesh.fehlt) {
-        console.log(`❌ D  Feld-Licht: ${bg.fehlt || feld.fehlt || mesh.fehlt}`);
-    } else {
-        // Gemeinsame Maske: Pixel, die BEIDE Boxen gegenüber dem Hintergrund ändern.
-        let n = 0,
-            lf = 0,
-            lm = 0;
-        const rf = [0, 0, 0],
-            rm = [0, 0, 0];
-        const lum = (p, i) => 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2];
-        const diff = (p, i) =>
-            Math.abs(p[i] - bg.px[i]) + Math.abs(p[i + 1] - bg.px[i + 1]) + Math.abs(p[i + 2] - bg.px[i + 2]);
-        for (let i = 0; i < bg.px.length; i += 4) {
-            if (diff(feld.px, i) <= 24 || diff(mesh.px, i) <= 24) continue;
-            n++;
-            lf += lum(feld.px, i);
-            lm += lum(mesh.px, i);
-            for (let c = 0; c < 3; c++) {
-                rf[c] += feld.px[i + c];
-                rm[c] += mesh.px[i + c];
-            }
-        }
-        const q = lm > 0 ? lf / lm : 0;
-        D = n > 300 && q >= 0.8 && q <= 1.25;
-        const f = (v) => v.map((x) => Math.round(x / Math.max(1, n))).join("/");
-        console.log(
-            `${D ? "✅" : "❌"} D  Feld-Licht ≙ Mesh-Licht (neutrale Box am selben Ort): Feld rgb ${f(rf)} · Mesh rgb ${f(rm)} ` +
-                `· Luminanz ${(lf / Math.max(1, n)).toFixed(1)} / ${(lm / Math.max(1, n)).toFixed(1)} = ${q.toFixed(2)} (Band 0,8–1,25) · ${n} px`
-        );
-    }
     await browser.close();
     server.close();
     const TF = !(res.taktFehler && res.taktFehler.n > 0);
@@ -531,7 +341,7 @@ function kartenGesetz(buch, zelleF) {
             ? "✅ T  keine Ausnahme im Spiel-Takt"
             : `❌ T  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
     );
-    const gruen = A && AM && AF && Bk && C && D && TF && pageErrors.length === 0;
+    const gruen = A && AM && AF && Bk && C && TF && pageErrors.length === 0;
     console.log(
         gruen
             ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld oder als Karte."

@@ -1,4 +1,4 @@
-// diag-portal-membran.cjs — V18.464 DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
+// diag-portal-membran.cjs — DIE PORTAL-VOLLENDUNG (Konsum-Beweis).
 // Beweist im ECHTEN Boot (foundry-ON, warmes Buch, Null-Renderer), dass ein
 // Tor-Gestalt-Portal in der Welt VOLLSTÄNDIG integriert ist:
 //
@@ -10,7 +10,7 @@
 //   Z (Ziel, D8): das Fenster wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
 //     Welt (die Datei, die das Studio in seiner Welt backt, `worlds/tor-ziele.json`, gate:studio-huelle H5) mit dem SHA-Stempel
 //     ihrer Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
-//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
+//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel; die Methoden trägt gate:altlasten).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
 //     Fallback), und die Uniforms atmen (time folgt der Bild-Uhr `_bildZeit`).
@@ -19,10 +19,8 @@
 //     seitlich am Pfosten vorbei feuert NICHT.
 //   O (das Tor ohne Ziel, D8-n1): ein Web-Portal (signierte Adresse, keine Welt auf diesem Boden) und ein Tor auf eine Welt, die der
 //     Export nicht kennt, LEBEN — Eintrag in der Registry, Hindurchgehen feuert, das Licht des Tors brennt, nur das Fenster
-//     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. Vorher (eaa3773a) hing der Eintrag am Ziel: kein
-//     Hindurchgehen, keine Flügel, kein Licht.
-//   B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
-//     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken (Spike der Prüfbühne 10.10.). Gezählt wird,
+//     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
+//     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken. Gezählt wird,
 //     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
 //       B1 aus der Ring-Mitte nach −x zeichnen Membranen (nicht vakuös), die im Rücken nicht alle
 //       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran zeichnet — Täter beim Namen (Gestalt, Abstand)
@@ -52,15 +50,15 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
 async function blickProbe(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
-    const t0 = performance.now();
     let r = null,
         st = null,
         stand = null;
-    // DIE BEREITSCHAFT ZÄHLT FENSTER, NIE EINTRÄGE (D8-n2): seit D8-n1 lebt das Tor ohne sein Ziel — die Registry trägt den Eintrag,
-    // bevor sein Fenster steht (`_tickPortalMembranes`). Die Bereitschaft zählte die Einträge (`size >= 3`): 8 ohne Mesh, die Probe
-    // startete mit 0 Fenstern (CI 38771709172, swiftshader: binnen 1,5 s kein neuer Scan), und B2, B3, HS, BS waren auf der leeren
-    // Menge grün. Bereit ist der Ring, wenn jedes Tor, dessen Ziel eine Zeile hat, sein Fenster trägt (der 1-Hz-Scan baut es) und
-    // mindestens drei Fenster stehen; ein Tor ohne Ziel (Web-Portal, Welt ohne Panorama) lebt ohne Fenster und wartet nicht.
+    // DIE BEREITSCHAFT ZÄHLT FENSTER, NIE EINTRÄGE (D8-n2): seit D8-n1 lebt das Tor ohne sein Ziel — die Registry trägt
+    // den Eintrag, bevor sein Fenster steht (`_tickPortalMembranes`). Die Bereitschaft zählte die Einträge (`size >=
+    // 3`): 8 ohne Mesh, die Probe startete mit 0 Fenstern, und B2, B3, HS, BS waren auf der leeren Menge grün. Bereit
+    // ist der Ring, wenn jedes Tor, dessen Ziel eine Zeile hat, sein Fenster trägt (der 1-Hz-Scan baut es) und
+    // mindestens drei Fenster stehen; ein Tor ohne Ziel (Web-Portal, Welt ohne Panorama) lebt ohne Fenster und wartet
+    // nicht.
     const fensterStand = () => {
         const Z = r._torZielAtlas;
         const tore = [...r._portalMembranes.values()];
@@ -75,24 +73,22 @@ async function blickProbe(opts) {
         }
         return { tore: tore.length, fenster: tore.filter((rec) => rec.mesh).length, wartend };
     };
-    while (performance.now() - t0 < 300000) {
-        r = window.anazhRealm;
-        st = r && r.state;
-        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && r._portalMembranes && r._torZielAtlas) {
-            // DAS FENSTER WARTET AUF SEIN ZIEL (D8): erst wenn jedes angefragte Ziel steht (oder bricht) und der nächste 1-Hz-Scan
-            // lief, stehen alle Membranen des Rings — vorher hing B1 an der Reihenfolge der Ankünfte (15.10.: drei Membranen ohne
-            // das Drachentor im Blick nach −x, 0 von 3; dieselbe Welt mit allen vier: 1 von 4)
-            await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt));
-            stand = fensterStand();
-            if (stand.fenster >= 3 && stand.wartend.length === 0) break;
-        }
-        await warte(250);
-    }
+    // der Ring steht (das EINE Warten, welt-boot `__weltDa` und `__gebautNach`): erst die Welt mit Renderer und Membranen, dann je
+    // Takt die Ziele (`kommt`) und der Stand der Fenster — der Deckel zählt Takte, in denen die Welt nichts offen hat (bis K-WANDUHR
+    // 300 s Wanduhr)
+    r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w._portalMembranes && w._torZielAtlas);
+    st = r.state;
+    await window
+        .__gebautNach("die Fenster am Ring", {
+            fertig: () => (stand = fensterStand()).fenster >= 3 && !stand.wartend.length,
+            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await warte(250)),
+            max: 120,
+        });
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
     if (!stand || stand.fenster < 3 || stand.wartend.length)
         return {
             fehler:
-                `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren nach 300 s` +
+                `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren, die Welt hat nichts mehr offen` +
                 (stand && stand.wartend.length ? ` — ohne Fenster: ${stand.wartend.join(" · ")}` : ""),
         };
     if (opts.nurWarten) return { bereit: true };
@@ -168,18 +164,14 @@ async function blickProbe(opts) {
 }
 
 // H (K64-n1, die Hellen Tafeln; D8 das Tor als Fenster): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der
-// AUSGABE-Pfad die Pixel jeder Membran. Bis D8 stand die Öffnung milchig-weiß (der Nebel-Kasten, der Anzeige-Wert der Shell); seit
-// D8 zeigt sie das Panorama der Ziel-Welt durch den Film. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
+// AUSGABE-Pfad die Pixel jeder Membran. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
 //   A    die Welt, wie sie die Membran zeigt: der Ausgabe-Pfad der Welt (TRAA, Tonung, Belichtung aus dem Licht), gezeichnet
 //        werden nur die gemessenen Bürger — Membran und Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
 //        Schatten (`_membranBauFor`): ihr Pixel hängt an keinem anderen Bürger. Die ganze Welt im Bild baute auf swiftshader jedes
 //        Programm im Blick, das die Bühne neu lichtet, und jedes, das während H ankam (CI Lauf 38674187005: A 10 kalt 113 s,
 //        M 6 kalt 227 s). Die Lichter bleiben (kein Programm wechselt seinen Licht-Schlüssel).
 //   M    die Maske OHNE Programm (K64-n3): dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
-//        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). Bis K64-n3 malte M die Membranen magenta: EIN kaltes
-//        Programm, in der CI 195 s von 233 s des Gates (Lauf 38670064375); A gegen A wiederholt weicht kein Pixel ab (die Uhr
-//        steht, TRAA ist bei gleicher Lage gleich), die Differenz-Maske deckt sich mit der magenta (swiftshader: 7 876 von 8 014
-//        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
+//        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
 // DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
@@ -391,8 +383,8 @@ async function blickStufe(check) {
             b.im.membran > 0 && b.im.membran < b.membranen,
             `${b.im.membran} von ${b.membranen} Membranen`
         );
-        // KEIN URTEIL AUF DER LEEREN MENGE (D8-n2): B2, B3, HS und BS waren mit 0 Fenstern grün (CI 38771709172) — jedes Urteil
-        // hier verlangt die Fenster, die es richtet
+        // KEIN URTEIL AUF DER LEEREN MENGE (D8-n2): B2, B3, HS und BS waren mit 0 Fenstern grün — jedes Urteil hier
+        // verlangt die Fenster, die es richtet
         check(
             "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran zeichnet",
             b.membranen >= 3 && b.weg.membran === 0,
@@ -432,8 +424,8 @@ async function blickStufe(check) {
             b.hell.n > 200 && hellRot(b.hell, b.hell.milch),
             hellZeile(b.hell, b.hell.milch)
         );
-        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
-        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
+        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm (ein kaltes kostet auf swiftshader Minuten); HMS:
+        // derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
         check(
             "HM die Maske zeichnet ohne kaltes Programm",
             b.hell.kalt.M === 0,
@@ -461,28 +453,19 @@ async function blickStufe(check) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false, warm: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.geisttor) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
         res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
 
         // ── Bühne: ein Welt-Portal (geisttor-Gestalt) direkt vor dem Spieler ──
@@ -535,7 +518,7 @@ async function blickStufe(check) {
                 quelle: zr.quelle,
                 fehler: zr.fehler,
                 stempel: zr.stempel,
-                halb: !!(Z.tex && Z.tex.type === window.THREE.HalfFloatType),
+                geteilt: !!(Z.tex && Z.tex.type === window.THREE.UnsignedInt5999Type),
                 zeilen: Z.tex ? Z.tex.image.height / G.h : 0,
                 n: Z.n,
                 welten: Z.welten.size,
@@ -551,9 +534,6 @@ async function blickStufe(check) {
         // ── N (Absenz, D8): kein Nebel-Kasten, kein Nebel-Gesetz, kein Host-Panorama ──
         res.n = {
             gesetz: mu.fog === undefined && globalThis.__portaCore.NEBEL_GESETZ === undefined,
-            methoden: ["_nebelMaterialFor", "_nebelGraph", "_torPanorama", "_torPanoMal"].filter(
-                (m) => typeof r[m] === "function"
-            ),
         };
 
         // ── M: Membran-Bau + Atem ──
@@ -584,18 +564,16 @@ async function blickStufe(check) {
             res.n.keinNebelInSzene = fremd === 0;
         }
 
-        // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
+        // ── F: Tür-Flügel öffnen sich dem Reisenden ──
         // Erst die NÄHE (die Stufe misst vom Auge, K43: Stufe 0 bis 9,5 m — nur sie trägt die Flügel), dann MATERIALISIEREN
         // (das Asset ist async — der Rewarm-Weg von Hand, ein gesetzter Bau wechselt im Takt wie im Spiel), dann Ticks.
         p.x = ex;
         p.z = ez + 2.0;
         p.y = ey + 1.0;
-        const dlF = performance.now() + 90000;
-        while (!(entry.instanced && entry._lodLevel === 0) && performance.now() < dlF) {
-            if (entry.instanced) r._tickArchitectureLOD(99, r._lodAuge());
-            else r._rebuildArchitectureMesh(entry);
-            await new Promise((r2) => setTimeout(r2, 300));
-        }
+        await window.__gebautNach(entry, {
+            fertig: () => entry.instanced && entry._lodLevel === 0,
+            bau: () => (entry.instanced ? r._tickArchitectureLOD(99, r._lodAuge()) : r._rebuildArchitectureMesh(entry)),
+        });
         res.fInstanced = entry.instanced === true;
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
@@ -762,8 +740,8 @@ async function blickStufe(check) {
             String(Z.stempel)
         );
         check(
-            `Z: der Atlas der Ziele ist rgba16float, 512 breit, 256 Zeilen je angefragter Welt (${Z.zeilen} Zeilen, ${Z.welten} Welten, ${Z.n} gesetzt)`,
-            Z.halb === true && Z.breit === 512 && Z.zeilen === Z.welten && Z.n >= 1 && Z.n <= Z.zeilen
+            `Z: der Atlas der Ziele ist rgb9e5ufloat, 512 breit, 256 Zeilen je angefragter Welt (${Z.zeilen} Zeilen, ${Z.welten} Welten, ${Z.n} gesetzt)`,
+            Z.geteilt === true && Z.breit === 512 && Z.zeilen === Z.welten && Z.n >= 1 && Z.n <= Z.zeilen
         );
         check("Z: die Zeile trägt Licht (das Panorama ist nicht leer)", Z.daten === true);
     } else check("Z: Ziel-Block erreicht", false);
@@ -775,11 +753,6 @@ async function blickStufe(check) {
         );
     if (out.n) {
         check("N: kein Nebel-Gesetz am Tor (mu.fog, NEBEL_GESETZ fielen)", out.n.gesetz === true);
-        check(
-            "N: keine Methode des Nebel-Kastens und des Host-Panoramas",
-            out.n.methoden.length === 0,
-            out.n.methoden.join(" · ")
-        );
         check(
             "N: kein Nebel-Kasten an der Membran, keiner in der Szene",
             out.n.keinKasten === true && out.n.keinNebelInSzene === true

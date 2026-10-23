@@ -37,7 +37,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { koerper: [0, 1] },
+            kindStages: { koerper: [0, 1, 2, 3] },
             budget: {
                 koerper: {
                     // 1310-15 (Lehre 19, Re-Mint deklariert): die Stufe erreicht ihr Band, das Feld `band` fällt und `tris`
@@ -47,6 +47,16 @@
                     // feinen (das alte Ziel 8 000 ließ den Wurf-Zwilling den Umriss nur noch zu 0,92 decken).
                     0: { tris: 40000, draws: 8, schatten: 1 },
                     1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
+                    // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
+                    // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
+                    // auf die Zeile; sie wirft über die NUR-WURF-Stufe 3 (der Wurf-Satz trägt sie).
+                    // Re-Mint mensch.K1 Staffel 2 (Lehre 19, die Kosten der Menge im Asset): 3 995 → 1 695 Dreiecke — die Glieder unter
+                    // FERN_KLEIN (Finger, Nasenflügel; ab 8 m unter zwei Pixeln) fallen wie im Wurf, das Auge bleibt (Haushalt bewohner).
+                    2: { tris: 1700, draws: 6, schatten: 2 },
+                    // DIE NUR-WURF-STUFE (mensch.K1 Staffel 2, rein additiv, Studio-Vertrag B2): nie gezeigt, sie IST der Wurf jedes
+                    // Bewohners im Nah-Kreis (der Wurf-Satz, `_bewohnerSatz`) — die Kosten der Menge in den Kaskaden; dieselbe Pipe,
+                    // die Hüllen kollabieren auf `band` (ihre Säume stehen fest: der Kollaps landet ~30 darüber), `tris` ist die Decke.
+                    3: { tris: 760, band: 700, draws: 6, schatten: 3, nurWurf: true },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,
@@ -566,13 +576,15 @@
                         // LUFTKONTROLLE (Zensus 17.07., rein additive DATEN-Zeile):
                         // die vier C5-Gefuehls-Hebel der Beschleunigungs-/Brems-
                         // Kurven als Gesetzbuch-Daten (exp-Lerp 1-e^(-k*dt):
-                        // kAcc Boden-Beschleunigung ~70 ms bis 63 %, kAccLuft die
-                        // schwaechere Luftkontrolle, kBrake der Boden-Schlitter
-                        // ~110 ms, kBrakeLuft laesst den Sprung-Bogen ballistisch).
-                        // Byte-gleiche Zahlen des historischen Host-Satzes; der
-                        // Wirt liest fail-soft (_bewegungsBlock): Kern kalt ->
-                        // seine Literale.
-                        luft: { kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
+                        // kAcc Boden-Beschleunigung 25 ms bis 63 %, 98 % des Tempos
+                        // in 0,1 s (die Anfahr-Rampe der Spiele, Source/Quake;
+                        // leib.K1: kAcc 14 brauchte ~31 ms Sim bis 1 cm Gang, die
+                        // Taste bis zum bewegten Leib im Bild p95 > 50 ms),
+                        // kAccLuft die schwaechere Luftkontrolle, kBrake der
+                        // Boden-Schlitter ~110 ms, kBrakeLuft laesst den Sprung-
+                        // Bogen ballistisch). Der Wirt liest fail-closed
+                        // (_bewegungsBlock).
+                        luft: { kAcc: 40, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
                         // SPRUNG-FENSTER (Zensus 17.07., rein additiv): die zwei
                         // Plattformer-Toleranzen -- coyoteSec (Sprung kurz NACH
                         // der Kante) + bufferSec (Space kurz VOR der Landung
@@ -1350,6 +1362,89 @@
         rubber: Object.freeze([24, 0.03]),
     });
 
+    // ── VERHALTEN (Meisterkarte mensch.K2, rein additiv; die Form des Kapitels VERHALTEN in tetrapoda-core) — DER TAG EINES
+    //    MENSCHEN als REINE Funktion der Uhr: wer er ist (sein Same, die Rolle seines Hauses aus dem Fachwerk-Plan) und
+    //    welche Stunde schlägt, ergibt, wo er sein soll und was er dort tut. Kein Zustand, kein Zufall: derselbe Same und
+    //    dieselbe Stunde ⇒ dasselbe Wort (bit-gleich). TAGES_GESETZ trägt die Wenden des Tags in Stunden (0–24): aufstehen
+    //    (wach), zum Werk (werk[0]), Mittag (mittag), Feierabend (werk[1]), zu Bett (ruhe); jeder Mensch verschiebt jede
+    //    Wende um bis zu ±streuH (aus seinem Samen — das Dorf wacht nicht im selben Atemzug). Die Rollen der Häuser mit
+    //    eigenem Werk (die Schmiede, die Kirche, das Gasthaus) tragen ihre eigenen Stunden; im Wohnhaus wählt der Same den
+    //    Beruf nach `berufe` (markt: der Stand auf dem Platz · feld: der Acker · hof: der eigene Hof). Mittags und abends geht
+    //    der Anteil platzMittag / platzAbend auf den Platz, wer mittags nicht dort ist, isst daheim (drinnen; die Rolle mit
+    //    mittagAmWerk am Werk). DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder
+    //    über den Platz (Brunnen, Markt) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. Das Tempo des Gangs
+    //    ist das Gesetz des Leibs (tetrapoda tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und
+    //    gate:kreatur-takt bewohner. ──
+    var TAGES_GESETZ = Object.freeze({
+        wach: 6.5,
+        werk: Object.freeze([8, 17]),
+        mittag: Object.freeze([12, 13]),
+        ruhe: 22,
+        streuH: 0.5,
+        platzMittag: 0.45,
+        platzAbend: 0.4,
+        morgenPlatzH: 1,
+        gang: 1.3,
+        rollen: Object.freeze({
+            schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
+            kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
+            gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+        }),
+        berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
+    });
+    // die Zahl des Samens zu einem Wort: [0, 1), rein (der Same ist eine ganze Zahl, das Wort benennt die Wende)
+    function _tagZahl(same, wort) {
+        var h = ((same >>> 0) ^ 0x9e3779b9) >>> 0;
+        for (var i = 0; i < wort.length; i++) {
+            h = Math.imul(h ^ wort.charCodeAt(i), 0x85ebca6b);
+            h ^= h >>> 13;
+        }
+        h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+        h ^= h >>> 16;
+        return (h >>> 0) / 4294967296;
+    }
+    // DER BERUF: das Werk der Rolle seines Hauses (schmiede · kirche · gasthaus), im Wohnhaus aus dem Samen nach `berufe`
+    function berufVon(same, rolle) {
+        if (Object.prototype.hasOwnProperty.call(TAGES_GESETZ.rollen, rolle)) return rolle;
+        var u = _tagZahl(same, "beruf");
+        var B = TAGES_GESETZ.berufe;
+        var a = 0;
+        for (var k in B) {
+            a += B[k];
+            if (u < a) return k;
+        }
+        return "hof";
+    }
+    // DER PLAN DER STUNDE: heim / werk / platz sind die Orte des Menschen (der Wirt reicht sie; ohne Werk ist der Hof das
+    // Werk, ohne Platz das Heim der Platz). Liefert { ort, wo, akt, drinnen } — ort ist einer der gereichten Orte, akt eines
+    // von schlaf · morgen · arbeit · mittag · abend; drinnen = der Mensch ist in seinem Haus (an der Tür ungezeichnet).
+    function tagesPlan(same, rolle, heim, werk, stunde, platz) {
+        var G = TAGES_GESETZ;
+        var R = G.rollen[rolle] || {};
+        var h = ((Number(stunde) % 24) + 24) % 24;
+        var j = function (wort) {
+            return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
+        };
+        var wach = G.wach + j("wach");
+        var w0 = (R.werk || G.werk)[0] + j("werk0");
+        var w1 = (R.werk || G.werk)[1] + j("werk1");
+        var m0 = G.mittag[0] + j("mittag");
+        var m1 = m0 + (G.mittag[1] - G.mittag[0]);
+        var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
+        var w = werk || heim;
+        var p = platz || heim;
+        var aus = function (wo, akt, drinnen) {
+            return { ort: wo === "werk" ? w : wo === "platz" ? p : heim, wo: wo, akt: akt, drinnen: !!drinnen };
+        };
+        if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
+        if (h < wach + G.morgenPlatzH) return aus("platz", "morgen", false);
+        if (h < w0) return aus("heim", "morgen", false);
+        if (h >= m0 && h < m1 && !R.mittagAmWerk)
+            return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("heim", "mittag", true);
+        if (h < w1) return aus("werk", "arbeit", false);
+        return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
@@ -1385,6 +1480,10 @@
         PARAMS_BY_KIND: { koerper: PARAMS },
         LEIB: LEIB,
         WEBE: WEBE,
+        // mensch.K2 — DER TAG (VERHALTEN): das Gesetz, der Beruf, der Plan der Stunde (Leser: _bewohnerListe, _tickBewohner)
+        TAGES_GESETZ: TAGES_GESETZ,
+        berufVon: berufVon,
+        tagesPlan: tagesPlan,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,

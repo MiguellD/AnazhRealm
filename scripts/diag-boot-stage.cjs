@@ -162,11 +162,10 @@ function KALT_PROBE() {
         _rebuildArchitectureMesh: "Bauten",
         _foundryBuildGroup: "Gruppen-Bau",
         _foundryIngestBook: "Buch",
-        _ortWahlScheibe: "Ort-Wahl",
         _spawnSettlementSlot: "Dorf",
     };
     // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
-    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
+    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn
     const wickle = (P) => {
         for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];

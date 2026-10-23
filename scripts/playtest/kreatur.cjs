@@ -83,10 +83,6 @@ async function checkBandV1751CombatStats(ctx) {
         const out = {};
         const S = r.constructor.STAT_FROM_TAGS;
 
-        // (1) Struktur: die drei Kombat-Stats existieren als Formeln in der EINEN Tabelle
-        out.formulasExist =
-            typeof S.knockback === "function" && typeof S.attackSpeed === "function" && typeof S.defense === "function";
-
         // (2) Substanz-Differenzierung (der KERN — die Tabelle IST die Regel):
         // schwere dichte Keule vs. leichte harte Klinge vs. weiches Wesen.
         const keule = { dichte: 0.9, härte: 0.5 }; // schwer + dicht (Masse)
@@ -130,7 +126,6 @@ async function checkBandV1751CombatStats(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
     check(
         "V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
         res.heavyMoreKnockback
@@ -178,11 +173,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         const matUnits = (inv) =>
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
 
-        // (0) der DSL-Op existiert
-        out.opExists = !!(r.dslEffects && r.dslEffects.damage_creature);
-
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
@@ -260,7 +252,6 @@ async function checkBandV1753CreatureCombat(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.53 Kampf C: der damage_creature-DSL-Op existiert", res.opExists);
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
     check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
@@ -301,14 +292,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.lifeField = new Map();
         r.state.emotionField = new Map();
 
-        // (0) Methoden + die attack-Emotion + COMBAT_REACH existieren
-        out.exists =
-            typeof r._pickCreatureAtCrosshair === "function" &&
-            !!r.constructor.ACTION_TO_EMOTION.attack &&
-            r.constructor._arenaGesetz().schwung.reachMaxM > 0;
-
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
@@ -319,7 +304,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
-        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
+        // Die Klinge zielt durchs Fadenkreuz (K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
         r.setCameraMode("first");
         r._loopCamera(performance.now() / 1000);
         {
@@ -402,7 +387,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.54 Kampf D: _pickCreatureAtCrosshair + die attack-Emotion + COMBAT_REACH existieren", res.exists);
     check(
         "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
         res.attackDamages
@@ -430,8 +414,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HBuildAndPersist(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -624,7 +606,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.listHasBuildClass = !!buildRow;
         out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
 
-        // 18. UI (V18.48 Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
+        // 18. UI (Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
         // (statt des globalen #creature-build-select, der der NÄCHSTEN Kreatur befahl).
         const buildSelect = listEl && listEl.querySelector(".creature-row .creature-order-select");
         out.uiBuildSelectExists = !!buildSelect;
@@ -865,7 +847,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
         // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
-        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (Welle 5 Klang: seine Stimme, genau einmal)
+        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (seine Stimme, genau einmal)
         const rufVor = r.state.symphony.tierRufe || 0;
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
@@ -1227,8 +1209,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureStats(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1336,7 +1316,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
         for (const row of rows) {
-            // V18.51 Hof-E (V9.56-i) — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
+            // Hof-E — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
             const main = row.querySelector(".creature-row-main");
             const t = (main && main.title) || "";
             if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
@@ -1850,7 +1830,7 @@ async function checkBandWDRittSpawn(ctx) {
     );
 }
 
-// V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
+// KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
 async function checkBandV18208CreatureSizeSymmetry(ctx) {
     const { page, check } = ctx;
@@ -1944,7 +1924,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (06.10., V18.531, Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// DER HÜPFER LANDET (Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf

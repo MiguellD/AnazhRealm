@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW4LofiPad(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -122,12 +120,12 @@ async function checkBandW4LofiPad(ctx) {
                 !!sym.lofi.gain &&
                 !!sym.lofi.filter &&
                 !!sym.lofi.melodyGain &&
-                // V8.91 — die Lead-Stimme sitzt über dem Pad.
+                // die Lead-Stimme sitzt über dem Pad.
                 sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
+                // die Groove-Schicht + Noise-Puffer.
                 !!sym.lofi.grooveGain &&
                 !!sym.lofi.noiseBuffer &&
-                // V8.93 Phase 4 — die Bass-Schicht.
+                // die Bass-Schicht.
                 !!sym.lofi.bassGain &&
                 sym.lofi.degree === 0 &&
                 typeof sym.lofi.rngState === "number";
@@ -158,7 +156,7 @@ async function checkBandW4LofiPad(ctx) {
             emo.joy = 0;
             emo.peace = 0;
             out.melodyDensityEmotion = melJoyTotal > melPeaceTotal;
-            // V8.90 — Rhythmus + Dynamik: über 12 Phrasen gibt es
+            // Rhythmus + Dynamik: über 12 Phrasen gibt es
             // verschiedene Noten-LÄNGEN (Halbtakt/Viertel) UND
             // verschiedene Lautstärken (starker vs schwacher Takt).
             const durSet = new Set();

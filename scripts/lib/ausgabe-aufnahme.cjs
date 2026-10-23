@@ -1,9 +1,8 @@
-// ausgabe-aufnahme.cjs — DIE EINE AUFNAHME der Look-Sonden (V18.503, Gebot 10: die Linse nennt,
+// ausgabe-aufnahme.cjs — DIE EINE AUFNAHME der Look-Sonden (Gebot 10: die Linse nennt,
 // was der Spieler SIEHT). Ein eigenes Render-Target liefert in r184 LINEARE, ungetonte Werte:
 // `currentToneMapping`/`currentColorSpace` greifen nur am Ausgabe-Ziel (`isOutputTarget`). Die
 // Beweisbilder aaa8–aaa11, die Wiesen- und die Fell-Linse lasen so — dunkle Schattenseiten, harte
-// Kontraste, ausgebrannte Lichter, die das Spiel nie zeigt (gemessen 01.10.: Prüf-Kiste im Render-
-// Target navy, im präsentierten Canvas hell-lavendel; das Ausgabe-Target trifft den Canvas-
+// Kontraste, ausgebrannte Lichter, die das Spiel nie zeigt (das Ausgabe-Target trifft den Canvas-
 // Screenshot pixelgleich im Bild).
 //
 // Der Weg hier: das Render-Target wird per `setOutputRenderTarget` zum Ausgabe-Puffer, dann läuft
@@ -150,7 +149,7 @@ function wetterBuch(seit) {
 // Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
-// (Leben-Schau 2, 09.10.) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
+// (Leben-Schau 2) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
 function wetterSetzen(wort) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -169,7 +168,7 @@ function wetterSetzen(wort) {
     return st.weather;
 }
 
-// DER UHR-SPION (die Linse der Uhr, Leben-Schau 2, 09.10.): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
+// DER UHR-SPION (die Linse der Uhr, Leben-Schau 2): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
 // Der EINE Uhr-Schreiber des Spiels (`_uhrSetzen`, falls es ihn gibt) bucht je Aufruf seine Quelle (`human` · `regler` ·
 // `nexus` · `rule:…` · `laden` …) und einen verweigerten Zug als „verweigert"; `state.timeOfDay` selbst trägt einen Accessor:
 // wer die Uhr am Schreiber vorbei setzt, steht als „roh" mit den Spiel-Rahmen seines Stapels im Buch (in der Schau: ein
@@ -216,7 +215,7 @@ function uhrSpion() {
             wert = v;
         },
     });
-    if (typeof r._uhrSetzen === "function" && !Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
+    if (!Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
         r._uhrSetzen = function (t, quelle) {
             const vor = this.state.timeOfDay;
             const q0 = S.quelle,
@@ -325,27 +324,23 @@ function uhrHalten() {
     r._tickPortalMembranes(performance.now() / 1000);
 }
 
-// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie in Takten, nie in Wanduhr (ruht der Loop, schaltet
-// sie ihn und stellt Kamera und Stunde zurück); der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht
-// seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973 Takte). Sonst bricht der Schuss LAUT beim Täter.
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
+// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
+// nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
-    const takte = () => (r._weltStand ? r._weltStand.takte : 0);
-    const t0 = takte();
-    for (let k = 0, vor, o; !r._weltSteht() && k < (max || 1800); k += o.foundry + o.chunks + o.wald ? 0 : 1) {
-        vor = takte();
-        await new Promise((ok) => requestAnimationFrame(ok));
-        o = r._weltOffen();
-        if (takte() !== vor) continue;
-        r._gameLoopTick(performance.now());
+    const takt = async () => {
+        await window.__seitenTakt();
         cam.position.copy(p);
         cam.quaternion.copy(q);
         if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
-    }
+    };
+    // steht sie schon, schießt die Bühne ohne Takt (ein Takt rendert und tickt, was die Linse für den Schuss gesetzt hat)
+    const n = r._weltSteht() ? 0 : await window.__weltStehtNach(takt, max);
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
@@ -354,9 +349,8 @@ async function weltStehtWarten(max) {
     await r._himmelFrisch();
     r._applyDayNightToScene();
     const W = r._weltStand || {};
-    if (!r._weltSteht())
-        throw new Error(`DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${W.ruhe | 0}, zuletzt brach sie: ${W.grund}`);
-    return takte() - t0;
+    if (!r._weltSteht()) throw new Error(`DIE WELT STEHT NICHT nach dem Himmel des Schusses: zuletzt brach sie: ${W.grund}`);
+    return n;
 }
 
 function buehne(o) {
@@ -372,17 +366,70 @@ function buehne(o) {
     // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
+    // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
+    r._naesseTakt(o && o.naesse != null ? o.naesse : 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
-    // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
-    // E 0,28 statt 1,89). Bis 07.10. erzwang jeder Aufruf eine PMREM-Regeneration (~25 Render-Pässe), und das Einschwingen von
-    // `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll — ohne Drift malt der Sprung nichts.
+    // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
     r._himmelSprung = true;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
+    r._applyDayNightToScene();
+    // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
+    // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
+    // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
+    const buehnenTiere = () => st.creatures.filter((c) => c.userData.buehne).length;
+    if (o && o.tiere > 0) {
+        const p = st.playerMesh.position;
+        st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + o.tiere - buehnenTiere());
+        let saat = 11;
+        const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let i = 0; i < 400 && buehnenTiere() < o.tiere; i++) {
+            const w = zufall() * 2 * Math.PI, d = 15 + 45 * zufall(), x = p.x + d * Math.cos(w), z = p.z + d * Math.sin(w);
+            const c = r._landAt(x, z, 0.3) && r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy");
+            if (c) c.userData.buehne = true;
+        }
+        if (buehnenTiere() < o.tiere) throw new Error(`DIE BÜHNE: ${buehnenTiere()} von ${o.tiere} Tieren stehen`);
+    }
+    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather, tiere: buehnenTiere() };
+}
+
+// DIE TIERE DER BÜHNE im Selbsttest (ohne Welt, Attrappen; Land nur östlich des Spielers): 50 Tiere stehen im Ring 15–60 m auf
+// Land, ein zweiter Ruf stellt keines dazu, eine Welt ohne Platz bricht laut.
+function buehneSelbsttest() {
+    const v = [], tiere = [], w0 = global.window;
+    const r = {
+        state: { creatures: tiere, maxCreatures: 10, playerMesh: { position: { x: 5, z: 7 } } },
+        setSeason: () => true,
+        _naesseTakt() {},
+        _tickRain() {},
+        _applyDayNightToScene() {},
+        getTerrainHeightAt: () => 0,
+        _landAt: (x) => x > 5,
+        spawnCreatureAt: (x, y, z) => tiere[tiere.push({ position: { x, z }, userData: {} }) - 1],
+    };
+    global.window = { anazhRealm: r, __weltaktSpion() {}, __wetterSetzen: (w) => (r.state.weather = w), __uhrHalten() {} };
+    try {
+        buehne({ wetter: "stormy", tiere: 50 });
+        const ring = tiere.filter(
+            (c) => c.position.x > 5 && Math.abs(Math.hypot(c.position.x - 5, c.position.z - 7) - 37.5) <= 22.5
+        );
+        if (tiere.length !== 50 || ring.length !== 50 || r.state.weather !== "stormy")
+            v.push(`Sturm + 50 Tiere: ${tiere.length} gestellt, ${ring.length} im Ring auf Land, Wetter ${r.state.weather}`);
+        if (buehne({ tiere: 50 }).tiere !== 50 || tiere.length !== 50) v.push(`der zweite Ruf stellt ${tiere.length - 50} dazu`);
+        r._landAt = () => false;
+        let laut = "still";
+        try {
+            buehne({ tiere: 60 });
+        } catch (e) {
+            laut = e.message;
+        }
+        if (!/50 von 60/.test(laut)) v.push(`eine Welt ohne Platz bricht nicht laut (${laut})`);
+    } finally {
+        global.window = w0;
+    }
+    return v;
 }
 
 // DIE MEMBRAN OHNE FILM (D8, die Linse milchweiss — K5 `klassenMasse` liest Milch gegen das Bild ohne Film): `an` setzt jeder
@@ -402,7 +449,7 @@ function membranOhneFilm(an) {
         if (!mat) continue;
         n++;
         const G =
-            typeof r._membranGraph === "function" && rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+            rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
         if (G && G.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
@@ -432,9 +479,8 @@ function membranOhneFilm(an) {
     return { n, ohneZiel };
 }
 
-// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern —
-// gemessen 01.10. (aaa13 Haus fern, aaa14 Kreatur fern): ein Tier lief in die Kamera und füllte das
-// Bild. Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
+// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
+// (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
 // und LOD laufen weiter.
 function tiereHalten() {
     const r = window.anazhRealm;
@@ -453,7 +499,7 @@ function tiereHalten() {
     };
 }
 
-// DIE RUHE DER ERST-ZEICHNUNG (Welle K, `_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
+// DIE RUHE DER ERST-ZEICHNUNG (`_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
 // misst (die Ausgabe-Aufnahme, der Ziel-Zensus): was zum ersten Mal zeichnet, baut je Render-Aufruf einen Stoff und lässt
 // seine Pipeline asynchron entstehen; in Frames am Stück erfüllt sich kein Versprechen. `frame` schaltet Frames mit einer
 // Pause für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt, kein Draw auf seine Pipeline wartet und keine
@@ -492,7 +538,7 @@ function erstRuhe(frame, opt, wer) {
                 v0 = E.verschoben,
                 w0 = E.wartetN;
             frame();
-            // DER GEGENDRUCK DER GPU (K60-N3): der nächste Frame kommt erst, wenn das Gerät diesen abgegeben hat. Eine Pause
+            // DER GEGENDRUCK DER GPU: der nächste Frame kommt erst, wenn das Gerät diesen abgegeben hat. Eine Pause
             // von 0 ms schob Frames schneller in den GPU-Prozess, als swiftshader sie rastert — die Rückmeldung jedes
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
@@ -537,7 +583,7 @@ function erstRuhe(frame, opt, wer) {
 // näher als 1 m, Gelände näher als 2 m und höchstens 1 m unter dem Auge — die Kamera an der Böschung oder in der Wand; die Linse der
 // Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r }: im Bild, ohne
 // Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
-// steht. Anlass 13.10.: vier Beweisbilder standen in Laub und Zweigen (K17 Dorfhang, K20 Waldrand, K24 Tanne, K16 Wald).
+// steht.
 function abnahmeMessen(opt) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -553,10 +599,10 @@ function abnahmeMessen(opt) {
         for (const e of st.architectures || [])
             if (e && e.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
     }
-    const RADIUS = 2;
     const E = cam.position;
-    // DER FUSS DES ZIELS (gemessen 13.10., Werkbank: die Blick-Wahl stand hinter einer Kuppe, die Birke zeigte nur die Krone,
-    // der Strahl zum Ziel-Punkt war frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
+    // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt
+    const RADIUS = z ? Math.min(2, 0.5 * Math.hypot(z.x - E.x, z.y - E.y, z.z - E.z)) : 2;
+    // DER FUSS DES ZIELS (hinter einer Kuppe zeigt ein Baum nur die Krone, der Strahl zum Ziel-Punkt ist frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
     // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand).
     const fussY = (q) => {
         if (q.fuss === false) return undefined;
@@ -578,8 +624,7 @@ function abnahmeMessen(opt) {
                   ohne,
                   ziel: z ? { x: z.x, y: z.y, z: z.z, name: z.name, saum: z.saum, fussY: fussY(z) } : null,
               });
-    // DER VORDERGRUND (gemessen 13.10., echte GPU: die Blick-Wahl stand frei, doch eine Kuppe 2–4 m vor dem Auge füllte ein Drittel
-    // des Bilds): mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
+    // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
     // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
     let vorn = null;
     if (z && nd.ziel) {
@@ -619,8 +664,7 @@ function abnahmeMessen(opt) {
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
         },
         sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
-        // DIE GESTALT DES ZIELS (gemessen 13.10., echte GPU: drei gesetzte Bäume ungebaut, das Bild zeigte einen leeren Hang und
-        // war frei): jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
+        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
         ziel: nd.ziel
             ? Object.assign(nd.ziel, {
                   gestalt: ohne.map((id) => {
@@ -684,7 +728,7 @@ function blickWahl(opt) {
     return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, posen };
 }
 
-// DAS GANZE BILD (04.10., echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
+// DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
 // des Frames in Originalgröße, nie das verkleinerte Bild — 1280×720 aus 1920×1080 waren ein 2/3-Ausschnitt,
 // 640×360 ein Drittel (gemessen: dieselbe Kamera, 640 = die linke obere 640×360-Ecke des 1920er Bildes). Die
 // Aufnahme rendert darum IMMER in Canvas-Größe (was der Spieler sieht) und mittelt danach auf W×H herunter.
@@ -698,7 +742,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const BH = Math.max(1, Math.round(db.y));
         const rt = new T.RenderTarget(BW, BH, { depthBuffer: true, samples: 0 });
         const prevOut = typeof rend.getOutputRenderTarget === "function" ? rend.getOutputRenderTarget() : null;
-        // DAS ZIEL DES RENDERERS mit zurück (06.10., echte GPU, `werkbank zerlegen --bilder`): im Direktpfad (ohne Post-Kette)
+        // DAS ZIEL DES RENDERERS mit zurück: im Direktpfad (ohne Post-Kette)
         // stellt r184 am Ende von `_renderScene` das aktuelle Ziel auf `_renderTarget || _outputRenderTarget` — nach einer
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
@@ -706,7 +750,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         const weltTakte =
             window.__buehneUhr && !(opt && opt.satz === "messung") ? await window.__weltStehtWarten() : null;
-        // DIE BLICK-WAHL (K32) vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
+        // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
         const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
@@ -731,7 +775,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         rend.setOutputRenderTarget(rt);
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
-            // (Listen-/Seiten-Upload + Pipelines, gemessen 30.09.).
+            // (Listen-/Seiten-Upload + Pipelines).
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
@@ -744,15 +788,13 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Loop standen die Ringe noch um die VORIGE Kamera — die Aufnahme schwingt sie für diese ein (Kachel um
             // Kachel, bis keine mehr fehlt; A9-n2: die Streu trug die Armlänge des vorigen Schusses).
             for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
-            // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
+            // DIE ERST-ZEICHNUNG (`_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
-            // erfüllt sich kein Versprechen (gemessen 07.10., Werkbank, Wiese: ein Bär, der eben ins Bild kam, fehlte im
-            // Beweisbild). Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
+            // erfüllt sich kein Versprechen. Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
             // für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt und keine Pipeline offen ist. Steht die
             // Erst-Zeichnung 120 s ohne Fortschritt (kein Bau, keine Pipeline wird bereit; `opt.erstFristMs`, die Wand prüft mit
             // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene
-            // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis (bis 07.10. brach sie nach 60 s
-            // still ab und lieferte das Bild ohne Marke).
+            // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis.
             const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
@@ -775,7 +817,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
                 // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
                 // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
-                if (typeof r._schattenAlleNeu === "function") r._schattenAlleNeu();
+                r._schattenAlleNeu();
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
@@ -797,7 +839,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             const ms = performance.now() - t0;
             // WebGPU kopiert Zeilen auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster
             // durch: bei W·4 ∤ 256 (z. B. 480 oder 160 px) lag jede Zeile versetzt — gestreifte Bilder,
-            // Mittel über Polster-Nullen (gemessen 01.10.: 8×8-Probe exakt ¼ zu dunkel). Hier fällt es.
+            // Mittel über Polster-Nullen. Hier fällt es.
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
             const zeile = BW * 4;
             const schritt = roh.length > zeile * BH ? Math.ceil(zeile / 256) * 256 : zeile;
@@ -932,7 +974,7 @@ function wetterSelbsttest() {
     return v;
 }
 
-// DAS URTEIL DER HIMMELS-WACHE (rein, Node; Leben-Schau 2, 09.10.: „Uhr und Wetter gehören dem Spieler"). `g` = ein getakteter
+// DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
 // takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
 // ROT, beim Namen:
@@ -1214,7 +1256,7 @@ function himmelSelbsttest() {
             "ROT",
             "kein Wetter-Zug zieht ein gewünschtes",
         ],
-        // DAS WESEN IM SCHÖPFER-MODUS (Gegenprüfung 10.10.): sein Vorschlag läuft von selbst — verweigert/gewünscht grün, als
+        // DAS WESEN IM SCHÖPFER-MODUS: sein Vorschlag läuft von selbst — verweigert/gewünscht grün, als
         // Schreiber rot beim Namen, und fehlt es im Buch, ist es ungeprüft
         [
             "Wesen verweigert",
@@ -1327,6 +1369,7 @@ module.exports = {
     himmelSelbsttest,
     weltaktUrteil,
     weltaktSelbsttest,
+    buehneSelbsttest,
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
@@ -1345,6 +1388,7 @@ module.exports = {
         `window.__uhrSpion = ${uhrSpion.toString()};` +
         `window.__bildUhren = ${bildUhren.toString()};` +
         `window.__uhrHalten = ${uhrHalten.toString()};` +
+        require("./welt-boot.cjs").WARTEN_SEITE +
         `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +

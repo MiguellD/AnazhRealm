@@ -41,7 +41,7 @@ const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
 // DIE MESSORTE (S1 W1f): das Band gilt überall, gemessen wird an benannten Orten — die Mess-Wiese (W0, Wald und
 // Wiese fern vom Ursprung) und der Genesis-Ring (die Ankunft: zehn Kern-Portale, die Vorschauen). Je Ort Spieler,
 // Blick, Dorf-Zug, Ort-Takt und seine EIGENE Ratsche (die Kosten zweier Orte sind zwei Hüllen, nie eine). Ohne Wahl
-// gilt der erste Ort (die Mess-Wiese, die Serie seit 04.10.).
+// gilt der erste Ort (die Mess-Wiese).
 function ortOf(haushalt, id) {
     const orte = (haushalt && haushalt.messorte) || [];
     const o = id == null ? orte[0] : orte.find((x) => x.id === id);
@@ -50,11 +50,12 @@ function ortOf(haushalt, id) {
 }
 
 // DIE RATSCHE JE ORT × GERÄT × SICHT (K26): die Kosten eines Orts sind auf der Radeon (iGPU) andere als auf der GTX (alte
-// dGPU) und in der Ego-Sicht andere als in Third-Person — gemessen wurde bis 13.10. auf der Radeon, gerichtet auf der GTX.
+// dGPU) und in der Ego-Sicht andere als in Third-Person.
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
-const istBandOrt = (o) => !!o && o.bank === undefined;
+// Ein Ort, den der Spieler erst gründet (`gruendung`, die Stadt), misst den Lauf (Profiband K1), nicht das Band: keine Ratsche.
+const istBandOrt = (o) => !!o && o.bank === undefined && o.gruendung === undefined;
 
 function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
@@ -126,10 +127,8 @@ function ortGier(ort) {
 }
 
 // DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
-// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Bis 07.10. nahm die
-// Linse den Ort aus dem Aufruf (`band --ort`) und prüfte nur den Abstand des Spielers: eine Serie mit laufendem Dorf-Zug
-// oder anderem Blick zog die Ratsche eines Orts, dessen Zustand sie nie hatte. Ein Lauf ohne Aufzeichnung (vor dem
-// 07.10.) ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
+// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne
+// Aufzeichnung ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
 // gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
 function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
@@ -171,6 +170,13 @@ function messortePruefen(h) {
         // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
+        // DIE GRÜNDUNG (die Stadt): das Wort des Spielers (`dorf <same> <häuser>`), sein Platz und Blick, der Anker der Siedlung, und die
+        // Bahn — eine Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
+        const g = o.gruendung;
+        if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || ![g.platz, g.blick, g.anker].every(xz)))
+            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>", platz, blick oder anker [x, z]`);
+        if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && `${o.bahn[0]}` === `${o.spieler}`))
+            f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
         // das Urteil am Ort spricht gate:profiband H1 (am Gesetz) und `werkbank umstellen --ort` (in der Welt, mit Gras).
         if (o.id === "wiese" && o.wiese === undefined) f.push(`${o.id}: das Wiesen-Gesetz (wiese) fehlt`);
@@ -211,7 +217,7 @@ function messortePruefen(h) {
             }
         } else if (o.ratsche !== undefined)
             // Die Datei folgt aus Ort × Gerät × Sicht (`ratsche-<ort>-<gerät>-<sicht>.json`, K26) — ein genannter Name wäre EINE
-            // Ratsche für alle Geräte und Sichten (bis 13.10.: auf der Radeon gemessen, auf der GTX gerichtet).
+            // Ratsche für alle Geräte und Sichten (auf der GTX gerichtet).
             f.push(`${o.id}: ratsche ${o.ratsche} — die Ratsche folgt aus Ort × Gerät × Sicht, kein Ort nennt eine Datei`);
         // Eine Soll-Zeile: die Hülle EINES Exemplars der Art `art` im Pass `pass` — auf EINER Stufe (`stufe`, die Tor-Hülle
         // L0) oder über mehrere (`stufen`, der Wurf: was in der Kaskade für die Art wirft, gleich welche Stufe es ist).
@@ -262,8 +268,7 @@ function einschwingOffen(r) {
     if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
     // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
     // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
-    // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
-    // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
+    // Die EINE Antwort der Welt (`_streuWartet`).
     const streuListe = [];
     if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
     const q = r._autoSettlementQueue;
@@ -852,8 +857,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
 
 // DIE ZU WEITE RATSCHE (K26, rein): je gebundene Klasse × Pass × Größe, die Summe und jeder VRAM-Erzeuger, deren Ratsche über
 // der Messung liegt — über max(Ist × (1 + toleranzPct), Ist + toleranzAbs), die Regel der Ratsche gespiegelt. `u` ist ein
-// Band-Urteil oder eine gespeicherte Band-Messung (`klassen[].je`, `summe.gebunden`, `vram`). An der Mess-Wiese lag die
-// Ratsche baum haupt bei 385 630 Dreiecken, gemessen 60 976 (1110-12): ein Rückschritt um das Sechsfache wäre grün geblieben.
+// Band-Urteil oder eine gespeicherte Band-Messung (`klassen[].je`, `summe.gebunden`, `vram`).
 function ratscheWeit(ratsche, u, paesse) {
     const out = [];
     if (!ratsche || !u) return out;
@@ -895,7 +899,7 @@ function ratscheWeit(ratsche, u, paesse) {
 // DER WURF (S3 haus, `stufen`): was in einer Kaskade für die Art wirft, gleich welche Stufe — über die Art zusammen, die
 // Exemplare aus dem Satz-Inhalt (je Zelle ihr Eintrag: das Haus, die Feuerstelle); eine Klasse außerhalb eines Satzes (ein
 // Tür-Flügel) zählt ihre Dreiecke mit, Exemplare trägt sie im Schatten-Pass keine. Am Dorf: der Haus-Wurf je Haus und
-// Kaskade gegen 96 Dreiecke (die Stufe 3 des Gesetzbuchs) — vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k).
+// Kaskade gegen 96 Dreiecke (die Stufe 3 des Gesetzbuchs).
 function ortSoll(ort, zensus) {
     const out = [];
     for (const s of ort.soll || []) {
@@ -989,8 +993,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
             if (!lebt.has(k) && !vramFrei(neu, k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
     // DIE GESAMT-ZEILE IST HÖCHSTENS DIE SUMME IHRER ZEILEN (gate:profiband H2b): jede Zeile zieht je Lauf auf ihr EIGENES
-    // Minimum, die Summe der Minima liegt dann unter dem Minimum der Gesamt-Zeile (14.10., GTX-Re-Mint: vramMB 96,3 gegen
-    // die Erzeuger 96,2) — eine Gesamt-Zeile darüber feuerte nie. Die Kappe gilt, sobald jede Zeile gemessen ist.
+    // Minimum, die Summe der Minima liegt dann unter dem Minimum der Gesamt-Zeile — eine Gesamt-Zeile darüber feuerte nie. Die Kappe gilt, sobald jede Zeile gemessen ist.
     const kappe = (key, zeilen, name) => {
         const alt = neu.gesamt[key];
         if (alt == null || zeilen.some((v) => v == null)) return;
@@ -1047,8 +1050,7 @@ function versionAbstand(kopf, gemessen) {
 // H2b DIE FRISCHE (K26, rein): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht), steht gemessen, an
 // höchstens einer Version vor dem Kopf, an ihrem Ort, Gerät und in ihrer Sicht; ihre Gesamt-Zeile ist höchstens die Summe der
 // Klassen (darüber feuert sie nie — die Mess-Wiese trug 4 095 487 Dreiecke über 1 295 324); und gegen jede gegebene Messung
-// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen
-// 05.–11.10. auf der Radeon, gerichtet auf der GTX, nie nachgezogen.
+// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit.
 function ratscheFrische({ haushalt, version, ratschen, messungen }) {
     const rot = [];
     const paesse = haushalt.paesse;

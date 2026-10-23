@@ -155,7 +155,7 @@ function baum() {
 
 function pruefe(karte) {
     const rot = [];
-    // VERALTET sperrt nicht (Koordinator 15.10., D8-Merge, wie K5): ein Panorama, dessen Quellen sich seither änderten, steht benannt
+    // VERALTET sperrt nicht (D8-Merge, wie K5): ein Panorama, dessen Quellen sich seither änderten, steht benannt
     // „veraltet“, bis jemand backt (`--panorama`) — sonst sperrte jede Welle an einer Studio-Quelle, der Hülle oder einem Kern check:statik
     const veraltet = [];
     const zahl = { handRegler: 0, bruecken: [] };
@@ -397,9 +397,8 @@ async function gang() {
                 await new Promise((res) => setTimeout(res, 900));
                 return { undo: { vor, mitte, nach: inp.value } };
             }));
-            // H4: die Kosten-Leiste nennt die L0 erst, wenn der Ofen gebacken hat — bis 60 s, je 500 ms gefragt
-            const t0 = Date.now();
-            while (OFEN_STUDIOS[id] && !(z.l0 > 0) && Date.now() - t0 < 60000) {
+            // H4: die Kosten-Leiste nennt die L0 erst, wenn der Ofen gebacken hat — je 500 ms gefragt, bis sie steht
+            while (OFEN_STUDIOS[id] && !(z.l0 > 0)) {
                 const t = await page.evaluate(() => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => e.textContent).join(" "));
                 const m = /([\d.]+) \/ ([\d.]+) △/.exec(t);
                 if (m) Object.assign(z, { l0: +m[1].replace(/\./g, ""), zeile: +m[2].replace(/\./g, "") });

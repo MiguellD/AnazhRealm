@@ -1,4 +1,4 @@
-# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.492, 18 Schritte)
+# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.492, 19 Schritte)
 
 > **Zweck:** EINE Browser-Session, die das ERLEBNIS des Feld-Stands bestätigt. Alles hier ist
 > vorab maschinell verifiziert (Merge-Gate „Alle Invarianten OK" + npm run check + Domänen-Gates
@@ -27,13 +27,14 @@
 | 14 | Symphonie an; Genre wechseln (LoFi → Trap → Bossa → Cinematic) | Drums UND Harmonie/Lead/Bass klingen distinkt; LoFi kippt harmony-lastig | |
 | 16 | Werkstatt öffnen, einen Bauplan wählen, in der Welt platzieren | v1.0-Schritt 3: ≤ 3 Klicks vom Öffnen bis zum stehenden Werk; der Werkstatt-Regler prägt, was platziert wird | |
 | 17 | Chat OHNE KI: `pflanz mir einen eichenhain am wasser` | v1.0-Schritt 4 (Grundstufe): 6 Studio-Eichen wachsen am nächsten Ufer (≤ 80 m), geerdet, keine im Wasser; ohne Wasser in Reichweite sagt der Chat es laut und nichts wächst (gate:v1-pfad V-k5) | |
-| 18 | KI an (Einstellungen → Begleiter, eigener Schlüssel): „lass mir ein paar Birken und ein Fachwerkhaus wachsen" | v1.0-Schritt 4: die KI antwortet UND die Welt verändert sich (spawn_studio — dieselben Baupläne wie die Werkstatt) | |
-| 15 | Schnell umsehen, dann ~2 min stehen; HUD + Konsole | Auflösung fällt bei Bewegung imperzeptibel und kehrt flicker-frei zurück; Konsole bleibt still; der Flugschreiber-Trace POSTet — Tris/dc/weltMarch gegen den letzten Trace lesen | |
+| 18 | KI an (Einstellungen → Begleiter: ollama lokal ohne Schlüssel oder ein eigener Schlüssel; der Korpus-Lauf `diag-v1-pfad --korpus --echt` misst dasselbe an 40 Sätzen, das Beweisbild nimmt `werkbank schirm`): „lass mir ein paar Birken und ein Fachwerkhaus wachsen" | v1.0-Schritt 4: die KI antwortet UND die Welt verändert sich (spawn_studio — dieselben Baupläne wie die Werkstatt) | |
+| 19 | Werkstatt: einen Bauplan wählen, „Teilen“ (die souveräne Geste signiert); den Code auf einem ZWEITEN Gerät (frisches Profil) in den Chat geben | v1.0-Schritt 5: vor dem Empfänger steht dasselbe Werk mit demselben Stempel (gleicher Bau-Hash, gate:praegung-welt T) in ≤ 10 s, der Code ≤ 4 KB; ein fremder oder manipulierter Code fällt im Chat laut beim Namen und schreibt nichts (F) | |
+| 15 | Schnell umsehen, dann ~2 min stehen; HUD + Konsole | Auflösung fällt bei Bewegung imperzeptibel und kehrt flicker-frei zurück; Konsole bleibt still; der Flugschreiber-Trace POSTet beim Verstecken der Seite — Tris/dc/weltMarch gegen den letzten Trace lesen | |
 
 **Stehende Ein-Wort-Defaults** (bestätigt, nur bei Widerspruch melden): Materialisierungs-Pop
 der Mesh-Zone = Streaming, kein eigener Fall · Feuerstelle (glutbrunnen) · Marktstand · Ziehbrunnen =
 Studio-Gestalt (fachwerk-Ausstattung; die Wirts-Teile sind unsichtbare Substanz, ein gezeichnetes Wirts-Teil ist
 eine Fremd-Silhouette) · fliegende Inseln + start_plattform = Welt-Substanz.
 
-**Abschluss:** 18 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
+**Abschluss:** 19 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
 `npm run look-golden -- --mint` auf dem Schöpfer-Holz — das Golden bewacht ab dann jeden Push.

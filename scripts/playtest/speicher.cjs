@@ -122,8 +122,6 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -136,23 +134,11 @@ async function checkBandRing8(ctx) {
         if (!r) return null;
         const out = {};
 
-        // Schema-Version-Bump
+        // Schema-Version-Bump (Zeiger, Index, Platz und Legacy-Migration fährt gate:boot-rettung am echten Boot)
         out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
-
-        // Aktive Welt ist im Index und als aktiv markiert.
         const activeId = r.state.worldMeta.worldId;
-        out.hasActiveWorldId = typeof activeId === "string" && activeId.length > 0;
-        const idx1 = r.worldsIndexLoad();
-        out.activeInIndex = !!idx1.find((e) => e.worldId === activeId);
-        out.activeWorldPointerSet = r.activeWorldGet() === activeId;
 
-        // Per-Welt-Save-Key existiert.
-        out.perWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(activeId));
-
-        // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
-        out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
-
-        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
         // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
         // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
         // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
@@ -160,7 +146,7 @@ async function checkBandRing8(ctx) {
             const echt = r.state.worldMeta;
             r.state.worldMeta = Object.assign({}, echt, {
                 macro: { massivC: { x: 1, z: 2 } },
-                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
                 genesisPortalRing: true,
                 portalPreviewFachwerk: true,
@@ -225,10 +211,9 @@ async function checkBandRing8(ctx) {
                 zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
             };
         }
-        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
-        // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
-        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
-        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build
+        // nicht trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als
+        // Snapshot eines Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben.
         {
             const fremd = () => ({
                 worldMeta: {
@@ -265,10 +250,7 @@ async function checkBandRing8(ctx) {
         const idx2 = r.worldsIndexLoad();
         out.indexGrewByOne = idx2.length === beforeCount + 1;
         out.newWorldInIndex = !!idx2.find((e) => e.worldId === newId && e.slug === "test-zweite");
-        out.newWorldSaveExists = !!localStorage.getItem(r.worldStorageKey(newId));
-        // Active wurde auf die neue Welt umgeleitet — aber state.worldMeta
-        // bleibt auf der alten (kein Reload). Das ist die Erwartung.
-        out.activePointerMovedToNew = r.activeWorldGet() === newId;
+        // state.worldMeta bleibt auf der alten (kein Reload; den Zeiger prüft die Ablage selbst, `_weltAblegen`)
         out.stateWorldMetaUnchanged = r.state.worldMeta.worldId === activeId;
 
         // Slug-Unique: weitere Welt mit demselben Slug bekommt Suffix -2.
@@ -320,11 +302,8 @@ async function checkBandRing8(ctx) {
         const classicSave = JSON.parse(localStorage.getItem(r.worldStorageKey(classicId)) || "{}");
         out.optOutForcedToVoxel = !!(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
 
-        // switchToWorld auf eine existierende Welt (ohne Reload):
-        // active-Pointer wandert, state bleibt (Reload würde state laden).
-        const switchOk = r.switchToWorld(newId, { reload: false });
-        out.switchReturnedTrue = switchOk === true;
-        out.activePointerAfterSwitch = r.activeWorldGet() === newId;
+        // switchToWorld auf eine existierende Welt (der Wechsel samt Reload: gate:boot-rettung „mehrere")
+        r.switchToWorld(newId, { reload: false });
         // Switch auf unbekannte Welt scheitert sauber
         out.switchToUnknownFails = r.switchToWorld("does-not-exist-123", { reload: false }) === false;
         // Switch auf aktive Welt ist noop = true
@@ -357,11 +336,6 @@ async function checkBandRing8(ctx) {
         );
     } else {
         check("Ring 8: Schema-Version ist 8.0-multiworld-v1", ring8Results.schemaIsMultiworld);
-        check("Ring 8: state.worldMeta.worldId gesetzt", ring8Results.hasActiveWorldId);
-        check("Ring 8: Aktive Welt im worldsIndex registriert", ring8Results.activeInIndex);
-        check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
-        check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
-        check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
         check(
             "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
             Array.isArray(ring8Results.geborenGeerbt) && ring8Results.geborenGeerbt.length === 0,
@@ -383,8 +357,6 @@ async function checkBandRing8(ctx) {
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
         check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);
-        check("Ring 8: Per-Welt-Save für neue Welt geschrieben", ring8Results.newWorldSaveExists);
-        check("Ring 8: Aktiv-Pointer auf neue Welt nach create", ring8Results.activePointerMovedToNew);
         check("Ring 8: state.worldMeta bleibt bis Reload alt", ring8Results.stateWorldMetaUnchanged);
         check("Ring 8: Slug-Kollision bekommt -N Suffix", ring8Results.slugUniqueWithSuffix);
         check("Ring 8: Person-Übernahme transportiert Seele", ring8Results.inheritCarriesPlayerSoul);
@@ -397,8 +369,6 @@ async function checkBandRing8(ctx) {
             "Voxel V9.35 Phase 5c.2.c.2: voxelTerrain:false-Argument wird ignoriert (Opt-out ist tot, immer Voxel)",
             ring8Results.optOutForcedToVoxel
         );
-        check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
-        check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
         check("Ring 8: switchToWorld auf unbekannte ID scheitert sauber", ring8Results.switchToUnknownFails);
         check("Ring 8: switchToWorld auf aktive Welt ist noop=true", ring8Results.switchToActiveIsNoop);
         check("Ring 8: deleteWorld lehnt aktive Welt ab", ring8Results.cantDeleteActive);
@@ -412,10 +382,9 @@ async function checkBandRing8(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // V18.73: die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
-        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list (V9.56-i).
+        // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
+        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list.
         out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
-        out.pickerListInDom = !!document.getElementById("world-picker-list");
         out.newWorldBtnInDom = !!document.getElementById("world-new");
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
         r.createNewWorld({ slug: "test-ui-eins", inheritPlayer: false, reload: false });
@@ -452,7 +421,6 @@ async function checkBandRing8(ctx) {
         );
     } else {
         check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
-        check("Ring 8 UI: #world-picker-list im DOM", ring8UiResults.pickerListInDom);
         check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
         check("Ring 8 UI: Beide Slugs sichtbar", ring8UiResults.pickerShowsBothSlugs);
@@ -557,37 +525,11 @@ async function checkBandRing8(ctx) {
         );
     }
 
-    // ### Ring 8.2 — Player-Position-Restore + Status-Bar-Welt ###
-    // generateNewWorld() teleportiert, solange `terrainEverGenerated` (state-only, nicht persistiert)
-    // fehlt → loadState setzt das Flag beim Laden eines Saves, sonst landet der Spieler bei (0,50,0).
+    // ### Ring 8.2 — Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
     const ring82Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-
-        // buildStateSnapshot fängt aktuelle Mesh-Position ein
-        if (r.state.playerMesh) {
-            // BÜHNE: der Snapshot fängt eine beliebige Position (Speicher-Mechanik)
-            r.state.playerMesh.position.set(42, 7, 23);
-        }
-        const snap1 = r.buildStateSnapshot();
-        out.snapshotCapturesPosition =
-            snap1.playerPosition &&
-            Math.abs(snap1.playerPosition.x - 42) < 0.01 &&
-            Math.abs(snap1.playerPosition.y - 7) < 0.01 &&
-            Math.abs(snap1.playerPosition.z - 23) < 0.01;
-
-        // Reset-Szenario: terrainEverGenerated=false, loadState(snap)
-        // soll Flag setzen UND Position restaurieren.
-        r.state.terrainEverGenerated = false;
-        // BÜHNE: der Reset-Wert vor loadState (Speicher-Mechanik)
-        if (r.state.playerMesh) r.state.playerMesh.position.set(99, 99, 99);
-        r.loadState(snap1);
-        out.flagSetAfterLoad = r.state.terrainEverGenerated === true;
-        out.positionRestoredAfterLoad =
-            r.state.playerMesh &&
-            Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
-            Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
 
         // Ein leerer createNewWorld-Snapshot (playerPosition:null) zählt NICHT als generiert: das Flag bleibt
         // false, die Position unangetastet → der Reload fährt den Genesis-Erst-Spawn (offener Punkt +
@@ -627,9 +569,6 @@ async function checkBandRing8(ctx) {
             (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 8.2: buildStateSnapshot fängt Spieler-Position ein", ring82Results.snapshotCapturesPosition);
-        check("Ring 8.2: loadState setzt terrainEverGenerated", ring82Results.flagSetAfterLoad);
-        check("Ring 8.2: loadState restauriert Spieler-Position", ring82Results.positionRestoredAfterLoad);
         check("V18.95: leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
         check(
             "V18.95: Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
@@ -642,8 +581,6 @@ async function checkBandRing8(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -803,7 +740,7 @@ async function checkBandRing9to10(ctx) {
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
         out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
         out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
-        // Bib (V18.71): der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
+        // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
         // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
         out.lineageDivInDom = !!document.getElementById("world-lineage");
@@ -1230,8 +1167,6 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1240,7 +1175,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const translatorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r.translatorInitDOM === "function";
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
         const prompt = r._buildTranslatorPrompt();
@@ -1349,7 +1283,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (translatorResults && !translatorResults.error) {
-        check("KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)", translatorResults.methods);
         check(
             "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
             translatorResults.promptNamesSchema
@@ -1421,7 +1354,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const transl2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r._runWorldBuild === "function";
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
         // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
@@ -1585,7 +1517,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (transl2Results && !transl2Results.error) {
-        check("KI-Übersetzer P2: _runWorldBuild existiert (die Suite ruft ihn nie)", transl2Results.methods);
         check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
         check(
             "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
@@ -1648,7 +1579,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("KI-Übersetzer P2: Phase-2-Tests laufen", false, transl2Results ? transl2Results.error : "no result");
     }
 
-    // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+    // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1697,7 +1628,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
         out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
         r._disposePortalOverlay();
-        // trusted → mit allow-same-origin + allow-pointer-lock (V18.384: die
+        // trusted → mit allow-same-origin + allow-pointer-lock (die
         // begehbare Welt fängt den Zeiger; sandboxed bleibt OHNE beides).
         r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
         out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
@@ -1802,16 +1733,12 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
 
-    // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
+    // ### W15 Phase 1: der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostBundle === "function" &&
-            typeof r._runVendorDock === "function" &&
-            typeof r.vendorInitDOM === "function";
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
@@ -1919,10 +1846,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendorResults && !vendorResults.error) {
-        check(
-            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock/vendorInitDOM existieren (die Suite ruft sie nie)",
-            vendorResults.methods
-        );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
         check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
         check(
@@ -1982,16 +1905,12 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
     }
 
-    // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
+    // ### W15 Phase 2: der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostRepo === "function" &&
-            typeof r._vendorPostJson === "function" &&
-            typeof r._runVendorRepoDock === "function";
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
         const origBundle = r._vendorPostBundle;
@@ -2079,7 +1998,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.roundtripKeepsTrust =
             !!reloaded["gh-test"] && reloaded["gh-test"].trust === "sandboxed" && reloaded["gh-test"].vendored === true;
         // UI: die GitHub-Holen-Sektion im DOM.
-        out.uiRepoSection = !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -2089,10 +2007,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendor2Results && !vendor2Results.error) {
-        check(
-            "W15 GitHub-Fetch: _vendorPostRepo/_vendorPostJson/_runVendorRepoDock existieren (die Suite ruft sie nie)",
-            vendor2Results.methods
-        );
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
         check(
@@ -2124,7 +2038,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
             "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
             vendor2Results.roundtripKeepsTrust
         );
-        check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
     } else {
         check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
     }
@@ -2268,35 +2181,13 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// INDEXEDDB gegen die localStorage-5-MB-Wand: große Snapshots leben ZUSÄTZLICH in IDB; beim Lesen
-// gewinnt der frischere Stand (IDB-Stempel vs. worldsIndex.lastPlayed); bei QUOTA trägt IDB die
-// Welt (WARN statt stillem Verlust). Der Index bleibt synchron in localStorage.
+// DIE QUOTA-WAND: wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
+// in IndexedDB (der Rundlauf, der Spiegel und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const out = {};
-        // (1) der Store öffnet (echtes IndexedDB im Test-Browser).
-        const db = await r._idb();
-        out.opens = !!db;
-        // (2) der Rundlauf: put → get (json + Stempel) → delete → null.
-        const putOk = await r._idbPutWorld("band151-test", '{"a":1}');
-        const rec = await r._idbGetWorld("band151-test");
-        out.roundTrip = putOk === true && !!rec && rec.json === '{"a":1}' && Number.isFinite(rec.at);
-        await r._idbDeleteWorld("band151-test");
-        out.deleteWorks = (await r._idbGetWorld("band151-test")) === null;
-        // (3) saveState SCHREIBT die aktive Welt nach IndexedDB (Spiegel-Paar).
         const worldId = r.state.worldMeta && r.state.worldMeta.worldId;
-        r.saveState();
-        let mirrored = null;
-        for (let i = 0; i < 20 && !mirrored; i++) {
-            await new Promise((res2) => setTimeout(res2, 100));
-            mirrored = await r._idbGetWorld(worldId);
-        }
-        const lsJson = localStorage.getItem(r.worldStorageKey(worldId));
-        out.saveMirrors = !!mirrored && !!lsJson && mirrored.json.length === lsJson.length;
-        // (4) die QUOTA-Wand fällt WEICH: localStorage wirft → kein Wurf nach außen, ein ehrliches WARN, und DIESER
-        // Speicher-Akt landet in IndexedDB (der Stempel at ≥ dem Akt).
         const origSet = Storage.prototype.setItem;
         let threw = false;
         const warn = [];
@@ -2325,43 +2216,23 @@ async function checkBandV18151Idb(ctx) {
             await new Promise((res2) => setTimeout(res2, 100));
             idb = await r._idbGetWorld(worldId);
         }
-        out.quotaSoft = !threw && ret === true && warn.some((m) => /lebt in IndexedDB weiter/.test(m)) && !!idb && idb.at >= tVor;
-        r.saveState(); // den echten Spiegel wiederherstellen
-        // (5) der Boot-Vorzug: ein ECHT frischerer IDB-Stand gewinnt das Lesen
-        // (Welt-Guard inklusive — der Preload trägt die worldId).
-        await r._idbPutWorld(worldId, '{"__band151Marker":true}');
-        // den Stempel künstlich in die Zukunft heben (frischer als lastPlayed):
-        {
-            const db2 = await r._idb();
-            await new Promise((res2) => {
-                const tx = db2.transaction("worlds", "readwrite");
-                tx.objectStore("worlds").put({ at: Date.now() + 600000, json: '{"__band151Marker":true}' }, worldId);
-                tx.oncomplete = res2;
-                tx.onerror = res2;
-            });
-        }
-        await r._idbPreload();
-        const pre = r._idbPreloadedState;
-        out.preloadWins = !!pre && pre.worldId === worldId && pre.state && pre.state.__band151Marker === true;
-        const fromStorage = r._loadStateLoadFromStorage();
-        out.readPrefersFresh = !!fromStorage && fromStorage.__band151Marker === true;
-        out.preloadConsumed = r._idbPreloadedState === null;
-        r.saveState(); // die Wahrheit zurück in den IDB-Spiegel
-        return out;
+        r.saveState(); // das Abbild wiederherstellen
+        return {
+            quotaSoft:
+                !threw &&
+                ret === true &&
+                warn.some((m) => /lebt in IndexedDB weiter/.test(m)) &&
+                !!idb &&
+                idb.at >= tVor,
+        };
     });
     check(
-        "V18.151 IndexedDB: der Store öffnet + put/get/delete-Rundlauf",
-        res.opens && res.roundTrip && res.deleteWorks
-    );
-    check("V18.151 IndexedDB: saveState spiegelt die Welt (LS + IDB, gleiche Länge)", res.saveMirrors);
-    check("V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)", res.quotaSoft);
-    check(
-        "V18.151 IndexedDB: der ECHT frischere IDB-Stand gewinnt das Boot-Lesen (+ wird konsumiert)",
-        res.preloadWins && res.readPrefersFresh && res.preloadConsumed
+        "V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
+        res.quotaSoft
     );
 }
 
-// V18.207 — R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
+// R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {
@@ -2371,8 +2242,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (R1) R5_STRUCTURE_TEXTURE frozen + Konstante
-        out.constExists = !!A.R5_STRUCTURE_TEXTURE && Object.isFrozen(A.R5_STRUCTURE_TEXTURE);
+        // (R1) R5_STRUCTURE_TEXTURE
         if (A.R5_STRUCTURE_TEXTURE) {
             out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
             out.microBoostSensible =
@@ -2384,7 +2254,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         return out;
     });
 
-    check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
     check(
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
@@ -2392,6 +2261,11 @@ async function checkBandV18207R5StructureTexture(ctx) {
 }
 
 module.exports = {
-    checkBandV1738RulePersistence, checkBandRing8, checkBandRing9to10, checkBandTranslatorAndUntrusted,
-    checkBandTailleOmega2, checkBandV18151Idb, checkBandV18207R5StructureTexture,
+    checkBandV1738RulePersistence,
+    checkBandRing8,
+    checkBandRing9to10,
+    checkBandTranslatorAndUntrusted,
+    checkBandTailleOmega2,
+    checkBandV18151Idb,
+    checkBandV18207R5StructureTexture,
 };

@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-// diag-tor-fern.cjs — DIE LINSE DES TOR-WURFS UND DER TOR-FERNFORM (1110-9, gate:tor-fern). Befund (OMEN 11.10., Genesis-Ring,
-// GTX 1060): die Stufe 0 jedes Tors warf sich selbst (Budget-Zeile `schatten: 0`) — 181 000 der 977 000 Dreiecke der Genesis
-// lagen im Wurf der Tore in die nahe Kaskade, je Tor und Kaskade bis 13 Stoff-Befehle. Der Akt: die NUR-WURF-Stufe 3 ist die
-// Hüllen-Liste des Tors (porta-core `huelle`, N5), gesammelt im SELBEN Lauf von buildGate, der die Meshes baut; die feinen Teile
-// tragen die Rolle "wurf" (nur die Stufe 3 wirft sie), die Fernform des Welt-March liest höchstens 24 Teile der Rolle "sicht"
-// (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je Pixel über alle Teile seines Eintrags). Die Linse
-// misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7 Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node,
-// worlds/terrain/lib/three-r128.min.js + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
+// diag-tor-fern.cjs — DIE LINSE DES TOR-WURFS UND DER TOR-FERNFORM (1110-9, gate:tor-fern). Der Akt: die NUR-WURF-Stufe
+// 3 ist die Hüllen-Liste des Tors (porta-core `huelle`, N5), gesammelt im SELBEN Lauf von buildGate, der die Meshes
+// baut; die feinen Teile tragen die Rolle "wurf" (nur die Stufe 3 wirft sie), die Fernform des Welt-March liest
+// höchstens 24 Teile der Rolle "sicht" (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je
+// Pixel über alle Teile seines Eintrags). Die Linse misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7
+// Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node, worlds/terrain/lib/three-r128.min.js + porta-core.js) und
+// mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
 //
-//   K  KOSTEN: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle), die
-//      Stufe 3 1 Draw und am Rezept ≤ ihrer Budget-Zeile (das Rezept-Maß; am Regler-Rand richtet die Kosten-Regel des Wirts
-//      `_wurfVonBilligerer` — gate:regler-wirkt WURF)
+//   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);
+//      die Kosten der Stufe 3 (Zeile und Draw je Rezept und Rand) richtet gate:regler-wirkt STUFEN über die echte Brücke
 //   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (Projektion entlang der Sonne auf y = 0, Raster
 //      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute) — die L0 mit den Teilen, die sie wirft (castShadow:
 //      die leuchtenden Türen, der Bogen-Saum, der Leucht-Ring und die Scheibe warfen nie)
@@ -31,9 +29,8 @@ const PC = globalThis.__portaCore;
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
 const NUR = ARG.indexOf("--nur") >= 0 ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
-const ZEILE = PC.PORTAL_RENDER_CONFIG.lod.budget.gate[3];
 
-// DAS SOLL (gemessen am Kopf des Akts, 7 Rezepte): Wurf-IoU min 0,864 (geisttor: der dünne Monolith-Rahmen und die Hölzer der
+// DAS SOLL: Wurf-IoU min 0,864 (geisttor: der dünne Monolith-Rahmen und die Hölzer der
 // Tür unter tiefer Sonne) · Median der Rezepte 0,958 → je Rezept ≥ 0,85, Median ≥ 0,92 (das Maß der Haus-Linse). Innen p95
 // 5,8–9,1 cm (die Hülle des Geflechts über den Lücken der Stränge, die Kästen gedrehter Steine — kathedrale 8,9 —, der
 // Fern-Strang der Ruine über ihren fehlenden Steinen — 9,1) → ≤ 10 cm; der Tiefen-Bias der nahen Kaskade trägt 5–13 cm.
@@ -226,20 +223,11 @@ const tris = (g3) => {
     });
     return n;
 };
-const draws = (g3) => {
-    let n = 0;
-    g3.traverse((o) => {
-        if (o.isMesh) n++;
-    });
-    return n;
-};
 
 // ── K über die Regler-Hülle ──
 function kosten(leserFn, umbau, nurRezepte) {
     const bruch = [];
-    let maxSicht = 0,
-        maxTris = 0,
-        maxRand = 0;
+    let maxSicht = 0;
     for (const id of Object.keys(PC.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const raender = [null];
@@ -260,21 +248,9 @@ function kosten(leserFn, umbau, nurRezepte) {
             if (sicht.length > SOLL.fernTeile) bruch.push(`${wo}: Fernbild ${sicht.length} Teile > ${SOLL.fernTeile}`);
             if (wurfImBild) bruch.push(`${wo}: ${wurfImBild} wurf-Teile im Fernbild (die Rolle leckt in den March)`);
             maxSicht = Math.max(maxSicht, sicht.length);
-            if (!umbau) {
-                // das Gitter der Stufe 3 aus derselben Liste mit dem EINEN Gitter-Bauer des Kerns (buildInstance(…, 3) = huelle → huelleGruppe)
-                // die Zeile ist das Rezept-Maß (Entscheidung A, 12.10.): am Rezept gilt sie, am Regler-Rand richtet die
-                // Kosten-Regel des Wirts (`_wurfVonBilligerer`, gate:regler-wirkt WURF) — hier steht dort nur die Zahl
-                const g3 = PC.huelleGruppe(h.teile),
-                    n = tris(g3),
-                    dr = draws(g3);
-                if (r) maxRand = Math.max(maxRand, n);
-                else maxTris = Math.max(maxTris, n);
-                if (!r && n > ZEILE.tris) bruch.push(`${wo}: Stufe 3 ${n} Dreiecke > ${ZEILE.tris}`);
-                if (dr > ZEILE.draws) bruch.push(`${wo}: Stufe 3 ${dr} Draws > ${ZEILE.draws}`);
-            }
         }
     }
-    return { bruch, maxSicht, maxTris, maxRand };
+    return { bruch, maxSicht };
 }
 
 // ── W und I je Rezept ──
@@ -303,10 +279,10 @@ function deckung(umbauListe, aufblaehen, nurIds) {
     return zeilen;
 }
 
-// ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
+// ── F: DIE FERNE STUFE — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
 // Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
 // Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
-// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third (Augen-Befund 14.10.). Gemessen an Genesis Third (werkbank
+// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third. Gemessen an Genesis Third (werkbank
 // zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
 // Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
 // Hysterese-Band in der Stufe 1 (23 082), der Wurf der Stufe 3 (19 248) und der Wurf der fernen Stufe (kathedrale + ruine
@@ -388,16 +364,12 @@ const check = (name, ok, info) => {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${info ? " — " + info : ""}`);
     if (!ok) fails.push(name);
 };
-console.log(
-    `=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle, Zeile ${JSON.stringify(ZEILE)}) ===`
-);
+console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle) ===`);
 const k = kosten(huelleVon);
 check(
-    `K KOSTEN: Fernbild ≤ ${SOLL.fernTeile} Teile ohne wurf-Teil (Regler-Hülle), Stufe 3 ≤ ${ZEILE.tris} Dreiecke am Rezept / ${ZEILE.draws} Draw`,
+    `K FERNBILD: ≤ ${SOLL.fernTeile} Teile ohne wurf-Teil (Regler-Hülle; die Kosten der Stufe 3 richtet gate:regler-wirkt STUFEN)`,
     k.bruch.length === 0,
-    k.bruch.length
-        ? k.bruch.slice(0, 4).join(" · ")
-        : `Fernbild max ${k.maxSicht} Teile · Stufe 3 am Rezept max ${k.maxTris} Dreiecke · am Regler-Rand max ${k.maxRand} (dort richtet die Kosten-Regel des Wirts, gate:regler-wirkt WURF)`
+    k.bruch.length ? k.bruch.slice(0, 4).join(" · ") : `Fernbild max ${k.maxSicht} Teile`
 );
 const z = deckung(null, 0);
 const med = [...z.map((r) => r.iouMedian)].sort((a, b) => a - b)[z.length >> 1];

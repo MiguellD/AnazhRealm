@@ -39,8 +39,8 @@ async function checkRing2Dsl(ctx) {
         const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
-        // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
-        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon und landen an seinem Rand).
+        // DIE KÖRPER-GESETZE SIND GESETZ: player_jump_power wiegt nur im Gesetz-Band des Leibs — der
+        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon; dslEval weist sie benannt ab).
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
         const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
@@ -48,7 +48,7 @@ async function checkRing2Dsl(ctx) {
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
-        // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
+        // maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
         // damit dieser Band den spawn_creature-INTENT misst, nicht den Cap (der Warmup
         // kann nahe 20 liegen). Der Test wandert mit dem Code (kein Revert der Senkung).
         const _saveMaxPos = r.state.maxCreatures;
@@ -116,9 +116,7 @@ async function checkRing2Dsl(ctx) {
 
     const phase2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (typeof r._gameLoopTick === "function") {
-            for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
-        }
+        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
             queueLen: r.state.nexusEvolutionQueue.length,
@@ -197,7 +195,7 @@ async function checkBandV1723Harmony(ctx) {
         r.state.skyTintTo = null;
         r.state.skyTintTarget = 0;
         r.state.skyTintStrength = 0;
-        // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
+        // Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
         r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
@@ -243,9 +241,8 @@ async function checkBandV1726FieldDirection(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
-        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm && out.hasResolver) {
+        const pm = r.state.playerMesh.position;
+        {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
             const need = r.dslPositions.at_field_need([50], ctx2);
             const needLeb = r.auraAt(need.x, need.z).lebendig;
@@ -262,7 +259,6 @@ async function checkBandV1726FieldDirection(ctx) {
         }
         return out;
     });
-    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
     check(
         "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
         res.needIsMin,
@@ -279,7 +275,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const A2E = r.constructor.ACTION_TO_EMOTION;
-        out.hasTable = !!A2E && typeof A2E.build === "object";
         // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
         const axes = new Set();
         for (const t of Object.keys(A2E || {})) for (const a of Object.keys(A2E[t])) axes.add(a);
@@ -306,7 +301,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         reset();
         return out;
     });
-    check("V17.30 Pfeiler 2: ACTION_TO_EMOTION-Tabelle existiert (die Regel IST die Daten)", res.hasTable);
     check("V17.30 Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)", res.allSixAxes);
     check("V17.30 Taten: bauen → joy + hope", res.buildJoyHope);
     check("V17.30 Taten: Schaden/Gefahr → sorrow + chaos", res.damageSorrowChaos);
@@ -329,7 +323,6 @@ async function checkBandV1733WorldRules(ctx) {
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
-        out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
@@ -443,8 +436,8 @@ async function checkBandV1733WorldRules(ctx) {
     });
 
     check(
-        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
-        res.cfgWired && res.registryArray && res.ruleOp && res.tickWired
+        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet (im Loop)",
+        res.cfgWired && res.registryArray && res.tickWired
     );
     check(
         "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
@@ -485,12 +478,6 @@ async function checkBandV1734FieldRules(ctx) {
         const out = {};
         const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
-
-        // --- Verdrahtung ---
-        out.condsWired =
-            typeof r.dslConditions.field_above === "function" && typeof r.dslConditions.field_below === "function";
-        out.effectsWired =
-            typeof r.dslEffects.deposit_life === "function" && typeof r.dslEffects.deposit_emotion === "function";
 
         // Save world state
         const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
@@ -604,10 +591,6 @@ async function checkBandV1734FieldRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.34 Feld-Regeln: field_above/field_below + deposit_life/deposit_emotion verdrahtet",
-        res.condsWired && res.effectsWired
-    );
     check("V17.34 Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
     check(
         "V17.34 Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",
@@ -960,7 +943,6 @@ async function checkBandV1737RulesUI(ctx) {
         const out = {};
         const host = document.getElementById("status-worldrules");
         out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
-        out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
 
         // Save state
         const savedRules = r.state.worldRules.slice();
@@ -1012,8 +994,8 @@ async function checkBandV1737RulesUI(ctx) {
         out.collapsibleHeaders =
             secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
 
-        // V18.52 Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
-        // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen, V17.31).
+        // Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
+        // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen).
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
         // Distinkte Bedingung je Regel → distinkte Dedup-Signatur (sonst kollabieren identische zu EINER).
@@ -1062,7 +1044,6 @@ async function checkBandV1737RulesUI(ctx) {
         res.nexusValueChipSorted
     );
     check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
-    check("V17.37 Gesetze-UI: _initCollapsibleDrawer existiert", res.collapsibleWired);
     check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     check(
         "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
@@ -1152,7 +1133,7 @@ async function checkBandV1739RulesUX(ctx) {
             r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
             r.state.worldRules.some((x) => x.id === keepId);
 
-        // --- (E) V18.53: ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
+        // --- (E) ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
         //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
@@ -1262,9 +1243,7 @@ async function checkBandV1740LlmRules(ctx) {
         }
         out.llmFires = r.state.weather === "sunny";
 
-        // --- (4) der LLM-Prompt KENNT die Regel-Grammatik (rule-Op + Feld-Bedingung) ---
-        const prompt = r.llmBuildSystemPrompt();
-        out.promptGrammar = /\["rule"/.test(prompt) && /field_below/.test(prompt) && /STEHENDES GESETZ/i.test(prompt);
+        // die Regel-Grammatik im Prompt der KI (rule-Op + Feld-Bedingungen) wacht gate:weltakt-wache (K)
 
         // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
         r.state.worldRules.length = 0;
@@ -1291,7 +1270,6 @@ async function checkBandV1740LlmRules(ctx) {
         res.llmEphemeral
     );
     check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
-    check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
     check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
 }
 
@@ -1619,7 +1597,7 @@ async function checkBandV1745EmotionCore(ctx) {
         const sCalm = r._emotionState();
         out.calmReadout = sCalm.intensity < 0.2 && sCalm.label === "ruhig";
 
-        // (5) KONSUM (kein Passagier, V17.31): die KI KENNT die Stimmung des Spielers
+        // (5) KONSUM (kein Passagier): die KI KENNT die Stimmung des Spielers
         // (llmBuildSystemPrompt — vorher trug der Persona-Prompt NULL Emotion).
         setEmo({ joy: 0.8 });
         out.promptClear = r.llmBuildSystemPrompt().includes("Freude");

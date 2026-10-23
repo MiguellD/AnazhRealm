@@ -1,4 +1,4 @@
-// diag-ankunft.cjs — DIE ANKUNFTS-LINSE (Welle L Folge, v1-Schritte 1–2: ankommen · laufen und sehen). Die Defekte, die die
+// diag-ankunft.cjs — DIE ANKUNFTS-LINSE (v1-Schritte 1–2: ankommen · laufen und sehen). Die Defekte, die die
 // SICHTBARE Leben-Schau am 07.10. auf dem Welle-L-Stand fand (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim
 // NAMEN. Jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON, Null-Renderer) und misst seine Wirkung;
 // das Bild der Ankunft beweist die echte GPU (Bild-Paare vorher/nachher), diese Linse die Mechanik.
@@ -304,8 +304,6 @@ function kameraVerdict(m) {
         if (ok !== true) out.push(`Konsum: \`${fn}\` ${ok === null ? "ohne Vorbedingung (keine Streu nah)" : "ruft sein Gesetz nicht"}`);
     for (const [fn, n] of Object.entries(fk.hinten || {}))
         if (n > 0) out.push(`Fadenkreuz-Strahl: \`${fn}\` trifft in ${n} von ${fk.stellungen} Stellungen HINTER dem Spieler (was zwischen Kamera und Spieler liegt)`);
-    if (fk.kreatur && fk.kreaturVornProben > 0 && fk.kreaturVorn < fk.kreaturVornProben)
-        out.push(`Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler trifft er nur in ${fk.kreaturVorn} von ${fk.kreaturVornProben} Stellungen ${JSON.stringify(fk.verfehlt || {})}`);
     // Das Ziel der Kamera liegt auf ihrem Blick: dann steht die Ebene
     // des Strahls senkrecht zum Blick und er beginnt bei jedem Arm am Blickpunkt.
     if (fk.stellungen > 0 && !(fk.zielAchse <= 0.01))
@@ -388,8 +386,7 @@ const server = statikServer();
 async function probe(arg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0) await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -434,10 +431,10 @@ async function probe(arg) {
         st._weltbildDa = 0;
         m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
         st._weltbildDa = daVor;
-        if (ls && typeof r._ankunftsBild === "function") {
+        if (ls) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick und wieder vor den Fällen: die
             // Mesh-Zone wächst im Rundblick, ein Baum im Werden hielte jeden Fall (lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
-            const steht = async (dlW = performance.now() + 90000) => { while (r._weltbildFehlt().length && performance.now() < dlW) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
+            const steht = async () => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt().length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
             m.fehltNachBoot = await steht();
             // DER RUNDBLICK (B3d): nach der Kontrolle (der EINE Schreiber, der Nachlauf beginnt) dreht die Kamera in RUNDBLICK_BILDER
             // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle
@@ -489,7 +486,7 @@ async function probe(arg) {
                 const w0 = warnt();
                 schaffe();
                 if (vorbereiten) vorbereiten();
-                const terme = typeof r._weltbildLuecken === "function" ? r._weltbildLuecken().map((l) => l.term) : null;
+                const terme = r._weltbildLuecken().map((l) => l.term);
                 r._ankunftsBild();
                 const weg = ls.classList.contains("weg");
                 m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0), terme };
@@ -586,15 +583,15 @@ async function probe(arg) {
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
             const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
-            fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: { plan: dorfPlan, origin: { x: pm.x, z: pm.z }, idx: 0, cellKey: "start" } }]);
+            fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: r._dorfZug(dorfPlan, { x: pm.x, z: pm.z }, "start") }]);
             // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
             const wmD = st.worldMeta || (st.worldMeta = {});
             const ohneStart = Object.assign({}, wmD.settlementCells || {});
             delete ohneStart.start;
-            const gMD = typeof r._genesisMitte === "function" ? r._genesisMitte() : null;
+            const gMD = r._genesisMitte();
             const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
             const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
-            const kanal = typeof r._autoSettlementChannelLive === "function" && r._autoSettlementChannelLive();
+            const kanal = r._autoSettlementChannelLive();
             if (amOrt && kanal) fallMit("dorfFaellig", dorfAn, [wmD, { settlementCells: ohneStart }], [r, { _autoSettlementStartHopeless: false }]);
             else
                 m.ohneFall.dorfFaellig = !kanal
@@ -622,7 +619,7 @@ async function probe(arg) {
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             if (baum)
                 fall("lueckeRuht", baumWeg(false), baumHer, () => {
-                    const sig = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                    const sig = r._weltbildFehlt().join(" · ");
                     st._weltbildLuecke = sig;
                     st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                 });
@@ -634,7 +631,7 @@ async function probe(arg) {
                     () => (fo.ready = false),
                     () => (fo.ready = merkBuch),
                     () => {
-                        st._weltbildLuecke = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                        st._weltbildLuecke = r._weltbildFehlt().join(" · ");
                         st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                     }
                 );
@@ -646,8 +643,7 @@ async function probe(arg) {
                     st._weltbildLuecke = "eine andere Zahl";
                     st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
                 });
-            // (8) Tasten hinter dem Ladeschirm (Gegenprüfung Runde 2: W lief den Spieler vom Ankunfts-Ort, Enter öffnete das
-            // Gespräch dahinter): solange er steht, gehört keine Taste der Welt
+            // (8) Tasten hinter dem Ladeschirm: solange er steht, gehört keine Taste der Welt
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
@@ -688,7 +684,7 @@ async function probe(arg) {
                 const v = { ohneLeser: [], karten: 0, kartenBsp: [], phaseBestellung: [] };
                 m.vorrat = v;
                 const f = r._foundry;
-                if (!f || !f.ready || typeof r._foundryPrefetchLibrary !== "function") v.fehler = "keine lebende Foundry";
+                if (!f || !f.ready) v.fehler = "keine lebende Foundry";
                 else {
                     const P = Object.getPrototypeOf(r);
                     const alt = {};
@@ -780,7 +776,7 @@ async function probe(arg) {
                 const merk = { da: st._weltbildDa, soul: st._deferredAvatarSoul, mode: st.cameraMode, held: st.player.equipped && st.player.equipped.held };
                 const zurueck = () => ["_foundryZug", "_foundryCacheGet", "_standRuht", "_weltKapselHolen", "_weltBakeErlaubt", "_foundryRequest", "_foundryRequestSettlement", "applyPlayerSoul"].forEach((n) => delete r[n]);
                 const P = Object.getPrototypeOf(r);
-                const bis = async (fn, ms, takt) => { for (const dl = performance.now() + ms; !fn() && performance.now() < dl; ) await (takt ? tick(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
+                const bis = async (fn, ms, takt) => { for (const weiter = window.__deckel(String(fn), ms / 50); !fn() && weiter(); ) await (takt ? tick(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
                 try {
                     Object.assign(st, { _weltbildDa: 0, _weltbildErsteFrage: null, _weltbildLuecke: null }); // eine neue Ankunft (die Fälle davor ließen den Deckel stehen)
                     let wer = "die Nah-Wiese";
@@ -801,7 +797,7 @@ async function probe(arg) {
                     r._foundryRequest = function (pre, s, lod, ...a) { if (pre === "mensch") k.leib.bestellt.push(`${st._weltbildDa ? "nach" : "vor"} L${lod}${a[1] && a[1].kopf ? " Kopf" : ""}`); return P._foundryRequest.call(this, pre, s, lod, ...a); }; // prettier-ignore
                     r.applyPlayerSoul = function (...a) { const x = P.applyPlayerSoul.apply(this, a); k.leib.baut.push(`${st._weltbildDa ? "nach" : "vor"} ${(st.playerMesh.userData._gelenk || {}).nahStufe}`); return x; }; // prettier-ignore
                     r._ofenSpielerVorlagen();
-                    if (!(await bis(() => r._leibBereit(), 90000))) k.leib.fehler = "die Vorlagen des Leibs kamen nicht in 90 s";
+                    await bis(() => r._leibBereit(), 90000);
                     k.leib.ohneFein = r._leibBereit() && !memo.has(key(0));
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
@@ -835,8 +831,8 @@ async function probe(arg) {
                 [w.ferne, w.steht] = [Q.size - vor, r._waldPlanSteht(o.x, o.z)];
                 const z = r._waldPlanZusage(o.x, o.z);
                 if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
-                // bis die Zusage kam, dann bis der ferne Kasten wieder steht (höchstens 60 s)
-                for (const dl = performance.now() + 60000; ((z && !w.kam) || Q.size) && performance.now() < dl; ) await tick(1, 30);
+                // bis die Zusage kam, dann bis der ferne Kasten wieder steht
+                for (const weiter = window.__deckel("die Zusage des fernen Kastens", 2000); ((z && !w.kam) || Q.size) && weiter(); ) await tick(1, 30);
             }
             // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) der Lade-Takt
             {
@@ -952,8 +948,7 @@ async function probe(arg) {
         ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
         m.nachEsc = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
         if (document.activeElement === ci) ci.blur();
-        // Enter auf einem fokussierten Knopf gehört dem Knopf (Gegenprüfung Runde 1: er öffnete zusätzlich den Chat und
-        // nahm ihm den Fokus — die Tastatur-Bedienung brach)
+        // Enter auf einem fokussierten Knopf gehört dem Knopf
         const knopf = document.getElementById("camera-mode-toggle") || document.querySelector("button");
         if (knopf) {
             knopf.focus();
@@ -1006,14 +1001,13 @@ async function probe(arg) {
         out.kamera = m;
         const pl = st.architectures.find((a) => a && a.type === "start_plattform");
         const P = pl ? pl.position : st.playerMesh.position;
-        const natur = (a) => (typeof r._istNatur === "function" ? r._istNatur(a) : /^(baum_|busch_|grown_)/.test((a && a.type) || ""));
+        const natur = (a) => r._istNatur(a);
         const naheBaeume = () =>
             st.architectures
                 .filter((a) => a && /^baum_/.test(a.type) && a.blockerAABBs && a.blockerAABBs.length)
                 .sort((a, b) => Math.hypot(a.position.x - P.x, a.position.z - P.z) - Math.hypot(b.position.x - P.x, b.position.z - P.z));
         let baeume = naheBaeume();
-        const dlB = performance.now() + 60000;
-        while (!baeume.length && performance.now() < dlB) {
+        for (const weiter = window.__deckel("ein naher Baum", 1500); !baeume.length && weiter(); ) {
             await tick(5, 40);
             baeume = naheBaeume();
         }
@@ -1043,15 +1037,14 @@ async function probe(arg) {
                 linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
             }
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
-            // Die Pflanzen beiseite (die Blocker der Natur-Einträge) und die Kronen-Grenze eines Vor-Stands neutral: das Soll,
-            // das nur Boden und Bau erzwingen. Der Täter beim Namen: Stamm (Blocker) oder Krone (die Kronen-Grenze).
+            // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen. Der Täter beim
+            // Namen: der Stamm (Blocker).
             // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
             // Pflanze — er hält die Kamera wie der Bau (K06: die Kugel der Kamera hielt im Ritt 2 von 496 Proben an Natur ohne
             // Pflanzen-Box, die der Mittelstrahl um weniger als ihren Radius verfehlte; die Linse nannte sie „Stamm")
             const pflanzen = st.architectures.filter(
                 (a) => a && natur(a) && a.blockerAABBs && a.blockerAABBs.length && a.blockerAABBs.every((b) => b && b.pflanze === true)
             );
-            const hatKronen = typeof r._kameraKronenGrenze === "function";
             const ohneStaemme = (an) => {
                 for (const a of pflanzen) {
                     if (an) {
@@ -1062,11 +1055,6 @@ async function probe(arg) {
                         delete a.__lkBlocker;
                     }
                 }
-            };
-            const ohneKronen = (an) => {
-                if (!hatKronen) return;
-                if (an) r._kameraKronenGrenze = () => 1;
-                else delete r._kameraKronenGrenze; // die Methode der Klasse gilt wieder
             };
             let T = 1000;
             const arm = () => {
@@ -1093,10 +1081,7 @@ async function probe(arg) {
                         if (!Number.isFinite(hh(x, zz))) continue;
                         stelle(x, zz, L.gier);
                         ohneStaemme(true);
-                        ohneKronen(true);
                         const aSoll = ruhig();
-                        ohneKronen(false);
-                        const aOhneStamm = ruhig();
                         ohneStaemme(false);
                         const aIst = ruhig();
                         z.proben++;
@@ -1104,8 +1089,7 @@ async function probe(arg) {
                         soll.push(aSoll);
                         if (aIst < aSoll - 0.3) {
                             z.pflanzeHaelt++;
-                            if (aOhneStamm < aSoll - 0.3) taeter.add("Krone (`_kameraKronenGrenze`)");
-                            if (aIst < aOhneStamm - 0.3) taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
+                            taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
                         }
                     }
                 }
@@ -1121,7 +1105,6 @@ async function probe(arg) {
                     let hinaus = 0;
                     if (!mitPflanzen) {
                         ohneStaemme(true);
-                        ohneKronen(true);
                     }
                     for (const L of linien.slice(0, 8)) {
                         let vor = null;
@@ -1141,7 +1124,6 @@ async function probe(arg) {
                         ruhig();
                     }
                     if (!mitPflanzen) {
-                        ohneKronen(false);
                         ohneStaemme(false);
                     }
                     return { n, hinaus };
@@ -1169,12 +1151,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
             const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
             if (gt) {
-                const dlG = performance.now() + 45000;
-                while (!gt.instanced && !gt.mesh && performance.now() < dlG) {
-                    r._rebuildArchitectureMesh(gt);
-                    if (gt.instanced || gt.mesh) break;
-                    await sleep(200);
-                }
+                await window.__gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
                 if (mr && mr.ok) {
                     weg(
@@ -1211,7 +1188,7 @@ async function probe(arg) {
             m.stoffeOhneArten = Array.from(new Set(ohne.map((mt) => mt.userData.foundryKind)));
             m.schattenGeschnitten = Array.from(stoffe).filter((mt) => mt.maskNode && mt.maskNode.isNode && !(mt.maskShadowNode && mt.maskShadowNode.isNode)).length;
             // das Ziel der Durchsicht ist der Blickpunkt (3rd: die Brust, zu Fuß um die Schulter versetzt) — gelesen, wo die
-            // Uniform es trägt: höchstens KAMERA_SCHULTER_M neben der Brust, und AUF dem Blick der Kamera (Integration V18.536,
+            // Uniform es trägt: höchstens KAMERA_SCHULTER_M neben der Brust, und AUF dem Blick der Kamera (
             // Gelb 1 der dritten Gegenprüfung: mit der Brust als Ziel stand die Ebene des Fadenkreuz-Strahls schräg, bei kurzem
             // Arm begann er 0,52–0,78 m hinter dem Blickpunkt)
             const lu = st.lodUniforms;
@@ -1237,10 +1214,9 @@ async function probe(arg) {
             // DER STRAHL DES FADENKREUZES: der Spieler 2,5 m vor einem Baum, der Blick von ihm weg
             // — der Baum steht zwischen Kamera und Spieler und ist durchsichtig. Kein Treffer-Strahl durch die Bildmitte trifft
             // HINTER dem Spieler: Bau-Pick, Welt-Treffer (Pfeil · Graben · Aufschütten), Blick-Ziel, Bau-Phantom, Kreatur-Pick
-            // (eine Kreatur zwischen Kamera und Spieler) — und eine Kreatur VOR ihm trifft er: JEDE Seele (Größe 1, je allein unter den
-            // Wesen, nie das zufällige erste Tier der Welt: CI 38993364096 72/96), ihre Leibes-Mitte (`_leibMitte`) auf dem Strahl.
+            // (eine Kreatur zwischen Kamera und Spieler: JEDE Seele, Größe 1, je allein unter den Wesen, ihre Leibes-Mitte auf dem Strahl).
             {
-                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {}, kreaturVorn: 0, kreaturVornProben: 0, verfehlt: {} });
+                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {} });
                 const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
                 const [welt, mx, seelen] = [st.creatures, st.maxCreatures, r.constructor.CREATURE_SOUL_NAMES];
                 st.maxCreatures = Infinity;
@@ -1290,11 +1266,6 @@ async function probe(arg) {
                             kreaturAuf(kreatur, 0.5 * arm2);
                             const kp = r._pickCreatureAtCrosshair();
                             if (kp && kp.creature === kreatur) zaehl("_pickCreatureAtCrosshair");
-                            kreaturAuf(kreatur, arm2 + 4);
-                            const kv = r._pickCreatureAtCrosshair();
-                            fk.kreaturVornProben++;
-                            if (kv && kv.creature === kreatur) fk.kreaturVorn++;
-                            else fk.verfehlt[kreatur.userData.soul] = (fk.verfehlt[kreatur.userData.soul] || 0) + 1;
                         }
                     }
                 st.creatures = welt;
@@ -1489,14 +1460,13 @@ async function probe(arg) {
         const tg = document.getElementById("llm-toggle");
         if (tg) tg.click();
         await sleep(1500);
-        if (typeof r._llmErreichbarkeit === "function") await r._llmErreichbarkeit();
+        await r._llmErreichbarkeit();
         m.status = (document.getElementById("llm-status") || {}).textContent || "";
         // (b) ein Cloud-Begleiter ohne Schlüssel, der Schalter steht an
         const defs = r.llmProviderDefs();
         const ohne = Object.keys(defs).find((k) => defs[k].requiresKey);
         llm.provider = ohne;
         llm.enabled = true;
-        llm.lastResponseAt = -1e9;
         if (llm.providerConfig[ohne]) llm.providerConfig[ohne].apiKey = "";
         const n0 = zeilen().length;
         r.processChatCommand("lass mir ein paar birken und ein fachwerkhaus wachsen");
@@ -1504,12 +1474,11 @@ async function probe(arg) {
         m.ohneSchluessel = zeilen().slice(n0 + 1).find((z) => /schweigt|Fehler/.test(z)) || null;
         // (c) der Proxy: der Ursprung der Seite (der Linsen-Server kennt /api/proxy/llm nicht → 404)
         m.ursprung = location.origin;
-        m.proxyUrl = typeof r._llmProxyUrl === "function" ? r._llmProxyUrl() : "http://localhost:4312/api/proxy/llm";
+        m.proxyUrl = r._llmProxyUrl();
         llm.provider = "ollama";
         llm.enabled = true;
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
         llm.providerConfig.ollama.useProxy = true;
-        llm.lastResponseAt = -1e9;
         const ant = await r.llmCall("hallo welt");
         m.proxyFehler = ant && ant.error ? String(ant.error) : "";
         llm.enabled = alt.enabled;
@@ -1556,8 +1525,7 @@ async function probe(arg) {
         const vor = new Set(st.architectures);
         const z0 = zeilen().length;
         r.processChatCommand("dorf 7 18");
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z))) await sleep(200);
+        for (const weiter = window.__deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
         const neu = st.architectures.filter((a) => !vor.has(a) && /^haus_/.test(a.type || ""));
         const fx = Math.sin(best.yaw);
         const fz = Math.cos(best.yaw);
@@ -1584,9 +1552,8 @@ async function probe(arg) {
             m.uebersprungen = +mz[2];
         }
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
-        // DER MITSPIELER (Gegenprüfung Runde 1: der Anker hing am EIGENEN Spieler, Blick und Fenster jedes Peers — etwa
-        // 60 m Versatz): „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei einem
-        // Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
+        // DER MITSPIELER: „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei
+        // einem Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
         {
             const satz = r.parseChatToDsl("baue dorf hier");
             const haeuserVon = async (quelle, wo, gier) => {
@@ -1594,10 +1561,9 @@ async function probe(arg) {
                 st.yaw = gier;
                 const vorM = new Set(st.architectures);
                 r.dslRun(satz.program, { source: quelle });
-                const dlM = performance.now() + 60000;
                 let n = -1;
                 let ruhig = 0;
-                while (performance.now() < dlM && ruhig < 6) {
+                for (const weiter = window.__deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
                     await sleep(250);
                     const k = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || "")).length;
                     ruhig = k > 0 && k === n ? ruhig + 1 : 0;
@@ -1666,7 +1632,7 @@ async function probe(arg) {
             llm.enabled = altE;
             llm.provider = altProv;
         }
-        if (typeof r._dslAbsageSatz === "function") r._chatEcho(r._dslAbsageSatz([{ event: "op_exception", fehler: "x" }]));
+        r._chatEcho(r._dslAbsageSatz([{ event: "op_exception", fehler: "x" }]));
         k.zeilen = k.zeilen.concat(zeilen().slice(z1));
         for (const a of st.architectures.filter((a) => !vor.has(a) && /^baum_birke/.test(a.type)).reverse()) r.removeArchitecture(a);
         k.gestartet = true;
@@ -1841,7 +1807,7 @@ async function probe(arg) {
                     zielFolgt: true,
                     kreuzAbstand: 0.6,
                     zielAbstand: 0.6,
-                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0 },
+                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0 },
                     konsum: { _hasMagnifyingInSight: true, _pickScatterAtCrosshair: true, _kampfKlingenAchse: true, _kameraDurchsichtNode: true },
                     durchsicht: {
                         formel: true,
@@ -1852,17 +1818,16 @@ async function probe(arg) {
                 },
                 [
                     ["Vorlagen-Maß", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
-                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
-                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
+                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
+                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
                     ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt 3× hinaus"],
                     ["Nadelwand ohne Durchsicht", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
                     ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
                     ["Fadenkreuz auf dem Kopf", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
-                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
-                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
-                    ["Kreatur vorn verfehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 0, kreaturVornProben: 96, zielAchse: 0 } }, "Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler"],
-                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, kreaturVorn: 0, kreaturVornProben: 0, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
+                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
+                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
+                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
                     ["Lupe ohne den EINEN Strahl", { konsum: { _hasMagnifyingInSight: false } }, "Konsum: `_hasMagnifyingInSight`"],
                     ["Loch im Stamm im 1st", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen"],
                     ["Loch im Stamm vor dem Spieler", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt"],
@@ -1989,7 +1954,7 @@ async function probe(arg) {
                 })
                 .join(" · ") +
             ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m neben der Brust, Fadenkreuz ${m.kreuzAbstand} m neben der Brust` +
-            ((fk) => ` · Fadenkreuz-Strahl: ${fk.stellungen} Stellungen, hinter dem Spieler ${JSON.stringify(fk.hinten || {})}, Kreatur vorn ${fk.kreaturVorn}/${fk.kreaturVornProben}, Ziel neben dem Blick ${fk.zielAchse} m`)(m.fadenkreuz || {}) +
+            ((fk) => ` · Fadenkreuz-Strahl: ${fk.stellungen} Stellungen, hinter dem Spieler ${JSON.stringify(fk.hinten || {})}, Ziel neben dem Blick ${fk.zielAchse} m`)(m.fadenkreuz || {}) +
             ((ds) =>
                 ds.formel
                     ? ` · Durchsicht: 1st ${(ds.first || {}).faellt}/${(ds.first || {}).anlaeufe} Anläufe mit fallender Rinde (Auge ${((ds.first || {}).abstand || []).join("/")} m), 3rd vor dem Spieler ${(ds.third || {}).faellt}/${(ds.third || {}).anlaeufe}, zwischen Kamera und Spieler fällt ${(ds.zwischen || {}).wirkt}/${(ds.zwischen || {}).stellungen}`

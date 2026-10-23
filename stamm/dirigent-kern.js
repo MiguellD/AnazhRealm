@@ -78,13 +78,14 @@ class AnazhRealm {
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
             satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
+            bauSatzRaten: null, // Map Gruppen-Schlüssel → der Bereich, der in Raten eintritt (_bauSatzRate)
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
-            _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
             _chunkIdbHits: 0,
             _chunkIdbHitByKey: null,
             _pfeile: null,
+            pfeileStecken: null, // die steckenden Pfeile in Gelände und Bau (_pfeilStecken, im Speicher)
             _deviceLost: null, // der Grund eines verlorenen GPU-Geräts
             _schrittKlang: null,
             _holzExplizit: false,
@@ -178,7 +179,26 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            keys: {},
+            keys: {}, // die Tastatur roh (event.key klein) — gelesen NUR vom Sammler der Verb-Tafel
+            // DIE VERB-TAFEL (leib.K5): Tastatur, Maus und Gamepad schreiben hinein, jedes Verb liest NUR sie (`_verbTafelSammeln`).
+            // Analog: vor/quer (−1..1, quer + = links), gas/bremse (0..1), lenken (−1..1, + = links), der Blick seit dem letzten
+            // Bild (rad). Digital: sprint · sprung · rutsch · handbremse und `gehalten` (Aktion → gedrückt, der EINE Auslöser).
+            verbTafel: {
+                vor: 0,
+                quer: 0,
+                sprint: false,
+                sprung: false,
+                rutsch: false,
+                gas: 0,
+                bremse: 0,
+                lenken: 0,
+                handbremse: false,
+                blickGier: 0,
+                blickNeig: 0,
+                gehalten: {},
+            },
+            padBelegung: null, // Aktion → "Pad<n>" (die freie Belegung des Gamepads, `_loadKeybindings`)
+            _pad: null, // das Gamepad dieses Bilds (Achsen hinter der Totzone, Abzüge, Knöpfe), `_eingabeTakt`
             // 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei kaltem Kern steht der Spieler sichtbar
             // (_kernPflichtWand nennt den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung (init) die
             // Kern-Werte VOR dem ersten Loop-Frame.
@@ -242,7 +262,8 @@ class AnazhRealm {
             right: new THREE.Vector3(),
             moveDirection: new THREE.Vector3(),
             lastSaveUpdate: 0,
-            saveInterval: 10.0,
+            // der Takt des Speichers (speicher.K1): ein Tod mitten im Schreiben liefert den Stand davor — ≤ 10 s verlangt < 10
+            saveInterval: 5.0,
             lastServerSaveUpdate: 0,
             serverSaveInterval: 30.0,
             isServerSaveInFlight: false,
@@ -276,11 +297,6 @@ class AnazhRealm {
             // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
             // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
             klangPreset: null,
-            // Studio-Übergabe: die LIVE-Bearbeitung reist aus dem Studio in die Welt (W12-Kanal "uebergabe",
-            // Empfänger _studioUebergabeEmpfang, fail-closed). koerper = {s, gestalt} → Vorrang-Quelle von
-            // _koerperStudioDials; kreatur = je Gattung {s} → gemischt in _tetrapodaStudioDials (geprägt beim
-            // Guss, Bestand bleibt). Persistiert im Snapshot; Linse: gate:studio-uebergabe.
-            studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
@@ -989,8 +1005,8 @@ class AnazhRealm {
     }
 
     // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
-    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
-    // Sonne) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht der Welt (`_weltLicht`)
+    // und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
     _spiegelPassWach(L) {
         const st = this.state;
         const K = AnazhRealm.SPIEGEL;
@@ -1000,19 +1016,21 @@ class AnazhRealm {
         const m = this._spiegelZielMass();
         let sig = L.sig;
         if (!sig) {
-            const HU = st.hydroSurfaceUniforms;
             const lu = st.luft && st.luft.U;
             sig = L.sig = {
-                neu: new Float64Array(32),
-                alt: new Float64Array(32),
+                neu: new Float64Array(64),
+                alt: new Float64Array(64),
                 da: false,
                 zeit: 0,
                 bilder: 0,
                 k: 0,
                 proj: [0, 5, 8, 9, 10, 14],
-                licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
-                    Boolean
-                ),
+                licht: [
+                    ...Object.values(this._weltLicht().U),
+                    lu && lu.farbe,
+                    lu && lu.sonneFarbe,
+                    lu && lu.beta,
+                ].filter(Boolean),
             };
         }
         const v = sig.neu;
@@ -1028,6 +1046,7 @@ class AnazhRealm {
         for (const i of sig.proj) v[k++] = pr[i];
         v[k++] = S.stand;
         v[k++] = S.wasserSatz ? S.wasserSatz.stand : -1;
+        v[k++] = this._weltLicht().stand; // die Himmels-Sonde des Lichts der Welt
         v[k++] = m.w;
         v[k++] = m.h;
         // Licht und Luft
@@ -1205,7 +1224,7 @@ class AnazhRealm {
     // gespiegelt nach state.gameMode für Gate-Reads. setGameMode ist der EINZIGE Mutations-Pfad
     // (beide + UI-Latches + Status-Bar + Save).
     static get GAME_MODES() {
-        return Object.freeze(["frieden", "pfad", "schöpfer"]);
+        return this._einmal("GAME_MODES", Object.freeze(["frieden", "pfad", "schöpfer"]));
     }
 
     setGameMode(mode) {
@@ -1386,30 +1405,26 @@ class AnazhRealm {
         const stamRatio = Math.max(0, Math.min(1, stam / stamMax));
         // Welle 6.X.4 B3 V8.14 — neue Bar-Breite 166 (von 158), zusätzlicher
         // Glow-Strip oben drauf folgt derselben Breite.
-        hpFill.setAttribute("width", String(166 * hpRatio));
-        const hpGlow = document.getElementById("stats-hud-hp-glow");
-        if (hpGlow) hpGlow.setAttribute("width", String(166 * hpRatio));
-        stamFill.setAttribute("width", String(166 * stamRatio));
-        const stamGlow = document.getElementById("stats-hud-stam-glow");
-        if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
-        hpText.textContent = `${hp}/${hpMax}`;
-        stamText.textContent = `${stam}/${stamMax}`;
+        // Jeder Wert über den EINEN HUD-Schreiber (`_hudSchreib`): im Stand schreibt der 10-Hz-Takt nichts.
+        this._hudSchreib(hpFill, 166 * hpRatio, "width");
+        this._hudSchreib(document.getElementById("stats-hud-hp-glow"), 166 * hpRatio, "width");
+        this._hudSchreib(stamFill, 166 * stamRatio, "width");
+        this._hudSchreib(document.getElementById("stats-hud-stam-glow"), 166 * stamRatio, "width");
+        this._hudSchreib(hpText, `${hp}/${hpMax}`);
+        this._hudSchreib(stamText, `${stam}/${stamMax}`);
         // Mana-Row: Welt-Gesten kosten in pfad Mana (derselbe Kosten-Walker wie das Nexus-Wirk-Budget);
         // dritte Row derselben Familie (eine Quelle, eine Throttle), NUR in pfad sichtbar.
         const manaRow = document.getElementById("stats-hud-mana-row");
         if (manaRow) {
             const isPfad = typeof this.getGameMode === "function" && this.getGameMode() === "pfad";
-            manaRow.hidden = !isPfad;
+            if (manaRow.hidden !== !isPfad) manaRow.hidden = !isPfad;
             if (isPfad) {
                 const manaMax = Math.max(1, Math.round(typeof p.manaMax === "number" ? p.manaMax : 40));
                 const mana = Math.max(0, Math.round(typeof p.mana === "number" ? p.mana : manaMax));
                 const manaRatio = Math.max(0, Math.min(1, mana / manaMax));
-                const manaFill = document.getElementById("stats-hud-mana-fill");
-                if (manaFill) manaFill.setAttribute("width", String(166 * manaRatio));
-                const manaGlow = document.getElementById("stats-hud-mana-glow");
-                if (manaGlow) manaGlow.setAttribute("width", String(166 * manaRatio));
-                const manaText = document.getElementById("stats-hud-mana-text");
-                if (manaText) manaText.textContent = `${mana}/${manaMax}`;
+                this._hudSchreib(document.getElementById("stats-hud-mana-fill"), 166 * manaRatio, "width");
+                this._hudSchreib(document.getElementById("stats-hud-mana-glow"), 166 * manaRatio, "width");
+                this._hudSchreib(document.getElementById("stats-hud-mana-text"), `${mana}/${manaMax}`);
             }
         }
         // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
@@ -1431,7 +1446,7 @@ class AnazhRealm {
         if (!tooltip) return;
         const stats = (this.state.player && this.state.player.stats) || null;
         if (!stats) {
-            tooltip.textContent = "Stats nicht initialisiert";
+            this._hudSchreib(tooltip, "Stats nicht initialisiert");
             return;
         }
         const lines = [
@@ -1460,7 +1475,7 @@ class AnazhRealm {
             lines.push(`Boosts        ${activeBoosts.length}`);
         }
         // <br>-getrennt damit das Tooltip schmal bleibt
-        tooltip.innerHTML = lines.join("<br>");
+        this._hudSchreib(tooltip, lines.join("<br>"), "html");
     }
 
     // ### Atmosphäre-Wurzel-Helper ###
@@ -1790,7 +1805,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.38";
+AnazhRealm.VERSION = "18.546.77";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

@@ -33,7 +33,12 @@ class AnazhRealm_dienst {
         });
     }
 
-    async llmCall(userText, systemPromptOverride = null) {
+    // DIE EINE TÜR ZUM MODELL — der Satz des Spielers hat Vorrang (KI H1, 20.10.): am lokalen Modell verweigerte sie 2 von 3
+    // Sätzen („Anfrage läuft bereits", „Kurze Pause"), weil ein Ruf der Welt im Flug war — der Kommentar zum Journal, den die
+    // Tat des vorigen Satzes auslöste, 30–60 s auf der CPU. Ein Ruf der Welt (`hintergrund`: Journal-Kommentar, Reflexion eines
+    // Wesens, die geteilte Stimme eines Mitspielers) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler
+    // wartet auf keins von beiden. Ein zweiter Vordergrund-Ruf während des Abbruchs findet die Tür wieder besetzt (`while`).
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -44,12 +49,20 @@ class AnazhRealm_dienst {
             return {
                 error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
-        if (llm.inFlight) return { error: "Anfrage läuft bereits" };
+        while (llm.inFlight) {
+            if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
+            this._llmHintergrund.abort();
+            await this._llmFrei;
+        }
         const nowSec = performance.now() / 1000;
-        if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
+        if (hintergrund && nowSec - llm.lastResponseAt < llm.minGapSeconds) {
             return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
         }
         llm.inFlight = true;
+        const abbruch = new globalThis.AbortController();
+        this._llmHintergrund = hintergrund ? abbruch : null;
+        let frei;
+        this._llmFrei = new Promise((r) => (frei = r));
         // Wohin die Anfrage ging (der Fehler-Klassifizierer liest den Endpunkt-Host, V-D6).
         let zielUrl = null,
             zielLokal = false,
@@ -59,7 +72,7 @@ class AnazhRealm_dienst {
             // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
             // Pfad bleibt sonst identisch (Provider, Headers, Body, Parse).
             const system = systemPromptOverride || this.llmBuildSystemPrompt();
-            const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
+            const userContent = def.buildUserContent(system, this.llmBuildContext(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
@@ -80,6 +93,7 @@ class AnazhRealm_dienst {
                 method: "POST",
                 headers: fetchHeaders,
                 body: fetchBody,
+                signal: abbruch.signal,
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
@@ -105,6 +119,7 @@ class AnazhRealm_dienst {
             llm.lastError = parsed.error || null;
             return parsed;
         } catch (err) {
+            if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
             // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
             // klaren Hinweis geben. „Failed to fetch" ist der typische
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
@@ -142,6 +157,8 @@ class AnazhRealm_dienst {
             return { error: llm.lastError };
         } finally {
             llm.inFlight = false;
+            this._llmHintergrund = null;
+            frei();
         }
     }
 
@@ -393,6 +410,7 @@ class AnazhRealm_dienst {
         if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
             this._weltBakeFenster = jetzt;
             this._weltBakeN = 0;
+            this._weltBakeNein = 0;
             this._weltBakeVorrang = Number.isFinite(this._weltBakeHunger) ? this._weltBakeHunger : Infinity;
             this._weltBakeHunger = Infinity;
         }
@@ -400,10 +418,27 @@ class AnazhRealm_dienst {
         const vorrang = jetzt - this._weltBakeFenster < 500 && D > this._weltBakeVorrang;
         if (this._weltBakeN >= max || vorrang) {
             if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
+            this._weltBakeNein++;
             return false;
         }
         this._weltBakeN++;
         return true;
+    }
+    // DIE SCHULD DER BAKE-UHR: wer in ihrem lebenden Fenster abgewiesen wurde, wartet (er fragt im nächsten Bild wieder) —
+    // `_weltOffen` liest sie. Die Uhr zählt Fits je Sekunde, jede Wand Takte: auf der GTX liefen 1 988 Takte, während sie den
+    // Satz des Dorfs noch abwies, und das Wort „steht" kannte ihre Schuld nicht (CI 39700100953). Ein abgelaufenes Fenster
+    // ohne Frager schuldet nichts.
+    _weltBakeSchuld() {
+        const f = this._weltBakeFenster;
+        return f !== undefined && performance.now() - f <= 1000 ? this._weltBakeNein | 0 : 0;
+    }
+    // DER WECKER DER BAKE-UHR: der Beginn ihrer jetzigen Phase (das Fenster, seine zweite Hälfte ohne Vorrang, das fällige
+    // nächste) — neu, sobald sie anders antworten kann. Ein Fege-Takt, der nur auf sie wartet, schläft bis dahin (`_standRuht`).
+    _weltBakeWecker() {
+        const f = this._weltBakeFenster;
+        if (f === undefined) return -1;
+        const dt = performance.now() - f;
+        return f + (dt < 500 ? 0 : dt <= 1000 ? 500 : 1000);
     }
 
     // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
@@ -1183,15 +1218,26 @@ class AnazhRealm_dienst {
             );
             return false;
         }
+        // DIE SPERRE DES LADENS (speicher.K1): solange loadState die Welt zusammensetzt, ist sie halb — neun Setter riefen
+        // hier vor dem Bau-Restore, jeder Boot legte eine Welt ohne Bauten ab (ein Tod vor dem ersten Takt: fort). Der Wunsch
+        // bleibt: loadState schreibt am Ende EINMAL die ganze Welt.
+        if (this._ladeSperre) {
+            this._ladeSperre.verlangt = true;
+            return false;
+        }
+        // DAS DORF IST NIE HALB (stadt-erwachen): der Gang seines Erlebnisses (`_dorfErlebnis`, Raten je Takt) schließt vor dem
+        // Schnappschuss — nach dem Laden baut die Zelle nur ihre Wege neu, nie Laterne, Brunnen und Hof-Baum
+        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
         // Legacy-Key zurück, damit nichts still verloren geht.
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
-        // Snapshot-JSON EINMAL bauen: IndexedDB trägt ihn IMMER (async), localStorage ist schneller Spiegel +
-        // Fallback — wirft es QUOTA, hat IndexedDB die Welt schon.
+        // EIN Stand, EIN Stempel: IndexedDB trägt ihn atomar (EINE Transaktion tauscht den vorigen nach `.bak`), der Platz im
+        // localStorage ist sein Abbild mit demselben Stempel (lastPlayed) — die Rettungs-Kette wählt am Stempel, nie am Ort.
         const json = JSON.stringify(stateToSave);
+        const at = Date.now();
         if (worldId) {
-            this._idbPutWorld(worldId, json).then((ok) => {
+            this._idbPutWorld(worldId, json, at).then((ok) => {
                 if (!ok && !this._idbWarned) {
                     this._idbWarned = true;
                     this.log("IndexedDB nicht verfügbar — Welten leben allein im localStorage (5-MB-Wand).", "WARN");
@@ -1200,20 +1246,13 @@ class AnazhRealm_dienst {
         }
         try {
             if (worldId) {
-                // Rotierender Backup: den bisherigen guten Stand VOR dem Überschreiben in den `.bak`-Slot retten
-                // (ein korrupter Write vernichtet ihn nicht); best-effort — Quota am Backup wird geschluckt.
-                try {
-                    const prevGood = localStorage.getItem(this.worldStorageKey(worldId));
-                    if (prevGood) localStorage.setItem(this.worldStorageKey(worldId) + ".bak", prevGood);
-                } catch (_bakErr) {
-                    /* Backup ist best-effort — der Haupt-Pfad + IndexedDB tragen die Welt */
-                }
+                localStorage.removeItem(this.worldStorageKey(worldId) + ".bak"); // der .bak lebt in der Transaktion
                 localStorage.setItem(this.worldStorageKey(worldId), json);
                 this.worldsIndexUpsert({
                     worldId,
                     slug: this.state.worldMeta.slug || "",
-                    bornAt: this.state.worldMeta.bornAt || Date.now(),
-                    lastPlayed: Date.now(),
+                    bornAt: this.state.worldMeta.bornAt || at,
+                    lastPlayed: at,
                 });
                 this.activeWorldSet(worldId);
             } else {
@@ -1343,7 +1382,8 @@ class AnazhRealm_dienst {
     //   · der Ort: der Ring die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings, Stufen-Wahlen und Kacheln Spieler
     //     oder Auge auf STAND_RAND_M, der Cull (Urteile ab 100 m) auf STAND_RAND_FERN_M — so kostet Gehen nur, was es ändert.
     // Offenes (ein Asset lädt, ein Budget ist leer) hält nur den eigenen Takt wach. Die Zeit weckt nie: Takte mit eigener Uhr
-    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
+    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Wuchs, Feld, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache —
+    // die langsamen Simulationen schlafen an ihrem eigenen Fixpunkt bis zu ihrem Ereignis (feld.K3, gate:stand-takt RUHE-SIM).
     // Die Wand: gate:stand-takt (Ruhe 0, Treue, Wecken, Gehen, Strom; der Bruch fällt rot).
     // `boden`: die Chunk-Menge regt sich — das weckt auch die Boden-Takte.
     // `stufe` (K51-5): ein Chunk tauschte nur seine Stufe (`_rebuildVoxelChunk`) — die Menge steht, es regt sich nur die
@@ -1378,6 +1418,7 @@ class AnazhRealm_dienst {
                 leer: 0,
                 ruht: 0,
                 arbeit: 0,
+                offen: false,
             };
             W.takte.set(name, t);
         }
@@ -1408,7 +1449,13 @@ class AnazhRealm_dienst {
             t.stempel = s;
             t.leer = 0;
         }
-        if (t.leer >= Math.max(1, runde | 0)) {
+        // die Runde, die er geht, ehe er schläft — so lange steht die Welt nicht (`_standGeht`). Ohne Einheit (0) ist sie
+        // gegangen: bis K-WANDUHR hieß sie 1, ein Gang über 0 Zellen meldete 0 — die Streu einer leeren Bühne ging für immer
+        // „0/1", die Welt stand nie (CI 39510089436 schatten-terminator, der Leib wärmte nie vor)
+        t.runde = runde | 0;
+        // DIE BAKE-UHR WECKT (Lehre 26): wartete der letzte Gang NUR auf sie (`offen` "felder"), geht der nächste erst, wenn sie
+        // anders antworten kann (`_weltBakeWecker`) — vorher ging archCull je Bild den Bestand (90 000 Abweisungen in 31 s)
+        if (t.leer >= t.runde || (!neu && t.offen === "felder" && t.wecker === this._weltBakeWecker())) {
             t.ruht++;
             return true;
         }
@@ -1416,11 +1463,14 @@ class AnazhRealm_dienst {
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
-    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach; "felder": nur auf die Bake-Uhr, ein Asset oder das
+    // Buch — ihn wecken ihr Wecker und der Stempel). Beides beginnt seine Runde neu.
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
+        t.offen = offen === "felder" ? offen : !!offen;
+        t.wecker = this._weltBakeWecker();
         if (gewirkt) {
             t.leer = 0;
             if (t.bau) this._bauRegt();

@@ -1,12 +1,8 @@
-// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots, 05.10.): ein freier Slot und eine leere Hülle zeichnen NIE,
+// diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
-// Befund (Radeon 890M, Mess-Wiese −900/−850, drei Wander-Schleifen à 1,2 km, Regler voll): `_archGroupFree` setzte nur die
-// Matrix auf eine Null-3×3 und legte den Slot in eine Free-Liste; `mesh.count` blieb am Höchststand, jede Null-Instanz lief
-// durch den Vertex-Shader jedes Passes — 890 freie Slots mit 1,73 M Dreiecken in 202 Gruppen, 92 leere Hüllen in der
-// Gnadenfrist zeichneten 0,99 M Dreiecke ins Hauptbild (Band-Klasse `leer:*`, Haushalt 0). Der Schnitt: jede Instanz-Senke
-// ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur `_instanzZahl`, eine
-// leere Senke ist unsichtbar.
+// Jede Instanz-Senke ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur
+// `_instanzZahl`, eine leere Senke ist unsichtbar.
 //
 // Die Linse fährt die echte Welt (Null-Renderer, Foundry an) durch eine Wander-Sequenz — fort und zurück, mehrere Umzüge —
 // und hält nach jedem Umzug JEDE Instanz-Senke gegen ihre lebenden Instanzen:
@@ -16,7 +12,7 @@
 //   F  Fundament-Pool: count == Zahl der Sockel, Rückverweis Slot ↔ Eintrag geschlossen
 //   S  Nah-Wiese · Zaun: keine Null-3×3 in [0, count), leer ⇒ unsichtbar; die Nah-Streu (W7: ihre Senken
 //      sind Daten, ihr Stoff-Satz zeichnet): Σ Blöcke == Anzahl, keine Senke trägt eine Mesh
-//   W  Nah-Wiese (Welle 6): ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
+//   W  Nah-Wiese: ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
 //      nie, die Senken stünden leer und S prüfte nichts. Die Linse legt den Satz nach jedem Umzug SELBST
 //      (scripts/lib/wiese-sicht.cjs: Linsen-Kamera am Ring-Mittelpunkt, Blick auf den nächsten Büschel) und verlangt:
 //      der Ring trägt Büschel, JEDE Senke anzahl > 0, jede gelegte Instanz steht im Ring um das Auge
@@ -57,7 +53,7 @@ function quellBefunde(q) {
 async function welt() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
@@ -67,19 +63,16 @@ async function welt() {
     const out = await page.evaluate(async (selbst) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = { boot: false };
-        const t0 = performance.now();
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() - t0 < 90000)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return o;
         o.boot = true;
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        const tF = performance.now();
-        while (f && !f.ready && performance.now() - tF < 60000) await sleep(100);
+        await window.__weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
         // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
-        // die Streu mit, Kamera und Nah-Wiese blieben am Start (bis 06.10. lag das Auge jedes Umzugs bei 36 0).
+        // die Streu mit, Kamera und Nah-Wiese blieben am Start.
         const spieler = () => st.playerMesh.position;
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register
@@ -273,7 +266,7 @@ async function welt() {
             const x = sx + dx,
                 zz = sz + dz;
             const pm = spieler();
-            const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, zz) : pm.y;
+            const y = r._voxelSurfaceY(x, zz);
             pm.set(x, (Number.isFinite(y) ? y : pm.y) + 1.8, zz);
             await takt(160);
             const wiese = window.__wieseSicht(r);

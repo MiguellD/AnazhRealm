@@ -1,36 +1,24 @@
 class AnazhRealm_feld_dsl {
     // ===== ATLAS · Feld/dsl — DSL-Ops · Sandbox · Welt-Regeln · Chat-Tore =====
-    // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
-    // verwandeln. Bei aktivem LLM kommt eine lebendige Beobachtung; ohne
-    // LLM (oder bei Fehler/Rate-Limit) fällt es auf den Pool zurück. Beide
-    // Pfade respektieren den Standard-Throttle aus grokSpeak.
+    // Ein Journal-Eintrag wird ein Satz der Welt: mit aktiver Stimme spricht NUR das Modell — ein Ruf, der dem Spieler wich,
+    // die Tür besetzt fand oder scheiterte, schweigt (der Fehler steht im LLM-Status); ohne Stimme spricht der Pool. Bis
+    // 20.10. sprang der Pool still ein (KI H1): genau wenn der Spieler sprach, kam eine Konserven-Zeile.
     grokSpeakFromJournal(entry) {
         const grok = this.state.grok;
         const cfg = grok.triggers.journalEvent;
         const now = performance.now() / 1000;
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
-        // LLM-Pfad: nur wenn aktiv und kein Inflight-Call läuft.
-        if (this.state.llm && this.state.llm.enabled && !this.state.llm.inFlight) {
+        if (this.state.llm && this.state.llm.enabled) {
             const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
-            // Async ohne await: das Tick darf nicht blockieren. Erfolg/Fehler
-            // werden im LLM-Status angezeigt; bei narrativer Antwort rendern
-            // wir sie direkt.
-            this.llmCall(prompt)
-                .then((reply) => {
-                    if (reply && reply.say) {
-                        grok.lastSpoke = performance.now() / 1000;
-                        if (cfg) cfg.lastFired = performance.now() / 1000;
-                        this.grokRender(reply.say);
-                        this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
-                    } else {
-                        // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
-                        this.grokSpeak("journalEvent");
-                    }
-                })
-                .catch(() => {
-                    this.grokSpeak("journalEvent");
-                });
+            // Async ohne await: das Tick darf nicht blockieren.
+            this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
+                if (!reply || !reply.say) return;
+                grok.lastSpoke = performance.now() / 1000;
+                if (cfg) cfg.lastFired = performance.now() / 1000;
+                this.grokRender(reply.say);
+                this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
+            });
             return true;
         }
         return this.grokSpeak("journalEvent");
@@ -120,52 +108,55 @@ class AnazhRealm_feld_dsl {
     // Steht einer IRGENDWO im Tree, fällt der GANZE Broadcast — sonst änderte z. B. ["chain", weather,
     // player_speed] beim Empfänger den Speed mit.
     static get NON_BROADCASTABLE_OPS() {
-        return new Set([
-            "player_jump_power",
-            "player_speed",
-            "player_soul",
-            "set_visible",
-            // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
-            // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
-            // bekommen). Tod-Wandlung läuft lokal.
-            "damage",
-            "apply_boost",
-            // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
-            // (jeder hat sein eigenes Inventar + Ausrüstung).
-            "equip_tool",
-            "equip_armor",
-            "equip_weapon",
-            "unequip",
-            // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
-            // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
-            // einer frieden) — set_mode darf nicht über P2P weiterspringen.
-            "set_mode",
-            // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
-            // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
-            // (sonst könnte ein Peer das Inventar von anderen befüllen).
-            "add_to_inventory",
-            // Kreatur-Aufträge sind spieler-private Gesten: "die nächste Kreatur folgt mir" meint bei jedem
-            // Sender eine andere Kreatur.
-            "creature_task",
-            "creature_task_nearest",
-            "creature_task_all",
-            // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
-            // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
-            "damage_creature",
-            // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
-            // Aktion in Multi-User (jeder Spieler stattet seine eigenen
-            // Kreaturen aus, gleiche Disziplin wie creature_task).
-            "creature_equip_tool",
-            "creature_equip_armor",
-            "creature_unequip",
-            // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
-            // Spieler-private Geste (er „gibt" der Kreatur den Trank).
-            "creature_apply_boost",
-            // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
-            // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
-            // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
-            "set_time_of_day",
-        ]);
+        return this._einmal(
+            "NON_BROADCASTABLE_OPS",
+            new Set([
+                "player_jump_power",
+                "player_speed",
+                "player_soul",
+                "set_visible",
+                // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
+                // (Mitspieler in Multi-User-Welt sollen nicht Schaden vom anderen
+                // bekommen). Tod-Wandlung läuft lokal.
+                "damage",
+                "apply_boost",
+                // Welle 6.D Etappe 3b — Equip-Aktionen sind ebenfalls Spieler-privat
+                // (jeder hat sein eigenes Inventar + Ausrüstung).
+                "equip_tool",
+                "equip_armor",
+                "equip_weapon",
+                "unequip",
+                // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
+                // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
+                // einer frieden) — set_mode darf nicht über P2P weiterspringen.
+                "set_mode",
+                // Welle 6.C1 — Inventar ist per-Spieler-privat. Mitspieler haben
+                // eigene Slots; add_to_inventory darf nicht remote ausgelöst werden
+                // (sonst könnte ein Peer das Inventar von anderen befüllen).
+                "add_to_inventory",
+                // Kreatur-Aufträge sind spieler-private Gesten: "die nächste Kreatur folgt mir" meint bei jedem
+                // Sender eine andere Kreatur.
+                "creature_task",
+                "creature_task_nearest",
+                "creature_task_all",
+                // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
+                // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
+                "damage_creature",
+                // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
+                // Aktion in Multi-User (jeder Spieler stattet seine eigenen
+                // Kreaturen aus, gleiche Disziplin wie creature_task).
+                "creature_equip_tool",
+                "creature_equip_armor",
+                "creature_unequip",
+                // Welle 6.H Phase 2F.3 — Konsumable-Übergabe an Kreatur ist
+                // Spieler-private Geste (er „gibt" der Kreatur den Trank).
+                "creature_apply_boost",
+                // Welle 6.G3.a — Tageszeit ist per-Spieler-Beziehung zur Welt
+                // (jeder Mitspieler darf seine eigene Tageszeit/Phase haben,
+                // gleiche Disziplin wie set_mode). Tag-Nacht-Tick läuft lokal.
+                "set_time_of_day",
+            ])
+        );
     }
 
     _dslContainsAnyOp(node, opSet) {
@@ -182,36 +173,39 @@ class AnazhRealm_feld_dsl {
     // Emotion/Kreaturen) — nie den frozen Worldgen (Determinismus/Multi-User-Seed), nie wiederholte
     // schwere Struktur-Spawns/Identitäts-Ops. Enthält der Effekt-AST IRGENDWO einen davon → abgelehnt.
     static get RULE_FORBIDDEN_EFFECT_OPS() {
-        return new Set([
-            // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
-            "terrain_steepness",
-            "terrain_base_height",
-            "voxel_carve",
-            "voxel_fill",
-            // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
-            "spawn_village",
-            "spawn_temple",
-            "spawn_waterfall",
-            "spawn_fractal",
-            "spawn_blueprint",
-            "spawn_island",
-            "spawn_ufo",
-            "spawn_tree",
-            "spawn_studio",
-            "remove_architecture",
-            // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
-            "define_blueprint",
-            "define_material",
-            "define_ability",
-            "register_tool",
-            "set_tool_meta",
-            "player_soul",
-            "set_portal",
-            "set_mode",
-            "gravity",
-            "apply_op",
-            "apply_connection",
-        ]);
+        return this._einmal(
+            "RULE_FORBIDDEN_EFFECT_OPS",
+            new Set([
+                // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
+                "terrain_steepness",
+                "terrain_base_height",
+                "voxel_carve",
+                "voxel_fill",
+                // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
+                "spawn_village",
+                "spawn_temple",
+                "spawn_waterfall",
+                "spawn_fractal",
+                "spawn_blueprint",
+                "spawn_island",
+                "spawn_ufo",
+                "spawn_tree",
+                "spawn_studio",
+                "remove_architecture",
+                // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
+                "define_blueprint",
+                "define_material",
+                "define_ability",
+                "register_tool",
+                "set_tool_meta",
+                "player_soul",
+                "set_portal",
+                "set_mode",
+                "gravity",
+                "apply_op",
+                "apply_connection",
+            ])
+        );
     }
 
     // Erlaubt, wenn der Effekt-AST KEINEN verbotenen Op enthält (_dslContainsAnyOp): reaktive Effekte
@@ -288,6 +282,16 @@ class AnazhRealm_feld_dsl {
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
         if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
+            return;
+        }
+        const wert = AnazhRealm.DSL_WERTE[op];
+        if (wert && !wert[1](args[wert[0]], this)) {
+            ctx.log.push({
+                event: "invalid_wert",
+                op: String(op),
+                wert: args[wert[0]],
+                grund: `das Gesetz von ${op}: ${wert[2](this)}`,
+            });
             return;
         }
         ctx.budget.depthLeft--;
@@ -842,7 +846,6 @@ class AnazhRealm_feld_dsl {
                         ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
                     return;
                 }
-                if (!(name in AnazhRealm.WEATHER_INTENSITY)) return;
                 const ok = this._setWeather(name, quelle);
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
                 else if (ctx && ok === false) ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
@@ -862,7 +865,7 @@ class AnazhRealm_feld_dsl {
             gravity: ([value]) => {
                 // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
                 // (keine Ammo-Welt mehr, die ein setGravity bräuchte).
-                this.state.gravity = c(value, -30, 0);
+                this.state.gravity = Number(value); // das Band hält dslEval (`AnazhRealm.DSL_WERTE`)
             },
             terrain_steepness: ([value]) => {
                 this.state.terrainSteepness = c(value, 0.1, 2.0);
@@ -878,13 +881,13 @@ class AnazhRealm_feld_dsl {
             voxel_carve: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxelSphere(p.x, p.y, p.z, r);
+                this.carveVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxelSphere(p.x, p.y, p.z, r);
+                this.fillVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             skybox_color: ([color]) => {
@@ -905,7 +908,7 @@ class AnazhRealm_feld_dsl {
             spawn_creature: ([positionNode, count, emotion], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const n = c(count, 1, 20);
-                const e = emotion === "sad" || emotion === "happy" ? emotion : "happy";
+                const e = emotion || "happy"; // das Gesetz der Werte hält dslEval (`AnazhRealm.DSL_WERTE`)
                 // === Spawn-Harmonie ===
                 // Kreaturen erscheinen im RING um den Ziel-Punkt, nie gestapelt, nie AUF dem Spieler (sonst
                 // clippt es); liegt das Ziel auf dem Spieler (at_player), rückt der Ring nach außen. ctx.rng →
@@ -975,7 +978,7 @@ class AnazhRealm_feld_dsl {
             spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
-                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche";
+                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche"; // eiche | kiefer: `AnazhRealm.DSL_WERTE`
                 let spawned = 0;
                 const weicht = {};
                 for (let i = 0; i < n; i++) {
@@ -1004,7 +1007,7 @@ class AnazhRealm_feld_dsl {
                     const entry = this._naturSetzen(
                         treeKind,
                         { x: pos.x + jx, y: pos.y, z: pos.z + jz },
-                        { seed: treeSeed },
+                        { seed: treeSeed, werk: !this._feldHandelt(ctx) },
                         null,
                         (wo) => (weicht[wo] = (weicht[wo] || 0) + 1)
                     );
@@ -1016,8 +1019,9 @@ class AnazhRealm_feld_dsl {
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
             // am EINEN Chokepoint spawnArchitecture — mit Preset-Stempel (_studioStampFor), geerdet, nie im
-            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum.
-            spawn_studio: ([what, positionNode, count, seed], ctx) => {
+            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
+            // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt.
+            spawn_studio: ([what, positionNode, count, seed, ov], ctx) => {
                 const name = this._studioBlueprintForWord(what == null ? "" : String(what));
                 if (!name) {
                     ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
@@ -1027,7 +1031,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
-                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
+                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov);
                 ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
             },
             spawn_island: ([positionNode, height, seed, size], ctx) => {
@@ -1156,7 +1160,7 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 // der Ort, an dem das ganze Fundament auf dem Land steht (nach der Spieler-Klemme der Wurzel); keiner → benannt
                 const ort = this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
                 if (!ort) {
@@ -1183,6 +1187,7 @@ class AnazhRealm_feld_dsl {
                 const entry = this.spawnArchitecture("waterfall", pos, {
                     seed: s,
                     autonomous: this._feldHandelt(ctx),
+                    werk: !this._feldHandelt(ctx),
                     absage,
                 });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
@@ -1219,6 +1224,14 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
                     return;
                 }
+                // der gereiste Stempel trägt nur, was der Kern seiner Art ausweist (`_ovVertrag`) — sonst fällt der Bau benannt
+                const bruch = this._ovVertrag(name, studioOv);
+                if (bruch) {
+                    ctx.log.push({ event: "studio_ov_vertrag", name, grund: bruch });
+                    absage(bruch === "buch" ? "buch" : "vertrag");
+                    ergebnis(0);
+                    return;
+                }
                 const ziel = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1229,12 +1242,11 @@ class AnazhRealm_feld_dsl {
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 // Autonom (Nexus) gespawnte Baupläne unterliegen dem _capNexusStructures-Cap (kein
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
-                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
-                // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
-                // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
-                if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
+                // PRÄGUNG-WELT — der Stempel (im Vertrag, oben) geht an den Sanitize-Chokepoint (spawnArchitecture: Taille-Wand).
+                if (studioOv) opts.studioOv = studioOv;
                 // Ein Werk mit geteilter id steht, wo der Sender es gesetzt hat; sonst wählt das Programm den Ort — er trägt das
                 // ganze Fundament (`_werkOrtSuchen`, nach der Spieler-Klemme der Wurzel), keiner → benannt.
                 const ort = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
@@ -1281,10 +1293,16 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, {
-                        name: result.name,
-                        parts: valid.parts.length,
-                    });
+                    // ein Name aus fremder Hand (Mitspieler, Werk-Code) geht nie in den Text der Erinnerung — sie liest die KI
+                    const fremd = /^(remote:|teilen)/.test(String(ctx.source));
+                    this.journalAppend(
+                        "growth",
+                        fremd ? "Ein Bauplan kam von außen." : `Ein neuer Bauplan entstand: ${result.name}.`,
+                        {
+                            name: result.name,
+                            parts: valid.parts.length,
+                        }
+                    );
                     // Einen EIGENEN Bauplan erschaffen feuert Stolz (joy + hope) ∝ Komplexität, gefärbt von der
                     // Substanz — NUR die Mensch-Geste (nicht Nexus/LLM/remote).
                     if (ctx && ctx.source === "human") this._feelAction("create", { blueprint: result.name });
@@ -1721,7 +1739,14 @@ class AnazhRealm_feld_dsl {
                         this.spawnArchitecture(
                             t,
                             { x: cx, y: pos.y, z: cz },
-                            { seed: childSeed, scale, precise: true, autonomous: this._feldHandelt(ctx), absage }
+                            {
+                                seed: childSeed,
+                                scale,
+                                precise: true,
+                                autonomous: this._feldHandelt(ctx),
+                                werk: !this._feldHandelt(ctx),
+                                absage,
+                            }
                         )
                     )
                         spawned++;
@@ -1776,7 +1801,6 @@ class AnazhRealm_feld_dsl {
                 }
             },
             creatures_emotion: ([emotion]) => {
-                if (emotion !== "happy" && emotion !== "sad") return;
                 // V18.100 (G4-1) — der Op SETZT das Innenleben (deterministisch,
                 // wie sein alter Intent): ein klarer Achsen-Zustand statt eines
                 // Etikett-Stempels; die Projektion liefert das alte Verhalten.
@@ -1942,12 +1966,31 @@ class AnazhRealm_feld_dsl {
         return y;
     }
 
-    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
-        const stamp = this._studioStampFor(name);
+    // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler
+    // setzt nichts (der Grund `regler`, das Log nennt ihn und die Regler der Art). Ein Same null ist keiner (Lehre 17).
+    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov) {
+        const befund = {};
+        const stamp = this._studioStampFor(name, ov, befund);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
+        if (befund.geklemmt && befund.geklemmt.length)
+            ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
+        if (stamp === false) {
+            ctx.log.push({ event: "studio_regler_abgelehnt", kind: name, regler: befund.fremd, kennt: befund.kennt });
+            this._setzErgebnis(
+                ctx,
+                "spawn_studio",
+                n,
+                0,
+                { regler: n },
+                this._werkLabel(name),
+                natur ? "gewachsen" : "gebaut"
+            );
+            return 0;
+        }
         const grundriss = !natur && !!this._grundrissGesetz(name);
-        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
+        const baseSeed =
+            seed != null && Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
         const wurf = this._samenStrom(baseSeed);
         let spawned = 0;
         const weicht = {};
@@ -1964,7 +2007,7 @@ class AnazhRealm_feld_dsl {
             let opts = null;
             if (grundriss) {
                 // DAS WERK MIT GRUNDRISS: Drehung und Same zuerst (der Grundriss dreht mit), dann der Ort, der es trägt
-                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2, werk: !this._feldHandelt(ctx) };
                 if (stamp) opts.studioOv = stamp;
                 const off = n > 1 ? Math.max(jitter, 2.5) : 0;
                 const ziel = { x: pos.x + (wurf() - 0.5) * 2 * off, y: pos.y, z: pos.z + (wurf() - 0.5) * 2 * off };
@@ -1991,7 +2034,7 @@ class AnazhRealm_feld_dsl {
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
             const y = Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;
             if (!opts) {
-                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2, werk: !this._feldHandelt(ctx) };
                 if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
                 if (stamp) opts.studioOv = stamp;
             }
@@ -2220,6 +2263,46 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     // (Live-Puls der Gesetze-Console); > ruleEverySecMax (5) → ein aktives Gesetz pulst durchgehend.
     threadRecentSec: 6,
 });
+// DAS GESETZ DER WERTE (KI H1, 20.10.): ein Op mit begrenztem Wert nennt ihn HIER — die KI liest ihn im Prompt
+// (`_dslVokabular`), `dslEval` weist einen Wert außerhalb benannt ab (`invalid_wert`, die Absage nennt das Gesetz). Bis 20.10.
+// verwarfen die Ops ihn still, der Chat sagte „Welt verändert" und nichts geschah (qwen3:4b-instruct am Korpus:
+// ["set_time_of_day","night"], ["weather","thunderstorm"]); der Leib und die Schwerkraft klemmten den Wunsch auf den Rand,
+// und der Chat meldete den Wunsch („Sprungkraft auf 1.2"). Je Op: [Argument, Prüfung (Wert, Welt), Gesetz in Worten (Welt)].
+AnazhRealm.DSL_WERTE = (() => {
+    const zahlIn = (v, lo, hi) => v != null && v !== "" && Number(v) >= lo && Number(v) <= hi;
+    // das Band des Leibs (`_koerperGesetzBand`) mit dem Wert von jetzt
+    const leib = (stat) => [
+        0,
+        (v, r) => (({ min, max }) => zahlIn(v, min - 1e-6, max + 1e-6))(r._koerperGesetzBand(stat)),
+        (r) =>
+            (({ min, max }) => `${min.toFixed(2)}–${max.toFixed(2)}, jetzt ${Number(r.state[stat]).toFixed(2)}`)(
+                r._koerperGesetzBand(stat)
+            ),
+    ];
+    return Object.freeze({
+        weather: [
+            0,
+            (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v),
+            () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | "),
+        ],
+        set_time_of_day: [
+            0,
+            (v) => zahlIn(v, 0, 1),
+            () => "0–1 (0 Mitternacht, 0.25 Sonnenaufgang, 0.5 Mittag, 0.75 Sonnenuntergang)",
+        ],
+        creatures_emotion: [0, (v) => v === "happy" || v === "sad", () => "happy | sad"],
+        spawn_creature: [2, (v) => v == null || v === "happy" || v === "sad", () => "emotion: happy | sad"],
+        // die zwei Arten der Grammatik-Bäume; jede andere Art (Birke, Tanne …) wächst aus dem Studio-Buch (spawn_studio)
+        spawn_tree: [
+            2,
+            (v) => v == null || v === "eiche" || v === "kiefer",
+            () => "kind: eiche | kiefer — jede andere Art: spawn_studio",
+        ],
+        gravity: [0, (v) => zahlIn(v, -30, 0), (r) => `-30–0 (Erde -9.81, jetzt ${r.state.gravity})`],
+        player_jump_power: leib("jumpPower"),
+        player_speed: leib("speed"),
+    });
+})();
 AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",
     "spawn_tree",

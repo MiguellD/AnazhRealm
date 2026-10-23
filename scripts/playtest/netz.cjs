@@ -7,14 +7,9 @@ const fs = require("fs");
 const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
-const { checkBandG8R2SovereignWall } = require("./feld.cjs");
-const { checkBandG8R1DampedChannel } = require("./netz-p2p.cjs");
-const { checkBandG8R3Locality } = require("./netz-portal.cjs");
 
-// V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW13W14VibePassLibrary(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
@@ -183,7 +178,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
         // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
-        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN; V9.56-i).
+        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN).
         r.selectBlueprintForEdit("_w13p2");
         const machZone =
             document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
@@ -225,10 +220,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p2p = r.state.p2p;
-        out.methods =
-            typeof r._p2pBroadcastVibe === "function" &&
-            typeof r._p2pBuildNameLabel === "function" &&
-            typeof r._p2pRefreshPeerNameLabel === "function";
         // Peer-Entry trägt die Vibe-Pass-Felder.
         const probe = r._p2pEnsurePeerEntry("_w13p3probe");
         out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
@@ -324,7 +315,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13p3Results && !w13p3Results.error) {
-        check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
         check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
         check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
         check(
@@ -358,15 +348,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r.renderLibraryUI === "function" &&
-            typeof r.obtainPortalForWorld === "function" &&
-            typeof r.libraryInitDOM === "function";
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
-        out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
         // renderLibraryUI baut eine Karte pro Registry-Welt.
         r.renderLibraryUI();
         const cards = document.querySelectorAll("#library-list .library-card");
@@ -375,7 +360,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
         out.cardShowsDsl =
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
-        // === Bib-A0/A/B/D (bibliothek-plan) — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
+        // === Bib-A0/A/B/D — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
         // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
         const wpRef = REG.fluid;
         const wp = r._worldProfile(wpRef);
@@ -395,14 +380,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard.querySelector(".lib-trust-seal") &&
             !!fluidCard.querySelector(".spec-body") &&
             !!fluidCard.querySelector(".spec-footer .library-get");
-        // V18.77 — Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
+        // Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
         // KEIN beschriftetes Zwei-Spalten-Datenblatt mehr (die `.spec-col-head`-Form-Labels sind weg).
         out.cardLightened =
             !!fluidCard &&
             !!fluidCard.querySelector(".lib-card-body .lib-card-meta") &&
             !!fluidCard.querySelector(".lib-card-meta .library-dsl-word") &&
             !fluidCard.querySelector(".lib-card-body .spec-col-head");
-        // === Feed (die Social-Media-Plattform, V18.70) — 3 Spalten, der vereinte Feed, das WERTEN ===
+        // === Feed (die Social-Media-Plattform) — 3 Spalten, der vereinte Feed, das WERTEN ===
         const libDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         const feedLayout = libDrawer && libDrawer.querySelector(".feed-layout");
         const feedLeft = feedLayout && feedLayout.querySelector(".feed-left");
@@ -411,7 +396,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
         out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
         out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
-        // V18.73 — die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
+        // die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
         // die Welt-Katalog-Quelle im Hauptthread als Tab (X-Muster); das Tagebuch eingeklappt (Chronik im Hof).
         const schoepfen = feedRight && feedRight.querySelector(".feed-schoepfen");
         out.schoepfenRight =
@@ -421,7 +406,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!schoepfen.querySelector(".feed-3block #world-new") &&
             !!schoepfen.querySelector(".feed-3block #world-fuse-open") &&
             !!schoepfen.querySelector(".feed-3block #library-import");
-        // V18.71: das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
+        // das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
         const feedSelf = feedLeft && feedLeft.querySelector(".feed-self");
         r._renderActiveWorldIsland();
         out.feedSelfIsland =
@@ -433,12 +418,12 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // das Tagebuch ist eingeklappt (progressive disclosure; die Welt-Chronik lebt im Hof).
         const tagebuch = feedSelf && feedSelf.querySelector("details.feed-tagebuch");
         out.tagebuchCollapsed = !!tagebuch && !tagebuch.open && !!tagebuch.querySelector("#world-journal-list");
-        // V18.72/.73: die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
+        // die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
         const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
             Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
-        // V18.73: die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
+        // die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
         const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
         const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
         out.feedTabs =
@@ -454,7 +439,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const foryouOn = document.getElementById("feed-foryou-panel").hidden === false && meshPanel.hidden === true;
         out.feedTabsWork = meshOn && foryouOn;
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
-        const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
+        const fi = r._feedItems();
         const fkinds = new Set(fi.map((it) => it.kind));
         const hasCreatures = (r.state.creatures || []).length > 0;
         out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
@@ -488,14 +473,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
         out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
-        // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
+        // jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
-        // V18.74 — die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
-        // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
-        // · ★ Bewertung) — der Test wandert mit (V9.56-i).
+        // die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
+        // nach oben). Die Chips wuchsen auf DREI (Neueste · ✦ Für dich
+        // · ★ Bewertung) — der Test wandert mit.
         out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
         const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
         if (aRecipe) {
@@ -511,12 +496,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r.state.feedSort = "neueste";
             r.renderLibraryUI();
         }
-        // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
+        // der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
-            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
-            typeof r._feedFocus === "function" &&
-            typeof r._feedEnsurePreview === "function" &&
-            typeof r._feedPreviewShow === "function";
+            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
         if (recForFocus) {
             const recCard = stream.querySelector(".feed-recipe");
@@ -526,12 +508,12 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
             r.state.feedFocusId = null;
         }
-        // V18.76 — der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
+        // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
         // Wurzel, GEMESSEN: der Drawer war 858 statt 816 → ragte unten aus dem Bild + der Resize-Griff unerreichbar).
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
-        // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
-        const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
+        // die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
+        const omniWelt = r._omniboxSearch("welt:");
         out.omniboxWelt =
             Array.isArray(omniWelt) &&
             omniWelt.length >= 1 &&
@@ -613,10 +595,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14Results && !w14Results.error) {
-        check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
-        check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check(
@@ -704,12 +684,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r._canonicalManifest === "function" &&
-            typeof r.signWorld === "function" &&
-            typeof r.verifyWorldSignature === "function" &&
-            typeof r._loadSignedWorlds === "function" &&
-            typeof r._portalShowSignature === "function";
         // _canonicalManifest deterministisch + ignoriert world/desc.
         const c1 = r._canonicalManifest(REG.fluid);
         const c2 = r._canonicalManifest({
@@ -794,10 +768,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14p2Results && !w14p2Results.error) {
-        check(
-            "W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren",
-            w14p2Results.methods
-        );
         check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
         check(
             "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
@@ -830,7 +800,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     const w13v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.payloadMethods = typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
         const baseP = r._portalEnterPayload();
         out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
         out.payloadVibeId = typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
@@ -864,7 +833,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13v2Results && !w13v2Results.error) {
-        check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
         check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
         check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
         check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
@@ -1000,8 +968,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.uiImportedCard =
             !!document.querySelector("#library-list .library-card-imported") &&
             !!document.querySelector("#library-list .library-imported-mark");
-        out.uiImportButton =
-            !!document.getElementById("library-import") && !!document.getElementById("library-import-input");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -1060,7 +1026,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
             w14p3Results.uiImportedCard
         );
-        check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
         check(
             "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe
@@ -1148,14 +1113,7 @@ async function checkBandG8R4Immunity(ctx) {
         const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
-        // (1) Methoden + revokedKeys benannt im innersten Ring + NIE im Snapshot.
-        out.methods =
-            typeof r.revokeKey === "function" &&
-            typeof r._appendProvenance === "function" &&
-            typeof r._isKeyRevoked === "function" &&
-            typeof r._provenanceSummary === "function" &&
-            typeof r._artifactProvenanceTainted === "function" &&
-            typeof r._normalizePubKey === "function";
+        // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
@@ -1219,8 +1177,8 @@ async function checkBandG8R4Immunity(ctx) {
         r.unrevokeKey(KEVIL);
         r.state.revokedKeys = savedRevoked;
         r.state.signedWorlds = savedSigned;
-        if (typeof r._saveSignedWorlds === "function") r._saveSignedWorlds();
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveSignedWorlds();
+        r._saveRevokedKeys();
         return out;
     });
     if (!res) {
@@ -1228,8 +1186,8 @@ async function checkBandG8R4Immunity(ctx) {
         return;
     }
     check(
-        "G8 R4: Immun-Methoden + revokedKeys im innersten Ring + NIE im Snapshot",
-        res.methods && res.revokedInRing && res.revokedNotInSnapshot
+        "G8 R4: revokedKeys im innersten Ring + NIE im Snapshot",
+        res.revokedInRing && res.revokedNotInSnapshot
     );
     check(
         "G8 R4 (4a): die Herkunftskette baut sich (Ursprung → Überträger, dedup) + zeigt die Lineage",
@@ -1279,14 +1237,6 @@ async function checkBandG8R5LivingImmune(ctx) {
     check(
         "G8 R5: alle vier Mechanismen vertreten (M1 Lokalität · M2 Dämpfung · M3 Katalysator · M4 Immunität)",
         res.allMechanisms
-    );
-    // Meta: die vier Korpus-Bänder SIND im Gate (sie laufen bei jedem Push = die Impfung).
-    check(
-        "G8 R5: die vier Korpus-Bänder laufen im Playtest-Gate (jeder Erreger → Antikörper)",
-        typeof checkBandG8R1DampedChannel === "function" &&
-            typeof checkBandG8R2SovereignWall === "function" &&
-            typeof checkBandG8R3Locality === "function" &&
-            typeof checkBandG8R4Immunity === "function"
     );
 }
 
@@ -1541,7 +1491,7 @@ async function checkBandTailleGolden(ctx) {
                         window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh])
                     );
                 });
-            if (typeof r._p2pRemovePeer === "function") r._p2pRemovePeer("__golden");
+            r._p2pRemovePeer("__golden");
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
             return out;
@@ -1601,9 +1551,6 @@ async function checkBandPhiArchipel(ctx) {
         // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
         // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
         // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
-        const dslEffects = r.constructor.dslEffects || (typeof window !== "undefined" && window.dslEffects);
-        // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
-        // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
         // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
         const keinOp = (op) => !r.dslEffects[op];
@@ -1648,7 +1595,7 @@ async function checkBandPhiArchipel(ctx) {
             }) === null;
         // Aufräumen — wir haben gerade einen Test-Schlüssel revoziert.
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
         out.revokeCleanup = r.state.revokedKeys.size === before;
 
         // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
@@ -2106,7 +2053,7 @@ async function checkBandPhi7PortalHalls(ctx) {
         });
         out.admitTaintedNull = admittedTainted === null;
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
 
         // (H9) materializePortalHall braucht einen Portal-Bauplan + Position.
         // Wir nehmen den ersten Built-In-Portal-Bauplan oder bauen einen ad hoc.
@@ -2179,7 +2126,7 @@ async function checkBandPhi7PortalHalls(ctx) {
 
         // Aufräumen: spawned-Portale + Halle aus dem Test.
         for (const e of spawned) {
-            if (typeof r.removeArchitecture === "function" && e.id !== undefined) {
+            if (e.id !== undefined) {
                 try {
                     r.removeArchitecture(e.id);
                 } catch {
@@ -2327,7 +2274,7 @@ async function checkBandPhi6ComputeSpende(ctx) {
         out.verifyForged = forgedVerify.equal === false && forgedEntry.status === "forged";
         out.revokedSchummler = r.state.revokedKeys.has(fakeKey) && r.state.revokedKeys.size === revBefore + 1;
         r.state.revokedKeys.delete(fakeKey);
-        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        r._saveRevokedKeys();
 
         // (K9) PLAYTEST-Lauf signieren + recordPlaytestRun ehrlicher Pfad.
         const runRes = await r.signPlaytestRun(

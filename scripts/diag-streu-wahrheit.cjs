@@ -2,13 +2,8 @@
 // ============================================================================
 // DIE STREU-WAHRHEIT — gate:streu-wahrheit (04.10., Bild-Wahrheit (b); Integration Waldboden 05.10.)
 //
-// Befund (echte GPU, Werkbank, Mess-Wiese): schwarze Brocken und schwarze Flächen auf der hellen Wiese. Zwei
-// Täter, eine Klasse — die Klein-Streu las ihr Licht nicht: der Fels-Oktaeder des Host-Bauers zeigte nach INNEN,
-// und r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus. Die Integration der Bild-Wahrheit ließ die
-// Lambert-Klasse im ganzen Stamm fallen und backte die Host-Paletten nach dem FARB-GESETZ (sRGB-Absicht → linear).
-// Integration Waldboden (05.10.): der Host-Bauer der Klein-Streu (Arten-Tafel, Strip-/Oktaeder-Geometrie, eigener
-// Stoff, eigenes Farb-Gesetz) fiel ganz — die Nah-Streu wächst aus dem Pflanzen-Studio. Die Linse liest jetzt die
-// STUDIO-ARTEN der Nah-Streu (foundry-core `placement.boden`, ring "nah") und hält dieselbe Klasse dort:
+// Die Nah-Streu liest ihr Licht (keine schwarzen Brocken auf der Wiese): die Linse liest die STUDIO-ARTEN der Nah-Streu
+// (foundry-core `placement.boden`, ring "nah") und hält die Klasse dort:
 //   (1) DIE ARTEN: jede Boden-Zeile mit ring "nah" ist ein Preset des Kerns, dessen kind einen Studio-Emitter hat
 //       (buildInstance: emitFlower · emitRock · WALDBODEN_EMIT) — die Arten, die die Welt zeichnet;
 //   (2) DAS FARB-GESETZ je Art: ein Emitter mit weichem Gewebe (foliageMat · stemMat — Laub, Halm, Stiel, Blüte, die

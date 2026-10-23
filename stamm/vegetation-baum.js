@@ -729,8 +729,8 @@ class AnazhRealm_vegetation_baum {
         let m = this._treeShadowTwinMats.get(key);
         if (m) return m;
         m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        m.userData.shadowTwin = true; // vor dem Leuchten: der Zwilling zeichnet keine Farbe, er wird nie nass
         this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
-        m.userData.shadowTwin = true;
         this._baumWindStoff(m, "schatten", baumWind || null);
         this._treeShadowTwinMats.set(key, m);
         return m;
@@ -1625,7 +1625,8 @@ class AnazhRealm_vegetation_baum {
     // wasser-wahrheit): ein benannter Wurf steht nie, wo sein Fuß kein Land ist (`_stammFussLand`: die Achse und der
     // Fuß-Kreis, 5 cm über dem Spiegel — der Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am
     // Fluss grün, und die Wand fragte bis zur Gegenprüfung nur die Achse). Die Nah-Streu (ohne
-    // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
+    // Namen) und die Nah-Wiese fragen beim Wurf dasselbe Urteil (`_nassAt` über ihrem gezeichneten Boden), ihr Schilf steht im
+    // Ufer-Wasser.
     _naturWand(name, position, opts) {
         if (!position) return false;
         const g = this._ortWand(name, position, opts);
@@ -1759,7 +1760,7 @@ class AnazhRealm_vegetation_baum {
         );
         if (!l) return false;
         for (const b of l) {
-            if (b === ohneFlaeche) continue;
+            if (b.quelle === ohneFlaeche) continue;
             if (x < b.x0 - rand || x > b.x1 + rand || z < b.z0 - rand || z > b.z1 + rand) continue;
             for (const f of b.formen)
                 if (AnazhRealm._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : rand)) return true;
@@ -1792,17 +1793,37 @@ class AnazhRealm_vegetation_baum {
                     l.push(e);
                 }
         }
-        // die Flächen der Dörfer (`_aufWeg`): jede Hülle der Wege-Karte in die Zellen, die sie mit 1 m Rand berührt
+        // die Flächen der Dörfer (`_aufWeg`): je Siedlung der Wege-Karte und Zelle die Formen, die sie mit 1 m Rand berühren
+        // ({ quelle, Hülle, formen }) — bis stadt-erwachen stand die Hülle in jeder Zelle mit ALLEN Formen: im Dorf nH 300 (bis
+        // 900 Formen) fragte jeder Punkt jede, die Räumung seiner Flächen (`_wegeRaeumen`) kostete den Takt nach dem Erwachen 73 ms
         const wk = this.state.wegeKarte;
         if (wk)
-            for (const b of wk.siedlungen)
-                for (let gx = Math.floor((b.x0 - 1) / G); gx <= Math.floor((b.x1 + 1) / G); gx++)
-                    for (let gz = Math.floor((b.z0 - 1) / G); gz <= Math.floor((b.z1 + 1) / G); gz++) {
-                        const k = AnazhRealm._grundrissSchluessel(gx, gz);
-                        let l = gitter.wege.get(k);
-                        if (!l) gitter.wege.set(k, (l = []));
-                        l.push(b);
-                    }
+            for (const b of wk.siedlungen) {
+                const je = new Map();
+                for (const f of b.formen) {
+                    const r = AnazhRealm._wegeFormRadius(f) + 1;
+                    const [gx0, gx1] = [
+                        Math.floor((Math.min(f.ax, f.bx) - r) / G),
+                        Math.floor((Math.max(f.ax, f.bx) + r) / G),
+                    ];
+                    const [gz0, gz1] = [
+                        Math.floor((Math.min(f.az, f.bz) - r) / G),
+                        Math.floor((Math.max(f.az, f.bz) + r) / G),
+                    ];
+                    for (let gx = gx0; gx <= gx1; gx++)
+                        for (let gz = gz0; gz <= gz1; gz++) {
+                            const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                            let e = je.get(k);
+                            if (!e) {
+                                je.set(k, (e = { quelle: b, x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, formen: [] }));
+                                const l = gitter.wege.get(k);
+                                if (l) l.push(e);
+                                else gitter.wege.set(k, [e]);
+                            }
+                            e.formen.push(f);
+                        }
+                }
+            }
         return gitter;
     }
 
@@ -1916,16 +1937,11 @@ class AnazhRealm_vegetation_baum {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
-        const nenne = (e) => {
-            const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
-            return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
-        };
         return this._naturRaeumen(
             haus.position.x,
             haus.position.z,
             fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
             !!fp.lichtung,
-            fp.lichtung ? "dem Genesis-Platz" : `dem Grundriss von ${nenne(haus)}`,
             haus
         );
     }
@@ -1934,8 +1950,9 @@ class AnazhRealm_vegetation_baum {
     // (`_imGrundriss` — Grundriss, Lichtung samt Krone, Weg des Dorfs), fällt: Einträge, lebende Streu-Zellen, und die
     // Nah-Streu-Kacheln wachsen durch die Wand neu. Leser: `_grundrissRaeumen` (ein Bau) und `_wegeRaeumen` (die Fläche eines
     // Dorfs, im Takt der Wege-Karte). `mitKrone`: eine Lichtung fragt die Krone, die Suche reicht eine Streu-Region weiter.
-    // `wem` nennt die Fläche im Spieler-Satz, `ausser` ist der Bau selbst. Gibt die Zahl der geräumten Natur-Stücke.
-    _naturRaeumen(hx, hz, r, mitKrone, wem, ausser) {
+    // `ausser` ist der Bau selbst. Ein Werk des Spielers (`werk`) weicht nie (`_weichtDemBau`, die Wiederkehr): bis dahin nahm
+    // die Räumung es nach seinem Stoff und nannte es nur. Gibt die Zahl der geräumten Natur-Stücke.
+    _naturRaeumen(hx, hz, r, mitKrone, ausser) {
         // die Welt regt sich, bevor geräumt wird: der Gang schreibt die Nah-Streu-Kacheln (`nahStreu.kacheln`, über
         // `_nahStreuKachelEntsorgen` ihren `zustand`) — die Stand-Wache weckt die Fege-Takte (gate:stand-takt, Schreiber-Wand)
         this._weltRegt();
@@ -1943,7 +1960,8 @@ class AnazhRealm_vegetation_baum {
         const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         this._grundrissFaellt(hx - r - weit, hz - r - weit, hx + r + weit, hz + r + weit);
         const weg = [];
-        for (const e of this.state.architectures || []) {
+        // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`, eine Obermenge des Quadrats), nie der ganze Bestand
+        for (const e of this._blockerUmPlatz(hx, hz, r + weit, [])) {
             if (e === ausser || !e.position) continue;
             if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
             if (!this._weichtDemBau(e)) continue;
@@ -1953,17 +1971,6 @@ class AnazhRealm_vegetation_baum {
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
-        // Ein Werk des Spielers (string-id: gesetzt im Bau-Modus) weicht nie still — die Räumung nennt es im Spieler-Kanal
-        // (Welle L Folge: jede Zerstörung nennt sich dem Spieler; ein älterer Stand trug die Werkstatt-Eiche auf der Lichtung,
-        // ein Dorf gründet über einem gepflanzten Baum).
-        const eigene = weg.filter((e) => typeof e.id === "string");
-        if (eigene.length) {
-            const nenne = (e) => {
-                const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
-                return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
-            };
-            this._spielerSagt(`${eigene.map(nenne).join(", ")} wich${eigene.length > 1 ? "en" : ""} ${wem}.`);
-        }
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {
@@ -2009,7 +2016,6 @@ class AnazhRealm_vegetation_baum {
                 (b.z0 + b.z1) / 2,
                 Math.max(b.x1 - b.x0, b.z1 - b.z0) / 2 + 1,
                 false,
-                "dem Weg des Dorfs",
                 null
             );
         return n;
@@ -2314,8 +2320,10 @@ class AnazhRealm_vegetation_baum {
                 }
             }
         }
-        // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt.
+        // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt. Wartet nur ein Satz
+        // (die Bake-Uhr, seine Flat, das Buch), weckt ihn ihr nächstes Fenster oder der Stempel, kein Bild (`_standRuht`).
         const offen = nahOffen.length + ziegelOffen.length;
+        const nurSatz = !nahOffen.length;
         // Mesh-Bauten NAH ZUERST (die Mesh-Zone, dahinter die Karten-Zone der Karten-Dinge): budgetiert; über Budget
         // mit Takt-Garantie (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die
         // Mesh-Zone für immer Feld.
@@ -2405,7 +2413,7 @@ class AnazhRealm_vegetation_baum {
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
-        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0);
+        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist

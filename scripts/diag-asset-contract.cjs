@@ -3,7 +3,7 @@
 // (die EINE Harness), baut jeden Golden-Fall neu, fingerabdruckt die Puffer (sha256 je Attribut,
 // die geteilte fingerprintMeshes) und vergleicht sha256 + Byte-Länge + prüft das Schema (cv,
 // Pflichtfelder). Dazu die drei Daten-Kanäle (recipes/world-params/render-config) gegen ihre
-// eingefrorenen JSONs. Der exakte Byte-Offset einer Divergenz kommt aus diag-foundry-parity.
+// eingefrorenen JSONs.
 //
 // GRÜN ⇒ der Vertrag hält, kein stiller Drift möglich. ROT ⇒ die erste Divergenz mit Ort
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
@@ -28,15 +28,13 @@ const PC = globalThis.__phytoCore;
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
-// DIE BILD-TAFEL (S3 pflanzen, Wand D; Gegenprüfung R1 09.10.): je Baum-Art × Same (Sommer) das Bild seiner L0 und
-// seiner L1 JE BLICK-HEBUNG (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°,
-// 30°, 60° von unten; Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1:
-// Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
+// DIE BILD-TAFEL (S3 pflanzen, Wand D): je Baum-Art × Same (Sommer) das Bild seiner L0 und seiner L1 JE BLICK-HEBUNG
+// (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°, 30°, 60° von unten;
+// Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1: Deckung der Mip 0,
+// mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
 // scripts/diag-asset-contract.cjs --tafel`; zuerst V18.536 auf 76c9624d, neu gemünzt im Vertrags-Akt K20: die Bäume
 // tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
-// 0,92–1,08 bei ΔE76 ≤ 2. Befund: das Mittel der 24 Ansichten (D0, nur L0) sah die Seitenansicht mit einem Drittel — die
-// Koniferen-L1 verlor 22–34 % ihrer Seitenansicht, die Karte 16–27 %, ihre Farbe sprang um ΔE 2,6–5,8, ohne dass eine
-// Wand anschlug.
+// 0,92–1,08 bei ΔE76 ≤ 2.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
 const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
 const BILD_BAND = [0.92, 1.08];
@@ -84,7 +82,7 @@ function meshDiff(tag, gold, live) {
             if (av.itemSize !== bv.itemSize) return `${tag} Mesh${i}.${k}: itemSize ${av.itemSize} vs ${bv.itemSize}`;
             if (av.bytes !== bv.bytes) return `${tag} Mesh${i}.${k}: Byte-Länge ${av.bytes} vs ${bv.bytes}`;
             if (av.sha256 !== bv.sha256)
-                return `${tag} Mesh${i}.${k}: sha256-Divergenz (Byte-Offset via diag-foundry-parity)`;
+                return `${tag} Mesh${i}.${k}: sha256-Divergenz`;
         }
         if (((a.index || null) !== null) !== ((b.index || null) !== null))
             return `${tag} Mesh${i}: index nur auf einer Seite`;
@@ -93,7 +91,7 @@ function meshDiff(tag, gold, live) {
     return null;
 }
 
-/// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
+/// DIE BUDGET-WAND — der KONSUM des Budgets (render-config lod.budget,
 // Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
 //  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
 //      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen
@@ -235,7 +233,7 @@ function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
         );
     if (Math.abs(atlas.fill[wedel.zelle] - wedel.fuellung) > 0.01)
         v.push(`Wedel-Füllung ${atlas.fill[wedel.zelle].toFixed(4)} ≠ Steckbrief ${wedel.fuellung}`);
-    // Die Großblatt-Zelle (05.10.: Strauch) und die Weiden-Zelle (Integration 05.10.: die Trauer-Strähnen) — Kern wie
+    // Die Großblatt-Zelle und die Weiden-Zelle — Kern wie
     // die Baum-Zweige, je eine eigene Füllung.
     for (const [name, z] of [
         ["GROSS", gross],
@@ -252,14 +250,13 @@ function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
     }
     return v;
 }
-// DIE GESTALTEN-WAND (S3 08.10., Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
+// DIE GESTALTEN-WAND (S3, Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
 // die Welt zieht je Gestalt einen eigenen Körper (`_foundryVariantFor`, je Gestalt × Stufe × Teil ein Leaf und ein Befehl).
 // Ein Rezept, dessen Bau den Samen nicht liest, trägt mit V ≥ 2 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
 // Drachentore = zwei Leaves, 43 Befehle, 8,67 MB). Die Wand baut je Art und Rezept mit V ≥ 2 JEDE Gestalt 1..V über die
 // echte Brücke (die erste gelieferte Gitter-Stufe, der EINE Bau-Fingerabdruck `bauAbdruck`; die Zweit-Kerne aus dem Bau
 // des Kosten-Zugs, kein Zweitbau) — V Gestalten müssen V verschiedene Abdrücke zeigen, jeder Zwilling ist ROT beim Namen
-// („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden: 1=9, …)"). Bis zur Gegenprüfung 08.10. verglich sie nur die
-// Samen 1 und 2 und war für Zwillinge dahinter blind: das Fahrzeug trug V 16 bei acht Lacken (Same 1 = 9 … 8 = 16).
+// („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden: 1=9, …)").
 // Eine Seed-Achse zu schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile.
 const SELBST_GESTALT = "drachentor"; // der Selbsttest: porta-Rezept, seed-invariant, mit V 2 MUSS es rot werden
 const SELBST_ACHSE = "gt"; // der Selbsttest hinter Same 2: das Lack-Gesetz wiederholt sich nach V — mit V + 1 MUSS es rot werden
@@ -315,7 +312,7 @@ function deckungsUrteil(paare, band, atlas) {
     return v;
 }
 
-// DIE KRONEN-KOSTEN (S3 pflanzen, 09.10.) — die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht; jede Stufe
+// DIE KRONEN-KOSTEN (S3 pflanzen) — die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht; jede Stufe
 // trug Geometrie ohne Bild. Drei Wände je Baum-Art × Gestalt (Goldens und jede Gestalt der Welt, Sommer):
 //  (L) LAGEN — Quad-Lagen je Kronen-Pixel (kronen-linse bildLagen, 24 Ansichten) ≤ lod.budget.tree[Stufe].lagen;
 //  (Q) QUOTE — Dreiecke L1 / L0 desselben Baums ≤ lod.budget.tree[1].quote (die L1 ist das Gerüst + Karten, nie die
@@ -546,7 +543,7 @@ function bildUrteil(mess, tafel) {
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
             // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
-            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true) {
+            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true && budget[kind].fernform === "huelle") {
                 const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
                 fernMess.push({ fall, fern: fb || null });
             }
@@ -734,7 +731,7 @@ function bildUrteil(mess, tafel) {
             fails.push(...wurfUrteil(wurfMess, budget).map((x) => "Wurf: " + x));
             // DIE FERN-WAND (S3 haus, N5): jede Art mit NUR-WURF-Stufe gebaut, jede mit __fern in der Form; Selbsttest: ohne
             // __fern und mit einem Keil ohne gültige First-Kante MUSS sie rot werden
-            const nwArten = Object.keys(stufen).filter((k) => stufen[k].some((s) => budget[k] && budget[k][s] && budget[k][s].nurWurf === true));
+            const nwArten = Object.keys(stufen).filter((k) => budget[k] && budget[k].fernform === "huelle" && stufen[k].some((s) => budget[k][s] && budget[k][s].nurWurf === true));
             const nwGebaut = new Set(fernMess.map((m) => m.fall.split("-s")[0]));
             if (nwArten.length && !fernMess.length) fails.push("Fern: keine NUR-WURF-Stufe gebaut (" + nwArten.join(",") + ")");
             fails.push(...fernUrteil(fernMess).map((x) => "Fern: " + x));
@@ -903,7 +900,7 @@ function bildUrteil(mess, tafel) {
         );
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.wedel, at.gross, at.weide).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
-        // 05.10.: keine L1-Krone mehr aus Klingen (die Trauer-Klinge las als Papier-Streifen) — jede Krone ist Karte.
+        // keine L1-Krone aus Klingen — jede Krone ist Karte.
         const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;
         const fehlt = new Set();
         for (const x of kostenUrteil(messungen, wand.budgetOhneZB))
@@ -916,7 +913,7 @@ function bildUrteil(mess, tafel) {
         const ohneFaltung = zweitArten.filter(
             (k) => !messungen.some((x) => x.kind === k && x.budget.vorher.draws > B[k][x.lod].draws)
         );
-        // jede Art der Zweit-Kerne (aus dem Umschlag — die Ausstattung kam 05.10. als siebte dazu) ist gemessen und gefaltet
+        // jede Art der Zweit-Kerne ist gemessen und gefaltet
         const s11 = zweitArten.length === Object.keys(wand.kernVonArt).length && ohneFaltung.length === 0;
         const p0 = sehProben[0];
         const entkleidet = p0

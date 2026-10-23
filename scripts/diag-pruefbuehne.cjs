@@ -3,9 +3,7 @@
 //
 // Die Prüfbühne (spec/pruefbuehne/welt.json) trägt statt der Wildnis analytische Terme; auf ihr steht nur, was ihre Saat
 // und die Linse setzen. Das Feld handelt dort nie: kein Wald, keine Streu, kein ungesetztes Tier — und kein Wurf des
-// Nexus. Die Gegenprüfung 10.10. fand den Nexus als Wurf, den kein Prädikat hielt: sein Pool (`dslComposeAtomic`) baut
-// alle 24 s an `far_player`, und auf der Bühne standen nach vier Würfen ein Tempel, ein Wasserfall und ein Dorf aus 33
-// Objekten (12 Bäume) — nur `spawn_creature` fragte `_kreaturGeburtsOrt`. Diese Linse nennt jeden Wurf beim Namen.
+// Nexus (sein Pool `dslComposeAtomic` baut alle 24 s an `far_player`). Diese Linse nennt jeden Wurf beim Namen.
 //
 // Je Welt (Standard = die Wildnis als FELD-KONTROLLE; Bühne, importiert wie im Spiel) misst sie:
 //   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan,
@@ -81,7 +79,8 @@ const WUERFE = [
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
-        while (performance.now() - start < 120000) {
+        await window.__weltDa(); // nach dem Erwachen des Boots
+        for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
@@ -310,7 +309,7 @@ async function s0Probe(page, station, schein) {
             }
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
-            out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
+            out.verzeichnis = r._blockerMit("licht").includes(feuer);
             // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`) — an
             // der ersten Stelle des Rings, die die Wände des Hebe-Chokepoints selbst frei nennen (Wasser `_landAt`, Bau
             // `_bauFreiRund`): das Feuer landet je Maschine anders (CI 1,46|0,86, lokal −0,6|2,26), fest +6 m in z fiel still.
@@ -366,9 +365,7 @@ async function s0Probe(page, station, schein) {
                 if (amFeuer.length < 1) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
-                        : typeof r._leuchtTakt !== "function"
-                          ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
-                          : "der Licht-Takt setzt keinen Platz an die Glut";
+                        : "der Licht-Takt setzt keinen Platz an die Glut";
                     out.befunde.push(
                         `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
@@ -497,8 +494,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             const s = r.state;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
             const takt = async (ms) => {
-                const t0 = performance.now();
-                while (performance.now() - t0 < ms) {
+                for (let i = 0; i * 16 < ms; i++) {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {
@@ -512,13 +508,17 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             {
                 let n = -1;
                 let still = 0;
-                const t0 = performance.now();
-                while (performance.now() - t0 < 40000 && still < 4) {
-                    await takt(1000);
-                    const m = (s.architectures || []).length + (s.creatures || []).length;
-                    still = m === n ? still + 1 : 0;
-                    n = m;
-                }
+                await window
+                    .__gebautNach("noch: still < 4", {
+                        fertig: () => !!(!(still < 4)),
+                        takt: async () => {
+                        await takt(1000);
+                        const m = (s.architectures || []).length + (s.creatures || []).length;
+                        still = m === n ? still + 1 : 0;
+                        n = m;
+                        },
+                        max: 800,
+                    });
             }
             const wm = () => s.worldMeta || {};
             // Die Welt-Substanz als Mengen (Identität, nie Länge): der Hort-Deckel des Nexus (MAX_NEXUS_STRUCTURES) lässt
@@ -603,7 +603,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             }
             // (4) DER ABSENZ-ZENSUS in 300 m um den Ursprung der Welt (die Genesis-Plattform)
             {
-                const pl = typeof r._genesisPlattform === "function" ? r._genesisPlattform() : null;
+                const pl = r._genesisPlattform();
                 const M = pl && pl.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);
@@ -637,7 +637,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 };
             }
             out.basis = basis;
-            out.erbgut = typeof r._erbgut === "function" ? r._erbgut().terme.map((t) => t.art) : ["wildnis(alt)"];
+            out.erbgut = r._erbgut().terme.map((t) => t.art);
             return out;
         },
         welt,
@@ -656,23 +656,15 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der Kreis MUSS unter die Schwelle fallen
 // und den Pool beim Namen nennen.
 // DIE FRIST (Kartenkopf: eine Linse ≤ 3 min CI): der ganze Lauf steht unter EINER Uhr (`S0_FRIST_S`), jede Phase (Laden,
-// Boot, Satz, Gestalt, Schuss, Schein) läuft gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase (bis
-// 12.10. hielt nur die Protokoll-Grenze von 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur
-// Versuche). Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
+// Boot, Satz, Gestalt, Schuss, Schein) läuft gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase. Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
 // auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
-// Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
+// Warte-Takten. Bis zum Schuss zeichnet
 // die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
 // DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Feuerkreis liest nur Boden, Feuer,
 // Pool und Ausgabe — der Schuss zeichnet über den Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) aus der
 // Welt-Szene GENAU das: den Boden-Satz und die Feuerstelle (ihren Bau-Satz, ihre Gruppe), dazu die fremden Szenen (Post,
 // PMREM) und die Lichter; die Zellen beider Sätze und jede gewählte Instanz urteilt das EINE Gesetz der Pass-Wahl
-// (`_passTrifft`) mit der Kugel um das Feuer. Gemessen 12.10.: die ganze Welt übersetzte im ersten Schuss 54 Programme
-// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s). Bis K60-N2 urteilte die Hülle (Kugel in Welt-
-// Lage gegen die Kugel um das Feuer, Sätze mit der Überall-Hülle 1e9 immer nah) und je Befund ein Stempel (der Fern-Ring K16,
-// der Portal-Nebel 14.10.) — jedes Mal riss die Frist, ehe der nächste Gast seinen Stempel bekam. K60-N2: die Tore des
-// Genesis-Platzes (Bau-Satz, Hülle 2–4 m vom Feuer) standen im Schuss, wenn die Welt sie vor ihm gebaut hatte — Kopf
-// 91dff111 lokal 11 Befehle, Programme/Pipelines [10,11,11] neben 6 und [8,8,8] (je nach Rennen), auf dem Runner riss die
-// Frist zweimal in Folge (CI 38628426005, 38662750291); der Himmel und seine Sterne zeichneten in jedem Schuss.
+// (`_passTrifft`) mit der Kugel um das Feuer — nie eine Hülle, nie ein Stempel je Gast.
 // DIE WAND: was der Renderer im Schuss zeichnet (`_objects.get`) und der Feuerkreis nicht liest, ist ROT beim Namen (Bau-
 // Sätze mit den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt
 // (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
@@ -800,8 +792,7 @@ const S0_NAH_INSTALL = () => {
 // DAS URTEIL ÜBER DIE GESTALT DER FEUERSTELLE (K10-6 Nachbesserung 2): wartet die Linse auf die Feuerstelle, nennt sie, was
 // fehlt, beim Namen — fiel sie aus der Welt, steht der Rufer von `removeArchitecture` (die Wache, `__s0Wache`) im Urteil, und
 // die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das Buch, die Schlange,
-// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt. Befund (CI 38660872064, voll 11/18): „die
-// Feuerstelle wächst" 158 s lang, ohne Täter — lokal und in jedem anderen Lauf stand sie nach 1–3 s.
+// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt.
 const S0_GESTALT_INSTALL = () => {
     const r = window.anazhRealm;
     const weg = Object.getPrototypeOf(r).removeArchitecture;
@@ -859,28 +850,24 @@ const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
 // DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
 // ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 28–45°. Die Sättigung (HSV, Soll
-// der Karte ≤ 0,75) ist seit K66 eine WAND (Augen-Runde 15.10.: nachts leuchtete die Giebelwand des Dorfs gesättigt orange;
-// hier vorher 0,85): bis K66 sah die Welt die Nacht mit dem Auge des Tages — 2 000 K ohne Blau, der Fuß der ACES-Kurve hielt
-// den Blau-Kanal eines schwach beschienenen Bodens auf 0 und kippte den Abfall ins Rot; das Auge der Nacht sieht mesopisch
+// der Karte ≤ 0,75) ist eine WAND: das Auge der Nacht sieht mesopisch
 // (`NACHT_AUGE`, die Sättigung der Post-Kette folgt der Leuchtdichte, CIE 191:2010). Der Selbsttest `tag` gibt dem Schuss das
 // Auge des Tages zurück — der Boden MUSS an der Sättigung reißen, im Farbton nicht. Der Selbsttest (`farbe`) gibt dem Platz
 // des Feuers das Datum bis K11b: die
 // Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen. Die untere Kante ist das Licht
 // selbst: 1 800 K liegt in sRGB bei 29,6°, die Glut-Palette bei 20,5°; jeder Boden zieht den Ton zu seinem eigenen (Gras
-// hinauf). Seit der Wiesen-Grund im Gesetz steht (K53) und die Probe neben dem Genesis-Platz (K52), hob das Gras die Glut auf
-// 26° — die alte Kante 25° ließ sie durch (Selbsttest BLIND, CI 38551540510), das Gesetz-Feuer misst 37,6°.
+// hinauf).
 // DER TON NETTO (D3-2): seit die Nacht ihr eigenes Licht trägt (Sternen-Licht, der Boden ohne Feuer Luma 36), mischt der Ring
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
 // derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
-// (sRGB, ≥ 0). Auf schwarzer Nacht ist das der alte Ton (integ-probe 37,3° → netto 37,0°).
+// (sRGB, ≥ 0).
 const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
 // gemessen trägt jedes Licht seine volle Sättigung (das Feuer allein, ohne den Boden der Nacht: 0,96).
 // DAS LICHT ADDIERT LINEAR (F1, die Foto-Kette): mit minus ohne Feuer je Kanal im LINEAREN Licht der Ausgabe (sRGB entschlüsselt),
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
-// Differenz) ist das das Licht des Feuers auf dem Boden. Die Differenz der sRGB-Werte zog die Nacht nichtlinear ab (Bühne 15.10.:
-// sRGB-netto 23,1°, linear-netto 28,5°, brutto 30,1°; unter ACES 32,3° / 35,1° / 36,6°).
+// Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
 const s0Lin = (c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4));
 const s0Srgb = (l) => (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
 function s0TonNetto(e, ohne) {
@@ -922,9 +909,7 @@ const S0_STOFF = (() => {
 // DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
 // „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung (die IBL jedes Stoffs, ihre
 // Lesung `_himmelsIrradianz`) die Bestrahlung des Himmels, der jetzt gilt: den Himmel des Orts, den die Belichtung und das Wasser
-// synchron lesen (`_himmelsBestrahlung`, S7). Bis K10 malte `_dayNightApplySkybox` die Umgebung VOR der Luft-Farbe
-// (`_dayNightApplyHemiUndLuft`), und die Raten-Drossel hielt den Sprung 6 s: die Nacht der Gasse trug die Bestrahlung 2,07 des
-// Tag-Himmels (Radeon, Bild 0,179 gegen 0,204 am Tag). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
+// synchron lesen (`_himmelsBestrahlung`, S7). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
 // auf die CPU (`state._skyEnvLesung`) — die Probe misst darum im Bild-Lauf (der Null-Renderer malt keinen Himmel, Lehre 16): sie
 // wartet auf die Lesung, die der Sprung angestoßen hat; malt der Maler nicht, bleibt die Lesung der vorigen Stunde stehen.
 // Morgen als Ausgang (frisch gemalt), dann Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel).
@@ -1081,10 +1066,8 @@ async function lichtLauf() {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
-                async (json, rest) => {
-                    const t = performance.now();
-                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t < rest)
-                        await new Promise((r) => setTimeout(r, 50));
+                async (json) => {
+                    await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
                     const res = r.importWorldBeside(json);
@@ -1119,11 +1102,10 @@ async function lichtLauf() {
         ]) {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
-                    async (st, gestalt, rest) => {
+                    async (st, gestalt) => {
                         const r = window.anazhRealm;
                         const s = r.state;
-                        const fristEnde = performance.now() + rest - 5000; // die Seite nennt, was fehlt, ehe die Uhr reißt
-                        s.renderer.setAnimationLoop(null);
+                                                s.renderer.setAnimationLoop(null);
                         let laengsterTakt = 0; // der längste Takt dieser Phase (ms): hielt ein Takt die Seite an, steht er im Urteil
                         const takt = async (n) => {
                             for (let i = 0; i < n; i++) {
@@ -1149,7 +1131,7 @@ async function lichtLauf() {
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
-                            while (!feuer && performance.now() < fristEnde) {
+                            for (const weiter = window.__deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
                                 const halt = s.weatherEffectTime;
                                 s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
                                 try {
@@ -1172,13 +1154,11 @@ async function lichtLauf() {
                         }
                         // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
                         // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
-                        // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
-                        // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
-                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle.
+                        // der Ring bis `RING_EXIST_FLOOR`; der Schuss misst den Boden im Feuerkreis, nie die Streu).
                         // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
-                        while (performance.now() < fristEnde) {
+                        for (const weiter = window.__deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
                             const u = window.__s0Gestalt(feuer);
                             if (u.fiel) return `die Feuerstelle fiel aus der Welt (${u.fiel}) — sie wächst nie mehr`;
                             fehlt = u.fehlt;

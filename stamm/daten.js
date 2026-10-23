@@ -16,13 +16,16 @@ class AnazhRealm_daten {
         if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
             throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
         const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
-        return Object.freeze({ sunny: zeile(F.sunny), rainy: zeile(F.rainy), stormy: zeile(F.stormy) });
+        return this._einmal(
+            "WEATHER_TINTS",
+            Object.freeze({ sunny: zeile(F.sunny), rainy: zeile(F.rainy), stormy: zeile(F.stormy) })
+        );
     }
     // Wetter = INTENSITÄTS-ACHSE, kein Binär-Paar: jeder wetter-abhängige Skalar lerpt über sie
     // (`_weatherBlendedValue`); ein neues Wort = EIN Tabellen-Eintrag, alle Leser erben es. stormy
     // extrapoliert über rainy — [0,1]-Shader clampen lokal. Nässe-Frage nur über `_weatherIsWet`.
     static get WEATHER_INTENSITY() {
-        return Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 });
+        return this._einmal("WEATHER_INTENSITY", Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 }));
     }
     // Wetter als 5-Kanal-Feld {fog,sun,grey,wind,rain} je Wort; der EINE LOOK-Leser `_weatherFieldFor(w)`
     // interpoliert transition-aware (wie `_weatherBlendedValue`). grey entsättigt NUR das Licht, nie den
@@ -31,7 +34,6 @@ class AnazhRealm_daten {
     // WX_GESETZ: sunny = klar · rainy = regen · stormy = sturm, das Labor liest dieselbe Tafel) — fail-closed, kein
     // Zahlen-Zwilling (K2: der Sturm hatte hier Sonne 0,42 gegen 0,15 im Gesetz).
     static get WEATHER_FIELD() {
-        if (AnazhRealm._wetterFeld) return AnazhRealm._wetterFeld;
         const WX = globalThis.__phytoCore.WX_GESETZ;
         const zeile = (w) => {
             const r = WX[w];
@@ -39,11 +41,14 @@ class AnazhRealm_daten {
                 throw new Error("phyto-core fehlt: WX_GESETZ." + w + " (das Wetter-Feld der Welt)");
             return Object.freeze({ fog: r.fog, sun: r.sun, grey: r.grey, wind: r.wind, rain: r.rain });
         };
-        return (AnazhRealm._wetterFeld = Object.freeze({
-            sunny: zeile("klar"),
-            rainy: zeile("regen"),
-            stormy: zeile("sturm"),
-        }));
+        return this._einmal(
+            "WEATHER_FIELD",
+            Object.freeze({
+                sunny: zeile("klar"),
+                rainy: zeile("regen"),
+                stormy: zeile("sturm"),
+            })
+        );
     }
     // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
     // Richtung neutral-grau (Luminanz-erhaltend). ~0.7 → stormy dämpft die
@@ -120,85 +125,97 @@ class AnazhRealm_daten {
     // sich selbst (kein Rate-Limit). Materie kostet in pfad+frieden, frei nur in schöpfer.
     // start/max/regen sind vorläufige Größen.
     static get NEXUS_WIRK() {
-        return Object.freeze({
-            start: 60,
-            max: 150,
-            regenPerValue: 30, // pro finalisiertem Outcome: (fitness−0.5)·30
-            idleRegenPer5s: 2, // der Tropf (in _loopSelfAnalysis, 5-s-Takt)
-            ruleRegisterCost: 6,
-            costCap: 80,
-        });
+        return this._einmal(
+            "NEXUS_WIRK",
+            Object.freeze({
+                start: 60,
+                max: 150,
+                regenPerValue: 30, // pro finalisiertem Outcome: (fitness−0.5)·30
+                idleRegenPer5s: 2, // der Tropf (in _loopSelfAnalysis, 5-s-Takt)
+                ruleRegisterCost: 6,
+                costCap: 80,
+            })
+        );
     }
 
     // Hydrosphären-Atlas: das Drainage-Netz rechnet über eine feste Region um den Ursprung (Flow-
     // Accumulation braucht eine endliche Wasserscheide); cell 16 m → 128² Zellen im Perf-Budget.
     static get HYDROSPHERE() {
-        return Object.freeze({
-            regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
-            cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
-            fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
-            minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
-            // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
-            // DIE BREITE (K16) ist das Gesetz des Kerns (gelaende-core `flussBreite`, `FLUSS_BREITE`): der Mäander misst seine
-            // Wellenlänge daran, jeder Fluss-Punkt trägt sie (`width`).
-            // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
-            // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
-            waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
-            waterfallMinDrop: 6, // Mindest-Gesamtdrop in m für einen Wasserfall
-            maxRiverPoints: 800, // Sicherheits-Cap je Fluss-Polylinie
-            // V9.43-d — der Carve: `_terrainDensityAt` senkt die Dichte im
-            // Fluss-Kanal + in See-Senken, der Chunk-Mesher produziert echte
-            // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
-            carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
-            carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
-            // DER KANAL IN DER AUE (K16): die Bett-Tiefe ist höchstens kanalTiefe — die Aue des Gelände-Gesetzes ist das
-            // Hochwasser-Bett, der Kanal liegt in ihr, nie als Graben unter ihr (am 30-m-Raster: keine Senke > 1 m).
-            kanalTiefe: 0.8,
-            // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
-            // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
-            spiegelFreibord: 0.25,
-            // DIE BANK (Gegenprüfung 07.10.): vom Flachboden steigt die Bank mit dieser Neigung (tan 35°, unter dem Geröll
-            // des Boden-Gesetzes ab ≈ 37°) bis zur KRONE auf Spiegel + Freibord · Tiefe; jenseits der Krone schneidet der
-            // Kanal höheres Gelände mit einer Böschung und hält tieferes mit einem Damm, beide mit derselben Neigung, die mit
-            // dem Abstand von der Krone um bankKruemmung je m zunimmt (ein Tal: flach am Wasser, steiler den Hang hinauf),
-            // bis bankWeite hinter der Krone; die Kanten (Fuß, Krone, Saum ins Gelände) runden über bankRundung (weiches
-            // Minimum der Dichten). Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe (≈ 61°), und dahinter glitt eine
-            // Wand ins Gelände (bis ≈ 73°: Fels-Rauten an 19 von 46 Bank-Profilen der Mess-Wiese).
-            bankNeigung: 0.7,
-            bankKruemmung: 0.04, // je m hinter der Krone
-            bankWeite: 24, // m hinter der Krone
-            bankRundung: 0.6, // m
-            // DIE DAMM-KRONE (Gegenprüfung 07.10., Runde 4): hält der Kanal tieferes Gelände mit einem Damm, trägt der Damm
-            // eine Krone, die das 1,8-m-Gitter trägt — dammBreite hinter der Krone des Kanals eben auf Spiegel + max(Freibord ·
-            // Tiefe, dammFreibord), erst dahinter fällt er mit der Neigung der Bank. Die Breite reicht, so weit das Wasser-Sheet
-            // hinter der Krone auf dem Spiegel liegt (die äußere Ecke einer Spalte, die an der Krone flutet: 1,8 m · √2), das
-            // Freibord über den Fehler der gezeichneten Fläche. Bis zur Gegenprüfung war der Damm eine Schneide (Breite 0, beim
-            // Rinnsal 7 cm über dem Spiegel): das Mesh trug ihn nicht (an der Krone des Bachs der Mess-Wiese lag der gezeichnete
-            // Boden in 68 von 152 Profilen unter dem Spiegel, p50 0,28 m), und das Wasser lief über ihn ins tiefere Gelände.
-            dammBreite: 2.6, // m hinter der Krone des Kanals
-            dammFreibord: 0.2, // m über dem Spiegel, mindestens
-            // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
-            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihres Einzugsgebiets trägt
-            // — Breite und Tiefe wachsen aus dem Gesetz, nichts bricht aus dem Nichts.
-            quellBett: 1.2,
-            quellWeitung: 0.25,
-            carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
-            carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
-        });
+        return this._einmal(
+            "HYDROSPHERE",
+            Object.freeze({
+                regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
+                cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
+                fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
+                minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
+                // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
+                // DIE BREITE (K16) ist das Gesetz des Kerns (gelaende-core `flussBreite`, `FLUSS_BREITE`): der Mäander misst seine
+                // Wellenlänge daran, jeder Fluss-Punkt trägt sie (`width`).
+                // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
+                // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
+                waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
+                waterfallMinDrop: 6, // Mindest-Gesamtdrop in m für einen Wasserfall
+                maxRiverPoints: 800, // Sicherheits-Cap je Fluss-Polylinie
+                // V9.43-d — der Carve: `_terrainDensityAt` senkt die Dichte im
+                // Fluss-Kanal + in See-Senken, der Chunk-Mesher produziert echte
+                // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
+                carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
+                carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
+                // DER KANAL IN DER AUE (K16): die Bett-Tiefe ist höchstens kanalTiefe — die Aue des Gelände-Gesetzes ist das
+                // Hochwasser-Bett, der Kanal liegt in ihr, nie als Graben unter ihr (am 30-m-Raster: keine Senke > 1 m).
+                kanalTiefe: 0.8,
+                // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
+                // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
+                spiegelFreibord: 0.25,
+                // DIE BANK (Gegenprüfung 07.10.): vom Flachboden steigt die Bank mit dieser Neigung (tan 35°, unter dem Geröll
+                // des Boden-Gesetzes ab ≈ 37°) bis zur KRONE auf Spiegel + Freibord · Tiefe; jenseits der Krone schneidet der
+                // Kanal höheres Gelände mit einer Böschung und hält tieferes mit einem Damm, beide mit derselben Neigung, die mit
+                // dem Abstand von der Krone um bankKruemmung je m zunimmt (ein Tal: flach am Wasser, steiler den Hang hinauf),
+                // bis bankWeite hinter der Krone; die Kanten (Fuß, Krone, Saum ins Gelände) runden über bankRundung (weiches
+                // Minimum der Dichten). Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe (≈ 61°), und dahinter glitt eine
+                // Wand ins Gelände (bis ≈ 73°: Fels-Rauten an 19 von 46 Bank-Profilen der Mess-Wiese).
+                bankNeigung: 0.7,
+                bankKruemmung: 0.04, // je m hinter der Krone
+                bankWeite: 24, // m hinter der Krone
+                bankRundung: 0.6, // m
+                // DIE DAMM-KRONE (Gegenprüfung 07.10., Runde 4): hält der Kanal tieferes Gelände mit einem Damm, trägt der Damm
+                // eine Krone, die das 1,8-m-Gitter trägt — dammBreite hinter der Krone des Kanals eben auf Spiegel + max(Freibord ·
+                // Tiefe, dammFreibord), erst dahinter fällt er mit der Neigung der Bank. Die Breite reicht, so weit das Wasser-Sheet
+                // hinter der Krone auf dem Spiegel liegt (die äußere Ecke einer Spalte, die an der Krone flutet: 1,8 m · √2), das
+                // Freibord über den Fehler der gezeichneten Fläche. Bis zur Gegenprüfung war der Damm eine Schneide (Breite 0, beim
+                // Rinnsal 7 cm über dem Spiegel): das Mesh trug ihn nicht (an der Krone des Bachs der Mess-Wiese lag der gezeichnete
+                // Boden in 68 von 152 Profilen unter dem Spiegel, p50 0,28 m), und das Wasser lief über ihn ins tiefere Gelände.
+                dammBreite: 2.6, // m hinter der Krone des Kanals
+                dammFreibord: 0.2, // m über dem Spiegel, mindestens
+                // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
+                // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihres Einzugsgebiets trägt
+                // — Breite und Tiefe wachsen aus dem Gesetz, nichts bricht aus dem Nichts.
+                quellBett: 1.2,
+                quellWeitung: 0.25,
+                carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
+                carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
+            })
+        );
     }
 
     static get CREATURE_TASKS() {
-        return Object.freeze(["wander", "follow_player", "wait", "gather", "build", "drink"]);
+        return this._einmal(
+            "CREATURE_TASKS",
+            Object.freeze(["wander", "follow_player", "wait", "gather", "build", "drink"])
+        );
     }
     static get CREATURE_TASK_AURA_HUE() {
-        return Object.freeze({
-            wander: null, // keine Aura — Default ist stumm
-            follow_player: 120, // grünlich, "ich bin dabei"
-            wait: 40, // bernsteinfarben, "ich harre"
-            gather: 200, // cyan, "ich suche"
-            build: 280, // violett, "ich erschaffe"
-            drink: 210, // azur, "ich nähre mich am Wasser" (V11.0-d.3)
-        });
+        return this._einmal(
+            "CREATURE_TASK_AURA_HUE",
+            Object.freeze({
+                wander: null, // keine Aura — Default ist stumm
+                follow_player: 120, // grünlich, "ich bin dabei"
+                wait: 40, // bernsteinfarben, "ich harre"
+                gather: 200, // cyan, "ich suche"
+                build: 280, // violett, "ich erschaffe"
+                drink: 210, // azur, "ich nähre mich am Wasser" (V11.0-d.3)
+            })
+        );
     }
     // drink-Konstanten: die Getter bleiben die Chokepoints, die ZAHLEN wohnen im tetrapoda-Gesetzbuch
     // (VERHALTEN.aufgaben, fail-closed via _verhaltenGesetz).
@@ -259,71 +276,77 @@ class AnazhRealm_daten {
         // [eventType][soulName] → Array von Phrase-Templates.
         // soulName "default" wirkt als Fallback wenn ein neuer Soul-Typ
         // hinzukommt ohne spezifische Phrasen.
-        return Object.freeze({
-            level_up_gather: {
-                wesen: Object.freeze([
-                    "Mein Boden trägt ${material} jetzt fester. Stufe ${level}.",
-                    "Ich kenne ${material} tiefer. Stufe ${level} in mir.",
-                    "${material} wird zu meinem Hand-Wissen — Stufe ${level}.",
-                ]),
-                default: Object.freeze(["Ich werde besser im Sammeln von ${material}. Stufe ${level}."]),
-            },
-            level_up_build: {
-                wesen: Object.freeze([
-                    "Ich baue ${blueprint} jetzt mit ruhigerer Hand. Stufe ${level}.",
-                    "${blueprint} wird Teil meines Wesens — Stufe ${level}.",
-                ]),
-                default: Object.freeze(["Ich verstehe ${blueprint} jetzt tiefer. Stufe ${level}."]),
-            },
-            boost_received: {
-                wesen: Object.freeze([
-                    "${label} setzt sich warm in mein Innerstes.",
-                    "Ich fühle ${label} durch meine Glieder gehen.",
-                ]),
-                default: Object.freeze(["Der Trank ${label} wirkt in mir."]),
-            },
-            no_material_found: {
-                wesen: Object.freeze([
-                    "${material} ist nirgends in Reichweite.",
-                    "Ich finde kein ${material}. Soll ich anderes suchen?",
-                ]),
-                default: Object.freeze(["Ich finde kein ${material} mehr."]),
-            },
-            no_inventory_for_build: {
-                wesen: Object.freeze([
-                    "Du hast kein Material für ${blueprint} bei dir.",
-                    "Mir fehlt für ${blueprint} der Stoff aus deiner Hand.",
-                ]),
-                default: Object.freeze(["Mir fehlt Material für ${blueprint}."]),
-            },
-        });
+        return this._einmal(
+            "CREATURE_PROACTIVE_PHRASES",
+            Object.freeze({
+                level_up_gather: {
+                    wesen: Object.freeze([
+                        "Mein Boden trägt ${material} jetzt fester. Stufe ${level}.",
+                        "Ich kenne ${material} tiefer. Stufe ${level} in mir.",
+                        "${material} wird zu meinem Hand-Wissen — Stufe ${level}.",
+                    ]),
+                    default: Object.freeze(["Ich werde besser im Sammeln von ${material}. Stufe ${level}."]),
+                },
+                level_up_build: {
+                    wesen: Object.freeze([
+                        "Ich baue ${blueprint} jetzt mit ruhigerer Hand. Stufe ${level}.",
+                        "${blueprint} wird Teil meines Wesens — Stufe ${level}.",
+                    ]),
+                    default: Object.freeze(["Ich verstehe ${blueprint} jetzt tiefer. Stufe ${level}."]),
+                },
+                boost_received: {
+                    wesen: Object.freeze([
+                        "${label} setzt sich warm in mein Innerstes.",
+                        "Ich fühle ${label} durch meine Glieder gehen.",
+                    ]),
+                    default: Object.freeze(["Der Trank ${label} wirkt in mir."]),
+                },
+                no_material_found: {
+                    wesen: Object.freeze([
+                        "${material} ist nirgends in Reichweite.",
+                        "Ich finde kein ${material}. Soll ich anderes suchen?",
+                    ]),
+                    default: Object.freeze(["Ich finde kein ${material} mehr."]),
+                },
+                no_inventory_for_build: {
+                    wesen: Object.freeze([
+                        "Du hast kein Material für ${blueprint} bei dir.",
+                        "Mir fehlt für ${blueprint} der Stoff aus deiner Hand.",
+                    ]),
+                    default: Object.freeze(["Mir fehlt Material für ${blueprint}."]),
+                },
+            })
+        );
     }
     // === Kreatur-DSL-Vorschläge (Sandbox) ===
     // Whitelist: atmosphärisch + Terrain — KEIN player_*, KEIN define_*, kein Bauplan-Löschen;
     // voxel_carve/voxel_fill bewusst erlaubt. chain erlaubt; der Validator walkt die AST rekursiv
     // gegen die Whitelist.
     static get CREATURE_PROPOSED_OPS() {
-        return Object.freeze(
-            new Set([
-                "weather",
-                "skybox_color",
-                "creatures_emotion",
-                "creatures_color",
-                "spawn_creature",
-                "spawn_blueprint",
-                "spawn_village",
-                "spawn_temple",
-                "spawn_waterfall",
-                "spawn_tree",
-                "spawn_island",
-                "spawn_ufo",
-                "spawn_fractal",
-                "set_visible",
-                "voxel_carve",
-                "voxel_fill",
-                "chain",
-                "say", // narrative-only Op (existing) bleibt erlaubt
-            ])
+        return this._einmal(
+            "CREATURE_PROPOSED_OPS",
+            Object.freeze(
+                new Set([
+                    "weather",
+                    "skybox_color",
+                    "creatures_emotion",
+                    "creatures_color",
+                    "spawn_creature",
+                    "spawn_blueprint",
+                    "spawn_village",
+                    "spawn_temple",
+                    "spawn_waterfall",
+                    "spawn_tree",
+                    "spawn_island",
+                    "spawn_ufo",
+                    "spawn_fractal",
+                    "set_visible",
+                    "voxel_carve",
+                    "voxel_fill",
+                    "chain",
+                    "say", // narrative-only Op (existing) bleibt erlaubt
+                ])
+            )
         );
     }
     // Throttle für die LLM-Vertiefung seltener Events (L5, neue Top-Spec) gegen API-Bursts; die
@@ -348,7 +371,7 @@ class AnazhRealm_daten {
     // Eine Cell ist LUFT (begehbar), WASSER (Spieler schwimmt, der Iso-Mesher baut hier die Boundary)
     // oder FEST (Land/Architektur/Voxel-Fill) — EINE Sprache mit dem Voxel-Terrain.
     static get CELL_STATE() {
-        return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
+        return this._einmal("CELL_STATE", Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 }));
     }
 
     // Die AQUIFER-Regel des Zell-Gesetzes: eine Zelle tiefer als so viele Meter unter der Makro-Fläche und über dem
@@ -370,7 +393,7 @@ class AnazhRealm_daten {
     // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
     // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
     static get STRUCTURE_EMISSIVE() {
-        return Object.freeze({ intensity: 0.07 });
+        return this._einmal("STRUCTURE_EMISSIVE", Object.freeze({ intensity: 0.07 }));
     }
 
     // Manifold-Dual-Contouring-Schärfe-Regler. MÜSSEN bit-identisch zum `voxel-worker.js`-Mirror sein
@@ -387,7 +410,7 @@ class AnazhRealm_daten {
     // Kavitäts-AO zeichnet Surface-Nets-Facetten-Kanten als Treppen-/Trapez-Linien nach → Strength
     // gedämpft; die triplanar-Textur trägt die Tiefe.
     static get TERRAIN_AO() {
-        return Object.freeze({ strength: 0.4, cap: 0.18 });
+        return this._einmal("TERRAIN_AO", Object.freeze({ strength: 0.4, cap: 0.18 }));
     }
 
     // Eingefrorener 2.5D-Lichtungs-Wert (der eine Tuning-Hebel). NUR die Shading-Normale (Material-
@@ -417,15 +440,18 @@ class AnazhRealm_daten {
     // Hub im Sturm (WIND_GESETZ 0,035 m); die 0,17 vom 17.10. lasen das Studio-Gras ohne die Matrix — ein Büschel 0,4 m vor der
     // Wand steckte seine Halme durch sie in den Anbau (gate:haus-welt W9 misst die Weite an der Vorlage).
     static get NAH_WIESE() {
-        return Object.freeze({
-            kachel: 6,
-            stufe1: 5,
-            stufe1Rand: 0.5,
-            radius: 14,
-            rand: 4,
-            kachelnJeTakt: 1,
-            reich: 0.72,
-        });
+        return this._einmal(
+            "NAH_WIESE",
+            Object.freeze({
+                kachel: 6,
+                stufe1: 5,
+                stufe1Rand: 0.5,
+                radius: 14,
+                rand: 4,
+                kachelnJeTakt: 1,
+                reich: 0.72,
+            })
+        );
     }
 
     // DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut): die Studio-Palette PORTAL_GROUND
@@ -437,13 +463,11 @@ class AnazhRealm_daten {
     // der Voxel-Worker bekommt DIESELBEN Zahlen im Init-Schnappschuss (`bodenPalette`), kein Spiegel. Ohne die
     // Palette bricht der Boden laut (Kern-Pflicht).
     static get BODEN_FARBE() {
-        if (AnazhRealm._bodenFarbeMemo) return AnazhRealm._bodenFarbeMemo;
         const PG =
             AnazhRealm.Gesetz("terrain:PORTAL_GROUND", null) || AnazhRealm._kernPflichtBruch("terrain:PORTAL_GROUND");
         const out = {};
         for (const k of Object.keys(PG)) out[k] = Object.freeze(AnazhRealm._srgbHexLinear(PG[k]));
-        AnazhRealm._bodenFarbeMemo = Object.freeze(out);
-        return AnazhRealm._bodenFarbeMemo;
+        return this._einmal("BODEN_FARBE", Object.freeze(out));
     }
 
     // Das FARB-GESETZ als EINE Rechnung: ein sRGB-Hex (die Absicht des Farbwählers) → [r, g, b] linear (die
@@ -460,15 +484,16 @@ class AnazhRealm_daten {
     // `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der Boden-Stoff (V18.346), der
     // Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
     static get WIESEN_GRUND() {
-        if (AnazhRealm._wiesenGrundMemo) return AnazhRealm._wiesenGrundMemo;
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
-        AnazhRealm._wiesenGrundMemo = Object.freeze({
-            farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
-            schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
-            rauschM: 1 / 0.13,
-        });
-        return AnazhRealm._wiesenGrundMemo;
+        return this._einmal(
+            "WIESEN_GRUND",
+            Object.freeze({
+                farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
+                schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
+                rauschM: 1 / 0.13,
+            })
+        );
     }
 
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Wiesen-
@@ -485,13 +510,11 @@ class AnazhRealm_daten {
     // der Boden-Wiese (`_terrainGeologyAlbedo`). Bis 06.10. hellte der Stamm in sRGB auf (0,187/0,383/0,049, ein Zwilling
     // der Studio-Formel mit eigener Rechnung).
     static get GRAS_SPITZE() {
-        if (AnazhRealm._grasSpitzeMemo) return AnazhRealm._grasSpitzeMemo;
         const ac = AnazhRealm._saisonGesetz().stuetzen[1].ac;
         if (!Number.isFinite(ac)) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.stuetzen[1].ac");
         const hell = AnazhRealm.Gesetz("terrain:GRAS_SPITZE_HELL", null);
         if (!Number.isFinite(hell)) AnazhRealm._kernPflichtBruch("terrain:GRAS_SPITZE_HELL");
-        AnazhRealm._grasSpitzeMemo = Object.freeze(AnazhRealm._srgbHexLinear(ac).map((v) => v * hell));
-        return AnazhRealm._grasSpitzeMemo;
+        return this._einmal("GRAS_SPITZE", Object.freeze(AnazhRealm._srgbHexLinear(ac).map((v) => v * hell)));
     }
 
     // Per-Fragment-Multi-Klassen-Geologie: die Klassen emergieren aus der Welt-Wahrheit — steile Hänge
@@ -502,51 +525,66 @@ class AnazhRealm_daten {
         // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die EINE Wiesen-Wache (g − (r+b)/2), die das
         // Boden-Fragment UND der Grün-Kanal der Boden-Karte lesen (Wiese 0,066, Streu und Fels < 0).
         const P = AnazhRealm.BODEN_FARBE;
-        return Object.freeze({
-            rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
-            rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
-            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt (gelaende-core `hoehe(…, aus).schutt`: der Abschnitt
-            // Schutthang der Treppe × Stil), nie nach der Steile der Masche — `schutt` sein Gewicht im Vertex (`_felsStoff`, an
-            // `aSchutt` weitergereicht, der Detail-Term legt sein Korn auf). Das Gesetz fragt der Chunk nur, wo ein Vertex unter
-            // dem Himmel steiler als `schuttKandidat` (≈ 23°) steht, auf einem Gitter der Kante `schuttGitter` (m, 3 Netz-Schritte;
-            // das Band ist 16,7 m breit). Bis zur Nachbesserung 2 lag er ab 28° auf jedem Hang (Steile 0,117 … 0,171).
-            schuttKandidat: 0.08,
-            schuttGitter: 5.4,
-            schutt: 0.85,
-            mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
-            gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
-            mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
-            mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
-            mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
-            roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
-            //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
-            //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
-            //                  statt eines toten uniformen Sheens unterm Sky-IBL.
-        });
+        return this._einmal(
+            "TERRAIN_GEOLOGY",
+            Object.freeze({
+                rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
+                rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
+                // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt (gelaende-core `hoehe(…, aus).schutt`: der Abschnitt
+                // Schutthang der Treppe × Stil), nie nach der Steile der Masche — `schutt` sein Gewicht im Vertex (`_felsStoff`, an
+                // `aSchutt` weitergereicht, der Detail-Term legt sein Korn auf). Das Gesetz fragt der Chunk nur, wo ein Vertex unter
+                // dem Himmel steiler als `schuttKandidat` (≈ 23°) steht, auf einem Gitter der Kante `schuttGitter` (m, 3 Netz-Schritte;
+                // das Band ist 16,7 m breit). Bis zur Nachbesserung 2 lag er ab 28° auf jedem Hang (Steile 0,117 … 0,171).
+                schuttKandidat: 0.08,
+                schuttGitter: 5.4,
+                schutt: 0.85,
+                mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
+                gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
+                mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
+                mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
+                mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
+                roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
+                //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
+                //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
+                //                  statt eines toten uniformen Sheens unterm Sky-IBL.
+            })
+        );
     }
 
     // Terrain-Mikro-Relief (Bump): ein Noise-Höhengradient kippt die geflattete Normale fein → der Boden
     // fängt Licht als Mikro-Struktur. NUR die PBR-Lichtung liest diese Normale (die Substanz-Response
     // liest die Geometrie-normalWorld → kein Schatten-/AO-Konflikt). LOD-gegated (nur nah).
     static get TERRAIN_BUMP() {
-        return Object.freeze({
-            freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
-            freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
-            eps: 0.45, // Gradient-Sample-Abstand (Welt-m, vor freq-Skalierung)
-            // Kipp-Stärke subtil halten: da TERRAIN_NORMAL_FLATTEN=1.0 voll flacht, ist der Bump die EINZIGE
-            // Normal-Variation — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze pro
-            // Makro-Facette. 0.24 = 13° moduliert echtes Mikro-Relief; das Albedo-Korn trägt die feine Textur.
-            strength: 0.24, // Kipp-Stärke der Normale (subtil — 13° statt 23°; der Haupt-Balance-Knopf)
-            strength2: 0.1, // Stärke der zweiten Oktave
-            // Die EINE Mikro-Detail-LOD-Quelle: Distanz-Fade von Bump UND feinem Korn; Terrain (`_lod`) und
-            // Werke/Strukturen/Rinde (`_substanceCharacter`) lesen dieselben Schwellen.
-            lodNear: 14, // Bump: voll bis 14 m
-            // Weite Fade-Rampe (14→95 m): auf flachem Boden steigt die Distanz monoton mit Screen-Y — eine
-            // scharfe Detail-Blende projiziert als horizontale Kontrastlinie auf feste Schirm-Höhe.
-            lodFar: 95, // Bump: weicher Auslauf bis 95 m (breite Rampe → kein scharfer Screen-Y-Streifen)
-            fineNear: 30, // feines Korn: voll bis 30 m
-            fineFar: 160, // feines Korn: weiter Auslauf (Rampe statt Kante)
-        });
+        return this._einmal(
+            "TERRAIN_BUMP",
+            Object.freeze({
+                freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
+                freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
+                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei Oktaven folgen der Pixelgröße — die feinste trägt
+                // `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene: 1 legt sie an den Nyquist der Ausgabe, die TAAU
+                // sammelt die welt-feste Oktave über den Jitter), nie feiner als `mikroMinM` (Schluff und Feinsand);
+                // jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum natürlicher Bilder, Field 1987).
+                mikroPx: 1,
+                mikroMinM: 0.0005,
+                mikro: 0.15,
+                mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
+                kavitaet: 0.7, // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung
+                korn: 1.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller, mittelfrei
+                // Kipp-Stärke subtil halten: da TERRAIN_NORMAL_FLATTEN=1.0 voll flacht, ist der Bump die EINZIGE
+                // Normal-Variation — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze pro
+                // Makro-Facette. 0.24 = 13° moduliert echtes Mikro-Relief; das Albedo-Korn trägt die feine Textur.
+                strength: 0.24, // Kipp-Stärke der Normale (subtil — 13° statt 23°; der Haupt-Balance-Knopf)
+                strength2: 0.1, // Stärke der zweiten Oktave
+                // Die EINE Mikro-Detail-LOD-Quelle: Distanz-Fade von Bump UND feinem Korn; Terrain (`_lod`) und
+                // Werke/Strukturen/Rinde (`_substanceCharacter`) lesen dieselben Schwellen.
+                lodNear: 14, // Bump: voll bis 14 m
+                // Weite Fade-Rampe (14→95 m): auf flachem Boden steigt die Distanz monoton mit Screen-Y — eine
+                // scharfe Detail-Blende projiziert als horizontale Kontrastlinie auf feste Schirm-Höhe.
+                lodFar: 95, // Bump: weicher Auslauf bis 95 m (breite Rampe → kein scharfer Screen-Y-Streifen)
+                fineNear: 30, // feines Korn: voll bis 30 m
+                fineFar: 160, // feines Korn: weiter Auslauf (Rampe statt Kante)
+            })
+        );
     }
 
     // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): das EINE Gradienten-Rauschen der Boden- und Substanz-Stoffe. Es ist
@@ -596,17 +634,28 @@ class AnazhRealm_daten {
     // emergiert das Profil via _substanceResponseProfile. Kein Profil trägt Licht: das additive Band (Rim, Nacht-Boden,
     // Mond-Rim) fiel mit F6 — das Licht ist die EINE Licht-Kette.
     static get SUBSTANCE_RESPONSE() {
-        return Object.freeze({
-            defaults: Object.freeze({
-                // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
-                // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
-                // triplanar-colorNode (darum hier 0).
-                feld: Object.freeze({ micro: 0, emissiv: 0 }),
-                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare)
-                werk: Object.freeze({ micro: 1, emissiv: 1 }),
-                frei: Object.freeze({}),
-            }),
-        });
+        return this._einmal(
+            "SUBSTANCE_RESPONSE",
+            Object.freeze({
+                defaults: Object.freeze({
+                    // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
+                    // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
+                    // triplanar-colorNode (darum hier 0).
+                    feld: Object.freeze({ micro: 0, emissiv: 0 }),
+                    // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare)
+                    werk: Object.freeze({ micro: 1, emissiv: 1 }),
+                    frei: Object.freeze({}),
+                }),
+            })
+        );
+    }
+
+    // DIE KONSTANTE EINMAL (K2 Belegung): jeder Konstanten-Getter münzte je Zugriff sein Objekt neu — HYDROSPHERE allein trug
+    // 13,5 % der Allokation an der Mess-Wiese (je Feld-Probe 30 Felder eingefroren; 12 MB/s, ein Scavenge je ~0,25 s außerhalb
+    // des Takts). Der erste Zugriff legt den Wert als Feld auf die Klasse, jeder weitere liest das Feld.
+    static _einmal(name, wert) {
+        Object.defineProperty(this, name, { value: wert, configurable: true });
+        return wert;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_daten]);

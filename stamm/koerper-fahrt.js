@@ -443,14 +443,11 @@ class AnazhRealm_koerper_fahrt {
         // Foundry-Geometrie — sie bleibt stehen, sonst verlöre Welt/Werkstatt/Cache das Asset.
         group.traverse((node) => {
             if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);
-            // W-A4b — Ref-Rückgabe der geteilten Foundry-Quell-Gruppe (V4(B)-Disziplin):
-            // war sie WÄHREND des Haltens LRU-geräumt (_evicted), fällt ihre Geometrie
-            // erst JETZT (nie mitten im Leben, nie geleakt). Idempotent via Nullen.
+            // W-A4b — Ref-Rückgabe der geteilten Foundry-Quell-Gruppe (`_foundryLoslassen`). Idempotent via Nullen.
             const src = node.userData && node.userData.foundrySrcGroup;
             if (src) {
                 node.userData.foundrySrcGroup = null;
-                src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-                if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+                this._foundryLoslassen(src);
             }
             // Die Render-Objekte des Leibs lösen sich in jedem Renderer, der ihn zeichnete (die Hörer an geteilten
             // Stoffen) — nach dem nächsten Submit, mit der Geometrie (`_renderObjekteLoesen`).
@@ -928,7 +925,7 @@ class AnazhRealm_koerper_fahrt {
             if (nahe.some((e) => e !== entry)) continue;
             const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
             if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
-            if (boden === null && !(this._koerperWasser(x, z, fz.y) > fz.y)) continue; // ein Abgrund ohne Wasser
+            if (boden === null && !this._nassAt(x, z, 0, fz.y)) continue; // ein Abgrund ohne Wasser
             // die Füße nie unter der Rad-Ebene (ein Boden tiefer ist Wasser-Grund unter einem schwimmenden Werk: er schwimmt)
             return { x, z, y: Math.max(boden !== null ? boden : fz.y, fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
         }
@@ -1257,6 +1254,15 @@ class AnazhRealm_koerper_fahrt {
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
+    // DIE HAFTUNG AM WAGEN (feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): der Boden-Faktor des Reibkreises im
+    // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
+    // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
+    // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
+    _fahrHaft() {
+        const n = this.state.naesse;
+        return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -1279,7 +1285,12 @@ class AnazhRealm_koerper_fahrt {
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
+                vc.fahrKraefte(
+                    fz,
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft() },
+                    entry._fahrSatz,
+                    dt
+                );
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {
@@ -1421,13 +1432,16 @@ class AnazhRealm_koerper_fahrt {
 
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
     // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
-    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
-    // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
+    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit, Zeiger-Verlust und die Heimkehr aus dem Portal lösen
+    // jede gehaltene Taste (state.keys) und jede gehaltene Aktion der Verb-Tafel — das Mahlen, den gespannten Bogen (er fällt, ohne zu
+    // schießen: `_tickBogenZug`), den Zoom — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt. Das Gamepad hält, was
+    // es hält: sein Stand kommt je Bild neu (`_eingabeTakt`).
     _alleTastenLos() {
         const k = this.state.keys;
         if (k) for (const n in k) k[n] = false;
+        const g = this.state.verbTafel.gehalten;
+        for (const n in g) g[n] = false;
         if (this.state._zoomActive) this.setZoomActive(false);
-        if (this.state.player) this.state.player.breakHeld = false;
     }
 
     setZoomActive(active) {
@@ -2073,9 +2087,11 @@ class AnazhRealm_koerper_fahrt {
         // verschmolzen, _heldImplementBlueprint) faltet mit HELD_STAT_WEIGHT über den kanonischen
         // _foldEquippedStatTags NUR in die Angriffs-Größen (AnazhRealm.HELD_ANGRIFF_STATS) — es bestimmt Angriff wie
         // Abbau. Vorher faltete es in ALLE Stats: jede Eisenwaffe hob defense 12,8 → 20,94 und hpMax 134 → 185,2, ein
-        // Wolf-Biss (roh 15,8) kostete 1 HP. Schutz kommt nur aus dem Slot armor.
+        // Wolf-Biss (roh 15,8) kostete 1 HP. Schutz kommt nur aus dem Slot armor. Ein Werk der Schmiede faltet NICHT
+        // (halten-gesetz): seinen Treffer urteilt der Kern aus Masse × Schneide × Tempo — die Tags seines Spenders
+        // (geraet_schwert / geraet_spitzhacke, zwei feste Sätze für 21 Gestalten) hoben den Schaden der Hand 22 auf 36,7–40,4.
         const heldBp = this._heldImplementBlueprint();
-        if (heldBp) {
+        if (heldBp && !this._schmiedeWerk(heldBp)) {
             const angriffTags = { ...finalTags };
             this._foldEquippedStatTags(angriffTags, heldBp, AnazhRealm.HELD_STAT_WEIGHT, "held");
             const angriff = this._statsFromTags(angriffTags);
@@ -2116,25 +2132,18 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // DER KÖRPER-HAUCH (Leben-Schau 07.10., Neu 1): ein DSL-Op wiegt Lauf-Tempo oder Sprungkraft nur INNERHALB des
-    // Gesetz-Bands des Leibs (`_koerperGesetzBand`) — der Wunsch jenseits des Bands landet an seinem Rand, benannt im
-    // Protokoll (Wunsch, gesetzt, Band, Quelle). Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s
-    // (Sprint 45 m/s) und Sprungkraft bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
+    // Gesetz-Bands des Leibs (`_koerperGesetzBand`); das Band hält `dslEval` (`AnazhRealm.DSL_WERTE`, KI H1): ein Wunsch
+    // jenseits fällt benannt und steht im Prompt der KI, statt still an den Rand zu rutschen, während der Chat den Wunsch
+    // meldete. Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s (Sprint 45 m/s) und Sprungkraft
+    // bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
     _koerperHauch(stat, wunsch, ctx) {
-        const w = Number(wunsch);
-        if (!Number.isFinite(w)) {
-            if (ctx && ctx.log) ctx.log.push({ event: "invalid_koerper_hauch", stat, wunsch });
-            return;
-        }
-        const b = this._koerperGesetzBand(stat);
-        const v = Math.min(b.max, Math.max(b.min, w));
+        const v = Number(wunsch);
         if (stat === "speed") this._applyPlayerSpeed(v);
         else if (stat === "jumpPower") this.state.jumpPower = v;
         else return;
         const quelle = (ctx && ctx.source) || "dsl";
-        if (ctx && ctx.log) ctx.log.push({ event: "koerper_hauch", stat, wunsch: w, gesetzt: v, band: [b.min, b.max] });
         this.log(
-            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)} ` +
-                `(Wunsch ${w.toFixed(2)}, Gesetz-Band ${b.min.toFixed(2)}–${b.max.toFixed(2)})`,
+            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)}`,
             "INFO"
         );
     }

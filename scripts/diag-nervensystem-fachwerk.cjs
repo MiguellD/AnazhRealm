@@ -92,29 +92,19 @@ function staticLaws(q, manifestSrc) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, d: {}, p: {}, e: {}, f: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipes.alemannisch && rc && rc.lod && rc.lod.kindStages) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.alemannisch && rc && rc.lod && rc.lod.kindStages; });
         const rc = A._studioRenderConfig;
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
@@ -200,7 +190,7 @@ function staticLaws(q, manifestSrc) {
         }
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
-        // FLÄCHEN-STUFE (V18.500 — der Test wandert mit dem Entscheid): L1 ist eine echte
+        // FLÄCHEN-STUFE: L1 ist eine echte
         // Studio-Stufe (17–33 % von L0), der Host-Umweg lodServe {1:2} ist gefallen. Also:
         // Wahl 2 fragt |2| frisch an; Wahl 1 fragt die ECHTE Stufe |1| frisch an (kein
         // Mapping, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|; Wahl 0
@@ -224,7 +214,7 @@ function staticLaws(q, manifestSrc) {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();

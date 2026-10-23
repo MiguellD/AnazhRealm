@@ -1319,7 +1319,7 @@
     // ════════════════════════════════════════════════════════════════════
     // DAS GANG-GESETZ (Welle 5, „Gang ohne Gleiten"): der Fuß im Stand steht still auf dem Boden. Die Schritt-Länge je
     // Zyklus wächst mit der relativen Geschwindigkeit (Froude v̂ = v/√(g·L), L = Hüft-Höhe): Λ = L·(1,2 + 2·v̂), gedeckelt
-    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad 0,5) die halbe Schritt-Länge S, die Frequenz folgt
+    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad tast) den Fußweg S = tast · Λ, die Frequenz folgt
     // dem Weg (ω = 2π·v/Λ) — vorher lief der Takt aus dem Gefühls-Profil (Freude 3,2 rad/s, Schritt 0,06 rad) bei jeder
     // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
     // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
@@ -1333,7 +1333,12 @@
         // Sekunde (Natur ~3). Vorher 1,2 + 2,0 · v̂ (8,2 L im Galopp, 1,7 Schritte je Sekunde, langsamer als sein Trab).
         schrittBasis: 1.4,
         schrittFroude: 1.0,
-        tastgrad: 0.5,
+        // DER TASTGRAD DER GANGART (K3, Alexander 1984, Hildebrand 1965): im Schritt steht jeder Fuß zwei Drittel des Takts
+        // (drei Füße tragen, Schritt 0,6–0,7), über die Schwelle des Trabs (GANG_FOLGE.froudeTrab × (1 + hysterese) bis
+        // zum Doppelten) fällt er auf tastgradTrab (die Diagonalen im halben Takt). Vorher stand der Fuß in Schritt und
+        // Trab den halben Takt (gate:tier-gang: Schritt 0,52–0,54).
+        tastgrad: 0.65,
+        tastgradTrab: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
         hub: 0.12, // × h — die Schwung-Höhe des Fußes
         // die Form des Hubs (Welle LF, Stand-Schlupf): sin(Phase)^hubForm — der Fuß hebt steil ab und setzt steil auf. Mit
@@ -1347,8 +1352,11 @@
         // Froude-Zahl über die Schwelle des Galopps (GANG_FOLGE.froudeGalopp) bis tastgradLauf, höchstens bis die Kontaktzeit
         // den Fußweg des Bein-Winkels trägt (Weyand 2000); der Schritt wächst mit der Schwebe. Vorher stand der Fuß in jeder
         // Gangart den halben Takt: der Wolf galoppierte bei v̂ 3,5 mit 7,7 Schritten je Sekunde (Natur ~3), acht Bilder je
-        // Schritt, und die Grenze des Beins hob jeden Fuß vor der Zeit.
+        // Schritt, und die Grenze des Beins hob jeden Fuß vor der Zeit. Im Galopp fegt das Bein weiter (Schulterblatt und
+        // Rücken strecken den Stand, K3): der größte Winkel wächst mit dem Wechsel bis winkelLauf — vorher deckelte
+        // maxWinkel auch den Galopp, der Fuß stand 0,18 des Takts (Natur ~0,3, Walter & Carrier 2007).
         tastgradLauf: 0.3,
+        winkelLauf: 0.48,
     });
     // DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3, VERTRAGS-AKT 20.10.): die Fußfolge folgt der Froude-Zahl Fr = v̂² =
     // v²/(g·L), nie der Stimmung — unter froudeTrab der Schritt in lateraler Folge (nach jedem Hinterfuß der Vorderfuß
@@ -1406,17 +1414,25 @@
             return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub, art: "stand", folge: GANG_FOLGE.schritt };
         var vv = Math.min(v, gangZahl(G, "vMax"));
         var vh = vv / Math.sqrt(g * L);
-        var sMax = 2 * L * Math.tan(gangZahl(G, "maxWinkel"));
+        var mW = gangZahl(G, "maxWinkel");
+        var sMax = 2 * L * Math.tan(mW);
         var lamF = L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh);
-        // die Zeile ohne eigenen Wechsel (die Tiere) läuft ab der Schwelle des Galopps
+        // die Zeile ohne eigenen Wechsel (die Tiere) läuft ab der Schwelle des Galopps und trabt mit tastgradTrab
+        var tier = !(G.laufFroude > 0);
         var tL = gangZahl(G, "tastgradLauf"),
-            fL = G.laufFroude > 0 ? G.laufFroude : GANG_FOLGE.froudeGalopp;
+            fL = tier ? GANG_FOLGE.froudeGalopp : G.laufFroude;
+        if (tier) {
+            var fT = GANG_FOLGE.froudeTrab * (1 + GANG_FOLGE.hysterese);
+            var wT = Math.max(0, Math.min(1, (vh * vh - fT) / fT));
+            tast += (gangZahl(G, "tastgradTrab") - tast) * wT * wT * (3 - 2 * wT);
+        }
         if (tL > 0 && fL > 0) {
             var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
             w = w * w * (3 - 2 * w);
+            if (tier) sMax = 2 * L * Math.tan(mW + (gangZahl(G, "winkelLauf") - mW) * w);
             // im Lauf fegt das Bein höchstens seinen Winkel: der Fußweg bleibt bei sMax, der Tastgrad fällt mit dem Tempo
             // (die Kontaktzeit = sMax / v — Weyand 2000), der Schritt wächst weiter mit der Froude-Zahl
-            tast += (Math.min(tL, sMax / lamF) - tast) * w;
+            tast += ((tier ? tL : Math.min(tL, sMax / lamF)) - tast) * w;
             if (G.hubLauf > 0) hub += (G.hubLauf - hub) * w;
         }
         var lamMax = sMax / tast;
@@ -1425,7 +1441,7 @@
         return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art] };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
-    // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π (byte-gleich zum Tier-Gang).
+    // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π.
     // hubForm aus der Zeile Z (sonst GANG_GESETZ).
     // DAS ABROLLEN DES FUSSES (K07, additiv — die Tiere lesen es nicht: ohne rollWinkel der Zeile oder ohne Reichweite R
     // bleibt der Fuß flach, byte-gleich): ab fersenAb des Stands hebt sich die Ferse, der Fuß rollt über den Ballen
@@ -1753,6 +1769,121 @@
         if (g.diet >= T.fleischDiet) return kg >= T.jagdKg ? "wild" : "scheu";
         if (g.diet <= T.pflanzDiet) return kg >= T.kolossKg ? "wehrhaft" : "scheu";
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
+    }
+
+    // DAS FURCHT-GESETZ (Oekologie K3, 23.10., additiv — FURCHT_GESETZ wohnt nicht in VERHALTEN, VERHALTEN reist in PRESETS und
+    // der v7-Fingerabdruck bleibt): EINE Furcht eines Wesens aus zwei Gedaechtnissen, gewogen nach EINER Bedrohung.
+    // DIE BEDROHUNG eines Gefuehls (bedrohung): chaos und sorrow schrecken, peace und joy beruhigen — mit den Gewichten von
+    // VERHALTEN.furcht; sie wiegt die Aura des Spielers UND den Abdruck einer Tat am Ort (vorher rechnete der Wirt sie nur fuer
+    // den Spieler, der Ort trug Gefuehle, die kein Tier las). DAS WESEN ERINNERT (furchtErinnert): jede Erinnerung an den
+    // Spieler traegt ihr Gewicht (geschlagen +, gefuettert −; der Schlag wiegt schwerer als die Gabe: Baumeister et al. 2001,
+    // „Bad is stronger than good"), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
+    // weitet Witterung und Flucht-Distanz um fluchtJeFurcht je Einheit (bejagte Bestaende fliehen frueher und weiter, beim
+    // Wapiti um ein Mehrfaches: Stankowich 2008, Biol. Conserv. 141:2159). Gezaehlt wird, was das Gedaechtnis traegt (die Kappe
+    // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
+    // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
+    // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    var FURCHT_GESETZ = Object.freeze({
+        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
+        deckel: 3,
+        fluchtJeFurcht: 1.25,
+        riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
+        ortGewicht: 1,
+        ortRadiusZellen: 1.5,
+    });
+    // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
+    function bedrohung(e, NAT) {
+        return (
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy
+        );
+    }
+    // memory = die Erinnerungen des Wesens [{type, …}] (die Typen geschlagen · gefuettert; jeder andere wiegt 0).
+    function furchtErinnert(memory, F) {
+        if (!memory || !memory.length) return 0;
+        var s = 0;
+        for (var i = 0; i < memory.length; i++) {
+            var g = memory[i] && F.erinnerung[memory[i].type];
+            if (g) s += g;
+        }
+        return s > F.deckel ? F.deckel : s < -F.deckel ? -F.deckel : s;
+    }
+    // gefuehl = der Abdruck einer Zelle (Achsen wie e) oder null. Liefert die Furcht des Orts (≥ 0: ein ruhiger Ort lockt nicht).
+    function furchtOrt(gefuehl, NAT, F) {
+        if (!gefuehl) return 0;
+        var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
+        return m > 0 ? m : 0;
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
+    // Jagd beginnt mit der ersten Hetze auf ein Ziel und endet mit dem Riss oder nach dauerS; dann ist der Jaeger erschoepft und
+    // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
+    // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
+    // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    function wundTempo(hpAnteil, J) {
+        var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
+        return Math.pow(a, J.wundExp);
+    }
+
+    // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
+    // Boden-Klasse eines Orts kommt aus dem Gelaende (bodenKlasse): am Fluss, wo sein Rand naeher als flussM liegt, am Hang, wo
+    // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
+    // forestStandDensity): Wald ab waldSd, Waldrand ab randSd, darunter Wiese. Je Gattung ihr Lebensraum (gattung: Klasse →
+    // Eignung) und ihre Haeufigkeit (Beute ist haeufig, der Jaeger selten); lebensraum = Eignung × Haeufigkeit, 0 = die Gattung
+    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982), der Wolf jagt aus dem Wald, der Baer
+    // sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8).
+    var LEBENSRAUM_GESETZ = Object.freeze({
+        flussM: 40,
+        hangTan: 0.36,
+        waldSd: 0.7,
+        randSd: 0.5,
+        gattung: Object.freeze({
+            deer: Object.freeze({ wiese: 1, waldrand: 1 }),
+            fox: Object.freeze({ waldrand: 1, wiese: 0.5 }),
+            wolf: Object.freeze({ wald: 1 }),
+            bear: Object.freeze({ fluss: 1, hang: 1 }),
+        }),
+        haeufigkeit: Object.freeze({ deer: 1, fox: 0.4, wolf: 0.35, bear: 0.25 }),
+    });
+    // flussRandM = der Abstand zum Rand des naechsten Flusses (m, Infinity ohne), hangTan = der Hang (tan), sd = die
+    // Bestandsdichte (0..1). Liefert "fluss" · "hang" · "wald" · "waldrand" · "wiese".
+    function bodenKlasse(flussRandM, hangTan, sd, L) {
+        if (flussRandM <= L.flussM) return "fluss";
+        if (hangTan >= L.hangTan) return "hang";
+        return sd >= L.waldSd ? "wald" : sd >= L.randSd ? "waldrand" : "wiese";
+    }
+    function lebensraum(gattung, klasse, L) {
+        var g = L.gattung[gattung];
+        return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
+    }
+    // DER DURST (Tiere K4, additiv): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr durch durstS; ab 1 sucht das Tier
+    // Wasser im Umkreis VERHALTEN.aufgaben.trinkSuchM und trinkt, dann ist er 0; fand es keines, sucht es nach suchPauseS
+    // wieder (das Rotwild zieht mehrmals am Tag zur Traenke).
+    var DURST_GESETZ = Object.freeze({ durstS: 1200, suchPauseS: 300 });
+    function durst(seitS, D) {
+        return seitS > 0 ? seitS / D.durstS : 0;
+    }
+    // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
+    // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
+    var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
+    function lebensraumWahl(klasse, u, L) {
+        var max = 0,
+            g,
+            i,
+            s;
+        for (i = 0; i < LEBENSRAUM_KLASSEN.length; i++) {
+            s = 0;
+            for (g in L.gattung) s += lebensraum(g, LEBENSRAUM_KLASSEN[i], L);
+            if (s > max) max = s;
+        }
+        var w = u * max;
+        for (g in L.gattung) if ((w -= lebensraum(g, klasse, L)) < 0) return g;
+        return null;
     }
 
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
@@ -3174,6 +3305,18 @@
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
+        FURCHT_GESETZ: FURCHT_GESETZ,
+        bedrohung: bedrohung,
+        furchtErinnert: furchtErinnert,
+        furchtOrt: furchtOrt,
+        JAGD_GESETZ: JAGD_GESETZ,
+        wundTempo: wundTempo,
+        LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
+        bodenKlasse: bodenKlasse,
+        lebensraum: lebensraum,
+        lebensraumWahl: lebensraumWahl,
+        DURST_GESETZ: DURST_GESETZ,
+        durst: durst,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

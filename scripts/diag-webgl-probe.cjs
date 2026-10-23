@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe, 18.07.)
+// diag-webgl-probe.cjs — DIE KEIN-WEBGPU-BOOT-PROBE (gate:webgl-probe)
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf den WebGL2-Backend zurück; die WGSL-Konsumenten
-// (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die V18.267-Falle
+// (der Feld-Pass) und die Render-Bundles existieren als KLASSEN auch dort — Existenz-Prüfungen sind blind (die Falle
 // in GPU-Form). Die Probe erzwingt den Rückfall (window.__anazhForceWebGL, der EINE Hook, alle 5 Renderer-Münzstellen) und
 // beweist auf echtem GL (die CI swiftshader, lokal die Karte):
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)
-//   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") — fail-soft wäre der Bruch (Schöpfer-Wort 17.07.)
+//   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") — fail-soft wäre der Bruch
 //   W3 die Wände halten: kein Feld-Pass · keine Geometrie-Arena (laut: `__arenaOhne`) · keine Region-RenderBundles
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht endlich, der Canvas nach einem echten Frame trägt SUBSTANZ (nicht
 //      schwarz) ohne page-error, und jedes Programm, das das Spiel baut, linkt — sonst ROT beim Stoff-Namen mit Info-Log im
 //      Fehler-Sammler (r184 nennt es namenlos) — „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
-//   W6 (Karten W3 + S5, 16.10., ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
+//   W6 (Karten W3 + S5, ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
 //      GL sie zählt (aktive Sampler × Feldgröße, nie Textur-Objekte), gezählt im GLSL OHNE Link (swiftshader linkt je Programm
 //      20–48 s); Selbsttests: ein Stoff mit 17 Karten fällt beim Namen, ein linkender Zensus ist ROT (r184-Drift)
 //   node scripts/diag-webgl-probe.cjs
@@ -35,8 +35,7 @@ const server = statikServer();
     page.on("console", (m) => consoleLines.push(m.text()));
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (!(window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true) && performance.now() < dl) await new Promise((r) => setTimeout(r, 200)); // prettier-ignore
+        await window.__weltDa(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet
         const st = window.anazhRealm && window.anazhRealm.state, rend = st && st.renderer, be = rend && rend.backend; // prettier-ignore
         if (!be || !be.gl) return;
@@ -64,7 +63,7 @@ const server = statikServer();
             // W5 — der Substanz-Schuss liest, was der Spieler SIEHT: den Canvas nach einem echten Frame (`_loopRender`), Frame für
             // Frame bis Substanz steht (Ereignis-Zeit, ≤ 120 Frames; bis W3 ein Einmal-Render in ein eigenes Ziel, auf der Radeon
             // schwarz). Er kommt ZUERST: ein Pixel-Lesen wartet auf jede GPU-Arbeit davor — hinter 12 gepumpten Takten stand er
-            // auf swiftshader bis 160 s (16.10.), hinter den Frames des ruhenden Loops kostet er seinen eigenen Frame.
+            // auf swiftshader bis 160 s, hinter den Frames des ruhenden Loops kostet er seinen eigenen Frame.
             const cam = st.camera, rend = st.renderer; // prettier-ignore
             const c2 = Object.assign(document.createElement("canvas"), { width: 96, height: 64 }).getContext("2d", { willReadFrequently: true }); // prettier-ignore
             for (o.schussFrames = 1; o.schussFrames <= 120; o.schussFrames++) {
@@ -105,12 +104,13 @@ const server = statikServer();
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);
-            // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms × Feldgröße,
-            // nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein Sampler, den die Stufe nach
-            // seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten Link der Radeon, GLSL = getActiveUniform je
-            // Programm). compileAsync baut je Stoff nur das GLSL, seine Pipeline (eigene Versprechen-Liste, nie E.neu der Welt) baut
-            // erst der echte Draw — swiftshader linkt je Programm 20–48 s synchron, der linkende Zensus der ganzen Szene riss die
-            // 300-s-Frist (CI 38947879876 · 38946214534); den Link prüft W5, wo das Spiel ihn baut. Auch der verborgene Stoff zählt.
+            // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms
+            // × Feldgröße, nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein
+            // Sampler, den die Stufe nach seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten
+            // Link der Radeon, GLSL = getActiveUniform je Programm). compileAsync baut je Stoff nur das GLSL, seine
+            // Pipeline (eigene Versprechen-Liste, nie E.neu der Welt) baut erst der echte Draw — swiftshader linkt je
+            // Programm 20–48 s synchron, der linkende Zensus der ganzen Szene riss die 300-s-Frist; den Link prüft W5,
+            // wo das Spiel ihn baut. Auch der verborgene Stoff zählt.
             const gl = be.gl;
             o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
             const aktiv = (q) => [...String(q).matchAll(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+(\w+)\s*(?:\[(\d+)\])?/gm)].filter((d) => String(q).split(new RegExp(`\\b${d[1]}\\b`)).length > 2); // prettier-ignore

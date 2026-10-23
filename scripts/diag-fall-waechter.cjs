@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-fall-waechter.cjs — DER FALL-WÄCHTER (Leben-Schau 2, 09.10., Familie koerper-bild): jeder Körper steht auf dem Boden
-// UNTER ihm — keiner fällt durch ihn, keiner springt aufs Dach. Befund (sichtbar gefahren, echte Radeon, Spur B Bilder 34–37):
-// der GT flog mit 38 km/h über die Spaltkante (−904/−975), prallte an die Gegenwand, rollte zurück in den Grund und unter den
-// Überhang der Westwand (Fels 22,3–29,5 m, Luft 16–22,3 m) — dort lag sein Boden 12 m ÜBER ihm: der Fahr-Schritt las die
-// Oberkante der Säule (`getTerrainHeightAt`), und der Flug-Zweig des Kerns ließ ihn fallen, −6 428 m nach 30 s, das Bild
-// fror senkrecht ein. Dieselbe Klasse trug das gestoßene Tier (der Gleit-Schritt las die Oberkante: in der Höhle aufs Dach)
-// und der Ritt (`_rittEbene`, `_rittSchritt`); der Spieler (`_fieldSurfaceBelow`) und das gehende Tier
-// (`_creatureGroundY` → `_koerperBodenUnter`) lasen den Boden unter dem Körper schon. Die Wand (Null-Renderer, echter
+// diag-fall-waechter.cjs — DER FALL-WÄCHTER (Familie koerper-bild): jeder Körper — Wagen, Ritt, gestoßenes und gehendes
+// Tier, Spieler — steht auf dem Boden UNTER ihm (`_koerperBodenUnter`), keiner fällt durch ihn, keiner springt aufs Dach.
+// Die Wand (Null-Renderer, echter
 // Spiel-Takt `_gameLoopTick`, die Boden-Wahrheit ist das Dichtefeld selbst — der erste Fels unter dem Körper):
 //   (O) DIE ORTE DER SCHAU
 //       O1 der Wagen im Spaltgrund unter dem Überhang (die nächste Spalte der Welt, in die er passt — welt-orte `hoehle`): aufgesessen, in der Luft wie in der Schau — nach 4 s
@@ -16,16 +11,12 @@
 //          tiefer als FALL_M unter seinem Grund, nie unter der Todes-Ebene;
 //       O3 die Höhle der Boden-Funktion (die nächste Kammer der Welt mit Wand, welt-orte `hoehle`): ein Wagen auf dem Höhlen-Grund,
 //          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
-//          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
-//          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach); und ein Wolf, der auf dem Grund
+//          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib); und ein Wolf, der auf dem Grund
 //          STIRBT, in TOD_GIER Blickrichtungen: die tiefste Stelle seiner Haut (je Punkt gegen den Fels unter ihm, absolut)
 //          liegt nach dem Kippen nie tiefer als TOD_M im Fels und nie höher als TOD_LIEGT_M über ihm (über einem Stand
-//          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
-//          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund; CI 38029478199: eine andere Gier sank
-//          0,24 m — die Tafel hielt einen Stand, der schon im Hang steckte). Der lebende Stand liegt nie tiefer als TOD_M im
+//          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M. Der lebende Stand liegt nie tiefer als TOD_M im
 //          Fels (STAND IM FELS), und der in die Wand laufende Wolf steht am Ende nie mit der Stirn höher über seinem Heck, als
-//          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND, Prüfung 2 K02a: er
-//          stieg die gekrümmte Wand hinauf, Stirn 3,60 m über dem Heck; unter CPU-Last ruhte er 1,00 m über seinem Grund);
+//          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND);
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
@@ -74,8 +65,7 @@ const KOERPER_SCHRITTE = [
     "_todHebeTafel",
 ];
 const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurfaceAbove", "_terrainMacroSurfaceY"]);
-// DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren (Gegenprüfung 10.10.: `_todHebeTafel` las die
-// Oberkante als Boden des sterbenden Leibs, und die Wand kannte ihn nicht): jede Methode, die einen Dach-Leser ruft UND
+// DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren: jede Methode, die einen Dach-Leser ruft UND
 // `.position.y` liest oder schreibt (oder `.position.set` ruft), ist ein Körper-Schritt (oben, dort ist die Oberkante
 // verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
 // benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
@@ -106,16 +96,7 @@ function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
     const befunde = [];
     const gefunden = new Set();
     const benanntGesehen = new Set();
-    const lauf = (n, f) => {
-        if (!n || typeof n.type !== "string") return;
-        f(n);
-        for (const k in n) {
-            if (k === "type" || k === "loc" || k === "start" || k === "end") continue;
-            const v = n[k];
-            if (Array.isArray(v)) for (const x of v) lauf(x, f);
-            else if (v && typeof v.type === "string") lauf(v, f);
-        }
-    };
+    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const name = (m) => (m && m.type === "MemberExpression" && !m.computed && m.property ? m.property.name : null);
     lauf(ast, (n) => {
         if (n.type !== "MethodDefinition" || !n.key) return;
@@ -222,9 +203,8 @@ function urteil(b) {
             if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
                 v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
             else {
-                // DER LEBENDE STAND (Prüfung 2 K02a, vorher OFFEN): am Fuß der Höhlenwand stand der Wolf vor dem Tod in 5 von 8
-                // Blickrichtungen mit der Haut bis 0,46 m im Fels — die Pfoten lasen in der Höhle die Höhe des Leibs, nie den
-                // Boden unter sich (`_standSicht` ohne Karte)
+                // DER LEBENDE STAND (K02a): am Fuß der Höhlenwand steht der Wolf vor dem Tod nie mit der Haut im Fels — die
+                // Pfoten lesen den Boden unter sich, nie die Höhe des Leibs
                 if (t.stehtM < -TOD_M)
                     v.push(
                         `(O) STAND IM FELS: ${p.name} — ${wo} steht lebend mit der Haut ${(-t.stehtM).toFixed(2)} m im Fels ` +
@@ -474,16 +454,13 @@ async function probe(K) {
     const r = window.anazhRealm;
     const st = r.state;
     const A = r.constructor;
-    const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
     let tMs = performance.now();
     const takt = () => {
         tMs += 1000 / 60;
         r._gameLoopTick(tMs);
     };
     const f = r._ensureAssetFoundry();
-    const dl = performance.now() + 90000;
-    while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt))
-        await pause(100);
+    await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt));
     const todesEbene = (st.terrainBaseHeight || 0) - 88;
     // DIE BODEN-WAHRHEIT: das Dichtefeld selbst — der erste Fels unter einem Punkt (0,05-m-Schritte), unabhängig von jedem
     // Leser des Spiels. Startet der Punkt im Fels, ist der Körper darin: Grund = +Infinity (er liegt unter ihm).
@@ -530,10 +507,7 @@ async function probe(K) {
             { silent: true, precise: true, rotationY: gier - Math.PI / 2 }
         );
         if (!e) return null;
-        for (let i = 0; i < 150 && !e.instanced && !e.mesh; i++) {
-            r._rebuildArchitectureMesh(e);
-            await pause(100);
-        }
+        await window.__gebautNach(e, { takt });
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) {
             r.removeArchitecture(e);
@@ -581,15 +555,15 @@ async function probe(K) {
     };
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
-    // DIE SPALTEN AUS DER WELT (K55-2): das Gesetz der Spalte, in der ein Leib steht, lebt in scripts/lib/welt-orte.cjs
-    // (`hoehle`): von der Oberkante abwärts Fels ≥ `fels`, dann Luft ≥ `luft`, dann ein Grund aus Fels; im Umkreis R ein GRUND
-    // (K16, das Flussnetz-Gelände: seine Höhlen sind Gänge 16 m unter dem Boden, oft schmaler als der Wagen — ein Körper halb in
-    // der Wand steht in keiner Höhle, am Gang −885,5/−1240,5 standen zwei Räder des GT im Fels, er stand 29,5 m auf dem Dach;
-    // der Fels liegt im Abstand d höchstens d/3 über oder unter dem der Spalte — am ersten Wolf-Ort fiel der Gang mit 38° zur
-    // Wand, die Wölfe glitten 2 m); dazu die Wand der Höhle binnen 2,5 m (`wand`: die Wahrheit des Dichtefelds, je Richtung der
-    // erste Abstand, an dem der Fels vom Fuß + einer Stufe bis 2,1 m darüber reicht). R: der Wagen KAMMER_R (die halbe
-    // Diagonale des GT, 1,66 m), der Wolf WOLF_R (seine Länge). Die Suche geht in Ringen alle 2 m um die Mitte der Welt (bis
-    // K55-2 um die Mess-Wiese: in der flachen Aue −278/−1038 fand O3 keine Höhle, CI 38546830515).
+    // DIE SPALTEN AUS DER WELT: das Gesetz der Spalte, in der ein Leib steht, lebt in scripts/lib/welt-orte.cjs
+    // (`hoehle`): von der Oberkante abwärts Fels ≥ `fels`, dann Luft ≥ `luft`, dann ein Grund aus Fels; im Umkreis R
+    // ein GRUND (K16, das Flussnetz-Gelände: seine Höhlen sind Gänge 16 m unter dem Boden, oft schmaler als der Wagen —
+    // ein Körper halb in der Wand steht in keiner Höhle, am Gang −885,5/−1240,5 standen zwei Räder des GT im Fels, er
+    // stand 29,5 m auf dem Dach; der Fels liegt im Abstand d höchstens d/3 über oder unter dem der Spalte — am ersten
+    // Wolf-Ort fiel der Gang mit 38° zur Wand, die Wölfe glitten 2 m); dazu die Wand der Höhle binnen 2,5 m (`wand`:
+    // die Wahrheit des Dichtefelds, je Richtung der erste Abstand, an dem der Fels vom Fuß + einer Stufe bis 2,1 m
+    // darüber reicht). R: der Wagen KAMMER_R (die halbe Diagonale des GT, 1,66 m), der Wolf WOLF_R (seine Länge). Die
+    // Suche geht in Ringen alle 2 m um die Mitte der Welt.
     const KAMMER_R = 1.8,
         WOLF_R = 0.9;
     const spalten = (opts) => window.__weltOrte("hoehle", Object.assign({ schritt: 2, rMax: 600 }, opts));
@@ -634,7 +608,7 @@ async function probe(K) {
     // ── (T) DER EINGESCHMUGGELTE TÄTER: der Boden des Werks liest die Oberkante der Säule (der alte Leser)
     {
         const P = Object.getPrototypeOf(r);
-        r._werkBoden = function (entry) {
+        r._werkBoden = function () {
             return (x, z) => this.getTerrainHeightAt(x, z);
         };
         let t;
@@ -716,10 +690,10 @@ async function probe(K) {
             }
         }
     }
-    // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste Wand zu
-    // (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2 m/s in sie
-    // hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des Körpers fiel auf
-    // die Oberkante der Säule (CI 38009273564: ein gestoßener Wolf 11,88 m auf dem Dach der Höhle).
+    // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste
+    // Wand zu (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2
+    // m/s in sie hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des
+    // Körpers fiel auf die Oberkante der Säule.
     const steuerRoh = A._steuerGesetz;
     const kappe = st.maxCreatures;
     // DIE STIRN eines Leibs (Prüfung 2 K02a): wie hoch der Boden eine halbe Länge voraus (längs `gier`) über dem eine halbe
@@ -770,9 +744,8 @@ async function probe(K) {
                 if (w.position.y < yMin) yMin = w.position.y;
             }
             const gE = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-            // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge trägt;
-            // höher, als er beim Anlauf schon stand, steht er auf einer Kletterwand, die er hinaufstieg (vorher: die Stirn 1,40
-            // bis 3,60 m über dem Heck, der Leib 1,00 m über seinen Grund gehoben)
+            // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge
+            // trägt; höher, als er beim Anlauf schon stand, steht er auf einer Kletterwand, die er hinaufstieg
             const stirn = lauf
                 ? {
                       hoch: stirnAn(w, w.rotation.y || 0),
@@ -821,11 +794,10 @@ async function probe(K) {
             proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
         }
     }
-    // DER TOD IN DER HÖHLE (Gegenprüfung 10.10.): der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
+    // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
     // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
     // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
-    // die Tiefe darin). Vorher las die Tod-Lage die Oberkante der Säule als Boden: in der Höhle legte sich der Leib nach dem
-    // Hang des Dachs.
+    // die Tiefe darin).
     const hautAbstand = (c) => {
         c.updateMatrixWorld(true);
         const T = window.THREE || globalThis.THREE;
@@ -935,8 +907,7 @@ async function probe(K) {
             st.maxCreatures = kappe;
         }
     };
-    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier — CI 38029478199:
-    // eine Gier, die der lokale Lauf nicht zog, sank 0,24 m in den Grund)
+    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier)
     for (let k = 0; k < K.todGier; k++) {
         const name = "O3 Wolf stirbt in der Höhle";
         if (!hoehleOk) {

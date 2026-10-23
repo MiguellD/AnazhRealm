@@ -34,7 +34,9 @@ class AnazhRealm_werkstatt_vorschau {
         // Die Liste liest die EINE Katalog-Regel (_katalogSichtbar): Streaming-Varianten (`grown_<art>_v<N>`)
         // sind Worldgen-Render-Details, keine Baupläne; von Fels-/Kristall-/Glut-Formationen zeigt sie EINEN
         // Repräsentanten (`*_var0`) — var1+ bleiben in state.blueprints für den Scatter.
-        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n));
+        const blueprintNames = this._katalogReihe(
+            Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n))
+        );
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {
@@ -407,6 +409,15 @@ class AnazhRealm_werkstatt_vorschau {
     // Tab-Wechsel-Hook: aktiv wenn Werkstatt-Drawer offen, sonst pausiert.
     _workshopHandleDrawerChange(activeName) {
         const ws = this._ensureWorkshopState();
+        const liste = typeof document !== "undefined" && document.getElementById("workshop-list");
+        if (activeName === "werkstatt" && liste) {
+            // DIE WAHL ZUERST (bauen.K1): die Werkstatt öffnet mit der aufgeklappten Bauplan-Liste, oben, in der Reihe des
+            // Katalogs (`_katalogReihe`) — der erste Klick wählt. Befund 22.10. (echte Eingaben): die Liste brauchte einen
+            // Klick auf die Suche, Haus, GT und das eigene Werk lagen 2–7 Mausrad-Rasten tief.
+            this._workshopRenderBlueprintList(liste, ws);
+            liste.closest(".workshop-picker").classList.add("open");
+            liste.scrollTop = 0;
+        }
         if (activeName === "werkstatt") {
             // Legacy-Größen einmalig räumen — der Werkstatt-Rahmen kommt rein aus CSS.
             this._workshopApplyDefaultSizeOnce();
@@ -764,8 +775,11 @@ class AnazhRealm_werkstatt_vorschau {
 
     // DER EINE STUDIO-STEMPEL eines Platzier-Akts (Werkstatt-Bau UND Co-Schöpfer): bp.studioOv (Craft)
     // führt, sonst die gewählte Werkstatt-Prägung seines Presets. Tief kopiert + fail-closed:
-    // nicht serialisierbar → „kein Stempel“ (nie eine gespaltene Welt).
-    _studioStampFor(blueprintName) {
+    // nicht serialisierbar → „kein Stempel“ (nie eine gespaltene Welt). Die Regler eines Programms (`ov`, das fünfte Argument
+    // von spawn_studio, KI K2) treten über die Prägung, geklemmt am Vertrag der Art (`_reglerKlemme`, jede Klemme in
+    // `befund.geklemmt`); ein Regler ohne Zeile seiner Art, ein Wert ohne Zahl oder ein ov ohne Objekt schließt: false,
+    // `befund.fremd` nennt ihn, `befund.kennt` die Regler der Art — nie halb geprägt.
+    _studioStampFor(blueprintName, ov, befund = {}) {
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         const preset =
             typeof this._foundryPresetForEntry === "function"
@@ -779,13 +793,51 @@ class AnazhRealm_werkstatt_vorschau {
                 stamp = null;
             }
         }
-        return stamp || null;
+        if (ov == null) return stamp || null;
+        const f = this._foundry;
+        const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+        const zeilen = (rec && f.paramsByKind && f.paramsByKind[rec.kind]) || [];
+        const k =
+            typeof ov === "object" && !Array.isArray(ov)
+                ? this._reglerKlemme(zeilen, ov)
+                : { werte: {}, geklemmt: [], fremd: [JSON.stringify(ov)] };
+        Object.assign(befund, { geklemmt: k.geklemmt, fremd: k.fremd, kennt: zeilen.map((d) => d.id) });
+        if (k.fremd.length) return false;
+        return Object.keys(k.werte).length ? Object.assign(stamp || {}, k.werte) : stamp || null;
+    }
+
+    // DIE KLEMME DES VERTRAGS (Studio-Vertrag B4): Werte {id: Zahl} gegen die Zeilen PARAMS_BY_KIND ihrer Art — jede Zahl auf
+    // [min, max], eine Zeile mit ganzem Schritt auf die ganze Zahl; was sie ändert, steht in `geklemmt` ({id, von, auf}), was
+    // keine Zeile oder keine endliche Zahl trägt, in `fremd`. Ob das Fremde fällt (must-ignore: die Übergabe eines Studios,
+    // `_studioWerkPruefen`) oder den Akt schließt (fail-closed: das Programm, `_studioStampFor`), sagt der Leser.
+    _reglerKlemme(zeilen, werte) {
+        const aus = { werte: {}, geklemmt: [], fremd: [] };
+        for (const id of Object.keys(werte)) {
+            const d = zeilen.find((z) => z && z.id === id);
+            const v = werte[id];
+            if (!d || typeof v !== "number" || !Number.isFinite(v)) {
+                aus.fremd.push(id);
+                continue;
+            }
+            const w = Math.min(d.max ?? Infinity, Math.max(d.min ?? -Infinity, d.step >= 1 ? Math.round(v) : v));
+            if (w !== v) aus.geklemmt.push({ id, von: v, auf: w });
+            aus.werte[id] = w;
+        }
+        return aus;
     }
 
     _workshopStudioOvFor(presetId) {
         const ws = this.state.workshop;
         const ov = ws && ws.studioOv ? ws.studioOv[presetId] : null;
         return ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+    }
+    // DIE PRÄGUNG EINES REZEPTS als Werte (ws.studioOv ohne den Samen `__gestalt`): der Leser der Guss-Dials (Mensch, Gattung)
+    // und des Welt-Klangs; null ohne eine. Ein gesetztes Werk liest den Stempel samt Samen (`_studioStampFor`).
+    _studioPraegung(presetId) {
+        const ov = this._workshopStudioOvFor(presetId);
+        const out = {};
+        for (const k in ov || {}) if (k !== "__gestalt") out[k] = ov[k];
+        return Object.keys(out).length ? out : null;
     }
 
     // DIE EINE STUDIO-VORSCHAU-QUELLE (_workshopStudioPreviewFrom) für Bauplan- UND Rezept-Auswahl,
@@ -856,10 +908,12 @@ class AnazhRealm_werkstatt_vorschau {
         // ihre Gestalt selbst; der Foundry-Worker kennt sie nicht (MESHFREI per Vertrag).
         const ovenRec = f.recipes ? f.recipes[preset] : null;
         if (ovenRec && typeof ovenRec.kind === "string") {
-            const oven = this._workshopOvenPreview(ovenRec, preset, ov, lod);
+            // der Ofen gießt aus den Werten der Prägung (ohne den Samen eines Studio-Werks — der Guss ist seed-invariant)
+            const oven = this._workshopOvenPreview(ovenRec, preset, ov ? this._studioPraegung(preset) : null, lod);
             if (oven !== undefined) return oven;
         }
-        const variant = this._foundryVariantFor(seedNum, preset);
+        // die Gestalt des Werks: ein Studio-Werk trägt seinen Samen im Stempel, sonst folgt sie dem Samen der Auswahl
+        const variant = this._foundryGestaltFor({ seed: seedNum, studioOv: ov }, preset);
         if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Vorschau wartet
         if (ov) {
             // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB) — der Memo-Schlüssel ist
@@ -1559,7 +1613,10 @@ class AnazhRealm_werkstatt_vorschau {
     // dunklen Preview-Hintergrund (#1a140a). Achsen-Konvention: X=rot,
     // Y=grün, Z=blau (Standard 3D-Editor + Three.js AxesHelper).
     static get WORKSHOP_GIZMO_COLORS() {
-        return Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 });
+        return this._einmal(
+            "WORKSHOP_GIZMO_COLORS",
+            Object.freeze({ x: 0xff5566, y: 0x66dd77, z: 0x5599ff, center: 0xffe066 })
+        );
     }
     static get WORKSHOP_SNAP_TRANSLATE() {
         return 0.5;
@@ -2143,6 +2200,7 @@ class AnazhRealm_werkstatt_vorschau {
             this._workshopAppendWerkHeading(machZone);
             if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
             if (canMake) this._workshopAppendFertigenRow(machZone, bp);
+            this._workshopAppendTeilenRow(machZone, bp);
             // M5 (V18.157, Befund 17) — das UMWIDMEN gehört der WERKSTATT.
             if (!bp.builtIn) this._workshopAppendUmwidmenRow(machZone, bp);
         }
@@ -2229,8 +2287,8 @@ class AnazhRealm_werkstatt_vorschau {
         // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
         const role = this._displayRole(bp);
         // Station und Portal werden über ihren eigenen Akt gesetzt, eine geborene (built-in) Seele wird nicht geformt. Das
-        // Fahrzeug ist ein Bauwerk wie jedes (M2: Phantom + confirmBuild) — FERTIGEN führt es in den Bau-Modus (Welle L
-        // Folge: die Werkstatt hatte für den GT keinen Weg in die Welt).
+        // Fahrzeug ist ein Bauwerk wie jedes (M2: Phantom + confirmBuild) — FERTIGEN setzt es, wohin der Spieler blickt (Welle
+        // L Folge: die Werkstatt hatte für den GT keinen Weg in die Welt; bauen.K1: das Setzen im selben Akt).
         if (role === "workshop-station" || role === "portal") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
@@ -2244,7 +2302,7 @@ class AnazhRealm_werkstatt_vorschau {
                   : role === "consumable"
                     ? "Trank brauen (trinken)"
                     : bauwerk
-                      ? "Bauen (das Phantom steht vor dir)"
+                      ? "Bauen (das Werk steht, wohin du blickst)"
                       : "Gerät schmieden (in die Hand)";
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";

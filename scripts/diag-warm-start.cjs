@@ -1,4 +1,4 @@
-// diag-warm-start.cjs — DER WARM-START-BEWEIS (DAS FELD ZEICHNET §4, V18.484):
+// diag-warm-start.cjs — DER WARM-START-BEWEIS:
 // gebaute uneditierte Chunk-Geometrie reist als GPU-fertige Bytes in IndexedDB
 // (DB "anazhChunkMesh") — der zweite Boot einer Welt liest den Ring aus der
 // Platte statt aus dem Meshing-Roundtrip. Vier Bänder (Browser, Null-Renderer;
@@ -47,13 +47,8 @@ async function runJob(page, fn, arg, timeoutMs) {
         fn.toString(),
         arg === undefined ? null : arg
     );
-    const dl = Date.now() + timeoutMs;
-    while (Date.now() < dl) {
-        const out = await page.evaluate(() => (window.__jobDone ? window.__jobOut : null));
-        if (out) return out;
-        await new Promise((r) => setTimeout(r, 400));
-    }
-    return { err: "Job-Timeout nach " + timeoutMs + " ms" };
+    await page.waitForFunction(() => window.__jobDone, { timeout: 0, polling: 400 });
+    return page.evaluate(() => window.__jobOut);
 }
 
 // ===== Die Band-Jobs (laufen 1:1 im Browser; nur `arg` reist hinein) =====
@@ -62,29 +57,13 @@ async function runJob(page, fn, arg, timeoutMs) {
 // (Als Quelltext-Präambel in jeden Job kopiert — Jobs reisen als Strings.)
 async function jobKalt() {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht" };
     const st = r.state;
-    while ((!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced) && performance.now() < dl0)
-        await new Promise((res) => setTimeout(res, 100));
+    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
-    // IDB-Schicht EXPLIZIT initialisieren (memoisiert — die Pumpe fände sie
-    // sonst erst ab dem zweiten Fetch; die Linse will ALLE Probe-Chunks
-    // durch die Stiftungs-Naht schicken).
-    await r._chunkIdbInit();
-    if (!r._chunkIdb || r._chunkIdb._idbDead || !r._chunkIdb._idbDb)
-        return { err: "IDB-Schicht kam trotz Hook nicht hoch (_idbDead)" };
     const { span } = r._voxelChunkConfig(0);
     const pm = st.playerMesh;
     const pcx = pm ? Math.floor(pm.position.x / span) : 0;
@@ -99,20 +78,11 @@ async function jobKalt() {
     ].filter(([cx, cz]) => !st.voxelChunks || !st.voxelChunks.has(cx + "," + cz));
     const posHashOf = (cx, cz) => {
         const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        if (!e || !e.mesh) return null;
-        const a = e.mesh.geometry.attributes.position.array;
-        const u8 = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-        let h = 0x811c9dc5;
-        for (let i = 0; i < u8.length; i++) {
-            h ^= u8[i];
-            h = Math.imul(h, 0x01000193);
-        }
-        return (h >>> 0).toString(16) + ":" + a.length;
+        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;
-        const dl = performance.now() + ms;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -175,44 +145,22 @@ async function jobKalt() {
 
 async function jobWarm(kaltIn) {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (warm)" };
     const st = r.state;
-    while ((!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced) && performance.now() < dl0)
-        await new Promise((res) => setTimeout(res, 100));
+    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (warm)" };
     if (st.worldMeta.seed !== kaltIn.seed)
         return { err: "Reload lud eine ANDERE Welt (Seed " + st.worldMeta.seed + " != " + kaltIn.seed + ")" };
-    await r._chunkIdbInit();
-    if (!r._chunkIdb || r._chunkIdb._idbDead || !r._chunkIdb._idbDb)
-        return { err: "IDB-Schicht kam im Warm-Lauf nicht hoch" };
     const posHashOf = (cx, cz) => {
         const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        if (!e || !e.mesh) return null;
-        const a = e.mesh.geometry.attributes.position.array;
-        const u8 = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-        let h = 0x811c9dc5;
-        for (let i = 0; i < u8.length; i++) {
-            h ^= u8[i];
-            h = Math.imul(h, 0x01000193);
-        }
-        return (h >>> 0).toString(16) + ":" + a.length;
+        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;
-        const dl = performance.now() + ms;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -249,9 +197,8 @@ async function jobWarm(kaltIn) {
     const added = r._addVoxelEdit(wx, h, wz, 3.5, "fill");
     if (!added) return Object.assign(out, { err: "Voxel-Edit wurde nicht angenommen (_addVoxelEdit false)" });
     const hitABefore = byKey.get(keyA) | 0;
-    const dl = performance.now() + 60000;
     let rebuilt = false;
-    while (performance.now() < dl && !rebuilt) {
+    for (const weiter = window.__deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
         if (!rebuilt) await new Promise((res) => setTimeout(res, 25));
     }
@@ -292,19 +239,15 @@ async function jobWarm(kaltIn) {
 
 async function jobSelbsttest(kaltIn) {
     /* eslint-disable no-undef */
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (Selbsttest)" };
-    await r._chunkIdbInit(); // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
+    // die Platte lebt im Faden (Karte hydro-faden): sein erster Auftrag mit Schlüssel (der unberührte Probe-Chunk B) öffnet sie,
+    // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
+    await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
+    const [bx, bz] = kaltIn.probes[1];
+    for (const weiter = window.__deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
+        await new Promise((res) => setTimeout(res, 25));
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
     return await new Promise((resolve) => {
         const req = indexedDB.open("anazhChunkMesh", 1);
@@ -336,11 +279,11 @@ async function jobSelbsttest(kaltIn) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
-        window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkIdbInit)
+        window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkPlatte)
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 

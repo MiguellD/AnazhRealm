@@ -121,7 +121,7 @@ ok(
     tested + " Läufe, " + maxDivergent + " divergent"
 );
 
-// ── P-ZWILLING (K24): EINE Ableitung Dials → P ──
+// ── P-ZWILLING: EINE Ableitung Dials → P ──
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
@@ -205,7 +205,7 @@ ok(
     pPaare.length + " Fälle, " + pFaelleRot + " abweichend" + (pFaelleRot ? " an " + Object.keys(pAbw).join(", ") : "")
 );
 
-// ── DAS SKELETT IM HAUPT-THREAD (Integration K20 × K16, 14.10.) ──
+// ── DAS SKELETT IM HAUPT-THREAD (Integration K20 × K16) ──
 // Der gefühlte Baum (`_baumGestaltTeile` ← `_populateBlockerAABBs` ← `spawnArchitecture`) wächst `skelettDerGestalt` im
 // Haupt-Thread — dort lädt die Seite phyto-core und foundry-core OHNE die Shell (index.html trägt kein phytogenesis.js):
 // jeder Schritt des Wuchses, der einen Vektor-Helfer der Shell liest, bricht dort (baum_totholz warf „vlen is not

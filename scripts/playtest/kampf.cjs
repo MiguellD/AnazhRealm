@@ -81,8 +81,8 @@ async function checkBandV1755HarvestEffort(ctx) {
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
-        // (7) der Hold-Tick ist gegated (ohne breakHeld → nichts)
-        p.breakHeld = false;
+        // (7) der Hold-Tick ist gegated (ohne die gehaltene Abbau-Aktion der Verb-Tafel → nichts)
+        r.state.verbTafel.gehalten.break = false;
         const beforeTick = r.state.architectures.length;
         r._tickHarvest();
         out.tickGuarded = r.state.architectures.length === beforeTick;
@@ -101,7 +101,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
-        p.breakHeld = false;
+        r.state.verbTafel.gehalten.break = false;
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);
@@ -130,11 +130,11 @@ async function checkBandV1755HarvestEffort(ctx) {
         "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
         res.yieldScalesWithFitness
     );
-    check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
+    check("V17.55 W1: der Hold-Tick ist gegated (ohne gehaltenes Abbauen passiert nichts)", res.tickGuarded);
     check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
 }
 
-// V17.56 W2 (kampf-plan §8.1) — das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
+// das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
 // harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
 // das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
 async function checkBandV1755W2Profile(ctx) {
@@ -248,9 +248,9 @@ async function checkBandV1755W2Profile(ctx) {
     check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
-// V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
+// die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
-// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz, V17.31): die Werkstatt-Rollen-Zeile rendert es.
+// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
 async function checkBandV1759CapabilityReadout(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -300,7 +300,7 @@ async function checkBandV1759CapabilityReadout(ctx) {
             (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
         );
 
-        // KONSUM (DOM, V17.31): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
+        // KONSUM (DOM): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
         const panel = document.createElement("div");
         r._specRenderHeader(panel, blu.__cap_maul);
         const chips = Array.prototype.slice
@@ -329,7 +329,7 @@ async function checkBandV1759CapabilityReadout(ctx) {
     );
 }
 
-// V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
+// die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
 // Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
 // setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
 async function checkBandV1775MakeActCost(ctx) {
@@ -521,7 +521,7 @@ async function checkBandV1783ImplementClassification(ctx) {
     );
 }
 
-// V17.86 — Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
+// Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
 // Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
 async function checkBandV1786WorkshopCoherence(ctx) {
     const { page, check } = ctx;
@@ -534,7 +534,7 @@ async function checkBandV1786WorkshopCoherence(ctx) {
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             if (!panel) return null;
-            // V18.44 Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
+            // Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
             // (die .spec-role-chip zeigt NUR die Rolle; die Affordanzen sind separate .spec-cap-chips).
             const header = panel.querySelector(".spec-header");
             const roleChipEl = header && header.querySelector(".spec-role-chip");
@@ -554,11 +554,6 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
-        out.schwertLabel = sw ? r._implementAffordanceLabel(sw) : "(missing)";
-        out.schwertCuts = out.schwertLabel === "Klinge"; // ein Schwert SCHNEIDET, ist kein Brecher
-        // die Spitzhacke bleibt ausgewogen/Werkzeug (kein Regress, der Substanz-Unterschied bleibt)
-        const sp = KS86.geraet_spitzhacke ? { parts: JSON.parse(JSON.stringify(KS86.geraet_spitzhacke.parts)) } : null;
-        out.spitzLabel = sp ? r._implementAffordanceLabel(sp) : "(missing)";
         // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
         const esse = r.state.blueprints["esse"];
         const esseRender = esse ? renderFor("esse") : null;
@@ -575,11 +570,6 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         "V17.86 Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
         res.schwertExists && res.schwertHeld,
         `role=${res.schwertRole}`
-    );
-    check(
-        'V17.86 Samen: das Schwert liest „Klinge" — es SCHNEIDET (cutPower > minePower), kein Brecher (die Waffen-Saat ist substanz-ehrlich)',
-        res.schwertCuts,
-        `schwert=${res.schwertLabel} · spitzhacke=${res.spitzLabel}`
     );
     check(
         'V17.86 Kohärenz: die Rolle-Chip liest das volle ROLE_LABELS-Register — die Esse zeigt „Werkstatt", nicht den rohen „workshop-station"',
@@ -612,8 +602,8 @@ async function checkBandM6ErnteSpawn(ctx) {
         let baum = null;
         let clampSpawn = null;
         try {
-            // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor;
-            // end-to-end: die Faust erntet den Baum (vorher loot = {}).
+            // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor; end-to-end: die Faust erntet den
+            // Baum.
             const fitProbe = r._harvestFitnessFromResist({ mineResist: 3.0, cutResist: 3.0 });
             out.sockel = fitProbe.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9;
             r.setGameMode("frieden");

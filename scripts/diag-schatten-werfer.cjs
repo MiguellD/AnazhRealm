@@ -1,15 +1,9 @@
 // diag-schatten-werfer.cjs — DIE WERFER-WAND (npm run gate:schatten-werfer).
 //
-// Befund 04.10. (echte GPU, Mess-Wiese, V18.528): beide CSM-Kaskaden zeichneten DIESELBE Werfer-Menge (k0 = k1 = 209
-// Befehle · 1,23 M Dreiecke). Drei Wurzeln: (a) das r184-Addon setzte jede Kaskade auf ein Quadrat mit der Diagonale
-// ihrer Frustum-Scheibe — der Blick deckte ein Viertel —, und es stellte die Lichter NACH den Karten (r184 ruft sein
-// updateBefore nach den Kaskaden-Pässen); (b) die Region-Bundles trugen EIN Urteil für jeden Pass, das der Haupt-Kamera:
-// ein Bundle im Blick warf in beide Kaskaden, eines hinter dem Blick nie; (c) jede Region warf als Ganzes. Die Heilung:
-// `_kaskadenPassen` misst die Box an der Scheibe im Licht-Raum (gerastet, texel-geschnappt, nahe Ebene über dem höchsten
-// Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die Regionen (Werfer-Hülle) und
-// darin die Werfer (Box je Blatt-Mesh) gegen das Frustum der Pass-Kamera. Im Schatten-Pass ist ein Region-Bundle eine
-// Gruppe (die Bundle-Wahrheit am Chokepoint `_renderScene`: unter dem Override-Stoff sammelt kein Render Bundles).
-// Der Boden ist EIN Satz außerhalb jedes Bundles — seine Bereiche sind Hüllen der Box (Empfänger-Band und Werfer).
+// Das Gesetz: `_kaskadenPassen` misst die Box jeder Kaskade an ihrer Scheibe im Licht-Raum (gerastet, texel-geschnappt,
+// nahe Ebene über dem höchsten Werfer) im Haken des Haupt-Passes VOR den Karten, `_passSicht` wählt je Schatten-Pass die
+// Regionen (Werfer-Hülle) und darin die Werfer gegen das Frustum der Pass-Kamera; der Boden ist EIN Satz außerhalb jedes
+// Bundles.
 //
 // Diese Linse (Null-Renderer, GPU-frei) fährt die ECHTEN Methoden an einer echten CSM-Instanz (Addon-Init mit der
 // Haupt-Kamera, wie der erste Material-Bau) und der gebooteten Welt:
@@ -18,10 +12,10 @@
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
-//   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
+//   K7  der Takt hält die Box (`_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
 //       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
 //       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
-//   K8  die Wahl hält über die Stufen der Sonne (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): dreht das Licht
+//   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht
 //       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
 //       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
 //       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
@@ -42,27 +36,20 @@
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
-//   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
-//       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
-//       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
+//   W7  die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
 //       die Höhlen-Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
 //       des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem
 //       Blick (der Hang wirft)
-//   W8  die Instanz-Wahl je Pass (Befund 06.10., echte GPU, Mess-Wiese: jede globale Baum-Gruppe zog in jedem Pass JEDE
-//       Instanz — das Hauptbild auch die Bäume hinter dem Blick, k1 bei schrägem Blick jeden Zwilling, jeder Pass die Stufen,
-//       deren Maske vom Auge alles verwirft): gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
+//   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
 //       Instanzen im Frustum und in ihrem Fenster (nicht hinter dem Blick, nicht jenseits d1), die L0 nicht jenseits d0; der
 //       Zwilling wirft mittags in die nahe Scheibe, nicht in die ferne, ein hoher Zwilling mitten in der fernen Scheibe nur
 //       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
 //       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot; ein Stoff OHNE Maske (die GPU zeichnet jede Instanz
 //       voll) bekommt kein Fenster — seine L1 jenseits d1 zeichnet; die Gruppen der Welt ohne Masken-Stoff stehen beim Namen
-//   W9  DAS EINE GESETZ, DREI LESER (W7-Vereinigung — Befund echte GPU, Mess-Wiese, yaw −0,88: boden k1 173 784 Dreiecke
-//       über der Ratsche 90 845, die Box der fernen Kaskade umschloss den nahen Boden, die Kapsel galt nur den Bäumen):
-//       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
+//   W9  DAS EINE GESETZ, DREI LESER: ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   W10 DIE WURF-EBENE (K72 — Befund 15.10., Radeon, Third: r184 projizierte je Kaskaden-Render 39–72 Nicht-Werfer, die
-//       die Schatten-Funktion erst nach Frustum-Test, Liste und Sortierung verwarf): der Wurf IST die Ebene SHADOW_TWIN_LAYER
+//   W10 DIE WURF-EBENE: der Wurf IST die Ebene SHADOW_TWIN_LAYER
 //       (`castShadow` liest und schreibt ihr Bit, kein Knoten trägt ein eigenes Feld), jede Kaskaden-Kamera sieht NUR sie —
 //       jeder zeichnende Knoten der Szene ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
 //       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)
@@ -166,9 +153,7 @@ function probe(selbsttest) {
     };
     // DIE EMPFÄNGER (K1): Boden-Punkte im Blick, aus dem Dichte-Feld (`_voxelSurfaceY`) — unabhängig von der Box-Rechnung.
     // Empfänger ist nur, was ein schatten-lesendes Mesh zeichnet: ein Punkt über einem Bereich des Boden-Satzes. Jenseits
-    // zeichnet der Fern-Ring (receiveShadow false) — gemessen 05.10.: ein Hügel 296 m weit (z 273, der Boden-Satz endet bei
-    // 222) lag 1 m über der nahen Ebene; bis zum Waldboden hatten die Hüllen der Klein-Streu-Bundles (Region-Kugel
-    // R·√½ + 140 m) das Band zufällig darüber gehoben.
+    // zeichnet der Fern-Ring (receiveShadow false).
     // Welche Kaskade ein Punkt liest, entscheidet der Addon-Shader (CSMShadowNode._setupFade, abgeschrieben): je Kaskade
     // [x, y] = `_cascades[i]` (die Uniform des Addons), Mitte = (x+y)/2, Kante = die nähere Grenze, margin = 0,25·Kante²,
     // csmX = x − margin/2, csmY = y + margin/2 (die letzte Kaskade: y); gelesen wird, wo csmX ≤ L ≤ csmY.
@@ -298,11 +283,11 @@ function probe(selbsttest) {
         }
         aus.k7 = { gehalten, neuGelegt, wirft };
     }
-    // K8 — DIE WAHL HÄLT ÜBER DIE STUFEN DER SONNE (Welle C, der Licht-Rand `PASS_WAHL.lichtRandTexel`): dreht das Licht seit
+    // K8 — DIE WAHL HÄLT ÜBER DIE STUFEN DER SONNE (der Licht-Rand `PASS_WAHL.lichtRandTexel`): dreht das Licht seit
     // der Wahl um weniger, als das Gesetz des Halts erlaubt (`_wahlHaelt`: der halbe Licht-Rand über den längsten Licht-Weg),
     // legt jede Kaskade ihre Box neu (die Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden
     // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
-    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft (Gegenprüfung 07.10.):
+    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft:
     // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
     // den Licht-Rand); die Grenze des Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
@@ -692,7 +677,7 @@ function probe(selbsttest) {
     zwei.userData._sichtHaupt = true;
     map.set("__w7:zwei", zwei);
     const passeAlt = (kamera, nach) => {
-        // DIE ALTE REGEL (bis V18.528): jeder Pass liest das Haupt-Urteil
+        // DIE ALTE REGEL: jeder Pass liest das Haupt-Urteil
         for (const bg of map.values()) if (bg.userData._sichtHaupt !== undefined) bg.visible = bg.userData._sichtHaupt;
         void kamera;
         void nach;
@@ -791,7 +776,7 @@ function probe(selbsttest) {
             bauGeprueft: 0,
         };
         // das Soll: die Zellen, deren Hülle das EINE Gesetz in der Lage des Passes trifft (erst der Bereich, dann seine Zellen);
-        // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
+        // eine Höhlen-Zelle zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
         // prüft gate:hoehlen-sicht (Strahlen gegen den ganzen Boden-Satz), hier zählt die Treue des Abschnitts
         const wahl = (s, L) => {
             const liste = [];
@@ -876,7 +861,7 @@ function probe(selbsttest) {
     };
     if (boden) {
         const passeVoll = (kamera, nach) => {
-            // DIE ALTE REGEL (bis 05.10.): der Satz zeichnet den ganzen Ring in jedem Pass
+            // DIE ALTE REGEL: der Satz zeichnet den ganzen Ring in jedem Pass
             void kamera;
             void nach;
             boden.mesh.geometry.setDrawRange(0, boden.iSumme);
@@ -893,7 +878,7 @@ function probe(selbsttest) {
         r._kaskadenPassen(csm);
     }
 
-    // ── W8: DIE INSTANZ-WAHL JE PASS (Welle 7) — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
+    // ── W8: DIE INSTANZ-WAHL JE PASS — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
     // Frustum schneiden (Schatten-Pass: die Licht-Kapsel gegen die Scheibe der Kaskade) und deren Stufen-Maske vom Auge etwas
     // behält; nach dem Pass zählt sie wieder alle. Gebaute Bäume an bekannten Orten (eine L1, eine L0, ein Zwilling, je über
     // den Produktions-Chokepoint `_archInstanceGroupFor`/`_archGroupAlloc`/`_lodSlotStamp`): je Pass die gezeichnete Menge
@@ -1099,7 +1084,7 @@ function probe(selbsttest) {
         };
         if (abweichung === "zellen")
             r._chunkSatzPass = function (kamera, nach, k, S2) {
-                // die gehaltene Wahl gilt nicht (Welle C: steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
+                // die gehaltene Wahl gilt nicht (steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
                 // Leser urteilte nie, S10 war blind, sobald kein Satz seit dem Haupt-Urteil wuchs: „Zellen falsch 0")
                 for (const sz of this.state.chunkSaetze.values()) for (const a of sz.abschnitte.values()) a.wahl = null;
                 return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
@@ -1199,7 +1184,7 @@ function probe(selbsttest) {
                     res.instanz = Z.mesh.count > 0;
                 }
                 for (const sz of saetze) {
-                    // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
+                    // eine Höhlen-Zelle zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
                     const stempel = sz.hoehle ? sz.hoehle.stempel : 0;
                     const menge = new Set(
                         [...soll.get(sz)].filter((zl) => zl.knoten === undefined || zl.knoten.sicht === stempel)
@@ -1235,7 +1220,7 @@ function probe(selbsttest) {
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. Ein Gefallener liegt in der
-    // Szene (state.leichname, mit Schatten bis er versunken ist — Welle LF kampf Nachbesserung 4): die Probe legt einen hin,
+    // Szene (state.leichname, mit Schatten bis er versunken ist): die Probe legt einen hin,
     // und die Box kennt ihn wie ein lebendes Tier (`_kaskadenWerferOben` liest beide Listen). ──
     {
         const altMax = st.maxCreatures;
@@ -1262,7 +1247,7 @@ function probe(selbsttest) {
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
         ]);
-        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze, Welle 6) trägt seine Bereichs-Hüllen in die Box
+        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze) trägt seine Bereichs-Hüllen in die Box
         // (`_kaskadenHuellen`)
         const satzWerfer = new Set();
         if (st.chunkSaetze)
@@ -1278,9 +1263,8 @@ function probe(selbsttest) {
         if (tot && tot.parent) r.removeCreature(tot);
     }
 
-    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer. Befund 15.10. (Radeon, Genesis/Wiese Third,
-    // Zerlegung je Kaskaden-Render): r184 projizierte je Render 39–72 Nicht-Werfer (Frustum-Test, Fassade, Liste,
-    // Sortierung), die die Schatten-Funktion danach verwarf — die Kaskaden-Kamera sah die Ebene der Welt. Der Wurf IST die
+    // ── W10 DIE WURF-EBENE: die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden
+    // Nicht-Werfer, den die Schatten-Funktion danach verwirft). Der Wurf IST die
     // Ebene SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein
     // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
     // der Szene: gesehen ⇔ wirft. ──
@@ -1479,11 +1463,11 @@ function probe(selbsttest) {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             });
-            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen Atlas-Gruppe)
-            // und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles mehr (gemessen
-            // 05.10.: nur "@global"; 14 auf 386f91c, 4 auf b9bf2bc). Vier Regionen um den Spieler bekommen je eine
-            // Streu-Instanz über den Produktions-Chokepoint `_scatterInstanceAdd` (echter Region-Schlüssel, echte
-            // Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an echten Region-Bundles, nie vakuös.
+            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen
+            // Atlas-Gruppe) und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles
+            // mehr. Vier Regionen um den Spieler bekommen je eine Streu-Instanz über den Produktions-Chokepoint
+            // `_scatterInstanceAdd` (echter Region-Schlüssel, echte Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an
+            // echten Region-Bundles, nie vakuös.
             const regionen = () =>
                 st._regionBundles ? [...st._regionBundles.values()].filter((bg) => bg.userData.cullSphere).length : 0;
             const welt0 = regionen();

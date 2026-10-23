@@ -1,9 +1,6 @@
-// diag-blick.cjs — DIE AUGEN (T0 des Erlebnis-Ziels, 16.07.): ein ECHTER Welt-Schuss
-// aus dem Container. Die V18.359-Narbe (WebGPU-Frame komponiert nicht in den
-// puppeteer-Screenshot: weiß/schwarz/Timeout — 3 Wege gemessen) wird UMGANGEN, nicht
-// wiederholt: die Welt rendert EINMAL in ein explizites RenderTarget und die Pixel
-// reisen über die RENDERER-API zurück (readRenderTargetPixelsAsync, r184 — derselbe
-// Weg, den der Studio-Bäcker seit V18.471 erfolgreich geht). Kein Composite nötig.
+// diag-blick.cjs — DIE AUGEN: ein ECHTER Welt-Schuss aus dem Container. Der WebGPU-Frame komponiert nicht in den
+// puppeteer-Screenshot: die Welt rendert EINMAL in ein explizites RenderTarget, die Pixel reisen über die
+// RENDERER-API zurück (readRenderTargetPixelsAsync, r184 — der Weg des Studio-Bäckers).
 //
 //   node scripts/diag-blick.cjs [--out DIR] [--zeit 10|22] [--blick wald|boden]
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
@@ -47,8 +44,7 @@ const server = statikServer();
         async (zeitArg, blickArg) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { schuesse: {} };
-            const dl = performance.now() + 300000;
-            while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+            await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
             const r = window.anazhRealm;
             if (!r) return { fatal: "anazhRealm kam nie" };
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
@@ -62,7 +58,7 @@ const server = statikServer();
             const cam = r.state.camera;
             const scene = r.state.scene;
             if (!cam || !scene) return { fatal: "kein cam/scene" };
-            const schuss = async (name) => {
+            const schuss = async () => {
                 const w = 640,
                     h = 360;
                 // die EINE Aufnahme (scripts/lib/ausgabe-aufnahme.cjs): der echte, getonte Frame
@@ -76,7 +72,7 @@ const server = statikServer();
                     set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
                     if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
                 }
-                // PNG über Canvas. GEMESSEN (erster Schuss 16.07.): der WebGPU-
+                // PNG über Canvas. GEMESSEN: der WebGPU-
                 // Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
                 // (der WebGL-Erfahrungswert „bottom-up" gilt hier nicht).
                 const cv = document.createElement("canvas");

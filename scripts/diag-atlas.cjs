@@ -1,4 +1,4 @@
-// diag-atlas.cjs — DER STAMM-ATLAS und seine RATSCHE (W6, R-032; Stamm-Zerlegung 13.10.; Domäne D2 16.10.). Pures fs + acorn,
+// diag-atlas.cjs — DER STAMM-ATLAS und seine RATSCHE (W6, R-032). Pures fs + acorn,
 // kein Browser. Der Stamm ist `stamm/<modul>[-<teil>].js` nach der Modul-Karte (spec/stamm/modul-karte.json) — EINE Klasse
 // (`AnazhRealm`, im Kern die erste Datei), ihre Glieder in den Zonen-Klassen `AnazhRealm_<modul>[_<teil>]`, deren Naht-Ruf sie
 // beim Laden auf den EINEN Prototyp trägt; die Liste ist die der Stamm-Tags in index.html (scripts/lib/stamm.cjs).
@@ -100,12 +100,7 @@ function ladeLeser(knoten, aus) {
             for (const a of n.arguments) geh(a, feld && /Function/.test(a.type));
             return;
         }
-        for (const k of Object.keys(n)) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) for (const c of v) geh(c, false);
-            else if (v && typeof v.type === "string") geh(v, false);
-        }
+        stammLib.kinder(n, (c) => geh(c, false));
     };
     geh(knoten, false); // eine Funktions-Deklaration oben läuft nicht beim Laden
     return out;

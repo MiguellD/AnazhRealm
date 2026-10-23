@@ -2669,6 +2669,11 @@ function emitTreeRezept(P, stufe) {
     return nodes;
 }
 
+// DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Blüte zählt Röhrenblüten aus der
+// Kopf-Fläche (headR² · 900), Blütenblätter aus der Fülle und Köpfe aus der Blüten-Zahl; trägt der Bau mehr Dreiecke als
+// die Zeile seiner Stufe, fällt dieses Detail um das Verhältnis (buildInstance baut neu, höchstens vier Mal) — die Röhren-
+// und Blütenblätter je Kopf, fern (die L2 trägt je Kopf nur seine Kugel) die Zahl der Köpfe. 1 = das Lab-Maß, byte-gleich.
+var __blueteDetail = 1;
 function emitFlower(P) {
     const stemGeos = [],
         folGeos = [];
@@ -2743,7 +2748,7 @@ function emitFlower(P) {
             hsw
         );
         const ff = __lod === 0 ? 1 : 0.4,
-            NF = Math.round(headR * headR * 900 * ff),
+            NF = Math.round(headR * headR * 900 * ff * __blueteDetail),
             cc = headR / Math.sqrt(Math.max(1, NF));
         for (let n = 0; n < NF; n++) {
             const th = n * GOLDEN,
@@ -2771,6 +2776,7 @@ function emitFlower(P) {
         }
         let np = nearestFib(lerp(8, 18, prich));
         if (__lod > 0) np = nearestFib(np * (__lod === 1 ? 0.7 : 0.42));
+        if (__blueteDetail < 1) np = Math.max(3, nearestFib(np * __blueteDetail));
         // DAS BLÜTENBLATT (phyto-core BLUETEN_BLATT): Saftmal-Grund, Rückbiegung, je Blatt gewürfelt aus dem Ort.
         const BB = self.__phytoCore.BLUETEN_BLATT;
         const pc = petalCol.clone().lerp(vegFarbe(seasonTint), 0.08);
@@ -2813,7 +2819,7 @@ function emitFlower(P) {
         bloom(top, tdir, P.headR, P.petalLen, P.petalRich, hsTop);
     } else if (P.infl === "umbel") {
         // Dolde: Bluetchen auf Stielen vom Scheitel
-        const n = P.bloomCount;
+        const n = __lod === 2 && __blueteDetail < 1 ? Math.max(1, Math.round(P.bloomCount * __blueteDetail)) : P.bloomCount;
         for (let k = 0; k < n; k++) {
             const aa = (k / n) * 6.2831 + rnd() * 0.22,
                 sd = vnorm([Math.cos(aa) * 0.78, 0.64, Math.sin(aa) * 0.78]),
@@ -2838,7 +2844,7 @@ function emitFlower(P) {
         }
     } else {
         // Aehre: Bluetchen spiralig die obere Haelfte hinauf
-        const n = P.bloomCount;
+        const n = __lod === 2 && __blueteDetail < 1 ? Math.max(1, Math.round(P.bloomCount * __blueteDetail)) : P.bloomCount;
         for (let k = 0; k < n; k++) {
             const ff = 0.5 + 0.48 * (n > 1 ? k / (n - 1) : 0),
                 idx = Math.min(NS, Math.round(ff * NS)),
@@ -5078,7 +5084,28 @@ function buildInstance(presetId, seed, lod, ov) {
         } else {
             const P = deriveParamsPlant(pre);
             if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
-            if (P.kind === "flower") emitFlower(P);
+            if (P.kind === "flower") {
+                const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
+                try {
+                    for (let versuch = 0; ; versuch++) {
+                        emitFlower(P);
+                        let n = 0;
+                        g.traverse((o) => {
+                            if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                        });
+                        if (!(n > zeile) || versuch === 4) break;
+                        for (const c of g.children.slice()) {
+                            g.remove(c);
+                            if (c.geometry) c.geometry.dispose();
+                        }
+                        __blueteDetail *= Math.min(0.97, zeile / n);
+                        RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
+                        Object.assign(P, deriveParamsPlant(pre), ov || {});
+                    }
+                } finally {
+                    __blueteDetail = 1;
+                }
+            }
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
@@ -6057,6 +6084,13 @@ function __huelleKollaps(geo, ziel) {
     return ng;
 }
 
+// DAS RASTER EINER KUGEL folgt ihrer GRÖSSE (V18.497; Tier-Guss und Mengen-Stufe des Menschen): eine 7-mm-Kralle trug
+// dieselben 20×14 wie der Brustkorb (520 Dreiecke je Kralle). Voll ab r·max(sc) ≥ 0.1·H, darunter ∝ √Größe, nie unter min.
+function __kugelRaster(r, sc, H, segW, segH, minW, minH) {
+    const q = Math.min(1, Math.sqrt((r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1)) / (0.1 * H)));
+    return [Math.max(minW, Math.round(segW * q)), Math.max(minH, Math.round(segH * q))];
+}
+
 // DER TIER-GUSS: baut den bauTier-Baum des Gattungs-Kerns mit ECHTEN THREE-
 // Fabriken, bäckt jede Mesh-Geometrie in den LOKAL-Raum ihres nächsten
 // ANIMIERTEN Gelenks und mergt je (Gelenk × Material-Klasse) → wenige Meshes,
@@ -6146,11 +6180,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const F = {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
-            // Segmente folgen der GRÖSSE (V18.497): eine 7-mm-Kralle trug dieselben 20×14 wie der
-            // Brustkorb (520 Dreiecke je Kralle). Voll ab r·max(sc) ≥ 0.1·H, darunter ∝ √Größe.
-            const q = Math.min(1, Math.sqrt((r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1)) / (0.1 * (P.size || 2.4))));
-            const w = Math.max(fein ? 5 : 8, Math.round(segW * q)),
-                h = Math.max(fein ? 4 : 6, Math.round(segH * q));
+            const [w, h] = __kugelRaster(r, sc, P.size || 2.4, segW, segH, fein ? 5 : 8, fein ? 4 : 6);
             const m = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) m.scale.set(sc[0], sc[1], sc[2]);
             return m;
@@ -7101,9 +7131,16 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     });
     const fein = (lod | 0) >= 1;
     let leibV = 0; // das Volumen der geschlossenen Haut (1310-15), der Beipack trägt es zur Masse
-    const segW = fein ? 8 : 20,
-        segH = fein ? 6 : 14,
-        segZ = fein ? 6 : 14;
+    // die Mengen-Stufe (lod 2, mensch.K1): jede Kugel im Raster ihrer Größe (`__kugelRaster`, das Gesetz des Tiers; die Lab-Höhe
+    // des Menschen ~6 Einheiten) — Stufe 0 und 1 byte-gleich
+    const menge = (lod | 0) >= 2;
+    // die NUR-WURF-Stufe (lod 3, mensch.K1 Staffel 2: der Wurf der Menge): ein gröberes Raster je Kugel und Walze, Augen,
+    // Lider, Lippen und die kleinen Glieder fallen (der Wurf trägt sie nie) — Stufe 0, 1 und 2 byte-gleich
+    const fern = (lod | 0) >= 3;
+    const FERN_KLEIN = 0.012;
+    const segW = fein ? (fern ? 5 : 8) : 20,
+        segH = fein ? (fern ? 4 : 6) : 14,
+        segZ = fein ? (fern ? 4 : 6) : 14;
     const lin = (hx) => {
         const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
         return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)];
@@ -7137,13 +7174,22 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
+            const auge = k === "eye" || k === "iris" || k === "pupil" || k === "socket" || k === "lips" || k === "shadow";
+            if (fern && auge) return new THREE.Group();
+            // in der Menge fallen die Glieder unter FERN_KLEIN der Lab-Höhe (Finger, Nasenflügel: im Wurf unter einem Kaskaden-
+            // Texel, in der Mengen-Stufe ab 8 m unter zwei Pixeln) — die Mengen-Stufe behält das Auge (Stufe 3 byte-gleich)
+            if (menge && !auge && r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1) < FERN_KLEIN * 6) return new THREE.Group();
             // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
             const AR = !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket") ? kern.MENSCH_GESTALT.augeRaster : null;
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, AR ? AR.w : segW, AR ? AR.h : segH), matFuer(k));
+            const [w, h] = AR ? [AR.w, AR.h] : menge ? __kugelRaster(r, sc, 6, segW, segH, fern ? 3 : 4, fern ? 2 : 3) : [segW, segH];
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
             return mesh;
         },
-        zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
+        zylinder: (rt, rb, h, k) =>
+            menge && Math.max(rt, rb, h / 2) < FERN_KLEIN * 6
+                ? new THREE.Group()
+                : new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
     };
     const B = kern.bauMensch(F);
     kern.morphAuf(B, dials);
@@ -7727,7 +7773,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt. Ohne Zeile kein Mensch (fail-closed).
     {
         const zeilen = kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
-        const zeile = zeilen && zeilen.koerper && zeilen.koerper[fein ? 1 : 0];
+        const zeile = zeilen && zeilen.koerper && zeilen.koerper[(lod | 0) >= 2 ? Math.min(3, lod | 0) : fein ? 1 : 0]; // die Mengen-Stufen (2, 3) additiv
         const ziel = zeile ? (Number.isInteger(zeile.band) ? zeile.band : zeile.tris) : null;
         if (!(ziel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
         const huellen = [];

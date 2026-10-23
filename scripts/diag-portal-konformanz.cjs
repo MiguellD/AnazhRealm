@@ -345,7 +345,6 @@ async function zaehlerAus(page) {
 // page.evaluate der Heimat; was nur die Welt sieht (ihre UI, ihr Esc — das Portal ist ein sandboxed null-origin-iframe),
 // tut ihr Rück-Hörer beim Lesen der Marke, eingehängt einmal je Welt (jede Rundreise wartet hinter dem Bild, das die
 // Welt auf demselben Faden rastert); die Zeile jeder Welt nennt ihre Zeit und ihre Schleusen.
-const SCHLEUSE_FRIST_MS = 60000;
 let schleuseNr = 0;
 let schleusenZeit = { n: 0, ms: 0 };
 let hinFrame = null;
@@ -421,7 +420,7 @@ async function schleuse(page, weg, welt, tat) {
     if (!hinFrame) hinFrame = await rueckHoerer(page, (welt && welt.ui) || null);
     const marke = `schleuse-${++schleuseNr}`;
     const s = await page.evaluate(
-        async (m, weg, tat, frist) => {
+        async (m, weg, tat) => {
             const r = window.anazhRealm;
             const K = window.__konformanz;
             const po = r._portalOverlay;
@@ -429,12 +428,12 @@ async function schleuse(page, weg, welt, tat) {
             if (!w) return { fehlt: true };
             let antwort = null;
             const zurueck = new Promise((ende) => {
-                const uhr = setTimeout(() => (window.removeEventListener("message", hoer, true), ende(false)), frist);
+                // die Marke kehrt zurück (das Ereignis) — ohne Frist: ein Hänger endet an der Frist des Browsers, die Stall-Akte
+                // nennt ihn
                 function hoer(ev) {
                     if (!ev.data || ev.data.__schleuse !== m) return;
                     ev.stopImmediatePropagation();
                     antwort = ev.data;
-                    clearTimeout(uhr);
                     window.removeEventListener("message", hoer, true);
                     ende(true);
                 }
@@ -451,9 +450,8 @@ async function schleuse(page, weg, welt, tat) {
             const marke = { __schleuse: m, esc: weg === "esc" };
             if (weg === "fremd") fremd.contentWindow.postMessage({ __fremd: true, nachricht: marke }, "*");
             else w.postMessage(marke, "*");
-            const ok = await zurueck;
+            await zurueck;
             return {
-                ok,
                 vor: { journal: journalVor, ui: antwort ? antwort.vor : null },
                 nach: { journal: K.journal(), ui: antwort ? antwort.ui : null },
                 enterImFenster: k ? k.enters - enter0 : 0,
@@ -463,13 +461,11 @@ async function schleuse(page, weg, welt, tat) {
         },
         marke,
         weg,
-        tat || null,
-        SCHLEUSE_FRIST_MS
+        tat || null
     );
     schleusenZeit.n++;
     schleusenZeit.ms += Date.now() - t0;
     if (s.fehlt) throw new Error(`die Schleuse (${weg}) findet keine Welt`);
-    if (!s.ok) throw new Error(`die Schleuse ${marke} (${weg}) kam binnen ${SCHLEUSE_FRIST_MS / 1000} s nicht zurück`);
     return s;
 }
 
@@ -693,9 +689,7 @@ async function lauf(welten, taeter) {
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat (K7).
-        await page
-            .waitForFunction(() => !!(window.anazhRealm.state.vibePass && window.anazhRealm.state.vibePass.ready), { timeout: 30000, polling: 200 })
-            .catch(() => console.log("  (der Vibe-Pass steht nach 30 s nicht — K7 wird rot)"));
+        await page.evaluate(() => window.__weltDa((r) => !!(r.state.vibePass && r.state.vibePass.ready)));
         await page.evaluate((M) => {
             const st = window.anazhRealm.state;
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };

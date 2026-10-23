@@ -45,7 +45,7 @@ function pruefeTraceFelder(trace) {
     const pp = trace.steadyState && trace.steadyState.pipelines;
     if (!pp || typeof pp.total !== "number" || typeof pp.neuProS !== "number")
         maengel.push("steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch");
-    // Welle K — die Erst-Zeichnung reist im selben Pipeline-Block (Bauten · verschoben · asynchron · offen).
+    // die Erst-Zeichnung reist im selben Pipeline-Block (Bauten · verschoben · asynchron · offen).
     if (!pp || typeof pp.erstBauN !== "number" || typeof pp.erstPipeAsync !== "number" || typeof pp.erstVerschoben !== "number")
         maengel.push("steadyState.pipelines {erstBauN,erstVerschoben,erstPipeAsync} fehlt oder ist nicht numerisch");
     if (!trace.steadyState || typeof trace.steadyState.uploadKBProS !== "number")
@@ -96,7 +96,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const rend = r.state.renderer;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const U = window.__bauUhr || null;
-    // (4b) Welle K — DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
+    // (4b) DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
     // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
     // am Gerät (createRenderPipeline synchron · …Async) und am Knoten-Bau (Nodes.getForRender ohne Cache-Treffer) je
     // Render-Aufruf der Welt-Szene; ein Haken über renderObject trägt die Szene des laufenden Draws.
@@ -184,7 +184,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
     // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe.
     const STILL_BILDER = 3;
-    // DER GEGENDRUCK DER GPU (K60-N3): jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
+    // DER GEGENDRUCK DER GPU: jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
     // (`queue.onSubmittedWorkDone`), bevor das nächste kommt — sonst wächst der Rückstau über die Probe, und jeder asynchrone
     // Pipeline-Bau wartet hinter ihm. `gpuStau` trägt die längste Wartezeit je Probe.
     const gpuStau = { maxMs: 0 };
@@ -256,7 +256,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         for (let i = 0; i < 3; i++) {
             serie++;
             // ein Stoff mit einer eigenen Konstante: ein neues Programm, eine neue Pipeline (unbeleuchtet — swiftshader
-            // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon: haenger --erst)
+            // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon im ABBA der Welle K, 347992564)
             const m = new window.THREE.MeshBasicNodeMaterial();
             m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
             const mesh = probeMesh(m, (i - 1) * 0.8, 4);
@@ -624,7 +624,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const D = probeMesh(M, 0, 3.5);
         welt.add(D);
         const a0 = ESt.absagenN || 0;
-        // DER EINE MELDER (Integration V18.535): die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
+        // DER EINE MELDER: die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
         // zählt dort, und dieselbe Absage steht genau EINMAL im Log
         const g0 = r._gpuWache ? r._gpuWache.n : 0;
         let wurf = null;
@@ -648,14 +648,12 @@ function erstWandInstall(BUNDLE_FRAMES) {
         }
         // die Backend-Weiche: eine Anmeldung auf WebGL2 trägt sich nicht in die Schlange ein, der wartende Draw zählt
         let webgl = null;
-        if (typeof r._erstWartet === "function") {
-            const n0 = ESt.offen.size,
-                w0 = ESt.wartetN;
-            const attrappe = { cacheKey: "webgl-attrappe", vertexProgram: { name: "webgl" } };
-            r._erstWartet({ isWebGPUBackend: false, isWebGLBackend: true, get: () => ({}) }, attrappe, null);
-            webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
-            ESt.offen.delete(attrappe);
-        }
+        const n0 = ESt.offen.size,
+            w0 = ESt.wartetN;
+        const attrappe = { cacheKey: "webgl-attrappe", vertexProgram: { name: "webgl" } };
+        r._erstWartet({ isWebGPUBackend: false, isWebGLBackend: true, get: () => ({}) }, attrappe, null);
+        webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
+        ESt.offen.delete(attrappe);
         const gpuWache = (r._gpuWache ? r._gpuWache.n : 0) - g0;
         return { ruheMs, ruheOffen, zeilen, absagen: (ESt.absagenN || 0) - a0, gpuWache, frames, offenDanach, wurf, webgl };
     };
@@ -701,14 +699,13 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const out = await page.evaluate(async (laufzeitMs) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = {};
-        const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("der Ring", 600); weiter(); ) {
             const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
@@ -824,9 +821,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
             : null;
         return res;
     }, IN(1) ? LAUFZEIT_MS : 0);
-    // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
+    // DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
-        // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
+        // DIE FRIST GILT JE BAU, NIE JE PROBE: eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
         // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug
         // ist (der GPU-Prozess hängt: ein Bau, der sich nie erfüllt — er steht beim Namen im Wurf) oder so lange kein Bau-
         // Ereignis kommt, während die Probe läuft.

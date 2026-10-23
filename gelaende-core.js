@@ -1748,6 +1748,160 @@
         return w;
     }
 
+    // DIE FORM DES EDITS (F2a „hoch bauen", Karte editform-kern): jeder Edit des Spielers (Graben, Aufschütten, hoch bauen) ist
+    // die SÄULE seines Maßes r — Radius r, halbe Höhe r, die Kanten gerundet (`kanteM`, höchstens r/2), oben und unten eben:
+    // Aufschütten vereinigt sie mit dem Boden, Graben nimmt sie heraus, in Setz-Reihenfolge, in jeder Höhe und Tiefe gleich.
+    // Gerechnet wird in Metern auf der GEKAPPTEN Dichte n = clamp(Basis, ±tiefeM) gegen das Abstandsfeld s der Säule (positiv
+    // innen). Die Kehle (`rundM`) ist RUND und KOMPAKT: sie wirkt nur, wo der Boden UND die Säule näher als rundM liegen
+    // (Vereinigung n > −rundM, Graben n < rundM, je s > −rundM); jenseits trägt jede Ecke die harte Form max(n, s) bzw.
+    // min(n, −s), und wo sie den Boden wählt, bleibt er byte-alt (ein weiches Polynom wirkt überall, wo n ≈ ∓s, und rückt das
+    // Netz bis 11 m um eine Grube r 3,5: die Wiese daneben fällt, gate:wasser-leben G5). EBEN, weil der Boden ein 1,8-m-Gitter ist: die
+    // Kuppe einer Kugel trug das Netz 0,14–1,1 m unter dem Gesetz, eine Ebene trägt es genau — wer baut, steht auf dem, was er
+    // sieht. Leser: der Punkt (`mitEdits`) und das Gitter (`editsImGitter`) in Stamm und Worker; die Reichweite (`editReich`)
+    // die Edit-Karte, die Weckung um einen Edit und die Wache des Fern-Rings.
+    const EDIT_FORM = Object.freeze({ tiefeM: 4, rundM: 1, kanteM: 0.5 });
+    function editForm(n, ed, dx, dy, dz) {
+        if (!(ed.r > 0)) return n; // ein Edit ohne Maß (Alt-Daten) ändert nichts
+        const k = EDIT_FORM.rundM;
+        const c = Math.min(EDIT_FORM.kanteM, ed.r * 0.5);
+        const qx = Math.sqrt(dx * dx + dz * dz) - ed.r + c;
+        const qy = Math.abs(dy) - ed.r + c;
+        const s = c - Math.min(Math.max(qx, qy), 0) - Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2);
+        if (ed.mode === "fill") return n > -k && s > -k ? Math.hypot(k + n, k + s) - k : Math.max(n, s);
+        return n < k && s > -k ? k - Math.hypot(k - n, k + s) : Math.min(n, -s);
+    }
+    // so weit ändert ein Edit die Dichte: jenseits liegt seine Säule (die Ecke im Abstand r·√2) um mehr als tiefeM unter der
+    // gekappten Dichte (die Kehle wirkt nur näher als rundM < tiefeM)
+    function editReich(ed) {
+        return (Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1) * Math.SQRT2 + EDIT_FORM.tiefeM;
+    }
+    function editKappe(basis) {
+        const K = EDIT_FORM.tiefeM;
+        return basis < -K ? -K : basis > K ? K : basis;
+    }
+    // DIE KRONE: die höchste Oberkante der Füll-Edits einer Liste (y + r — dort endet die Säule eben; −Infinity ohne Füllung).
+    // Darüber ist Luft: die Flächen-Probe (`_voxelSurfaceY`, Worker `voxelSurfaceY`) hebt ihre Garantie-Luft bis dorthin.
+    function editKrone(edits) {
+        let top = -Infinity;
+        for (let i = 0; edits && i < edits.length; i++) {
+            const e = edits[i];
+            if (e && e.mode === "fill") {
+                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
+                if (t > top) top = t;
+            }
+        }
+        return top;
+    }
+    // DER PUNKT: die Dichte über `basis` an (x, y, z) mit den Edits `edits` (Setz-Reihenfolge; ohne Liste die Basis) —
+    // max(1, |Basis|/tiefeM) · n: stetig, gleich der Basis, wo kein Edit sie ändert, um jede Säule ihr Abstand (die Wand-Proben
+    // des Leibs lesen ihn).
+    function mitEdits(basis, x, y, z, edits) {
+        if (!edits) return basis;
+        let n = editKappe(basis);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const dx = x - ed.x;
+            const dy = y - ed.y;
+            const dz = z - ed.z;
+            const R = editReich(ed);
+            if (dx * dx + dy * dy + dz * dz < R * R) n = editForm(n, ed, dx, dy, dz);
+        }
+        return Math.max(1, Math.abs(basis) / EDIT_FORM.tiefeM) * n;
+    }
+    // DAS GITTER (Float32, Index i + j·Nx + k·Nx·Ny ab gox|goy|goz): jede Ecke in der Reichweite eines Edits (sein Kasten)
+    // beginnt bei ihrer gekappten Basis und nimmt die Edits in Setz-Reihenfolge; sie trägt n (dieselbe Fläche wie der Punkt, ohne
+    // dessen Maß — die Kanten des Gitters sehen das Abstandsfeld der Säule), wo kein Edit die Kappe änderte, wieder ihre Basis:
+    // unberührter Boden bleibt byte-alt (die Kappe allein verschob die Interpolation steiler Kanten bis an den Rand der
+    // Reichweite). Liefert eine Kopie, `basis` bleibt.
+    function editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
+        const out = new Float32Array(basis);
+        const beruehrt = new Uint8Array(out.length);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const R = editReich(ed);
+            const R2 = R * R;
+            const i0 = Math.max(0, Math.floor((ed.x - R - gox) / step));
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + R - gox) / step));
+            const j0 = Math.max(0, Math.floor((ed.y - R - goy) / step));
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + R - goy) / step));
+            const k0 = Math.max(0, Math.floor((ed.z - R - goz) / step));
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + R - goz) / step));
+            for (let k = k0; k <= k1; k++) {
+                const dz = goz + k * step - ed.z;
+                for (let j = j0; j <= j1; j++) {
+                    const dy = goy + j * step - ed.y;
+                    for (let i = i0; i <= i1; i++) {
+                        const dx = gox + i * step - ed.x;
+                        if (dx * dx + dy * dy + dz * dz >= R2) continue;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (!beruehrt[idx]) {
+                            beruehrt[idx] = 1;
+                            out[idx] = editKappe(basis[idx]);
+                        }
+                        out[idx] = editForm(out[idx], ed, dx, dy, dz);
+                    }
+                }
+            }
+        }
+        for (let idx = 0; idx < out.length; idx++)
+            if (beruehrt[idx] && out[idx] === editKappe(basis[idx])) out[idx] = basis[idx];
+        return out;
+    }
+    // DAS BAND DES GITTERS: je Spalte sampelt das Gitter nur die Ebenen um ihre Fläche `surf` — über `bandOben` ist garantiert
+    // Luft (surf + 12, die größte 3D-Rauheit noise·7 + noise·5, + 4 Zellen: der Gradient-eps der Normalen, 1,5 Zellen — ein
+    // Gipfel-Vertex sampelt +eps nach oben, sonst kippt seine Normale), unter `bandUnten` garantiert Fels (min(surf, base) − 40,
+    // das Höhlen-Band endet base − 28; es folgt surf — in einer Tiefsee-Rinne, ~−75 m, füllte ein fixes base − 40 die Wassersäule
+    // als Fels). Leser: das Gitter in Stamm und Worker.
+    function bandOben(surf, oy, step) {
+        return Math.floor((surf + 12 + 4 * step - oy) / step) + 1;
+    }
+    function bandUnten(surf, base, oy, step) {
+        return Math.floor((Math.min(surf, base) - 40 - oy) / step);
+    }
+    // DAS BAND DECKT DIE EDITS: über dem Band trägt das Gitter Luft −1, unter ihm Fels +1 — bit-identisch, solange dort keine
+    // Fläche liegt. Ein Edit legt seine Fläche dorthin (der Turm über dem Band, die tiefe Grube), und die Kappe der Form braucht
+    // die wahre Basis: in der Reichweite jedes Edits (+ 4 Zellen, die Marge des Bands) sampelt jede Spalte `probe(x, y, z, ctx)`
+    // (ctx = `spalte(x, z)`, sein `surf` legt das Band), wo das Band übersprang — je Spalte die Hülle der Edits, die sie
+    // erreichen. Schreibt `density` an Ort und Stelle.
+    function bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, spalte, probe) {
+        if (!edits || !edits.length) return;
+        const huelle = new Map(); // Spalte i + k·Nx → [unterste, oberste] Ebene der Edits, die sie erreichen
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const r = editReich(ed);
+            const i0 = Math.max(0, Math.floor((ed.x - r - ox) / step) - 4);
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - ox) / step) + 4);
+            const j0 = Math.max(0, Math.floor((ed.y - r - oy) / step) - 4);
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - oy) / step) + 4);
+            const k0 = Math.max(0, Math.floor((ed.z - r - oz) / step) - 4);
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - oz) / step) + 4);
+            if (j0 > j1) continue;
+            for (let k = k0; k <= k1; k++)
+                for (let i = i0; i <= i1; i++) {
+                    const h = huelle.get(i + k * Nx);
+                    if (!h) huelle.set(i + k * Nx, [j0, j1]);
+                    else {
+                        if (j0 < h[0]) h[0] = j0;
+                        if (j1 > h[1]) h[1] = j1;
+                    }
+                }
+        }
+        for (const [s, h] of huelle) {
+            const i = s % Nx;
+            const k = (s - i) / Nx;
+            const wx = ox + i * step;
+            const wz = oz + k * step;
+            const ctx = spalte(wx, wz);
+            const oben = bandOben(ctx.surf, oy, step);
+            const unten = bandUnten(ctx.surf, base, oy, step);
+            for (let j = h[0]; j <= h[1]; j++)
+                if (j > oben || j < unten) density[i + j * Nx + k * Nx * Ny] = probe(wx, oy + j * step, wz, ctx);
+        }
+    }
+
     // DER ORT LIEST DAS GELÄNDE (K10): die Lese-Funktionen, die der Plan v2 (fachwerk `ortPlan`) an der Lage L erhält — die
     // Höhe samt dem Erdbau früherer Orte (`hoehe`) und die Fläche seiner eigenen Splats (`erdbauFlaeche`). EIN ctx für den
     // Wirt (`_ortPlanSetzen` über seine lebende Lage), das Fachwerk-Studio (`buildDorf` über `lageGrund`) und die Linse
@@ -3643,6 +3797,911 @@
         return lageAus(planAbbild(plan), Rausch);
     }
 
+    // ===== DIE HYDROSPHÄRE (Karte hydro-faden): das Drainage-Netz einer Region als reine Daten =====
+    // Flüsse · Seen · Wasserfälle · der Kanal-Index · das Wasser-Feld einer Region der Kante `H.regionSize` — f(L, H, boden,
+    // origin): `L` die Lage, `H` das Gesetz der Hydrosphäre des Wirts (Stamm `HYDROSPHERE`; der Faden bekommt dasselbe Objekt),
+    // `boden(x, z)` die gebaute Fläche des Wirts (voxel-worker `voxelSurfaceY`, er hält den Kanal der Hydrosphäre während des
+    // Baus aus), `origin` null für die Heimat um den Ursprung, sonst die Ecke einer fernen Kachel. Flow-Accumulation aus der
+    // Saat, keine Live-Simulation → multiplayer-sicher. Es rechnet der voxel-worker vor dem ersten Chunk (Lehre 14), der
+    // Haupt-Faden empfängt das Ergebnis per Transfer (Lehre 24); bis zur Karte hydro-faden rechnete der Stamm es synchron im
+    // Haupt-Faden (`_computeHydrosphere`: Kalt-Boot 168 ms, je ferne Kachel 235 ms).
+    function hydrosphaere(L, H, boden, origin) {
+        const ctx = hydroInit(L, H, origin);
+        hydroMarkOcean(ctx);
+        hydroPriorityFlood(ctx, H);
+        const lakes = hydroExtractLakes(ctx, H);
+        const rivers = hydroNetzFluesse(ctx, L, H);
+        // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
+        // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
+        hydroSampleRiverSurfaces(rivers, boden);
+        // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
+        hydroRiverSpiegel(ctx, H, rivers, boden);
+        const waterfalls = hydroExtractWaterfalls(ctx, H, rivers);
+        const { dim, surf, waterLevel, lakeOf, isOcean } = ctx;
+        let landCells = 0;
+        let lakeCells = 0;
+        let seaCells = 0;
+        let surfMin = Infinity;
+        let surfMax = -Infinity;
+        for (let idx = 0; idx < dim * dim; idx++) {
+            const s = surf[idx];
+            if (s < surfMin) surfMin = s;
+            if (s > surfMax) surfMax = s;
+            if (lakeOf[idx] >= 0) lakeCells++;
+            if (isOcean[idx]) {
+                seaCells++;
+                continue;
+            }
+            const i = idx % dim;
+            const j = (idx / dim) | 0;
+            if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
+            landCells++;
+        }
+        // Diagnostik: steilstes Fluss-Segment der Voxel-Surface (Tuning-Anker für `waterfallSlope`) +
+        // Netz-Vermessung (Fluss-Längen, See-Größen: echte Flüsse oder Pfützen-Kette?).
+        let lakeCellsMax = 0;
+        for (let li = 0; li < lakes.length; li++) {
+            const c = lakes[li].cells ? lakes[li].cells.length : 0;
+            if (c > lakeCellsMax) lakeCellsMax = c;
+        }
+        let riverMaxSlope = 0;
+        let riverMaxDrop = 0;
+        let riverPointsTotal = 0;
+        let riverLenMax = 0;
+        // die Breite des kleinsten vollen Flusses (Leser: die Quell-Hülle der Wasser-Linse)
+        let bettMin = Infinity;
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            riverPointsTotal += pts.length;
+            if (pts.length > riverLenMax) riverLenMax = pts.length;
+            for (const p of pts) if (p.quelle === 1 && p.width < bettMin) bettMin = p.width;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                const ay = typeof a.voxelY === "number" ? a.voxelY : a.y;
+                const by = typeof b.voxelY === "number" ? b.voxelY : b.y;
+                const drop = ay - by;
+                if (drop <= 0) continue;
+                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                if (drop / horiz > riverMaxSlope) riverMaxSlope = drop / horiz;
+                if (drop > riverMaxDrop) riverMaxDrop = drop;
+            }
+        }
+        // V9.43-d — den Carve-Index aus dem fertigen Netz bauen (Fluss-Bucket-
+        // Grid + See-Cut-Feld); die Dichte des Wirts liest ihn beim Meshen.
+        const carve = hydroBuildCarveIndex(ctx, H, rivers, lakes);
+        // V9.49-a/e — das vereinte Wasser-Feld.
+        const water = hydroBuildWaterField(ctx, lakes);
+        return {
+            ready: true,
+            originX: ctx.originX,
+            originZ: ctx.originZ,
+            size: ctx.size,
+            cell: ctx.cell,
+            dim: ctx.dim,
+            rivers,
+            lakes,
+            waterfalls,
+            riverBuckets: carve.riverBuckets,
+            bucketSize: carve.bucketSize,
+            bucketsDim: carve.bucketsDim,
+            lakeBedCell: carve.lakeBedCell,
+            lakeW: carve.lakeW,
+            lakeNear: carve.lakeNear,
+            water,
+            stats: {
+                cells: dim * dim,
+                landCells,
+                lakeCells,
+                seaCells,
+                bettMin: Number.isFinite(bettMin) ? Math.round(bettMin * 100) / 100 : null,
+                waterLevel: Math.round(waterLevel),
+                surfMin: Math.round(surfMin),
+                surfMax: Math.round(surfMax),
+                riverMaxSlope: Math.round(riverMaxSlope * 100) / 100,
+                riverMaxDrop: Math.round(riverMaxDrop * 10) / 10,
+                riverPointsTotal,
+                riverLenMax,
+                lakeCellsMax,
+            },
+        };
+    }
+
+    // DIE BETT-TIEFE eines Fluss-Punkts (der EINE Leser): carveBedMin + carveBedK · volle Breite, an der Quelle mit ihrem
+    // Anteil (W-F5: eine Quelle ist ein Rinnsal, nie ein 1,4-m-Graben aus dem Nichts). Leser: `hydroRiverSpiegel`,
+    // `hydroBuildCarveIndex` (seg.dA/dB → der Kanal des Wirts) und der Stamm (`AnazhRealm._flussTiefe`).
+    function flussTiefe(H, p) {
+        const q = p.quelle;
+        if (!(q > 0 && q <= 1)) throw new Error(`gelaende-core flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
+        return Math.min(H.kanalTiefe, (H.carveBedMin + (H.carveBedK * p.width) / q) * q);
+    }
+
+    // DAS GLOBALE WASSER-Y-BAND über alle Regionen (Heimat und Kacheln): top = der höchste Spiegel JEDES Wasser-Körpers
+    // (`waterLevel`, jeder See, jeder Punkt jedes Flusses) + 10 m, bottom = waterLevel − 10 m. Zellen außerhalb klassifiziert
+    // der Wirt ohne Dichte-Probe (darüber AIR, darunter WATER). Leser: Stamm `_computeHydroBand`, Faden `hydroBandNeu` —
+    // dasselbe Band in beiden (die Fluss-Spiegel gehören hinein, K16).
+    function hydroBand(waterLevel, regionen) {
+        let topY = waterLevel;
+        for (const h of regionen) {
+            if (!h) continue;
+            if (Array.isArray(h.lakes))
+                for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            if (Array.isArray(h.rivers))
+                for (const fluss of h.rivers)
+                    for (const p of fluss.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
+        }
+        return { top: topY + 10, bottom: waterLevel - 10 };
+    }
+
+    // Phase 1 — Surface-Sampling: Region-Raster mit der Höhe `hoehe` OHNE Detail-Oktave
+    // (`includeDetail=false`): die aliast bei 16-m-Abtastung (±4 m, λ~22 m) und übertrifft das Makro-
+    // Gefälle je Zelle — die Drainage folgte dem Rauschen. Keine 3D-Roughness/Höhlen; 3 Noise-Calls je
+    // Zelle. Der Wirt hält den Kanal der Hydrosphäre während des Baus aus (kein Carve-Zirkel).
+    function hydroInit(L, H, origin) {
+        const base = L.baseHeight || 0;
+        let waterLevel = L.waterLevel;
+        if (typeof waterLevel !== "number" || !Number.isFinite(waterLevel)) {
+            waterLevel = base - GRUND.meerUnterBasis;
+        }
+        const size = H.regionSize;
+        const cell = H.cell;
+        const dim = Math.max(8, Math.round(size / cell));
+        // A3 (V18.132) — parametrisierter Ursprung: ohne `origin` die Heimat-
+        // Region (bit-identisch zu immer); mit `origin` eine ferne KACHEL
+        // (seed-deterministisch — f(seed, Kachel-Koordinate), nie Spieler-Pfad).
+        const originX = origin && Number.isFinite(origin.x) ? origin.x : -size / 2;
+        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -size / 2;
+        const n = dim * dim;
+        const raw = new Float64Array(n);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const s = hoehe(L, originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
+                raw[j * dim + i] = Number.isFinite(s) ? s : base - 52;
+            }
+        }
+        const surf = hydroBlur(raw, dim);
+        return {
+            base,
+            waterLevel,
+            size,
+            cell,
+            dim,
+            originX,
+            originZ,
+            surf,
+            isOcean: null,
+            filled: null,
+            lakeOf: null,
+        };
+    }
+
+    // 3×3-Box-Blur übers Höhen-Raster (Rand-clamp; Ränder sind ohnehin Priority-Flood-Auslässe) —
+    // Schutz gegen Aliasing-Reste der ridged-Oktave.
+    function hydroBlur(src, dim) {
+        const out = new Float64Array(dim * dim);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                let sum = 0;
+                let cnt = 0;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        const ni = i + di;
+                        const nj = j + dj;
+                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        sum += src[ni + nj * dim];
+                        cnt++;
+                    }
+                }
+                out[i + j * dim] = sum / cnt;
+            }
+        }
+        return out;
+    }
+
+    // Phase 1.5 — Ozean-Maske: Ozean = die mit dem Region-RAND verbundene Komponente der Zellen unter
+    // Meeresspiegel; eine Binnen-Mulde darunter ist ein abflussloses Becken (See). Sonst wäre jede
+    // Senke ein Auslass und der Abfluss versickerte, statt sich zu Flüssen zu sammeln.
+    function hydroMarkOcean(ctx) {
+        const { dim, surf, waterLevel } = ctx;
+        const n = dim * dim;
+        const isOcean = new Uint8Array(n);
+        const stack = [];
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
+                if (!border) continue;
+                const idx = i + j * dim;
+                if (surf[idx] <= waterLevel && !isOcean[idx]) {
+                    isOcean[idx] = 1;
+                    stack.push(idx);
+                }
+            }
+        }
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        while (stack.length) {
+            const c = stack.pop();
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let k = 0; k < 8; k++) {
+                const ni = ci + NB[k][0];
+                const nj = cj + NB[k][1];
+                if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                const nidx = ni + nj * dim;
+                if (!isOcean[nidx] && surf[nidx] <= waterLevel) {
+                    isOcean[nidx] = 1;
+                    stack.push(nidx);
+                }
+            }
+        }
+        ctx.isOcean = isOcean;
+    }
+
+    // Phase 2 — Depression-Filling (Priority-Flood + ε, Barnes et al. 2014): Min-Heap mit Rand- +
+    // Ozean-Zellen seeden, tiefste poppen, Nachbarn auf max(Höhe, Pop-Füllhöhe + ε) füllen. ε gibt jeder
+    // Zelle Gefälle (D8 auch auf See-Flächen) und einen echt-tieferen Nachbarn. filled > surf = Seen.
+    function hydroPriorityFlood(ctx, H) {
+        const { dim, surf, isOcean, waterLevel } = ctx;
+        const EPS = H.fillEpsilon;
+        const n = dim * dim;
+        const filled = new Float64Array(n);
+        const visited = new Uint8Array(n);
+        // Binärer Min-Heap in parallelen Arrays (Priorität + Zell-Index). Gleichstand nach Index →
+        // deterministischer Pop (sonst hinge filled an der Heap-Reihenfolge).
+        const hp = [];
+        const hv = [];
+        const less = (a, b) => hp[a] < hp[b] || (hp[a] === hp[b] && hv[a] < hv[b]);
+        const swap = (a, b) => {
+            const tp = hp[a];
+            hp[a] = hp[b];
+            hp[b] = tp;
+            const tv = hv[a];
+            hv[a] = hv[b];
+            hv[b] = tv;
+        };
+        const push = (p, v) => {
+            hp.push(p);
+            hv.push(v);
+            let c = hp.length - 1;
+            while (c > 0) {
+                const par = (c - 1) >> 1;
+                if (!less(c, par)) break;
+                swap(c, par);
+                c = par;
+            }
+        };
+        const pop = () => {
+            const top = hv[0];
+            const lastP = hp.pop();
+            const lastV = hv.pop();
+            if (hp.length) {
+                hp[0] = lastP;
+                hv[0] = lastV;
+                let c = 0;
+                for (;;) {
+                    const l = c * 2 + 1;
+                    const r = l + 1;
+                    let s = c;
+                    if (l < hp.length && less(l, s)) s = l;
+                    if (r < hp.length && less(r, s)) s = r;
+                    if (s === c) break;
+                    swap(s, c);
+                    c = s;
+                }
+            }
+            return top;
+        };
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
+                const sea = isOcean[idx] === 1;
+                if (border || sea) {
+                    // Ozean-Zellen werden auf den flachen Meeresspiegel
+                    // geseedet; eine Rand-Land-Zelle auf ihre echte Höhe.
+                    filled[idx] = sea ? waterLevel : surf[idx];
+                    visited[idx] = 1;
+                    push(filled[idx], idx);
+                }
+            }
+        }
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        while (hp.length) {
+            const c = pop();
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let k = 0; k < 8; k++) {
+                const ni = ci + NB[k][0];
+                const nj = cj + NB[k][1];
+                if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                const nidx = ni + nj * dim;
+                if (visited[nidx]) continue;
+                filled[nidx] = Math.max(surf[nidx], filled[c] + EPS);
+                visited[nidx] = 1;
+                push(filled[nidx], nidx);
+            }
+        }
+        ctx.filled = filled;
+    }
+
+    // Phase 5a — Seen: Komponenten der aufgefüllten Zellen (filled > surf, über Meereshöhe). Je See:
+    // Füll-Level (≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box, Zell-Indizes (für die See-Plane).
+    function hydroExtractLakes(ctx, H) {
+        const { dim, surf, filled, isOcean } = ctx;
+        const n = dim * dim;
+        const TOL = 0.02;
+        const lakeOf = new Int32Array(n).fill(-1);
+        const lakes = [];
+        // ein See ist eine aufgefüllte Zelle (filled > surf), die NICHT
+        // Ozean ist — ein abflussloses Becken, das das Priority-Flood füllte
+        // (auch eines unter Meereshöhe — wie das Tote Meer).
+        const isLakeCell = (idx) => !isOcean[idx] && filled[idx] > surf[idx] + TOL;
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        for (let start = 0; start < n; start++) {
+            if (lakeOf[start] >= 0 || !isLakeCell(start)) continue;
+            const id = lakes.length;
+            const cells = [];
+            const stack = [start];
+            lakeOf[start] = id;
+            let floorY = Infinity;
+            let level = Infinity;
+            let minX = Infinity;
+            let minZ = Infinity;
+            let maxX = -Infinity;
+            let maxZ = -Infinity;
+            while (stack.length) {
+                const c = stack.pop();
+                cells.push(c);
+                if (surf[c] < floorY) floorY = surf[c];
+                if (filled[c] < level) level = filled[c];
+                const ci = c % dim;
+                const cj = (c / dim) | 0;
+                const wx = ctx.originX + (ci + 0.5) * ctx.cell;
+                const wz = ctx.originZ + (cj + 0.5) * ctx.cell;
+                if (wx < minX) minX = wx;
+                if (wx > maxX) maxX = wx;
+                if (wz < minZ) minZ = wz;
+                if (wz > maxZ) maxZ = wz;
+                for (let k = 0; k < 8; k++) {
+                    const ni = ci + NB[k][0];
+                    const nj = cj + NB[k][1];
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nidx = ni + nj * dim;
+                    if (lakeOf[nidx] < 0 && isLakeCell(nidx)) {
+                        lakeOf[nidx] = id;
+                        stack.push(nidx);
+                    }
+                }
+            }
+            // Mikro-Senken (< minLakeCells) sind keine Seen: gefüllt bleibt die Drainage korrekt, aber sie
+            // werden nicht gelistet + lakeOf zurückgesetzt (Fluss darf hindurch) — sonst hunderte Geister-Seen.
+            if (cells.length < H.minLakeCells) {
+                for (let ci2 = 0; ci2 < cells.length; ci2++) lakeOf[cells[ci2]] = -1;
+                continue;
+            }
+            // Rand-Höhe: kleinste Füllhöhe der Nicht-See-Nachbarn ringsum.
+            // Der See füllt bis zu seinem Überlauf — level ≈ rimY.
+            let rimY = Infinity;
+            for (let ci2 = 0; ci2 < cells.length; ci2++) {
+                const c = cells[ci2];
+                const ci = c % dim;
+                const cj = (c / dim) | 0;
+                for (let k = 0; k < 8; k++) {
+                    const ni = ci + NB[k][0];
+                    const nj = cj + NB[k][1];
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nidx = ni + nj * dim;
+                    // nur der Nicht-See-, Nicht-Ozean-Rand zählt — der
+                    // Überlauf läuft über Land zum Abfluss, nicht in den Ozean.
+                    if (lakeOf[nidx] !== id && !isOcean[nidx] && filled[nidx] < rimY) {
+                        rimY = filled[nidx];
+                    }
+                }
+            }
+            lakes.push({
+                id,
+                level,
+                floorY,
+                rimY: Number.isFinite(rimY) ? rimY : level,
+                cells,
+                bbox: { minX, minZ, maxX, maxZ },
+            });
+        }
+        ctx.lakeOf = lakeOf;
+        return lakes;
+    }
+
+    // Phase 5b — DIE FLÜSSE SIND DAS NETZ DES GESETZES (K16): die Läufe der Ebenen 0 und 1 aus gelaende-core
+    // (`flussLaeufe`) — dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites (bis K16 eine D8-
+    // Akkumulation auf der geglätteten Makro-Fläche: ihr Kanal fräste den gebauten Boden quer durch Hänge und Ebenen, 3,94
+    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied die Punkte seiner BAHN (der Mäander des
+    // Gesetzes, `bahn`: Abstand ≤ Zelle auf dem Bogen; ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des
+    // Gesetzes am Ort der Sehne (stromab streng fallend), die Richtung die der Bahn, die Breite aus dem Einzugsgebiet (Kern
+    // `flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter Bogen). Ein Lauf endet am Meer, am
+    // See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Bahn seines Hauptlaufs ("zufluss") oder am Rand der Kachel.
+    function hydroNetzFluesse(ctx, L, H) {
+        const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
+        const laeufe = flussLaeufe(L, originX, originZ, originX + size, originZ + size, cell);
+        const zelle = (x, z) => {
+            const i = Math.floor((x - originX) / cell);
+            const j = Math.floor((z - originZ) / cell);
+            return i >= 0 && j >= 0 && i < dim && j < dim ? i + j * dim : -1;
+        };
+        const rivers = [];
+        for (const lf of laeufe) {
+            let lauf = lf.quelle ? 0 : Infinity;
+            let points = [];
+            let mouth = null;
+            let seeY = NaN;
+            const abschluss = (m) => {
+                if (points.length >= 2) {
+                    const rv = { points, mouth: m };
+                    if (m === "see" && Number.isFinite(seeY)) rv.seeY = seeY;
+                    if (lf.term) rv.term = lf.term; // der Lauf eines Terms (die Klamm `rinne`): Gesetz des Erbguts, kein Wurf des Feldes
+                    rivers.push(rv);
+                }
+                points = [];
+            };
+            for (let g = 0; g < lf.glieder.length && !mouth; g++) {
+                const gl = lf.glieder[g];
+                const B = gl.bahn;
+                const voll = flussBreite(gl.A);
+                const bis = g === lf.glieder.length - 1 ? B.length : B.length - 1;
+                for (let m = 0; m < bis; m++) {
+                    const { t, x, z } = B[m];
+                    const idx = zelle(x, z);
+                    if (idx < 0) {
+                        abschluss("border");
+                        continue;
+                    }
+                    if (isOcean[idx]) {
+                        mouth = "sea";
+                        break;
+                    }
+                    if (lakeOf[idx] >= 0) {
+                        mouth = "see";
+                        seeY = filled[idx];
+                        break;
+                    }
+                    const s = lauf + B[m].s;
+                    const quelle = Math.min(1, (H.quellBett + H.quellWeitung * s) / voll);
+                    points.push({
+                        x,
+                        z,
+                        y: gl.ba + (gl.bb - gl.ba) * t,
+                        width: voll * quelle,
+                        quelle,
+                        flowX: B[m].fx,
+                        flowZ: B[m].fz,
+                        inLake: false,
+                    });
+                }
+                lauf += B[B.length - 1].s;
+            }
+            const ende = { meer: "sea", see: "see", muendung: "zufluss" };
+            abschluss(mouth || ende[lf.ende] || "border");
+        }
+        return rivers;
+    }
+
+    // Phase 5c-Vorbereitung: jeder Fluss-Punkt bekommt `voxelY` = die gebaute Fläche `boden` an seiner Position.
+    // Geroutet wird auf der glatten Makro-Surface, gerendert + nach Wasserfällen gesucht auf der
+    // echten; der Wirt hält den Kanal aus → un-gecarvte Surface (kein Zirkel).
+    function hydroSampleRiverSurfaces(rivers, boden) {
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            for (let k = 0; k < pts.length; k++) {
+                const p = pts[k];
+                if (p.inLake) {
+                    // V9.46 — im See ist die Wasser-Oberfläche der Füllstand
+                    // (`p.y`), NICHT die gecarvte Bett-Surface — sonst meldete
+                    // der Wasserfall-Scan einen Sturz am flachen See-Boden.
+                    p.voxelY = p.y;
+                    continue;
+                }
+                const v = boden(p.x, p.z);
+                p.voxelY = Number.isFinite(v) ? v : p.y;
+            }
+        }
+    }
+
+    // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt, W-F1/F2/F3): je Fluss-Punkt der Spiegel `S` — stromab nie steigend,
+    // quer waagrecht; das Bett folgt ihm (`_hydrosphereCarveAt`). Ziel je Punkt: das tiefste Ufer seines Querschnitts
+    // (die ungecarvte Voxel-Fläche in der Mitte und an beiden Kanal-Kanten, halbe Breite + Bank-Rampe) minus dem
+    // Freibord-Anteil der Bett-Tiefe; die Folge ist die monotone Ausgleichs-Kurve (PAVA, kleinste Quadrate) je Reach
+    // zwischen zwei Seen — der Kanal schneidet Buckel und überbrückt Senken, beides so wenig wie möglich. Ein Reach endet
+    // nie unter dem See, in den er mündet (oder dem Meer), und beginnt nie über dem See, aus dem er kommt. Geteilte
+    // Unterläufe (zwei Quellen, ein Fluss) tragen EIN S: die längsten Flüsse zuerst, ein Zufluss endet am Spiegel seiner
+    // Mündung. Bis V18.531 war der Spiegel die Makro-Höhe des Orts plus ein Buckel (14,3 % der Lauf-Schritte stiegen,
+    // der Querschnitt wölbte sich 1,55 m). Läuft im Bau (der Wirt hält den Kanal aus: die Ufer sind ungecarvt).
+    function hydroRiverSpiegel(ctx, H, rivers, boden) {
+        const schluessel = (p) => p.x + "," + p.z;
+        const S = new Map();
+        const ziel = (p) => {
+            const D = flussTiefe(H, p);
+            const rand = p.width * 0.5 + D / H.bankNeigung;
+            let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+            for (let sg = -1; sg <= 1; sg += 2) {
+                const v = boden(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
+                if (Number.isFinite(v) && v < tief) tief = v;
+            }
+            return tief - H.spiegelFreibord * D;
+        };
+        // PAVA (pool adjacent violators): benachbarte Verletzer verschmelzen zu ihrem Mittel, bis die Folge nicht steigt.
+        const pava = (t) => {
+            const summe = [];
+            const zahl = [];
+            for (let i = 0; i < t.length; i++) {
+                summe.push(t[i]);
+                zahl.push(1);
+                let n = summe.length;
+                while (n > 1 && summe[n - 2] / zahl[n - 2] < summe[n - 1] / zahl[n - 1]) {
+                    summe[n - 2] += summe[n - 1];
+                    zahl[n - 2] += zahl[n - 1];
+                    summe.pop();
+                    zahl.pop();
+                    n--;
+                }
+            }
+            const aus = [];
+            for (let b = 0; b < summe.length; b++) for (let i = 0; i < zahl[b]; i++) aus.push(summe[b] / zahl[b]);
+            return aus;
+        };
+        const reihe = rivers.slice().sort((a, b) => b.points.length - a.points.length);
+        // (1) die Ausgleichs-Kurve je Reach, mit den Schranken der Seen und der Mündung.
+        const reaches = [];
+        const deckel = new Map();
+        for (const rv of reihe) {
+            const P = rv.points;
+            let k = 0;
+            while (k < P.length) {
+                if (P[k].inLake || S.has(schluessel(P[k]))) {
+                    k++;
+                    continue;
+                }
+                let e = k;
+                while (e < P.length && !P[e].inLake && !S.has(schluessel(P[e]))) e++;
+                const t = [];
+                for (let i = k; i < e; i++) {
+                    const p = P[i];
+                    t.push(ziel(p));
+                    // Die HEBUNG ist gedeckelt: der Kanal überbrückt eine Senke höchstens um eine Bett-Tiefe über ihrem
+                    // Grund — tiefer (eine Schlucht) fällt der Fluss hinein und schneidet stromab.
+                    const D = flussTiefe(H, p);
+                    const mitte = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+                    deckel.set(schluessel(p), mitte + (1 - H.spiegelFreibord) * D);
+                }
+                const f = pava(t);
+                for (let i = k; i < e; i++) S.set(schluessel(P[i]), f[i - k]);
+                reaches.push({ rv, k, e });
+                k = e;
+            }
+        }
+        // (2) der Deckel, dann stromab nie steigend: in Fluss-Reihenfolge (die Füllhöhe y fällt entlang des Flusses
+        // strikt) gibt jeder Punkt sein Minimum an den nächsten weiter — über Zusammenflüsse, nie in einen See.
+        const naechster = new Map();
+        const punkte = new Map();
+        for (const rv of rivers) {
+            const P = rv.points;
+            for (let i = 0; i < P.length; i++) {
+                if (P[i].inLake) continue;
+                punkte.set(schluessel(P[i]), P[i]);
+                if (i + 1 < P.length && !P[i + 1].inLake) naechster.set(schluessel(P[i]), schluessel(P[i + 1]));
+            }
+        }
+        for (const [key, d] of deckel) if (S.get(key) > d) S.set(key, d);
+        const nachHoehe = [...punkte.keys()].sort((a, b) => punkte.get(b).y - punkte.get(a).y);
+        for (const key of nachHoehe) {
+            const n = naechster.get(key);
+            if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+        }
+        // (3) die Schranken: nie unter dem See, in den der Reach mündet (oder dem Meer), nie über dem See, aus dem er
+        // kommt (eine Konstante wahrt die Monotonie).
+        for (const { rv, k, e } of reaches) {
+            const P = rv.points;
+            const oben = k > 0 && P[k - 1].inLake ? P[k - 1].y : Infinity;
+            let unten = -Infinity;
+            if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
+            else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            else if (rv.mouth === "see" && Number.isFinite(rv.seeY)) unten = rv.seeY;
+            for (let i = k; i < e; i++) {
+                const key = schluessel(P[i]);
+                S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
+            }
+            // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
+            // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
+            if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        // (4) DIE FRÄSE DES BREITEREN (K16, W-F5): die Ufer eines Zuflusses liest `ziel` ungefräst — liegt er im Kanal oder
+        // auf der Böschung eines BREITEREN Flusses, schneidet dessen Fräse den Boden unter ihn, und sein Wasser stand darüber
+        // (am Ursprung 0,5–2,9 m tief statt des Rinnsals; im Kanal des Stamms hob es dessen Spiegel bis 0,71 m). Je Segment
+        // des breiteren (die breitesten zuerst — ihr Spiegel steht dann fest) trägt jeder schmalere Punkt eines anderen Laufs
+        // in seiner Reichweite höchstens die Kanal-Fläche des Segments (die Gestalt von `_hydrosphereCarveAt`) minus seinem
+        // Freibord, nie weniger als den Spiegel des breiteren. Danach wieder stromab nie steigend.
+        {
+            const sN = H.bankNeigung;
+            const sK = H.bankKruemmung;
+            const fuss = H.bankRundung;
+            const zelle = (x, z) =>
+                Math.round((x - ctx.originX) / ctx.cell - 0.5) + "," + Math.round((z - ctx.originZ) / ctx.cell - 0.5);
+            const raster = new Map();
+            for (const [key, p] of punkte) {
+                const zk = zelle(p.x, p.z);
+                if (!raster.has(zk)) raster.set(zk, []);
+                raster.get(zk).push(key);
+            }
+            const stromab = (kp, kz, n) => {
+                for (let k = naechster.get(kp), g = 0; k !== undefined && g < n; k = naechster.get(k), g++)
+                    if (k === kz) return true;
+                return false;
+            };
+            const segmente = [...naechster.entries()].sort(
+                (a, b) => (punkte.get(b[0]).width || 0) - (punkte.get(a[0]).width || 0)
+            );
+            let gekappt = false;
+            for (const [ka, kb] of segmente) {
+                const a = punkte.get(ka);
+                const b = punkte.get(kb);
+                if (!b) continue;
+                const hwA = a.width * 0.5;
+                const hwB = b.width * 0.5;
+                const dA = flussTiefe(H, a);
+                const dB = flussTiefe(H, b);
+                const weit = Math.max(hwA + dA / sN, hwB + dB / sN) + H.dammBreite + H.bankWeite;
+                const nZ = Math.ceil(weit / ctx.cell) + 1;
+                const ia = Math.round((a.x - ctx.originX) / ctx.cell - 0.5);
+                const ja = Math.round((a.z - ctx.originZ) / ctx.cell - 0.5);
+                const ex = b.x - a.x;
+                const ez = b.z - a.z;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let dj = -nZ; dj <= nZ; dj++)
+                    for (let di = -nZ; di <= nZ; di++) {
+                        const liste = raster.get(ia + di + "," + (ja + dj));
+                        if (!liste) continue;
+                        for (const kp of liste) {
+                            if (kp === ka || kp === kb) continue;
+                            const p = punkte.get(kp);
+                            let t = ((p.x - a.x) * ex + (p.z - a.z) * ez) / len2;
+                            t = t < 0 ? 0 : t > 1 ? 1 : t;
+                            const halfW = hwA + (hwB - hwA) * t;
+                            if (!(p.width * 0.5 < halfW)) continue;
+                            const D = dA + (dB - dA) * t;
+                            const dK = halfW + D / sN;
+                            const dist = Math.hypot(p.x - (a.x + ex * t), p.z - (a.z + ez * t));
+                            if (dist >= dK + H.dammBreite + H.bankWeite) continue;
+                            const spiegel = S.get(ka) + (S.get(kb) - S.get(ka)) * t;
+                            if (!(S.get(kp) > spiegel)) continue;
+                            if (stromab(kp, ka, nZ + 2)) continue; // der eigene Lauf mündet hier
+                            const B = spiegel - (1 - H.spiegelFreibord) * D;
+                            const u0 = dist - halfW;
+                            let flaeche =
+                                u0 <= -fuss
+                                    ? B
+                                    : u0 < fuss
+                                      ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss)
+                                      : B + sN * u0;
+                            if (dist > dK) flaeche += sK * (dist - dK) * (dist - dK);
+                            const grenze = Math.max(spiegel, flaeche - H.spiegelFreibord * flussTiefe(H, p));
+                            if (S.get(kp) > grenze) {
+                                S.set(kp, grenze);
+                                gekappt = true;
+                            }
+                        }
+                    }
+            }
+            if (gekappt)
+                for (const key of nachHoehe) {
+                    const n = naechster.get(key);
+                    if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+                }
+        }
+        for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
+    }
+
+    // Phase 5c — Wasserfälle: Fluss-Läufe, deren SPIEGEL (`S`) steil fällt (Steigung > waterfallSlope, in Summe ≥
+    // waterfallMinDrop) = ein Sturz; aufeinanderfolgende steile Segmente verschmelzen zu EINEM. Jedes Segment zählt
+    // EINMAL: zwei Quellen teilen ihren Unterlauf, und der Sturz darin gehört beiden (bis V18.531 19 Einträge an 13 Orten,
+    // W-F4).
+    function hydroExtractWaterfalls(ctx, H, rivers) {
+        const waterfalls = [];
+        const yOf = (p) => (Number.isFinite(p.S) ? p.S : p.y);
+        const gesehen = new Set();
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            let runStart = -1; // Index des oberen Punkts des steilen Laufs
+            const flush = (lowerK) => {
+                if (runStart < 0) return;
+                const a = pts[runStart];
+                const b = pts[lowerK];
+                const topY = yOf(a);
+                const bottomY = yOf(b);
+                if (topY - bottomY >= H.waterfallMinDrop) {
+                    waterfalls.push({
+                        x: (a.x + b.x) / 2,
+                        z: (a.z + b.z) / 2,
+                        topY,
+                        bottomY,
+                        width: a.width,
+                        flowX: a.flowX || b.flowX,
+                        flowZ: a.flowZ || b.flowZ,
+                        riverIndex: ri,
+                    });
+                }
+                runStart = -1;
+            };
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung ist flach (Wasser-Oberfläche),
+                // kein Wasserfall; ein laufender steiler Lauf endet an ihr. Ein schon gezähltes Segment (geteilter
+                // Unterlauf) beendet den Lauf ebenso.
+                const seg = a.x + "," + a.z;
+                if (a.inLake || b.inLake || gesehen.has(seg)) {
+                    flush(k);
+                    continue;
+                }
+                gesehen.add(seg);
+                const drop = yOf(a) - yOf(b);
+                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                const steep = drop > 0 && drop / horiz > H.waterfallSlope;
+                if (steep) {
+                    if (runStart < 0) runStart = k;
+                } else {
+                    flush(k); // k ist der untere Punkt des letzten steilen Segments
+                }
+            }
+            flush(pts.length - 1);
+        }
+        return waterfalls;
+    }
+
+    // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) Fluss-Bucket-Grid (jedes Segment
+    // in alle Buckets seiner um die Kanal-Reichweite erweiterten BBox; eine Abfrage liest einen Bucket),
+    // (2) See-Raster `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein
+    // `_terrainDensityAt`, kein Zirkel.
+    function hydroBuildCarveIndex(ctx, H, rivers, lakes) {
+        const { dim, originX, originZ, size, waterLevel } = ctx;
+        // --- Fluss-Bucket-Grid ---
+        const bucketSize = H.carveBucketSize;
+        const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
+        const riverBuckets = new Array(bucketsDim * bucketsDim);
+        const addSeg = (seg) => {
+            // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Krone des Damms + die Böschung dahinter
+            const reach =
+                Math.max(seg.hwA, seg.hwB) + Math.max(seg.dA, seg.dB) / H.bankNeigung + H.dammBreite + H.bankWeite;
+            let bi0 = Math.floor((Math.min(seg.ax, seg.bx) - reach - originX) / bucketSize);
+            let bi1 = Math.floor((Math.max(seg.ax, seg.bx) + reach - originX) / bucketSize);
+            let bj0 = Math.floor((Math.min(seg.az, seg.bz) - reach - originZ) / bucketSize);
+            let bj1 = Math.floor((Math.max(seg.az, seg.bz) + reach - originZ) / bucketSize);
+            if (bi0 < 0) bi0 = 0;
+            if (bj0 < 0) bj0 = 0;
+            if (bi1 >= bucketsDim) bi1 = bucketsDim - 1;
+            if (bj1 >= bucketsDim) bj1 = bucketsDim - 1;
+            for (let bj = bj0; bj <= bj1; bj++) {
+                for (let bi = bi0; bi <= bi1; bi++) {
+                    const k = bj * bucketsDim + bi;
+                    if (!riverBuckets[k]) riverBuckets[k] = [];
+                    riverBuckets[k].push(seg);
+                }
+            }
+        };
+        // Ein geteilter Unterlauf ist EIN Segment (zwei Quellen, ein Fluss — die Buckets trugen ihn je Quelle).
+        const segGesehen = new Set();
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung NICHT carven: das Becken-Bett
+                // ist schon von `_hydrosphereLakeAt` flach gesculptet; ein
+                // Fluss-Carve grübe sonst eine Rinne in den flachen See-Boden.
+                if (a.inLake || b.inLake) continue;
+                const segKey = a.x + "," + a.z;
+                if (segGesehen.has(segKey)) continue;
+                segGesehen.add(segKey);
+                addSeg({
+                    ax: a.x,
+                    az: a.z,
+                    bx: b.x,
+                    bz: b.z,
+                    hwA: a.width * 0.5,
+                    hwB: b.width * 0.5,
+                    dA: flussTiefe(H, a),
+                    dB: flussTiefe(H, b),
+                    // der Spiegel an beiden Enden (`hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
+                    sA: a.S,
+                    sB: b.S,
+                });
+            }
+        }
+        // --- See-Becken-Raster ---
+        // `lakeBedCell` = flache Bett-Höhe `bedY` (2 Ringe propagiert für saubere bilineare Ufer-Ecken);
+        // `lakeW` = Becken-Zugehörigkeit 0/1 (daraus rampt die Ufer-Mischung); `lakeNear` = 1-Ring-Maske.
+        // `bedY` ∈ [waterLevel+0.5, level−1.2]: über dem Meer (Meeres-Plane verdeckt), unter dem Spiegel.
+        // Seen ≤ waterLevel+2 werden nicht gesculptet — das Meer deckt sie (keine zwei Wasser-Ebenen).
+        const n = dim * dim;
+        const lakeBedCell = new Float32Array(n);
+        const lakeW = new Float32Array(n);
+        const lakeNear = new Uint8Array(n);
+        for (let li = 0; li < lakes.length; li++) {
+            const lake = lakes[li];
+            if (lake.level <= waterLevel + 2.0) continue; // faktisch Meeresspiegel
+            let bedY = lake.level - H.carveLakeBedDepth;
+            const minBed = waterLevel + 0.5;
+            const maxBed = lake.level - 1.2;
+            if (bedY < minBed) bedY = minBed;
+            if (bedY > maxBed) bedY = maxBed;
+            const cells = lake.cells || [];
+            for (let c = 0; c < cells.length; c++) {
+                const idx = cells[c];
+                const ci = idx % dim;
+                const cj = (idx / dim) | 0;
+                lakeW[idx] = 1;
+                for (let dj = -2; dj <= 2; dj++) {
+                    for (let di = -2; di <= 2; di++) {
+                        const ni = ci + di;
+                        const nj = cj + dj;
+                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        const nidx = ni + nj * dim;
+                        lakeBedCell[nidx] = bedY; // bedY auf 2 Ringe propagiert
+                        if (di >= -1 && di <= 1 && dj >= -1 && dj <= 1) lakeNear[nidx] = 1;
+                    }
+                }
+            }
+        }
+        return { riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
+    }
+
+    // Vereintes Wasser-Feld je Region-Zelle: flacher Spiegel `waterY` + `waterKind` (0 Land · 1 Ozean ·
+    // 2 See). Stehendes Wasser = EINE Höhe je Körper (`waterLevel`/`lake.level`), kein per-Zelle-
+    // `filled` (ε-Gefälle kippt den See). Trockene Zelle → Meeresspiegel: das Rand-Quad taucht unters
+    // Ufer, die Uferlinie ist der emergente Schnitt. Reine Daten.
+    function hydroBuildWaterField(ctx, lakes) {
+        const { dim, isOcean, lakeOf, waterLevel } = ctx;
+        const n = dim * dim;
+        const waterY = new Float32Array(n);
+        const waterKind = new Uint8Array(n);
+        for (let idx = 0; idx < n; idx++) {
+            if (isOcean[idx]) {
+                waterKind[idx] = 1;
+                waterY[idx] = waterLevel;
+            } else if (lakeOf[idx] >= 0) {
+                waterKind[idx] = 2;
+                const lk = lakes[lakeOf[idx]];
+                waterY[idx] = lk ? lk.level : waterLevel;
+            } else {
+                waterY[idx] = waterLevel;
+            }
+        }
+        return { waterY, waterKind };
+    }
+
     root.__gelaendeCore = Object.freeze({
         MESSUNG: MESSUNG,
         abdruckFeld: abdruckFeld,
@@ -3709,6 +4768,15 @@
         erdbauHohl: erdbauHohl,
         erdbauKeller: erdbauKeller,
         erdbauSchnitt: erdbauSchnitt,
+        EDIT_FORM: EDIT_FORM,
+        editForm: editForm,
+        editReich: editReich,
+        editKrone: editKrone,
+        mitEdits: mitEdits,
+        editsImGitter: editsImGitter,
+        bandOben: bandOben,
+        bandUnten: bandUnten,
+        bandUmEdits: bandUmEdits,
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,
@@ -3727,5 +4795,8 @@
         flussLaeufe: flussLaeufe,
         schichtOrt: schichtOrt,
         kachelSchluessel: kachelSchluessel,
+        hydrosphaere: hydrosphaere,
+        flussTiefe: flussTiefe,
+        hydroBand: hydroBand,
     });
 })(typeof self !== "undefined" ? self : globalThis);

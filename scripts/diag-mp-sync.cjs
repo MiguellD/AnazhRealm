@@ -12,10 +12,10 @@
 //                 scheitert (signaling-server aus), heilte nie. Probe: Server beim Aufbau 3 s aus, dann an; Rejoin
 //                 ≤ 31 s (Backoff-Deckel 30 s + Jitter). Täter, wenn ROT: der Rejoin liest eine Absicht, die die Tür
 //                 nie setzte.
-//   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
+//   (c) GRABEN    das Chat-Graben reist: A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
 //                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
 //                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
-//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen (K60): B sieht A
+//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen: B sieht A
 //                 an dessen Ort, und JEDER Takt hält das Gesetz (`taktBruch`): er verbraucht bis zur Kappe der Wanduhr
 //                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
 //                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
@@ -29,18 +29,16 @@
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Der
 // Selbsttest von (c) läuft im Hauptlauf gleich nach (c): B wendet jede Graben-Nachricht doppelt an (`_p2pMsgDsl` zweimal)
 // → (c) ROT an der Länge; die erste Fassung aus K23 fragte nur „jeder Edit von A auch bei B“ und blieb dabei grün.
-// Ports: MP_SYNC_PORT (save-server, Default 4312), MP_SYNC_SIGNAL_PORT (signaling, Default 4313). `--roh <datei>`
+// Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems. `--roh <datei>`
 // schreibt die Zahlen als JSON.
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser, halteBis, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 
-const PORT = Number(process.env.MP_SYNC_PORT || 4312);
-const SIGNAL_PORT = Number(process.env.MP_SYNC_SIGNAL_PORT || 4313);
-const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+// die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "mp-sync-raum";
 const SELBSTTEST = process.argv.includes("--selftest");
 const ROH = (() => {
@@ -53,9 +51,8 @@ const LATENZ_MS = 150;
 // Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
 const LAUF_M = 1.5;
 const LAUF_FRIST_MS = 30000;
-// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
-// das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
-// Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
+// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen
+// sind — das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers.
 const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
@@ -81,7 +78,7 @@ const dTaeter = (m) =>
           : m.some((x) => x.startsWith("Abstand"))
             ? " — das Gesetz hält, der Ort weicht: Täter der Schritt des Ghosts (_lockstepStepGhost) oder sein Anker"
             : "";
-// DER SCHUB VOR DEM FENSTER (Prüfer K60 Runde 4, B gedrosselt × 8; dieselbe Form CI 38677065212): ein Puffer, der VOR dem
+// DER SCHUB VOR DEM FENSTER (K60, B gedrosselt × 8): ein Puffer, der VOR dem
 // Fenster auflief, steht nach dem ersten Takt (dt 25 ms, Kappe 15) bei 235 Schritten — das Gesetz trug ihn, das Urteil mit
 // festem Verzug (≤ Reserve + aufholJeSchritt) nannte `_lockstepTickPeers` als Täter. Je Takt [dt ms, Schritte, Puffer danach].
 const SCHUB_VOR_DEM_FENSTER = [
@@ -145,7 +142,7 @@ function installiere(alteTuer) {
     // DIE WAHRHEIT DES ZEICHEN-MOMENTS: `_p2pUpdatePeer` zeichnet den Ort, den der Ghost am Ende des VORIGEN Takts setzte
     // (`_lockstepTickPeers` läuft in `p2pTick` NACH dem Zeichnen) bzw. den Snap von vor P2P_SNAP_INTERP_DELAY_MS (120 ms).
     // Geurteilt wird darum gegen die Quellen in DIESEM Moment — der Ghost, der Snap-Puffer, der zuletzt empfangene Ort —,
-    // nie gegen den Ghost nach dem Takt (8a2f91e5 und be09baf4: 1–2 Takte ROT, als A aus dem Erst-Spawn 0/0 loslief).
+    // nie gegen den Ghost nach dem Takt.
     const zeichne = r._p2pUpdatePeer;
     r._p2pUpdatePeer = function (entry, t, dt) {
         const res = zeichne.call(this, entry, t, dt);
@@ -244,6 +241,9 @@ function bericht(p) {
 
 (async () => {
     const fehler = [];
+    [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
     const roh = { selbsttest: SELBSTTEST, port: PORT, signalPort: SIGNAL_PORT };
     const check = (name, ok, detail = "") => {
         console.log(`  ${ok ? "OK  " : "ROT "} ${name}${detail ? " — " + detail : ""}`);
@@ -276,7 +276,6 @@ function bericht(p) {
                 !!window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 !!window.anazhRealm.state.playerMesh,
-            90000,
             "Seite A bereit"
         );
         await pageA.evaluate(installiere, SELBSTTEST);
@@ -373,7 +372,7 @@ function bericht(p) {
             `Inits ${kVor.inits}→${kAn.inits}→${kZwei.inits}, verbunden beim 2. Klick=${kZwei.connected}`
         );
         await pageA.evaluate(klick);
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.connected === true, 15000, "A verbunden über den Knopf");
+        await waitFor(pageA, () => window.anazhRealm.state.p2p.connected === true, "A verbunden über den Knopf");
         const kVerb = await bericht(pageA);
         check("Knopf an: A verbunden, Knopf „an“", kVerb.connected && kVerb.knopf === "true", `Inits ${kVerb.inits}`);
 
@@ -388,22 +387,21 @@ function bericht(p) {
                 !!window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 !!window.anazhRealm.state.playerMesh,
-            90000,
             "Seite B bereit"
         );
         await pageB.evaluate(installiere, false);
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, 30000, "B verbunden über den Boot");
+        await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
         const idB = (await bericht(pageB)).peerId;
-        await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "A kennt B", idB);
-        await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "B kennt A", idA);
+        await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), "A kennt B", idB);
+        await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
         // W13 P3 am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
-        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, 20000, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
+        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
         check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
-        const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), 120000, "A: Ladeschirm weg");
+        const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
         await waitFor(
             pageA,
             () => {
@@ -412,7 +410,6 @@ function bericht(p) {
                 window.__mpY = y;
                 return prev !== undefined && Math.abs(y - prev) < 0.02;
             },
-            30000,
             "A gesettelt"
         );
         await sleep(800);
@@ -436,7 +433,7 @@ function bericht(p) {
                 window.__mp.eigenBewegtAm = null;
                 window.__mpP = undefined;
             });
-            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m (CI 38683406115)
+            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m
             const halt = await halteBis(pageA, {
                 taste: "w",
                 ziel: (soll) => {
@@ -455,14 +452,13 @@ function bericht(p) {
                     window.__mpP = { x: p.x, z: p.z };
                     return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
                 },
-                15000,
                 "A steht wieder"
             );
             await sleep(1200);
             // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
             // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
             const takteB = await pageB.evaluate(() => window.__mp.lsTakte);
-            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, 60000, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
+            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
             const wahrA = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
                 return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
@@ -503,21 +499,19 @@ function bericht(p) {
         if (!process.env.CI && l0.latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
 
-        // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // ── (d) LANGE TAKTE: B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
-        // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
-        // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
-        // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
-        // DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am Ende und nie einen festen Verzug: der Ort
-        // allein war blind (CI 38670118945, die alte Kappe holte den kurzen Lauf vor dem Urteil fast ein), der feste Verzug
-        // las einen Schub vor dem Fenster als Täter (CI 38677065212).
+        // (`_lockstepTickPeers`). Der Selbsttest gleich danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein
+        // Frame von 1/60 s): (d) muss ROT werden. DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am
+        // Ende und nie einen festen Verzug: der Ort allein war blind, der feste Verzug las einen Schub vor dem Fenster
+        // als Täter.
         const lsGesetz = await pageB.evaluate(() => {
             const K = window.anazhRealm.constructor;
             return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
         });
-        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL Schritte von A angekommen
-        // sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A sendet und wie belastet der Läufer
-        // ist (CI 38670118945 lief mit 300 ms Wanduhr-Takten; lokal unter Last kam je Takt kein einziger Schritt, K60-N3/mp-4.txt)
+        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL
+        // Schritte von A angekommen sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A
+        // sendet und wie belastet der Läufer ist
         const ZUFLUSS_SOLL = ZUFLUSS_FAKTOR * lsGesetz.aufhol;
         const langeTakte = (an, alteKappe) =>
             pageB.evaluate(
@@ -612,7 +606,6 @@ function bericht(p) {
             await waitFor(
                 pageB,
                 () => !!window.__mp.langFenster && window.__mp.langFenster.takte.filter((t) => t.anschluss).length >= 3,
-                60000,
                 "B: drei lange Takte"
             ).catch(() => {});
             return langeTakte(false);
@@ -645,10 +638,10 @@ function bericht(p) {
         );
         await sleep(1500);
 
-        // ── (c) DAS CHAT-GRABEN REIST (K23) ──
+        // ── (c) DAS CHAT-GRABEN REIST ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
         // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
-        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxelSphere/fillVoxelSphere)
+        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxel/fillVoxel)
         // statt über dslRun, das broadcastet; wenn B mehr trägt: der Empfang wendet eine Graben-Nachricht mehrfach an.
         const editsVon = (p) =>
             p.evaluate(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).map((e) => ({ ...e })));

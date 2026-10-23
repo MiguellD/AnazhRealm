@@ -5,9 +5,9 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V17.64 S5 (kampf-plan §11.7, §11.2) — Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
+// Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
-// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
+// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz).
 async function checkBandV1764ForgeAvatar(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -17,8 +17,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
         const p = r.state.player;
         const savedMode = r.getGameMode();
         const savedSoul = p.soul;
-
-        out.methods = typeof r.forgeAvatar === "function" && typeof r.embodyBlueprint === "function";
 
         // ein körper-geformter Bauplan, role="soul" + ein Nicht-Soul
         blu.__soul = {
@@ -93,7 +91,6 @@ async function checkBandV1764ForgeAvatar(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.64 S5: forgeAvatar + embodyBlueprint existieren", res.methods);
     check("V17.64 S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
     check(
         "V17.64 S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",
@@ -114,10 +111,8 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing5Soul(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 5 — createPlayerSoul V1 ###
@@ -140,9 +135,9 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        // ALTLASTEN-NULL (V9.56-i) + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
+        // ALTLASTEN-NULL + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
         // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
-        // ist ALT_DOPPEL (V18.480) und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
+        // ist ALT_DOPPEL und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
         const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
         out.dropdownHasBuiltinSouls =
             ring5SoulVals.includes("human") &&
@@ -405,7 +400,7 @@ async function checkBandRing5Soul(ctx) {
             ring5Results.phoenixHasWingsAndTail
         );
         check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
-        // V18.331/.347 — die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
+        // die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
         // body-frei, feld-native; es gibt keinen rigid body, der dem Soul-Group folgt).
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5 (NULL): Chat 'werde hirsch' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
@@ -492,7 +487,7 @@ async function checkBandRing5Soul(ctx) {
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
-        if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        r._gameLoopTick(performance.now());
         return {
             playerYaw: r.state.yaw,
             playerRotationY: r.state.playerMesh.rotation.y,
@@ -522,7 +517,7 @@ async function checkBandRing5Soul(ctx) {
                 r.state.playerVel.setValue(0, 0, 0);
                 r.state._fieldVy = 0;
             }
-            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            r._gameLoopTick(performance.now());
             const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
@@ -703,8 +698,8 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
-            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der
+            // Sitzfläche, −π/2)
             out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
@@ -741,7 +736,7 @@ async function checkBandM3RittVollendet(ctx) {
     );
 }
 
-// W-F Fluss (Welle L, Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
+// W-F Fluss (Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
 // steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
 // geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
 // Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
@@ -749,14 +744,14 @@ async function checkBandM3RittVollendet(ctx) {
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
-        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
-        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot (Integration 08.10.).
-        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (global) — dort gab der
+        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot.
+        out.runExists = typeof r._atlasWaterLevelAt === "function";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
         if (hW && hW.ready && hW.water && hW.water.waterKind) {
@@ -801,7 +796,7 @@ async function checkBandWFFluss(ctx) {
         // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
         // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
         // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
-        const o = window.__wasserOrt("see");
+        const o = await window.__wasserOrt("see");
         const boot = (mat) => {
             const bp = mkBoat(mat);
             r.state.blueprints[bp.name] = bp;
@@ -821,7 +816,7 @@ async function checkBandWFFluss(ctx) {
         return out;
     });
     check(
-        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
     );
     check(
@@ -910,8 +905,6 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
             // (S5) Größer ist NICHT schneller: die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
             // oder attackSpeed.
-            const smallSpeed = smallComputed.stats.speed;
-            const largeSpeed = largeComputed.stats.speed;
             // Keine speed-Identität (Tags variieren je Compound), aber keine systematische Beschleunigung der
             // Großen: |speed_large/speed_small| ≈ Tag-Verhältnis, NICHT sqrt(sizeFactor).
             out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil
@@ -966,9 +959,8 @@ async function checkBandV18195AvatarSizeHp(ctx) {
     );
 }
 
-// V18.196 — MANA-SYMMETRIE (aktiv-plan §4.E): die zweite Ausdauer-Achse als
-// Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
-// Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
+// MANA-SYMMETRIE: die zweite Ausdauer-Achse — STAT_FROM_TAGS.manaMax, state.player.mana/manaMax, der Regen im Spiel-Takt
+// (MANA_REGEN_PER_SEC, M7 fährt ihn).
 async function checkBandV18196ManaSymmetry(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -976,11 +968,8 @@ async function checkBandV18196ManaSymmetry(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (M1) STAT_FROM_TAGS.manaMax existiert
-        out.hasManaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
-
         // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
-        if (out.hasManaMaxFn) {
+        {
             const fn = A.STAT_FROM_TAGS.manaMax;
             out.manaBase = fn({});
             out.manaFullMag = fn({ magieleitung: 1 });
@@ -991,8 +980,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
                 Math.abs(out.manaFullBoth - 180) < 0.001;
         }
 
-        // (M3) MANA_REGEN_PER_SEC frozen Konstante
-        out.regenConstExists = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
 
         // (M4) computePlayerStats gibt stats.manaMax
         const savedSoul = r.state.player && r.state.player.soul;
@@ -1050,12 +1037,10 @@ async function checkBandV18196ManaSymmetry(ctx) {
         return out;
     });
 
-    check("V18.196 (M1) STAT_FROM_TAGS.manaMax existiert", res.hasManaMaxFn === true);
     check(
         `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
         res.manaFormulaOk === true
     );
-    check("V18.196 (M3) MANA_REGEN_PER_SEC frozen Konstante existiert", res.regenConstExists === true);
     check("V18.196 (M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
     check(
         `V18.196 (M5/NULL) Wolf-Körper hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
@@ -1071,9 +1056,9 @@ async function checkBandV18196ManaSymmetry(ctx) {
     );
 }
 
-// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
+// MANA-KONSUMENTEN FOUNDATION.
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
-// KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
+// KEIN DSL-Op.
 async function checkBandV18201ManaKonsum(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -1162,7 +1147,7 @@ async function checkBandV18201ManaKonsum(ctx) {
     );
 }
 
-// V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// AVATAR-GRÖSSE-SPEED-TRADE: größere
 // Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
 async function checkBandV18206SpeedTrade(ctx) {
     const { page, check } = ctx;
@@ -1285,7 +1270,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const out = { arten: {} };
         for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
             const g = r._buildCreatureGroup(art);
-            const a = { baum: false, meshN: 0, faceLOD: false, geoSet: new Set() };
+            const a = { baum: false, meshN: 0, geoSet: new Set() };
             if (g) {
                 a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
                 g.traverse((n) => {
@@ -1309,8 +1294,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
                     a.klonTeilt = n2 > 0 && geteilt === n2;
                     r._disposeSoulGroup(gz);
                 }
-                a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
-                // DIE NaN-LINSE: Welt-BBox finit + sinnvoll (0.05..20 Einheiten hoch).
+                // DIE NaN-LINSE: Welt-BBox finit + sinnvoll.
                 const bb = new THREE.Box3().setFromObject(g);
                 const h = bb.max.y - bb.min.y;
                 a.bboxFinit =
@@ -1323,16 +1307,11 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
-        // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
-        // Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG des Leibs:
-        // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
-        // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
-        // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
-        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
-        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
-        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
-        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
+        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die Lab-Mathe legt das Leben in die
+        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG
+        // des Leibs: der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine Blickrichtung (Blick +x,
+        // Lauf +x — wie gate:tier-gang), gewertet wird die zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg)
+        // faltet und schwingt nicht. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;
@@ -1371,7 +1350,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
         );
         // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
         // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
-        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
+        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — Klasse).
         out.fernExists = false;
         out.fernMeshN = -1;
         out.fernFar = false;
@@ -1416,7 +1395,6 @@ async function checkBandKonvergenzTierBaum(ctx) {
             `KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`,
             a.baum === true && a.meshN >= 2
         );
-        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
         check(`KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`, a.bboxFinit === true);
         check(
             `KONVERGENZ III/PIPE (4) ${art}: ≤120 Meshes (Gelenk-Merge, gemessen ${a.meshN}), Klone TEILEN jede Geometrie`,
@@ -1459,7 +1437,6 @@ async function checkBandTierFern(ctx) {
         const abKern = BK && BK[1] ? BK[1].ab : null;
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
-        if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
     
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
         for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -1471,7 +1448,7 @@ async function checkBandTierFern(ctx) {
         };
     
         // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
-        // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
+        // sichtbaren geskinnten Haut (der Leib ist EINE Haut über den Gelenk-Baum).
         let zTris = 0,
             zBones = 0;
         const sichtbar = (node) => {
@@ -1613,7 +1590,7 @@ async function checkBandTierFern(ctx) {
         };
         const saveRandom = Math.random;
         // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
-        // bewegt, behält seinen Gelenk-Baum, Welle LF)
+        // bewegt, behält seinen Gelenk-Baum)
         let landWinkel = 0;
         for (let q = 0; q < 24; q++) {
             const a = (q / 24) * Math.PI * 2;
@@ -1635,7 +1612,7 @@ async function checkBandTierFern(ctx) {
             if (!cw) return null;
             cw.position.x = pm.x + Math.cos(landWinkel) * 1.4 * fern;
             cw.position.z = pm.z + Math.sin(landWinkel) * 1.4 * fern;
-            // Die Ruhe trägt nur ein Tier, das STEHT (Welle LF, der ferne Gang: wer läuft, behält seinen Schritt) —
+            // Die Ruhe trägt nur ein Tier, das STEHT (der ferne Gang: wer läuft, behält seinen Schritt) —
             // der Wolf wartet, sonst wanderte er aus dem Fern-Regime in die feine Stufe.
             r.assignCreatureTask(cw, "wait", {}, { silent: true });
             if (cw.userData.task) cw.userData.task.since = 0;
@@ -1803,7 +1780,7 @@ async function checkBandKoerperBewegung(ctx) {
         const mesh = s.playerMesh;
         if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
         const savedSoul = p.soul;
-        if (!mesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        if (!mesh.userData.rig) r.applyPlayerSoul("human");
         const pmesh = s.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         const savedVel = s.playerVel;
@@ -1932,7 +1909,7 @@ async function checkBandKoerperBewegung(ctx) {
                     if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
             if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
+            // das Becken NICHT
             traeger(soleY - 0.25);
             s.isInAir = true;
             probenFrisch();
@@ -1957,7 +1934,7 @@ async function checkBandKoerperBewegung(ctx) {
         p.walkPhase = savedPhase;
         p._gaitW = savedW;
         p.animationLastTick = savedTick;
-        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+        if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
     
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {
@@ -2034,8 +2011,176 @@ async function checkBandKoerperBewegung(ctx) {
     check(`Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`, !e, e && "ROT: " + e);
 }
 
+// leib.K5 — DAS GAMEPAD LENKT JEDES VERB (Meisterkarte Leib H): ein synthetisches Gamepad fährt jedes Verb durch den echten Takt,
+// gerichtet wird die Wirkung in Takten (Schlupfloch: ein auf 0/1 gerundeter Achs-Wert fällt an der Stetigkeit). Jedes Glied, das
+// `state.keys` liest, ist ROT beim Namen (frei: die Tastatur in init, der Sammler, die Tasten-Wand) — SELBSTTEST: ein Zwilling-Leser.
+async function checkBandGamepadVerben(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, () => {
+        const [r, fx, los, spione] = [window.anazhRealm, [], [], {}];
+        const [s, A, proto] = [r.state, r.constructor, Object.getPrototypeOf(r)];
+        const [P, T, B, o] = [A.PAD_GESETZ, s.verbTafel, A.PAD_BELEGUNG, { c: {} }];
+        const c = o.c;
+        const leser = () =>
+            Object.getOwnPropertyNames(proto).filter((n) => {
+                const f = Object.getOwnPropertyDescriptor(proto, n).value;
+                const frei = ["constructor", "init", "_verbTafelSammeln", "_alleTastenLos"].includes(n);
+                return !frei && typeof f === "function" && !window.__fehlt(f, /\b(?:state|st|s)\.keys\b/);
+            });
+        o.leser = leser();
+        proto.__zwillingLeser = function () {
+            return this.state.keys.w;
+        };
+        c.selbsttest = leser().includes("__zwillingLeser");
+        delete proto.__zwillingLeser;
+        c.absenz = o.leser.length === 0;
+        if (!P || !T || !B) return Object.assign(o, { error: "keine Verb-Tafel (state.verbTafel · PAD_GESETZ · PAD_BELEGUNG)" });
+        const pad = { connected: true, axes: [0, 0, 0, 0], buttons: [...Array(17)].map(() => ({ pressed: false, value: 0 })) };
+        pad.vibrationActuator = { type: "dual-rumble", playEffect: (art, e) => (fx.push(e), Promise.resolve()), reset() {} };
+        Object.defineProperty(navigator, "getGamepads", { value: () => [pad], configurable: true });
+        let tMs = performance.now();
+        const takt = (n) => {
+            for (let i = 0; i < n; i++) r._gameLoopTick((tMs += 1000 / 60));
+        };
+        const kn = (a) => +B[a].slice(3);
+        const knopf = (i, v) => ((pad.buttons[i].pressed = v > 0.5), (pad.buttons[i].value = v));
+        const druck = (i) => (knopf(i, 1), takt(1), knopf(i, 0), takt(1));
+        const ruhe = () => (pad.axes.fill(0), pad.buttons.forEach((_, i) => knopf(i, 0)), Object.keys(s.keys).forEach((k) => (s.keys[k] = false)), takt(1));
+        const soll = (a) => Math.max(0, Math.min(1, (a - P.totzone) / (1 - P.totzone)));
+        const nah = (x, y, tol) => Math.abs(x / y - 1) < tol;
+        const v = () => Math.hypot(s.playerVel.x(), s.playerVel.z());
+        const rumble = () => Math.max(0, ...fx.map((e) => Math.max(e.strongMagnitude, e.weakMagnitude)));
+        const [pm, sicht0, hp0, hud0] = [s.playerMesh.position, s.cameraMode, s.player.hp, document.body.className];
+        const [heim, h] = [pm.clone(), (x, z) => r.getTerrainHeightAt(x, z)];
+        let ort = null; // die ebene, trockene Bühne (wie das Ritt-Band): 12 m × 12 m Ebene um den Spieler
+        for (let i = 0; i < 192 && !ort; i++) {
+            const [x, z] = [heim.x + Math.cos(i * 0.5236) * (2 + Math.floor(i / 12)) * 24, heim.z + Math.sin(i * 0.5236) * (2 + Math.floor(i / 12)) * 24];
+            const ws = r._atlasWaterLevelAt(x, z, h(x, z));
+            let eben = Number.isFinite(h(x, z)) && !(ws > h(x, z) - 0.3);
+            for (let d = 0; d < 49 && eben; d++) eben = Math.abs(h(x + ((d % 7) - 3) * 2, z + (Math.floor(d / 7) - 3) * 2) - h(x, z)) < 0.15;
+            if (eben) ort = { x, y: h(x, z) + A.PLAYER_FOOT_OFFSET + 0.02, z };
+        }
+        if (!ort) return { error: "keine ebene, trockene Bühne um den Spieler" };
+        const stellen = () => {
+            ruhe();
+            pm.set(ort.x, ort.y, ort.z);
+            s.playerVel.setValue(0, 0, 0);
+            [s._fieldVy, s._fixedAccumulator, s.yaw, s.pitch] = [0, 0, 0, 0];
+            takt(3);
+        };
+        const SPIONE = ["tryMouseBreak", "tryMousePlace", "swapHands", "toggleInventoryOverlay", "confirmBuild", "setZoomActive", "selectHotbarSlot", "setCameraMode", "toggleMountAtPlayer", "exitPortal"];
+        r.setCameraMode("first");
+        try {
+            // (A) GEHEN ∝ Auslenkung hinter der Totzone, W = der volle Stick (dieselbe Tafel), Sprint; (B) BLICK ∝ Stick, die Maus ebenso
+            const tempo = (setze) => (stellen(), setze(), takt(12), [v(), T.vor]);
+            const AUS = [P.totzone * 0.6, 0.35, 0.6, 1];
+            o.gehen = AUS.map((a) => tempo(() => (pad.axes[1] = -a))[0]);
+            o.taste = tempo(() => (s.keys.w = true));
+            o.sprint = tempo(() => ((pad.axes[1] = -1), knopf(kn("sprint"), 1)))[0];
+            const v1 = o.gehen[3];
+            c.gehen = v1 > 0.5 * s.speed && AUS.every((a, i) => Math.abs(o.gehen[i] / v1 - soll(a)) < 0.03) && o.taste[1] === 1 && nah(o.taste[0], v1, 0.01);
+            c.sprint = nah(o.sprint / v1, s.sprintSpeed / s.speed, 0.05);
+            const blick = (achse, a) => (stellen(), (pad.axes[achse] = a), takt(10), [s.yaw, s.pitch]);
+            o.blick = [blick(2, 0.6)[0], blick(2, 1)[0], blick(3, 1)[1]];
+            c.blick = nah(o.blick[1], -P.blickRadS / 6, 0.02) && nah(o.blick[0] / o.blick[1], soll(0.6), 0.02) && nah(o.blick[2], -P.neigRadS / 6, 0.02);
+            stellen();
+            [o.lock, s.isPointerLocked] = [s.isPointerLocked, true];
+            document.dispatchEvent(new MouseEvent("mousemove", { movementX: 40 }));
+            s.isPointerLocked = o.lock;
+            o.maus = [T.blickGier, (takt(1), s.yaw), T.blickGier];
+            c.maus = o.maus[0] === -40 * s.mouseSensitivity && o.maus[1] === o.maus[0] && o.maus[2] === 0;
+            // (C) FAHREN: X steigt auf (der Portal-Griff zuerst), Lenkwinkel und Gas stetig, B bremst das Heck, Rumble aus der Fahrt
+            const KS = A.KIND_SUBSTANCE.fahrzeug_wagen;
+            s.blueprints._t_pad_wagen = JSON.parse(JSON.stringify({ name: "_t_pad_wagen", parts: KS.parts, connections: KS.connections || [] }));
+            stellen();
+            const wagen = r.spawnArchitecture("_t_pad_wagen", { x: ort.x + 2.5, y: ort.y, z: ort.z }, { silent: true });
+            r._tryEnterPortalAtPlayer = () => ((spione.tor = (spione.tor || 0) + 1), false);
+            druck(kn("einsteigen"));
+            c.einsteigen = spione.tor === 1 && !!wagen && s.player.mountedArch === wagen.id;
+            const lenk = (a) => ((pad.axes[0] = a), takt(30), (o.l = wagen._fahr ? wagen._fahr.steer : NaN), ruhe(), takt(30), o.l);
+            o.lenk = [0.35, 0.6, 1].map(lenk);
+            c.lenk = o.lenk[2] < 0 && [0.35, 0.6].every((a, i) => Math.abs(o.lenk[i] / o.lenk[2] - soll(a)) < 0.03);
+            const fahrt = (setze, n) => (s.playerVel.setValue(0, 0, 0), setze(), takt(n), (o.f = v()), ruhe(), o.f);
+            o.gas = [0.25, 0.5, 1].map((a) => fahrt(() => knopf(7, a), 20));
+            c.gas = o.gas[0] > 0 && o.gas[1] / o.gas[2] > 0.3 && o.gas[1] / o.gas[2] < 0.6;
+            const auslauf = (bremse) => ((o.v0 = fahrt(() => knopf(7, 1), 40)), bremse && knopf(kn("handbremse"), 1), takt(10), (o.hb = T.handbremse), (o.f = o.v0 - v()), ruhe(), o.f);
+            o.bremse = [auslauf(false), auslauf(true)];
+            c.handbremse = o.hb === true && o.bremse[1] > 1.3 * o.bremse[0];
+            fx.length = 0;
+            o.rumbleFahrt = (fahrt(() => ((pad.axes[0] = 1), knopf(7, 1)), 40), rumble());
+            druck(kn("einsteigen"));
+            c.absteigen = s.player.mountedArch == null && o.rumbleFahrt > 0;
+            r.removeArchitecture(wagen);
+            delete s.blueprints._t_pad_wagen;
+            // (D) SPRUNG, JEDER BELEGTE KNOPF über den EINEN Auslöser (die Tastatur ebenso), B verlässt das Portal
+            stellen();
+            knopf(kn("jump"), 1);
+            takt(1);
+            c.sprung = s.isJumping === true;
+            stellen();
+            for (const n of SPIONE) r[n] = () => ((spione[n] = (spione[n] || 0) + 1), n === "exitPortal" && (r._portalOverlay = null), false);
+            r._verbTaste = function (a, an) {
+                los.push(a + (an ? "+" : "-"));
+                return proto._verbTaste.call(this, a, an);
+            };
+            for (const a in B) druck(kn(a));
+            o.ohne = Object.keys(B).filter((a) => !(los.includes(a + "+") && los.includes(a + "-")));
+            o.spione = Object.assign({}, spione);
+            c.knoepfe = o.ohne.length === 0 && SPIONE.every((n) => n === "exitPortal" || spione[n] > 0) && spione.selectHotbarSlot === 2;
+            los.length = 0;
+            for (const art of ["keydown", "keyup"]) window.dispatchEvent(new KeyboardEvent(art, { code: s.keybindings.cameraToggle }));
+            const tastatur = los.join() === "cameraToggle+,cameraToggle-";
+            r._portalOverlay = {};
+            druck(kn("cancelBuild"));
+            c.tastaturPortal = tastatur && spione.exitPortal === 1 && r._portalOverlay === null;
+            // (E) BELEGUNG FREI: jede Aktion und jede Fähigkeit (rule), das Fangen nimmt den nächsten Knopf; RUMBLE aus dem Treffer
+            s.abilities.linse_pad = () => (spione.faehig = 1);
+            r.setKeybinding("linse_pad", "Pad16");
+            r.setKeybinding("jump", "Pad3");
+            r.beginKeybindRebind("place");
+            druck(11);
+            o.belegung = [s.padBelegung.jump, s.padBelegung.swapHands, s.padBelegung.place];
+            druck(16);
+            r.resetKeybindings();
+            c.belegung = o.belegung.join() === "Pad3,Pad0,Pad11" && spione.faehig === 1 && s.padBelegung.jump === B.jump && !s.padBelegung.linse_pad;
+            stellen();
+            fx.length = 0;
+            takt(10);
+            const [modus0, gnade0] = [r.getGameMode(), s.player.respawnGraceUntil];
+            r.setGameMode("pfad");
+            s.player.respawnGraceUntil = 0;
+            o.rumble = [rumble(), (r.damagePlayer(5, "jagd"), takt(2), rumble())];
+            r.setGameMode(modus0);
+            [s.player.hp, s.player.respawnGraceUntil] = [hp0, gnade0];
+            c.rumbleTreffer = o.rumble[0] === 0 && o.rumble[1] > 0;
+        } finally {
+            for (const n of [...SPIONE, "_verbTaste", "_tryEnterPortalAtPlayer"]) delete r[n];
+            delete s.abilities.linse_pad;
+            r._portalOverlay = null;
+            delete navigator.getGamepads;
+            ruhe();
+            pm.copy(heim);
+            r.setCameraMode(sicht0);
+            document.body.className = hud0;
+        }
+        return o;
+    });
+    if (!out || out.error) return check("Gamepad-Verben (leib.K5): die Bühne steht", false, out ? `${out.error} · rohe Tasten-Leser [${out.leser}]` : "keine Antwort");
+    const rot = (...k) => k.filter((x) => out.c[x] !== true).join(" · ");
+    const f = (x) => (Array.isArray(x) ? x.map(f).join("/") : typeof x === "number" ? x.toFixed(3) : String(x));
+    for (const [teil, text] of [
+        [["absenz", "selbsttest"], `jedes Verb liest NUR die Tafel — rohe Tasten-Leser [${out.leser}]; SELBSTTEST Zwilling-Leser ROT`],
+        [["gehen", "sprint", "blick", "maus"], `Gehen ∝ Auslenkung ${f(out.gehen)} m/s (W ${f(out.taste)}, Sprint ${f(out.sprint)}), Blick ∝ Stick ${f(out.blick)} rad, die Maus in derselben Tafel`],
+        [["einsteigen", "lenk", "gas", "handbremse", "absteigen"], `Fahren: Lenkwinkel ${f(out.lenk)}, Gas ${f(out.gas)} m/s, Auslauf ${f(out.bremse)} m/s ohne/mit Handbremse, Rumble ${f(out.rumbleFahrt)}`],
+        [["sprung", "knoepfe", "tastaturPortal", "belegung", "rumbleTreffer"], `jeder Knopf über _verbTaste (ohne [${out.ohne}], ${JSON.stringify(out.spione)}), Belegung ${f(out.belegung)} frei, Rumble ${f(out.rumble)} ruhig → Treffer`],
+    ]) {
+        const rest = rot(...teil);
+        check(`Gamepad-Verben (leib.K5): ${text}`, !rest, rest && "ROT: " + rest);
+    }
+}
+
 module.exports = {
     checkBandV1764ForgeAvatar, checkBandRing5Soul, checkBandM3RittVollendet, checkBandWFFluss,
     checkBandV18195AvatarSizeHp, checkBandV18196ManaSymmetry, checkBandV18201ManaKonsum, checkBandV18206SpeedTrade,
-    checkBandKonvergenzTierBaum, checkBandTierFern, checkBandKoerperBewegung,
+    checkBandKonvergenzTierBaum, checkBandTierFern, checkBandKoerperBewegung, checkBandGamepadVerben,
 };

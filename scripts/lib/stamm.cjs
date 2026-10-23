@@ -1,9 +1,9 @@
 "use strict";
 /* global process, console, __dirname, Buffer, TextEncoder, TextDecoder, URL */
-// scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung, plan 13.10. §3).
+// scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung).
 //
 // Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
-// Dateien unter stamm/ (ein Stand vor der Zerlegung 14.10.: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
+// Dateien unter stamm/ (ein Stand vor der Zerlegung: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
 // beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht
 // als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
 //
@@ -12,7 +12,7 @@
 //   stamm/<kern>.js     Kopf + `class AnazhRealm {` + die erste Zone (Konstruktor) + `}` + die Naht-Funktion `_stammZonen`
 //   stamm/<modul>.js    `class AnazhRealm_<modul> {` + die Zone `ATLAS · Modul[/teil]` + `}` + ihr Naht-Ruf, dahinter ihre
 //                       Außen-Anweisungen (`AnazhRealm.X = …`) ab ihrem Außen-Marker; Datei-Name = Modul[-teil]
-// Die LAGE (Zerlegung 13.10., ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
+// Die LAGE (ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
 // Die Leerzeile vor jedem Marker trägt die Umkehrung; S verlangt sie (sonst wirft S).
 //
 //   node scripts/lib/stamm.cjs --selftest     beweist Umkehrung, Ordnung, Layout-Weiche, 5-MB-Wand, Kanon, ort, liefere
@@ -97,7 +97,6 @@ function marker(t) {
     }
     return out;
 }
-const istMarker = (z) => MARKER_RX.test(z) || DOMAENE_RX.test(z);
 
 // S(text) → [{ pfad, text, klasse? }] in Lade-Ordnung. Wirft bei jedem Text, den die Umkehrung nicht trüge.
 function schneide(t) {
@@ -478,8 +477,7 @@ function kopf(t, methode, ab = 0) {
 // DER RUMPF AM KOPF (D2-N1) — der EINE Rumpf-Schneider jeder Linse: `rumpf(t, kopf)` gibt den Block `{…}`, der DIREKT an
 // einem Kopf hängt (ein Name sucht das Klassen-Glied wie `kopf`, ein Regex jeden Kopf): nach dem Treffer höchstens die
 // Parameter-Liste, ein `=>` und Leerraum, dann `{`. Ein Aufruf (`this._x(a);`, `if (this._x(a)) {`) trägt keinen eigenen
-// Block und zählt nie — der erste TEXT-Treffer hing an der Datei-Reihenfolge: gate:vehicle-drive A5 schnitt nach dem Umzug
-// am Aufruf in siedlung-ort.js statt an der Definition in koerper-fahrt.js (Zweig-CI 38894453753, voll 11/18). null ohne
+// Block und zählt nie (der erste TEXT-Treffer hängt an der Datei-Reihenfolge). null ohne
 // Definition; der Zähler liest Klammern blind wie jeder Schneider vor ihm (Linsen lesen kommentar-gestrippten Text), mit
 // `{ zitate: true }` überspringt er "…" und '…' (die Zeilen eines Daten-Literals tragen Klammern in Zeichenketten).
 function blockAm(t, a, e) {
@@ -532,7 +530,7 @@ let astMerk = { t: null };
 function ast(t) {
     if (astMerk.t !== t) {
         const acorn = require("acorn");
-        const baum = acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true });
+        const baum = acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true });
         const zeilenAb = [0];
         for (let i = t.indexOf("\n"); i !== -1; i = t.indexOf("\n", i + 1)) zeilenAb.push(i + 1);
         astMerk = { t, baum, zeilenAb, glieder: null, rufe: null };
@@ -552,15 +550,19 @@ function zeileVon(t, i) {
     }
     return lo + 1;
 }
-function wandere(n, f, ahnen = []) {
-    if (f(n, ahnen) === false) return;
-    ahnen.push(n);
+// DER EINE Kinder-Gang eines AST-Knotens (jedes Kind, das ein Knoten ist, ohne `loc`) — wandere und jede Linse lesen ihn
+function kinder(n, f) {
     for (const k in n) {
         const v = n[k];
         if (Array.isArray(v)) {
-            for (const c of v) if (c && typeof c.type === "string") wandere(c, f, ahnen);
-        } else if (v && typeof v.type === "string" && k !== "loc") wandere(v, f, ahnen);
+            for (const c of v) if (c && typeof c.type === "string") f(c);
+        } else if (v && typeof v.type === "string" && k !== "loc") f(v);
     }
+}
+function wandere(n, f, ahnen = []) {
+    if (f(n, ahnen) === false) return;
+    ahnen.push(n);
+    kinder(n, (c) => wandere(c, f, ahnen));
     ahnen.pop();
 }
 const schluesselVon = (t, n) =>
@@ -636,9 +638,7 @@ function rufe(t) {
 // DIE STELLE IM STAMM (D2-N2) — die EINE Engstelle jeder Probe und jeder Mutation am Stamm-Text: `x` (Text oder Regex)
 // steht höchstens EINMAL im benannten Glied (`glied` = Name einer Methode, eines Getters oder Felds, am AST) oder — `null`
 // — im ganzen Stamm; mehrere wirft, keiner gibt der Probe null und wirft der Mutation (sie wäre vakuös). Der erste TEXT-
-// Treffer im ganzen Stamm hing an der Datei-Reihenfolge: gate:werkstatt-weg mutierte nach dem Umzug `this._bauSame("insel")`
-// in spawnIslandAt statt in chatDslPatterns, der Selbsttest wurde vakuös (Zweig-CI 38908372005, voll 14/18); gate:apparat
-// Klinge 6 nennt jeden rohen ersten Treffer.
+// Treffer im ganzen Stamm hängt an der Datei-Reihenfolge; gate:apparat Klinge 6 nennt jeden rohen ersten Treffer.
 // `treffer` gibt den Treffer wie `exec` (Index im ganzen Text), `ersetze` den ganzen Text mit der EINEN Stelle ersetzt
 // (`neu` wie bei `replace`); die Glieder-Tafel des Ergebnisses wandert verschoben mit (eine Kette parst den Stamm einmal).
 const tafeln = new Map();
@@ -1022,6 +1022,7 @@ function fehlt(glied, re, quelle) {
 }
 
 module.exports = {
+    kinder,
     ohneKommentare,
     fehlt,
     stripperTafel,
@@ -1031,7 +1032,6 @@ module.exports = {
     KARTE,
     sha,
     marker,
-    istMarker,
     pfadVon,
     klasseVon,
     karteVon,

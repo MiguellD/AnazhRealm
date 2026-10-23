@@ -226,9 +226,11 @@ class AnazhRealm_kreatur_verhalten {
         // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
         // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
         const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-        const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
+        if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
+        // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
+        const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
         const jaeger = this._kreaturJaeger;
-        if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
+        if (!jaeger || !jaeger.length) return wSpieler;
         // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
         // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
         const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
@@ -260,27 +262,79 @@ class AnazhRealm_kreatur_verhalten {
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        // DAS WESEN ERINNERT (Ökologie K3, tetrapoda furchtErinnert): wer es schlug, den fürchtet es — die erinnerte Furcht hebt
+        // die Wariness und weitet Witterung und Flucht-Distanz; wer es fütterte, dem nähert es sich (die Furcht sinkt unter 0).
+        // Vorher las kein Verhalten das Gedächtnis (nur Spezialisierung, Prompt und Hof).
+        const FG = AnazhRealm._furchtGesetz();
+        const erinnert = this._kreaturFurchtErinnert(creature);
+        const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
+        const witterung = NAT.noticeRadius * weit;
         von.x = pm.x;
         von.z = pm.z;
-        von.r = NAT.fleeRadius;
+        von.r = NAT.fleeRadius * weit;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
+        if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
-        const menace =
-            (e.chaos || 0) * NAT.menaceFromChaos +
-            (e.sorrow || 0) * NAT.menaceFromSorrow -
-            (e.peace || 0) * NAT.calmFromPeace -
-            (e.joy || 0) * NAT.calmFromJoy;
+        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt)
+        const menace = FG.bedrohung(e, NAT);
         // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
         // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
         // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
         const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-        const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
-        let wariness = (menace * modeMul - boldness) * (fearActive ? 1 : proximity);
+        const proximity = Math.max(0, 1 - dist / witterung);
+        let wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
         if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
         return wariness;
+    }
+
+    // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·
+    // gefüttert; die Einträge schreiben `damageCreature` und `activateCreatureConsumable`, sie reisen im Speicherstand).
+    _kreaturFurchtErinnert(creature) {
+        const FG = AnazhRealm._furchtGesetz();
+        return FG.furchtErinnert(creature.userData && creature.userData.memory, FG.F);
+    }
+
+    // DIE FURCHT DES ORTS (Ökologie K3, tetrapoda furchtOrt): die Beute (ein Pflanzenfresser, diet bis
+    // temperament.gattung.pflanzDiet — der Jäger und der Aasfresser gehen an den Riss) liest den Abdruck der Zellen um sich
+    // (das Emotions-Feld `_emotionOverlayAt`, 3 × 3 Zellen der Kante LIFE_FIELD.cell); die Furcht einer Zelle wiegt bis
+    // ortRadiusZellen Zellen um ihre Mitte, linear zum Rand. Ist sie größer als die Wariness w, ist der Ort die Bedrohung: `von`
+    // ist die Mitte der Zelle, ihr Flucht-Radius der Umkreis. Liefert die Wariness. Ein Riss prägt den Ort
+    // (`_creatureCombatDeath`); vorher trug der Ort Gefühle, die kein Tier las.
+    _kreaturFurchtOrt(creature, NAT, von, w) {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return w;
+        const VG = AnazhRealm._verhaltenGesetz();
+        if (this._kreaturDiet(creature) > VG.temperament.gattung.pflanzDiet) return w;
+        const FG = AnazhRealm._furchtGesetz();
+        const zelle = AnazhRealm.LIFE_FIELD.cell;
+        const R = FG.F.ortRadiusZellen * zelle;
+        const x = creature.position.x,
+            z = creature.position.z;
+        const cx = Math.floor(x / zelle),
+            cz = Math.floor(z / zelle);
+        let best = w,
+            bx = 0,
+            bz = 0;
+        for (let i = -1; i <= 1; i++)
+            for (let j = -1; j <= 1; j++) {
+                const mx = (cx + i + 0.5) * zelle,
+                    mz = (cz + j + 0.5) * zelle;
+                const m = FG.furchtOrt(this._emotionOverlayAt(mx, mz), NAT, FG.F);
+                if (!(m > 0)) continue;
+                const wo = m * Math.max(0, 1 - Math.hypot(x - mx, z - mz) / R);
+                if (wo > best) {
+                    best = wo;
+                    bx = mx;
+                    bz = mz;
+                }
+            }
+        if (best === w) return w;
+        von.x = bx;
+        von.z = bz;
+        von.r = R;
+        return best;
     }
 
     // Jagt dieses Wesen den Spieler? NUR wildes Temperament, NUR im pfad, NUR unverängstigt (Furcht
@@ -288,6 +342,7 @@ class AnazhRealm_kreatur_verhalten {
     // task-losen Bewegungs-Zweig).
     _creatureHuntDrive(creature, wariness) {
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (this._kreaturErschoepft(creature)) return false; // die Jagd endete, der Jäger ruht (Tiere K2)
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return false;
         if (this._creatureTemperament(creature) !== "wild") return false;
@@ -313,6 +368,7 @@ class AnazhRealm_kreatur_verhalten {
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
         if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
+        if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -511,13 +567,20 @@ class AnazhRealm_kreatur_verhalten {
         const umstellt = R.umstellt;
         const hetzt = ud._motionZustand === "hetzen";
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
-        if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
+        const hetze =
+            ((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt);
+        if (this._kreaturJagdEndet(creature, zielKey, hetze)) {
+            this._kreaturZustandStempel(creature, null);
+            direction.set(0, 0, 0);
+            return;
+        }
+        if (hetze) {
             this._kreaturZustandStempel(creature, "hetzen");
             // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
             // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
             const K = AnazhRealm._steuerGesetz();
             const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
-            const sprint = K.sprintTempo(hueftL);
+            const sprint = this._kreaturSprint(creature, hueftL);
             // DIE HETZE HÄLT IN DER WEITE DES ANSPRUNGS (Welle LF kampf, Posten 5): der Rest ist der Spalt vor dem Maul
             // (_kreaturBissRadial, waagrecht, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
             // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn;
@@ -553,6 +616,53 @@ class AnazhRealm_kreatur_verhalten {
         const qx = tx + Math.sin(platz) * J.hetzM - p.x,
             qz = tz + Math.cos(platz) * J.hetzM - p.z;
         this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (ruhte die Hetze
+    // länger als ruheS, beginnt die nächste eine neue); dauert die Jagd dauerS — in der Hetze oder in der Pirsch danach —, bricht der
+    // Jäger ab und ist ruheS erschöpft: er jagt nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
+    // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
+    _kreaturJagdEndet(creature, zielKey, hetze) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const J = AnazhRealm._jagdGesetz().J;
+        // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei; erst die Hetze beginnt eine neue
+        if (ud._jagd && (ud._jagd.ziel !== zielKey || now - ud._jagd.zuletzt > J.ruheS)) ud._jagd = null;
+        if (!ud._jagd) {
+            if (!hetze) return false;
+            ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
+        }
+        if (hetze) ud._jagd.zuletzt = now;
+        if (now - ud._jagd.beginn < J.dauerS) return false;
+        ud._jagd = null;
+        ud._erschoepftBis = now + J.ruheS;
+        return true;
+    }
+    // DER DURST (Tiere K4, tetrapoda durst): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr (ab der Geburt); nach einer
+    // Suche ohne Wasser ruht er suchPauseS.
+    _kreaturDurstig(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
+        if (now < ud._durstSucheBis) return false;
+        const LG = AnazhRealm._lebensraumGesetz();
+        if (LG.durst(now - ud._getrunken, LG.D) < 1) return false;
+        // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
+        const h = this._hydroDistAt(creature.position.x, creature.position.z);
+        if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
+        ud._durstSucheBis = now + LG.D.suchPauseS;
+        return false;
+    }
+    _kreaturErschoepft(creature) {
+        const b = creature.userData && creature.userData._erschoepftBis;
+        return Number.isFinite(b) && this.state.creatureAnimationTime < b;
+    }
+    // DER SPRINT DES LEIBS (STEUER sprintTempo × tetrapoda wundTempo): die Wunde bremst Flucht, Hetze und Ansprung
+    _kreaturSprint(creature, hueftL) {
+        const ud = creature.userData;
+        const JG = AnazhRealm._jagdGesetz();
+        const anteil = ud && ud.hpMax > 0 && Number.isFinite(ud.hp) ? ud.hp / ud.hpMax : 1;
+        return AnazhRealm._steuerGesetz().sprintTempo(hueftL) * JG.wundTempo(anteil, JG.J);
     }
 
     // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint: updateCreatures ruft sie JEDEN Frame auf die
@@ -964,24 +1074,22 @@ class AnazhRealm_kreatur_verhalten {
         for (let i = 0; i < cr.length; i++) {
             const c = cr[i];
             if (!c || !c.position || !c.userData) continue;
-            const t = teil(n++);
-            const lb = this._kreaturLeib(c, 0, t.leib);
-            t.q = c;
-            t.x = c.position.x;
-            t.z = c.position.z;
-            t.hx = lb.fx * lb.halb;
-            t.hz = lb.fz * lb.halb;
-            t.r = lb.radius;
-            t.y0 = c.position.y;
-            t.y1 = c.position.y + lb.hoehe;
-            t.reich = lb.halb + lb.radius;
+            this._leibTeil(c, teil(n++));
         }
         const pm = st.playerMesh;
-        const zuFuss = pm && pm.position && !(st.player && st.player.mountedArch != null);
-        if (zuFuss) {
-            const t = teil(n++);
+        if (pm && pm.position && !(st.player && st.player.mountedArch != null)) this._leibTeil(pm, teil(n++));
+        if (n < 2) return;
+        const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
+        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
+            if (!this._leibKontaktGang(T, n, nah)) break;
+        }
+    }
+    // DER TEIL EINES LEIBS im Kontakt Leib an Leib: das Tier seine Strecke −halb … +halb längs der Gier mit seinem Radius
+    // (`_kreaturLeib`), der Spieler zu Fuß seine Kapsel (`_spielerKapsel`). `t` wird überschrieben.
+    _leibTeil(q, t) {
+        t.q = q;
+        if (q === this.state.playerMesh) {
             const K = this._spielerKapsel(this._leibKapsel || (this._leibKapsel = {}));
-            t.q = pm;
             t.x = K.x;
             t.z = K.z;
             t.hx = 0;
@@ -990,76 +1098,106 @@ class AnazhRealm_kreatur_verhalten {
             t.y0 = K.y0;
             t.y1 = K.y1;
             t.reich = t.r;
+            return t;
         }
-        if (n < 2) return;
-        const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
-        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
-            if (!this._leibKontaktGang(T, n, nah)) break;
-        }
+        const lb = this._kreaturLeib(q, 0, t.leib || (t.leib = {}));
+        t.x = q.position.x;
+        t.z = q.position.z;
+        t.hx = lb.fx * lb.halb;
+        t.hz = lb.fz * lb.halb;
+        t.r = lb.radius;
+        t.y0 = q.position.y;
+        t.y1 = q.position.y + lb.hoehe;
+        t.reich = lb.halb + lb.radius;
+        return t;
     }
     // EIN GANG über alle Paare (`_leibKontakte`): true, wenn ein Leib wich.
     _leibKontaktGang(T, n, nah) {
         let wich = false;
-        for (let i = 0; i < n; i++) {
-            const a = T[i];
-            for (let j = i + 1; j < n; j++) {
-                const b = T[j];
-                const grob = a.reich + b.reich;
-                if (Math.abs(a.x - b.x) > grob || Math.abs(a.z - b.z) > grob) continue;
-                if (a.y1 <= b.y0 || b.y1 <= a.y0) continue;
-                AnazhRealm._streckenNah2D(
-                    a.x - a.hx,
-                    a.z - a.hz,
-                    a.x + a.hx,
-                    a.z + a.hz,
-                    b.x - b.hx,
-                    b.z - b.hz,
-                    b.x + b.hx,
-                    b.z + b.hz,
-                    nah
-                );
-                const tief = a.r + b.r - nah.d;
-                if (!(tief > 0)) continue;
-                if (tief > 1e-4) wich = true; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
-                let nx;
-                let nz;
-                if (nah.d > 1e-6) {
-                    nx = (nah.qx - nah.px) / nah.d;
-                    nz = (nah.qz - nah.pz) / nah.d;
-                } else {
-                    // genaue Deckung: der Goldwinkel des Paares (deterministisch)
-                    nx = Math.cos((i + j) * 2.39996);
-                    nz = Math.sin((i + j) * 2.39996);
-                }
-                // die Lage: der leichte weicht nach dem Verhältnis der Massen (der Spieler weicht nie — sein Sim-Schritt)
-                const KA = this._stossKoerper(a.q, this._leibKontaktKA || (this._leibKontaktKA = {}));
-                const KB = this._stossKoerper(b.q, this._leibKontaktKB || (this._leibKontaktKB = {}));
-                if (!KA || !KB) continue;
-                const fest = (K) => K.art === "spieler";
-                const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
-                const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
-                if (wa > 0) {
-                    const x0 = a.q.position.x;
-                    const z0 = a.q.position.z;
-                    a.q.position.x -= nx * tief * wa;
-                    a.q.position.z -= nz * tief * wa;
-                    this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
-                    a.x = a.q.position.x;
-                    a.z = a.q.position.z;
-                }
-                if (wb > 0) {
-                    const x0 = b.q.position.x;
-                    const z0 = b.q.position.z;
-                    b.q.position.x += nx * tief * wb;
-                    b.q.position.z += nz * tief * wb;
-                    this._kreaturHuellenKontakt(b.q, 0, x0, z0);
-                    b.x = b.q.position.x;
-                    b.z = b.q.position.z;
-                }
-                this._stossPaar(a.q, b.q, nx, nz);
-            }
-        }
+        for (let i = 0; i < n; i++)
+            for (let j = i + 1; j < n; j++) if (this._leibPaar(T[i], T[j], i + j, nah)) wich = true;
         return wich;
+    }
+    // DAS PAAR Leib an Leib — gelesen vom Gang (`_leibKontaktGang`) und vom Weg des Leibs (`_leibGegenLeiber`): durchdringen
+    // sich a und b (Teile aus `_leibTeil`), weicht der leichte nach dem Verhältnis der Massen, und sie tauschen Impuls; `saat`
+    // dreht die Normale bei genauer Deckung (deterministisch). true, wenn ein Leib wich.
+    _leibPaar(a, b, saat, nah) {
+        const grob = a.reich + b.reich;
+        if (Math.abs(a.x - b.x) > grob || Math.abs(a.z - b.z) > grob) return false;
+        if (a.y1 <= b.y0 || b.y1 <= a.y0) return false;
+        AnazhRealm._streckenNah2D(
+            a.x - a.hx,
+            a.z - a.hz,
+            a.x + a.hx,
+            a.z + a.hz,
+            b.x - b.hx,
+            b.z - b.hz,
+            b.x + b.hx,
+            b.z + b.hz,
+            nah
+        );
+        const tief = a.r + b.r - nah.d;
+        if (!(tief > 0)) return false;
+        const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
+        let nx;
+        let nz;
+        if (nah.d > 1e-6) {
+            nx = (nah.qx - nah.px) / nah.d;
+            nz = (nah.qz - nah.pz) / nah.d;
+        } else {
+            // genaue Deckung: der Goldwinkel des Paares (deterministisch)
+            nx = Math.cos(saat * 2.39996);
+            nz = Math.sin(saat * 2.39996);
+        }
+        // die Lage: der leichte weicht nach dem Verhältnis der Massen (der Spieler weicht nie — sein Sim-Schritt)
+        const KA = this._stossKoerper(a.q, this._leibKontaktKA || (this._leibKontaktKA = {}));
+        const KB = this._stossKoerper(b.q, this._leibKontaktKB || (this._leibKontaktKB = {}));
+        if (!KA || !KB) return wich;
+        const fest = (K) => K.art === "spieler";
+        const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
+        const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
+        if (wa > 0) {
+            const x0 = a.q.position.x;
+            const z0 = a.q.position.z;
+            a.q.position.x -= nx * tief * wa;
+            a.q.position.z -= nz * tief * wa;
+            this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
+            a.x = a.q.position.x;
+            a.z = a.q.position.z;
+        }
+        if (wb > 0) {
+            const x0 = b.q.position.x;
+            const z0 = b.q.position.z;
+            b.q.position.x += nx * tief * wb;
+            b.q.position.z += nz * tief * wb;
+            this._kreaturHuellenKontakt(b.q, 0, x0, z0);
+            b.x = b.q.position.x;
+            b.z = b.q.position.z;
+        }
+        this._stossPaar(a.q, b.q, nx, nz);
+        return wich;
+    }
+    // DER WEG GEGEN DIE LEIBER (je Teil-Schritt des Wegs, `_kreaturWeg`): der gehende Leib c (Index i) gegen jeden anderen in
+    // seiner Reichweite — das Paar des Kontakts Leib an Leib (`_leibPaar`). Der grobe Filter liest den weitesten Raum des
+    // Takts (`_raumMaxTakt` ≥ die Reichweite jedes Leibs).
+    _leibGegenLeiber(c, i) {
+        const st = this.state;
+        const cr = st.creatures || [];
+        const a = this._leibTeil(c, this._leibWegA || (this._leibWegA = { leib: {} }));
+        const b = this._leibWegB || (this._leibWegB = { leib: {} });
+        const nah = this._leibWegNah || (this._leibWegNah = {});
+        const rm = this._raumMaxTakt;
+        const grob = a.reich + (Number.isFinite(rm) ? Math.max(rm, AnazhRealm.PLAYER_WALL_RADIUS) : Infinity);
+        for (let j = 0; j < cr.length; j++) {
+            const o = cr[j];
+            if (o === c || !o || !o.position || !o.userData) continue;
+            if (Math.abs(o.position.x - a.x) > grob || Math.abs(o.position.z - a.z) > grob) continue;
+            this._leibPaar(a, this._leibTeil(o, b), i + j, nah);
+        }
+        const pm = st.playerMesh;
+        if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
+        if (Math.abs(pm.position.x - a.x) > grob || Math.abs(pm.position.z - a.z) > grob) return;
+        this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
     }
 
     // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
@@ -1071,10 +1209,46 @@ class AnazhRealm_kreatur_verhalten {
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
     }
 
+    // DER WEG DES LEIBS (kontakt-tempo, Lehre 13): EIN Weg für jeden Schritt, der ein Tier trägt — den Gang im Frame-Takt
+    // (updateCreatures: Gier × Tempo + Strömung) und den Stoß im Sim-Schritt (`_kreaturStossSchritt`). v·dt geht in
+    // Teil-Schritten von höchstens LEIB_TEIL.radius Leib-Radien (mindestens LEIB_TEIL.minM), je Teil-Schritt die EINE Hülle
+    // (`_kreaturHuellenKontakt`) und im Gang (`leiber`: der Frame-Takt, dem bis zum nächsten Sim-Schritt kein Löser folgt) das
+    // EINE Paar Leib an Leib (`_leibGegenLeiber`; den Stoß trennt `_leibKontakte` im selben Sim-Schritt): die Achse erreicht in
+    // einem Teil-Schritt nie die Mitte einer Wand oder eines Leibs, gleich wie dünn, gleich bei welcher Bildrate. Was die
+    // Berührung schiebt, nimmt v die Komponente in sie (v wird fortgeschrieben). Vorher ging der Gang EINEN Schritt je Frame
+    // mit EINER Hülle: bei 10 fps (der Takt-Deckel 100 ms) liefen Fuchs, Wolf und Bär im Galopp 6 von 6 Mal durch eine
+    // 0,35-m-Mauer, 4 von 4 durch die 0,3-m-Wand des Hauses, der Wolf 2 von 4 durch einen stehenden Bären. Die Kosten folgen
+    // dem Weg (Gebot 7): ein stehender Leib geht einen Teil-Schritt, ohne Leib-Paar.
+    _kreaturWeg(c, L, v, dt, i, leiber) {
+        const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
+        const T = AnazhRealm.LEIB_TEIL;
+        const weg = Math.hypot(v.x, v.z) * dt;
+        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
+        const h = dt / teile;
+        for (let k = 0; k < teile; k++) {
+            const x0 = c.position.x;
+            const z0 = c.position.z;
+            c.position.x += v.x * h;
+            c.position.z += v.z * h;
+            const kx = c.position.x;
+            const kz = c.position.z;
+            this._kreaturHuellenKontakt(c, L, x0, z0);
+            if (leiber && weg > 0) this._leibGegenLeiber(c, i);
+            const hx = c.position.x - kx;
+            const hz = c.position.z - kz;
+            const hd = Math.hypot(hx, hz);
+            const vn = hd > 1e-6 ? (v.x * hx + v.z * hz) / hd : 0;
+            if (vn < 0) {
+                v.x -= (vn * hx) / hd;
+                v.z -= (vn * hz) / hd;
+            }
+        }
+        return v;
+    }
+
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
-    // getragenem Stoß der Weg dieses Schritts — in Teil-Schritten von höchstens dem halben Leib-Radius, je Teil-Schritt die
-    // EINE Hülle (`_kreaturHuellenKontakt`): die Achse erreicht in einem Teil-Schritt nie die Mitte einer Wand, gleich wie
-    // dünn sie ist (dieselbe Regel wie der Deckel des Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
+    // getragenem Stoß der Weg dieses Schritts (`_kreaturWeg`, Teil-Schritte gegen die Hülle; dieselbe Regel wie der Deckel des
+    // Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
     // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
     // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
     // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
@@ -1084,7 +1258,8 @@ class AnazhRealm_kreatur_verhalten {
         const ST = AnazhRealm.STOSS;
         const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
         const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
-        for (const c of wesen) {
+        for (let i = 0; i < wesen.length; i++) {
+            const c = wesen[i];
             const ud = c && c.userData;
             const sv = ud && ud._stossV;
             if (!sv) continue;
@@ -1095,8 +1270,6 @@ class AnazhRealm_kreatur_verhalten {
             }
             const L = this._kreaturHueftL(c);
             this._kreaturLeib(c, L, leib);
-            const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
-            const h = dt / teile;
             ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
             ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
             // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
@@ -1108,23 +1281,7 @@ class AnazhRealm_kreatur_verhalten {
             const amOrt = sg0 && sg0.x === sx && sg0.z === sz;
             const sg = amOrt ? sg0.g : this._koerperBodenUnter(sx, c.position.y, sz);
             const sgGenau = amOrt ? sg0.genau : this._feldKanteGenau(sx, sg, sz);
-            for (let k = 0; k < teile; k++) {
-                const x0 = c.position.x;
-                const z0 = c.position.z;
-                c.position.x += sv.x * h;
-                c.position.z += sv.z * h;
-                const kx = c.position.x;
-                const kz = c.position.z;
-                this._kreaturHuellenKontakt(c, L, x0, z0);
-                const hx = c.position.x - kx;
-                const hz = c.position.z - kz;
-                const hd = Math.hypot(hx, hz);
-                const vn = hd > 1e-6 ? (sv.x * hx + sv.z * hz) / hd : 0;
-                if (vn < 0) {
-                    sv.x -= (vn * hx) / hd;
-                    sv.z -= (vn * hz) / hd;
-                }
-            }
+            this._kreaturWeg(c, L, sv, dt, i, false);
             // die HÖHE des gleitenden Leibs gehört demselben Schritt (Q4: die Sim steht auf dem Gesetz, die Sicht liest es um
             // den Stand-Leser): erdete erst der Frame-Takt (Budget, 0,5-m-Cache), lag die Höhe je Bildrate verschieden, und
             // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
@@ -1765,8 +1922,21 @@ class AnazhRealm_kreatur_verhalten {
         const cx = creature.position.x;
         const cz = creature.position.z;
         // Phase 1: Wasser-Punkt suchen wenn keiner gesetzt.
+        const now = this.state.creatureAnimationTime; // das Trinken läuft auf der Kreatur-Uhr (Welle LF, Q1)
+        const ud = creature.userData;
+        // DER DURST TRINKT NUR IN RUHE (Tiere K4): wer aus Durst zum Wasser zieht, flieht vor der Bedrohung
+        const durst = task.args.durst === true;
+        if (durst && this._creatureWariness(creature) >= AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
         if (!task.args._target) {
             const water = this._findNearestWaterPoint(cx, cz, SEARCH_RADIUS);
+            if (!water && durst) {
+                ud._durstSucheBis = now + AnazhRealm._lebensraumGesetz().D.suchPauseS;
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
             if (!water) {
                 this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
                 if (typeof this.journalAppend === "function") {
@@ -1786,13 +1956,17 @@ class AnazhRealm_kreatur_verhalten {
         const dist = Math.hypot(dx, dz);
         // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
         if (dist <= HALT_DIST) {
-            const now = performance.now() / 1000;
             if (!task.args._drinkStart) {
                 task.args._drinkStart = now;
                 // Das Tier ruft zum Trink-Beginn (seine Stimme, multisensorisch — Vision §1.2).
                 this._tierRuf(creature);
             }
             if (now - task.args._drinkStart >= DURATION_S) {
+                ud._getrunken = now; // der Durst ist gestillt (Tiere K4)
+                if (durst) {
+                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                    return null;
+                }
                 // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:
                 // joy+hope, V18.100 G4-1 — dasselbe Substrat wie der Spieler;
                 // die "happy"-Projektion fällt aus der Valenz) + Erinnerung + wander.
@@ -2298,6 +2472,7 @@ class AnazhRealm_kreatur_verhalten {
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
         const soul = soulName || this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+        if (!soul) return 0; // der Lebensraum trägt hier keine Gattung (Tiere K4)
         return this._kreaturWurf(ort, soul, emotion, rng, platz).length;
     }
 
@@ -2613,8 +2788,9 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DER ZIEGEL EINES LEIBS: nah das Studio-Tier (mit Hysterese), fern seine Glieder ins Feld — je Takt aus dem Ziegel, und
-    // für einen Leib, den der Blick des Bilds weckt (`_ruheImBild`), direkt vor dem Zeichnen.
-    _kzLeib(cr, playerPos) {
+    // für einen Leib, den der Blick des Bilds weckt (`_ruheImBild`), direkt vor dem Zeichnen. `vorab`: die Glieder backen
+    // schon nah (im Takt des Bakes, ruhend) — ein Leib, der hinausgeht, trägt sein Feld ab dem ersten Schritt (mensch.K2).
+    _kzLeib(cr, playerPos, vorab = false) {
         const N = AnazhRealm.KREATUR_NAH_MESH;
         const dx = cr.position.x - playerPos.x;
         const dz = cr.position.z - playerPos.z;
@@ -2623,6 +2799,11 @@ class AnazhRealm_kreatur_verhalten {
         u._kzNah = u._kzNah === true ? d2 < N.aus * N.aus : d2 < N.ein * N.ein;
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
+            if (vorab && !u._kzGlieder && !u._kzVersuch && this._weltBakeErlaubt(d2)) {
+                u._kzVersuch = true;
+                this._leibMatrix(cr);
+                u._kzGlieder = this._kreaturGliederBacken(cr, false);
+            }
             // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
             if (u._kzGlieder)
                 for (const gl of u._kzGlieder) {
@@ -2658,10 +2839,11 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
-    // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass.
+    // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass. Ein Bewohner in seinem
+    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld.
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
-        return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
+        return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
     }
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
@@ -2764,8 +2946,9 @@ class AnazhRealm_kreatur_verhalten {
     // (Tod-Zensus: fern gefallen lag er auf 2 m als Fern-Guss ohne Schatten, nah gefallen trug er auf 40 m die volle Gestalt
     // — 2 400 von 5 460 Leichnam-Takten). Rückgabe: fern?
     _leibSicht(creature, distSq, inFrustum) {
-        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
         const ud = creature.userData;
+        // im Satz (`_tickTierSatz`) zeichnet der Leib nicht
+        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true && !ud._satz;
         const fern = this._gelenkStufe(creature, distSq);
         if (!inFrustum) return fern; // das Bild-Gesetz setzt DERSELBE Frame, in dem der Leib in den Blick kommt
         if (!fern && ud._tierBaum) this._fellBildschirmGesetz(creature, ud._tierBaum);
@@ -2851,6 +3034,16 @@ class AnazhRealm_kreatur_verhalten {
                     jz = j.position.z - p.z;
                 if (jx * jx + jz * jz < w2) return false;
             }
+        return this._kreaturAusserBlick(c, frustum, rand);
+    }
+
+    // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, das Auge des Satzes
+    // `_tierSatzImBild`): die Körper-Kugel samt Saum (`KREATUR_RUHE.saumM`) und Rand (`rand` je Meter Abstand zur Kamera: im
+    // Takt der Vor-Frame-Frustum und die Drehung bis zum Render, `_tickKreaturRuhe`; im Bild 0) gegen den Frustum
+    _kreaturAusserBlick(c, frustum, rand) {
+        const R = AnazhRealm.KREATUR_RUHE;
+        const u = c.userData;
+        const p = c.position;
         // die Körper-Kugel: Reichweite des Leibs waagrecht, die halbe Höhe senkrecht (je Leib und Größe einmal)
         if (!(u._ruheKugelR > 0) || u._ruheKugelS !== c.scale.x) {
             const leib = this._kreaturLeib(c, 0, this._ruheLeib || (this._ruheLeib = {}));
@@ -2862,6 +3055,30 @@ class AnazhRealm_kreatur_verhalten {
         s.center.set(p.x, p.y + u._ruheKugelH, p.z);
         const cp = this.state.camera.position;
         s.radius = u._ruheKugelR + R.saumM + s.center.distanceTo(cp) * rand;
+        return !frustum.intersectsSphere(s);
+    }
+
+    // DIE RICHTUNG DES SCHATTENS (die EINE Licht-Quelle der Kaskaden, `directionalLight`): waagrecht weg vom Licht (`x`, `z`)
+    // und die Länge je Meter Höhe des Werfers (`cot`, der Kotangens der Licht-Höhe); null ohne Licht
+    _kreaturLicht() {
+        const dl = this.state.directionalLight;
+        if (!dl) return null;
+        const v = (this._kreaturLichtV || (this._kreaturLichtV = new THREE.Vector3()))
+            .subVectors(dl.position, dl.target.position)
+            .normalize();
+        const h = Math.hypot(v.x, v.z) || 1;
+        return { x: -v.x / h, z: -v.z / h, cot: h / Math.max(v.y, 1e-3) };
+    }
+    // DER WURF AUSSER BLICK: der Leib ist außer Blick, und sein Schatten auch — die Körper-Kugel längs des Schattens (Länge
+    // Höhe × `licht.cot`, gekappt bei `KREATUR_RUHE.wurfM`), um die halbe Länge gewachsen, gegen den Frustum
+    _kreaturWurfAusserBlick(c, frustum, licht) {
+        if (!this._kreaturAusserBlick(c, frustum, 0)) return false;
+        if (!licht) return true;
+        const u = c.userData;
+        const L = Math.min(AnazhRealm.KREATUR_RUHE.wurfM, 2 * u._ruheKugelH * licht.cot);
+        const s = this._ruheKugel;
+        s.center.set(c.position.x + 0.5 * L * licht.x, c.position.y + u._ruheKugelH, c.position.z + 0.5 * L * licht.z);
+        s.radius = u._ruheKugelR + AnazhRealm.KREATUR_RUHE.saumM + 0.5 * L;
         return !frustum.intersectsSphere(s);
     }
 
@@ -2908,9 +3125,7 @@ class AnazhRealm_kreatur_verhalten {
         const pm = st.playerMesh && st.playerMesh.position;
         if (!cam || !pm) return 0;
         let fr = null;
-        let n = 0;
-        for (const c of st.creatures) {
-            if (!c || !c.userData || c.userData._ruht !== true) continue;
+        const blick = () => {
             if (!fr) {
                 cam.updateWorldMatrix(true, false);
                 const m = (this._ruheBildM || (this._ruheBildM = new THREE.Matrix4())).multiplyMatrices(
@@ -2919,7 +3134,14 @@ class AnazhRealm_kreatur_verhalten {
                 );
                 fr = (this._ruheBildF || (this._ruheBildF = new THREE.Frustum())).setFromProjectionMatrix(m);
             }
-            if (this._kreaturRuht(c, pm, fr, 0, 0)) continue;
+            return fr;
+        };
+        // das Auge des Tier-Satzes sieht mit demselben Blick (`_tierSatzImBild`)
+        if (this._tierSaetze && this._tierSaetze.size) this._tierSatzImBild(blick());
+        let n = 0;
+        for (const c of st.creatures) {
+            if (!c || !c.userData || c.userData._ruht !== true) continue;
+            if (this._kreaturRuht(c, pm, blick(), 0, 0)) continue;
             this._kreaturErwacht(c);
             n++;
             if (st.renderer && st.renderer._isHeadlessNull) continue;
@@ -3012,7 +3234,7 @@ class AnazhRealm_kreatur_verhalten {
             const emotion = this.state.creatureEmotions[i];
             // DER GROBE TAKT (K59): ein ruhender Leib geht nur in seinem Fenster (jeder `takt`-te Frame, gestaffelt am Index)
             // mit der aufgelaufenen Zeit; ein erwachter trägt die Rest-Zeit in seinen ersten Schritt. Der Takt ändert die
-            // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über `wegMax`.
+            // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über den Teil-Schritt (`_kreaturWeg`).
             const dt = this._kreaturTaktDt(creature, aiFrame + i, delta);
             if (dt === null) continue;
             // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
@@ -3051,6 +3273,15 @@ class AnazhRealm_kreatur_verhalten {
             let direction;
             if (recomputeAI) {
                 task = this._getCreatureTask(creature);
+                // DER DURST ZIEHT ZUM WASSER (Tiere K4): ein Tier in Ruhe, ohne Auftrag des Spielers, trinkt, wenn es durstig ist
+                if (
+                    (!task || task.name === "wander") &&
+                    !creature.userData._motionZustand &&
+                    this._kreaturDurstig(creature)
+                ) {
+                    this.assignCreatureTask(creature, "drink", { durst: true }, { silent: true });
+                    task = this._getCreatureTask(creature);
+                }
                 direction = this._tickCreatureTaskDirection(creature, task, emotion);
                 if (direction === null) {
                     direction = scratchDir.set(0, 0, 0);
@@ -3095,7 +3326,7 @@ class AnazhRealm_kreatur_verhalten {
                             this._kreaturZustandStempel(creature, "flucht");
                             // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
                             // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
-                            const fv = fd > 1e-6 ? AnazhRealm._steuerGesetz().sprintTempo(hueftL) / fd : 0;
+                            const fv = fd > 1e-6 ? this._kreaturSprint(creature, hueftL) / fd : 0;
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -3231,7 +3462,7 @@ class AnazhRealm_kreatur_verhalten {
                     }
                     const fort = bd > 1e-6 ? Math.max(0, (zvx * bx + zvz * bz) / bd) : 0;
                     const SG = AnazhRealm._steuerGesetz();
-                    const sprint = SG.sprintTempo(hueftL);
+                    const sprint = this._kreaturSprint(creature, hueftL);
                     // (ein Hauch von Wunsch bleibt: er trägt die Wendung zum Ziel, auch wenn der Kopf es schon erreicht)
                     const bv = Math.max(1e-3, weg > 0 ? Math.min(sprint, SG.ankunftTempo(weg, sprint) + fort) : fort);
                     if (bd > 1e-6) direction.set((bx / bd) * bv, 0, (bz / bd) * bv);
@@ -3250,28 +3481,28 @@ class AnazhRealm_kreatur_verhalten {
             const steuer = udS._steuer || (udS._steuer = { gier: creature.rotation.y || 0, v: 0 });
             AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, dt, hueftL);
             creature.rotation.y = steuer.gier;
-            const px0 = creature.position.x;
-            const pz0 = creature.position.z;
-            creature.position.x += Math.sin(steuer.gier) * steuer.v * dt;
-            creature.position.z += Math.cos(steuer.gier) * steuer.v * dt;
-            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
-            // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
-            // Spieler).
+            // DER GANG geht den EINEN Weg des Leibs (`_kreaturWeg`): Gier × Tempo und die STRÖMUNG, die SCHWIMMENDE Kreaturen
+            // trägt (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie — Land-Läufer nie: eine Drift des
+            // Wassers, kein Wunsch des Tiers; Quelle = DIESELBE `_waterFlowAt` wie beim Spieler), in Teil-Schritten gegen Hülle
+            // und Leiber.
+            const gang = this._kreaturGangV || (this._kreaturGangV = { x: 0, z: 0 });
+            gang.x = Math.sin(steuer.gier) * steuer.v;
+            gang.z = Math.cos(steuer.gier) * steuer.v;
             if (waterSurface !== null) {
                 const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
                 if (_fl) {
-                    creature.position.x += _fl.x * dt;
-                    creature.position.z += _fl.z * dt;
+                    gang.x += _fl.x;
+                    gang.z += _fl.z;
                 }
             }
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
             // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
             // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
             // DER RUHENDE LEIB GEHÖRT DEM SCHRITT: steht ein Leib, wo ihn sein letzter Stoß-Schritt ließ (`_kreaturRuhtImSchritt`),
-            // löst der Frame-Takt ihn weder gegen die Hüllen noch setzt er seine Höhe — beides tat der Stoß-Schritt mit derselben
-            // Regel; erst wenn er selbst geht, trägt ihn der Frame-Takt.
-            const ruhtImSchritt = this._kreaturRuhtImSchritt(creature);
-            if (!ruhtImSchritt) this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
+            // und geht er nicht, löst der Frame-Takt ihn weder gegen die Hüllen noch setzt er seine Höhe — beides tat der
+            // Stoß-Schritt mit derselben Regel; erst wenn er selbst geht, trägt ihn der Frame-Takt.
+            const ruhtImSchritt = gang.x === 0 && gang.z === 0 && this._kreaturRuhtImSchritt(creature);
+            if (!ruhtImSchritt) this._kreaturWeg(creature, hueftL, gang, dt, i, true);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -3384,7 +3615,9 @@ class AnazhRealm_kreatur_verhalten {
             // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
             {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
-                if (mroles) {
+                // im Satz geht der Satz (`_tickTierSatz`): der Leib zeichnet nicht, sein Weg rückt die Phase
+                if (creature.userData._satz) this._tierSatzGang(creature, dt);
+                else if (mroles) {
                     const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? dt * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
@@ -3461,6 +3694,8 @@ class AnazhRealm_kreatur_verhalten {
             // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
         this._kreaturTaktI = null;
+        // DIE MENGE (profiband.K1): wer nicht als Leib lebt, steht und geht im Satz seiner Gestalt
+        this._tickTierSatz(playerPos);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_verhalten]);
@@ -3559,8 +3794,82 @@ AnazhRealm._steuerGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
 };
+// DAS FURCHT-GESETZ (tetrapoda FURCHT_GESETZ + bedrohung · furchtErinnert · furchtOrt, Ökologie K3): die EINE Bedrohung eines
+// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts. Fail-closed.
+AnazhRealm._furchtGesetz = function () {
+    if (AnazhRealm._furchtGesetzMemo) return AnazhRealm._furchtGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const F = k && k.FURCHT_GESETZ;
+    if (
+        F &&
+        F.erinnerung &&
+        Number.isFinite(F.erinnerung.geschlagen) &&
+        Number.isFinite(F.erinnerung.gefuettert) &&
+        Number.isFinite(F.deckel) &&
+        Number.isFinite(F.fluchtJeFurcht) &&
+        F.riss &&
+        Number.isFinite(F.ortGewicht) &&
+        Number.isFinite(F.ortRadiusZellen) &&
+        typeof k.bedrohung === "function" &&
+        typeof k.furchtErinnert === "function" &&
+        typeof k.furchtOrt === "function"
+    ) {
+        AnazhRealm._furchtGesetzMemo = Object.freeze({
+            F,
+            bedrohung: k.bedrohung,
+            furchtErinnert: k.furchtErinnert,
+            furchtOrt: k.furchtOrt,
+        });
+        return AnazhRealm._furchtGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
+};
+// DIE JAGD HAT EIN ENDE (tetrapoda JAGD_GESETZ + wundTempo, Tiere K2): die Dauer der Jagd, die Ruhe des Erschöpften, die Wunde,
+// die den Sprint bremst. Fail-closed.
+AnazhRealm._jagdGesetz = function () {
+    if (AnazhRealm._jagdGesetzMemo) return AnazhRealm._jagdGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const J = k && k.JAGD_GESETZ;
+    if (J && [J.dauerS, J.ruheS, J.wundExp].every(Number.isFinite) && typeof k.wundTempo === "function") {
+        AnazhRealm._jagdGesetzMemo = Object.freeze({ J, wundTempo: k.wundTempo });
+        return AnazhRealm._jagdGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
+};
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
+// je Gattung. Fail-closed.
+AnazhRealm._lebensraumGesetz = function () {
+    if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const L = k && k.LEBENSRAUM_GESETZ;
+    if (
+        L &&
+        [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
+        L.gattung &&
+        L.haeufigkeit &&
+        typeof k.bodenKlasse === "function" &&
+        typeof k.lebensraum === "function" &&
+        typeof k.lebensraumWahl === "function" &&
+        k.DURST_GESETZ &&
+        [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
+        typeof k.durst === "function"
+    ) {
+        AnazhRealm._lebensraumMemo = Object.freeze({
+            L,
+            bodenKlasse: k.bodenKlasse,
+            lebensraum: k.lebensraum,
+            wahl: k.lebensraumWahl,
+            D: k.DURST_GESETZ,
+            durst: k.durst,
+        });
+        return AnazhRealm._lebensraumMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:LEBENSRAUM_GESETZ");
+};
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;
+// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m
+AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02 });
 AnazhRealm._leibGesetz = function () {
     if (AnazhRealm._leibGesetzMemo) return AnazhRealm._leibGesetzMemo;
     const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3660,12 +3969,13 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
 // nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
 // mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
-// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (der Hüllen-Kontakt schiebt hinaus,
-// er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
+// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (ein schnellerer Leib geht voll; der
+// Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
 // Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
 // des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
-// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
-AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens
+// `wurfM` m weit (`_kreaturWurfAusserBlick`).
+AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60, wurfM: 12 });
 // Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
 // `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.

@@ -5,10 +5,8 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 1 D — Welt-Journal ###
@@ -16,7 +14,6 @@ async function checkBandWaves1to3(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasJournal = r.state.worldJournal && Array.isArray(r.state.worldJournal.entries);
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
         // journalAppend schreibt
@@ -47,7 +44,6 @@ async function checkBandWaves1to3(ctx) {
             (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 1 D: state.worldJournal existiert", journalResults.hasJournal);
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -137,7 +133,7 @@ async function checkBandWaves1to3(ctx) {
         delete r.state.blueprints["cycle-a"];
         delete r.state.blueprints["cycle-b"];
         r.state.dsl.abilities = (r.state.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -175,12 +171,12 @@ async function checkBandWaves1to3(ctx) {
             Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
         // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
-        // Einstellungen tragen keine Welt-Akte mehr (V18.79, Profi-Struktur). Die alte
+        // Einstellungen tragen keine Welt-Akte mehr (Profi-Struktur). Die alte
         // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
         out.activeWorldIslandInDom = !!document.getElementById("feed-active-ident");
         // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
         // + „Welt-Datei exportieren" (in der Insel, id action-export-state wiederverwendet). Der Test
-        // wandert mit (V9.56-i): er prüft die Verortung, nicht den alten Ort.
+        // wandert mit: er prüft die Verortung, nicht den alten Ort.
         out.worldImportInBibliothek = !!document.getElementById("library-import");
         out.worldExportInBibliothek = !!document.getElementById("action-export-state");
         // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
@@ -273,15 +269,13 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
             parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
         });
 
-        out.method = typeof r._computeWorkshopDomain === "function" && typeof r._blueprintResonance === "function";
-
         // R1 — die Domäne ist das ARGMAX einer VEKTOR-RESONANZ (kein Einzel-Signal), gegen die frozen
         // WORKSHOP_DOMAIN_SIGNATURES. Sanity: der Kern rechnet ein gewichtetes Skalarprodukt (Invers-Achse).
         out.resonanceKernel =
             r._blueprintResonance({ a: 2, b: 3 }, { a: 1, b: -1 }) === -1 &&
             r._blueprintResonance({ a: 2 }, { a: 0.5 }) === 1;
 
-        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift, V17.17)
+        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift)
         out.esse = r._computeWorkshopDomain(blu.esse) === "forging";
         out.brennkolben = r._computeWorkshopDomain(blu.brennkolben) === "alchemy";
         out.webstuhl = r._computeWorkshopDomain(blu.webstuhl) === "textile";
@@ -334,10 +328,6 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         return out;
     });
     check(
-        "V17.67 S7-B / R1: _computeWorkshopDomain + _blueprintResonance existieren (die Domäne emergiert als Vektor-Resonanz)",
-        res.method
-    );
-    check(
         "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
         res.resonanceKernel
     );
@@ -370,7 +360,7 @@ async function checkBandOmegaGrammatik(ctx) {
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
-        // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt (V9.56-i).
+        // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt.
         const temple = { parts: r._buildClassicalTemple("dorisch") };
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
         const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
@@ -428,7 +418,7 @@ async function checkBandOmegaGrammatik(ctx) {
                     },
                 ],
             }).buckles === true;
-        // die WAND-Verfeinerung (V18.242): eine breite tragende Wand knickt NICHT (keine freie Säule)
+        // die WAND-Verfeinerung: eine breite tragende Wand knickt NICHT (keine freie Säule)
         o.wallNoBuckle =
             r._failsUnderLoad({
                 parts: [
@@ -489,10 +479,8 @@ async function checkBandOmegaGrammatik(ctx) {
     check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 10b.1 + 10b.3 — Compound-Tag-Affordances + Welt-Reaktionen (mount + zoom + focusing-Ignite)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave10b(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
@@ -516,14 +504,6 @@ async function checkBandWave10b(ctx) {
                 AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
                 AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
             out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
-            out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
-            out.hasMoveable = typeof r._isMoveable === "function";
-            out.hasMagnifying = typeof r._isMagnifying === "function";
-            out.hasFocusing = typeof r._isFocusing === "function";
-            // 10b.2 — neue räumliche Helper
-            out.hasBbox = typeof r._compoundBBox === "function";
-            out.hasBelowMid = typeof r._partsBelowMidline === "function";
-            out.hasAxialAlignment = typeof r._axialAlignment === "function";
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
@@ -626,8 +606,6 @@ async function checkBandWave10b(ctx) {
                 r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
 
             // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
-            out.hasRadiating = typeof r._isRadiating === "function";
-            out.hasTickRadiating = typeof r._tickRadiatingAffordances === "function";
             out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
             out.radiatingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.radiating &&
@@ -716,7 +694,6 @@ async function checkBandWave10b(ctx) {
             r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
-            out.hasBroadcasting = typeof r._isBroadcasting === "function";
             out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
             out.broadcastingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
@@ -755,8 +732,7 @@ async function checkBandWave10b(ctx) {
             out.horizLineNotBroadcasting =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
             // Relais: ein broadcasting-Mast nahe einem Strahler verstärkt dessen Reichweite — Spieler 22 m vom
-            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m). Vorher ALLE radiating-
-            // Architekturen ringsum entfernen (natürliche kristall_geode aus `_populateVoxelChunkVegetation`).
+            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m).
             if (pmR) {
                 pmR.x = 60;
                 pmR.y = 0;
@@ -787,7 +763,6 @@ async function checkBandWave10b(ctx) {
             void radE;
 
             // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
-            out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
             out.strengthEmptyForNone =
                 Object.keys(r.computeAffordanceStrength(r.state.blueprints.stein_block)).length === 0;
             // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
@@ -889,8 +864,6 @@ async function checkBandWave10b(ctx) {
             );
 
             // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
-            out.hasBalancing = typeof r._isBalancing === "function";
-            out.hasTickBalancing = typeof r._tickBalancingAffordances === "function";
             out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
             out.balancingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.balancing &&
@@ -992,9 +965,6 @@ async function checkBandWave10b(ctx) {
             emoR.chaos = chaosBefore0;
 
             // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
-            out.hasLifting = typeof r._isLifting === "function";
-            out.hasTickLifting = typeof r._tickLiftingAffordances === "function";
-            out.hasLiftVy = typeof r._liftVerticalVelocity === "function";
             out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
             out.liftingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.lifting &&
@@ -1106,8 +1076,8 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            // V17.91 — die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
-            // angezeigt (V17.86), nicht im entfernten Editor-Header-Status.
+            // die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // angezeigt, nicht im entfernten Editor-Header-Status.
             const spCar = document.getElementById("workshop-stats-panel");
             out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");
 
@@ -1132,7 +1102,7 @@ async function checkBandWave10b(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            if (r) r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1149,17 +1119,6 @@ async function checkBandWave10b(ctx) {
         check(
             "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",
             wave10bResults.thresholdsAreSpatial
-        );
-        check(
-            "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
-            wave10bResults.hasComputeAffordances &&
-                wave10bResults.hasMoveable &&
-                wave10bResults.hasMagnifying &&
-                wave10bResults.hasFocusing
-        );
-        check(
-            "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
-            wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
         );
         check(
             "Welle 10b.1: leerer/null Bauplan → leere Affordances",
@@ -1195,10 +1154,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. — radiating ──
         check(
-            "W10 ext.: _isRadiating + _tickRadiatingAffordances existieren, Label + Schwellen definiert",
-            wave10bResults.hasRadiating &&
-                wave10bResults.hasTickRadiating &&
-                wave10bResults.radiatingLabel &&
+            "W10 ext.: radiating trägt Label + Schwellen",
+            wave10bResults.radiatingLabel &&
                 wave10bResults.radiatingThresholds
         );
         check(
@@ -1220,8 +1177,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 2/4 — broadcasting ──
         check(
-            "W10 ext.: _isBroadcasting existiert, Label 'sendend' + Schwellen definiert",
-            wave10bResults.hasBroadcasting && wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
+            "W10 ext.: broadcasting trägt Label 'sendend' + Schwellen",
+            wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
         );
         check("W10 ext.: ein aufrechter leitfähiger Quarz-Mast → broadcasting=true", wave10bResults.mastIsBroadcasting);
         check(
@@ -1246,8 +1203,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
         check(
-            "W10 ext. Politur: computeAffordanceStrength existiert, leer für ein Compound ohne Affordance",
-            wave10bResults.hasAffordanceStrength && wave10bResults.strengthEmptyForNone
+            "W10 ext. Politur: computeAffordanceStrength ist leer für ein Compound ohne Affordance",
+            wave10bResults.strengthEmptyForNone
         );
         check(
             "W10 ext. Politur: ein resonanter Quarz-Sphären-Strahler ist STÄRKER als der Octahedron-Strahler",
@@ -1271,10 +1228,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 3/4 — balancing ──
         check(
-            "W10 ext.: _isBalancing + _tickBalancingAffordances existieren, Label 'gründend' + Schwellen",
-            wave10bResults.hasBalancing &&
-                wave10bResults.hasTickBalancing &&
-                wave10bResults.balancingLabel &&
+            "W10 ext.: balancing trägt Label 'gründend' + Schwellen",
+            wave10bResults.balancingLabel &&
                 wave10bResults.balancingThresholds
         );
         check(
@@ -1301,11 +1256,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 4/4 — lifting ──
         check(
-            "W10 ext.: _isLifting + _tickLiftingAffordances + _liftVerticalVelocity existieren, Label 'hebend' + Schwellen",
-            wave10bResults.hasLifting &&
-                wave10bResults.hasTickLifting &&
-                wave10bResults.hasLiftVy &&
-                wave10bResults.liftingLabel &&
+            "W10 ext.: lifting trägt Label 'hebend' + Schwellen",
+            wave10bResults.liftingLabel &&
                 wave10bResults.liftingThresholds
         );
         check(
@@ -1426,7 +1378,7 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
-            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Das Brennglas-Gesetz bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
             // Eiche liegt (nachts brennt nichts).
             const beforeTod = r.state.timeOfDay;
             r.state.timeOfDay = 0.5;
@@ -1625,10 +1577,9 @@ async function checkBandPsi0Winkel(ctx) {
             op: maxCos(A.OP_CLASS_SIGNATURES),
         };
     });
-    // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
+    // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
-    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
-    // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das Gemüt kommt aus Gattung und Größe).
     check(
         `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
         res.role.max <= 0.94 && res.role.warn <= 7
@@ -1642,8 +1593,8 @@ async function checkBandPsi0Winkel(ctx) {
         res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04
     );
 
-    // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
-    // Loops sind VERDICHTET (V9.82). KONSUM aller Leser am Ruf + die Organ-
+    // Ψ1 — das EINE argmax-Organ: die ~7 Inline-
+    // Loops sind VERDICHTET. KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
     const psi1 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1654,8 +1605,7 @@ async function checkBandPsi0Winkel(ctx) {
             { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
         ] };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
-        out.organDa = typeof r._resonateArgmax === "function";
-        // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
+        // das Temperament fiel aus dem Organ (Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
             liest("_computeWorkshopDomain", [bpK]) &&
@@ -1675,7 +1625,7 @@ async function checkBandPsi0Winkel(ctx) {
     });
     check(
         "Ψ1 das EINE argmax-Organ: alle 6 Inline-Leser konsumieren _resonateArgmax (Domäne·GapHint·FormRolle·Implement·Op·Motion)",
-        psi1.organDa && psi1.leser
+        psi1.leser
     );
     check(
         "Ψ1 Organ-Semantik: argmax + strikt-über-floor + refs/refDefault-Norm + keys-Subset (bit-gleiche Inline-Form)",
@@ -1785,7 +1735,7 @@ async function checkBandV18266RockDetail(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        if (typeof r._makePartGeometry !== "function" || typeof THREE === "undefined") return out;
+        if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
             g && g.attributes && g.attributes.position
                 ? g.index

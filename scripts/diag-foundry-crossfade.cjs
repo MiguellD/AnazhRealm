@@ -308,7 +308,7 @@ function mitTaeter(glied, taeter) {
 async function runPartB() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const pageErrors = [];
@@ -319,9 +319,7 @@ async function runPartB() {
         const res = { samples: [], err: null };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ── Boot + Foundry abwarten ──
-        const dl0 = performance.now() + 60000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { err: "anazhRealm nicht gebootet" };
         const st = r.state;
@@ -330,8 +328,7 @@ async function runPartB() {
         const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (der Stamm liest das Kern-Gesetz)
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 50000;
-        while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
+        await window.__weltDa(() => f && f.ready);
         res.foundryReady = !!(f && f.ready);
         if (!res.foundryReady) return res;
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
@@ -353,21 +350,27 @@ async function runPartB() {
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
         const warm = { 0: false, 1: false, 2: false };
-        const dl2 = performance.now() + 120000;
-        while (performance.now() < dl2 && !(warm[0] && warm[1] && warm[2])) {
-            for (const lod of [0, 1, 2]) {
-                if (!warm[lod]) {
-                    const fl = r._foundryFlattenFor(entry, preset, lod);
-                    if (fl && fl.instanceable) warm[lod] = true;
-                }
-            }
-            if (!(warm[0] && warm[1] && warm[2])) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
+        const loopTakt = async () => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            await sleep(120);
+        };
+        const waerme = (name, e, preset, stufen, w) =>
+            window
+                .__gebautNach(name, {
+                    fertig: () => {
+                        for (const l of stufen)
+                            if (!w[l]) {
+                                const fl = r._foundryFlattenFor(e, preset, l);
+                                w[l] = !!(fl && fl.instanceable);
+                            }
+                        return stufen.every((l) => w[l]);
+                    },
+                    takt: loopTakt,
+                    max: 1000,
+                });
+        await waerme(`${preset} L0–L2`, entry, preset, [0, 1, 2], warm);
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
         // DIE STREU IM SPRUNG (F1 a, gemessen in (10)): die Geburt der Region vom Kopf des Spielers (der alte Ort der Wahl
@@ -405,34 +408,32 @@ async function runPartB() {
             st.camera.updateMatrixWorld(true);
             st.playerMesh.position.copy(streuPm);
         };
-        const dlS0 = performance.now() + 60000;
-        for (let kalt = true; kalt && performance.now() < dlS0; ) {
-            kalt = false;
-            for (const z of streuOrte) {
-                const reg = streuGeburt(z, false);
-                kalt = kalt || !reg || reg._deferredFoundry === true;
-                for (const c of (reg && reg.cells) || []) {
-                    if (!Number.isFinite(c.dient)) continue;
-                    const L = SC.layers.find((l) => l.name === c.layer);
-                    const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
-                    const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
-                    for (const l of [1, 2]) {
-                        const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                        kalt = kalt || !(fl && fl.instanceable);
+        await window
+            .__gebautNach("die Streu-Zellen in L1 und L2", {
+                fertig: () => {
+                    let kalt = false;
+                    for (const z of streuOrte) {
+                        const reg = streuGeburt(z, false);
+                        kalt = kalt || !reg || reg._deferredFoundry === true;
+                        for (const c of (reg && reg.cells) || []) {
+                            if (!Number.isFinite(c.dient)) continue;
+                            const L = SC.layers.find((l) => l.name === c.layer);
+                            const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
+                            const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
+                            for (const l of [1, 2]) {
+                                const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
+                                kalt = kalt || !(fl && fl.instanceable);
+                            }
+                        }
                     }
-                }
-            }
-            streuZurueck();
-            if (kalt) {
-                r._tickWaldPlan(Infinity);
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
-        // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
-        // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
+                    streuZurueck();
+                    return !kalt;
+                },
+                takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
+                max: 500,
+            });
+        // DER STRAUCH (kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
+        // (aLodLevel 2) und das Billboard. Eigener Ort,
         // eigener Sweep.
         const sx = px + 400,
             sz = pz;
@@ -441,26 +442,12 @@ async function runPartB() {
         const sEntry = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
         res.strauchPreset = sEntry ? r._foundryPresetForEntry(sEntry) : null;
         const sWarm = { 0: false, 1: false, 2: false };
-        const dlS = performance.now() + 120000;
-        while (sEntry && performance.now() < dlS && !(sWarm[0] && sWarm[1] && sWarm[2])) {
-            for (const lod of [0, 1, 2]) {
-                if (!sWarm[lod]) {
-                    const fl = r._foundryFlattenFor(sEntry, res.strauchPreset, lod);
-                    if (fl && fl.instanceable) sWarm[lod] = true;
-                }
-            }
-            if (!(sWarm[0] && sWarm[1] && sWarm[2])) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await sleep(120);
-            }
-        }
+        if (sEntry) await waerme(`${res.strauchPreset} L0–L2`, sEntry, res.strauchPreset, [0, 1, 2], sWarm);
         res.strauchWarm = { l0: sWarm[0], l1: sWarm[1], l2: sWarm[2] };
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre
+        // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre
         // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
         // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
         // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
@@ -480,20 +467,7 @@ async function runPartB() {
             const ziel = gezeigt.concat(karte ? [2] : []);
             const warm = {};
             const alleWarm = () => ziel.length > 0 && ziel.every((s) => warm[s] === true);
-            const dlO = performance.now() + 90000;
-            while (oE && oPreset && performance.now() < dlO && !alleWarm()) {
-                for (const lod of ziel)
-                    if (!warm[lod]) {
-                        const fl = r._foundryFlattenFor(oE, oPreset, lod);
-                        if (fl && fl.instanceable) warm[lod] = true;
-                    }
-                if (!alleWarm()) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                    await sleep(120);
-                }
-            }
+            if (oE && oPreset) await waerme(`${oPreset} ${ziel.join("/")}`, oE, oPreset, ziel, warm);
             const rec = oPreset && f.recipes ? f.recipes[oPreset] : null;
             res.kette.push({
                 typ,
@@ -509,8 +483,7 @@ async function runPartB() {
             if (oE) r.removeArchitecture(oE);
         }
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
-        const dl3 = performance.now() + 20000;
-        while (f.pending && f.pending.size > 0 && performance.now() < dl3) await sleep(100);
+        await window.__weltDa(() => !(f.pending && f.pending.size > 0));
         res.pendingAtSweep = f.pending ? f.pending.size : -1;
 
         // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════
@@ -522,8 +495,8 @@ async function runPartB() {
         res.visH = visH;
         res.factor = factor;
         const stageOfKey = (k) => {
-            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
-            // Welle A: der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
+            // der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
+            // der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
             // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — die L0
             // steht auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
             if (/#S$/.test(k)) return null;
@@ -671,7 +644,7 @@ async function runPartB() {
                 return o;
             };
             const fdVor = st._foliageDensityScale;
-            if (core && typeof core.lodCrossfadeMask === "function" && typeof r._lodPerfMul === "function") {
+            if (core && typeof core.lodCrossfadeMask === "function") {
                 const fdMin = A.PERF_FOLIAGE_DENSITY_MIN;
                 res.stufenWahrheit = { voll: lochSweep(1), last: lochSweep(fdMin) };
                 const s2 = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
@@ -684,7 +657,7 @@ async function runPartB() {
                     r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
                     st.architectures = [entry];
                 }
-                // DIE KETTE DES GESETZBUCHS im selben Gesetz (K43-3): je Probe die GEZEICHNETEN Stufen — eine Instanz-Gruppe mit
+                // DIE KETTE DES GESETZBUCHS im selben Gesetz: je Probe die GEZEICHNETEN Stufen — eine Instanz-Gruppe mit
                 // ihren Instanz-Stempeln, ein Bereich des Bau-Satzes mit den Stempeln JE ECKE seiner Zelle (die Satz-Gruppe
                 // zeichnet nie: sie ist Slot-Wahrheit, gezeichnet wird ihr Bereich im Satz ihres Stoffs, `_bauSatzArt`). Eine
                 // Zelle, die der Satz nicht trägt (Satz verborgen, Bereich oder Zelle fehlt, die Zelle liegt nicht an ihrer
@@ -791,7 +764,7 @@ async function runPartB() {
                         st.playerMesh.position.set(E.px - raw, E.py, E.pz);
                         r._archLODCursor = 0;
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
-                        r._tickBauSatz(); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`)
+                        r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
                         const neu = new Map(),
                             alt = new Map();
                         for (const list of [E.entry.instSlots, E.entry.instSlotsBand])
@@ -853,7 +826,7 @@ async function runPartB() {
                         for (const [art, S] of st.chunkSaetze || [])
                             if (st.satzStoffe && st.satzStoffe.has(art)) for (const key of S.bloecke.keys()) r._bauSatzMarke(key, art);
                         for (const g of (st.archInstanceGroups || new Map()).values()) if (g.satz) r._bauSatzMarke(g.key, g.satz);
-                        r._tickBauSatz();
+                        r._tickBauSatz(Infinity);
                     }
                 };
                 for (const op of res.kette || []) {
@@ -881,7 +854,7 @@ async function runPartB() {
                 delete r._lodTreeVisHeight;
                 if (r._lodTreeVisHeight !== echt) res.stufenWahrheit.err = "Leser nicht zurückgesetzt";
                 lochSweep(1); // die Stufen auf den echten Leser zurück
-                // ════ (10) DER GEISTER-BAUM (K36): keine Instanz steht halb maskiert. Die DECKUNG je Klasse (Rinde, Laub;
+                // ════ (10) DER GEISTER-BAUM: keine Instanz steht halb maskiert. Die DECKUNG je Klasse (Rinde, Laub;
                 // die Karte deckt beide) = der Anteil der Dither-Werte, den eine gezeichnete Stufe behält — gelesen aus
                 // den Stempeln wie die Maske (|aH0L|, sein Vorzeichen = der HALT; aKarte.w, negativ = voll), gemessen vom
                 // AUGE. Sie ist 0 oder 1; dazwischen steht ein Geist (unter TRAA halb durchsichtig), 0 bei gezeichneten
@@ -1070,7 +1043,7 @@ async function runPartB() {
                         // (ii) der Sprung: das Rig setzte das Auge 500 m vom Baum, der Spieler springt an den Baum → L0
                         st.playerMesh.position.set(px - 500, py, pz);
                         setzeKam(px - 509.6, py + 3, pz);
-                        if (typeof r._lodAugeGesetzt === "function") r._lodAugeGesetzt();
+                        r._lodAugeGesetzt();
                         st.playerMesh.position.set(px + 1, py, pz);
                         fall("Sprung", r._foundryLodForEntry(entry), 0);
                         // (iii) die Sonde setzt die Kamera an den Baum, der Spieler steht 500 m fern → das Auge ist die Kamera: L0
@@ -1637,7 +1610,7 @@ async function main() {
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
             check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
-        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
+        // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
         // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
         // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
         const zk = (o) =>
@@ -1697,7 +1670,7 @@ async function main() {
         }
         if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
-    // (10) DER GEISTER-BAUM (K36): je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
+    // (10) DER GEISTER-BAUM: je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;
     if (GB) {
         const g = (o) =>

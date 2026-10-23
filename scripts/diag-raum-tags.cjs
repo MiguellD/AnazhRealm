@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Befund (OMEN 0710-10, Werkbank an der
-// Mess-Wiese): `tickPlayerBoosts` rechnete je Sekunde `computeSpatialTags` für jeden nahen Eintrag neu — 10 Rufe für 5
-// Baupläne (Haselbusch 112 Teile 1,1 ms, Bäume 80 Teile 0,6 ms), 8,3 ms je Boost-Takt, Spitze 10,3 ms: eine CPU-Spitze jede
-// Sekunde. Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
+// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
 // Der Schnitt: `computeSpatialTags` merkt sich je Bauplan die Tags und einen SCHLÜSSEL — den Schnappschuss jedes Eingangs der
 // Rechnung (`_raumTagSchluessel`), bei jedem Ruf gebaut und Wert für Wert verglichen; die Rechnung (`_raumTagsRechnen`) läuft
 // nur bei geändertem Schlüssel. Ein Schreiber muss sich nicht melden: der Schlüssel liest den Inhalt.
@@ -35,21 +32,7 @@ const MUTIERER = /^(add|delete|clear|set|push|pop|splice|shift|unshift|sort|reve
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f, eltern) => {
-        f(n, eltern);
-        for (const k of kinder(n)) lauf(k, f, n);
-    };
+    const lauf = (n, f, eltern) => (f(n, eltern), stammLib.kinder(n, (c) => lauf(c, f, n)));
     const befunde = [];
     const methoden = new Map();
     lauf(ast, (m) => {
@@ -527,22 +510,14 @@ function urteil(S, Q, pageErrors) {
 (async () => {
     const Q = quellWand(stammLib.text(root));
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.player ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.player);
     });
     const S = await page.evaluate(probe);
     await browser.close();

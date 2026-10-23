@@ -5,10 +5,8 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (W17 — Multiplayer-Sub-Welten (B-Relay, JS-Compute, Phase C, Decl, Vendor)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW17Multiplayer(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W17 Phase B-Relay — das Mesh-als-Server ###
@@ -186,7 +184,7 @@ async function checkBandW17Multiplayer(ctx) {
         r.p2pSend = origSend;
 
         // buildStateSnapshot persistiert multiplayer im portalMeta
-        // (der feste Feld-Satz — V8.59-Lehre); _sanitizePortalMeta
+        // (der feste Feld-Satz — Lehre); _sanitizePortalMeta
         // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
         const bpName = "_w17b_portal";
         const wp = r.state.blueprints["welt_portal"];
@@ -259,15 +257,6 @@ async function checkBandW17Multiplayer(ctx) {
         const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
         const SUBW = "worlds/skeleton/index.html";
         const OTHER = "worlds/fluid/index.html";
-
-        out.methodsPresent =
-            typeof r._portalSrvSend === "function" &&
-            typeof r._portalSrvReceive === "function" &&
-            typeof r._portalSrvFromGuest === "function" &&
-            typeof r._portalCliReceive === "function" &&
-            typeof r._portalDeliverToClient === "function" &&
-            typeof r._portalSrvEnsureConn === "function" &&
-            typeof r._portalSelfConnId === "function";
 
         // _sanitizePortalMeta — serverMode Default "relay".
         out.sanitizeDefaultRelay = r._sanitizePortalMeta({ world: SUBW }, "x").serverMode === "relay";
@@ -499,7 +488,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17jsResults && w17jsResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 JS: die 7 Compute-Host-Methoden existieren", w17jsResults.methodsPresent);
         check("W17 JS: _sanitizePortalMeta — serverMode Default 'relay'", w17jsResults.sanitizeDefaultRelay);
         check("W17 JS: serverMode 'js-compute' bleibt + erzwingt multiplayer", w17jsResults.sanitizeJsComputeForcesMp);
         check("W17 JS: aimBlueprintAtWorld trägt serverMode aus dem Eintrag", w17jsResults.aimCarriesServerMode);
@@ -565,13 +553,6 @@ async function checkBandW17Multiplayer(ctx) {
         const out = {};
         const SUBW = "worlds/skeleton/index.html";
         const selfConn = r._portalSelfConnId();
-
-        out.methodsPresent =
-            typeof r._portalSpawnServerContext === "function" &&
-            typeof r._portalBroadcastRoster === "function" &&
-            typeof r._portalRosterReceive === "function" &&
-            typeof r._portalMigrateHost === "function" &&
-            typeof r._portalPromoteToHost === "function";
 
         const chanSent = [];
         const origChan = r._p2pSendChannelTo;
@@ -703,7 +684,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17mResults && w17mResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 JS P2: die 5 Host-Migrations-Methoden existieren", w17mResults.methodsPresent);
         check(
             "W17 JS P2: _portalSpawnServerContext baut ein Server-Kontext-iframe",
             w17mResults.spawnBuildsServerFrame
@@ -1136,10 +1116,8 @@ async function checkBandW17Multiplayer(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (W12 Phase 1 (Portal-Rolle + Skelett + Betreten) + Phase 2 (fremde Welten + Registry + DSL-Brücke) + Phase 3 (Ereignisse zurück + Manifest)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW12WorldPortal(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
@@ -1462,7 +1440,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
-        out.stromExists = !!ws && ws.builtIn === true;
         out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
         out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
 
@@ -1489,7 +1466,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p2Results && !w12p2Results.error) {
-        check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
         check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
@@ -1596,7 +1572,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
-        out.terrainExists = !!wt && wt.builtIn === true;
         out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
         out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
         out.terrainManifest =
@@ -1626,7 +1601,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
         check("W12 P2: welt_terrain trägt ein DSL-Manifest (eiche/wald/neu)", w12terrainResults.terrainManifest);
@@ -2027,7 +2001,7 @@ async function checkBandG8R3Locality(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
-        // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
+        // trusted → + allow-same-origin + allow-pointer-lock (unser
         // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
         out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
         out.trustedAttr =
@@ -2339,7 +2313,7 @@ async function checkBandW18Dwell(ctx) {
             else localStorage.setItem("anazh.portalState", savedStates);
         }
         // (7) der Empfänger merkt sich, wo der Gefährte wohnt, und sein Namensschild zeichnet es; die Chat-Gesten
-        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
+        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle.
         const pid = "peer-dwell-zensus";
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, r.state.p2p);
         const pe = r.state.p2p.peers.get(pid);
@@ -2464,8 +2438,7 @@ async function checkBandR6Capability(ctx) {
             r._portalOverlay = savedPo || null;
             r.state.capabilityProposals = savedProps;
             r.state.grantedCapabilities = savedCaps;
-            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "human");
-            else r.state.weather = savedWeather;
+            r._setWeather(savedWeather, "human");
         }
         return out;
     });

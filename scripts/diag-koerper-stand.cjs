@@ -1,10 +1,5 @@
-// diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Welle L 06.10., Klasse Q4).
-// Befund der Leben-Prüfung (Synthese Q4, Kritik §2.1): die Sim steht auf dem Gesetz, die Sicht muss auf dem stehen, was das
-// Auge sieht. Gemessen war: die Fuß-IK zog Becken und Sohlen 0,25 m ins Haus-Podest (die Probe las das Gelände unter
-// dem Träger), im Sprung sank das Becken 0,25 m, während die Kapsel stieg (N-D1); in jeder Höhle las die Probe die Wiese
-// darüber und die IK schwieg; ein Tier auf dem Höhlen-Boden stand im ersten Frame auf dem Dach (+32,6 m); die Sohlen der
-// Tiere lagen am Hang-Fuß bis 0,63 m im sichtbaren Boden (R-D15), der 0,5-m-Cache war ihre Y-Quelle (Treppen bis 0,64 m je
-// Frame, R-D10), Pitch längs der festen Welt-z, Roll 0 (R-D11); das sterbende Tier kippte halb unter das Gelände (K-D19).
+// diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Klasse Q4): die Sim steht auf dem
+// Gesetz, die Sicht auf dem, was das Auge sieht.
 // Die Linse ruft die ECHTEN Pfade der Welt (headless, Null-Renderer — die Boden-Karte ist das Mesh des Workers):
 //   K1  MENSCH AUF DEM TRÄGER: der Spieler auf der Start-Plattform (der Kapsel-Schritt trägt ihn auf dem Bauwerk), Fuß-IK
 //       im Stand → das Becken sinkt nicht (≤ 1 cm); im Sprung (Kapsel in der Luft) senkt kein Boden das Becken
@@ -16,25 +11,24 @@
 //       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe; der
 //       Täter heißt mit seiner Box, wenn ein Werk den Sprung trägt) — und (K4c, K24-N1) keine FUGE trägt einen Leib: die
 //       Oberkante einer Box, auf der eine Box desselben Werks sitzt (zwei Stamm-Abschnitte), hebt weder die Kapsel noch das
-//       Tier. Vorher stieg das Tier an einer Tanne 0,6 m auf die erste Stamm-Fuge (Treppe 55,1 cm, jede der 2803 Fugen trug)
+//       Tier.
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
-//       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die
-//       Beine, die ein Ruf 20 m weit am alten Ort verankert ließ: blind, sobald der Gang sie am neuen Ort setzte, K07)
-//   K6  TIER AM CHUNK-RAND (K07): am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
+//       steht dort, kein Seegrund)
+//   K6  TIER AM CHUNK-RAND: am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
 //       des Eigners ist leer oder trägt nur, was darunter liegt — (a) der Stand-Leser quer durch die Rand-Streifen um den
-//       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm. Vorher las der
-//       Stand-Leser dort den Träger: 527 von 582 Punkten daneben (Pfoten 62–71 cm über dem Boden); die Pfote am Mesh misst K8
-//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
+//       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm; die Pfote am
+//       Mesh misst K8
+//   K7  WIESE UND STREU AM CHUNK-RAND: der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
 //       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
-//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
-//       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
+//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
-//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (das Reh im Stand je Bein), das Rad
+//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
+//       Bein, das schlechteste), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
-//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
+//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
@@ -501,12 +495,12 @@ async function proben(mitWiese, umfang) {
                 c.position.z = sz;
             });
             o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10, traeger };
-            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
-            // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der Kapsel —
-            // die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche: an ihrem Rand, der
-            // Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers (`_stepCharacterStructures`) noch die Auflage des
-            // Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit achsparallelen Boxen im Umkreis 60 m um den Start. Befund
-            // (K24-N1): an der Hang-Stelle stieg das Tier auf die erste Stamm-Fuge einer Tanne, 0,6 m je Takt (K4 Treppe 55,1 cm).
+            // ── K4c DIE FUGE: die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
+            // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der
+            // Kapsel — die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche:
+            // an ihrem Rand, der Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers
+            // (`_stepCharacterStructures`) noch die Auflage des Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit
+            // achsparallelen Boxen im Umkreis 60 m um den Start.
             {
                 const R = A.PLAYER_WALL_RADIUS;
                 const SNAP = A.PLAYER_GROUND_SNAP;
@@ -716,7 +710,7 @@ async function proben(mitWiese, umfang) {
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
     s.playerVel = savedVel;
-    // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
+    // ── K7 WIESE UND STREU AM CHUNK-RAND: Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
     // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln im Umkreis 120 m, deren Chunks
     // einer Stufe sind (der Nah-Ring liegt ganz in LOD 0, die Stufen-Kette K51 trägt L1 und L2 in den Umkreis; der Streifen ist
@@ -929,22 +923,34 @@ async function rollen(n) {
         );
         s.keys.w = false;
         streuJetzt();
-        // der Huf: ein Reh 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0 ihres Ziels)
+        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
+        // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const P = pm.position;
-        const max = s.maxCreatures;
-        s.maxCreatures = Math.max(max || 0, s.creatures.length + 3);
-        const reh = r.spawnCreatureAt(P.x + 4, r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5, P.z + 3, "happy", "wesen");
-        s.maxCreatures = max;
-        const tb = reh && reh.userData._tierBaum;
-        if (tb) {
+        const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
+        for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {
+            [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
+            const reh = r.spawnCreatureAt(
+                P.x + 4,
+                r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5,
+                P.z + 3,
+                "happy",
+                "wesen",
+                {
+                    bodySize: band.max,
+                }
+            );
+            [s.maxCreatures, s._creatureNetSeq] = [max, seq];
+            const tb = reh && reh.userData._tierBaum;
+            if (!tb) continue;
             const huf = sohle(reh, [tb.teile.flP, tb.teile.frP, tb.teile.hlP, tb.teile.hrP]);
-            R.huf = mass(
+            const m = mass(
                 gehen((a) => {
                     const Zg = tb._gang && tb._gang.ziele;
                     reh.updateMatrixWorld(true);
                     for (let j = 0; Zg && j < 4; j++) if (Zg[j][3] === 0 && (v.y = huf(j)) !== null) a.push(v.y);
                 })
             );
+            if (!R.huf || m.p95 > R.huf.p95) R.huf = { ...m, median: band.name + " " + m.median };
             r.removeCreature(reh);
         }
         // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x)
@@ -953,10 +959,7 @@ async function rollen(n) {
             { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
             { silent: true, precise: true, rotationY: quer - Math.PI / 2 }
         );
-        for (let k = 0; e && k < 200 && !e.instanced && !e.mesh; k++) {
-            r._rebuildArchitectureMesh(e);
-            await new Promise((q) => setTimeout(q, 100));
-        }
+        if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
         if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
             for (let k = 0; k < 15; k++) takt();
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
@@ -1048,7 +1051,7 @@ function urteil(o) {
     if (!o.k6leser || !(o.k6leser.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
     // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
-    // −278/−1038 (K55) trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
+    // −278/−1038 trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
     // nicht unabhängig je Büschel: dort lag das Verhältnis 1,12 ± 0,044, und die Erwartung aus den Faktoren des Lesers selbst
     // (Σp je Kandidat, Stufe 0/1/2 einzeln) 1,07 — Streifen über und unter 1 je Stufe, keine Naht. Der Täter der Klasse (K21:
     // der Leser liest nur die Karte des Eigners) fiel auf 0,08.

@@ -19,7 +19,7 @@
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
 //         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
-//   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
+//   B-d: DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
 //     die Blocker (_populateBlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot)
@@ -69,7 +69,7 @@ function driveVerdict(d) {
     if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
     if (!d || d.flatFoundry !== true || d.flatBauplan !== true) out.push("flat"); // die EINE Flat-Quelle der Instanz
     if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
-    // DONOR-ABSCHIED (18.07.): Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
+    // DONOR-ABSCHIED: Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
     // Anker; Blocker-Huelle == exportDrive.huelle-Laenge (> 3 m — die 2.1-m-Donor-
     // Box KANN das nicht liefern). Beide beweisen KONSUM des Kerns + ABSENZ des Donors.
     if (!d || d.sitzKern !== true) out.push("sitzKern");
@@ -242,7 +242,7 @@ function staticLaws(garage) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
@@ -254,30 +254,18 @@ function staticLaws(garage) {
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (
-                f &&
+        await window.__weltDa(() => f &&
                 f.ready &&
                 f.recipes &&
                 f.recipes.gt &&
                 f.recipes.gt.fx &&
                 f.recipes.gt.fx.fahrprofil &&
                 r.state.blueprints &&
-                r.state.blueprints.fahrzeug_gt
-            )
-                break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+                r.state.blueprints.fahrzeug_gt);
         // ===== B-a: das LIVE-Buch je Fahrzeug-Preset =====
         try {
             for (const id in f.recipes) {
@@ -339,7 +327,7 @@ function staticLaws(garage) {
         } catch (e) {
             res.profErr = (e && e.message) || String(e);
         }
-        // ===== B-d (B2 14.07.): DIE FAHR-PROBE — nach N Fahr-Ticks bewegt sich der EINTRAG =====
+        // ===== B-d: DIE FAHR-PROBE — nach N Fahr-Ticks bewegt sich der EINTRAG =====
         try {
             const pm = r.state.playerMesh.position;
             const spawnAt = { x: pm.x + 5, y: pm.y, z: pm.z };
@@ -347,12 +335,7 @@ function staticLaws(garage) {
             res.drive = { spawned: !!entry };
             if (entry) {
                 // Studio-Gestalt andocken lassen (der Bau ist async: Flat-Miss → Anfrage → Bau).
-                const dl2 = performance.now() + 45000;
-                while (!entry.instanced && !entry.mesh && performance.now() < dl2) {
-                    r._rebuildArchitectureMesh(entry);
-                    if (entry.instanced || entry.mesh) break;
-                    await new Promise((res3) => setTimeout(res3, 200));
-                }
+                await window.__gebautNach(entry);
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k) => {
@@ -375,7 +358,7 @@ function staticLaws(garage) {
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
                 res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
-                // DONOR-ABSCHIED (18.07.) — der lebende KONSUM/ABSENZ-Beweis am
+                // DONOR-ABSCHIED — der lebende KONSUM/ABSENZ-Beweis am
                 // frisch gespawnten Eintrag (Gier 0 — die Welt-AABB-Spanne ist die
                 // Laengs-Achse): Sitz == Kern-Formel UND != Donor-Anker; Blocker-
                 // Spanne == Kern-Huellen-Laenge (> 3 m — Donor-Box war 2.1 m).
@@ -414,7 +397,7 @@ function staticLaws(garage) {
                 } catch (eD) {
                     res.drive.donorErr = (eD && eD.message) || String(eD);
                 }
-                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
+                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
                 for (let i = 0; i < 120; i++) {
@@ -469,7 +452,7 @@ function staticLaws(garage) {
         } catch (e) {
             res.driveErr = (e && e.message) || String(e);
         }
-        // ===== B-e (W5 Gegenstände, 05.10.): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
+        // ===== B-e (W5 Gegenstände): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
         // Der GT fährt durch den echten Sim-Schritt `_stepFixedSim` (Kapsel · Bewegung · Ritt-Sitz, 60 Hz) + den Frame-Tick:
         // 90 Ticks Gas geradeaus, dann 120 Ticks voller Lenk-Einschlag. Gemessen an der GERENDERTEN Matrix
         // (`_archEntryWorldMatrix`) und am Gesetz (exportDrive.huelle):
@@ -514,12 +497,7 @@ function staticLaws(garage) {
             );
             res.gefuehl.spawned = !!e2;
             if (e2) {
-                const dl3 = performance.now() + 45000;
-                while (!e2.instanced && !e2.mesh && performance.now() < dl3) {
-                    r._rebuildArchitectureMesh(e2);
-                    if (e2.instanced || e2.mesh) break;
-                    await new Promise((res3) => setTimeout(res3, 200));
-                }
+                await window.__gebautNach(e2);
                 r.mountArchitecture(e2);
                 const fzg = r._fahrzeugGesetzFor(e2);
                 const h = fzg.drive.huelle;
@@ -537,7 +515,7 @@ function staticLaws(garage) {
                 let vEnde = 0;
                 const tick = (lenk) => {
                     t += dt;
-                    // Welle L (Q0 F-L6): der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
+                    // der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
                     // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
                     r._stepFixedSim(t, dt);
                     const v = r.state.playerVel;
@@ -608,7 +586,7 @@ function staticLaws(garage) {
         } catch (e) {
             res.gefuehlErr = (e && e.message) || String(e);
         }
-        // ===== B-f (W5 Gegenstände, 05.10.): DER STAND AM HANG =====
+        // ===== B-f (W5 Gegenstände): DER STAND AM HANG =====
         // Je Hang-Probe (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der Spawn-Pfad wie
         // Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der GERENDERTEN
         // Matrix gegen das Boden-Gesetz. Die Hänge kommen aus der Welt (welt-orte `hang`, K55-5 — bis dahin ±40 m um die

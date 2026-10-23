@@ -67,15 +67,11 @@ const state = {
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
-    voxelEdits: [], // Array of { x, y, z, r, strength, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
+    voxelEdits: [], // Array of { x, y, z, r, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
-    spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
-    bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
-    bankKruemmung: 0.04, // Mirror AnazhRealm.HYDROSPHERE.bankKruemmung
-    bankWeite: 24, // Mirror AnazhRealm.HYDROSPHERE.bankWeite
-    bankRundung: 0.6, // Mirror AnazhRealm.HYDROSPHERE.bankRundung
-    dammBreite: 2.6, // Mirror AnazhRealm.HYDROSPHERE.dammBreite (die Damm-Krone, Gegenprüfung 07.10., Runde 4)
-    dammFreibord: 0.2, // Mirror AnazhRealm.HYDROSPHERE.dammFreibord
+    // DAS GESETZ DER HYDROSPHÄRE des Mains (`HYDROSPHERE`: Zelle, Bank, Damm, Freibord, Bett — Karte hydro-faden): der Faden
+    // rechnet mit ihm die Regionen (gelaende-core `hydrosphaere`) und baut mit ihm den Kanal. Fehlt es, wirft der Bau.
+    hydroGesetz: null,
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -85,8 +81,9 @@ const state = {
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
-    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null
+    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null, und seine Liste (`_erdbauRoh` des Mains)
     erdbau: null,
+    erdbauRoh: null,
     // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
     // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
     felsStoff: null,
@@ -102,71 +99,37 @@ self.onmessage = function (e) {
         } else if (msg.type === "state-update") {
             applyStateDelta(msg.delta);
             self.postMessage({ type: "ack", op: "state-update", requestId: msg.requestId || null });
+        } else if (msg.type === "hydro") {
+            // DIE HYDROSPHÄRE IM FADEN (Karte hydro-faden, Lehre 14): die Heimat (`key` "heim") oder eine ferne Kachel entsteht
+            // HIER, an DERSELBEN Stelle der Zustands-Reihe in jedem Faden (der EINE Sender `_voxelZustandPost`) — der Voxel-Faden
+            // antwortet dem Main per Transfer (`hydroAntwort`), ein Neben-Faden behält sie nur. Jeder Auftrag dahinter liest sie.
+            const h = hydroRegion(msg.key, msg.origin || null);
+            if (msg.requestId) {
+                const a = hydroAntwort(h);
+                self.postMessage(
+                    { type: "hydro-result", requestId: msg.requestId, key: msg.key, region: a.region },
+                    a.transfer
+                );
+            }
         } else if (msg.type === "density-grid") {
             const { ox, oy, oz, dimX, dimY, dimZ, step, requestId } = msg;
             const density = computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step);
             self.postMessage({ type: "density-grid-result", requestId, density: density.buffer }, [density.buffer]);
         } else if (msg.type === "chunk-mesh") {
-            // V9.91 (Phase 3): voller Chunk-Mesh-Build im Worker. Returns
-            // {positions, normals, indices, colors, waterCells} via
-            // Transferable. Main-Thread macht nur noch BufferGeometry-
-            // Konstruktion + Architektur-Cell-Stempel + BVH-Collision +
-            // Scene-Attach (~30 ms statt 100-150 ms).
-            // die Flut-Saat der Nachbarn (Main `_flutSaat`, null ohne Carve im 3×3) reist als Daten mit dem Auftrag
-            const { cx, cz, lod, saat, requestId } = msg;
-            const mesh = buildChunkMesh(cx, cz, lod, saat || null);
-            if (mesh.empty) {
-                self.postMessage({ type: "chunk-mesh-result", requestId, empty: true, lod: lod | 0 });
-            } else {
-                self.postMessage(
-                    {
-                        type: "chunk-mesh-result",
-                        requestId,
-                        empty: false,
-                        lod: lod | 0,
-                        positions: mesh.positions.buffer,
-                        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
-                        stufeZiel: mesh.stufeZiel ? mesh.stufeZiel.buffer : null,
-                        normalZiel: mesh.normalZiel ? mesh.normalZiel.buffer : null,
-                        farbeZiel: mesh.farbeZiel ? mesh.farbeZiel.buffer : null,
-                        normals: mesh.normals.buffer,
-                        indices: mesh.indices.buffer,
-                        colors: mesh.colors.buffer,
-                        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
-                        himmel: mesh.himmel.buffer,
-                        schutt: mesh.schutt.buffer,
-                        felsFeuchte: mesh.felsFeuchte,
-                        waterCells: mesh.waterCells.buffer,
-                        // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
-                        hTri: mesh.hTri.buffer,
-                        hN: mesh.hN,
-                        hKnoten: mesh.hKnoten.buffer,
-                        hMuend: mesh.hMuend.buffer,
-                        hSeiten: mesh.hSeiten.buffer,
-                        hKanten: mesh.hKanten.buffer,
-                        hRand: mesh.hRand.buffer,
-                        vertCount: mesh.positions.length / 3,
-                        indexCount: mesh.indices.length,
-                    },
-                    [
-                        mesh.positions.buffer,
-                        mesh.normals.buffer,
-                        mesh.indices.buffer,
-                        mesh.colors.buffer,
-                        mesh.himmel.buffer,
-                        mesh.schutt.buffer,
-                        mesh.waterCells.buffer,
-                        mesh.hTri.buffer,
-                        mesh.hKnoten.buffer,
-                        mesh.hMuend.buffer,
-                        mesh.hSeiten.buffer,
-                        mesh.hKanten.buffer,
-                        mesh.hRand.buffer,
-                    ].concat(
-                        mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : []
-                    )
-                );
-            }
+            // V9.91 (Phase 3): voller Chunk-Mesh-Build im Worker, die Arrays per Transfer (`chunkAntwort`). DIE PLATTE IM FADEN
+            // (Karte hydro-faden, Lehre 24): trägt der Auftrag den Schlüssel seines Warm-Starts (`platte`, nur edit-freie
+            // Footprints), liest der Faden ihn zuerst von der Platte und legt jeden frischen Bau dort ab — der Haupt-Faden
+            // klont nie mehr einen Reply in die IndexedDB oder aus ihr. Die Flut-Saat der Nachbarn (Main `_flutSaat`, null
+            // ohne Carve im 3×3) reist als Daten mit dem Auftrag.
+            if (msg.platte) plattePost(msg);
+            else chunkPost(msg, null);
+        } else if (msg.type === "zellen-frei") {
+            // der Main trägt die Zellen nicht mehr: nur sie fallen, ein neuerer Bau desselben Chunks bleibt
+            msg.keys.forEach((k, i) => {
+                const l = (zellen.get(k) || []).filter((b) => b.zid !== msg.zids[i]);
+                if (l.length) zellen.set(k, l);
+                else zellen.delete(k);
+            });
         } else if (msg.type === "water-sheet") {
             // B1 (V18.345) — der Wasser-Sheet OFF-THREAD (Streaming, CA-frei). Der Main
             // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Uint8Array oder
@@ -174,7 +137,29 @@ self.onmessage = function (e) {
             // + transferiert die Geometrie-Arrays zurück. Main macht nur BufferGeometry +
             // Mesh (`_applyWorkerWaterSheet`). `getDach` undefined → dachlos (der Main baut jede
             // Nachbarschaft mit gezeichnetem Dach selbst, `_waterSheetCaFree`).
-            const { cx, cz, requestId, smoothPasses, cells } = msg;
+            const { cx, cz, requestId, smoothPasses } = msg;
+            // DIE ZELLEN DES FADENS (Karte hydro-faden): ein Verweis `{ zid }` nimmt die Zellen, die dieser Faden für den Chunk
+            // baute und unverändert beim Main liegen (`zellen`); fehlt einer, fragt der Main mit den Zellen selbst nach.
+            let fehlt = false;
+            const cells = msg.cells.map((c, i) => {
+                if (!c || !(c.zid > 0)) return c;
+                const z = (zellen.get(cx + ((i % 3) - 1) + "," + (cz + ((i / 3) | 0) - 1)) || []).find(
+                    (b) => b.zid === c.zid
+                );
+                if (!z) {
+                    fehlt = true;
+                    return null;
+                }
+                if (!c.fest) return z.cells;
+                // der Architektur-Stempel des Mains: seine Zellen sind fest (`_stampArchitectureSolidCellsInto`)
+                const k = z.cells.slice();
+                for (let j = 0; j < c.fest.length; j++) k[c.fest[j]] = CELL_STATE.SOLID;
+                return k;
+            });
+            if (fehlt) {
+                self.postMessage({ type: "water-sheet-result", requestId, fehlt: true });
+                return;
+            }
             const ctx = {
                 smoothPasses: smoothPasses | 0,
                 getCells: (ncx, ncz) => {
@@ -235,6 +220,10 @@ self.onmessage = function (e) {
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
             waldAuftraege.push(msg);
             waldWecken();
+        } else if (msg.type === "ort-wahl") {
+            // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
+            // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
+            self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -247,6 +236,251 @@ self.onmessage = function (e) {
         });
     }
 };
+
+// DIE ANTWORT EINES CHUNKS (per Transfer, Lehre 24): die Arrays des Baus; das Morph-Ziel (`morphZiel`, das der Geomorph des
+// Mains beschreibt) und in der gröbsten Stufe Normalen- und Farb-Ziel sind eigene Kopien — sie entstehen hier im Faden, nie im
+// Haupt-Faden (bis zur Karte hydro-faden kopierte `_buildVoxelChunkDataFromWorkerMesh` sie: 2,5 MB je Minute Fahrt).
+function chunkAntwort(mesh, lod) {
+    if (mesh.empty) return { type: "chunk-mesh-result", empty: true, lod: lod | 0 };
+    const grob = !mesh.stufeZiel;
+    return {
+        type: "chunk-mesh-result",
+        empty: false,
+        lod: lod | 0,
+        positions: mesh.positions.buffer,
+        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
+        stufeZiel: grob ? null : mesh.stufeZiel.buffer,
+        morphZiel: (grob ? mesh.positions : mesh.stufeZiel).slice().buffer,
+        normalZiel: (grob ? mesh.normals.slice() : mesh.normalZiel).buffer,
+        farbeZiel: (grob ? mesh.colors.slice() : mesh.farbeZiel).buffer,
+        normals: mesh.normals.buffer,
+        indices: mesh.indices.buffer,
+        colors: mesh.colors.buffer,
+        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+        himmel: mesh.himmel.buffer,
+        schutt: mesh.schutt.buffer,
+        felsFeuchte: mesh.felsFeuchte,
+        waterCells: mesh.waterCells.buffer,
+        // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
+        hTri: mesh.hTri.buffer,
+        hN: mesh.hN,
+        hKnoten: mesh.hKnoten.buffer,
+        hMuend: mesh.hMuend.buffer,
+        hSeiten: mesh.hSeiten.buffer,
+        hKanten: mesh.hKanten.buffer,
+        hRand: mesh.hRand.buffer,
+        vertCount: mesh.positions.length / 3,
+        indexCount: mesh.indices.length,
+    };
+}
+
+// DIE ZELLEN DES FADENS (Karte hydro-faden): je Chunk die Wasser-Zellen seiner letzten Bauten (`ZELLEN_JE_CHUNK`, der Main trägt
+// beim Stufen-Wechsel noch den älteren, bis der neuere eintritt), je Bau seine Nummer (`zid`) — das Wasser-Sheet nimmt sie
+// per Verweis statt eines Klons von neun Zell-Blöcken je Bestellung (79,7 MB je Minute Fahrt bis zur Karte). Der Main gibt
+// einen Bau frei, wenn er ihn nicht mehr trägt (`zellen-frei`); ein verworfener fällt mit dem Deckel.
+const zellen = new Map();
+const ZELLEN_JE_CHUNK = 4;
+let zellenNr = 0;
+
+// Der Reply an den Main, die Puffer per Transfer: die Zellen behält der Faden als Kopie (`zellen`), die Platte bekommt den
+// Reply VOR dem Transfer (ihr Put klont hier im Faden).
+function chunkPost(msg, a) {
+    const antwort = a || chunkAntwort(buildChunkMesh(msg.cx, msg.cz, msg.lod, msg.saat || null), msg.lod);
+    if (!a && msg.platte) platteLege(msg.platte, antwort);
+    const transfer = [];
+    for (const k in antwort) if (antwort[k] instanceof ArrayBuffer) transfer.push(antwort[k]);
+    if (antwort.waterCells && antwort.waterCells.byteLength) {
+        antwort.zid = ++zellenNr;
+        const k = msg.cx + "," + msg.cz;
+        const l = (zellen.get(k) || []).concat({
+            zid: antwort.zid,
+            cells: new Uint8Array(antwort.waterCells.slice(0)),
+        });
+        zellen.set(k, l.slice(-ZELLEN_JE_CHUNK));
+    }
+    antwort.requestId = msg.requestId;
+    self.postMessage(antwort, transfer);
+}
+
+// DIE PLATTE DES BODENS (Warm-Start, V18.484 — seit der Karte hydro-faden im Faden): der rohe Reply eines edit-freien Chunks
+// liegt in IndexedDB ("anazhChunkMesh"/"chunks"), der zweite Boot liest den Ring von ihr. Stempel (`state.platte.stempel`:
+// Version · Generation · Erbgut · Form) ungleich → leeren; ein Fehler → nur noch Bau (`tot`); voll (`max`) → leeren —
+// die Korrektheit hängt nie an ihr. Der Main sagt, ob sie gilt (`state.platte.an`: headless aus).
+const platte = { auf: null, db: null, stempel: null, tot: false, zahl: 0 };
+function platteAuf() {
+    const P = state.platte;
+    if (!P || !P.an || platte.tot || !self.indexedDB) return Promise.resolve(null);
+    if (platte.auf && platte.stempel === P.stempel) return platte.auf;
+    platte.stempel = P.stempel;
+    platte.db = null;
+    platte.auf = new Promise((ok) => {
+        const tot = () => {
+            platte.tot = true;
+            ok(null);
+        };
+        const req = self.indexedDB.open("anazhChunkMesh", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("chunks");
+        req.onerror = tot;
+        req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction("chunks", "readwrite");
+            const st = tx.objectStore("chunks");
+            const g = st.get("__stamp");
+            g.onsuccess = () => {
+                if (g.result !== P.stempel) {
+                    st.clear();
+                    st.put(P.stempel, "__stamp");
+                    platte.zahl = 1;
+                } else st.count().onsuccess = (e) => (platte.zahl = e.target.result | 0);
+            };
+            tx.oncomplete = () => ok((platte.db = db));
+            tx.onerror = tot;
+        };
+    });
+    return platte.auf;
+}
+function plattePost(msg) {
+    platteAuf()
+        .then(
+            (db) =>
+                db &&
+                new Promise((ok) => {
+                    const g = db.transaction("chunks", "readonly").objectStore("chunks").get(msg.platte);
+                    g.onsuccess = () => ok(g.result || null);
+                    g.onerror = () => ok(null);
+                })
+        )
+        .then((p) => {
+            // ein Reply ohne Morph-Ziel ist eine alte Form: der Faden baut frisch
+            if (p && !p.empty && !p.morphZiel) p = null;
+            if (p) p.vonPlatte = true;
+            chunkPost(msg, p || null);
+        })
+        .catch((err) =>
+            self.postMessage({ type: "error", op: "chunk-mesh", requestId: msg.requestId, message: String(err) })
+        );
+}
+// der Put klont SOFORT (synchron, hier im Faden) — vor dem Transfer, der die Puffer abgibt; die Platte steht, denn der Auftrag
+// mit Schlüssel wartete auf sie (`plattePost`)
+function platteLege(key, antwort) {
+    const db = platte.db;
+    if (!db || platte.tot) return;
+    try {
+        const st = db.transaction("chunks", "readwrite").objectStore("chunks");
+        if (platte.zahl >= state.platte.max) {
+            st.clear();
+            st.put(platte.stempel, "__stamp");
+            platte.zahl = 1;
+        }
+        st.put(antwort, key).onerror = () => (platte.tot = true);
+        platte.zahl++;
+    } catch (_e) {
+        platte.tot = true;
+    }
+}
+
+// DIE ORT-WAHL IM FADEN (siedlung.K5, K10): der Auftrag des Wirts (`_ortWahl`) — der Export `plan`, der Wunsch `origin`,
+// die Ringe `W` (ORT_WAHL), `M` (WERK_LAND_M), der Spieler `spieler` {x, z, frei} und je Slot das Raster seines Fundaments
+// (`raster`: plan-lokal je Slot die Punkte lx, lz des Wirts-Rasters `_fundamentRaster` im Schritt grob und in dem der Wand,
+// `grobN`/`wandN` Punkte je Slot, `radius` die Reichweite des Grundrisses, NaN ohne). Ab dem Kandidaten `ab` rechnet der
+// Faden je Ort der Ringe den Plan v2 (fachwerk `ortPlan`, dieselbe Gelände-Funktion: gelaende-core `hoehe` am Zustand samt
+// dem Erdbau früherer Orte, das Wasser des Gesetzes `atlasWaterLevelAt`) und urteilt, ob er jedes Haus trägt (`ortTraegt`).
+// Das Welt-Wasser des Plans (ctx.wasserAt: Haus und Brücken-Etikett) ist DASSELBE Urteil `ortNass` über dem Boden vor dem Plan:
+// bis K5 kannte es nur den Spiegel über dem ungeformten Boden, nie den Fluss — sein Kanal liegt unter dem Spiegel, sein Damm
+// darüber —, der Plan stellte Häuser in Kanal und Damm, und erst `ortTraegt` warf den Ort (nH 300: jeder der 231 Kandidaten,
+// 8–48 Häuser und 4–22 Laternen in der Gestalt des Gewässers, der Faden rechnete 8–19 s). Ein Ort, an dem das Wasser ein Haus
+// nimmt (fachwerk `ortImWasser`), trägt den Plan nie ganz: er fällt, bevor sein Plan entsteht. Rückgabe { index (−1: kein Ort,
+// der Wunsch), v2, wand, abstandM, kandidaten (die Pläne der Ringe), ms }. Billige Urteile zuerst (Lehre 25): der Faden gibt den
+// Ort nach dem groben Raster, der Wirt urteilt die Bauten, und erst sein Sieger (`msg.wand`: sein Index) zahlt das Raster der
+// Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
+// Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
+function ortWahl(msg) {
+    if (!self.__fachwerkCore)
+        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    const FC = self.__fachwerkCore;
+    const { plan, origin, W } = msg;
+    const t0 = self.performance.now();
+    const ctx = G.ortCtx(state, (x, z) => ortNass(msg, null, x, z));
+    let i = 0;
+    let kandidaten = 0;
+    for (let ring = 0; ring <= W.ringe; ring++) {
+        const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
+        for (let j = 0; j < n; j++, i++) {
+            if (i < msg.ab) continue;
+            const a = (2 * Math.PI * j) / n;
+            const o = { x: origin.x + Math.cos(a) * ring * W.schrittM, z: origin.z + Math.sin(a) * ring * W.schrittM };
+            const aus = (k, wand) => ({
+                index: i,
+                v2: k,
+                wand,
+                abstandM: ring * W.schrittM,
+                kandidaten,
+                ms: self.performance.now() - t0,
+            });
+            if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            const k = FC.ortPlan(plan, o, ctx);
+            kandidaten++;
+            // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
+            if (i === msg.wand) {
+                if (ortTraegt(msg, k, false)) return aus(k, true);
+            } else if (ortTraegt(msg, k, true)) return aus(k, false);
+        }
+    }
+    return {
+        index: -1,
+        v2: FC.ortPlan(plan, origin, ctx),
+        abstandM: null,
+        kandidaten,
+        ms: self.performance.now() - t0,
+    };
+}
+// TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports? Jeder Punkt des Fundament-Rasters (`grob` im Schritt ORT_WAHL.grobM, sonst
+// im Raster der Wand, 0,5 m) und jede Laterne liegt mit dem Boden, den der Erdbau des Plans baut, mindestens `M` über dem
+// Wasser des Gesetzes an dieser Höhe — das Urteil der Wand (`_fundamentLand`) über dem Boden des Plans —, die Gestalt des
+// Gewässers (`gewaesserForm`: Damm, Kanal, See-Becken) verschiebt ihn um höchstens `bodenTolM`, und kein Haus berührt den
+// Spieler. Die Bauten (`_bauFrei`) urteilt der Wirt am Sieger.
+function ortTraegt(msg, k, grob) {
+    const plan = msg.plan;
+    if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
+    const E = G.erdbauNormal(k.erdbau);
+    const nass = (x, z) => ortNass(msg, E, x, z);
+    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+    const R = msg.raster;
+    const sp = msg.spieler;
+    let p = 0;
+    for (let si = 0; si < k.slots.length; si++) {
+        const sl = k.slots[si];
+        const nG = R.grobN[si];
+        const nW = R.wandN[si];
+        const p0 = p;
+        p += nG + nW;
+        if (!(R.radius[si] >= 0)) continue;
+        const wx = k.ort.x + sl.x;
+        const wz = k.ort.z + sl.z;
+        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return false;
+        const ry = sl.phi || 0;
+        const c = Math.cos(ry);
+        const sn = Math.sin(ry);
+        const von = grob ? p0 : p0 + nG;
+        const bis = grob ? p0 + nG : p0 + nG + nW;
+        for (let q = von; q < bis; q++) {
+            const lx = R.lx[q];
+            const lz = R.lz[q];
+            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return false;
+        }
+    }
+    return true;
+}
+// DAS WASSER DES ORTS an (x, z): der Boden (gelaende-core `hoehe` samt dem Erdbau früherer Orte, darauf der Erdbau `E` des
+// Plans, null: der Boden vor dem Plan) verschiebt die Gestalt des Gewässers (`gewaesserForm`) um mehr als `bodenTolM`, oder er
+// liegt weniger als `M` über dem Wasser des Gesetzes. Leser: das Welt-Wasser des Plans (`ortWahl`) und `ortTraegt`.
+function ortNass(msg, E, x, z) {
+    const h0 = G.hoehe(state, x, z, true);
+    const he = E ? G.erdbauY(E, x, z, h0) : h0;
+    const h = gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    if (Math.abs(h - he) > msg.W.bodenTolM) return true;
+    return h < atlasWaterLevelAt(x, z, h) + msg.M;
+}
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,
 // alle Aufträge im Flug); hier wartet jeder Auftrag, und der Faden rechnet je Takt EINEN — den mit dem kleinsten `rang` (der
@@ -355,20 +589,13 @@ function voxelSurfaceY(x, z) {
     return null;
 }
 
-// Mirror von `_voxelEditsFillTop`: die höchste Füll-Kugel (Krone y + r), gemerkt je Edit-Liste und Länge.
+// Wie `_voxelEditsFillTop`: die Krone der Füll-Edits (`G.editKrone`), gemerkt je Edit-Liste und Länge.
 let fillTopMerk = null;
 function editsFillTop() {
     const edits = state.voxelEdits;
     const len = edits ? edits.length : 0;
     if (fillTopMerk && fillTopMerk.edits === edits && fillTopMerk.len === len) return fillTopMerk.top;
-    let topY = -Infinity;
-    for (let i = 0; i < len; i++) {
-        const e = edits[i];
-        if (e && e.mode === "fill") {
-            const t = (Number(e.y) || 0) + (Number(e.r) || 0);
-            if (t > topY) topY = t;
-        }
-    }
+    const topY = G.editKrone(edits);
     fillTopMerk = { edits, len, top: topY };
     return topY;
 }
@@ -457,14 +684,9 @@ function applyStateSnapshot(snap) {
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
-    if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
-    if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
-    if (typeof snap.bankNeigung === "number") state.bankNeigung = snap.bankNeigung;
-    if (typeof snap.bankKruemmung === "number") state.bankKruemmung = snap.bankKruemmung;
-    if (typeof snap.bankWeite === "number") state.bankWeite = snap.bankWeite;
-    if (typeof snap.bankRundung === "number") state.bankRundung = snap.bankRundung;
-    if (typeof snap.dammBreite === "number") state.dammBreite = snap.dammBreite;
-    if (typeof snap.dammFreibord === "number") state.dammFreibord = snap.dammFreibord;
+    // eine Region, die dieser Faden nicht selbst rechnete (er wurde nach ihrer Bestellung geboren, `_hydroAn` im Main)
+    if (snap.hydroRegion) hydroSetzen(snap.hydroRegion.key, snap.hydroRegion.h);
+    if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -474,10 +696,12 @@ function applyStateSnapshot(snap) {
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
-    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
+    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
     if (snap.fern) state.fern = snap.fern;
+    // DIE PLATTE DES BODENS (Karte hydro-faden): ob sie gilt, ihr Stempel und ihr Deckel
+    if (snap.platte) state.platte = snap.platte;
 }
 
 function applyStateDelta(delta) {
@@ -489,11 +713,20 @@ function applyStateDelta(delta) {
         state.voxelEdits.push(delta.voxelEditAppend);
         return;
     }
+    // DER ERDBAU ALS ÄNDERUNG (stadt-erwachen, `_erdbauWirkt`): die Splats eines neuen Orts hängen an, die Stellen gefallener
+    // (in der Reihe vor dem Fall) fallen — dieselbe Liste wie `_erdbauRoh` im Main, ohne ihren Klon je Haus
+    if (delta.erdbauDazu || delta.erdbauOhne) {
+        const roh = state.erdbauRoh || [];
+        const ohne = new Set(delta.erdbauOhne);
+        state.erdbauRoh = delta.erdbauDazu ? roh.concat(delta.erdbauDazu) : roh.filter((_p, i) => !ohne.has(i));
+        state.erdbau = G.erdbauNormal(state.erdbauRoh);
+        return;
+    }
     applyStateSnapshot(delta);
 }
 
-// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Kugel ihn samt einem
-// Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
+// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Reichweite ihn samt einem
+// Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `G.editReich`), in Setz-Reihenfolge.
 // Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
 // nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
 // zur Main (gate:worker-dichte, 300 Edits).
@@ -510,7 +743,7 @@ function editKarteFrisch() {
         while (k.n < edits.length) {
             const ed = edits[k.n++];
             if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-            const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+            const r = G.editReich(ed); // die Reichweite der Form (das Gesetz des Kerns)
             const kax = Math.floor((ed.x - r) / span);
             const kbx = Math.floor((ed.x + r) / span);
             const kaz = Math.floor((ed.z - r) / span);
@@ -563,13 +796,9 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const Ny = dimY + 1;
     const Nz = dimZ + 1;
     const density = new Float32Array(Nx * Ny * Nz);
-    // Welle F (mirror von `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur
-    // die j-Ebenen um die Oberfläche samplen, über `surf+Roughness` Luft (−1),
-    // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
+    // Welle F (wie `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur die j-Ebenen um die Oberfläche samplen, über dem
+    // Band Luft (−1), unter ihm Fels (+1); das Band ist das Gesetz des Kerns (`G.bandOben`/`G.bandUnten`).
     const base = state.baseHeight || 0;
-    const ROUGH = 12;
-    // V17.103 (mirror): Band-Top-Margin deckt den Normalen-eps (1.5 Zellen) + Puffer.
-    const topMargin = 4 * step;
     // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
     // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
     // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
@@ -579,9 +808,8 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
             const wx = ox + i * step;
             const ctx = state.noise ? terrainColumnContext(wx, wz) : null;
             const surf = ctx ? ctx.surf : G.hoehe(state, wx, wz, true);
-            const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
-            // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
-            const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
+            const bandTopJ = G.bandOben(surf, oy, step);
+            const bandBotJ = G.bandUnten(surf, base, oy, step);
             const colBase = i + k * Nx * Ny;
             for (let j = 0; j < Ny; j++) {
                 const idx = colBase + j * Nx;
@@ -591,53 +819,15 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
             }
         }
     }
-    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Kugel über ihren Index-Kasten
-    // und in Float32 — auch über und unter dem Band. Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine
-    // Füll-Kugel über dem Band stand im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0
-    // 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
-    applyVoxelEditsGrid(density, ox, oy, oz, Nx, Ny, Nz, step);
-    return density;
-}
-
-// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (Stamm) — dieselben Kästen, dieselbe Reihenfolge,
-// dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
-function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
-    const edits = editsImKasten(gox, gox + (Nx - 1) * step, goz, goz + (Nz - 1) * step);
-    if (!edits.length) return;
-    for (let e = 0; e < edits.length; e++) {
-        const ed = edits[e];
-        if (!ed) continue;
-        const r = ed.r;
-        const r2 = r * r;
-        const strength = ed.strength || 48;
-        const isFill = ed.mode === "fill";
-        const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
-        const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
-        const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
-        const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
-        const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
-        const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
-        for (let k = k0; k <= k1; k++) {
-            const wz = goz + k * step;
-            const dz = wz - ed.z;
-            for (let j = j0; j <= j1; j++) {
-                const wy = goy + j * step;
-                const dy = wy - ed.y;
-                for (let i = i0; i <= i1; i++) {
-                    const wx = gox + i * step;
-                    const dx = wx - ed.x;
-                    const dist2 = dx * dx + dy * dy + dz * dz;
-                    if (dist2 < r2) {
-                        const fall = 1 - Math.sqrt(dist2) / r;
-                        const amt = fall * strength;
-                        const idx = i + j * Nx + k * Nx * Ny;
-                        if (isFill) out[idx] += amt;
-                        else out[idx] -= amt;
-                    }
-                }
-            }
-        }
-    }
+    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Edit über seinen Index-Kasten und in
+    // Float32 — auch über und unter dem Band, das ihre Reichweite deckt: dieselbe Form des Kerns (`G.bandUmEdits`,
+    // `G.editsImGitter`). Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine Füll-Kugel über dem Band stand
+    // im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
+    const edits = editsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step);
+    if (!edits.length) return density;
+    if (state.noise)
+        G.bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, terrainColumnContext, terrainBaseDensityCol);
+    return G.editsImGitter(density, ox, oy, oz, Nx, Ny, Nz, step, edits);
 }
 
 // =============================================================================
@@ -694,50 +884,33 @@ function terrainBaseDensityCol(x, y, z, ctx) {
             d -= hallCarve * caveEnv * 72;
         }
     }
-    if (ctx.hydroActive) {
-        // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
-        // See-Becken danach.
-        const kn = ctx.hydroCarve;
-        if (kn) {
-            const dL = kn.L - y;
-            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-            const dP = kn.P - y;
-            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-        }
-        const lk = ctx.lake;
-        if (lk) {
-            const flatD = lk.bedY - y;
-            d = d * (1 - lk.w) + flatD * lk.w;
-        }
+    if (ctx.hydroActive) d = gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+    return d;
+}
+// DIE GESTALT DES GEWÄSSERS (Mirror von `_gewaesserForm`): der Fluss-Kanal kn — das weiche Maximum aus Gelände und Damm, davon
+// das weiche Minimum mit dem Kanal —, danach das See-Becken lk. Leser: die Dichte und die Ort-Wahl (`ortTraegt`).
+function gewaesserForm(d, y, kn, lk) {
+    if (kn) {
+        const dL = kn.L - y;
+        let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+        const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+        const dP = kn.P - y;
+        hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+        d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+    }
+    if (lk) {
+        const flatD = lk.bedY - y;
+        d = d * (1 - lk.w) + flatD * lk.w;
     }
     return d;
 }
 
-// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel, gefragt wird die Karte des Chunks (Spiegel von
-// `_voxelEditDeltaAt`).
-function applyVoxelEdits(d, x, y, z) {
+// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel die Form des Kerns (`G.mitEdits`), gefragt wird die Karte des
+// Chunks (wie `_mitEdits` im Stamm).
+function applyVoxelEdits(basis, x, y, z) {
     const k = state.voxelEdits && state.voxelEdits.length ? editKarteFrisch() : null;
     const edits = k ? k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
-    if (edits) {
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const dx = x - ed.x;
-            const dy = y - ed.y;
-            const dz = z - ed.z;
-            const dist2 = dx * dx + dy * dy + dz * dz;
-            const r = ed.r;
-            if (dist2 < r * r) {
-                const fall = 1 - Math.sqrt(dist2) / r;
-                const amt = fall * (ed.strength || 48);
-                if (ed.mode === "fill") d += amt;
-                else d -= amt;
-            }
-        }
-    }
-    return d;
+    return G.mitEdits(basis, x, y, z, edits);
 }
 
 // Volle Density an EINEM Punkt mit gegebenem Spalten-Kontext (base-col + edits) — der Hoist-Pfad.
@@ -749,6 +922,41 @@ function terrainDensityAtCol(x, y, z, ctx) {
 function terrainDensityAt(x, y, z) {
     if (!state.noise) return 0;
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
+}
+
+// DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand, die
+// Fläche ungecarvt (`hydroComputing` hält den Kanal aus, wie der Stamm es bis dahin im Haupt-Faden tat); danach das
+// globale Band über alle Regionen (gelaende-core `hydroBand`, derselbe Rechner wie `_computeHydroBand` im Stamm).
+function hydroRegion(key, origin) {
+    if (!state.hydroGesetz)
+        throw new Error("voxel-worker: die Hydrosphäre ohne ihr Gesetz (hydroGesetz fehlt im Zustand)");
+    state.hydroComputing = true;
+    let h;
+    try {
+        h = G.hydrosphaere(state, state.hydroGesetz, voxelSurfaceY, origin);
+    } finally {
+        state.hydroComputing = false;
+    }
+    hydroSetzen(key, h);
+    return h;
+}
+function hydroSetzen(key, h) {
+    if (key === "heim") state.hydrosphere = h;
+    else (state.hydroTiles || (state.hydroTiles = {}))[key] = h;
+    const regionen = [state.hydrosphere].concat(state.hydroTiles ? Object.values(state.hydroTiles) : []);
+    state.hydroBand = G.hydroBand(typeof state.waterLevel === "number" ? state.waterLevel : 0, regionen);
+}
+
+// Die Antwort an den Main (Lehre 24): die Felder der Region reisen per Transfer — der Faden behält seine eigenen und kopiert
+// sie hier (die Kopie liegt im Faden, nie im Haupt-Faden); Flüsse, Seen, Fälle und der Kanal-Index reisen als Daten.
+function hydroAntwort(h) {
+    const lakeBedCell = h.lakeBedCell.slice();
+    const lakeW = h.lakeW.slice();
+    const lakeNear = h.lakeNear.slice();
+    const waterY = h.water.waterY.slice();
+    const waterKind = h.water.waterKind.slice();
+    const region = Object.assign({}, h, { lakeBedCell, lakeW, lakeNear, water: { waterY, waterKind } });
+    return { region, transfer: [lakeBedCell.buffer, lakeW.buffer, lakeNear.buffer, waterY.buffer, waterKind.buffer] };
 }
 
 // A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` im Stamm): Heimat-Region wenn (x,z) in ihr, sonst die
@@ -783,10 +991,11 @@ function hydrosphereCarveAt(x, z) {
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
     const list = rb[bj * bd + bi];
     if (!list) return null;
-    const sN = state.bankNeigung;
-    const sK = state.bankKruemmung;
-    const fuss = state.bankRundung;
-    const kB = state.dammBreite;
+    const H = state.hydroGesetz;
+    const sN = H.bankNeigung;
+    const sK = H.bankKruemmung;
+    const fuss = H.bankRundung;
+    const kB = H.dammBreite;
     let P = Infinity;
     let L = -Infinity;
     for (let s = 0; s < list.length; s++) {
@@ -803,15 +1012,15 @@ function hydrosphereCarveAt(x, z) {
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
         const dK = halfW + D / sN;
-        if (dist >= dK + kB + state.bankWeite) continue;
+        if (dist >= dK + kB + H.bankWeite) continue;
         const spiegel = seg.sA + (seg.sB - seg.sA) * t;
-        const B = spiegel - (1 - state.spiegelFreibord) * D;
+        const B = spiegel - (1 - H.spiegelFreibord) * D;
         const u0 = dist - halfW;
         let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
         const u = dist - dK;
         if (u > 0) p += sK * u * u;
         // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung (Mirror)
-        let l = spiegel + Math.max(state.spiegelFreibord * D, state.dammFreibord);
+        let l = spiegel + Math.max(H.spiegelFreibord * D, H.dammFreibord);
         const uL = u - kB;
         if (uL > 0) l -= sN * uL + sK * uL * uL;
         if (p < P) P = p;
@@ -1198,7 +1407,7 @@ function hydroRiverAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const krone = halfW + D / state.bankNeigung;
+        const krone = halfW + D / state.hydroGesetz.bankNeigung;
         if (dist > krone) continue;
         const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
         gSumme += g;
@@ -3397,7 +3606,7 @@ function flussAbdruck(x, z, F) {
                 else if (t > 1) t = 1;
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
                 const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
-                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.bankNeigung);
+                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.hydroGesetz.bankNeigung);
                 if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
                 let schon = false;
                 for (let k = 0; k < A.n; k++)

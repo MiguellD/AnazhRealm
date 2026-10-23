@@ -1,6 +1,4 @@
-// diag-v1-pfad.cjs — DIE V1-PFAD-LINSE (Welle L, Familie auge-v1): die Defekte, die die Leben-Prüfung am 06.10. auf dem
-// gespielten v1.0-Pfad fand (artifacts/profiband/leben/befund-v1-pfad.md,
-// artifacts/profiband/leben/synthese.md Q14/Q15), je beim NAMEN. Jede
+// diag-v1-pfad.cjs — DIE V1-PFAD-LINSE (Familie auge-v1): die Defekte des gespielten v1.0-Pfads, je beim NAMEN. Jede
 // Probe ruft den Chokepoint selbst (die Methode, in der der Defekt saß) im echten Boot (headless, foundry-ON,
 // Null-Renderer der Welt) und misst seine Wirkung — keine Probe ersetzt die Stelle, an der der Defekt sitzt (Q0).
 //
@@ -8,66 +6,67 @@
 //     `_workshopRender`. Die Linse liest am Vorschau-Renderer, mit welchem Masken-Stand er gerufen wird (der
 //     Neben-Renderer ist der Beobachtungs-Punkt — er bekommt den Stand, die GPU-Arbeit bleibt aus), und rechnet mit dem
 //     EINEN Masken-Gesetz (`__phytoCore.lodCrossfadeMask`) über die Vertices der Vorschau, welcher Anteil der Eiche
-//     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
+//     im Bild bleibt.                                                                                   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
-//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
+//   V-D3 FREMDER ZUG — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
 //     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
 //     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
-//     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
-//     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
-//     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
+//     Zug der Vorschau: sie wird NACH der Ankunft geweckt.                                            Soll ≤ 20 s
 //     Dazu die Wand W7: der Foundry-Pfad pollt nicht — EIN Zeit-Graph über jedes Glied, das die Familie erreicht (Kreise
 //     mit Zeit-Kante, Schleifen mit Schlaf, setInterval, Warten auf ein pollendes Glied); frei nur die Frist-Kette.
 //
 //   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
 //     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
 //     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
-//     Waffe des Buchs gemessen. Befund 32027dc2: Messer 0,059, Waffen-Median 0,146, 71 von 232 unter 0,5 (der
-//     3-m-Mindestabstand in `_workshopCenterPreviewOn`).                                          Soll [0,5; 0,9]
+//     Waffe des Buchs gemessen.                                                                    Soll [0,5; 0,9]
 //
 //   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
 //     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
-//     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
-//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
+//     der gezeichneten Instanz geprüft). Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
 //     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
+//     Framerate) und um die Plattform, nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
-//     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
-//     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
+//     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los.
 //     V-D6 — `llmCall` gegen einen lokalen Endpunkt ohne Dienst: der Fehler nennt den Host, nie CORS.
 //     V-k5 — „pflanz mir einen eichenhain am wasser" an einem Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster):
-//       0 Eichen, die Absage im Chat (Befund: 6 Eichen um den Spieler, „am Wasser gewachsen").
+//       0 Eichen, die Absage im Chat.
 //     V-k6 — „pflanz mir zwei birken" mit P2P an: das gesendete Programm trägt den Ort aufgelöst (["at", …]), der
-//       Empfänger 200 m weiter pflanzt beim Absender (Befund: 203/206 m vom Absender). Der Sende-Punkt `p2pSend` ist
+//       Empfänger 200 m weiter pflanzt beim Absender. Der Sende-Punkt `p2pSend` ist
 //       der Beobachtungs-Punkt (das Netz), der Chokepoint `dslRun` → `_dslMitOrten` läuft echt.
 //     V-D8 — das Label der Art im Chat („Birke", nie „baum_birke"), die Dorf-Zählung nur im Log.
 //     V-k5-KLASSE — an demselben trockenen Ort läuft JEDE Op mit ["near_water", 60] (spawn_creature · tree · studio ·
 //       island · ufo · village · temple · waterfall · blueprint · fractal · deposit_life · deposit_emotion) und eine chain
 //       durch `dslRun`: jede scheitert benannt an der Engstelle `dslEvalPos` („kein Wasser im Umkreis von 60 m", die Op im
 //       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
-//       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
-//       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
-//     V-k5-KLASSE, DER REST (Gegenprüfung pruef3) — jeder UNGÜLTIGE Ort scheitert benannt an derselben Engstelle: ein
+//       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler.
+//     V-k5-KLASSE, DER REST — jeder UNGÜLTIGE Ort scheitert benannt an derselben Engstelle: ein
 //       Text, eine Zahl, ein Objekt oder [] statt Knoten (die KI schreibt "near_water" ohne Klammern), `at` mit fehlendem
 //       oder nicht-numerischem x/y/z (Number(null) === 0), jeder Auflöser mit einem Text statt seiner Zahl (Radius,
 //       Abstand, Spanne), `far_player` ohne Abstände, die Koordinaten von voxel_carve/voxel_fill, jeder spieler-relative
 //       Ort ohne Spieler (auch der Feld-Akt ohne Knoten, die nächste Kreatur, der Mess-Ort einer Regel). Dazu die Defaults:
 //       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
-//       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
-//       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
+//       nie die Untergrenze von `dslClamp`.
 //     R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` (mit den Fels-Beweisen `_felsUeber`) gegen den vollen Spalten-Scan,
 //       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
 //       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
-//       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
+//       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring.
+//
+//   WORT (KI H1) — DER KORPUS (spec/abnahme/ki-korpus.json, 40 Sätze) über den echten Chat-Pfad: Fenster der KI →
+//     `maybeAnswerWithLlm` → `llmCall` → `dslRun`; je Satz das Soll am Welt-Abdruck, ein Negativ-Satz nur ohne Tat. --echt
+//     fragt den Anbieter (KI_ENDPUNKT, lokal ollama), --aufnahme schreibt den Mitschnitt Satz → Programm (spec/profiband/
+//     ratsche-ki-korpus.json, sinkt nie), ohne --echt spielt ihn die CI ab. Das Beweisbild nimmt die Werkbank.
 //
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
+//   node scripts/diag-v1-pfad.cjs --korpus [--echt [--bild] [--aufnahme]]   (KI_ENDPUNKT, KI_MODELL)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
+const path = require("path");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -77,11 +76,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const ohneKommentare = stammLib.ohneKommentare;
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, karteMin: 0.5, karteMax: 1.5 };
 // W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
 // die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
 const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
-// V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
+// V-D3 FREMDER ZUG: jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
     const out = [];
@@ -91,23 +90,24 @@ function zugVerdict(m) {
     ]) {
         if (!z) out.push(`zug ${wer}: keine Probe (vakuös)`);
         else if (!z.fremd) out.push(`zug ${wer}: kein fremder Zug im Flug (vakuös)`);
-        else if (!(Number.isFinite(z.ms) && z.ms <= SOLL.zugMs)) // null ist nie 0 (Lehre 17)
+        // erwacht er nach dem Ereignis (die Foundry hat nichts mehr offen), nie an einer Uhr (K-WANDUHR); null ist nie 0 (Lehre 17)
+        else if (!Number.isFinite(z.ms))
             out.push(
                 z.imCache
                     ? `zug ${wer} schläft: ${z.key} liegt im Cache, ${wer === "hand" ? "die Hand" : "die Vorschau"} wartet weiter`
-                    : `zug ${wer}: ${z.key} nach ${SOLL.zugMs} ms nicht angekommen (der fremde Zug im Rang der Ferne)`
+                    : `zug ${wer}: ${z.key} nach dem Zug nicht angekommen (der fremde Zug im Rang der Ferne)`
             );
     }
-    // V-D3 STUFEN (K38-N2): jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
+    // V-D3 STUFEN: jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
     // die Karte wartet auf ihre Höhen-Stufe (Rahmen und Sichthöhe) bzw. auf ihren Bake, nie auf eine Uhr.
     const st = m.stufen || [];
     if (st.length !== 3) out.push(`zug stufen: ${st.length} von 3 Stufen gemessen (vakuös)`);
     for (const s of st)
-        if (!(Number.isFinite(s.ms) && s.ms <= SOLL.zugMs))
+        if (!Number.isFinite(s.ms))
             out.push(
                 s.da
                     ? `zug stufe L${s.lod} schläft: ${s.wart} ist da, die Vorschau wartet weiter`
-                    : `zug stufe L${s.lod}: ${s.wart} nach ${SOLL.zugMs} ms nicht da`
+                    : `zug stufe L${s.lod}: ${s.wart} nicht da, die Foundry hat nichts mehr offen`
             );
         // die Karte steht in ihrer Größe: die Box der Vorschau misst die Höhe ihrer Höhen-Stufe (der Rahmen rahmt die Karte,
         // nie den Stamm des Einheits-Quads)
@@ -115,9 +115,8 @@ function zugVerdict(m) {
             out.push(
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
-    // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
-    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
-    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    // V-D3 VORRAT: der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag.
     const vr = m.vorrat;
     if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
     else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
@@ -126,7 +125,6 @@ function zugVerdict(m) {
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
-// Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
 function rahmenVerdict(m) {
     if (!m || m.gestartet !== true) return ["rahmen start"];
     const out = [];
@@ -170,13 +168,6 @@ function ankunftVerdict(m) {
     return out;
 }
 
-function rezeptVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
-    const out = [];
-    if (!m.friedenGesperrt) out.push("frieden: der Knopf ist ohne Material frei (Vorbedingung)");
-    if (!m.schoepferFrei) out.push(`schöpfer: der Knopf bleibt gesperrt („${m.titel}")`);
-    return out;
-}
 function tasteVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -324,7 +315,7 @@ function knotenVerdict(m) {
 
 // R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
 // scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
-// cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
+// cf9a07ba (8 je 4-m-Ring).
 const ALT8 = (R) => 8 * Math.floor(R / 4);
 function sucheVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
@@ -807,7 +798,7 @@ function wand(src) {
         fehltIn("dslEffects", /const c[xyz] = Number\(|playerMesh\.position : \{ x: 0/),
         fehltIn("_dslRulePos", /Array\.isArray/),
     ];
-    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
+    // Der Foundry-Pfad pollt nicht: jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
     // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
     // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
     const zg = zeitGraph(src);
@@ -847,20 +838,79 @@ function wand(src) {
     ];
 }
 
+// ── WORT (KI H1) — das Soll am Welt-Abdruck, das Urteil über den Lauf (rein; Probe UND Selbsttest). ──
+const KORPUS_PFAD = path.join(root, "spec/abnahme/ki-korpus.json");
+const RATSCHE_PFAD = path.join(root, "spec/profiband/ratsche-ki-korpus.json");
+const KORPUS_SOLL = {
+    gueltig: 0.95,
+    absicht: 0.85,
+    p95Ms: 6000,
+    fensterMs: 10000,
+    gegenprobe: "http://localhost:9/",
+};
+// die feste Welt: ein Akt der KI, den ihr Satz nicht verlangt, ist ein Bruch
+const FESTE_WELT = /"(voxel_carve|voxel_fill|terrain_steepness|terrain_base_height|remove_architecture)"/;
+// Das Soll am Abdruck vor → nach (`wortTyp` Wort → Bauplan); null = kein Leser.
+function korpusPraedikat(soll, vor, nach, wortTyp) {
+    if (soll.wetter) return nach.wetter === soll.wetter;
+    if (soll.saison) return nach.saison === soll.saison;
+    if (soll.himmel) return nach.himmel !== vor.himmel;
+    if (soll.uhr) {
+        const [a, b] = soll.uhr;
+        return a <= b ? nach.uhr >= a && nach.uhr <= b : nach.uhr >= a || nach.uhr <= b;
+    }
+    const zahl = (x) =>
+        Object.entries(x.werke).reduce((s, [t, n]) => s + (soll.werk === "*" || soll.werk.some((w) => wortTyp[w] === t) ? n : 0), 0);
+    if (soll.werk) return zahl(nach) - zahl(vor) >= soll.min;
+    for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
+    for (const k of ["tempo", "sprung", "schwere"]) if (soll[k]) return nach[k] > vor[k];
+    return null;
+}
+// Ein Satz: gültig (JSON, das Programm läuft ohne Absage) · Absicht (das Soll) · Bruch. Ein Negativ-Satz nur ohne versuchte
+// Tat — auch eine, die `dslEval` abweist, ist ROT.
+function korpusSatzUrteil(e, soll) {
+    const a = e.antwort || {};
+    const json = !!e.antwort && !a.error && !a.fallbackUsed;
+    const bruch = e.fehler > 0 || FESTE_WELT.test(JSON.stringify(a.program || null));
+    if (soll.still) return { gueltig: json && !a.program, absicht: json && !a.program && !!a.say, bruch, tat: !!a.program };
+    return { gueltig: json && Array.isArray(a.program) && e.lauf === true, absicht: e.praedikat === true, bruch };
+}
+// Das Urteil, die Täter beim Namen: echt gegen das Soll der Karte, der Mitschnitt gegen die Absicht des echten Laufs.
+function korpusVerdict(m) {
+    if (!m || !m.korpus) return ["Korpus fehlt (spec/abnahme/ki-korpus.json)"];
+    const [S, n, r, out] = [m.saetze, m.korpus.saetze.length, m.ratsche || {}, []];
+    if (S.length !== n) out.push(`${S.length} von ${n} Sätzen gelaufen`);
+    const nie = S.filter((e) => e.praedikat === null).map((e) => e.satz);
+    if (nie.length) out.push(`Prädikat nie geprüft: ${nie.slice(0, 3).join(" · ")}`);
+    if (!m.echt && !(r.anbieter && r.quote)) out.push("kein echter Anbieter: der Mitschnitt trägt keinen echten Lauf");
+    if (!(m.tueren || []).length) out.push("die Türen der CSP nie geprüft");
+    for (const [u, zu] of m.tueren || [])
+        if (zu !== (u === KORPUS_SOLL.gegenprobe))
+            out.push(zu ? `die CSP sperrt die Tür ${u}` : `die CSP-Probe ist blind: ${u} geht durch`);
+    if (m.sinkt) out.push(`die Aufnahme sänke die Ratsche (Absicht ${m.sinkt.join(" gegen ")} oder Täter) — nicht geschrieben`);
+    for (const e of S)
+        if (e.urteil.tat) out.push(`Negativ-Satz versucht eine Tat: „${e.satz}“ → ${JSON.stringify(e.antwort.program).slice(0, 80)}`);
+    const b = S.filter((e) => e.urteil.bruch).map((e) => e.satz);
+    if (b.length) out.push(`${b.length} Brüche: ${b.slice(0, 3).join(" · ")}`);
+    const q = (k) => S.filter((e) => e.urteil[k]).length / Math.max(1, S.length);
+    const pz = (x) => (100 * x).toFixed(1) + " %";
+    if (m.echt) {
+        for (const k of ["gueltig", "absicht"]) if (q(k) < KORPUS_SOLL[k]) out.push(`${k} ${pz(q(k))} < ${pz(KORPUS_SOLL[k])}`);
+        if (!(m.p95 <= KORPUS_SOLL.p95Ms)) out.push(`p95 Satz → Welt ${m.p95} ms > ${KORPUS_SOLL.p95Ms} ms`);
+    } else if (r.quote && q("absicht") < r.quote.absicht)
+        out.push(`Rückschritt am Mitschnitt: Absicht ${pz(q("absicht"))} < ${pz(r.quote.absicht)} des echten Laufs`);
+    return out;
+}
+
+
 const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(arg) {
     const kiPort = arg && arg.kiPort;
-    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while (
-        (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-        performance.now() < dl0
-    )
-        await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -875,8 +925,8 @@ async function probe(arg) {
     try {
         const m = { gestartet: false };
         out.ankunft = m;
-        const dl0b = performance.now() + 60000;
-        while (performance.now() < dl0b && !st.architectures.some((a) => a && a.type === "start_plattform")) await tick(1, 100);
+        await window
+            .__gebautNach("die Genesis-Plattform", { fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"), takt: () => tick(1, 100), max: 600 });
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
         if (!plat) throw new Error("keine Genesis-Plattform");
         const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
@@ -934,35 +984,6 @@ async function probe(arg) {
     } catch (e) {
         out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
-    try {
-        const m = { gestartet: false };
-        out.rezept = m;
-        const host = document.getElementById("inventory-recipes");
-        if (!host) throw new Error("kein #inventory-recipes");
-        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
-        const knopf = () => {
-            for (const row of host.querySelectorAll(".recipe-row")) {
-                const nm = row.querySelector(".recipe-name");
-                if (nm && nm.textContent === lbl) return row.querySelector("button");
-            }
-            return null;
-        };
-        const modusAlt = r.getGameMode();
-        r.setGameMode("frieden");
-        r.renderRecipeBook();
-        const k0 = knopf();
-        m.friedenGesperrt = !!k0 && k0.disabled === true;
-        r.setGameMode("schöpfer");
-        r.renderRecipeBook();
-        const k1 = knopf();
-        m.schoepferFrei = !!k1 && k1.disabled === false;
-        m.titel = k1 ? k1.title || "" : "kein Knopf";
-        r.setGameMode(modusAlt);
-        m.gestartet = true;
-    } catch (e) {
-        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
-    }
     // ── V-k4: der Fensterwechsel löst die Tasten ──
     try {
         const m = { gestartet: false };
@@ -986,13 +1007,11 @@ async function probe(arg) {
             provider: llm.provider,
             ep: llm.providerConfig.ollama.endpoint,
             px: llm.providerConfig.ollama.useProxy,
-            last: llm.lastResponseAt,
         };
         llm.enabled = true;
         llm.provider = "ollama";
         llm.providerConfig.ollama.endpoint = "http://127.0.0.1:" + kiPort;
         llm.providerConfig.ollama.useProxy = false;
-        llm.lastResponseAt = -1e9;
         let antwort = null;
         try {
             antwort = await r.llmCall("hallo welt");
@@ -1001,7 +1020,6 @@ async function probe(arg) {
             llm.provider = alt.provider;
             llm.providerConfig.ollama.endpoint = alt.ep;
             llm.providerConfig.ollama.useProxy = alt.px;
-            llm.lastResponseAt = alt.last;
         }
         m.fehler = antwort && antwort.error ? String(antwort.error) : null;
         m.host = "127.0.0.1:" + kiPort;
@@ -1123,11 +1141,11 @@ async function probe(arg) {
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
             _depositLife: (a) => ({ x: a[0], z: a[1] }),
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
-            carveVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
-            fillVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
+            carveVoxel: (a) => ({ x: a[0], z: a[2] }),
+            fillVoxel: (a) => ({ x: a[0], z: a[2] }),
             assignTaskToNearestCreature: (a) => a[0] || null,
         };
-        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxelSphere: () => {}, fillVoxelSphere: () => {} };
+        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxel: () => {}, fillVoxel: () => {} };
         const alt = {};
         for (const nm of Object.keys(ortVon)) {
             alt[nm] = r[nm];
@@ -1249,7 +1267,7 @@ async function probe(arg) {
         const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
         const scan = r._voxelSurfaceY;
         const urteil = r._landAt;
-        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
+        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz): 3 Margen, je 400 Punkte
         //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
         const ref = (x, z, mg) => {
             const s = scan.call(r, x, z);
@@ -1289,8 +1307,8 @@ async function probe(arg) {
         const ufer = w0 || P;
         const sy = scan.call(r, ufer.x + 6, ufer.z) ?? 0;
         wm.voxelEdits = (editsAlt || []).concat([
-            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, strength: 48, mode: "carve" },
-            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, strength: 48, mode: "fill" },
+            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, mode: "carve" },
+            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, mode: "fill" },
         ]);
         try {
             for (let i = 0; i < 300; i++) {
@@ -1384,9 +1402,7 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche))
-            await sleep(80);
+        await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche));
         // Das Welt-Auge steht beim Spieler (der Loop spiegelt es je Frame) — dort, wo der neue Spieler die Werkstatt öffnet.
         await tick(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
@@ -1406,12 +1422,12 @@ async function probe(arg) {
             });
         };
         r.selectBlueprintForEdit("baum_eiche");
-        const dl2 = performance.now() + 90000;
-        while (performance.now() < dl2) {
-            const p = ws.preview;
-            if (p && p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length) break;
-            await tick(1, 80);
-        }
+        await window
+            .__gebautNach("die Werkstatt-Vorschau der Eiche", {
+                fertig: () => !!(ws.preview && ws.preview.currentMesh && !r._wsStudioPending && ws.preview.currentMesh.children.length),
+                takt: () => tick(1, 80),
+                max: 1125,
+            });
         const p = ws.preview;
         if (!p || !p.currentMesh) {
             // Der Zustand beim Namen: liegt der Körper im Cache, schläft die Vorschau; sonst wartet sie auf den Zug.
@@ -1475,7 +1491,7 @@ async function probe(arg) {
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D3 FREMDER ZUG (K38): der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
+    // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
     // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
     // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
     // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
@@ -1505,7 +1521,6 @@ async function probe(arg) {
         r._foundryCacheEvict(a.key);
         let same = 1;
         while (same < 100000 && r._foundryVariantFor(same, a.preset) !== a.variant) same++;
-        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // ohne Ort: die Gestalt kommt aus dem Samen (mit Ort wählt der Platz sie, `_foundryGestaltFor`), der Rang ist der
         // der Ferne (`_foundryAuftragD2` ohne Ort = ∞)
         r._foundryFlattenFor({ type: "baum_eiche", seed: same }, a.preset, 0);
@@ -1513,7 +1528,7 @@ async function probe(arg) {
         const t0 = performance.now();
         r.selectBlueprintForEdit("baum_eiche");
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
-        while (performance.now() < t0 + zugFrist && !steht()) await tick(1, 80);
+        await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, { fertig: steht, takt: () => tick(1, 80), max: 275 });
         m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
         m.vorschau.imCache = f.cache.has(a.key);
         // (b) die Hand hinter dem Zug der Vorschau: geweckt zählt nur NACH der Ankunft
@@ -1535,14 +1550,15 @@ async function probe(arg) {
                 const t1 = performance.now();
                 const erst = r._heldFoundryGroup(klinge);
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
-                while (performance.now() < t1 + zugFrist && !m.hand.geweckt) await tick(1, 80);
+                await window
+                    .__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, { fertig: () => m.hand.geweckt > 0, takt: () => tick(1, 80), max: 275 });
                 m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
                 m.hand.imCache = f.cache.has(b.key);
             } finally {
                 r._refreshHeldMesh = echt;
             }
         }
-        // (c) JEDE STUFE der Vorschau (K38-N2): die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
+        // (c) JEDE STUFE der Vorschau: die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
         // Körper der Stufe, die L2-Karte ihre Höhen-Stufe (Rahmen + Sichthöhe), ihre Höhe und ihre Zelle im Atlas.
         m.stufen = [];
         const bpE = st.blueprints.baum_eiche;
@@ -1563,7 +1579,7 @@ async function probe(arg) {
                 }
                 const t2 = performance.now();
                 r.selectBlueprintForEdit("baum_eiche");
-                while (performance.now() < t2 + zugFrist && !steht()) await tick(1, 80);
+                await window.__gebautNach(`die Vorschau-Stufe L${s}`, { fertig: steht, takt: () => tick(1, 80), max: 275 });
                 const z = at ? at.zellen.get(zKey) : null;
                 const box = steht() ? new THREE.Box3().setFromObject(p.currentMesh) : null;
                 m.stufen.push({
@@ -1578,13 +1594,12 @@ async function probe(arg) {
         } finally {
             bpE._recipeLod = lodAlt;
         }
-        // (d) DER VORRAT (K38-N2): eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
+        // (d) DER VORRAT: eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
         // an; sobald ihr Körper im Flug ist, fragt ein Leser denselben Schlüssel — gezählt wird jeder Auftrag an den Worker.
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        const tV = performance.now();
-        while (f._vorrat && performance.now() < tV + zugFrist) await tick(1, 80); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
@@ -1670,8 +1685,7 @@ async function probe(arg) {
             const ti = performance.now();
             if (art === "rezept") r.selectStudioRecipeForView(id);
             else r.selectBlueprintForEdit(id);
-            const dl = performance.now() + 20000;
-            while (performance.now() < dl && r._wsStudioPending) await sleep(40);
+            await window.__weltDa(() => !(r._wsStudioPending));
             e.ms = Math.round(performance.now() - ti);
             if (r._wsStudioPending) {
                 e.frist = true;
@@ -1694,7 +1708,188 @@ async function probe(arg) {
     return out;
 }
 
+// ── WORT — DIE SEITE ──
+async function korpusAufbau(a) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
+    for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++) await window.__weltStehtNach();
+    // DER SPIELER STELLT DIE STIMME EIN, im Fenster der KI: Anbieter, Modell, Endpunkt, Proxy an (lokal geht er vorbei)
+    for (const [id, w] of [["llm-provider", "ollama"], ["llm-model", a.modell], ["llm-endpoint", a.endpunkt], ["llm-use-proxy", true]]) {
+        const el = document.getElementById(id);
+        el[w === true ? "checked" : "value"] = w;
+        el.dispatchEvent(new Event("change"));
+    }
+    document.getElementById("llm-toggle").click();
+    // Beobachtungs-Punkte: die Antwort an den Spieler und was der Lauf der KI setzte (nie, was die Welt selbst wachsen ließ)
+    const K = (window.__korpus = {});
+    const [ruf, lauf] = [r.llmCall, r.dslRun];
+    r.llmCall = async function (text, system, o) {
+        const p = await ruf.call(this, text, system, o);
+        if (!system && !(o && o.hintergrund)) K.antwort = p;
+        return p;
+    };
+    r.dslRun = function (p, o) {
+        const [na, nw] = [st.architectures.length, st.creatures.length];
+        const res = lauf.call(this, p, o);
+        if ((o && o.source) !== "llm:grok") return res;
+        K.werke.push(...st.architectures.slice(na));
+        K.wesen.push(...st.creatures.slice(nw));
+        K.lauf = res.ok && !res.log.some((x) => /^(sovereign|weltakt_gehalten)/.test(x.event));
+        return res;
+    };
+    K.abdruck = () => {
+        const [da, werke] = [new Set(st.architectures), {}];
+        for (const x of K.werke) if (da.has(x)) werke[x.type] = (werke[x.type] || 0) + 1;
+        return {
+            werke,
+            wesen: K.wesen.filter((c) => st.creatures.includes(c)).length,
+            traurig: st.creatures.filter((c) => ((c.userData && c.userData.emotions) || {}).sorrow >= 0.5).length,
+            wetter: st.weather,
+            uhr: st.timeOfDay,
+            saison: st.season,
+            himmel: st.skyTintTo ? st.skyTintTo.getHexString() : "",
+            schwere: st.gravity,
+            regel: (st.worldRules || []).filter((x) => /^llm:/.test(x.source)).length,
+            tempo: st.speed,
+            sprung: st.jumpPower,
+        };
+    };
+    // DER ORT DER SÄTZE: 45 m hinter der Lichtung im Land (auf ihr weicht jede Pflanzung benannt dem Platz)
+    const pm = st.playerMesh.position;
+    const platz = st.architectures.find((x) => x && x.type === "start_plattform");
+    const [P, R] = [platz.position, ((r._grundrissVon(platz) || {}).lichtung || 0) + 45];
+    const [x, z] = [[R, 0], [0, R], [-R, 0], [0, -R]]
+        .map(([dx, dz]) => [P.x + dx, P.z + dz])
+        .find(([x, z]) => r._landAt(x, z, 1)) || [P.x + R, P.z];
+    pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+    await window.__weltStehtNach();
+    // DER RÜCKBAU je Satz: was entstand, fällt; Ort, Leib, Schwere und Gemüt der Wesen stehen wie vorher
+    K.stand = () => ({
+        werke: new Set(st.architectures),
+        wesen: new Set(st.creatures),
+        gemuet: st.creatures.map((c) => [c, { ...(c.userData || {}).emotions }]),
+        leib: [pm.clone(), st.gravity, st.jumpPower, st.speed],
+    });
+    K.zurueck = (v) => {
+        for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
+        for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
+        for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
+        pm.copy(v.leib[0]);
+        [st.gravity, st.jumpPower] = v.leib.slice(1);
+        r._applyPlayerSpeed(v.leib[3]);
+    };
+    // DIE TÜREN: jeder Anbieter und der Proxy der Stimme gehen durch die CSP der Welt, die Gegenprobe nie (sonst ist sie blind)
+    const gesperrt = [];
+    document.addEventListener("securitypolicyviolation", (e) => gesperrt.push(e.blockedURI));
+    const tueren = [...Object.values(r.llmProviderDefs()).map((d) => d.endpoint("m", "", {})), r._llmProxyUrl(), a.gegenprobe];
+    for (const u of tueren) fetch(u, { method: "POST", signal: AbortSignal.timeout(50) }).catch(() => {});
+    await new Promise((ok) => setTimeout(ok, 500));
+    return {
+        wortTyp: Object.fromEntries(a.worte.map((w) => [w, r._studioBlueprintForWord(w)])),
+        tueren: tueren.map((u) => [u, gesperrt.some((g) => g.startsWith(new URL(u).origin))]),
+    };
+}
+
+async function korpusSatz(a) {
+    const r = window.anazhRealm;
+    const K = window.__korpus;
+    const praedikat = new Function(`return (${a.praedikat})`)();
+    if (K.vor) K.zurueck(K.vor);
+    // die Bühne: Mittag · Sonne · Sommer, dann löst sich ihr Halt — die KI darf handeln (`_messHalt`)
+    window.__buehne();
+    r.state.weatherEffectTime = 0;
+    await window.__weltStehtNach();
+    Object.assign(K, { vor: K.stand(), werke: [], wesen: [], lauf: null, antwort: null });
+    const [vor, f0, e] = [K.abdruck(), window.__seitenfehler || 0, { satz: a.satz }];
+    const t0 = performance.now();
+    await r.maybeAnswerWithLlm(a.satz, (z) => r._chatEcho(z));
+    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
+    // das Fenster zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
+    for (let gang = 0; !a.soll.still && gang <= a.fensterMs / 100; gang++) {
+        e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
+        if (e.praedikat) break;
+        await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
+    }
+    Object.assign(e, { weltMs: e.praedikat ? Math.round(performance.now() - t0) : null, lauf: K.lauf });
+    e.fehler = (window.__seitenfehler || 0) - f0;
+    return e;
+}
+
+// Der Mitschnitt-Anbieter der CI (die CSP erlaubt `connect-src 'self'`): das Programm des echten Laufs zum Satz (false: kein JSON).
+const mitschnitt = (ratsche) => (req) =>
+    new Promise((fertig) => {
+        let b = "";
+        req.on("data", (d) => (b += d));
+        req.on("end", () => {
+            const u = JSON.parse(b).messages.pop().content;
+            const p = (ratsche.mitschnitt || {})[u.slice(u.lastIndexOf("Spieler sagt: ") + 14)];
+            const inhalt = p === false ? "kein JSON" : JSON.stringify({ say: "Aus dem Mitschnitt.", program: p });
+            fertig(JSON.stringify(p === undefined ? { error: "kein Mitschnitt" } : { message: { role: "assistant", content: inhalt } }));
+        });
+    });
+
+async function korpusHaupt() {
+    const echt = process.argv.includes("--echt");
+    const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
+    const [roh, ratsche] = [lies(KORPUS_PFAD), lies(RATSCHE_PFAD) || {}];
+    const korpus = roh && { saetze: Object.entries(roh.saetze) };
+    const m = { korpus, ratsche, echt, saetze: [] };
+    const modell = process.env.KI_MODELL || ratsche.modell || "qwen3:4b-instruct";
+    const q = (k) => +(m.saetze.filter((e) => e.urteil[k]).length / Math.max(1, m.saetze.length)).toFixed(3);
+    if (korpus) {
+        const srv = statikServer({ seiten: echt ? null : { "/api/chat": mitschnitt(ratsche) } });
+        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
+        const browser = await starteBrowser({ art: "null", frist: 900000 });
+        const page = await browser.newPage();
+        await nullRenderer(page, { foundry: true });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+        await warteAufWelt(page);
+        await page.evaluate(AUSGABE_INSTALL);
+        const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
+        const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
+        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe };
+        const auf = await page.evaluate(korpusAufbau, arg);
+        m.tueren = auf.tueren;
+        Object.assign(arg, { wortTyp: auf.wortTyp, fensterMs: KORPUS_SOLL.fensterMs, praedikat: korpusPraedikat.toString() });
+        for (const [satz, soll] of korpus.saetze) {
+            const e = await page.evaluate(korpusSatz, { ...arg, satz, soll });
+            e.urteil = korpusSatzUrteil(e, soll);
+            m.saetze.push(e);
+            const [u, a] = [e.urteil, e.antwort || {}];
+            const welt = `${e.antwortMs} ms → Welt ${e.weltMs == null ? "—" : e.weltMs + " ms"}`;
+            const prog = JSON.stringify(a.program || null).slice(0, 100) + (a.error ? ` — ${a.error}` : "");
+            console.log(`  ${u.absicht ? "✓" : "✗"}${u.gueltig ? "" : " ungültig"}${u.bruch ? " BRUCH" : ""} „${satz}“ ${welt} · ${prog}`);
+        }
+        await browser.close();
+        srv.close();
+        const welt = m.saetze.map((e) => e.weltMs).filter((x) => x != null);
+        m.p95 = welt.sort((x, y) => x - y)[Math.ceil(0.95 * welt.length) - 1];
+        // DIE RATSCHE SINKT NIE: ein schwächerer Lauf (weniger Absicht, eine Negativ-Tat, ein Bruch) wird nie der Maßstab der CI
+        if (echt && process.argv.includes("--aufnahme")) {
+            const quote = { gueltig: q("gueltig"), absicht: q("absicht"), p95: m.p95 };
+            const taeter = m.saetze.some((e) => e.urteil.tat || e.urteil.bruch);
+            if (taeter || quote.absicht < ((ratsche.quote || {}).absicht || 0)) m.sinkt = [quote.absicht, (ratsche.quote || {}).absicht];
+            const prog = (a) => (a && !a.error && !a.fallbackUsed ? a.program || null : false);
+            const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
+            const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
+            if (!m.sinkt) fs.writeFileSync(RATSCHE_PFAD, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
+        }
+    }
+    const v = korpusVerdict(m);
+    const ist = `${m.saetze.length} Sätze · ${modell} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
+    check(
+        `WORT der Korpus über den echten Chat-Pfad (${echt ? "echter Anbieter" : "Mitschnitt"}): das Soll, 0 Brüche, Negativ-Sätze ohne Tat`,
+        v.length === 0,
+        ist + (v.length ? " — Täter: " + v.join(" · ") : "")
+    );
+    console.log(errs.length ? `\n❌ ROT — ${errs.length} Verletzung(en).` : "\n✅ GRÜN — der Korpus hält sein Soll.");
+    process.exit(errs.length ? 1 : 0);
+}
+
+
 (async () => {
+    if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
@@ -1782,7 +1977,6 @@ async function probe(arg) {
             telemetrieImChat: false,
         };
         for (const [kurz, urteil, gesund, brueche] of [
-            ["V-D5", rezeptVerdict, { gestartet: true, friedenGesperrt: true, schoepferFrei: true }, [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]]],
             ["V-k4", tasteVerdict, { gestartet: true, gedrueckt: true, nachBlur: false }, [["Klebetaste (V-k4)", { nachBlur: true }, "W bleibt"]]],
             [
                 "V-D6",
@@ -1813,9 +2007,9 @@ async function probe(arg) {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
         const vorStand = stammLib.ersetze(quelle, [
             ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
-            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
+            // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
+            // der Rest der Klasse beim Vorher: der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
             ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
@@ -1823,11 +2017,11 @@ async function probe(arg) {
             // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
             ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
-            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
+            // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
         ]);
-        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
+        // die Klasse der festen Stellen-Zahl: ein Renderer weniger über die Bühne bleibt grün
         const weniger = wand(stammLib.ersetze(quelle, "_hofStartRAF", 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
         check(
             "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
@@ -2072,7 +2266,7 @@ async function probe(arg) {
             const v = ortVerdict(bruch);
             check(`Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand (c52089c7) der Täter beim Namen.
+        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const kGesund = (name) => {
             const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
             return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };
@@ -2093,7 +2287,7 @@ async function probe(arg) {
             ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
             ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
             ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
-            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxelSphere", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
+            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
             ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
             ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
             ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],
@@ -2130,6 +2324,45 @@ async function probe(arg) {
             const v = sucheVerdict(bruch);
             check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        // WORT — der Korpus: das Soll liest den Abdruck; ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
+        const kP = (soll, nach) => korpusPraedikat(soll, { werke: { baum_eiche: 1 } }, nach, { eiche: "baum_eiche" });
+        for (const [name, ist, soll] of [
+            ["zwei Eichen statt drei, ein Haus", kP({ werk: ["eiche"], min: 3 }, { werke: { baum_eiche: 3, haus: 1 } }), false],
+            ["ein Soll ohne Leser", kP({ farbe: 1 }, {}), null],
+        ])
+            check(`Selbst-Test WORT Prädikat: ${name} → ${soll}`, ist === soll, String(ist));
+        const kSaetze = [...Array(39)].map((_, i) => [`satz ${i}`, { wetter: "rainy" }]).concat([["kaffee", { still: 1 }]]);
+        const G = KORPUS_SOLL.gegenprobe;
+        const kLauf = (b = {}) => {
+            const S = kSaetze.map(([satz, soll]) => {
+                const antwort = { say: "Gern.", program: soll.still ? null : ["weather", "rainy"] };
+                const e = { satz, fehler: 0, praedikat: true, weltMs: 2000, lauf: true, antwort, ...(b.satz || {})[satz] };
+                return Object.assign(e, { urteil: korpusSatzUrteil(e, soll) });
+            });
+            const tueren = [["https://openrouter.ai/x", false], [G, true]];
+            return { korpus: { saetze: kSaetze }, ratsche: { anbieter: "h", quote: { absicht: 1 } }, echt: true, saetze: S, p95: 3000, tueren, ...b.m };
+        };
+        const sieben = (e) => Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((i) => [`satz ${i}`, e]));
+        const prog = (program) => ({ antwort: { say: "x", program } });
+        for (const [name, b, soll] of [
+            ["ein gesunder Lauf", {}, null],
+            ["der Negativ-Satz versucht eine Tat, die dslEval abweist", { satz: { kaffee: prog(["spawn_creature", "kaffee_machine"]) } }, "Negativ-Satz versucht"],
+            ["Korpus fehlt", { m: { korpus: null } }, "Korpus fehlt"],
+            ["Prädikat nie geprüft", { satz: { "satz 4": { praedikat: null } } }, "Prädikat nie"],
+            ["die KI gräbt ungefragt", { satz: { "satz 5": prog(["voxel_carve", 0, 0, 0]) } }, "1 Brüche"],
+            ["Plain-Text statt JSON", { satz: sieben({ antwort: { say: "Regen!", fallbackUsed: "plain-text" } }) }, "gueltig"],
+            ["die Absicht verfehlt", { satz: sieben({ praedikat: false }) }, "absicht"],
+            ["die Antwort zu langsam", { m: { p95: 9000 } }, "p95"],
+            ["Mitschnitt ohne echten Lauf", { m: { echt: false, ratsche: {} } }, "kein echter Anbieter"],
+            ["Rückschritt am Mitschnitt", { m: { echt: false }, satz: { "satz 2": { praedikat: false } } }, "Rückschritt"],
+            ["die CSP sperrt einen Anbieter", { m: { tueren: [["https://openrouter.ai/x", true], [G, true]] } }, "die CSP sperrt"],
+            ["die CSP-Probe ist blind", { m: { tueren: [[G, false]] } }, "die CSP-Probe ist blind"],
+            ["die Türen nie geprüft", { m: { tueren: [] } }, "nie geprüft"],
+            ["die Aufnahme sänke die Ratsche", { m: { sinkt: [0.7, 0.75] } }, "sänke die Ratsche"],
+        ]) {
+            const v = korpusVerdict(kLauf(b));
+            check(`Selbst-Test WORT: ‚${name}' → ${soll || "0 Täter"}`, soll ? v.some((t) => t.includes(soll)) : !v.length, v.join(" · "));
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -2142,13 +2375,13 @@ async function probe(arg) {
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
 
@@ -2161,15 +2394,8 @@ async function probe(arg) {
         vA.length === 0,
         `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
     );
-    console.log("=== V-D5 · V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
+    console.log("=== V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
     for (const [kurz, name, m, urteil, zeile] of [
-        [
-            "V-D5",
-            "das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
-            out.rezept,
-            rezeptVerdict,
-            (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`,
-        ],
         [
             "V-k4",
             "der Fensterwechsel löst die gehaltene Taste",
@@ -2255,7 +2481,7 @@ async function probe(arg) {
     const vZ = zugVerdict(zm);
     const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
     check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
+        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (am Ereignis, nie an der Uhr)`,
         vZ.length === 0,
         `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );

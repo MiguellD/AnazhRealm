@@ -6,7 +6,7 @@
 //
 // Dieselbe Sonde läuft auf JEDEM Stand (die APIs sind geguardet) → das Bild-PAAR
 // vorher↔nachher entsteht, indem man sie in einem Worktree des Mesh-Stands
-// (z. B. d7ca0a1f, 19.07.) und auf HEAD fährt:
+//  und auf HEAD fährt:
 //
 //   node scripts/diag-beweis-e.cjs --tag analog [--out DIR] [--ohne-wiese] [--klassen baum,haus] [--proto-min 40]
 //   (im Worktree)  node scripts/diag-beweis-e.cjs --tag mesh --out <HEAD>/artifacts/beweis-e
@@ -33,15 +33,15 @@ const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
 const MIT_WIESE = !process.argv.includes("--ohne-wiese") && KLASSEN.includes("wiese");
 // Die Protokoll-Frist je page.evaluate: der Mesh-Stand (Juli) rendert im Wald Millionen Dreiecke
-// durch swiftshader — ein Doppel-Render dort sprengte 15 min (GEMESSEN 30.09.).
+// durch swiftshader — ein Doppel-Render dort sprengte 15 min.
 const PROTO_MS = Number(argOf("--proto-min", "15")) * 60000;
 const W = 640,
     H = 360;
 const server = statikServer();
 
-// DIE BLICK-WAHL (Befund 30.09.: Kameras standen im Laub, unter dem Bauch des Tiers, hinter Stämmen):
+// DIE BLICK-WAHL (unter dem Bauch des Tiers, hinter Stämmen):
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
-// meisten vom Objekt geänderten Pixeln trägt Fern- UND Armlängen-Schuss.
+// meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
     const r = window.anazhRealm;
     const THREE_ = window.THREE;
@@ -72,7 +72,7 @@ const SICHT_FN = async (a) => {
     }
     const bild = async () => {
         try {
-            if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
         r._schattenAlleNeu();
         const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
@@ -122,19 +122,19 @@ const SCHUSS_FN = async (kam) => {
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
-    // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
-    const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;
+    // BODEN-KLEMME: das Auge nie im Hang.
+    const sy = r._voxelSurfaceY(kam.px, kam.pz);
     if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
     cam.lookAt(kam.lx, kam.ly, kam.lz);
     cam.updateMatrixWorld(true);
     // Die March-Uniforms folgen der Kamera über den EINEN Produktions-Pfad (sonst
     // marcht der Pass aus der Kamera des letzten Loop-Takts — falsche Gestalt).
     try {
-        if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+        if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
     } catch (_e) {}
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
-    // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
+    // die neue Kamera veraltet.
     r._schattenAlleNeu();
     // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, Tonkurve + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
@@ -200,7 +200,7 @@ const SCHUSS_FN = async (kam) => {
         : null;
     zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
     try {
-        if (typeof r._analogEMetrologieZeile === "function") zahlen.zeile = String(r._analogEMetrologieZeile());
+        zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch (_e) {}
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
@@ -220,13 +220,12 @@ const SCHUSS_FN = async (kam) => {
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         let stable = 0,
             last = -1;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
             const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
@@ -239,12 +238,10 @@ const SCHUSS_FN = async (kam) => {
         const rend = r.state.renderer;
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
-        const dlB = performance.now() + 90000;
-        while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
-        // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den
-        // GPU-Puffer, oder eine offene updateRange über ein genulltes/kürzeres Array — Befund 30.09.:
-        // entlassene Batch-Stagings), sprengt queue.writeBuffer („Number of bytes to write is too large")
-        // — die Linse nennt es beim Namen (Objekt · Attribut · Bytes), statt dass der Schuss namenlos stirbt.
+        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
+        // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den GPU-Puffer, oder eine
+        // offene updateRange über ein genulltes/kürzeres Array), sprengt queue.writeBuffer — die Linse nennt es beim Namen
+        // (Objekt · Attribut · Bytes), statt dass der Schuss namenlos stirbt.
         try {
             const au = rend.backend && rend.backend.attributeUtils;
             if (au && !au.__linse) {
@@ -298,19 +295,17 @@ const SCHUSS_FN = async (kam) => {
         `Boot OK · V${boot.version} · ${boot.renderer} (WebGPU-Backend=${boot.backendWebGPU}) · Chunks=${boot.chunks} · Foundry=${boot.foundryBereit}`
     );
 
-    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D). Befund 30.09.: am Spawn
-    // stand die Kamera unter der Start-Plattform bzw. im Hang (Bühnen-Spanne bis 13 m) —
-    // alle Klassen stehen darum auf der Wiese, wo Bühne und Kamera wirklich eben sind.
+    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D) — dort sind Bühne und Kamera
+    // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const dl = performance.now() + 240000;
         let stable = 0,
             last = -1,
             takte = 0;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("die Mess-Wiese", 4000); weiter(); ) {
             try {
                 if (r.state.world) r.state.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
@@ -342,10 +337,10 @@ const SCHUSS_FN = async (kam) => {
         };
         setzeMittag();
         const boden = (x, z) => {
-            const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, z) : r.getTerrainHeightAt(x, z);
+            const y = r._voxelSurfaceY(x, z);
             return typeof y === "number" && isFinite(y) ? y : pm.y;
         };
-        const trocken = (x, z) => (typeof r._landAt === "function" ? r._landAt(x, z, 0.3) : true);
+        const trocken = (x, z) => r._landAt(x, z, 0.3);
         // DIE BÜHNE: je Klasse ein FLACHER, TROCKENER Platz um die Mess-Wiese —
         // Höhen-Spanne über Mitte + 2 Ringe (r, r/2 × 8 Richtungen) ≤ tol, alle Proben trocken,
         // Abstand zu den schon vergebenen Bühnen. Kamera und Objekt stehen auf DERSELBEN Bühne.
@@ -395,7 +390,7 @@ const SCHUSS_FN = async (kam) => {
         const out = { objekte: {}, hausName: hausName || null };
         // Wolf
         const pw = buehne(8, 50, 6, 1.2, 0.3);
-        // Am Kreatur-Limit (Befund 30.09.: spawnCreatureAt=null) weicht das FERNSTE Tier dem Beweis-Wolf.
+        // Am Kreatur-Limit weicht das FERNSTE Tier dem Beweis-Wolf.
         if (r.state.creatures.length >= r.state.maxCreatures) {
             let fern = null,
                 fd = -1;
@@ -445,9 +440,8 @@ const SCHUSS_FN = async (kam) => {
         const zeit = [];
         let lueckeTakte = 0,
             takte = 0;
-        const dl = performance.now() + 120000;
         let fpSichtbarBei = null;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("das Einschwingen des Wolfs", 3000); weiter(); ) {
             setzeMittag();
             try {
                 r._gameLoopTick(performance.now());
@@ -542,14 +536,14 @@ const SCHUSS_FN = async (kam) => {
     // DAS UMSTELLEN: der Spieler steht dort, wo die Kamera steht — der Chunk-Ring, die
     // Foundry-Stufe (Distanz zum Spieler) und der March folgen ihm; eingeschwungen, wenn
     // die Chunk-Zahl 15 Takte ruht (mindestens 40 Takte, höchstens 150 s).
-    // voll = true: warten, bis die Mesh-Zone GANZ steht (vor der Blick-Wahl — ein später gebauter Baum darf nicht
-    // in die gewählte Sichtlinie wachsen, Befund 30.09.); sonst genügen 60 Takte ohne Fortschritt.
+    // voll = true: warten, bis die Mesh-Zone GANZ steht (vor der Blick-Wahl: ein später gebauter Baum wüchse in die Sichtlinie);
+    // sonst genügen 60 Takte ohne Fortschritt.
     const umstellen = (kam, voll = false) =>
         page.evaluate(
             async (kam, voll) => {
                 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
                 const r = window.anazhRealm;
-                const g = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : kam.py;
+                const g = r._voxelSurfaceY(kam.px, kam.pz);
                 r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
                 // Beim Einschwingen rendert der Takt NICHT (unter swiftshader kostet ein Voll-Render mit
                 // Studio-Meshes Sekunden — die Mesh-Zone würde nie fertig); gerendert wird nur der Schuss.
@@ -558,15 +552,13 @@ const SCHUSS_FN = async (kam) => {
                     origRA = rend.renderAsync;
                 rend.render = function () {};
                 if (typeof origRA === "function") rend.renderAsync = () => Promise.resolve();
-                const dl = performance.now() + (voll ? 900000 : 240000);
-                let stable = 0,
+                                let stable = 0,
                     last = -1,
                     takte = 0,
                     offenVor = -1,
                     ohneFortschritt = 0;
                 // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
-                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
-                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                // gröberen Stufe — der feinere Guss ist unterwegs. Vor dem Schuss wird gewartet (≤ 600 Takte).
                 let ziel = null,
                     zielD = Infinity;
                 for (const e of r.state.architectures) {
@@ -582,7 +574,7 @@ const SCHUSS_FN = async (kam) => {
                     Number.isFinite(ziel._lodLevel) &&
                     ziel._lodLevel > 0 &&
                     Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
-                while (performance.now() < dl) {
+                for (const weiter = window.__deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());
@@ -717,14 +709,12 @@ const SCHUSS_FN = async (kam) => {
             continue;
         }
         const suche = kameraFuer(klasse, o, 0, "fern");
-        // ERST einschwingen, DANN den Blick wählen (Befund 30.09.: die Blick-Wahl vor dem Einschwingen sah eine
-        // halb gebaute Mesh-Zone — danach stand ein frisch gebauter Stamm zwischen Kamera und Wolf).
+        // ERST einschwingen, DANN den Blick wählen.
         const um0 = await umstellen(suche, true);
         console.log(
             `  eingeschwungen am ${klasse}: ${um0.takte} Takte · ungebaut in der Mesh-Zone ${um0.offen}${um0.warum ? " — " + um0.warum : ""}\n      Impostor: ${um0.zensus}`
         );
-        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz (Befund 30.09.: der Arm-Schuss erbte den Fern-Azimut
-        // und stand im Busch vor dem Wolf).
+        // Blick-Wahl JE SCHUSS-ART mit ihrer eigenen Distanz.
         for (const art of ["fern", "arm"]) {
             const wahl = await page.evaluate(SICHT_FN, Object.assign({ klasse }, kameraFuer(klasse, o, 0, art)));
             console.log(

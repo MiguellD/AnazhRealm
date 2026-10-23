@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, starteBrowser } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -27,7 +27,7 @@ function sha256Hex(buf) {
 }
 
 // ---------------------------------------------------------------------------
-// Kommentar-Stripper (die V18.267-Falle: der Code darf das Wort im KOMMENTAR tragen,
+// Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
 // der CODE darf es nicht — jeder Source-Grep läuft über den gestrippten Body).
 // Strings/Templates bleiben ERHALTEN (die Stempel-Probe sucht "cores.manifest.json",
 // das als String-Literal im Code lebt).
@@ -35,8 +35,8 @@ const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
-// Foundry-Brücke seit K42, vorher die Labor-Shell). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n")). Die
+// Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
 // Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
 // Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
 function computeStamp(root, lies) {
@@ -162,33 +162,22 @@ function readPack(file) {
 }
 
 // ---------------------------------------------------------------------------
-// DER EINE BOOT-PFAD (wie gate:foundry-warm): AnazhRealm headless (Null-Renderer, GPU-frei)
+// DER EINE BOOT-PFAD (wie gate:fluss): AnazhRealm headless (Null-Renderer, GPU-frei)
 // mit ERZWUNGENER Foundry (der Worker bäckt echte Assets im Gate-Kontext; die IDB ist
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
     const server = statikServer();
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-        window.__anazhForceFoundry = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                !window.anazhRealm.state.blueprints) &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.blueprints);
     });
     const close = async () => {
         try {
@@ -199,7 +188,7 @@ async function bootRealm(port) {
     return { browser, page, server, pageErrors, close };
 }
 
-// Auf den Worker + das Rezeptbuch warten (die foundry-warm-Disziplin: der Rezept-Reply ist
+// Auf den Worker + das Rezeptbuch warten (der Rezept-Reply ist
 // ein EIGENER Round-Trip nach ready — auf die WAHRHEIT warten, nicht den Timing-Zufall).
 async function waitFoundryReady(page, timeoutMs) {
     return page.evaluate(async (tmo) => {
@@ -208,13 +197,11 @@ async function waitFoundryReady(page, timeoutMs) {
         const f = r._ensureAssetFoundry();
         if (!f) return out;
         const t0 = performance.now();
-        const dl = t0 + tmo;
-        while (!f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+        await window.__weltDa(() => !(!f.ready));
         out.ready = !!f.ready;
         out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
         if (!f.ready) return out;
-        const dlR = performance.now() + 30000;
-        while (!(f.recipeCount > 0) && performance.now() < dlR) await new Promise((res) => setTimeout(res, 100));
+        await window.__weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;
     }, timeoutMs || 90000);
@@ -226,11 +213,7 @@ async function waitLibraryWarm(page, timeoutMs) {
     return page.evaluate(async (tmo) => {
         const r = window.anazhRealm;
         const f = r._foundry;
-        const dl = performance.now() + tmo;
-        while (performance.now() < dl) {
-            if (f && f.cache && f.cache.size > 0 && f._vorrat === false) break;
-            await new Promise((res) => setTimeout(res, 200));
-        }
+        await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
         return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
     }, timeoutMs || 180000);

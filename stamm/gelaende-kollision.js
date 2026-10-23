@@ -454,6 +454,9 @@ class AnazhRealm_gelaende_kollision {
     // übergehen sie). Eine Treppe bleibt Treppe: die nächste Stufe deckt nie die Mitte der vorigen. Gedrehte Boxen messen im
     // Rahmen der deckenden (`obb`). Vorher stand jeder Leib, der einen Baum berührte, auf der ersten Stamm-Fuge in der Box
     // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, jede der 2803 Fugen trug).
+    // DER STAB (siedlung.K1): eine Box, deren Grundfläche schmaler ist als ein Fuß (`PLAYER_STAB`), trägt ebenso keinen
+    // Leib — Brüstung, Geländer, Türblatt bleiben Wand. Vorher stieg die Kapsel auf jeder Treppe neben der Schacht-Brüstung
+    // auf deren Holm (Hub 0,56–0,59 m in einem Schritt, gate:haus-welt W10).
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
@@ -488,9 +491,11 @@ class AnazhRealm_gelaende_kollision {
             return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx + rand && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz + rand;
         };
         for (const a of boxes) {
-            let gedeckt = false;
+            const ob = a.obb;
+            let gedeckt =
+                (ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;
             let eckenDa = false;
-            for (const b of boxes) {
+            for (const b of gedeckt ? [] : boxes) {
                 if (b === a || !(b.botY <= a.topY + SNAP) || !(b.topY > a.topY)) continue;
                 if (!eckenDa) {
                     ecken(a);
@@ -567,6 +572,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
+        this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
         entry._blockerGen = 0;
@@ -582,6 +588,7 @@ class AnazhRealm_gelaende_kollision {
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).
     _blockerNetzSetzen(entry) {
         const N = this._blockerNetz();
+        this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
@@ -626,6 +633,24 @@ class AnazhRealm_gelaende_kollision {
                 ? [x0, x1, z0, z1]
                 : null;
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
+        this._blockerWacheMelden(entry._blockerHuelle);
+    }
+
+    // DIE WACHE DES NETZES (mensch.K3): wer sich merkt, was er im Netz las (die Wege der Bewohner einer Siedlung), stellt
+    // eine Wache über sein Rechteck { x0, x1, z0, z1, stand } in `_blockerWachen`; jede Hülle, die dort ein- oder austritt
+    // oder neu gestempelt wird (die Studio-Hülle nach der Kern-Hülle, das Haus des Spielers, der gefällte Baum), zählt ihren
+    // Stand hoch — vor dem Stempel die alte Hülle, danach die neue. Der Leser vergleicht den Stand, nie den Bestand; DAS BUCH
+    // der Wache (`wechsel`, die letzten 256) trägt je Stand die Hülle, die ihn zählte — ein Leser urteilt nur neu, was sie
+    // berührt (`_bewohnerWechsel`, Lehre 25).
+    _blockerWacheMelden(h) {
+        const W = this._blockerWachen;
+        if (!W || !W.size || !h) return;
+        for (const w of W)
+            if (h[1] >= w.x0 && h[0] <= w.x1 && h[3] >= w.z0 && h[2] <= w.z1) {
+                w.stand++;
+                const L = w.wechsel || (w.wechsel = []);
+                if (L.push(h) > 256) L.shift();
+            }
     }
 
     // Trägt einen Eintrag in die Zellen von `karte` über das Rechteck x0..x1 · z0..z1 ein — zu groß (mehr als

@@ -1,12 +1,7 @@
 // diag-fenster-wechsel.cjs — DIE FENSTER-WAND (npm run gate:fenster-wechsel).
 //
-// Befund 03.10. (echte GPU, Radeon 890M): ein Fenster-Wechsel machte die Welt für immer SCHWARZ — die Textur-Bindung des
-// Wassers (des Lesers der Szenen-Tiefe) zog nach `renderer.setSize` nicht nach („Destroyed texture … used in a submit").
-// Befund 09.10. (Leben-Schau 2, laufender Loop): 264× „Destroyed texture [Texture "szene:tiefenabbild"]" beim Vergrößern und
-// Maximieren (DPR 2) — die Pixel-Ratio stellt die DPR-Kappe (`_applyRenderScale` → `setPixelRatio`) Frames NACH dem resize-
-// Ereignis. Die Wurzel beider: die Observer-Diät sah das neu angelegte Tiefen-Abbild nie. Der EINE Schnitt ist der Vorher-
-// Textur-Wächter der Diät (`_diaetVorTextur`); der Wasser-Neubau im resize-Handler war sein Zwilling und ist gefallen
-// (0910-3 A, Gegenprüfung; der Name steht in gate:altlasten).
+// Ein Fenster-Wechsel (Größe, DPR) lässt keine zerstörte Textur in einer Bindung („Destroyed texture … used in a submit"):
+// die Observer-Diät sieht das neu angelegte Tiefen-Abbild über ihren Vorher-Textur-Wächter (`_diaetVorTextur`).
 //
 // Die Wand fährt den ECHTEN Frame: WebGPU auf swiftshader, das Software-Holz (`?holz=kienspan`) mit der Pixel-Kappe des
 // Holzes nah (1,25 — die Kappe, die ein DPR-Wechsel trifft), am Ufer des Bachs der Mess-Wiese (das Wasser liest das Tiefen-
@@ -22,7 +17,7 @@
 //       Schritt „Destroyed texture …" an einem Größen-Ziel beim Namen zeigen (`GROESSEN_ZIELE`: Szenen-Tiefe oder seit D10 der
 //       Spiegel-Strahl). JEDER Schritt urteilt in Bau-Ereignissen: jeder Submit unter einem eigenen Fehler-Bereich, nach n Frames
 //       das Urteil, sobald der GPU-Prozess sie geprüft hat — ein Bereich von r184 (je async Pipeline-Bau offen, swiftshader-Linux
-//       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt (CI 38825754441). K hält den Rest.
+//       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
@@ -80,11 +75,16 @@ async function fensterSchritt(o) {
     const st = r.state;
     const L = () => (r._gpuLeine ? r._gpuLeine.gerendert : 0);
     const warte = () => new Promise((q) => setTimeout(q, 20));
-    const t0 = performance.now();
     if (o.pr != null) {
         const f0 = L();
-        while (Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60 && performance.now() - t0 < 120000)
-            await warte();
+        await window
+            .__gebautNach("noch: Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60", {
+                fertig: () => !!(!(Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60)),
+                takt: async () => {
+                await warte();
+                },
+                max: 2400,
+            });
     }
     const f0 = L();
     const S = window.__fensterEcht;
@@ -93,7 +93,7 @@ async function fensterSchritt(o) {
     // n Frames (die Leine trägt 2 im Flug), dann bis der GPU-Prozess die Submits des Schritts geprüft hat (der Selbsttest
     // endet mit der ersten Meldung)
     const halt = () => o.bisMeldung && gemeldet();
-    while (L() - f0 < o.n && !halt() && (o.bisMeldung || performance.now() - t0 < 120000)) await warte();
+    while (L() - f0 < o.n && !halt()) await warte();
     for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e)); ) await warte();
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
     const W = r._gpuWache || { n: 0, meldungen: [] };

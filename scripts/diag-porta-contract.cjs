@@ -16,13 +16,10 @@
 // hier ALS Invariante geprüft: wer Seed-Variation einführt, bricht bewusst
 // die Goldens (Re-Mint-Entscheid).
 //
-// Goldens: spec/asset-contract/v4/golden/gates.json — EINGEFROREN
-// (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
-// SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
-// PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte —
-// die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion
-// und Aufrufstelle. Befund am Kopf 516e704a: unter Node 24 grün, unter Node 22 16 von 16 Fällen rot (three r128
-// CatmullRomCurve3 'centripetal' und convertSRGBToLinear rufen Math.pow mit gebrochenem Exponenten).
+// Goldens: spec/asset-contract/v4/golden/gates.json — EINGEFROREN (Taille-Disziplin), gemintet NUR wenn die Datei fehlt
+// (oder MINT_FORCE=1). SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden. PLATTFORM-PROBE (S1
+// Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte — die Goldens tragen
+// unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const fs = require("fs");
 const path = require("path");
@@ -146,7 +143,7 @@ function caseKey(c) {
     );
     globalThis.__portaCore = PC;
 
-    // 5c) DIE TOR-HÜLLE (Leben-Schau 2, Nachbesserung 10.10.): die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
+    // 5c) DIE TOR-HÜLLE (Leben-Schau 2): die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
     //     stoßen lässt, IST die gebaute Gestalt — je Rezept und Zahl deckt die Tafel das Gemessene und liegt höchstens 1 cm
     //     darüber (scripts/lib/tor-huelle.cjs). Bis dahin baute der Wirt die Gestalt beim ersten Spawn synchron auf dem
     //     Haupt-Thread nach; ändert sich der Bau, nennt die Linse die Zahl beim Namen. `MINT_TOR_HUELLE=1` druckt die Tafel.

@@ -1,9 +1,5 @@
-// diag-weg-boden.cjs — DIE WEG-KANTEN-PROBE (V18.530): der Siedlungs-Weg ist Boden, kein schwebendes Quad.
-// Befund 04.10. (Blick-Tour 1-nord · 3-markt · 4-west, echte GPU): Straßen, Feldwege, Platz und Äcker lagen als
-// flache Box-Streifen (0,14 m) des Wege-Pools auf der Gesetz-Höhe — der sichtbare Boden (Surface-Nets, ±0,2 m)
-// schnitt sie: harte Kanten, schwarze Linien zwischen gekippten Segmenten, Gras durch den Weg, am Ring-Rand
-// schwebend über der Leere. Jetzt malt `_stlWegeBuild` die Boden-Schichten in die Wege-Karte, die der
-// Boden-Shader und die Wiese lesen. Die Linse baut eine Probe-Siedlung durch DENSELBEN Hebel und prüft:
+// diag-weg-boden.cjs — DIE WEG-KANTEN-PROBE: der Siedlungs-Weg ist Boden, kein schwebendes Quad — `_stlWegeBuild` malt die
+// Boden-Schichten in die Wege-Karte, die der Boden-Shader und die Wiese lesen. Die Linse baut eine Probe-Siedlung durch DENSELBEN Hebel und prüft:
 //   1 KEIN QUAD   keine Boden-Streifen mehr als Geometrie (der Zaun-Pool trägt nur hüfthohe Zäune)
 //   2 BODEN       die Karte trägt den Weg: Mitte voll, 2 m außerhalb leer; Platz und Acker in ihren Kanälen
 //   3 KANTE       der Rand ist weich (an der Weg-Kante liegt ein Zwischenwert, kein Sprung 0 → 1)
@@ -11,12 +7,11 @@
 //   5 ECKE        ein um 45° gedrehter Acker trägt seine Ecke (die Ausdehnung ist die Diagonale, kein Achteck)
 //   6 FERNE       ein Weg 300 m vom Spieler steht in der Karte (die ferne Stufe der Clipmap, kein Loch hinter 120 m)
 //   7 BESTAND     die Kronen-Karte derselben Fenster: eine Eintrags-Krone übersteht 1,6 km Ausflug (Register, Streu,
-//                 verschoben = voll neu gemalt) — bis 06.10. vergaß der ferne Umzug jede Eintrags-Krone
+//                 verschoben = voll neu gemalt)
 //   8 TRITT       die Trittfläche einer Feuerstelle (`fx.tritt` des Gesetzbuchs) als EINZIGE Form der Karte: gesetzt
 //                 tragen GPU-Bytes und CPU-Leser Erde und die Wiesen-/Streu-Kachel darüber fällt; abgebaut über den
 //                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
-//                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen) — bis 06.10. wartete
-//                 der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte (GPU Erde, CPU 0, keine Wiese)
+//                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen)
 // --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug und der alte
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
@@ -318,31 +313,22 @@ function urteil(S) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
+    const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 90000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.scene ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.scene);
     });
     // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
     // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe)
     await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const dl = performance.now() + 90000;
         const warm = () => {
             const f = r._foundry;
             return f && f.recipes && f.recipes.feuerstelle && r.state.voxelChunks && r.state.voxelChunks.size > 20;
         };
-        while (!warm() && performance.now() < dl) {
+        for (const weiter = window.__deckel("Buch und Ring", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(r.state.playerMesh.position);
             await new Promise((ok) => setTimeout(ok, 20));
         }

@@ -1,14 +1,7 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette, 06.10., Welle G)
-//
-// Befund (GTX 1060, `werkbank zerlegen` auf dem V18.532-Kandidaten): der Direktpfad ohne Post-Kette — der Rückfall, wenn
-// die Kette scheitert, und die Weiche der Zerleg-Linse (`post`, `leer`) — STÜRZTE: TypeError „Invalid value used as weak
-// map key" in r184 `copyFramebufferToTexture` ← ViewportDepthTextureNode.updateBefore ← renderObject. Die Wurzel: der
-// Ketten-Bau nahm der Leinwand die Tiefe (`renderer.depth = false`, die nie gelesene Leinwand-Tiefe, V18.532), nur der
-// Fang eines Render-Fehlers gab sie zurück — jeder andere Weg in den Direktpfad zeichnete die Szene in ein Rahmen-Ziel
-// ohne Tiefe (kein Tiefentest), und der erste Leser der Szenen-Tiefe (Wasser, Feld-Pass) warf. Und die Godrays tasteten
-// 20× je Pixel auch bei Stärke 0 (0,69 ms je Frame an der Mess-Wiese).
+// diag-post-kette.cjs — DIE POST-KETTE UND IHR DIREKTPFAD (gate:post-kette): der Direktpfad ohne Post-Kette (der
+// Rückfall, wenn die Kette scheitert, und die Weiche der Zerleg-Linse) zeichnet mit Tiefe, die Godrays tasten nur mit Stärke.
 //
 // Die Wand fährt den ECHTEN Renderer des Spiels (WebGPU auf swiftshader, Holz `kienspan`) mit seinem echten Frame
 // (`_loopRender`) an einer eigenen Bühne in der Welt-Szene: eine nahe rote Kiste vor einer fernen grünen, eine Wasser-
@@ -22,25 +15,20 @@
 //       (Bloom samt Mitte), mindestens 24 in Zweigen (Godrays 20 + lokaler Kontrast 4 hinter ihrer Stärke).
 //   (d) GODRAYS — mit der Sonne im Bild trägt der Zweig: das Bild mit Godrays weicht von dem ohne ab (über dem Rausch-Boden
 //       zweier gleicher Aufnahmen).
-//   (f) SAUM (0710-3) — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
-//       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe —
-//       vorher las jedes ungerade x der rechten Hälfte (screenUV, Nearest) den Nachbar-Block: ein heller Saum von 1 px.
+//   (f) SAUM — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
+//       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe.
 //   (e) WASSER — das Wasser über einem hellen Grund (0,3 m) liest das Tiefen-Abbild wie r184s Viewport-Tiefe: bei festen
 //       Uhren dieselbe Farbe mit dem Abbild und mit dem vollen Klon, und ohne Grund eine andere (die Probe hängt an der
-//       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide) —
-//       bis 07.10. lag sie umgekehrt, das Wasser der Wand wurde gezeichnet und gecullt, kein Pixel.
-//   (g) RAHMEN-ZIEL (0910-1) — der Direktpfad zeichnet in r184s Rahmen-Ziel (`_getFrameBufferTarget`, rgba16float +
+//       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide).
+//   (g) RAHMEN-ZIEL — der Direktpfad zeichnet in r184s Rahmen-Ziel (`_getFrameBufferTarget`, rgba16float +
 //       depth24plus, `isPostProcessingRenderTarget` → im Band `tex:r184-ausgabe`); die Post-Kette legt es nie an. Vor dem
-//       ersten Ausflug, nach der Rückkehr und am Ende lebt keines (r184 hielt es bis zur Entsorgung der Leinwand: 0710-6 und
-//       0710-9 maßen `band --ort genesis` nach `zerlegen` mit 23,7 MB davon), im Direktpfad steht es, und die Regel der Band
+//       ersten Ausflug, nach der Rückkehr und am Ende lebt keines, im Direktpfad steht es, und die Regel der Band
 //       (`rahmenZielBefunde`) nennt es.
-//       DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
+//       DIE DRIFT: fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
 //       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
 //   (h) DUNKEL (D3-N2, der Abend) — eine flache Fläche füllt das Bild mit dunklem Szenen-Licht, belichtet gleich hell
 //       (0,05 bei Belichtung 1, 0,0125 bei 4 — ein Schatten 1,6 EV unter dem belichteten Mittelgrau): das Bild ist nicht schwarz
-//       und bei beiden Belichtungen gleich. Vorher lag der Drehpunkt des Kontrasts bei 0,5 in Szenen-Einheiten VOR der
-//       Belichtung (y = 1,06·x − 0,03): jedes Licht unter 0,028 wurde schwarz, gleich wie hell die Belichtung es hob — seit die
-//       Belichtung dem Tag über 1 folgt, wurde der Abend schwarz. Jetzt dreht er über Belichtung 1 um 0,5 nach der Belichtung (25c).
+//       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 //       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
@@ -56,14 +44,11 @@ const BAND = require("./lib/band-urteil.cjs");
 const N_FRAMES = 4;
 const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
-// gemessen 06.10. (kienspan, 64×48): 0,14 % mittlere Änderung über das ganze Bild, sie sitzt um die Sonne.
+// sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
-// Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von r184s
-// Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN anders.
-// Gemessen 07.10. (kienspan, Leinwand 320×240): Abbild gegen r184 2,5 (das 2×2-Maximum — die Hälfte der Pixel liest den
-// Grund eine Leinwand-Zeile weiter; bei 1080p ist die Zeile 4,5× feiner), Rausch-Boden 0, ohne Grund 37, der vec4-Weg
-// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L (08.10.) las das 2×2-Maximum 6,0
-// daneben; das waagrechte Paar (die Zeile ganz) 0.
+// Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von
+// r184s Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN
+// anders. Mit dem Wasser der Welle L las das 2×2-Maximum 6,0 daneben; das waagrechte Paar (die Zeile ganz) 0.
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
@@ -78,7 +63,7 @@ const DUNKEL_LUMA_MIN = 3;
 const DUNKEL_TOL = 1.5;
 // (h) Die Nacht (D3-2): das Licht des Bodens im Mondlicht (0,02 Szenen-Einheiten bei Belichtung 1, unter dem Schnitt der
 // Tag-Kurve bei 0,028) bei nightFactor 1 zeigt mindestens DUNKEL_LUMA_MIN Luma — der Kontrast fadet zur Nacht aus wie die
-// Entgrauung. Vorher schnitt er auch nachts: der Boden der Wiese um Mitternacht soff ab (61 % schwarz).
+// Entgrauung.
 const DUNKEL_NACHT_LICHT = 0.02;
 
 function urteil(z) {
@@ -201,7 +186,7 @@ function urteil(z) {
         v.push(
             `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
         );
-    // (a) DER ERZWUNGENE BRUCH (K22): der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
+    // (a) DER ERZWUNGENE BRUCH: der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
     // (`_loopRender` → `_stoffBruch`, ERROR „STOFF: die Post-Kette …" mit der Ursache) — GENAU EINMAL; still (0) ist rot,
     // ein zweiter ist rot. Bis zur Nachbesserung 2 zählte die Konsolen-Wand ihn als fremd (die CI voll 6/11 rot).
     const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -504,7 +489,7 @@ function saumProbe() {
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
-        const y0 = (typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x0, z0) : 0) + 160;
+        const y0 = r._voxelSurfaceY(x0, z0) + 160;
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -614,7 +599,7 @@ function buehne(nFrames, nachtLicht) {
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
-        const y0 = (typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x0, z0) : 0) + 160;
+        const y0 = r._voxelSurfaceY(x0, z0) + 160;
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -832,7 +817,7 @@ function buehne(nFrames, nachtLicht) {
             gruppe.visible = false;
             st.timeOfDay = 0.3;
             if (st.world) st.world.timeOfDay = 0.3;
-            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            r._applyDayNightToScene();
             const blickSonne = () => {
                 cam.position.set(x0, y0, z0);
                 frame();
@@ -947,21 +932,12 @@ function buehne(nFrames, nachtLicht) {
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            while (performance.now() - t0 < 300000) {
-                const r = window.anazhRealm;
-                const st = r && r.state;
-                if (st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera) {
-                    return {
-                        ok: true,
-                        ms: Math.round(performance.now() - t0),
-                        webgpu: st.renderer.backend.isWebGPUBackend === true,
-                    };
-                }
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
+            const r = await window.__weltDa((r) => {
+                const st = r.state;
+                return !!(st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera);
+            });
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
         });
-        if (!bereit.ok) throw new Error("Renderer und Post-Kette standen nach 300 s nicht");
         if (!bereit.webgpu)
             throw new Error("kein WebGPU-Backend — die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);

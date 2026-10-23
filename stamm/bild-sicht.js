@@ -619,7 +619,7 @@ class AnazhRealm_bild_sicht {
     // Felds — `schritte` Schritte: über der
     // Höchsten des Blocks der Sprung an seinen Rand, darunter Lipschitz-Schritte gegen die Rest-Höhe (höchstens `fein` Zellen),
     // `halbierungen` und die Sekante; am Treffer die Albedo im
-    // Licht des Wassers (uIrr, die Sonne über die Neigung der Fläche relativ zur Ebene) unter der EINEN Luft längs des
+    // Licht der Welt (`_weltLicht` an der Normale des Felds) unter der EINEN Luft längs des
     // gespiegelten Wegs. Ausgabe (Strahlung, Treffer); ohne Versatz je Pixel (die Zeit-Auflösung mittelt Kanten, kein Rauschen).
     _spiegelPass() {
         const st = this.state;
@@ -627,14 +627,13 @@ class AnazhRealm_bild_sicht {
         const T = THREE.TSL;
         const { Fn, Loop, If, Break, float, vec2, vec3, vec4, uniform, texture, screenUV, max, abs, smoothstep, mix } =
             T;
-        const { normalize, dot, clamp, ivec2, select, floor, mod, step, min, exp, Continue } = T;
+        const { normalize, dot, ivec2, select, floor, mod, step, min, exp, Continue } = T;
         const K = AnazhRealm.SPIEGEL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
-        this._ensureHydroSurfaceMaterial();
-        const HU = st.hydroSurfaceUniforms;
+        const WL = this._weltLicht();
         // die EINE Luft (Pflicht jeder Szene: `_luftEnsure` legt sie an, der Pass läuft nur mit Szene und Szenen-Pass)
         this._luftEnsure();
         const luft = st.luft;
@@ -913,27 +912,22 @@ class AnazhRealm_bild_sicht {
                                 const hx = feld(q.xz.add(vec2(e, 0))).r.sub(feld(q.xz.sub(vec2(e, 0))).r);
                                 const hz = feld(q.xz.add(vec2(0, e))).r.sub(feld(q.xz.sub(vec2(0, e))).r);
                                 const nrm = normalize(vec3(hx.negate(), 2 * e, hz.negate()));
-                                const sonne = normalize(HU.sunDir);
-                                const neig = clamp(
-                                    float(0.3).add(max(dot(nrm, sonne), 0.0).mul(0.7).div(max(sonne.y, 0.2))),
-                                    0.0,
-                                    2.0
-                                );
-                                // DAS LICHT DES TREFFERS: Laub streut Sonne und Himmel in jede Richtung — an Flanke und Dach das Licht
-                                // des Orts, tiefer in der Krone (die Unterseite des Schirms) durch das Laub darüber (Beer-Lambert,
-                                // e-Länge laubTiefe, über dem Himmelslicht laubGrund); die untere Fläche unter einer Krone im Licht
-                                // durch deren Dicke, der Boden mit seiner Neigung (D10-n2: die Krone als Säule bis zum Boden zeichnete
-                                // den Ufer-Busch unter dem Schirm schwarz)
+                                // DAS LICHT DES TREFFERS (`_weltLicht`, der EINE Baustein): Laub streut Sonne und Himmel in jede Richtung —
+                                // an Flanke und Dach das Licht einer waagrechten Fläche, tiefer in der Krone (die Unterseite des Schirms)
+                                // durch das Laub darüber (Beer-Lambert, e-Länge laubTiefe, über dem Himmelslicht laubGrund); die untere
+                                // Fläche unter einer Krone im Licht durch deren Dicke, der Boden mit seiner Normale (D10-n2: die Krone als
+                                // Säule bis zum Boden zeichnete den Ufer-Busch unter dem Schirm schwarz). Bis Licht K3 trug der Boden einen
+                                // eigenen Term (0,3 + 0,7·N·L/max(sun.y, 0,2) × die Bestrahlung des Wassers): in der Dämmerung zu dunkel.
                                 const durch = (dicke) =>
                                     mix(float(K.laubGrund), float(1.0), exp(max(dicke, 0.0).div(-K.laubTiefe)));
-                                const untenLicht = durch(sq.b.sub(sq.g)).mul(
-                                    select(art.greaterThan(1.5), float(1.0), neig)
-                                );
+                                const oben = vec3(0, 1, 0);
                                 const strahl = select(
                                     kroneTraf,
-                                    kroneFarbe.mul(durch(sq.b.sub(yq))),
-                                    albedo.mul(untenLicht)
-                                ).mul(HU.irr);
+                                    kroneFarbe.mul(durch(sq.b.sub(yq))).mul(WL.at(oben)),
+                                    albedo
+                                        .mul(durch(sq.b.sub(sq.g)))
+                                        .mul(WL.at(select(art.greaterThan(1.5), oben, nrm)))
+                                );
                                 const rq = q.xz.sub(U.mitte).div(kante);
                                 // trifft der Strahl eine höhere Wasser-Fläche (der Fluss oberhalb der Mündung steigt in Stufen), sieht er
                                 // ihren Spiegel — streifend den Himmel: kein Treffer, das Wasser liest den Himmel (D10-n1: der Körper
@@ -1075,10 +1069,9 @@ class AnazhRealm_bild_sicht {
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
         const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
-        // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
-        // + der Himmel des Orts + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
-        // Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
-        const uIrr = uniform(new THREE.Color(1, 1, 1));
+        // Das Licht des Orts: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne, Himmel, Hemi, Ambient —
+        // dieselben Quellen wie jedes Mesh), der Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
+        const licht = this._weltLicht().at(vec3(0, 1, 0));
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
@@ -1333,7 +1326,7 @@ class AnazhRealm_bild_sicht {
             viewDir,
             T,
             koerper: koerperAlbedo,
-            irr: uIrr,
+            irr: licht,
             sunCol: uSunCol,
             sunDir: uSunDir,
             light: uLight,
@@ -1343,7 +1336,7 @@ class AnazhRealm_bild_sicht {
         // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),
         // im Tiefen deckt der dunkle Körper, unter flachem Winkel der Himmel (F → 1). α ≥ F ≥ 0,02: kein Pol.
         const alpha = float(1.0).sub(T.mul(float(1.0).sub(fres)).mul(float(1.0).sub(fw)));
-        const farbe = mix(eigen, uFoam.mul(uIrr), fw).div(max(alpha, float(1e-3)));
+        const farbe = mix(eigen, uFoam.mul(licht), fw).div(max(alpha, float(1e-3)));
 
         // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
 
@@ -1378,7 +1371,6 @@ class AnazhRealm_bild_sicht {
             flowPeriod: uFlowPeriod,
             foam: uFoam,
             sunDir: uSunDir,
-            irr: uIrr,
             sunCol: uSunCol,
             light: uLight,
             // emotion ist der V14-Haken.
@@ -1429,7 +1421,7 @@ class AnazhRealm_bild_sicht {
     //     jedes Pixel, vor dem Szene oder Satz stehen; nur Himmels-Pixel schlagen das Panorama nach.
     // Höhen und Farben aus dem Fern-Faden (`_feldPassMal`) als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
     // Gesetz im Fragment → keine Drift). Ohne Device/TSL kein Pass, die Schalen tragen den Blick.
-    _feldPassEnsure(fr) {
+    _feldPassEnsure(_fr) {
         const st = this.state;
         if (st.feldPass) return st.feldPass;
         if (!st.scene || typeof THREE === "undefined") return null;
@@ -1478,17 +1470,9 @@ class AnazhRealm_bild_sicht {
             nah: TSL.uniform(0.1),
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
-            // DAS LICHT DER WELT (_feldLichtSync): das Richt-Licht (Sonne/Mond), Ambient, Hemi und die
-            // Himmels-Umgebung — dieselben Quellen und dieselbe BRDF wie jedes Mesh.
-            l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l0c: TSL.uniform(new THREE.Vector3()),
-            ambientFarbe: TSL.uniform(new THREE.Vector3()),
-            hemiOben: TSL.uniform(new THREE.Vector3()),
-            hemiUnten: TSL.uniform(new THREE.Vector3()),
-            envUnten: TSL.uniform(new THREE.Vector3()),
-            envMitte: TSL.uniform(new THREE.Vector3()),
-            envOben: TSL.uniform(new THREE.Vector3()),
         };
+        // DAS LICHT DER WELT: March und Panorama lesen den EINEN Baustein (`_weltLicht`) — dieselben Quellen, dieselbe BRDF wie jedes Mesh
+        const WL = this._weltLicht();
         // DIE HEIMAT DES TAKTS (Pflicht-Paar der Diät, E1): jeder Wert des Satzes wechselt je Takt (Kamera, Licht) und gilt
         // dem EINEN Pass — als geteilte renderGroup lädt er EINMAL je Render statt einer Objekt-Gruppe, die je Wechsel
         // lädt (der Uniform-Wächter fand `camPos` · `invVP` · `l0d` 17.10. je Bild).
@@ -1610,7 +1594,7 @@ class AnazhRealm_bild_sicht {
         // Strahl zieht in den GLIED-Raum (Knochen-Matrix = Animation), die Normale kommt aus dem SDF-Gradienten und die
         // Sonne beleuchtet (kein Nacht-Glühen). Rückgabe: rgb + Strahl-Länge (0 = kein Treffer → verworfen).
         const march = TSL.wgslFn(
-            "fn feldMarch(ndc: vec2<f32>, i: u32, camPos: vec3<f32>, invVP: mat4x4<f32>, nah: f32, fern: f32, fwd: vec3<f32>, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldMarch(ndc: vec2<f32>, i: u32, camPos: vec3<f32>, invVP: mat4x4<f32>, nah: f32, fern: f32, fwd: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let kein = vec4<f32>(0.0);\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
@@ -1840,23 +1824,29 @@ class AnazhRealm_bild_sicht {
                 "        }\n" +
                 "    }\n" +
                 "    if (!getroffen) { return kein; }\n" +
-                "    // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
-                "    // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
-                "    // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
-                "    let nY = bestN.y;\n" +
-                "    let direkt = l0c * max(dot(bestN, l0d), 0.0);\n" +
-                "    let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
-                "    let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
-                "    let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
-                "    return vec4<f32>(bestRgb * licht, bestT);\n" +
+                "    // DER TREFFER FÜR DAS LICHT DER WELT (`_weltLicht`, `feldAlbedo`/`feldNormale`): Albedo und Normale als Halb-Floats,\n" +
+                "    // je Paar das obere um +2 verschoben — der Exponent des f32 ist nie 0, kein Denormal fällt der Hardware zum Opfer\n" +
+                "    return vec4<f32>(bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.r, bestRgb.g + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.b, bestN.x + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestN.y, bestN.z + 2.0))), bestT);\n" +
                 "}",
             [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn] // der raue Ellipsoid, der Keil + die 2D-Kapsel-Liste
+        );
+        const feldAlbedo = TSL.wgslFn(
+            "fn feldAlbedo(p: vec4<f32>) -> vec3<f32> {\n" +
+                "    let rg = unpack2x16float(bitcast<u32>(p.x));\n" +
+                "    return vec3<f32>(rg.x, rg.y - 2.0, unpack2x16float(bitcast<u32>(p.y)).x);\n" +
+                "}"
+        );
+        const feldNormale = TSL.wgslFn(
+            "fn feldNormale(p: vec4<f32>) -> vec3<f32> {\n" +
+                "    let yz = unpack2x16float(bitcast<u32>(p.z));\n" +
+                "    return normalize(vec3<f32>(unpack2x16float(bitcast<u32>(p.y)).y - 2.0, yz.x, yz.y - 2.0));\n" +
+                "}"
         );
         // DAS PANORAMA (Fragment): Richtung aus invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-Umkehr)
         // → Farbe unter dem Licht der Welt; die Luft legt der Pass-Knoten auf. Rückgabe: rgb + Treffer-Distanz (0 =
         // Himmel → verworfen). textureDimensions braucht f32/i32-Casts (WGSL-Spec).
         const panorama = TSL.wgslFn(
-            "fn feldPanorama(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, elevMax: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, envOben: vec3<f32>, pano: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPanorama(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, elevMax: f32, pano: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -1893,10 +1883,8 @@ class AnazhRealm_bild_sicht {
                 "    let deck = w00 + w10 + w01 + w11;\n" +
                 "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
                 "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
-                "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
-                "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
-                "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
-                "    return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe + hemiOben) * (1.0 / PI) + envOben), pT.a);\n" +
+                "    // die Rampen-Farbe ist Albedo (das Licht der Welt legt der Pass-Knoten auf, die Normale oben)\n" +
+                "    return pT;\n" +
                 "}"
         );
         // Der Schirm-Strahl beider Fragmente: NDC aus dem Pixel, derselbe Strahl (invVP · NDC) wie im WGSL — die Luft
@@ -1936,14 +1924,6 @@ class AnazhRealm_bild_sicht {
             nah: U.nah,
             fern: U.fern,
             fwd: U.fwd,
-            l0d: U.l0d,
-            l0c: U.l0c,
-            ambientFarbe: U.ambientFarbe,
-            hemiOben: U.hemiOben,
-            hemiUnten: U.hemiUnten,
-            envUnten: U.envUnten,
-            envMitte: U.envMitte,
-            envOben: U.envOben,
             // Die Szenen-Tiefe VOR dem Feld-Pass (das Tiefen-Abbild `_szeneTiefe`, gezeichnet im Pass-Bruch wie beim
             // Wasser, je Texel die fernste Tiefe seines waagrechten Pixel-Paars): die Grenze des Marchs — am Rand läuft er höchstens
             // einen Pixel weiter, der Tiefentest verwirft. Die Bindung folgt jeder neu angelegten Textur über die Diät (6).
@@ -1957,7 +1937,8 @@ class AnazhRealm_bild_sicht {
             liste: TSL.texture(wm.liste),
             kapseln: TSL.texture(wm.kapseln),
         });
-        matMarch.outputNode = imDunst(rufMarch);
+        // DAS LICHT DER WELT am Treffer (`_weltLicht`, die Normale des Felds), ohne Ton-Klemme: die Belichtung macht die Ausgabe-Kette
+        matMarch.outputNode = imDunst(TSL.vec4(feldAlbedo(rufMarch).mul(WL.at(feldNormale(rufMarch))), rufMarch.a));
         // Die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren): View-Z aus der Strahl-Länge.
         const vzStrahl = rufMarch.a.mul(TSL.max(TSL.dot(dirN, U.fwd), 1e-4));
         matMarch.depthNode = TSL.clamp(
@@ -1989,20 +1970,15 @@ class AnazhRealm_bild_sicht {
         const mat = new THREE.MeshBasicNodeMaterial({ depthWrite: true, depthTest: true });
         mat.fog = false;
         mat.vertexNode = TSL.vec4(TSL.positionGeometry.x, TSL.positionGeometry.y, 0.999999, 1.0);
-        mat.outputNode = imDunst(
-            panorama({
-                ndc: ndcNode,
-                camPos: U.camPos,
-                invVP: U.invVP,
-                elevMax: U.elevMax,
-                l0d: U.l0d,
-                l0c: U.l0c,
-                ambientFarbe: U.ambientFarbe,
-                hemiOben: U.hemiOben,
-                envOben: U.envOben,
-                pano: TSL.texture(panoTex),
-            })
-        );
+        // DAS LICHT DER WELT auf der Ferne (`_weltLicht`): das Gelände liegt flach, die Normale oben
+        const pano = panorama({
+            ndc: ndcNode,
+            camPos: U.camPos,
+            invVP: U.invVP,
+            elevMax: U.elevMax,
+            pano: TSL.texture(panoTex),
+        });
+        mat.outputNode = imDunst(TSL.vec4(pano.rgb.mul(WL.at(TSL.vec3(0.0, 1.0, 0.0))), pano.a));
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
             "position",
@@ -2353,20 +2329,96 @@ class AnazhRealm_bild_sicht {
             const e = cam.matrixWorld.elements;
             fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
             // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
-            // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild. Licht der Welt:
-            // das Feld gehorcht den Szene-Lichtern, sonst leuchtet das Albedo nachts aus sich selbst.
+            // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild.
             const wm = st.weltMarch;
             fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
-            this._feldLichtSync(fp.U);
         }
     }
 
-    // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
-    // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
-    // und die Himmels-Umgebung (Irradianz aus der zurückgelesenen Umgebung der EINEN Atmosphäre, `_himmelsIrradianz`).
-    // Die Luft legt der Pass-Knoten aus `_luftEnsure` auf (dieselben Fn wie `scene.fogNode`).
-    _feldLichtSync(U) {
+    // DAS LICHT DER WELT (Licht K3, EIN Lichtweg; Lehre 21): die diffuse Bestrahlung E(n)/π einer Fläche mit der Normale n, wie
+    // jedes MeshStandard sie nimmt — Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden) und die Umgebung der
+    // EINEN Atmosphäre in DERSELBEN Lesung wie die Stoffe: die PMREM-Stufe der Rauheit 1 (r184 `createIrradianceContext`), je
+    // Normale abgetastet in die Himmels-Sonde (`_weltLichtHimmel`, 32 × 16 Richtungen, equirect). EIN TSL-Baustein `at(n)`:
+    // Spiegel-Pass und Wasser rufen ihn, Feld-March und Panorama reichen Albedo und Normale an ihn. Bis Licht K3 rechnete jeder
+    // Weg sein Licht selbst (der Spiegel 0,3 + 0,7·N·L/max(sun.y, 0,2) × die Bestrahlung des Wassers, das Panorama eine Lambert-
+    // Kopie, das Wasser `uIrr`); die erste Runde las den Himmel aus der CPU-Lesung in drei Höhen ohne Azimut — eine senkrechte
+    // Fläche bei Uhr 0,27 nahm zur Sonne 0,79, abgewandt 1,65 des Himmels-Lichts.
+    _weltLicht() {
         const st = this.state;
+        if (st.weltLicht) return st.weltLicht;
+        const TSL = THREE.TSL;
+        const v = () => TSL.uniform(new THREE.Vector3());
+        const U = {
+            l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            l0c: v(),
+            ambientFarbe: v(),
+            hemiOben: v(),
+            hemiUnten: v(),
+            ei: TSL.uniform(1),
+        };
+        // DIE HEIMAT DES TAKTS (E1): jeder Wert gilt jedem Leser gleich — als geteilte renderGroup lädt ihn EIN Render
+        this._uniformHeimatTeilen(U);
+        const himmel = new THREE.RenderTarget(32, 16, {
+            type: THREE.HalfFloatType,
+            depthBuffer: false,
+            generateMipmaps: false,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            wrapS: THREE.RepeatWrapping,
+        });
+        himmel.texture.name = "welt-licht-himmel";
+        const sonde = TSL.texture(himmel.texture);
+        const fn = TSL.Fn(([n]) => {
+            const direkt = U.l0c.mul(TSL.max(TSL.dot(n, U.l0d), 0.0));
+            const hemi = TSL.mix(U.hemiUnten, U.hemiOben, n.y.mul(0.5).add(0.5));
+            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei);
+            return direkt
+                .add(U.ambientFarbe)
+                .add(hemi)
+                .mul(1 / Math.PI)
+                .add(umgebung);
+        });
+        st.weltLicht = { U, himmel, stand: 0, at: (n) => fn(n) };
+        this._weltLichtTakt();
+        return st.weltLicht;
+    }
+
+    // DIE HIMMELS-SONDE des Lichts der Welt: je Texel die Richtung der Equirekt-Lage (`_umgebungRichtung`, wie die Umgebung
+    // selbst) und dort die PMREM-Lesung der Rauheit 1 — dieselbe Abtastung, mit der r184 jedem MeshStandard das Umgebungs-Licht
+    // gibt. Gezeichnet je neuer Umgebung (`_ensureSkyEnvironment`, ihr Ziel behält seine Identität), 512 Texel; vor der ersten
+    // Umgebung schwarz wie jeder Stoff.
+    _weltLichtHimmel() {
+        const st = this.state;
+        const WL = this._weltLicht();
+        const quelle = st._skyEnvRT && st._skyEnvRT.texture;
+        if (!quelle || !st.atmoLut) return;
+        if (!WL.pass) {
+            const TSL = THREE.TSL;
+            const m = new THREE.MeshBasicNodeMaterial();
+            m.name = "welt-licht-himmel";
+            m.fragmentNode = TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1);
+            m.depthTest = false;
+            m.depthWrite = false;
+            m.toneMapped = false;
+            m.fog = false;
+            const q = st.atmoLut.qEq;
+            WL.pass = new THREE.Mesh(q.geometry, m);
+            WL.pass.frustumCulled = false;
+            WL.pass.userData = { kamera: q.userData.kamera, quelle };
+        } else if (WL.pass.userData.quelle !== quelle)
+            this._bruchMelden(
+                "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
+            );
+        this._atmoZeichne(WL.pass, WL.himmel);
+        WL.stand++;
+    }
+
+    // Der EINE Schreiber der Lichter: je Bild (`_loopRender`, neben der Bild-Uhr) und je Anwendung des Tags
+    // (`_dayNightApplyWaterMaterials`).
+    _weltLichtTakt() {
+        const st = this.state;
+        const U = st.weltLicht && st.weltLicht.U;
+        if (!U) return;
         const nullV = this._nullVektor || (this._nullVektor = new THREE.Vector3());
         const l = st.directionalLight;
         if (!l || l.visible === false || !(l.intensity > 0)) U.l0c.value.set(0, 0, 0);
@@ -2382,36 +2434,20 @@ class AnazhRealm_bild_sicht {
         U.ambientFarbe.value.set(amb ? amb.color.r * ai : 0, amb ? amb.color.g * ai : 0, amb ? amb.color.b * ai : 0);
         const hemi = st.hemiLight;
         const hi = hemi && hemi.visible !== false ? Math.max(0, hemi.intensity || 0) : 0;
-        if (hemi) {
-            U.hemiOben.value.set(hemi.color.r * hi, hemi.color.g * hi, hemi.color.b * hi);
-            U.hemiUnten.value.set(hemi.groundColor.r * hi, hemi.groundColor.g * hi, hemi.groundColor.b * hi);
-        } else {
-            U.hemiOben.value.set(0, 0, 0);
-            U.hemiUnten.value.set(0, 0, 0);
-        }
-        this._feldEnvIrradianz(U);
+        U.hemiOben.value.set(hemi ? hemi.color.r * hi : 0, hemi ? hemi.color.g * hi : 0, hemi ? hemi.color.b * hi : 0);
+        U.hemiUnten.value.set(
+            hemi ? hemi.groundColor.r * hi : 0,
+            hemi ? hemi.groundColor.g * hi : 0,
+            hemi ? hemi.groundColor.b * hi : 0
+        );
+        const sc = st.scene;
+        U.ei.value = sc && Number.isFinite(sc.environmentIntensity) ? sc.environmentIntensity : 1;
     }
 
-    // Die Himmels-Irradianz (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der
-    // Kosinus-gefaltete Mittelwert der Umgebung (`_himmelsIrradianz`). Neu gerechnet nur, wenn eine neue Lesung kam.
-    _feldEnvIrradianz(U) {
-        const e = this._himmelsIrradianz();
-        if (!e) {
-            U.envUnten.value.set(0, 0, 0);
-            U.envMitte.value.set(0, 0, 0);
-            U.envOben.value.set(0, 0, 0);
-            return;
-        }
-        U.envUnten.value.fromArray(e.unten);
-        U.envMitte.value.fromArray(e.mitte);
-        U.envOben.value.fromArray(e.oben);
-    }
-
-    // DIE HIMMELS-IRRADIANZ (diffuse IBL, E/π) für drei Normalen (unten · waagrecht · oben) aus der Umgebung der EINEN
-    // Atmosphäre, wie die CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω,
-    // die waagrechte Normale gemittelt über vier Azimute (die Umgebung ist azimut-abhängig). Neu gerechnet nur, wenn eine
-    // neue Lesung kam. Leser: der Feld-Pass und die Luft unter Wasser (dieselbe IBL wie die Stoffe); die Belichtung und das
-    // Wasser lesen den Himmel des Orts synchron (`_himmelsBestrahlung`).
+    // DIE HIMMELS-IRRADIANZ auf der CPU (E/π) für zwei Normalen (oben · waagrecht) aus der Umgebung der EINEN Atmosphäre, wie die
+    // CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω, die waagrechte Normale
+    // gemittelt über vier Azimute. Neu gerechnet nur, wenn eine neue Lesung kam. Leser: die Luft unter Wasser und die Linsen der
+    // Umgebung; die Belichtung liest den Himmel des Orts synchron (`_himmelsBestrahlung`), die Flächen das Licht der Welt.
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
@@ -2426,7 +2462,6 @@ class AnazhRealm_bild_sicht {
         const W = A.rtEq.width;
         const H = A.rtEq.height;
         const oben = [0, 0, 0],
-            unten = [0, 0, 0],
             mitte = [0, 0, 0];
         const dEl = Math.PI / H,
             dPhi = (2 * Math.PI) / W;
@@ -2437,24 +2472,18 @@ class AnazhRealm_bild_sicht {
             const dA = ce * dEl * dPhi;
             for (let x = 0; x < W; x++) {
                 const phi = ((x + 0.5) / W - 0.5) * 2 * Math.PI;
-                const cx = ce * Math.cos(phi),
-                    cz = ce * Math.sin(phi);
                 // die vier waagrechten Normalen (±x, ±z) zusammen: (|cx| + |cz|) / 4 je Halbraum
                 const wO = Math.max(se, 0) * dA,
-                    wU = Math.max(-se, 0) * dA,
-                    wM = ((Math.abs(cx) + Math.abs(cz)) / 4) * dA;
+                    wM = ((Math.abs(ce * Math.cos(phi)) + Math.abs(ce * Math.sin(phi))) / 4) * dA;
                 const i = (y * W + x) * 4;
                 for (let c = 0; c < 3; c++) {
-                    const L = d[i + c];
-                    oben[c] += L * wO;
-                    unten[c] += L * wU;
-                    mitte[c] += L * wM;
+                    oben[c] += d[i + c] * wO;
+                    mitte[c] += d[i + c] * wM;
                 }
             }
         }
         const k = ei / Math.PI;
-        const s = (v) => v.map((x) => x * k);
-        this._himmelsIrr = { unten: s(unten), mitte: s(mitte), oben: s(oben) };
+        this._himmelsIrr = { mitte: mitte.map((x) => x * k), oben: oben.map((x) => x * k) };
         return this._himmelsIrr;
     }
 

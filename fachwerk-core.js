@@ -186,7 +186,11 @@
     return zP; };
   const roofUnderY=(x,z)=> { if(ROOFMODE==='dome')return eaveY+0.35; if(ROOFMODE==='flat')return eaveY+0.05; const s=roofSkinY(x,z); return s===Infinity?Infinity:s-0.05; };   // knapp unter die Ziegel
   // ════ METAGESETZ · EINDECKEN einer Dachfläche (EINE Schräge): Lattung + Ziegelreihen, parametrisch über First(rY)/Traufabwurf(eaveDropY)/Spanne(eZ)/First-z(zMid)/Ortgang(xRangeAt). EINE Quelle für Haupt- UND Wing-Sattel­dach — kein paralleler Deckungscode mehr. ════
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), tw=0.26, tl=0.34, tt=0.03, cs=0.205; const ax=o.axis||'z';
+  // DIE RANGFOLGE DES VERZICHTS über der Zeile (P.__sehne, buildInstance streckt höchstens viermal; auf der Zeile bleibt jeder Bau byte-gleich): zuerst das GROSSFORMAT
+  // jedes Verbands — Ziegel, Backstein (Gefach und Giebel), Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
+  // 3,5 cm); ÜBER dem Großformat trägt das Gefach seine Fläche (die Flächen-Stufe, der Fugen-Ton reist mit); in der fernen Stufe (ohne Ständer) fluchten die Riegel
+  const GROSSFORMAT=()=>(P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, UEBER_GROSSFORMAT=()=>P.__sehne>2.56;
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -196,12 +200,15 @@
         const _fl=(a,bq)=>{ if(bq-a<0.10)return; const _cc=(a+bq)/2, _ll=Math.max(0.1,bq-a-0.05); if(ax==='z')beam(g,_cc,y+lift-0.05,alo,_ll,0.03,0.045,'lattung'); else beam(g,alo,y+lift-0.05,_cc,0.045,0.03,_ll,'lattung'); };
         for(let _p=pa; _p<=pb+1e-6; _p+=_st){ const _sk=o.skip&&o.skip(ax==='z'?_p:alo, ax==='z'?alo:_p); if(!_sk){ if(_rs==null)_rs=_p; } else if(_rs!=null){ _fl(_rs,_p-_st); _rs=null; } }
         if(_rs!=null)_fl(_rs,pb); }   // Lattung
+      const _hr=(_HG&&!_fl2)?new Map():null;
       let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2; if(ax==='z')beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); _rA=null; };
       for(let p=Math.floor((pa-ox-tw/2)/tw)*tw+ox+tw/2; p<pb+tw; p+=tw){ const inner=p-tw*0.46, outer=p+tw*0.46;   // VERBAND-GESETZ: Fugenraster WELTFEST + ox-Halbverband — ein Muster für Haupt UND Flügel (vorher pa-verankert → Fugen fluchteten am Flügel zu Streifen) if(inner>pb-0.02||outer<pa+0.02)continue;
         let ww=tw*0.92, pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
+        if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
         if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); }
+      if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
@@ -229,14 +236,18 @@
     return [X,Y,Z]; }
   // FELD-ACHSEN-GESETZ (V18.500): das Feld hängt ohne Biegung nur an (Y,Z) — entlang x ist es konstant, unter der Traufe die Identität. Die Segment-Schrittweite misst darum die (Y,Z)-Länge: gleicher maximaler Sehnenfehler (chinesisch 16,5/3,0 mm, japanisch 10,6/1,8 mm), 40 % weniger Dreiecke
   const defYZ=r=>Math.hypot(r[1],r[2]);
-  function defSeg(L,Lyz,min,step,cap,yTop){ if(DEF_bk>0) return L>min?Math.min(cap,Math.ceil(L/step)):1; if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
+  // BIEGE-ACHSEN-GESETZ (pipeline.K3): die Biegung krümmt nur entlang x — für festes x ist das Feld in (y,z) linear (X=r·sin θ, Z=r·cos θ−R, r=R+z), die Teilung misst die x-Länge Lx; der Schwung darüber misst wie ohne Biegung die (Y,Z)-Länge (gleicher Sehnenfehler, die gerade Strebe entlang z bleibt EIN Segment)
+  function defSeg(L,Lyz,min,step,cap,yTop,Lx){ if(P.__sehne>1) step*=P.__sehne; if(DEF_bk>0){ const nb=Lx>min?Math.min(cap,Math.ceil(Lx/step)):1; return (DEF_cv>0&&yTop>eaveY-1e-6&&Lyz>min)?Math.max(nb,Math.min(cap,Math.ceil(Lyz/step))):nb; } if(yTop<=eaveY-1e-6) return 1; return Lyz>min?Math.min(cap,Math.ceil(Lyz/step)):1; }
   function rotE(vx,vy,vz,rx,ry,rz){ const a=Math.cos(rx),b=Math.sin(rx),c=Math.cos(ry),d=Math.sin(ry),e=Math.cos(rz),f=Math.sin(rz);
     return [ c*e*vx-c*f*vy+d*vz, (a*f+b*e*d)*vx+(a*e-b*f*d)*vy-b*c*vz, (b*f-a*e*d)*vx+(b*e+a*f*d)*vy+a*c*vz ]; }
   // ════ EINHEITLICHES PRIMITIV · jeder Eckpunkt durch deform — die Box biegt wie der Ziegel, kein Sonderfall ════
+  // ════ DIE MASS-HÜLLE (`__nurMass`, nur massBau): der Mass-Bau zählt nur seine Box (Box3.setFromObject = Vereinigung der Geometrie-Boxen unter der Welt-Matrix) — ungebogen teilt jede Box gleichen Maßes EINE Geometrie (gleiche Float32-Ecken ⇒ dieselbe Box), ohne Tint; die Ziegelreihe legt je Maß nur ihre Enden (eindeckenFlaeche). Der Export bleibt byte-gleich (gate:settlement), der Mass-Bau fällt ~6× ════
+  const _HG=(P.__nurMass&&DEF_bk===0&&DEF_cv===0)?new Map():null;
+  function _hgBox(lx,ly,lz){ let a=_HG.get(lx); if(!a)_HG.set(lx,a=new Map()); let b=a.get(ly); if(!b)a.set(ly,b=new Map()); let q=b.get(lz); if(!q)b.set(lz,q=new THREE.BoxGeometry(lx,ly,lz)); return q; }
   const _BF=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,7,3],[0,4,7],[1,2,6],[1,6,5],[0,1,5],[0,5,4],[3,7,6],[3,6,2]];
   function beam(g,cx,cy,cz,lx,ly,lz,role,rot){ const rx=(rot&&rot[0])||0, ry=(rot&&rot[1])||0, rz=(rot&&rot[2])||0;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
-    const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz), P=[];
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const m=new THREE.Mesh(_HG?_hgBox(lx,ly,lz):new THREE.BoxGeometry(lx,ly,lz),mat(role)); m.position.set(cx,cy,cz); if(rx||ry||rz)m.rotation.set(rx,ry,rz); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,cx,cy,cz); }
+    const hx=lx/2,hy=ly/2,hz=lz/2, useX=lx>=lz, Ln=useX?lx:lz, N=defSeg(Ln, Ln*defYZ(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)), 0.9, 0.4, 32, cy+Math.abs(rotE(1,0,0,rx,ry,rz)[1])*hx+Math.abs(rotE(0,1,0,rx,ry,rz)[1])*hy+Math.abs(rotE(0,0,1,rx,ry,rz)[1])*hz, Ln*Math.abs(rotE(useX?1:0,0,useX?0:1,rx,ry,rz)[0])), P=[];
     const wc=(x,y,z)=>{ const r=rotE(x,y,z,rx,ry,rz); return deform(cx+r[0],cy+r[1],cz+r[2]); };
     for(let i=0;i<N;i++){ let c; if(useX){ const a=-hx+i*lx/N, q=-hx+(i+1)*lx/N; c=[wc(a,-hy,-hz),wc(q,-hy,-hz),wc(q,hy,-hz),wc(a,hy,-hz),wc(a,-hy,hz),wc(q,-hy,hz),wc(q,hy,hz),wc(a,hy,hz)]; } else { const a=-hz+i*lz/N, q=-hz+(i+1)*lz/N; c=[wc(-hx,-hy,a),wc(hx,-hy,a),wc(hx,hy,a),wc(-hx,hy,a),wc(-hx,-hy,q),wc(hx,-hy,q),wc(hx,hy,q),wc(-hx,hy,q)]; }
       for(let k=0;k<12;k++){ const A=c[_BF[k][0]],B=c[_BF[k][1]],C=c[_BF[k][2]]; P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]); } }
@@ -244,8 +255,8 @@
     const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,cx,cy,cz); }
   const Vc=(x,y,z)=>new THREE.Vector3(x,y,z);
   function strut(g,x0,y0,z0,x1,y1,z1,th,role){ const dx=x1-x0,dy=y1-y0,dz=z1-z0, len=Math.hypot(dx,dy,dz); if(len<1e-4)return;
-    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
-    const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
+    if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const a=Vc(x0,y0,z0),b=Vc(x1,y1,z1); const m=new THREE.Mesh(_HG?_hgBox(th,len,th):new THREE.BoxGeometry(th,len,th),mat(role)); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Vc(0,1,0),b.clone().sub(a).normalize()); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return _HG?m:tintWood(m,role,(x0+x1)/2,(y0+y1)/2,(z0+z1)/2); }
+    const N=defSeg(len, Math.hypot(dy,dz), 0, 0.4, 32, Math.max(y0,y1)+th, Math.abs(dx)), h=th/2, P=[], ux=dx/len,uy=dy/len,uz=dz/len;
     let px=-uy,py=ux,pz=0, pl=Math.hypot(px,py,pz); if(pl<0.01){px=1;py=0;pz=0;pl=1;} px/=pl;py/=pl;pz/=pl;
     const qx=uy*pz-uz*py, qy=uz*px-ux*pz, qz=ux*py-uy*px;
     const cor=(t,sp,sq)=>{ const nx=x0+dx*t,ny=y0+dy*t,nz=z0+dz*t; return deform(nx+(px*sp+qx*sq)*h, ny+(py*sp+qy*sq)*h, nz+(pz*sp+qz*sq)*h); };
@@ -256,7 +267,7 @@
   function tri(g,a,b,c,role){
     if((DEF_bk===0 && DEF_cv===0)||(g&&g.noDeform)){ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute([a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]],3)); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat(role)); m.castShadow=m.receiveShadow=true; g.add(m); return tintWood(m,role,(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3,(a[2]+b[2]+c[2])/3); }
     const e1=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]), e2=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]), e3=Math.hypot(c[0]-b[0],c[1]-b[1],c[2]-b[2]), em=Math.max(e1,e2,e3);
-    const n=defSeg(em, Math.max(Math.hypot(b[1]-a[1],b[2]-a[2]),Math.hypot(c[1]-a[1],c[2]-a[2]),Math.hypot(c[1]-b[1],c[2]-b[2])), 0.9, 0.45, 16, Math.max(a[1],b[1],c[1])), P=[];   // FLÄCHE unterteilt → jeder Punkt durch deform, folgt dem Bogen wie der Frame
+    const n=defSeg(em, Math.max(Math.hypot(b[1]-a[1],b[2]-a[2]),Math.hypot(c[1]-a[1],c[2]-a[2]),Math.hypot(c[1]-b[1],c[2]-b[2])), 0.9, 0.45, 16, Math.max(a[1],b[1],c[1]), Math.max(Math.abs(b[0]-a[0]),Math.abs(c[0]-a[0]),Math.abs(c[0]-b[0]))), P=[];   // FLÄCHE unterteilt → jeder Punkt durch deform, folgt dem Bogen wie der Frame
     const pt=(i,j)=>{ const u=i/n, v=j/n; return deform(a[0]+(b[0]-a[0])*u+(c[0]-a[0])*v, a[1]+(b[1]-a[1])*u+(c[1]-a[1])*v, a[2]+(b[2]-a[2])*u+(c[2]-a[2])*v); };
     for(let i=0;i<n;i++)for(let j=0;j<n-i;j++){ const A=pt(i,j),B=pt(i+1,j),C=pt(i,j+1); P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]); if(i+j<n-1){ const D=pt(i+1,j+1); P.push(B[0],B[1],B[2],D[0],D[1],D[2],C[0],C[1],C[2]); } }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat(role)); m.castShadow=m.receiveShadow=true; g.add(m); return tintWood(m,role,(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3,(a[2]+b[2]+c[2])/3); }
@@ -416,6 +427,9 @@
           S.push({horiz:F.h,fixed:F.f,lo:f.lo,hi:f.hi,c:f.c,yLo,yHi,type:t,corner,brick,win,sillY,lintelY}); }); }); });
     return S; }
   const WALLS=wallSpec();
+  // DOPPELHAUS-INNEN: die geteilte Seite (Einheit A an +x, Einheit B unter SHIFT an −x) liegt in der EINEN Brandwand — ihre Fassade (Gefach, Riegel, Streben, Nägel, Fenster, Giebel) sieht kein Auge, der Bau legt sie nicht an
+  const BRANDSEITE=x=>!!P.doppel&&(SHIFT?x<0:x>0), INNEN=w=>!w.horiz&&BRANDSEITE(w.fixed);
+  const FERNFENSTER=[];   // DIE FERNE STUFE (Marke nur.fern: L2 und die Turm-L1 zeichnen den Körper der Liste und das Fern-Fenster): die Öffnungen der Teilbauten (Turm, Hof), die dort ihr Fern-Fenster tragen — `s` ist ihre Außenseite
   if(P.brandwand){ WALLS.forEach(w=>{                                                        // BRANDWAND-GESETZ: anliegende Seiten sind fensterlose Brandmauern — dasselbe Feld→Wand-Prinzip wie die Fenster-Okklusion
     const seite = w.horiz ? (w.fixed>0?'z1':'z0') : (w.fixed>0?'x1':'x0');
     if(P.brandwand[seite]){ w.type='wand'; w.win=null; w.brand=1; } }); }
@@ -555,8 +569,8 @@
   // Querwände treffen den Giebel daher am Pfosten ZWISCHEN den Fensterfeldern. Kein Veto nötig, kein Fenster blockiert.
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;
     if(brick===false){ if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
-    const bw=0.32,bh=0.15,m=0.025,bt=0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen
-    if(P.flaechig){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
+    const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
+    if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
     if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor)
     for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
@@ -564,11 +578,15 @@
         if(horiz)beam(g,cc,by,fixed,w,rh-m,bt,'backstein'); else beam(g,fixed,by,cc,bt,rh-m,w,'backstein'); } } }
 
   function riegel(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                 // STIL modern: keine Riegel → glatte Putzwand
-    const rail=(lo,hi,y,f,h)=>{const c=(lo+hi)/2,l=hi-lo; if(l<0.05)return; if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz');};
+    const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
+    const rail=(lo,hi,y,f,h)=>{const c=(lo+hi)/2,l=hi-lo; if(l<0.05)return; if(_flucht){ const k=(h?1:0)+'|'+f+'|'+y; if(!_fl.has(k))_fl.set(k,[]); _fl.get(k).push([lo,hi]); return; } if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz');};
     const postV=(a,y0,y1,f,h)=>{const yc=(y0+y1)/2,yl=y1-y0; if(yl<0.05)return; if(h)beam(g,a,yc,f,0.1,yl,0.13,'holz'); else beam(g,f,yc,a,0.13,yl,0.1,'holz');};
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor')return;          // alle Türöffnungen frei: keine Riegel quer
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||INNEN(w))return;          // alle Türöffnungen frei: keine Riegel quer
       rail(w.lo,w.hi,w.sillY,w.fixed,w.horiz); rail(w.lo,w.hi,w.lintelY,w.fixed,w.horiz);          // Brüstungs- + Sturzriegel (fluchtendes Band)
-      if(w.type==='window'){ const wd=winW(w); postV(w.c-wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); postV(w.c+wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); } }); return g; }
+      if(w.type==='window'){ const wd=winW(w); postV(w.c-wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); postV(w.c+wd/2,w.sillY,w.lintelY,w.fixed,w.horiz); } });
+    _fl.forEach((iv,k)=>{ const q=k.split('|'), h=q[0]==='1', f=+q[1], y=+q[2]; iv.sort((a,b)=>a[0]-b[0]); let a=iv[0][0], b=iv[0][1];   // die Lücke eines Ständers (2·ps) schließt der Balken
+      for(let i=1;i<=iv.length;i++){ const n=iv[i]; if(n&&n[0]<=b+2*ps+0.01){ b=Math.max(b,n[1]); continue; } const c=(a+b)/2,l=b-a; if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz'); if(n){ a=n[0]; b=n[1]; } } });
+    return g; }
 
   function streben(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                // STIL modern: keine Streben → glatte Putzwand (kein Fachwerk-Relief)
     const seg=(fixed,horiz,x0,y0,x1,y1,no)=>{ const f=fixed+(no||0); if(horiz)strut(g,x0,y0,f,x1,y1,f,0.1,'holz'); else strut(g,f,y0,x0,f,y1,x1,0.1,'holz'); };
@@ -579,13 +597,13 @@
       else { seg(fixed,horiz,a0,y0,a1,y1,+0.022); seg(fixed,horiz,a1,y0,a0,y1,-0.022); } };
     const corner=(w)=>{ const a0=w.lo-ps,a1=w.hi+ps, oc=w.corner==='lo'?a0:a1, ic=w.corner==='lo'?a1:a0, H=w.yHi-w.yLo;  // Fuß- + Kopfband am Eckständer
       seg(w.fixed,w.horiz, oc,w.yLo, ic,w.yLo+H*0.5, +0.022); seg(w.fixed,w.horiz, oc,w.yHi, ic,w.yHi-H*0.5, -0.022); };
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor')return;          // alle Türöffnungen frei: kein Brüstungsmotiv quer
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||INNEN(w))return;          // alle Türöffnungen frei: kein Brüstungsmotiv quer
       motif(w.lo-ps,w.hi+ps, w.yLo, w.sillY, w.fixed, w.horiz);                                      // Brüstungsmotiv (durchgehendes Band, fluchtet)
       if(w.type==='corner') corner(w); });                                                            // + Eckstreben
     return g; }
 
   function gefache(){const g=grp(); if(ROUND)return g;
-    WALLS.forEach(w=>{ if(w.type==='door'){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
+    WALLS.forEach(w=>{ if(w.type==='door'||INNEN(w)){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
       if(w.type==='door2'){ const dh=baseY+P.doorH, cx=backDoor?backDoor.cx:w.c, oL=cx-0.62, oR=cx+0.62;   // Hintertür: Öffnung nur türbreit — daneben + oben Gefach (sauberer Schnitt)
         if(w.yHi>dh+0.05) infill(g,w.lo,w.hi,dh,w.yHi,w.fixed,w.horiz,w.brick);
         infill(g,w.lo,oL,w.yLo,dh,w.fixed,w.horiz,w.brick); infill(g,oR,w.hi,w.yLo,dh,w.fixed,w.horiz,w.brick); return; }
@@ -621,10 +639,11 @@
     return (eaveY-ovZ*tanP+off) + ((ridgeY+off)-(eaveY-ovZ*tanP+off))*(hz-Math.abs(z))/hz; }
 
   function giebel(){const g=grp(); if(ROOFMODE!=='sattel'||P.hip>0.985) return g;
-    [1,-1].forEach(sx=>{ const gw = wings.some(w=>(sx>0?w.side==='E':w.side==='W')) ? null : gableWin;       // Giebel trägt einen Flügel davor → KEIN Estrichfenster dort (nur auf der Seite, wo wirklich ein E/W-Flügel steht)
+    [1,-1].forEach(sx=>{ if(BRANDSEITE(sx)){ rnd(); return; }   // DOPPELHAUS-INNEN: der Giebel an der Brandwand liegt im gemeinsamen Dach (sein Würfel fällt wie gebaut — der Strom der Einheit bleibt)
+      const gw = wings.some(w=>(sx>0?w.side==='E':w.side==='W')) ? null : gableWin;       // Giebel trägt einen Flügel davor → KEIN Estrichfenster dort (nur auf der Seite, wo wirklich ein E/W-Flügel steht)
       const xf=sx*(W/2-0.02), apexY=hipStartY, half=gzTop;
       beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                          // Schwellrähm
-      const gbrick=rnd()>0.5, bw=0.32,bh=0.15,m=0.025,bt=0.075;
+      const gbrick=rnd()>0.5, _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.075;
       const zHalf=y=>eaveZ+(half-eaveZ)*(y-eaveY)/Math.max(0.1,apexY-eaveY);
       { const topY = half>0.02?apexY:ridgeY, nh=Math.max(3,Math.round((topY-eaveY)/0.24)), rh=(topY-eaveY)/nh;   // Hinterfüllung als Streifen — Fensteröffnung ECHT ausgespart (nicht nur Backstein)
         for(let r=0;r<nh;r++){ const by=eaveY+(r+0.5)*rh, zh=(half>0.02)?zHalf(by):eaveZ*(ridgeY-by)/Math.max(0.1,ridgeY-eaveY);
@@ -639,6 +658,8 @@
           } else beam(g,xf,by,0,0.05,rh,2*zh,'lehm'); } }
       if(gbrick){ const nr=Math.max(1,Math.round((apexY-eaveY)/bh)),rh=(apexY-eaveY)/nr;                  // Backstein im Dreieck (geklippt, Fensteröffnung ausgespart)
         for(let r=0;r<nr;r++){ const by=eaveY+(r+0.5)*rh, zh=zHalf(by), ox=(r%2)*bw*0.5;
+          if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein').userData.__fuge={mat:mat('lehm'),anteil:(bw-m)/bw}; };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (die Stoßfugen reisen als Fugen-Ton), die Öffnung bleibt frei
+            if(gw && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05){ band(-zh,Math.min(zh,gw.z0-0.05)); band(Math.max(-zh,gw.z1+0.05),zh); } else band(-zh,zh); continue; }
           for(let z0=Math.floor((-zh-ox)/bw)*bw+ox; z0<zh-0.02; z0+=bw){ const cl=Math.max(-zh,z0),cr=Math.min(zh,z0+bw),wz=cr-cl-m; if(wz<0.06)continue;   // FIX: Backstein-Spalten auf festem z-Raster (Ursprung 0, Phase ox) → senkrechte Stossfugen wie die Hauptwand, an der Schräge geschnitten (vorher: Ursprung −zh wanderte je Zeile → seitliche Drift)
             if(gw && cr>gw.z0-0.05 && cl<gw.z1+0.05 && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05) continue;     // Öffnung frei
             beam(g,xf,by,(cl+cr)/2,bt,rh-m,wz,'backstein'); } } }
@@ -729,6 +750,7 @@
       for(let i=0;i<nH;i++){ const y=hipStartY+0.02+ i*csH*Math.sin(th); if(y>ridgeY+0.05)break;
         const x=sx*(W/2+(rH-W/2)*Math.min(1,(y-hipStartY)/span)), zw=gzTop*Math.max(0,(ridgeY-y))/span;
         const n=Math.ceil(2*zw/tw)+2, ox=(i%2)*tw*0.5;
+        if(P.flaechig&&P.__sehne>1){ if(zw>0.02) beam(g,x,y+lift,0,tl+0.07,tt,2*zw+tw*0.97,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE über der Zeile: auch der Walm trägt je Reihe EIN Band
         for(let j=0;j<n;j++){ const z=-zw-tw*0.5+ox+tw*0.5+j*tw; if(Math.abs(z)>zw+0.06)continue; beam(g,x,y+lift,z,tl+0.07,tt,tw*0.97,'ziegel',[0,0,-sx*th]); } } };
       layHip(-1); layHip(1); }
     beam(g,0,ridgeY+0.15,0,2*rH+2*ovX*(1-P.hip)+0.25,0.16,0.24,'ziegel');                            // Firstziegel
@@ -742,7 +764,7 @@
 
   const Wi=W/2-0.08, Di=Dp/2-0.08;  // Treppe (stW/wx0/wx1/wz1/STAIR) im Weltmodell oben definiert
   function boeden(){const g=grp(); if(ROUND)return g; let levelTop;
-    const rect=(y,x0,x1,z0,z1,role,sol)=>{ if(x1-x0<0.08||z1-z0<0.08)return; const w=x1-x0,d=z1-z0,nb=P.flaechig?1:Math.max(1,Math.round(d/0.28)),cx=(x0+x1)/2;   // FLÄCHEN-STUFE: der Boden als EINE Platte — seine Kante schließt den Geschoss-Schlitz der Fassade
+    const rect=(y,x0,x1,z0,z1,role,sol)=>{ if(x1-x0<0.08||z1-z0<0.08)return; const w=x1-x0,d=z1-z0,nb=P.flaechig?1:Math.max(1,Math.round(d/(0.28*GROSSFORMAT()))),cx=(x0+x1)/2;   // FLÄCHEN-STUFE: der Boden als EINE Platte — seine Kante schließt den Geschoss-Schlitz der Fassade
       for(let i=0;i<nb;i++){const z=z0+(i+0.5)*d/nb; beam(g,cx,y,z,w,0.06,d/nb*0.98,role);} if(sol!==false)addSolid(cx,y,(z0+z1)/2,w,0.12,d); };
     const railSeg=(x0,z0,x1,z1,hcx,hcz)=>{ if(P.flaechig)return; const hh=0.95,dx=x1-x0,dz=z1-z0,len=Math.hypot(dx,dz),h=Math.abs(dx)>=Math.abs(dz),cx=(x0+x1)/2,cz=(z0+z1)/2;
       beam(g,cx,levelTop+hh,cz,h?len:0.07,0.08,h?0.07:len,'holz');
@@ -925,7 +947,7 @@
     // die Bogenlänge der Laibung (dicht abgetastet) → N Keile gleicher Länge
     const M=96, tab=[], L=[0]; for(let k=0;k<=M;k++){ tab.push(bogenKurve(kurve,R,f,k/M)); if(k)L.push(L[k-1]+Math.hypot(tab[k][0]-tab[k-1][0],tab[k][1]-tab[k-1][1])); }
     const at=(l)=>{ let k=1; while(k<M && L[k]<l)k++; const a=tab[k-1], b=tab[k], q=(L[k]-L[k-1])>0?Math.max(0,Math.min(1,(l-L[k-1])/(L[k]-L[k-1]))):0, nu=a[2]+(b[2]-a[2])*q, nv=a[3]+(b[3]-a[3])*q, nl=Math.hypot(nu,nv)||1; return [a[0]+(b[0]-a[0])*q, a[1]+(b[1]-a[1])*q, nu/nl, nv/nl]; };
-    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/0.34)); if(N%2===0)N++;
+    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/(0.34*GROSSFORMAT()))); if(N%2===0)N++;
     const eb=(d)=>({horiz,cx,cz,w0:vs-d/2,w1:vs+d/2}), ext=(q,tt)=>[q[0]+q[2]*tt, q[1]+q[3]*tt], vO=(q)=>[q[0],yS+q[1]];
     const Q=[]; for(let i=0;i<=N;i++){ const q=at(Lg*i/N); Q.push({p:[q[0],q[1]], n:q, r:ext(q,t)}); }
     for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
@@ -950,7 +972,7 @@
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
-  function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win)return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
+  function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
     if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;
       beam(g,c,y0+rH,zr,rW,0.06,0.05,'metall'); beam(g,c,y0+0.10,zr,rW,0.05,0.05,'metall');   // Handlauf + Fussschiene
@@ -1118,16 +1140,16 @@
 
   // ════════ ZIMMERMANN (Holzverbindungen: Zapfen · Holznägel · Balkenköpfe) ════════
   function zimmermann(){const g=grp(); if(ROUND)return g; const zf=Dp/2-0.02, xf=W/2-0.02;
-    const peg=(x,y,z,face)=>{ const d=0.035,L=0.135;                                // Holznagel: klein, bündig eingetrieben
+    const peg=(x,y,z,face)=>{ if(P.__sehne>1)return; const d=0.035,L=0.135;                                // Holznagel: klein, bündig eingetrieben
       if(face==='z') beam(g,x,y,z,d,d,L,'nagel',[0,0,Math.PI/4]); else beam(g,x,y,z,L,d,d,'nagel',[Math.PI/4,0,0]); };
     const kopf=(x,y,zc,len)=>beam(g,x,y,zc,0.13,P.balkenH+0.02,len,'holz');         // Balkenkopf (Zapfennase über Rähm)
     levels.forEach(L=>{ const y0=L.y,h=L.h;                                          // 1) Ständer↔Schwelle/Rähm verstiftet (auf dem Ständer)
       bx.forEach(x=>{[zf,-zf].forEach(z=>{ if(z<0&&Math.abs(x-doorX)<doorW/2+0.2)return;          // Haustür-Öffnung (vorne −z) → kein Ständer, kein Nagel
         if(backDoor&&z>0&&x>backDoor.lo-0.2&&x<backDoor.hi+0.2)return;                              // Hintertür-Öffnung (hinten +z) → GLEICHE Regel, kein schwebender Nagel
         peg(x,y0+0.20,z,'z'); peg(x,y0+h-0.20,z,'z'); });});
-      bz.forEach(z=>{ if(Math.abs(z)<Dp/2-0.1)[xf,-xf].forEach(x=>{ peg(x,y0+0.20,z,'x'); peg(x,y0+h-0.20,z,'x'); }); });
+      bz.forEach(z=>{ if(Math.abs(z)<Dp/2-0.1)[xf,-xf].forEach(x=>{ if(BRANDSEITE(x))return; peg(x,y0+0.20,z,'x'); peg(x,y0+h-0.20,z,'x'); }); });
       [doorX-doorW/2-ps,doorX+doorW/2+ps].forEach(x=>{ peg(x,y0+0.20,-zf,'z'); peg(x,y0+h-0.20,-zf,'z'); }); });
-    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||w.win)return;   // 2) Kreuzungsnagel NUR in geschlossenen Brüstungsfeldern — alle Öffnungen (Türen, Fenster) frei (war inkonsistent: nur 'door' übersprungen → schwebender Nagel in Hintertür)
+    WALLS.forEach(w=>{ if(w.type==='door'||w.type==='door2'||w.type==='balkdoor'||w.type==='wingdoor'||w.win||INNEN(w))return;   // 2) Kreuzungsnagel NUR in geschlossenen Brüstungsfeldern — alle Öffnungen (Türen, Fenster) frei (war inkonsistent: nur 'door' übersprungen → schwebender Nagel in Hintertür)
       const a=(w.lo+w.hi)/2, y=(w.yLo+w.sillY)/2, f=w.fixed;
       if(P.brace==='andreas'||P.brace==='wild'){ if(w.horiz)peg(a,y,f,'z'); else peg(f,y,a,'x'); } });
     const rows=levels.map(L=>L.top-P.balkenH/2).concat([eaveY-P.balkenH/2]);          // 3) Deckenbalkenköpfe über Rähm + Nagel
@@ -1144,7 +1166,7 @@
     beam(g,xc,wy0+0.02,zc,gw,0.06,gd,'boden'); addSolid(xc,wy0,zc,gw,0.12,gd);
     [[xin,z0],[xin,z1],[xout,z0],[xout,z1]].forEach(([x,z])=>{ const yt=yR(x); beam(g,x,(wy0+yt)/2,z,0.14,yt-wy0,0.14,'holz'); });
     beam(g,xin,yHigh-0.07,zc,0.14,0.14,gd,'holz'); beam(g,xout,yLow-0.07,zc,0.14,0.14,gd,'holz');
-    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n;
+    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=P.flaechig?1:Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n;   // FLÄCHEN-STUFE: die Bretterwand als EINE Fläche (die Fuge 1 % der Breite)
       for(let i=0;i<n;i++)beam(g,x,(y0+y1)/2,za+(i+0.5)*bw,0.05,y1-y0,bw*0.99,'holz'); };
     const stripTrap=(a,b,z,yb)=>{ if(b-a<0.04)return; const n=Math.max(1,Math.round((b-a)/0.26)),bw=(b-a)/n;
       for(let i=0;i<n;i++){ const x=a+(i+0.5)*bw, yt=yR(x); if(yt-yb>0.05)beam(g,x,(yb+yt)/2,z,bw*0.99,yt-yb,0.05,'holz'); }
@@ -1181,6 +1203,7 @@
     { const nS=Math.max(2,Math.round(gd/0.7)); for(let i=0;i<=nS;i++){ const z=z0+gd*i/nS; strut(g,xoO,yOut,z, xin,yHigh,z, P.spar,'holz'); } }
     { const z0e=z0-ovZ, z1e=z1+ovZ, lift=0.07, tcw=0.26, tcl=0.34, stp=0.205*Math.cos(th);
       for(let i=0;i<200;i++){ const x=xin + sx*i*stp; if(sx*(x-xoO)>0.02)break; const y=yR(x);
+        if(P.flaechig){ beam(g,x,y+lift,zc,tcl,0.03,z1e-z0e,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE: das Pultdach trägt je Reihe EIN Ziegel-Band wie das Hauptdach, keine Lattung (vorher trug die L1 des Anbaus seine L0: pueblo annexN=2 L1/L0 0,544)
         if(i%2===0)beam(g,x,y+lift-0.04,zc,0.05,0.03,z1e-z0e,'lattung');
         const off=(i%2)*tcw*0.5, nz=Math.ceil((z1e-z0e)/tcw)+1;
         for(let j=0;j<nz;j++){ const z=z0e+off+j*tcw+tcw/2; if(z>z1e+0.02)continue; beam(g,x,y+lift,z,tcl,0.03,tcw*0.92,'ziegel',[0,0,-sx*th]); } } }
@@ -1357,22 +1380,26 @@
     // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
     // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
+    // DIE FERNE STUFE (Marke `fern`): die Arme trägt der Körper der Liste ('hofarm': Wand und Dach), ihre Fenster das Fern-Fenster — der Hof legt nur Pflaster
+    // und Brunnen (vorher zeichnete die L2 jeden Arm zweimal: marokkanisch Hofbau 3528 Dreiecke über dem Körper); Massen und Solids bleiben
+    const _fern=(P.nur||{}).fern===true, hb=(...a)=>_fern?null:beam(...a);
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
       addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
-      beam(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
-      const xWall=(zz)=>{ if(!gate){ beam(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
+      hb(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
+      const xWall=(zz)=>{ if(!gate){ hb(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
         const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
-        if(L>0.05){ beam(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ beam(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
-        if(wH>lh+0.05){ beam(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
+        if(L>0.05){ hb(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ hb(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
+        if(wH>lh+0.05){ hb(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
       xWall(z0); xWall(z1);
       { const nzW=Math.max(1,Math.round(lz/2.2)), wcy=baseY+Math.min(wH-0.55,1.5), wfw=Math.min(0.8,lz/nzW*0.4), wfh=0.9, zh=[];   // HOF-FENSTER-GESETZ: Arme schauen in den Hof UND zur Strasse — LOCHWAND
         for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; zh.push({c:pz,w:wfw+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03}); }
-        lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } }
-      if(ROOFMODE==='flat'){ beam(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
+        if(_fern){ for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; for(const xw of [x0,x1]) FERNFENSTER.push({cx:SHIFT?xw+SHIFT:xw, cy:wcy, cz:pz, w:wfw, h:wfh, perp:'x', kind:'hof', s:xw<cx?-1:1, schlaf:fensterSchlaeft(P.seed,'x',xw,pz,wcy)}); } }
+        else { lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
+        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } } }
+      if(ROOFMODE==='flat'){ hb(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
-      [1,-1].forEach(s=>{ if(alongZ) beam(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
-                          else beam(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
+      [1,-1].forEach(s=>{ if(alongZ) hb(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
+                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
     bar(-W/2,-W/2+armW,zC+gateW,zF,true);            // linker Arm (First entlang z)   // Arm stößt an den Torriegel — kein Dach-Kreuz
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
@@ -1389,7 +1416,7 @@
     const hTop=deckY+1.05, B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,hTop-0.035,len,0.07,0.09); B((a0+a1)/2,deckY+0.10,len,0.06,0.07);                                    // Handlauf (OK 1.05) + Fußriegel
     const nP=Math.max(1,Math.round(len/1.5)); for(let i=0;i<=nP;i++)B(a0+len*i/nP,(deckY+hTop)/2,0.07,hTop-deckY,0.07);   // Pfosten
-    const nS=Math.max(2,Math.ceil(len/0.16)); for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045,hTop-deckY-0.16,0.045); }   // Stäbe: Pitch ≤0.16 → licht ≤0.115
+    const _gf=P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); if(!(P.nur&&P.nur.fern)) for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe ohne Stäbe (4,5 cm unter 1,5 Pixel: sie flimmerten nur)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
   function bruestungRect(g,xa,xb,za,zb,deckY,role){ bruestungSeg(g,'z',xa,xb,za,za,deckY,role); bruestungSeg(g,'z',xa,xb,zb,zb,deckY,role); bruestungSeg(g,'x',xa,xa,za,zb,deckY,role); bruestungSeg(g,'x',xb,xb,za,zb,deckY,role); }
   // MERLON-GESETZ (Burgenbau) — Brustwehr mannshoch (Sims ≥1.0 über Deck, man fällt nicht durchs Crenel), Merlon:Crenel ≈ 3:2 — GETEILT von Ringmauer UND Turm
   function merlonSeg(g,axis,x0,x1,z0,z1,deckY,role,dpt){ const hor=(axis==='z'), a0=hor?x0:z0, a1=hor?x1:z1, fix=hor?z0:x0, len=a1-a0; if(len<0.4)return; dpt=dpt||0.42;
@@ -1534,15 +1561,20 @@
     addMasse({art:'turm',x0:tx-tw/2,x1:tx+tw/2,z0:tz-tw/2,z1:tz+tw/2,y0:baseY,y1:baseY+h,spitze:P.zinnen?0:tw*2.4,zinnen:P.zinnen?1:0});   // TURM-VERZICHTS-GESETZ: kein freier Platz an der Hülle — ehrlich statt Kollision (E→W→Heck-Mitte)
     const fw2=Math.min(0.85,tw*0.5), fh=1.05, nLv=Math.max(1,Math.floor(h*0.72/2.4)), pw2=Math.min(0.6,tw*0.36), pH=1.55;
     const zF=tz-tw/2+twT/2, zB=tz+tw/2-twT/2, xL=tx-tw/2+twT/2, xR=tx+tw/2-twT/2, zP=(szT<0?zF:zB), zQ=(szT<0?zB:zF), lvH=2.4, nB=Math.ceil(h/lvH);   // GESCHOSS-BAND-GESETZ: jede Fassade bandweise — lochWand je Ebene (Löcher übereinander sauber getrennt)
-    for(let s=0;s<nB;s++){ const y0=baseY+s*lvH, y1=Math.min(baseY+h, y0+lvH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv);
+    const _tN=P.nur||{};   // DIE STUFEN-FLAGS GELTEN AUCH DEM TURM (pipeline.K3): die ferne Stufe (fenster/tueren/boeden false) trägt keine Löcher und keine Geschossböden — der Schaft steht geschlossen
+    const _fern=_tN.fern===true;   // DIE FERNE STUFE (die Marke `fern` der Masken DESTNUR und TURMNUR: die Stufen, die den Körper der Liste und das Fern-Fenster zeichnen): Schaft und Helm trägt der Körper der Liste ('turm'), die Fenster das Fern-Fenster — der Turm legt nur, was der Körper nicht trägt (vorher zeichnete die L2 den Turm zweimal: marokkanisch turm=1 L2 7614 > 7250)
+    const _nBand=_fern?0:nB, _bH=_nBand===1?h:lvH;   // ohne Löcher trägt EIN Band die ganze Höhe (die Bänder trennen nur Löcher)
+    for(let s=0;s<_nBand;s++){ const y0=baseY+s*_bH, y1=Math.min(baseY+h, y0+_bH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv)&&_tN.fenster!==false;
       const wHole=hasW?[{c:tx,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[], sHole=hasW?[{c:tz,w:fw2+0.12,b:cy-fh/2-0.03,t:cy+fh/2+0.03}]:[];
-      lochWand(g,true, zP, tx-tw/2, tx+tw/2, y0, y1, (s===0?[{c:tx,w:pw2*2-0.02,b:y0-0.02,t:baseY+pH}]:wHole), wr, twT);   // Front: EG=Portal, darüber Fenster
+      lochWand(g,true, zP, tx-tw/2, tx+tw/2, y0, y1, (s===0&&_tN.tueren!==false?[{c:tx,w:pw2*2-0.02,b:y0-0.02,t:baseY+pH}]:wHole), wr, twT);   // Front: EG=Portal, darüber Fenster
       lochWand(g,true, zQ, tx-tw/2, tx+tw/2, y0, y1, wHole, wr, twT);
       lochWand(g,false, xL, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT);
       lochWand(g,false, xR, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT); }
-    for(let s=1;s<=nLv;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
-    bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2);   // Blendbogen + Torblatt in der Laibung + Stufen
+    for(let s=1;s<=nLv&&_tN.boeden!==false;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
+    if(!(_fern&&_tN.tueren===false)){ bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2); }   // Blendbogen + Torblatt in der Laibung + Stufen (die ferne Stufe ohne Türen: der Körper steht geschlossen)
     { for(let s=1;s<nLv;s++){ const cy=baseY+1.8+s*2.4;
+      if(_fern){ const ff=(cx,cz,perp,sg,wand,u)=>FERNFENSTER.push({cx:SHIFT?cx+SHIFT:cx, cy, cz, w:fw2, h:fh, perp, kind:'turm', s:sg, schlaf:fensterSchlaeft(P.seed,perp,wand,u,cy)});   // der Würfel aus derselben Lage wie fensterAt der nahen Stufen
+        ff(tx,tz-tw/2,'z',-1,tz-tw/2-0.02,tx); ff(tx,tz+tw/2,'z',1,tz+tw/2+0.02,tx); ff(tx-tw/2,tz,'x',-1,tx-tw/2-0.02,tz); ff(tx+tw/2,tz,'x',1,tx+tw/2+0.02,tz); continue; }
       fensterAt(g,tx,cy,tz-tw/2-0.02,fw2,fh,true); fensterAt(g,tx,cy,tz+tw/2+0.02,fw2,fh,true);
       fensterAt(g,tx-tw/2-0.02,cy,tz,fw2,fh,false); fensterAt(g,tx+tw/2+0.02,cy,tz,fw2,fh,false); } }
     if(P.zinnen){ const dy=baseY+h, e2=tw/2+0.25; beam(g,tx,dy+0.06,tz,tw+0.5,0.12,tw+0.5,'stein');   // WEHRPLATTFORM + Zinnenkranz
@@ -1585,7 +1617,7 @@
       beam(g,0,hW+0.05,zW+0.03,(x1-x0)+0.8,0.09,0.12,'dunkel'); }   // WANDANSCHLUSS-Schürze
     return g; }
   function kuppel(){ const g=grp(); if(!P.kuppel||ROUND) return g;   // KUPPEL auf PENDENTIFS (Byzanz/Osmanen) — sphärische Zwickel tragen Quadrat→Kreis, dann Tambour-Trommel, dann Dom
-    const rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=24, bands=18;
+    const _ks=P.__sehne>1?P.__sehne:1, rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=Math.max(8,Math.round(24/_ks)), bands=Math.max(6,Math.round(18/_ks));   // über der Zeile (P.__sehne, buildInstance): weniger Meridiane und Bänder, dieselbe Silhouette
     addMasse({art:'kuppel',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,rad,base,springY,y1:springY+rad*1.4});
     const prof=t=>{ const y=springY+rad*1.4*t, r=rad*Math.pow(Math.cos(t*Math.PI*0.5),0.62)*(1+0.30*Math.sin(t*Math.PI)); return [Math.max(0.02,r),y]; };   // ab Springlinie: breit → Zwiebelbauch → Spitze
     { const seg2=8; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>{ const cxp=sx*(W/2-0.04), czp=sz*(Dp/2-0.04), cd=Math.atan2(czp,cxp); for(let k=0;k<seg2;k++){ const a0=cd-Math.PI/4+(k/seg2)*Math.PI/2, a1=cd-Math.PI/4+((k+1)/seg2)*Math.PI/2; tri(g,[cxp,base,czp],[rad*Math.cos(a0),springY,rad*Math.sin(a0)],[rad*Math.cos(a1),springY,rad*Math.sin(a1)],'putz'); } }); }   // PENDENTIFS: vier sphärische Eckzwickel
@@ -1627,9 +1659,13 @@
   function build(enabled){const root=grp(); order.forEach(k=>{ if(!enabled||enabled[k]!==false){ subsystems[k].position.y=0; root.add(subsystems[k]); } }); return root; }
   const spawn={x:0,y:baseY+1.6,z:-Dp/2-2.0};
   const windowOpenings=[];
-  WALLS.forEach(w=>{ if(!w.win)return; const wd=winW(w),c=(w.lo+w.hi)/2; windowOpenings.push({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}); });
-  if(gableWin){ [1,-1].forEach(sx=>windowOpenings.push({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'})); }
+  const _oeffnungenDerEinheit=()=>{ const dx=SHIFT;   // die Öffnungen EINER Einheit — das Doppelhaus trägt die der Einheit B um +W (vorher stand B in der L2 blind), keine an der Brandwand
+    const auf=(o,wand,u)=>{ if(dx){ o.cx+=dx; o.schlaf=fensterSchlaeft(P.seed,o.perp,wand,u,o.cy); } windowOpenings.push(o); };   // der Würfel der Einheit B aus ihrer eigenen Lage (EIN Würfel je Fenster, wie ihr Bau)
+    WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; auf({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}, w.fixed, c); });
+    if(gableWin){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); } };
+  _oeffnungenDerEinheit(); if(P.doppel){ SHIFT=W; _oeffnungenDerEinheit(); SHIFT=0; }
   GAs.forEach(A=>windowOpenings.push({cx:A.xout, cy:0.06+1.2, cz:A.zc, w:0.8, h:0.55, perp:'x', kind:'anbau'}));   // Anbau-Fenster außen — seitenrichtig (war x1)
+  for(const f of FERNFENSTER) windowOpenings.push(f);   // die Teilbauten der fernen Stufe (Turm, Hof): ihr Fern-Fenster
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
@@ -1899,9 +1935,9 @@
     // prettier-ignore
     const KULLVOL=0.012;
     // prettier-ignore
-    const DESTNUR={kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
-    const TURMNUR={gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
+    const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
     const MASSNUR={geruest:false,riegel:false,streben:false,zimmermann:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // MASS-BUILD: 9 Verdichter aus, 4 Maß-Träger (dachdeckung/tueren/fenster/herd) eager — Δext=0 über 96 Kombos bewiesen                                                              // Destillat: Kleinst-Prims (Einzelziegel, Latten) fallen
     // prettier-ignore
@@ -2009,6 +2045,220 @@
       s0+=(C2[a]+C2[b]+C2[c])/3*ar; s1+=(C2[a+1]+C2[b+1]+C2[c+1])/3*ar; s2+=(C2[a+2]+C2[b+2]+C2[c+2])/3*ar; w+=ar; } }
   return w>1.5? [s0/w,s1/w,s2/w] : null;
 }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DER STUFEN-TON (S8, material.K3): jede ferne Stufe zeigt die Albedo der nahen — gemessen, nie aus Rollen-Tönen
+    //  vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch, 9 Blicke —
+    //  8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), je Blick-Klasse (wand |n.y| < 0,25,
+    //  flach sonst) die mittlere Vertex-Farbe der tragenden Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton),
+    //  übertragen wird die Leuchtdichte je Klasse.
+    //  Die Stufe 1 misst sich im Warm-Pfad (`B.sichtTon`, stufe1Ton); die Stufe 2 und die Hülle (Stufe 3, Fernform
+    //  `__fern`) messen sich selbst und tragen je Klasse den Faktor Soll/Ist (`tonUebertrag`). Bis S8 kam der Ton der L2
+    //  aus Rollen-Farben × EINEM Wand-Ton (`wandTonAus`, Fenster 2,6..Traufe): der Giebel trug die Dach-Farbe, das
+    //  Erdgeschoss den Ton des Obergeschosses — L2/L0 0,704 (gotisch) bis 1,108 (pueblo), 31 von 64 Häusern im Band.
+    // ═══════════════════════════════════════════════════════════════════════
+    var SICHT_N = 64;
+    // Die Achsen stehen als Zahlen (cos/sin von 22,5° + k · 45°), normiert mit der Wurzel: plattformgleich (IEEE rundet
+    // sqrt exakt, Transzendente nie — die Plattform-Probe des Vertrags kippt cos/sin/hypot um 1 ULP).
+    var SICHT_BLICKE = (function () {
+        var c = 0.923880, s = 0.382683, b = [], ring = [[c, s], [s, c], [-s, c], [-c, s], [-c, -s], [-s, -c], [s, -c], [c, -s]];
+        for (var a = 0; a < 8; a++) {
+            var d = [ring[a][0], a % 2 ? 0.25 : 0.6, ring[a][1]],
+                l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            b.push([d[0] / l, d[1] / l, d[2] / l]);
+        }
+        b.push([0, 1, 0]);
+        return b;
+    })();
+    function _tonTraegt(rolle) {
+        var m = materials()[rolle];
+        var seh = m && m.userData && m.userData.__seh;
+        return !!m && !m.transparent && (seh === "stoff" || seh === "metall");
+    }
+    function _sichtKlasse(ny, l) {
+        return l > 0 && Math.abs(ny / l) < 0.25 ? 0 : 1;
+    }
+    // geoms (je Rolle { pos, nrm, col, idx }, Welt-Lage) → { k: [[r, g, b, n] wand, [r, g, b, n] flach], alle: [r, g, b, n] }
+    function sichtTon(geoms) {
+        var Gs = [],
+            tri = [],
+            lo = [Infinity, Infinity, Infinity],
+            hi = [-Infinity, -Infinity, -Infinity];
+        for (var rolle in geoms) {
+            var G = geoms[rolle];
+            if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
+            for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(Gs.length, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
+            Gs.push(G);
+            for (var v = 0; v < G.pos.length; v += 3)
+                for (var c = 0; c < 3; c++) {
+                    if (G.pos[v + c] < lo[c]) lo[c] = G.pos[v + c];
+                    if (G.pos[v + c] > hi[c]) hi[c] = G.pos[v + c];
+                }
+        }
+        var aus = { k: [[0, 0, 0, 0], [0, 0, 0, 0]], alle: [0, 0, 0, 0] };
+        if (!tri.length) return aus;
+        // die Blick-Klasse je Dreieck (aus seiner Fläche, nie aus dem Blick) — einmal, nicht je Pixel
+        var kl = new Int8Array(tri.length / 4);
+        for (var t0 = 0; t0 < tri.length; t0 += 4) {
+            var P0 = Gs[tri[t0]].pos,
+                a0 = tri[t0 + 1] * 3,
+                a1 = tri[t0 + 2] * 3,
+                a2 = tri[t0 + 3] * 3;
+            var e1 = [P0[a1] - P0[a0], P0[a1 + 1] - P0[a0 + 1], P0[a1 + 2] - P0[a0 + 2]],
+                e2 = [P0[a2] - P0[a0], P0[a2 + 1] - P0[a0 + 1], P0[a2 + 2] - P0[a0 + 2]];
+            var nx = e1[1] * e2[2] - e1[2] * e2[1],
+                ny = e1[2] * e2[0] - e1[0] * e2[2],
+                nz = e1[0] * e2[1] - e1[1] * e2[0];
+            kl[t0 / 4] = _sichtKlasse(ny, Math.sqrt(nx * nx + ny * ny + nz * nz));
+        }
+        var mx = (lo[0] + hi[0]) / 2,
+            my = (lo[1] + hi[1]) / 2,
+            mz = (lo[2] + hi[2]) / 2;
+        var dx = hi[0] - lo[0],
+            dy = hi[1] - lo[1],
+            dz = hi[2] - lo[2];
+        var rad = Math.max(0.5, Math.sqrt(dx * dx + dy * dy + dz * dz) / 2);
+        var N = SICHT_N,
+            zb = new Float64Array(N * N),
+            ti = new Int32Array(N * N),
+            wb = new Float64Array(N * N * 2);
+        // die Lage jeder Ecke im Blick, je Rolle und Blick EINMAL (vorher je Dreiecks-Ecke — dieselbe Rechnung, dieselben Bits)
+        var PX = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            }),
+            PY = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            }),
+            PZ = Gs.map(function (g) {
+                return new Float64Array(g.pos.length / 3);
+            });
+        var X = [0, 0, 0],
+            Y = [0, 0, 0],
+            Z = [0, 0, 0];
+        for (var b = 0; b < SICHT_BLICKE.length; b++) {
+            var f = SICHT_BLICKE[b];
+            // die Achsen des Blicks: f zeigt zum Auge, r nach rechts, u nach oben
+            var r = Math.abs(f[1]) > 0.99 ? [1, 0, 0] : [f[2], 0, -f[0]];
+            var rl = Math.sqrt(r[0] * r[0] + r[2] * r[2]);
+            r = [r[0] / rl, r[1] / rl, r[2] / rl];
+            var u = [f[1] * r[2] - f[2] * r[1], f[2] * r[0] - f[0] * r[2], f[0] * r[1] - f[1] * r[0]];
+            for (var gi = 0; gi < Gs.length; gi++) {
+                var P = Gs[gi].pos;
+                for (var q = 0, w = 0; q < P.length; q += 3, w++) {
+                    var px = P[q] - mx,
+                        py = P[q + 1] - my,
+                        pz = P[q + 2] - mz;
+                    PX[gi][w] = ((px * r[0] + py * r[1] + pz * r[2]) / rad) * 0.5 * N + 0.5 * N;
+                    PY[gi][w] = ((px * u[0] + py * u[1] + pz * u[2]) / rad) * 0.5 * N + 0.5 * N;
+                    PZ[gi][w] = px * f[0] + py * f[1] + pz * f[2];
+                }
+            }
+            zb.fill(-Infinity);
+            ti.fill(-1);
+            for (var t = 0; t < tri.length; t += 4) {
+                var g3 = tri[t];
+                for (var e = 0; e < 3; e++) {
+                    var iv = tri[t + 1 + e];
+                    X[e] = PX[g3][iv];
+                    Y[e] = PY[g3][iv];
+                    Z[e] = PZ[g3][iv];
+                }
+                var den = (Y[1] - Y[2]) * (X[0] - X[2]) + (X[2] - X[1]) * (Y[0] - Y[2]);
+                if (Math.abs(den) < 1e-12) continue;
+                var x0 = Math.max(0, Math.floor(Math.min(X[0], X[1], X[2]))),
+                    x1 = Math.min(N - 1, Math.ceil(Math.max(X[0], X[1], X[2]))),
+                    y0 = Math.max(0, Math.floor(Math.min(Y[0], Y[1], Y[2]))),
+                    y1 = Math.min(N - 1, Math.ceil(Math.max(Y[0], Y[1], Y[2])));
+                for (var yy = y0; yy <= y1; yy++)
+                    for (var xx = x0; xx <= x1; xx++) {
+                        var sx = xx + 0.5,
+                            sy = yy + 0.5;
+                        var w0 = ((Y[1] - Y[2]) * (sx - X[2]) + (X[2] - X[1]) * (sy - Y[2])) / den,
+                            w1 = ((Y[2] - Y[0]) * (sx - X[2]) + (X[0] - X[2]) * (sy - Y[2])) / den,
+                            w2 = 1 - w0 - w1;
+                        if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                        var zz = w0 * Z[0] + w1 * Z[1] + w2 * Z[2],
+                            k = yy * N + xx;
+                        if (zz > zb[k]) {
+                            zb[k] = zz;
+                            ti[k] = t;
+                            wb[k * 2] = w0;
+                            wb[k * 2 + 1] = w1;
+                        }
+                    }
+            }
+            for (var k2 = 0; k2 < N * N; k2++) {
+                var t2 = ti[k2];
+                if (t2 < 0) continue;
+                var C2 = Gs[tri[t2]].col,
+                    c0 = tri[t2 + 1] * 3,
+                    c1 = tri[t2 + 2] * 3,
+                    c2 = tri[t2 + 3] * 3;
+                var S = aus.k[kl[t2 / 4]],
+                    v0 = wb[k2 * 2],
+                    v1 = wb[k2 * 2 + 1],
+                    v2 = 1 - v0 - v1;
+                for (var ch = 0; ch < 3; ch++) {
+                    var cv = v0 * C2[c0 + ch] + v1 * C2[c1 + ch] + v2 * C2[c2 + ch];
+                    S[ch] += cv;
+                    aus.alle[ch] += cv;
+                }
+                S[3]++;
+                aus.alle[3]++;
+            }
+        }
+        return aus;
+    }
+    // DER WARM-PFAD (der EINE, S8): das Soll jeder fernen Stufe ist die gemessene Stufe 1 — gemessen erst, wenn eine ferne
+    // Stufe sie braucht (eine gezeigte Stufe 1 misst nichts): am Fragment im Fach, sonst baut der Bau sie einmal (das
+    // Fragment fällt, Wand-Ton und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
+    function stufe1Ton(B) {
+        if (!B.sichtTon) {
+            var g = B.frag && B.fragStufe === 1 ? B.frag : null;
+            if (!g) {
+                g = fragFuer(B, 1);
+                B.frag = null;
+                B.fragStufe = undefined;
+            }
+            B.sichtTon = sichtTon(g);
+        }
+        return B.sichtTon;
+    }
+    // Der Faktor je Klasse: die Leuchtdichte Soll/Ist (Rec. 709 — der Farbton jeder Stufe bleibt ihr eigener: die Scheibe der L2
+    // zeigt den Raum dahinter in seiner Farbe, gate:haus-fern G), eine Klasse unter 1 % der gesehenen Pixel trägt den Faktor
+    // des Ganzen; auf dem Raster 2^-10 — eine Drift der Eingänge um 1 ULP kippt fast nie einen Faktor (Plattform-Probe).
+    function tonFaktoren(soll, ist) {
+        var Y = function (s) {
+            return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2]) / s[3];
+        };
+        var ganz = function (s, i) {
+            var q = s[3] && i[3] && Y(i) > 0 ? Y(s) / Y(i) : 1;
+            q = Math.round(Math.min(4, Math.max(0.25, q)) * 1024) / 1024;
+            return [q, q, q];
+        };
+        var alle = ganz(soll.alle, ist.alle);
+        return [0, 1].map(function (k) {
+            return soll.k[k][3] >= 0.01 * soll.alle[3] && ist.k[k][3] >= 0.01 * ist.alle[3] ? ganz(soll.k[k], ist.k[k]) : alle;
+        });
+    }
+    // Die Stufe trägt den Ton ihres Solls: jede Ecke der tragenden Stoffe × den Faktor ihrer Klasse (nach ihrer Normale).
+    function tonUebertrag(geoms, soll) {
+        if (!soll || !soll.alle[3]) return geoms;
+        var F = tonFaktoren(soll, sichtTon(geoms));
+        for (var rolle in geoms) {
+            var G = geoms[rolle];
+            if (!G || !G.col || !_tonTraegt(rolle)) continue;
+            for (var v = 0; v < G.col.length; v += 3) {
+                var n0 = G.nrm[v],
+                    n1 = G.nrm[v + 1],
+                    n2 = G.nrm[v + 2];
+                var f = F[_sichtKlasse(n1, Math.sqrt(n0 * n0 + n1 * n1 + n2 * n2))];
+                G.col[v] *= f[0];
+                G.col[v + 1] *= f[1];
+                G.col[v + 2] *= f[2];
+            }
+        }
+        return geoms;
+    }
     // prettier-ignore
     function stapelBau(hp, flags, extraNur){
   if(extraNur) hp=Object.assign({},hp,{nur:Object.assign({},hp.nur||{},extraNur)});                                                               // TURM-STAPEL-GESETZ: Türme sind gestapelte ECHTE builds
@@ -2082,7 +2332,7 @@
       idx.push(...(x*n[0]+y*n[1]+z*n[2]>0?[v0,v0+1,v0+2,v0,v0+2,v0+3]:[v0,v0+2,v0+1,v0,v0+3,v0+2])); }
     const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); pg.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); pg.setIndex(idx);
     grp2.add(new THREE.Mesh(pg,mat)); };
-  for(const o of liste){ const z=o.perp==='z', s=z?(o.cz<0?-1:1):(o.cx<0?-1:1), u=z?o.cx:o.cz, schlaf=fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
+  for(const o of liste){ const z=o.perp==='z', s=o.s||(z?(o.cz<0?-1:1):(o.cx<0?-1:1)), u=z?o.cx:o.cz, schlaf=o.schlaf!=null?o.schlaf:fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
     const e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
     const rw=(o.w+0.2)/2, rh=(o.h+0.2)/2, y0=o.cy-rh, y1=o.cy+rh, d0=-0.02, d1=RAHMEN_TIEFE;   // der Kasten greift 2 cm in die Wand: keine Fuge zum Körper (der liegt 1,5 cm innen)
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
@@ -2646,10 +2896,32 @@
     function huelleVonBau(B) {
         return {
             stufe: 3,
-            teile: koerperListe(B).map(function (x) {
-                return x.teil;
-            }),
+            teile: koerperTeile(B),
         };
+    }
+    // DIE TEILE DER HÜLLE IM TON DER STUFE 1 (S8): je Teil seine Farbe × den Faktor seiner Blick-Klassen (`tonFaktoren`
+    // der Hülle gegen `B.sichtTon`), gewichtet nach den Flächen, die ein Auge an ihm sieht — der Kasten vier Wände und
+    // den Deckel, Keil und Kapsel ihre Schräge. Gitter (Stufe 3) und Fernform (`__fern`, der Welt-March) lesen DIESE Liste.
+    function koerperTeile(B) {
+        if (B.koerperTeile) return B.koerperTeile;
+        var soll = stufe1Ton(B);
+        var teile = koerperListe(B).map(function (x) {
+            return x.teil;
+        });
+        if (soll.alle[3]) {
+            var F = tonFaktoren(soll, sichtTon(huelleGeoms(teile, {}, B.q)));
+            teile = teile.map(function (t) {
+                if (!t.farbe) return t;
+                var aw = t.art === "box" ? 4 * t.h[1] * (t.h[0] + t.h[2]) : 0,
+                    af = t.art === "box" ? t.h[0] * t.h[2] : 1,
+                    n = Object.assign({}, t);
+                n.farbe = _hr3([0, 1, 2].map(function (c) {
+                    return (t.farbe[c] * (aw * F[0][c] + af * F[1][c])) / (aw + af);
+                }));
+                return n;
+            });
+        }
+        return (B.koerperTeile = teile);
     }
     // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest".
     function huelleAusBoxen(stufe, boxen) {
@@ -2698,13 +2970,7 @@
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        var B = planBau(p);
-        if (!((p.storeys || 1) >= 6)) {
-            fragFuer(B, 1);
-            B.frag = null;
-            B.fragStufe = undefined;
-        }
-        return huelleVonBau(B);
+        return huelleVonBau(planBau(p));
     }
     // prettier-ignore
     // DER BAU-ORT (K10): der Rahmen, in dem ein Haus der Siedlung bakt — Gier phi, Ort x/z und sein BODEN y (der Plan v2,
@@ -2776,8 +3042,9 @@
     // prettier-ignore
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
+  if(stufe>=2) stufe1Ton(B);                                                                  // DER WARM-PFAD (S8): jede ferne Stufe baut auf der gemessenen Stufe 1 (Wand-Ton, Sicht-Ton)
   const geoms={};
-  if(stufe===3){ huelleGeoms(koerperListe(B).map(x=>x.teil), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
+  if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
@@ -2797,6 +3064,7 @@
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
     if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
+  if(stufe===2) tonUebertrag(geoms, B.sichtTon);                                              // die Stufe 2 trägt je Blick-Klasse den Ton der Stufe 1
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2866,11 +3134,139 @@
     // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
     // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
     const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35 };
+    // ── DAS RANG-GESETZ (siedlung.K2, additiv): die Größen der Welt folgen dem Rang (Zipf, Exponent 1). Je Stufe L ein Raster
+    // aus `zellen` × `zellen` Welt-Zellen; sein Sieger (die Dorf-Zelle mit dem höchsten Rang-Schlüssel) trägt die Stadt der
+    // Stufe — der Sieger des groben Rasters siegt auch in seinem feinen, er steigt auf. Die Größe der Stufe ist Pareto(α = 1)
+    // auf [nH, 4·nH): mit der Rasterseite × 2 je Stufe (Dichte / 4) gilt N(≥ s) ∝ 1/s über alle Stufen (`siedlungsGroesse`).
+    // Das Dorf (Stufe 0) bleibt nHMin … nHMin+nHSpan−1, byte-gleich. Ein Ort steht nur, wo kein höherer, der steht, in
+    // Reichweite liegt (`reichM`: kern + jeWurzel·√nH m um den Anker — der Rang verdrängt, `siedlungsZelle`); bis K2 würfelte
+    // jede Zelle 8–17 Häuser, die Welt trug nur Dörfer. Ohne Zahl nimmt eine Epoche die Größe ihrer Klasse (`GROESSE_N`,
+    // EPOCHEN.groesse → nZiel im DORF). ──
+    SIEDLUNG.rang = [
+        { zellen: 8, nH: 24 },
+        { zellen: 16, nH: 96 },
+    ];
+    SIEDLUNG.reichM = { kern: 30, jeWurzel: 22 };
+    // je Größen-Klasse des DORF die Häuserzahl, die eine Epoche ohne Zahl verlangt (jede liegt in ihrer Klasse, gate:settlement Z)
+    var GROESSE_N = { weiler: 6, dorf: 12, markt: 21, stadt: 36, grossstadt: 90, metropole: 220 };
+    // DIE STADTMAUER (siedlung.K2): die Maße, die das Labor (`worlds/fachwerk` buildDorf) und die Welt (`_stlMauerBuild`) aus der
+    // Mauer des Plans (`dorfLayout`: Segmente, Türme, Tore) bauen — die Wand mit ihrer Krone (y = die Mitte über dem Fuß), der
+    // Turm mit seinem Dach; die Stoffe stein und ziegel in den Farben von DEFCOL
+    var STADTMAUER = {
+        wand: { hoch: 5.6, dick: 1.6, ueber: 0.6 },
+        krone: { y: 5.9, hoch: 0.7, dick: 2.0 },
+        turm: { breit: 3.6, hoch: 8.4 },
+        dach: { y: 9.1, breit: 4.2, hoch: 1.5 },
+    };
+    // der Rang-Schlüssel einer Zelle aus ihrem Hash (fmix32, eine Bijektion: zwei Hashes tragen nie denselben Schlüssel)
+    function rangSchluessel(h) {
+        var x = h >>> 0;
+        x = Math.imul(x ^ (x >>> 16), 0x85ebca6b) >>> 0;
+        x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0;
+        return (x ^ (x >>> 16)) >>> 0;
+    }
+    // DIE EINE GRÖSSE einer Siedlung aus ihrem Zell-Hash h und ihrer Stufe (die Auto-Zelle, das Start-Dorf, der Akt ohne Zahl)
+    function siedlungsGroesse(S, h, stufe) {
+        var L = stufe | 0;
+        if (L <= 0) return S.nHMin + ((h >>> 24) % S.nHSpan);
+        var u = (rangSchluessel((h ^ 0x9e3779b9) >>> 0) >>> 8) / 16777216;
+        return Math.floor(S.rang[L - 1].nH / (1 - 0.75 * u));
+    }
+    // die Reichweite eines Orts mit nH Häusern um seinen Anker (m)
+    function siedlungsReich(S, nH) {
+        return S.reichM.kern + S.reichM.jeWurzel * Math.sqrt(nH);
+    }
+    // DIE EPOCHEN-LEGENDE einer Siedlung aus ihrem Samen: jede dritte trägt eine Epoche der Tafel (DP.epoche fixiert Region und
+    // Zeit), die übrigen würfelt der Same (undefined). Bis siedlung.K2 rechnete sie der Wirt (`_siedlungEpoche`), byte-gleich.
+    function siedlungsEpoche(seed) {
+        var namen = Object.keys(EPOCHEN);
+        var h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
+        h = (h ^ (h >>> 16)) >>> 0;
+        if (h % 3 !== 0) return undefined;
+        return namen[(h >>> 4) % namen.length];
+    }
+    // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` reicht der Wirt (FNV-1a über „<Welt-Same>:dorf:cx,cz"), der Kern
+    // entscheidet Existenz (1 von `rarity`), Anker (die Zell-Mitte ± ¼ Zelle aus den Bits >>>8 und >>>16), Stufe, Größe, Reichweite
+    // und die Verdrängung. `memo` (eine Map je Welt-Same) hält Orte, Sieger und Urteile. Rückgabe {seed, nH, stufe, x, z, reichM}
+    // oder null (kein Dorf, verdrängt).
+    function siedlungsZelle(S, cx, cz, zellHash, memo) {
+        var M = memo || new Map();
+        var ort = function (x, z) {
+            var k = "o" + x + "," + z;
+            if (M.has(k)) return M.get(k);
+            var h = zellHash(x, z) >>> 0;
+            var o = null;
+            if (h % S.rarity === 0) {
+                var jx = (((h >>> 8) & 0xff) / 255 - 0.5) * S.cellM * 0.5;
+                var jz = (((h >>> 16) & 0xff) / 255 - 0.5) * S.cellM * 0.5;
+                o = { cx: x, cz: z, h: h, rang: rangSchluessel(h), x: (x + 0.5) * S.cellM + jx, z: (z + 0.5) * S.cellM + jz };
+            }
+            M.set(k, o);
+            return o;
+        };
+        var sieger = function (L, bx, bz) {
+            var k = "s" + L + ":" + bx + "," + bz;
+            if (M.has(k)) return M.get(k);
+            var n = S.rang[L - 1].zellen;
+            var best = null;
+            for (var i = 0; i < n; i++)
+                for (var j = 0; j < n; j++) {
+                    var o = ort(bx * n + i, bz * n + j);
+                    if (o && (!best || o.rang > best.rang)) best = o;
+                }
+            M.set(k, best);
+            return best;
+        };
+        var stufeVon = function (o) {
+            var k = "t" + o.cx + "," + o.cz;
+            if (M.has(k)) return M.get(k);
+            var st = 0;
+            for (var L = S.rang.length; L >= 1 && !st; L--) {
+                var n = S.rang[L - 1].zellen;
+                if (sieger(L, Math.floor(o.cx / n), Math.floor(o.cz / n)) === o) st = L;
+            }
+            M.set(k, st);
+            return st;
+        };
+        var groesse = function (o) {
+            return siedlungsGroesse(S, o.h, stufeVon(o));
+        };
+        var hoeher = function (w, o) {
+            var a = stufeVon(w);
+            var b = stufeVon(o);
+            return a > b || (a === b && w.rang > o.rang);
+        };
+        // der Ort steht, wenn kein höherer, der steht, in Reichweite liegt (der Rang steigt in jeder Frage: die Kette endet)
+        var steht = function (o) {
+            var k = "l" + o.cx + "," + o.cz;
+            if (M.has(k)) return M.get(k);
+            var so = stufeVon(o);
+            var ro = siedlungsReich(S, groesse(o));
+            var ja = true;
+            for (var L = S.rang.length; L >= Math.max(1, so) && ja; L--) {
+                var n = S.rang[L - 1].zellen;
+                var B = n * S.cellM;
+                var D = ro + siedlungsReich(S, 4 * S.rang[L - 1].nH);
+                for (var bx = Math.floor((o.x - D) / B); bx <= Math.floor((o.x + D) / B) && ja; bx++)
+                    for (var bz = Math.floor((o.z - D) / B); bz <= Math.floor((o.z + D) / B) && ja; bz++) {
+                        var w = sieger(L, bx, bz);
+                        if (!w || w === o || stufeVon(w) !== L || !hoeher(w, o)) continue;
+                        if (Math.hypot(w.x - o.x, w.z - o.z) < ro + siedlungsReich(S, groesse(w)) && steht(w)) ja = false;
+                    }
+            }
+            M.set(k, ja);
+            return ja;
+        };
+        var o = ort(cx, cz);
+        if (!o || !steht(o)) return null;
+        var nH = groesse(o);
+        return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const nZiel=Math.max(4,Math.min(500,DP.nH||24));                                          // ZIEL-GESETZ: der Regler IST die Stadt
   const leg=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;
+  const nZiel=Math.max(4,Math.min(500,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   let region,jahr,spanne;
   if(leg){ region=leg.region; jahr=leg.jahr+(((rnd()-0.5)*50)|0); spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
@@ -2953,6 +3349,12 @@
     function distPunktOBB(px,pz,o){ const c=Math.cos(o.phi),s2=Math.sin(o.phi), dx=px-o.cx, dz=pz-o.cz;
   const lx=dx*c-dz*s2, lz=dx*s2+dz*c;             // Welt→lokal = R(−φ)
   const ex=Math.max(Math.abs(lx)-o.ex,0), ez=Math.max(Math.abs(lz)-o.ez,0); return Math.hypot(ex,ez); }
+    // DIE VORAUSWAHL DER NÄHE (siedlung.K5): sicher fern, ohne Winkel zu rechnen — die Box liegt im Kreis ex+ez um ihre Mitte, ein Weg in
+    // seinem Kasten; was weiter als thr (+1 µm für die Rundung) liegt, kann die genaue Probe nicht treffen, ihr Urteil bleibt bit-gleich.
+    // Leser: dorfLayout (Bauplatz, Laterne) · brunnenWeicht · wandLaternen — bis K5 rechnete jede Probe Winkel und Abstand zu allem (nH 300: 4 s).
+    function fernOBB(px,pz,o,thr){ const dx=px-o.cx, dz=pz-o.cz, R=thr+o.ex+o.ez+1e-6; return dx*dx+dz*dz>R*R; }
+    function wegKasten(P){ const K={x0:Infinity,x1:-Infinity,z0:Infinity,z1:-Infinity}; for(const p of P){ if(p.x<K.x0)K.x0=p.x; if(p.x>K.x1)K.x1=p.x; if(p.z<K.z0)K.z0=p.z; if(p.z>K.z1)K.z1=p.z; } return K; }
+    function fernKasten(x,z,K,thr){ const ax=Math.max(K.x0-x,0,x-K.x1), az=Math.max(K.z0-z,0,z-K.z1), R=thr+1e-6; return ax*ax+az*az>R*R; }
     // ════════════ PROXY-GESETZ ════════════ ferne Gebäude als Massivkörper (~30 Prims): Korpus·Fensterraster·Tür·Satteldach·Giebel·Kamin
     // prettier-ignore
     function PROXYHAUS(p){ const W=p.W, D=p.D, st=Math.max(1,p.storeys), sh=2.75, H=st*sh;
@@ -3169,7 +3571,7 @@
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
           for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
-            if(distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
+            if(!fernOBB(q2.x,q2.z,o,thr)&&distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
       if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
         const fmx=q.x+cu.side*q.nx*(rd.w/2+gw+jit), fmz=q.z+cu.side*q.nz*(rd.w/2+gw+jit);
         pl[i]={x:tx,z:tz,phi,obb:o,fm:[fmx,fmz],rd:cu.rd,fr:rd.w/2+gw,jit};
@@ -3204,7 +3606,7 @@
         if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
           else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
           obbs.push({i,o}); done=true; } }
@@ -3220,7 +3622,7 @@
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o};
@@ -3295,9 +3697,9 @@
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
-  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2})));   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
-  const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
-  const laterneFrei=(x,z)=>obbs.every(q2=>distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
+  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
+  const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
+  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
@@ -3452,7 +3854,7 @@
     //    (MASSNUR, LOD1F) einmal bauen, Hülle vermessen, sofort entsorgen.
     //    B trägt die Sonden-Identität (q am Ursprung, hofGap 2.5). ──
     function massBau(p) {
-        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR }), LOD1F);
+        var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR, __nurMass: true }), LOD1F);
         var bx = new THREE.Box3().setFromObject(mass.g);
         var B = {
             p: p,
@@ -3602,7 +4004,6 @@
     function buildStufe(p, stufe) {
         materials();
         var geoms = {};
-        var turm = (p.storeys || 1) >= 6;
         if (stufe === 0) {
             var hp2 = stufe0Param(p);
             var st = stufe0Bau(hp2);
@@ -3662,22 +4063,9 @@
             // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
             // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe). Ihre Massen
             // kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
-            var B3 = planBau(p);
-            if (!turm) {
-                fragFuer(B3, 1);
-                B3.frag = null;
-                B3.fragStufe = undefined;
-            }
-            geoms = wurfVon(B3);
+            geoms = wurfVon(planBau(p));
         } else {
             var B = massBau(p);
-            if (stufe === 2 && !turm) {
-                // ≡ LOD-Sonde WARM-PFAD: wandTon wie im Dorf beim Abstieg aus Stufe 1
-                // gemessen (Fragment verworfen, Ton bleibt — lod2Koerper liest ihn).
-                fragFuer(B, 1);
-                B.frag = null;
-                B.fragStufe = undefined;
-            }
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
             B.frag = null;
             B.fragStufe = undefined;
@@ -3731,6 +4119,16 @@
     // ov.seed überstimmt bewusst das seed-Argument). Ausgang: EINE THREE.Group
     // (je Rolle EIN gebakter Mesh, Vertex-Farben tragen Kultur×AO×Illusion),
     // Welt-Matrizen aktualisiert — die Naht sind die Float32-Attribute (G2.2).
+    function hausDreiecke(gm) {
+        var n = 0;
+        for (var r in gm) if (gm[r] && gm[r].idx) n += gm[r].idx.length / 3;
+        (gm.__tuerFluegel || []).forEach(function (w) {
+            w.traverse(function (o) {
+                if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            });
+        });
+        return n;
+    }
     function buildInstance(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre) return null;
@@ -3743,7 +4141,21 @@
         var L = lod | 0;
         var stufe = HOST_STUFEN[0];
         for (var i = 0; i < HOST_STUFEN.length; i++) if (HOST_STUFEN[i] <= L) stufe = HOST_STUFEN[i];
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Teilung des Verformungs-Felds
+        // (Biegung, Schwung) misst die Sehne der Stufe — die gebogene Stufe 1 steht ab 12 m, die 2 ab 26 m, ihr Schritt
+        // streckt sich um 2 bzw. 3 (gleicher Sehnenfehler im Bild); trägt der Bau mehr Dreiecke als die Zeile, streckt er
+        // sich weiter (höchstens vier Mal). Ein Bau ohne Feld oder auf seiner Zeile bleibt byte-gleich.
+        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe] || {}).tris;
+        if (p.bend > 0) p.__sehne = [1, 2, 3, 1][stufe];
         var gm = buildStufe(p, stufe);
+        // der Schritt folgt dem Überschuss (n / Zeile, mindestens 1,5); bewegt ein Schritt weniger als 2 %, trägt die Stufe
+        // kein Feld und keine Fläche, die sich streckt — der Bau bleibt, die Linse nennt ihn
+        for (var versuch = 0, n = hausDreiecke(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
+            p.__sehne = (p.__sehne || 1) * Math.max(1.5, n / zeile);
+            gm = buildStufe(p, stufe);
+            vorher = n;
+            n = hausDreiecke(gm);
+        }
         var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
@@ -4071,6 +4483,7 @@
     // nach innen zurückläuft (Korb, Eimer), dreht seine Normale selbst nach innen. `jitter(i, k)` darf je Ring-Punkt
     // den Radius verformen (Rinde, Glut).
     function ausDreh(profil, seg, boden, deckel, jitter) {
+        if (_ausDetail < 1) seg = Math.max(Math.min(seg, 3), Math.round(seg * _ausDetail));
         var pos = [],
             idx = [],
             ring = [],
@@ -4314,11 +4727,17 @@
             zV = ausZufall(seed, 0x54);
         var R = 0.58 * G;
         // DER STEINRING — Feldsteine tangential gelegt, ein Drittel eingesunken; die der Glut zugewandte Seite trägt Ruß.
-        var nStein = 11 + Math.round(F * 3 + zR() * 2);
+        var nStein = 11 + Math.round(F * 3 + zR() * 2),
+            steinBreit = 1;
+        // über der Zeile (buildAusstattung): die ferne Stufe legt weniger, breitere Steine — der Ring bleibt geschlossen
+        if (_ausDetail < 1 && !fein) {
+            steinBreit = nStein / Math.max(8, Math.round(nStein * _ausDetail));
+            nStein = Math.round(nStein / steinBreit);
+        }
         for (var i = 0; i < nStein; i++) {
             var w = ((i + 0.5 + (zR() - 0.5) * 0.4) / nStein) * Math.PI * 2;
             var rr = R + (zR() - 0.5) * 0.07 * G;
-            var b = (0.17 + zR() * 0.1) * G,
+            var b = (0.17 + zR() * 0.1) * G * steinBreit,
                 tq = b * (0.68 + zR() * 0.3),
                 h = b * (0.52 + zR() * 0.26);
             var ton = ausTon(zR, 0.13, 0.04),
@@ -5171,6 +5590,7 @@
     }
     // B2 der Ausstattung: buildInstance(id, seed, lod, ov) → EINE Gruppe, je Rolle EIN gebakter Mesh (die Glut wirft
     // nicht), Stufe = die größte deklarierte ≤ lod (sonst die kleinste). ov.seed überstimmt das seed-Argument.
+    var _ausDetail = 1; // die Teilung der Drehkörper der Ausstattung (1 = das Lab-Maß; buildAusstattung senkt sie nur über der Zeile)
     function buildAusstattung(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre || pre.kind !== "ausstattung" || !AUS_BAU[rezeptId]) return null;
@@ -5183,14 +5603,33 @@
             stufe = AUS_STUFEN[0];
         for (var i = 0; i < AUS_STUFEN.length; i++) if (AUS_STUFEN[i] <= L) stufe = AUS_STUFEN[i];
         var kol = ausFarben(rezeptId, sd);
-        var roh = new THREE.Group();
         var wahl = stufe === 3 ? ausWahl(rezeptId, p, sd, kol) : null;
-        if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
-        else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
-        roh.updateMatrixWorld(true);
-        var geoms = {};
-        bakeLOD(roh, kol, geoms, 0, true);
-        var g = geomsZuGruppe(geoms);
+        // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Fülle legt Steine und Scheite
+        // zu, die Zeile der Stufe wächst nicht; trägt der Bau mehr Dreiecke, fällt die Teilung jedes Drehkörpers um das
+        // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
+        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.ausstattung[stufe] || {}).tris;
+        try {
+            for (var versuch = 0; ; versuch++) {
+                var roh = new THREE.Group();
+                if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
+                else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
+                roh.updateMatrixWorld(true);
+                var geoms = {};
+                bakeLOD(roh, kol, geoms, 0, true);
+                var g = geomsZuGruppe(geoms);
+                var n = 0;
+                g.traverse(function (o) {
+                    if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                });
+                if (!(n > zeile) || stufe === 3 || versuch === 4) break;
+                g.traverse(function (o) {
+                    if (o.geometry) o.geometry.dispose();
+                });
+                _ausDetail *= Math.min(0.97, zeile / n);
+            }
+        } finally {
+            _ausDetail = 1;
+        }
         g.traverse(function (o) {
             if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
         });
@@ -5264,7 +5703,7 @@
         var fremd = function (x, z, h) {
             for (var j = 0; j < pl.length; j++) {
                 var o = pl[j] && pl[j].obb;
-                if (!o || pl[j] === h.q) continue;
+                if (!o || pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
                 var c = Math.cos(o.phi || 0),
                     s = Math.sin(o.phi || 0);
                 if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
@@ -5375,8 +5814,11 @@
             }
             return null;
         };
+        var kw = wege.map(function (rd) {
+            return wegKasten(rd.pts);
+        });
         var aufWeg = function (x, z, saum) {
-            for (var j = 0; j < wege.length; j++) if (fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
+            for (var j = 0; j < wege.length; j++) if (!fernKasten(x, z, kw[j], wege[j].w / 2 + saum) && fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
             return false;
         };
         // die Flächen der Häuser: der Grundriss und der Gang vom Eingang bis an den Weg (mindestens ORT_GESETZ.vorplatzM)
@@ -5402,8 +5844,8 @@
         }
         var frei = function (x, z) {
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
-            for (var j = 0; j < flaechen.length; j++) if (distPunktOBB(x, z, flaechen[j]) < r) return false;
-            for (j = 0; j < (lay.felder || []).length; j++) if (distPunktOBB(x, z, lay.felder[j]) < r) return false;
+            for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
+            for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
             var nah = function (L, m) {
                 for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
                 return false;
@@ -5419,9 +5861,16 @@
             var b = lay.brunnen[k],
                 stand = frei(b.x, b.z) ? b : null;
             if (!stand) {
-                var nach = raender.slice().sort(function (p1, p2) {
-                    return Math.hypot(p1.x - b.x, p1.z - b.z) - Math.hypot(p2.x - b.x, p2.z - b.z);
-                });
+                var nach = raender
+                    .map(function (p1) {
+                        return [Math.hypot(p1.x - b.x, p1.z - b.z), p1];
+                    })
+                    .sort(function (e1, e2) {
+                        return e1[0] - e2[0];
+                    })
+                    .map(function (e1) {
+                        return e1[1];
+                    });
                 for (a = 0; !stand && a < nach.length; a++) if (frei(nach[a].x, nach[a].z)) stand = nach[a];
             }
             if (stand && stand !== b) aus.gerueckt++;
@@ -5507,6 +5956,25 @@
       else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
       return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
     }
+    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das META-GESETZ von der anderen Seite: dort emergiert die
+    //    Größe eines Hauses aus Personen und Wohlstand, hier wohnen in einem gebauten Haus (die Zeile hp des Plans, `slot.ov`)
+    //    so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
+    //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
+    //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
+    //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
+    //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2 } };
+    function leuteVon(hp) {
+        if (!hp || typeof hp !== "object") return 0;
+        var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
+        if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
+        var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
+        var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
+        if (!(W > 0 && D > 0)) return 1;
+        var fl = W * D * (st >= 1 ? st : 1) * LEUTE_GESETZ.nutz;
+        var jeP = LEUTE_GESETZ.flaeche + LEUTE_GESETZ.wohlFlaeche * wohl;
+        return Math.max(1, Math.min(LEUTE_GESETZ.max, Math.round(fl / jeP)));
+    }
 
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
     //    N6.2: die EINE Lab-Formel exportiert ABGELEITETE Daten, kein Duplikat).
@@ -5525,7 +5993,7 @@
         dp = dp && typeof dp === "object" ? dp : {};
         var plan = DORF({
             seed: isFinite(dp.seed) ? Number(dp.seed) : 1,
-            nH: isFinite(dp.nH) ? Number(dp.nH) : 18,
+            nH: isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
             epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
         });
@@ -5610,13 +6078,26 @@
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
-            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
-            // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
-            // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
-            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
-            // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
+            // + Hof-Bäume (Architektur-Spawns) + Laternen, die Mauer der Stadt (`_stlMauerBuild`,
+            // siedlung.K2: bis dahin aus dem Export gestrichen, die Stadt der Welt stand ohne sie) und
+            // der Graph der Gassen (nV/nE/zyklen, der Leser gate:settlement Z). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
+            mauer: lay.mauer
+                ? {
+                      R: lay.mauer.R,
+                      segs: lay.mauer.segs.map(function (s) {
+                          return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 };
+                      }),
+                      towers: lay.mauer.towers.map(function (t) {
+                          return { x: t.x, z: t.z };
+                      }),
+                      gates: lay.mauer.gates.map(function (g) {
+                          return { x: g.x, z: g.z, th: g.th };
+                      }),
+                  }
+                : null,
+            graph: { nV: lay.graph.nV, nE: lay.graph.nE, zyklen: lay.graph.zyklen },
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
@@ -5699,6 +6180,55 @@
         var c = Math.cos(p.phi || 0);
         return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
     }
+    // DAS WASSER EINES HAUSES (K10): ein Slot `sl` (plan-lokal), dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt
+    // (`wasserAm(x, z)` plan-lokal: ctx.wasserAt, dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts,
+    // `_fundamentRaster`: je Meter ein Punkt, höchstens 13 je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine
+    // Platte im See, das Dorf ist, was steht. `ein` sein Eingang (`eingangVon`); `mitte`: nur der mittlere Punkt des Rasters
+    // (der billige Beweis zuerst). Leser: `ortPlan` und `ortImWasser`.
+    function slotImWasser(sl, wasserAm, ein, mitte) {
+        var O = ORT_GESETZ;
+        var ob = sl.obb;
+        if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
+            var c = Math.cos(ob.phi || 0);
+            var s = Math.sin(ob.phi || 0);
+            var ex = ob.ex + O.saumM;
+            var ez = ob.ez + O.saumM;
+            var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
+            var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
+            for (var i = mitte ? nx >> 1 : 0; i <= (mitte ? nx >> 1 : nx); i++)
+                for (var j = mitte ? nz >> 1 : 0; j <= (mitte ? nz >> 1 : nz); j++) {
+                    var lx = ex * ((2 * i) / nx - 1);
+                    var lz = ez * ((2 * j) / nz - 1);
+                    if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
+                }
+        } else if (wasserAm(sl.x, sl.z)) return true;
+        var tu = sl.tuer;
+        if (!mitte && tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w)) {
+            var ez0 = ein(sl).z;
+            var cu = Math.cos(sl.phi || 0);
+            var su = Math.sin(sl.phi || 0);
+            for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
+                for (var u = -1; u <= 1; u++) {
+                    var lt = ez0 - t;
+                    var du = (u * tu.w) / 2;
+                    if (wasserAm(sl.x + tu.x * cu + lt * su + du * cu, sl.z - tu.x * su + lt * cu - du * su)) return true;
+                }
+        }
+        return false;
+    }
+    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
+    // (`slotImWasser`: erst die Mitte jedes Hauses, dann sein ganzes Raster), −1 ohne — ohne den Plan zu rechnen. Leser: die
+    // Ort-Wahl der Welt (voxel-worker `ortWahl`: ein Ort, an dem das Wasser ein Haus nimmt, trägt den Plan nie ganz).
+    function ortImWasser(plan, origin, ctx) {
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        var am = function (x, z) {
+            return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
+        };
+        for (var m = 1; m >= 0; m--)
+            for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
+        return -1;
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -5760,6 +6290,36 @@
         };
         // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
         var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
+        // DAS NETZ DES PROFILS (siedlung.K5): ein Weg-Punkt sucht seinen gepinnten Nachbarn nur in den Zellen, die seine größte
+        // Reichweite (max 1,5 m | halbe Breite) trifft, in der Folge des Profils — dasselbe Urteil wie die Suche über alle
+        // Punkte (gleicher Abstand, der erste gewinnt), ohne die quadratische Schleife (nH 300: 1 206 Punkte je Kandidat)
+        var profilNetz = new Map();
+        var profilR = 0;
+        var profilZ = function (ix, iz) {
+            return (ix + 32768) * 65536 + (iz + 32768);
+        };
+        var profilSetzen = function (pt) {
+            var key = profilZ(Math.floor(pt[0] / 4), Math.floor(pt[1] / 4));
+            var lst = profilNetz.get(key);
+            if (!lst) profilNetz.set(key, (lst = []));
+            lst.push(profil.length);
+            profil.push(pt);
+            profilR = Math.max(profilR, 1.5, pt[3]);
+        };
+        var profilNah = function (x, z) {
+            var out = [];
+            var rz = Math.ceil(profilR / 4) + 1; // eine Zelle Rand: die Rundung am Zellrand fällt nie aus der Suche
+            var ix = Math.floor(x / 4);
+            var iz = Math.floor(z / 4);
+            for (var a = -rz; a <= rz; a++)
+                for (var b = -rz; b <= rz; b++) {
+                    var lst = profilNetz.get(profilZ(ix + a, iz + b));
+                    if (lst) for (var li = 0; li < lst.length; li++) out.push(lst[li]);
+                }
+            return out.sort(function (p, q) {
+                return p - q;
+            });
+        };
         var wege = [];
         var roads = Array.isArray(plan.roads) ? plan.roads : [];
         var k;
@@ -5780,7 +6340,9 @@
                     continue;
                 }
                 var best = Infinity;
-                for (var q = 0; q < profil.length; q++) {
+                var nah = profilNah(pts[k].x, pts[k].z);
+                for (var qi = 0; qi < nah.length; qi++) {
+                    var q = nah[qi];
                     var d = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
                     if (d <= Math.max(1.5, profil[q][3]) && d < best) {
                         best = d;
@@ -5859,7 +6421,7 @@
             }
             for (k = 0; k < n; k++) {
                 ys[k] = r6(ys[k]);
-                profil.push([pts[k].x, pts[k].z, ys[k], hw]);
+                profilSetzen([pts[k].x, pts[k].z, ys[k], hw]);
             }
             // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
             // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand; eine Strecke an der Brücke trägt keine
@@ -5914,40 +6476,16 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
-        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz
-        var eingang = eingangVon;
-        // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
-        // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
-        // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
+        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz — je Slot EINMAL gerechnet
+        // (die Parameter des Hauses, `hausParams`, mischte jeder Schritt der Vorplatz-, Gassen- und Hof-Suche neu: bis 80 je Slot)
+        var eingaenge = new Map();
+        var eingang = function (sl) {
+            var e = eingaenge.get(sl);
+            if (!e) eingaenge.set(sl, (e = eingangVon(sl)));
+            return e;
+        };
         var wasserAm = function (x, z) {
             return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
-        };
-        var imWasser = function (sl) {
-            var ob = sl.obb;
-            if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
-                var c = Math.cos(ob.phi || 0);
-                var s = Math.sin(ob.phi || 0);
-                var ex = ob.ex + O.saumM;
-                var ez = ob.ez + O.saumM;
-                var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
-                var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
-                for (var i = 0; i <= nx; i++)
-                    for (var j = 0; j <= nz; j++) {
-                        var lx = ex * ((2 * i) / nx - 1);
-                        var lz = ez * ((2 * j) / nz - 1);
-                        if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
-                    }
-            } else if (wasserAm(sl.x, sl.z)) return true;
-            if (hatTuer(sl) && isFinite(sl.tuer.w))
-                for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
-                    for (var u = -1; u <= 1; u++) {
-                        var v = vorne(sl, eingang(sl).z - t);
-                        var cu = Math.cos(sl.phi || 0);
-                        var su = Math.sin(sl.phi || 0);
-                        var du = (u * sl.tuer.w) / 2;
-                        if (wasserAm(v[0] + du * cu, v[1] - du * su)) return true;
-                    }
-            return false;
         };
         var ps = [];
         var wasserSlots = 0;
@@ -5957,7 +6495,7 @@
         // Hauses hing vor einer Wand, die es nicht gab.
         var neuSi = [];
         for (var si0 = 0; si0 < plan.slots.length; si0++)
-            if (imWasser(plan.slots[si0])) {
+            if (slotImWasser(plan.slots[si0], wasserAm, eingang)) {
                 wasserSlots++;
                 neuSi.push(-1);
             } else {
@@ -6239,6 +6777,7 @@
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
         ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,
@@ -6265,6 +6804,8 @@
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
+        LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
+        leuteVon: leuteVon,
         DORF: DORF,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
@@ -6277,6 +6818,13 @@
         ORTSNAME: ORTSNAME,
         DORF_NORM: DORF_NORM,
         SIEDLUNG: SIEDLUNG,
+        // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
+        siedlungsZelle: siedlungsZelle,
+        siedlungsGroesse: siedlungsGroesse,
+        siedlungsReich: siedlungsReich,
+        siedlungsEpoche: siedlungsEpoche,
+        GROESSE_N: GROESSE_N,
+        STADTMAUER: STADTMAUER,
         EPOCHEN: EPOCHEN,
         REGION_HIST: REGION_HIST,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)
@@ -6315,6 +6863,7 @@
         bakeHaus: bakeHaus,
         bakeLOD: bakeLOD,
         wandTonAus: wandTonAus,
+        sichtTon: sichtTon,
         stapelBau: stapelBau,
         fensterFern: fensterFern,
         fensterSchlaeft: fensterSchlaeft,

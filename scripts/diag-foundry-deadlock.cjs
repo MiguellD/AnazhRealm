@@ -10,32 +10,23 @@ const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true }); // die Foundry im Gate-Kontext an (die echte Pipeline)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                !window.anazhRealm.state.blueprints) &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.blueprints);
     });
 
     const S = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const out = { ready: false, coldBefore: 0, foundryBefore: 0, foundryAfter: 0, ticks: 0, err: null };
         const isTree = (e) =>
-            e && e.position && typeof r._foundryPresetForEntry === "function" && !!r._foundryPresetForEntry(e);
+            e && e.position && !!r._foundryPresetForEntry(e);
         try {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();
-            const dl = performance.now() + 60000;
-            while (f && !f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+            await window.__weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
@@ -60,7 +51,7 @@ const server = statikServer();
             const cold = () => archs().filter((e) => kalt(e) && nah(e)).length;
             const foundry = () => archs().filter((e) => isTree(e) && e.instFoundry && (e.instanced || e.mesh)).length;
             // DIE VORAUSSETZUNG BAUEN: seit der EINEN Nah-Grenze (121856c) ist die Nähe nach dem Warm-up schon
-            // konvergiert (gemessen 05.10.: 0 kalte Bäume im Radius 149 m, die 8 kalten stehen bei 150-168 m). Der
+            // konvergiert (die 8 kalten stehen bei 150-168 m). Der
             // Spieler tritt an den nächsten kalten Baum heran (20 m davor, wie im Gehen) — die Bäume, die dabei in den
             // Radius kommen, sind die kalte Nähe, die unter Last konvergieren muss.
             out.coldFern = archs().filter((e) => kalt(e) && !nah(e)).length;
@@ -79,8 +70,8 @@ const server = statikServer();
                     out.schritt = Math.round(zd - 20);
                 }
             }
-            // Ist die Welt ganz konvergiert (der CI-Runner backt im Warm-up jeden Baum, gemessen 05.10.: 299
-            // platziert, 0 kalt — auch jenseits des Radius), entsteht die kalte Nähe wie im Spiel nach einer
+            // Ist die Welt ganz konvergiert (der CI-Runner backt im Warm-up jeden Baum, auch jenseits des Radius), entsteht
+            // die kalte Nähe wie im Spiel nach einer
             // Räumung: die nächsten Foundry-Bäume verlieren Platz UND Körper über die EINE Räumungs-Naht
             // _foundryCacheEvict — sie sind nicht gedockt und müssen unter Über-Budget neu BACKEN (der Deadlock-Pfad).
             if (cold() === 0) {
@@ -106,12 +97,11 @@ const server = statikServer();
             out.coldBefore = cold();
             out.foundryBefore = foundry();
 
-            // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0)
-            // würde KEIN kalter Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie.
-            // Der Takt unter Dauer-Last ist BEIDES, was das Spiel dann trägt: die Schlange des Walds mit dem Boden der
-            // Welt-Substanz (`_dispatchFrameJobs`: prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der
-            // Rewarm — seit K69 wartet die Gestalt eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen
-            // nur des Rewarms ließ 8 von 8 kalt (CI 38759430399, Gruppe 12).
+            // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0) würde KEIN kalter
+            // Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie. Der Takt unter Dauer-Last ist BEIDES,
+            // was das Spiel dann trägt: die Schlange des Walds mit dem Boden der Welt-Substanz (`_dispatchFrameJobs`:
+            // prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der Rewarm — seit K69 wartet die Gestalt
+            // eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen nur des Rewarms ließ 8 von 8 kalt.
             const A = window.AnazhRealm || r.constructor;
             for (let i = 0; i < 400; i++) {
                 r.state._frameOverBudget = true; // Dauer-Last simulieren

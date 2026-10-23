@@ -1,21 +1,17 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-chunk-satz.cjs — DER SATZ (Welle B): die Draw-Einheit ist Material × Geometrie über den ganzen
-// Ring, nie Chunk × Material. Befund (Inventur der echten GPU, Mess-Wiese −900/−850): der Boden zog
-// 78 Chunk-Meshes in JEDEM Pass (234 Befehle), die Klein-Streu je Chunk und Art eine InstancedMesh
-// (162), das Wasser je Chunk ein Mesh, die Fern-Deko einen Deck-Zwilling, der platzierte Bau je
-// 256-m-Region eine Gruppe je Leaf (`@p:`). Die Wand zählt die Render-Bürger je Klasse direkt im
+// diag-chunk-satz.cjs — DER SATZ: die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material.
+// Die Wand zählt die Render-Bürger je Klasse direkt im
 // Szenen-Baum (Null-Renderer — Bundles sind headless reine Gruppen, die Chunk-Meshes werden gebaut):
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
 //   (b) WASSER — höchstens EIN Chunk-Wasser-Objekt (der Satz);
-//   (c) STREU-SATZ (W7) — die Draw-Einheit der Nah-Streu (Waldboden 04.10.: Studio-Arten, Kachel-Ring um die Kamera) ist
+//   (c) STREU-SATZ (W7) — die Draw-Einheit der Nah-Streu (Kachel-Ring um die Kamera) ist
 //       ihr STOFF: kein Nah-Streu-Objekt zeichnet selbst (keine `streuNah:`-/`streu-klein`-Mesh im Szenen-Baum), keine
 //       Deck-Streu und keine Fern-Deko (beide fielen); jede Senke (Art × Gestalt × Stufe × Teil) trägt je Kachel einen
 //       Block (Σ n = Anzahl, je Block die Ernte-Identitäten, jeder Block einer lebenden Kachel des Rings), und jeder Block
 //       mit Pflanzen lebt als Bereich im Streu-Satz seines Stoffs — n × Vertices der Gestalt, die erste Pflanze in
-//       Welt-Lage (Geometrie × Matrix), je Stoff EIN Satz. Befund (echte GPU, Mess-Wiese): je Senke eine InstancedMesh
-//       über den ganzen Ring — 15 Befehle, 46k Dreiecke, auch hinter dem Blick (Haushalt 9 / 40k);
+//       Welt-Lage (Geometrie × Matrix), je Stoff EIN Satz;
 //   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
@@ -23,29 +19,24 @@
 //       Anfang verschoben, genau seine Dreiecke als lückenlose Zell-Läufe — Boden/Wasser Viertel, Bau je Instanz); jeder
 //       Abschnitt (der Haken des Renders legt ihn) trägt seine Zellen byte-gleich hintereinander, Boden nah → fern;
 //   (g) kein Page-Error;
-//   (h) BAU-SATZ (Welle 6) — die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF: jede lebende Gruppe einer
+//   (h) BAU-SATZ — die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF: jede lebende Gruppe einer
 //       Satz-Art (`AnazhRealm.BAU_SATZ` je Rezept-kind: Haus, Fels, Kristall, Säulen; ohne Tür-Flügel) hängt an keinem
 //       Eltern-Knoten (weder Bundle noch Szene) und lebt als Bereich im Satz ihres Stoffs — n × liveCount Vertices, die
-//       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle. Befund (echte GPU, Mess-Wiese):
-//       jede Gestalt zog als eigene Gruppe einen Befehl je Pass — das Dorf 33 (11 Häuser × 3 Stoffe), die Felszacken 34;
-//   (i) WACHSEN (Welle 6) — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
+//       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle;
+//   (i) WACHSEN — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
 //       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
 //       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
-//   (j) NEUSCHREIBEN (06.10.) — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
+//   (j) NEUSCHREIBEN — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
-//       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
-//       Mess-Wiese, Drehen 1°/Frame): 32 Verdrängungen in 36 Frames, k0 + k1 schrieben einander 2,2 MB je Frame neu.
-//   (k) DER SATZ FOLGT SEINEM INHALT (W7) — trägt die Kapazität eines Satzes `ruheTakte` Takte lang mehr als
+//       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen.
+//   (k) DER SATZ FOLGT SEINEM INHALT — trägt die Kapazität eines Satzes `ruheTakte` Takte lang mehr als
 //       `schwelle` × Ziel, schrumpft er am selben Mesh auf Inhalt × `luft`: leer auf vMin/iMin, belegt dicht nach vorn
-//       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
-//       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
-//       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
-//   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
+//       (jeder Bereich treu, jeder Abschnitt neu gelegt). Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
+//   (n) DER EINE SATZ-STOFF — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
 //       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
-//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
-//       (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
-//       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
+//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs.
+//       Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
@@ -111,7 +102,7 @@ function urteil(z) {
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
-    // (n) DER EINE SATZ-STOFF (K43-2): je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
+    // (n) DER EINE SATZ-STOFF: je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
     const sst = z.satzStoff;
     if (sst) {
         if (sst.zwillinge.length)
@@ -128,8 +119,8 @@ function urteil(z) {
                 `SATZ-STOFF: ${sst.untreu.length} Gruppen tragen nicht die Regler ihres Stoffs — ${sst.untreu.slice(0, 4).join(", ")}`
             );
     }
-    // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
-    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, gemessen 14.10. Radeon: 14,6 MB des Boden-Satzes)
+    // (m) DIE VERTEX-FORM: der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
+    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, 6 MB des Boden-Satzes)
     const SOLL = { normal: "nint8x4", color: "float16x4" };
     for (const f of z.vertexForm || [])
         if (SOLL[f.attr] && f.form !== SOLL[f.attr])
@@ -139,9 +130,8 @@ function urteil(z) {
         if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
     }
     // (n) DIE BODEN-STUFEN (K51, K51-2 nach dem Kasten-Abstand): ein Chunk der Stufe L lebt höchstens bis zum Abstand
-    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu fein
-    // (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke, trug den Boden-Satz
-    // der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
+    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu
+    // fein (Haushalt boden 120k samt Fern-Ring); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
     if (z.stufen) {
         const T = z.stufen.tabelle;
         const grenze = (lod) => {
@@ -367,8 +357,8 @@ function selbsttest() {
             if (!v.some((s) => re.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${re})`);
         console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
-    // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu, gemessen
-    // 06.10. an der Mess-Wiese) und ein fremder Umzug fallen rot, beim Namen.
+    // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
+    // ein fremder Umzug fallen rot, beim Namen.
     const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };
     if (urteilNeu(neuGruen).length !== 0)
         fehler.push("die ruhige Messung fällt rot: " + urteilNeu(neuGruen).join(" · "));
@@ -651,7 +641,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                             mb: +(a.array.byteLength / 1048576).toFixed(2),
                         });
                     }
-                // (n) DIE BODEN-STUFEN (K51): je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
+                // (n) DIE BODEN-STUFEN: je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
                 // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
                 // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
                 const BS = r.constructor.BODEN_STUFEN;
@@ -740,7 +730,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             // Bereichs-Anfang verschoben) trägt genau die Dreiecke des Chunks, als Viertel-Läufe hintereinander (die
             // Viertel decken ihn lückenlos); jeder Abschnitt eines Passes (hier: das Hauptbild, wie der Haken des Renders
             // ihn legt) trägt seine Viertel byte-gleich hintereinander und in der Richtung der Art (Boden nah → fern,
-            // Wasser fern → nah). Vorher (kein Satz) ist das unmessbar und fällt benannt rot.
+            // Wasser fern → nah).
             const lpc = s.lastPlayerVoxelChunk;
             // die Dreiecke als Multimenge (ordnungsfrei): Summe und XOR eines Hashes je Dreieck
             const mengeVon = (arr, plus) => {
@@ -871,7 +861,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     const dst = geo.attributes[a].array;
                     const is = geo.attributes[a].itemSize;
                     if (fa.form) {
-                        // gepackt (K44): der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
+                        // gepackt: der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
                         if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
                         const soll = new dst.constructor(b.vAnzahl * 4);
                         r.constructor._satzPacke(
@@ -954,7 +944,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     res.konsum = { opfer: opfer.key, vor, ab, auf };
                 }
             }
-            // (i) WACHSEN (Welle 6): ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
+            // (i) WACHSEN: ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
@@ -982,7 +972,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
-            // der Hörer fällt im Register (D3c, vorher am Rumpf-TEXT): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
+            // der Hörer fällt im Register (D3c): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
             // die neue Geometrie behält keinen Entsorgungs-Hörer, der beim Tausch ihre GPU-Puffer mitnähme
             {
                 const h = () => {};
@@ -993,7 +983,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 geos.initGeometry({ geometry: g });
                 res.tauschSicher = !geos._geometryDisposeListeners.has(g) && !g.hasEventListener("dispose", h);
             }
-            // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
+            // (j) NEUSCHREIBEN: kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
             // Chokepoint `_chunkSatzPass` mit Stellvertreter-Ortho-Kameras über dem Spieler: „ruhe" = enge Boxen
             // (k0 ±120 m, k1 ±400 m), „druck" = beide über den ganzen Ring (der Abend mit der Sonne im Rücken trägt fast den
@@ -1053,13 +1043,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 ring = ortho(4000);
             res.neu = { messung: {}, wachse: {} };
             res.neu.messung.ruhe = phase(eng, 5);
-            // der Druck braucht die volle Last: seit der Höhlen-Sicht (Welle 7) tragen die Ring-Kaskaden nur, was ein Empfänger
+            // der Druck braucht die volle Last: seit der Höhlen-Sicht tragen die Ring-Kaskaden nur, was ein Empfänger
             // braucht, und der Index reichte — am Exemplar zeichnet hier jede Höhlen-Zelle (die Methode des Stamms bleibt)
             r._hoehlenSicht = function (satz) {
                 const st = ++satz.hoehle.stempel;
                 for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
             };
-            // die Kapazität ERZWUNGEN klein (K51): der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
+            // die Kapazität ERZWUNGEN klein: der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
             // Ring-Kaskaden brauchen mehr, gleich wie gross der Ring gerade ist (der Druck hing am Inhalt: mit den Boden-Stufen
             // reichte der Start-Index für beide Ring-Kaskaden, 0× gewachsen)
             const bodenS = s.chunkSaetze.get("boden");
@@ -1137,9 +1127,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 cam.updateMatrixWorld(true);
                 return o;
             };
-            // EINE Vor-Drehung ohne Wertung (K51): die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
+            // EINE Vor-Drehung ohne Wertung: die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
             // Umlegen), das die alte Regel danach geschenkt bekam — beide Regeln messen aus demselben gewachsenen Stand
-            // (14.10.: die Formationen buchten im ersten Lauf 1,5 MB Umlegen, im zweiten 0)
+            // (5 MB Umlegen, im zweiten 0)
             drehen(36);
             res.neu.dreh = drehen(36);
             const P = Object.getPrototypeOf(r);
@@ -1171,13 +1161,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 delete r._chunkSatzUmlegen;
             }
             phase(eng, 2);
-            // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt die
-            // Kapazität eines Satzes `ruheTakte` Takte lang mehr als `schwelle` × Ziel, schrumpft er auf Inhalt × `luft` — am SELBEN Mesh, die Bereiche dicht nach vorn, jeder treu, jeder Abschnitt im
-            // nächsten Pass neu gelegt und treu. Befund (echte GPU, Mess-Wiese): in Ruhe hielt der Wasser-Satz 3,25 MB für 0,33 MB
-            // Inhalt, nach drei Wander-Schleifen der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt 1,3 MB. Zwei
-            // Proben: LEER (ein eigener Bau-Satz des Gates, gewachsen, ohne Bereich → vMin/iMin) und BELEGT (der Boden-Satz:
-            // die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach der Frist dicht auf Inhalt × luft).
-            // Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz kehrt zurück): er hält sein Hochwasser.
+            // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt
+            // die Kapazität eines Satzes `ruheTakte` Takte lang mehr als `schwelle` × Ziel, schrumpft er auf Inhalt ×
+            // `luft` — am SELBEN Mesh, die Bereiche dicht nach vorn, jeder treu, jeder Abschnitt im nächsten Pass neu
+            // gelegt und treu. Zwei Proben: LEER (ein eigener Bau-Satz des Gates, gewachsen, ohne Bereich → vMin/iMin)
+            // und BELEGT (der Boden-Satz: die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach
+            // der Frist dicht auf Inhalt × luft). Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz
+            // kehrt zurück): er hält sein Hochwasser.
             const VD = r.constructor.CHUNK_SATZ_VERDICHTEN;
             const RT = r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte;
             const ruhe = (n) => {
@@ -1305,7 +1295,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             res.wurfAlt = wurfProbe(false);
             return res;
         });
-        // (o) DER STUFEN-SPRUNG (K51-2): das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
+        // (o) DER STUFEN-SPRUNG: das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
         // gezeichnete Fläche (Lage + (Ziel − Lage) · `_morphFaktor`, die Boden-Karte des Stoffs) vor dem Wechsel gegen die des
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
         // (die Ring-Kette K51 morphte nur die Naht) springt.
@@ -1342,12 +1332,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
-                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Morphs seiner Nachbarn — ein Nachbar, der den Chunk nicht liest
-                // (weder seine neue noch seine alte Stufe ist gröber als die des Nachbarn), ist ein LEER-Morph. Der Selbsttest
-                // (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau morpht alle acht.
+                // (p) DIE FOLGE DES WECHSELS: je Neubau die Bitten seiner Nachbarn an die Folge-Schlange (`_morphFolge`,
+                // fahrt-takt) — ein Nachbar, der den Chunk nicht liest (weder seine neue noch seine alte Stufe ist gröber als die
+                // des Nachbarn), ist ein LEER-Morph. Der Selbsttest (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau bittet
+                // alle acht.
                 const folge = { neubau: 0, morphs: 0, leer: 0 };
                 const F0 = r._finalizeVoxelChunkBuild,
-                    G0 = r._applyCrossLodGeomorph;
+                    FS = (s._morphFolge ||= new Map());
                 const lodVon = new Map();
                 for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
                 let ctx = null;
@@ -1360,23 +1351,21 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         if (ohne)
                             for (let dx = -1; dx <= 1; dx++)
                                 for (let dz = -1; dz <= 1; dz++)
-                                    if (dx || dz) this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                                    if (dx || dz) FS.set(cx + dx + "," + (cz + dz), 0);
                         return e;
                     } finally {
                         ctx = null;
                         lodVon.set(key, lod);
                     }
                 };
-                r._applyCrossLodGeomorph = function (x, z) {
-                    if (ctx && (x !== ctx.cx || z !== ctx.cz)) {
-                        const nb = s.voxelChunks.get(x + "," + z);
-                        if (nb && !nb.empty && nb.mesh) {
-                            folge.morphs++;
-                            const nl = nb.lod || 0;
-                            if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
-                        }
+                FS.set = function (k, v) {
+                    const nb = ctx && s.voxelChunks.get(k);
+                    if (nb && !nb.empty && nb.mesh) {
+                        folge.morphs++;
+                        const nl = nb.lod || 0;
+                        if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
                     }
-                    return G0.call(this, x, z);
+                    return Map.prototype.set.call(this, k, v);
                 };
                 try {
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
@@ -1390,9 +1379,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                             const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
                             if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
                         }
-                        const t0 = performance.now();
-                        while (performance.now() - t0 < 20000) {
+                        for (const weiter = window.__deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
+                            r._tickMorphFolge(Infinity); // die Folge-Schlange wie im Takt
                             await sleep(15);
                             let fertig = true;
                             for (const [key, v] of vor) {
@@ -1429,7 +1418,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 } finally {
                     delete r._stufeGewicht;
                     delete r._finalizeVoxelChunkBuild;
-                    delete r._applyCrossLodGeomorph;
+                    delete FS.set;
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
@@ -1497,9 +1486,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             `Dreiecke (${zs.bruecken} Brücken)` +
             (vn.length ? " — " + vn.join(" · ") : "")
     );
-    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der Fläche vor und
-    // nach dem Wechsel (Befund 14.10. mit der Ring-Kette: ein Wechsel L1 → L0 sprang an der Mess-Wiese sichtbar, p99,9 der
-    // Luma-Änderung 17 gegen 5 im Rauschen); der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
+    // (o) DER STUFEN-SPRUNG: der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der
+    // Fläche vor und nach dem Wechsel; der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
     const SP = out.sprung || {};
     const fmt = (g) =>
         g
@@ -1516,19 +1504,19 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.p90 > STUFEN_SPRUNG_M,
         fmt(SP.ohne)
     );
-    // (p) DIE FOLGE DES WECHSELS (K51-4): ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
+    // (p) DIE FOLGE DES WECHSELS: ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
     // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
     const fo = (g) =>
         g && g.folge
-            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Nachbar-Morphs · ${g.folge.leer} leer`
+            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Folge-Bitten · ${g.folge.leer} leer`
             : "keine Messung";
     check(
-        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau morpht nur Nachbarn, die seine neue oder alte Stufe lesen",
+        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau bittet nur Nachbarn, die seine neue oder alte Stufe lesen",
         !!SP.mit && !!SP.mit.folge && SP.mit.folge.neubau >= 3 && SP.mit.folge.leer === 0,
         fo(SP.mit)
     );
     check(
-        "(p) Selbsttest: die Lawine (jeder Neubau morpht alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
+        "(p) Selbsttest: die Lawine (jeder Neubau bittet alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
         !!SP.ohne && !!SP.ohne.folge && SP.ohne.folge.leer > 0,
         fo(SP.ohne)
     );

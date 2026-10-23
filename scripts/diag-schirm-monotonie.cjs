@@ -1,13 +1,5 @@
-// diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie, 06.10.): ein kleinerer Schirm trägt höchstens
+// diag-schirm-monotonie.cjs — DIE SCHIRM-WAND (gate:schirm-monotonie): ein kleinerer Schirm trägt höchstens
 // gleich viel Welt — je Pass und Täter-Klasse —, und jedes Gesetz liest den Schirm aus der EINEN Quelle (`_schirm`).
-//
-// Befund (OMEN GTX 1060, main 2b60988b, EINE Welt, gleiche Stellgrößen): „beim Verkleinern des Fensters verdoppeln sich
-// Befehle und Dreiecke" (1080p 124 · 720p/540p 267–276 · zurück 126). Gemessen 06.10. (Radeon 890M, Mess-Wiese, dieselben
-// Stellgrößen): die Welt zeichnet in jeder Größe dasselbe — `werkbank zaehlen` 282/283 Befehle bei 1080p, 540p und 4K,
-// je gerendertem Frame im Mittel 227–235 von 540p bis 4K. Die Sprung-Zahl war das Perzentil des Werkbank-Laufs über die
-// TAKTE: die nahe Kaskade rendert jeden zweiten Frame, das Perzentil sprang zwischen den zwei Moden (540p 273 und im
-// nächsten Lauf 176). Und zwei Gesetze lasen den Schirm an der EINEN Quelle vorbei: der Geräte-Seed (innerWidth·dpr,
-// VERKEHRT herum: ab 4 MPix 0,1–0,2 weniger Welt) und das Fell-Gesetz (Canvas-Höhe, Rückfall 1080 und 60°).
 //
 // Die Wand fährt die echte Welt (Null-Renderer, Foundry an; sein Zeichenpuffer ist der Canvas, den der ECHTE
 // resize-Handler setzt):
@@ -58,7 +50,7 @@ const ERLAUBT = {
 };
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
 const ohneKommentare = stammLib.ohneKommentare;
-// DER ALIAS (Kette V18.534): eine Methode legt den Canvas des Renderers in eine eigene Variable (`schirm =
+// DER ALIAS: eine Methode legt den Canvas des Renderers in eine eigene Variable (`schirm =
 // this.state.renderer.domElement`) und liest dort die Größe (`schirm.height`) — SCHIRM_RE sah nur `domElement.height`.
 // Je Methode merkt die Linse jede Variable, der ein `….domElement` zugewiesen wird (const/let/var, Komma-Liste oder
 // Zuweisung), und liest dann `<alias>.width/height/clientWidth/clientHeight` als Schirm-Lesung.
@@ -94,12 +86,12 @@ function quellBefunde(src) {
 }
 
 // ── M: das Urteil über die Zensus-Reihe (rein, Node) ──────────────────────────────────────────────────────────────────
-// reihe = die gespiegelte Folge groß → klein → groß (1280×720 · 960×540 · 640×360 · 960×540 · 1280×720), je Größe
-// { groesse, proben: [{ "<klasse>|<pass>": { cmd, tris } }, …] }. Zwei Dinge bewegen die Welt ohne den Schirm: Zufälliges
-// (Partikel — der Dorf-Rauch atmet bei fester Größe 23–26 Befehle) und langsames Wachsen (der Wasser-Satz kroch über eine
-// Reihe 2124 → 2152 Dreiecke; gemessen 06.10.). Darum urteilt die Wand über SPANNEN und KLAMMERN: eine Größe trägt die
-// Proben beider Durchgänge, und VERKEHRT ist eine Klasse erst, wenn JEDE Probe im kleineren Fenster über JEDER im
-// größeren liegt — eine Drift hebt die spätere Klammer mit und wird nie als Schirm-Gesetz gelesen (sie steht als DRIFT im
+// reihe = die gespiegelte Folge groß → klein → groß (1280×720 · 960×540 · 640×360 · 960×540 · 1280×720), je Größe {
+// groesse, proben: [{ "<klasse>|<pass>": { cmd, tris } }, …] }. Zwei Dinge bewegen die Welt ohne den Schirm: Zufälliges
+// (Partikel — der Dorf-Rauch atmet bei fester Größe 23–26 Befehle) und langsames Wachsen (der Wasser-Satz kroch über
+// eine Reihe 2124 → 2152 Dreiecke). Darum urteilt die Wand über SPANNEN und KLAMMERN: eine Größe trägt die Proben
+// beider Durchgänge, und VERKEHRT ist eine Klasse erst, wenn JEDE Probe im kleineren Fenster über JEDER im größeren
+// liegt — eine Drift hebt die spätere Klammer mit und wird nie als Schirm-Gesetz gelesen (sie steht als DRIFT im
 // Bericht, wenn die beiden Enden der Reihe sich nicht treffen).
 function monotonieBefunde(reihe) {
     const b = [];
@@ -144,7 +136,7 @@ function driftBefunde(reihe) {
 async function welt() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await nullRenderer(page);
@@ -161,18 +153,15 @@ async function welt() {
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        const dl = performance.now() + 240000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "keine Welt" };
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        while (!(f && f.ready && f.recipeCount > 0) && performance.now() < dl) await sleep(100);
+        await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
         if (!(f && f.ready)) return { fatal: "Foundry nicht bereit" };
-        // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest — die Tageszeit lief in der langen
-        // Einschwing-Schleife davon und zog Feuerstelle und Zacken mit, gemessen 06.10.).
+        // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
             st._frameOverBudget = false;
             st.timeOfDay = 0.5;
@@ -271,8 +260,7 @@ async function welt() {
         waechst();
         let still = 0,
             stillTakte = 0;
-        const dlStill = performance.now() + 120000;
-        while (still < 3 && performance.now() < dlStill) {
+        for (const weiter = window.__deckel("der stille Schirm", 400); still < 3 && weiter(); ) {
             for (let i = 0; i < 30; i++) {
                 takt();
                 stillTakte++;
@@ -351,7 +339,7 @@ async function welt() {
     };
 
     const messung = await reihe();
-    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c, vorher am Stamm-TEXT)
+    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c)
     const quelleLiest = await page.evaluate(() => {
         const r = window.anazhRealm,
             ren = r.state.renderer,

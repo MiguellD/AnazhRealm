@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-sicht-arbeit.cjs — DIE SICHT KOSTET, WAS SICH ÄNDERT (Welle C, Lehre 25). Befund 06.10. (OMEN, GTX 1060 +
-// i7-8750H, CPU-Profil 12 s, Regler voll, Blick gepinnt, Mess-Wiese −900/−850): die Sicht je Pass (`_passSicht` an
-// scene.onBeforeRender) kostete ~6 ms CPU je Frame — `_chunkSatzPass` 5,3 · `_hoehlenSicht` 4,5 · `_hoehlenSichtLicht` 3,6
-// ms (je Kaskaden-Pass acht Ecken je Box über jede Mündung des Rings und jede Höhlen-Zelle der Box) —, obwohl der Spieler
-// an der Oberfläche stand und nichts sich bewegte: jeder Pass rechnete jeden Frame dieselbe Wahl neu. Die Wand fährt die
+// diag-sicht-arbeit.cjs — DIE SICHT KOSTET, WAS SICH ÄNDERT (Lehre 25). Die Wand fährt die
 // Sicht-Kette an der Mess-Wiese (Null-Renderer; das Hauptbild über `_passSicht`, zwei Stellvertreter-Kaskaden über den
 // EINEN Chokepoint `_chunkSatzPass` samt Instanz-Wahl, wie gate:chunk-satz) und zählt mit der Sicht-Linse
 // (scripts/lib/sicht-linse.cjs, dieselbe wie `werkbank sicht`) je Frame die Arbeit:
@@ -17,25 +13,22 @@
 //       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Gruppe der Wahl dieselbe Zahl;
 //   (S) SCHARF — ein eingeschmuggelter Cache-Bruch (die Lage-Erinnerung fällt je Pass) arbeitet in Ruhe und fällt rot;
 //       ein eingeschmuggelter Lege-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
-//       schuldet) zählt als Neulegen OHNE Änderung und steht als `dicht:ohne` beim Namen (K, 07.10.: die Linse trennt die
-//       Arbeit einer Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von der ohne Grund;
-//       K71: seit der vergleichende Schreiber nur Geändertes lädt, legt der Bruch 0 Bytes — die Linse zählt den Gang);
+//       schuldet) zählt als Neulegen OHNE Änderung und steht als `dicht:ohne` beim Namen (die Linse trennt die Arbeit einer
+//       Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von der ohne Grund; sie zählt den Gang);
 //       ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle
-//       ändert sich — der Cache-Schlüssel churnt) zählt als Arbeit OHNE Änderung und steht als `stand:ohne` beim Namen
-//       (Gegenprüfung 07.10.: die Linse hielt `s.stand` selbst für „Inhalt geändert" und stand bei 15 072 Prüfungen je
-//       Frame GRÜN); in der eingefrorenen Welt fällt jede Inhalts-Änderung in Ruhe rot;
-//   (L) RUHE MIT LAUFENDER SONNE (07.10. — der Tag steht im Spiel nie): die Tageszeit läuft mit der Tageslänge des Spiels
+//       ändert sich — der Cache-Schlüssel churnt) zählt als Arbeit OHNE Änderung und steht als `stand:ohne` beim Namen;
+//       in der eingefrorenen Welt fällt jede Inhalts-Änderung in Ruhe rot;
+//   (L) RUHE MIT LAUFENDER SONNE (der Tag steht im Spiel nie): die Tageszeit läuft mit der Tageslänge des Spiels
 //       (60 Frames je s), das Licht folgt `_applyDayNightToScene`, die Stellvertreter-Kaskaden stehen entlang des Lichts
 //       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
 //       (die Stellvertreter tragen keine Box — den Licht-Rand der echten Kaskaden, über den ihre Wahl die Stufen hält, prüft
 //       gate:schatten-werfer K8, im echten Loop `werkbank sicht --sonne`);
-//   (A) DAS ATMENDE AUGE (zweite Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm
-//       quer, unter dem Halt — die Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende (vorher verglich die
-//       Lage die Blende exakt, eine zweite Signatur neben `_wahlHaelt`: 14 999 Prüfungen je Frame, die Linse GRÜN); die
+//   (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm quer, unter dem Halt — die
+//       Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende; die
 //       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
 //       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
 //   (C) EIN Gesetz der Lage: die Nah-Wiese prüft ihre Kacheln nur bei neuer Generation (`L.gen`, am Ruf von `_passTrifft`);
-//       die eigene Kamera-Signatur der Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
+//       die eigene Kamera-Signatur der Nah-Wiese ist gefallen (gate:altlasten); (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser, Page-Error — MUSS rot fallen und ihn beim
 // Namen nennen.
@@ -108,7 +101,6 @@ function urteil(b) {
     if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
     else if (!c.wieseLiest)
         v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
-    if (c.zweiteSignatur) v.push("CODE: `_sichtSteht` lebt — eine zweite Kamera-Signatur neben dem Gesetz der Lage");
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
@@ -193,7 +185,7 @@ function selbsttest() {
             geprueft: 40,
             namen: [],
         },
-        code: { wieseLiest: true, zweiteSignatur: false },
+        code: { wieseLiest: true },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -208,7 +200,7 @@ function selbsttest() {
     const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
     if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
     console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
-    // RUHE MIT ÄNDERUNG (K, 07.10.): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
+    // RUHE MIT ÄNDERUNG (K): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
     // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
     // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
     const loopInhalt = Object.assign(klon().ruhe, {
@@ -343,7 +335,7 @@ function selbsttest() {
     }
     if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
         fehler.push("ungesehene Bytes stehen nicht beim Namen");
-    // das Neulegen (K71) klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
+    // das Neulegen klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
     // die Bytes des Frames zählen dort nie als ungesehen
     {
         const lk = (g) => SICHT.sichtBytesKlasse({ bytes: 100, legeGrund: { [g]: 480 }, inhalt: {} }, "legeGrund");
@@ -354,8 +346,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
     }
     // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
-    // Linse jeden Ruhe-Frame — Radeon 07.10.: 299 von 299), ein Schritt über den Halt und eine Drehung über den halben
-    // Dreh-Rand sind es
+    // Linse jeden Ruhe-Frame), ein Schritt über den Halt und eine Drehung über den halben Dreh-Rand sind es
     const mat = (yawGrad, x, y, z) => {
         const w = (yawGrad * Math.PI) / 180;
         const c = Math.cos(w),
@@ -377,8 +368,8 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein Atmen
-    // unter dem halben Halt ist keine Bewegung (vorher exakt verglichen: jeder Frame hieß „Blende", jede Arbeit entschuldigt)
+    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`): das Auge der Maske ist ein Ort der Lage — sein
+    // Atmen unter dem halben Halt ist keine Bewegung
     if (typeof SICHT.sichtBlendeBewegt !== "function")
         fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
     else {
@@ -440,7 +431,7 @@ function selbsttest() {
         if (n !== soll) fehler.push(`Arbeit ohne Änderung „${name}": ${n} statt ${soll}`);
         console.log(`  ${n === soll ? "✅" : "❌"} Selbsttest Arbeit ohne Änderung „${name}" → ${n}`);
     }
-    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`, Gegenprüfung 07.10.): je Bild die Bereiche (Identität und
+    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`): je Bild die Bereiche (Identität und
     // Hülle), der Anker, die offene Ordnung, Geometrie und Überhang — der Stand und der Verdichten-Zähler belegen nichts
     if (typeof SICHT.sichtSatzInhalt !== "function")
         fehler.push("LINSE: `sichtSatzInhalt` fehlt — der Inhalt hat keine Belege");
@@ -557,7 +548,7 @@ function selbsttest() {
                     (e.ohne.stand || e.ohne.verdichtet ? ` (ohne Ursache: ${JSON.stringify(e.ohne)})` : "")
             );
         }
-        // die Ordnung bleibt offen, solange der Satz schmutzig ist (ein Austritt nach dem Render, geordnet im nächsten)
+        // die Ordnung bleibt offen, solange der Satz schmutzig ist
         const o1 = SICHT.sichtSatzInhalt(
             bild({}),
             bild({ schmutzig: true, bloecke: mit([["c", { b: C, h: H(61) }]]) })
@@ -803,7 +794,6 @@ function selbsttest() {
         ],
         ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
-        ["zweite Signatur", (b) => (b.code.zweiteSignatur = true), /CODE: `_sichtSteht` lebt/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     for (const [name, tat, muss] of faelle) {
@@ -1060,7 +1050,7 @@ const server = statikServer();
                 }
                 aus.drehTreue = D;
             }
-            // (I) DIE INSTANZ-TREUE DER KASKADEN (Gegenprüfung 07.10.): beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
+            // (I) DIE INSTANZ-TREUE DER KASKADEN: beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
             // fremder Schreiber, der die Zahl lässt (Freigeben + Belegen; der echte Weg: der Stufen-Wechsel eines Baums,
             // `_switchArchitectureLOD`), muss JEDE Kaskade neu wählen lassen: keine tote Marke (Slot −1), kein Wurf, kein NaN
             // in einem lebenden Slot, und jeder Werfer, den das Gesetz in der Lage einer Kaskade trifft, steht in ihrer Wahl.
@@ -1249,7 +1239,7 @@ const server = statikServer();
             } finally {
                 delete r._chunkSatzRuht;
             }
-            // (S) SCHARF FÜR DEN SATZ-STAND (Gegenprüfung 07.10.): der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
+            // (S) SCHARF FÜR DEN SATZ-STAND: der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
             // seinen Stand, ohne dass ein Bereich, ein Anker oder eine Hülle sich ändert (der Cache-Schlüssel churnt, jede Wahl
             // rechnet neu); die Linse zählt die Arbeit OHNE Änderung und nennt `stand:ohne`
             stelle(0, 0);
@@ -1263,10 +1253,9 @@ const server = statikServer();
             } finally {
                 delete r._tickChunkSatz;
             }
-            // (A) DAS ATMENDE AUGE (Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
+            // (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
             // legt es je Frame aus der Kamera) atmen ±1 mm quer, unter dem Halt: keine Lage ändert sich, die Kette arbeitet
-            // nicht, und die Linse nennt es weder Kamera noch Blende. Vorher verglich die Lage die Blende exakt — eine zweite
-            // Signatur neben dem Gesetz des Halts: 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende".
+            // nicht, und die Linse nennt es weder Kamera noch Blende.
             const lu = st.lodUniforms;
             aus.augeAn = !!(lu && lu.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
             if (aus.augeAn) {
@@ -1441,7 +1430,6 @@ const server = statikServer();
                 r._nahWieseSicht(cam, Lg);
                 aus.code.wieseLiest = !trifft(Lg) && trifft(Object.assign({}, Lg, { gen: Lg.gen + 1 })) && nw.gen === Lg.gen + 1;
             }
-            aus.code.zweiteSignatur = typeof P._sichtSteht === "function";
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             aus.gruppen = r._instanzWahlGruppen().size;
             const H = s.hoehle;

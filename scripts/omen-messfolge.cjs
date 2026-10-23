@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot (Welle K, 07.10.). Befund: der OMEN (GTX 1060, der ruhige Messplatz) fuhr
-// jeden Stand mit einer Befehlsfolge, die in jeder Nachricht neu stand — und zweimal maß er Falsches, ohne dass eine Zahl es
-// zeigte: `band` vor `lauf` (die Bank-Frames ohne rAF füllen den Zeitstempel-Pool, jeder Pass-Stempel danach ist blind) und
-// das „tauende" Wetter (die Bühne hielt die Uhr des Auto-Zugs, ein anderer Schreiber drehte trotzdem sunny → rainy; V18.534
-// in einem B-Boot). Diese Datei IST die Folge: sie startet die Welt (`werkbank start --echt`), fährt die Schritte in fester
+// omen-messfolge.cjs — DIE EINE MESS-FOLGE je Boot. Diese Datei IST die Folge: sie startet die Welt (`werkbank start --echt`), fährt die Schritte in fester
 // Ordnung, prüft nach jedem Schritt jede Wache und schreibt EIN JSON je Boot — jeder Stand misst gleich.
 //
 //   DIE FOLGE: boot · dorf-aus (`window.__anazhAutoSettlement = false`, vor dem Umstellen) · fenster 1920 1080 · umstellen
@@ -13,8 +9,7 @@
 //   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
 //   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
 //   zählt nie; JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt · stufe · leck · weit · ungemessen) ebenso —
-//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26: bis 13.10. sah der Exit die Linse nie, 1110-12 meldete
-//   „12 von 12 GRÜN" bei 8 von 8 Band-Boots „linse ROT"). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
+//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie. Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -26,16 +21,13 @@
 //     FENSTER  vor und nach jedem messenden Schritt: der Viewport 1920 × 1080;
 //     FOLGE    die Schritte in der Ordnung der FOLGE: kein Lauf nach einem Pool-Füller (gpu-bank, band), die Bühne vor dem
 //              ersten Messen, der Dorf-Zug ruht vor dem Umstellen.
-//   DIE TIERE neben jeder Messung (OMEN 07.10.: sie streuen zwischen Boots von 0 bis 3 Arten im Bild, 11–101 Befehle — der
-//   größte unbenannte Störfaktor jeder ABAB): je messendem Schritt und je Blick der Bank die Zahl gesamt, im Sichtkegel (davon
+//   DIE TIERE neben jeder Messung (der größte unbenannte Störfaktor jeder ABAB): je messendem Schritt und je Blick der Bank die Zahl gesamt, im Sichtkegel (davon
 //   nah), mit Schatten-Wurf je Kaskade (k0/k1) und die Arten (`tierZahl` der Werkbank) — im JSON und in `kurz`, damit Boots
 //   vergleichbar gefiltert werden. Die Zahl ist Weltzustand und nie rot; nur ein fehlender oder zerbrochener Zähler ist ein
 //   Befund (`tierUrteil`: die Messung stünde ohne ihre Tiere).
 //   Die Messwerte stehen roh je Schritt im JSON, dazu die Kurzfassung (`kurz`): fps · Frame p50/p95/max · CPU-Takt · render-EWMA
 //   je Lauf, gpu-bank, Band-Urteil, Profil-Top, die Tiere je Messung. Die render-EWMA ist die WANDUHR der Render-Phase
-//   (`_loopShadowUpdate` + `_loopRender`) und trägt den Takt-Zustand der CPU mit (0710-11, Werkbank an der Wiese: dieselbe feste
-//   Rechnung lief 12–15 % langsamer, wenn der Takt davor leichter war; eine Dosis Rechnung vor dem Render kürzte die Phase,
-//   ein leichterer Takt dehnte sie bei gleichem Render-Pfad um 0,26–0,41 ms) — die Zeile nennt sie so; ein Kosten-Urteil über
+//   (`_loopShadowUpdate` + `_loopRender`) und trägt den Takt-Zustand der CPU mit — die Zeile nennt sie so; ein Kosten-Urteil über
 //   den Render geben gpu-bank, Band und die Frame-Zeit, über die CPU der CPU-Takt (die Summe aller Phasen). Exit 0 = alle Wachen grün, 1 = eine Wache rot (der Lauf
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.
@@ -95,7 +87,7 @@ const FOLGEN = {
 
 // DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
 // Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
-// dieser Größe blind und nennt die Pose. An der Mess-Wiese lag sie am 11.10. bis 1,8 ms (der Baum-Inhalt je Sitzung).
+// dieser Größe blind und nennt die Pose.
 // DER TAKT (1110-7): die GTX des OMEN läuft unter Last am Leistungs-Deckel (Drossel 0x4, ~70 W) mit 1680–1710 MHz, in Ruhe mit
 // 1771 MHz — zwischen Sitzungen ~4 %, so viel wie der vermeintliche Merge-Täter von 1110-6. Verglichen wird nur bei gleichem
 // Takt (±0,5 % um den Median); fehlt er in einer Sitzung (kein nvidia-smi), ist der gleiche Takt nicht belegt — beides laut.
@@ -165,16 +157,15 @@ function bankJe(lauf) {
 }
 
 // DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
-// Befund 12.10. (1110-9, Genesis): jeder Eingriff machte das folgende 10-s-Band ~1 ms teurer — auch das Entfernen des
-// Tor-Zwillings. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
 // wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
-// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
-// `bloecke` = [{ zustand: "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in
-// Zeitfolge. DAS RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-
-// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme, 13.10.: 1796 → 1765 MHz) fällt so
-// aus Rauschen UND Schalter heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-
-// Block gegen das Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
+// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode). `bloecke` = [{ zustand:
+// "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in Zeitfolge. DAS
+// RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-Nachbarn
+// (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so aus Rauschen UND Schalter
+// heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-Block gegen das
+// Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
 const SCHALTER_MIN_BLOECKE = 2;
 const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
 function schalterUrteil(bloecke, toleranz = 0.005) {
@@ -397,8 +388,7 @@ function tierUrteil(name, t) {
 // DIE BAND-MESSUNG SELBST (rein, 0910-1; der LESER K26): was die Band beim Zählen aufzeichnete — der gestellte Ort
 // (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf zählt nie),
 // das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt ·
-// stufe · leck · weit · ungemessen) als Befund. Bis 13.10. las die Folge nur Ort und Rahmen-Ziel, der Exit sah die Linse nie:
-// 1110-12 urteilte in 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0".
+// stufe · leck · weit · ungemessen) als Befund.
 // `basis` = die Band-Messung der Basis-Seite A des ABAB (`--basis`): eine Zeile, die A am selben Ort, Gerät und in derselben
 // Sicht trägt (derselbe Schlüssel, B nicht über A hinaus), ist kein Befund dieser Seite — sie bleibt der Befund von A.
 function bandBefunde(messung, basis) {
@@ -520,11 +510,9 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
     return v;
 }
 
-// DAS ENDE DER WERKBANK (Gegenprüfung 07.10.): `/stop` beendet sie samt Chrome; die Folge wartet auf ihr Ende (`frist`). Hängt
+// DAS ENDE DER WERKBANK: `/stop` beendet sie samt Chrome; die Folge wartet auf ihr Ende (`frist`). Hängt
 // `/stop` (eine tote Seite, ein hängender Browser), stirbt der ganze Prozess-Baum — Werkbank und Chrome (Windows:
 // `taskkill /T /F`, ein TerminateProcess allein ließe Chrome stehen; sonst SIGTERM, puppeteer räumt Chrome, dann SIGKILL).
-// Vorher stand `kind.kill` in einem unref-Timer direkt vor `process.exit`: er feuerte nie — unter POSIX blieb die Werkbank
-// mit Port und Chrome als Waise stehen (unter Windows riss erst der libuv-Job der Folge sie beim Ende mit, still).
 // Rückgabe: wie sie endete (`stop` · `getoetet` · `beendet` = schon vorher · `waise`).
 async function beendeBaum(kind, frist) {
     const lebt = () => kind.exitCode === null && kind.signalCode === null;
@@ -595,7 +583,7 @@ function rufe(port, weg, nutzlast) {
     });
 }
 
-// DER NEULAUF (OMEN 15.10.): ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
+// DER NEULAUF: ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
 // eine Schlange), misst eine andere Szene als seine Geschwister und trägt kein Urteil (1510-k72-abab: an Genesis 7 von 16
 // Boots, −2 Baum-Befehle, +6 fps). Die Folge fährt ihn neu, höchstens NEULAUF_MAX-mal — ein Erst-Boot einer Serie mit
 // frischem Profil, sonst wäre der Neulauf ein Zweit-Boot; schwingt auch der letzte nicht ein, ist er ROT beim Namen
@@ -925,12 +913,10 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         }
         if (hat("profil")) {
             const prof = await schritt("profil", () =>
-                R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
+                R("/haenger", { spitze: true, sek: P.profilSek, ein: 2, regler: "voll", tiere: "frei" })
             );
             aus.kurz.profil = mitTieren(
-                prof && !abbruchVon(prof)
-                    ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) }
-                    : null
+                prof && !abbruchVon(prof) ? { cpuMs: prof.cpuMs, taeter: prof.taeter.slice(0, 12) } : null
             );
             if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
                 aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
@@ -976,8 +962,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             `  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel}) · ` +
                 tierZeile(aus.kurz.band.tiere)
         );
-    if (aus.kurz.profil && aus.kurz.profil.frames != null)
-        console.log(`  profil: ${aus.kurz.profil.frames} Frames · ${tierZeile(aus.kurz.profil.tiere)}`);
+    if (aus.kurz.profil && aus.kurz.profil.cpuMs)
+        console.log(`  profil: CPU-Takt p95 ${aus.kurz.profil.cpuMs.p95} ms · ${tierZeile(aus.kurz.profil.tiere)}`);
     console.log(`  Werkbank-Ende: ${aus.werkbankEnde}`);
     return {
         code: abbruch ? 2 : aus.befunde.length ? 1 : 0,
@@ -1234,7 +1220,7 @@ async function selbsttest() {
             wachenUrteil("band", anWiese, anWiese, g, true),
             /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
         );
-        // DER LESER DER BAND-LINSE (K26; 1110-12: 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0"): jede
+        // DER LESER DER BAND-LINSE: jede
         // Rot-Zeile der Linse ist ein Befund der Folge — außer die Basis-Seite A des ABAB trägt sie (derselbe Schlüssel, B nicht
         // über A hinaus, A am selben Ort, Gerät und in derselben Sicht).
         const { haushalt } = BAND.ladeSpec("genesis");
@@ -1308,7 +1294,7 @@ async function selbsttest() {
         );
     }
     // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
-    // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
+    // `beendeBaum` lebt keiner der beiden mehr
     {
         const werkbank = spawn(
             process.execPath,
@@ -1484,7 +1470,7 @@ async function selbsttest() {
         /Block 6 ohne Grund-Block davor UND danach/
     );
     }
-    // DER NEULAUF und der Ort vor dem Boot (OMEN 15.10.): ein nicht eingeschwungener Lauf fährt neu, ein Abbruch nie; der letzte
+    // DER NEULAUF und der Ort vor dem Boot: ein nicht eingeschwungener Lauf fährt neu, ein Abbruch nie; der letzte
     // Versuch nennt sich ROT; ein schwebender Dorf-Plan ist ein Befund; die Werkbank startet mit dem Ort, und jeder Messort
     // sagt, ob sein Dorf-Zug läuft (die Werkbank sperrt ihn danach vor dem ersten Skript).
     const offen = { eingeschwungen: false, takte: 4213, offen: { dorfWaechst: "0/18" } };

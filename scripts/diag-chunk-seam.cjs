@@ -6,7 +6,7 @@
 //
 //   A — RÄUMLICH, gleiche LOD (die Determinismus-Wette):
 //       Teilen zwei gleich-LODige Nachbar-Chunks am gemeinsamen Rand koinzidente Oberflächen-
-//       Vertices (Pad+Crop-Overlap, V9.79)? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
+//       Vertices? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
 //       → die gleiche-LOD-Naht ist STRUKTURELL straff (kein T1/T2 nötig). Wenn nicht: sub-cell-
 //       Jitter = ein echter Riss.
 //
@@ -25,13 +25,14 @@
 // Sign-off (§4 T0): der Schöpfer entscheidet aus A/B/C, welche Naht schwerer wiegt → priorisiert
 // T1 (zeitlich) vs T2 (räumlich). Dies ist eine MESSUNG (informativ), kein Pass/Fail-Gate:
 // Exit 0 bei erfolgreicher Messung, Exit 1 nur bei Harness-Versagen (keine Chunks gestreamt).
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
+    await nullRenderer(page);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     // der Stoff-Zeuge (K22): ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
     const stoffBrueche = [];
@@ -43,15 +44,14 @@ const server = statikServer();
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {
         let stubbed = false;
-        const start = performance.now();
-        while (performance.now() - start < 60000) {
+        for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
             const r = window.anazhRealm;
             if (r && !stubbed && r.state && r.state.renderer) {
                 r.state.renderer.render = function () {};
                 if (typeof r.state.renderer.renderAsync === "function")
                     r.state.renderer.renderAsync = () => Promise.resolve();
                 r.state.postProcessingFailed = true;
-                // V18.370 — den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
+                // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
                 // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).
                 r.state.voxelWorker = null;
@@ -64,7 +64,7 @@ const server = statikServer();
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                // V18.370 — bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
+                // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
                 if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
             }
@@ -82,7 +82,7 @@ const server = statikServer();
             await new Promise((res) => setTimeout(res, 2));
         }
         const r = window.anazhRealm;
-        if (r && typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        if (r) r._drainDirtyVoxelChunks();
     });
 
     // ===== MESSUNG A + B — die RÄUMLICHE Naht (gleiche LOD vs Cross-LOD) =====
@@ -91,7 +91,7 @@ const server = statikServer();
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 
-        // Terrain-Chunks sammeln (Vertices in Welt-Koords, V9.25). Pro Chunk: cx,cz,lod,step,
+        // Terrain-Chunks sammeln. Pro Chunk: cx,cz,lod,step,
         // pos (BufferAttribute), idx (Index-Array — die Geometrie IST indiziert, :18296), vset
         // (quantisierte Vertex-Menge für die exakte „geteilte Vertices?"-Frage, §1.2-These).
         const QV = 0.03; // Quantisierung für „derselbe Vertex" (float32-Determinismus → <QV)
@@ -112,7 +112,7 @@ const server = statikServer();
         }
 
         // Das dispositive Maß: EXAKT-geteilte Vertices, GEBINNT nach Abstand zur Naht-Ebene.
-        // Die ÜBERLAPP-Zellen (Pad+Crop, V9.79) sitzen NAHE der Ebene + sollten koinzidente
+        // Die ÜBERLAPP-Zellen sitzen NAHE der Ebene + sollten koinzidente
         // Vertices rendern (deterministische Density + welt-identische Laplacian-Nachbarn) →
         // same-LOD: das nächste Bin (auf der Naht-Linie) ist ~100% geteilt → die Oberfläche ist
         // dort STETIG (kein Riss); die ferneren Bins (Interieur) sind natürlich ungeteilt (kein
@@ -298,7 +298,7 @@ const server = statikServer();
     // aMorphTarget/aMorphWeight-Attribute (`_applyCrossLodGeomorph`) die feinen Boundary-Vertices
     // bei geomorph=1 auf die GROBEN Nachbar-Vertices. Wir rechnen die GEMORPHTE Position
     // (pos + weight·(target−pos)) und prüfen: liegt sie EXAKT auf einem groben Nachbar-Vertex?
-    // Vorher (roh, T0): 0 % geteilt, ~2.8 m Spalt. Nachher (gemorpht): die Naht-Vertices sind
+    // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
         const r = window.anazhRealm;
@@ -659,7 +659,7 @@ const server = statikServer();
 
         // sauberes Dirty-Set, dann Carve (der Edit-Call selbst heilt nach T1 den Footprint sync)
         if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
-        r.carveVoxelSphere(cx0, cy0, cz0, 3.5);
+        r.carveVoxel(cx0, cy0, cz0, 3.5);
 
         // T1-MASS: welche Chunks heilten IM Edit-Call (uuid schon geändert, BEVOR ein Tick lief)?
         const inEdit = [];
@@ -692,9 +692,9 @@ const server = statikServer();
         // --- SYNC-Drain-Referenz: ein Drain heilt jeden Rest in EINEM Schritt (die T1-Maschinerie) ---
         if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
         const cz1 = dcx !== 0 ? (pcz + 0.5) * span : cz0; // leicht versetzt, frischer Edit
-        r.carveVoxelSphere(cx0, cy0 + 0.2, cz1, 3.5);
+        r.carveVoxel(cx0, cy0 + 0.2, cz1, 3.5);
         const dirtyBeforeDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
-        const built = typeof r._drainDirtyVoxelChunks === "function" ? r._drainDirtyVoxelChunks() : 0;
+        const built = r._drainDirtyVoxelChunks();
         const dirtyAfterDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
 
         return {
@@ -859,9 +859,9 @@ const server = statikServer();
         console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
-    // G0 (goldstandard-mesh-plan) — `--gate`: das echte Naht-Gate. Es schützt gegen den
+    // G0 — `--gate`: das echte Naht-Gate. Es schützt gegen den
     // VAKUÖSEN Pass (0 Cross-LOD-Paare = die Messung lief gar nicht → grün ohne Beweis;
-    // die V18.370-Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
+    // die Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.

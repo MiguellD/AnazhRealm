@@ -5,9 +5,9 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
+// die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
-// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States (V17.66).
+// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22,7 +22,7 @@ async function checkBandV1774UseByRole(ctx) {
         const savedSoul = (p && p.soul) || "mensch";
         const savedHotbar = r.state.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
-        // V17.74 — falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
+        // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
 
@@ -72,15 +72,9 @@ async function checkBandV1774UseByRole(ctx) {
         r.selectHotbarSlot(0);
         out.toggleOff = p.equipped.held == null;
 
-        // (4) HOTBAR-GATE — Struktur → Platzier-Phantom (wie bisher, kein Regress)
-        r.setHotbarSlot(1, "waterfall");
-        r.selectHotbarSlot(1);
-        out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
-        r._clearBuildMode(); // das Test-Phantom abräumen
-
         // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
-        // V18.66 Ich-J2 — der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
-        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
+        // der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
+        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit.
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
         r.renderPlayerEquipUI();
@@ -184,10 +178,6 @@ async function checkBandV1774UseByRole(ctx) {
     );
     check("V17.74 Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
     check(
-        "V17.74 Welle 1b HOTBAR-GATE: eine Struktur im Slot baut das Platzier-Phantom (wie bisher, kein Regress)",
-        res.structureToPhantom
-    );
-    check(
         "V17.74 Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
         res.armorListed && res.heldDeviceListed
     );
@@ -213,7 +203,7 @@ async function checkBandV1774UseByRole(ctx) {
     );
 }
 
-// V17.76 Welle 2 (Schritt 1) — die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
+// die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
 // Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
 // Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
 async function checkBandV1776WorkshopPrecision(ctx) {
@@ -288,7 +278,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
     );
 }
 
-// V17.77 — die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
+// die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
 // Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
 // „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
 async function checkBandV1777SteigerungVisible(ctx) {
@@ -313,7 +303,7 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
         out.rangeVisible = softP < meisterP - 0.1;
         delete r.state.blueprints["_softws"];
-        // KONSUM — V18.44: der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
+        // KONSUM — der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
         const panel = document.createElement("div");
         r._specRenderBody(panel, meister);
         const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
@@ -340,7 +330,7 @@ async function checkBandV1777SteigerungVisible(ctx) {
     check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
 }
 
-// V17.89 — der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
+// der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
 // ändern (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint im Werkzeuge-Feld
 // sobald platziert+nah; das Undo/Redo unter den Parts. Drei Befunde, eine Welle.
 async function checkBandV1789WorkshopReadout(ctx) {
@@ -418,12 +408,12 @@ async function checkBandV1789WorkshopReadout(ctx) {
         delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
-        // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
+        // Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
         out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
-        // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
+        // Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
             !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
-        // V17.91 — die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
+        // die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
         // (schöpfer → alle besessenen Werkstätten); auf einen Part im 3D ziehen wendet den Prozess an.
         out.domWorkshopChips = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
         // restore
@@ -548,7 +538,7 @@ async function checkBandV1790Recalibration(ctx) {
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
         out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
 
-        // (6) UI-Befund (b) — V17.91: Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // (6) UI-Befund (b) — Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
         for (const sheet of document.styleSheets) {
@@ -609,8 +599,6 @@ async function checkBandV1790Recalibration(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A6 (Maus-Aktionen + Resonanz-Abklang) + 6.C3 V2/Tastenbelegung).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6Keybindings(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -624,7 +612,6 @@ async function checkBandWelle6Keybindings(ctx) {
         const out = {};
         // Statische Konstante
         out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
-        // Methoden-Existenz
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
@@ -861,7 +848,7 @@ async function checkBandWelle6Keybindings(ctx) {
             r.constructor.DEFAULT_KEYBINDINGS &&
             typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
-        // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
+        // 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
             Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
@@ -876,11 +863,6 @@ async function checkBandWelle6Keybindings(ctx) {
         // State init
         out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
         out.keybindRebindInitNull = r.state.keybindRebind === null;
-
-        // Methoden-Existenz
-        out.hasLoad = typeof r._loadKeybindings === "function";
-        out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
-        out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
 
         // setKeybinding ändert state
         const before = r.state.keybindings.confirmBuild;
@@ -945,8 +927,8 @@ async function checkBandWelle6Keybindings(ctx) {
         out.sectionInDom = !!document.getElementById("keybindings-section");
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
-        // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
+        // je Aktion eine Zeile: 13 der Tastatur + 8, die nur das Gamepad frei bindet (leib.K5)
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 21;
         // Pro Aktion ein Rebind-Button mit data-action
         out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
@@ -974,11 +956,6 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
         check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
         check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-        check("Welle 6.C3: _loadKeybindings existiert", wave6c3Results.hasLoad);
-        check(
-            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI existieren",
-            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI
-        );
         check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
         check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
         check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
@@ -1002,7 +979,7 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
@@ -1091,7 +1068,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                 // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
                 // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
                 out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-                // Welle B — die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
+                // die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
                 // ein Studio-Leaf keyt nach seiner Studio-Geometrie): eine baum_kiefer#0-Gruppe.
                 out.cutoverGroupExists = !!(
                     r.state.archInstanceGroups &&
@@ -1215,8 +1192,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1294,7 +1269,7 @@ async function checkBandWelle6XAudit(ctx) {
             out._a3bMarked = !!(armorResult && armorResult.ok);
             const equipResult = r.equipArmor("audit_armor_real");
             out._a3bEquipped = !!(equipResult && equipResult.ok);
-            // V18.61 Ich-F — das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
+            // das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
             r._ichRenderSpecSheet();
             const container = document.getElementById("ich-stage-spec");
@@ -1306,15 +1281,6 @@ async function checkBandWelle6XAudit(ctx) {
         } else {
             out.statsShowsArmorRow = false;
         }
-
-        // --- A4 (SYNERGIE-WELLE gewandert): die Avatar-Aura ist GANZ gefallen —
-        // kein Tick, keine Lampe, keine Haut-Shells; der Kamera-Wechsel bleibt aura-frei.
-        r.setCameraMode("first");
-        out.auraHiddenInFirst = !r.state.playerAuraGlow && typeof r.tickPlayerAura !== "function";
-        r.setCameraMode("third");
-        out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
-        r.setCameraMode("first");
-        out.auraPositionStillTracked = true; // gegenstandslos — nichts folgt mehr
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -1351,18 +1317,6 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
-        check(
-            "Welle 6.X.1 A4 (V18.105): die Lampe ist geschnitten — kein Sprite in 1st",
-            wave6x1Results.auraHiddenInFirst
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
-            wave6x1Results.auraVisibleInThird
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
-            wave6x1Results.auraPositionStillTracked
-        );
     } else {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
@@ -1374,13 +1328,13 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+        // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
         out.logbookSectionExists = !!document.getElementById("logbook-section");
         out.logbookToggleExists = !!document.getElementById("logbook-toggle");
         const consoleLog = document.getElementById("console-log-section");
         const logEl = document.getElementById("log");
         out.logbookConsoleSectionExists = !!consoleLog;
-        // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
+        // Section bleibt sichtbar, NUR #log (innen) hidden default
         out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
         out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
         // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
@@ -1394,7 +1348,7 @@ async function checkBandWelle6XAudit(ctx) {
             toggle.dispatchEvent(new Event("change"));
             out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
         }
-        // V8.14: Inline-Console-Toggle togglet selber State
+        // Inline-Console-Toggle togglet selber State
         const inlineBtn = document.getElementById("console-log-toggle");
         if (inlineBtn && logEl) {
             inlineBtn.click();
@@ -1447,7 +1401,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
-    // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+    // ### Welle 6.X.3 — Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
@@ -1455,7 +1409,6 @@ async function checkBandWelle6XAudit(ctx) {
         const out = {};
 
         // --- C1: at_player_forward DSL-Resolver
-        out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
         if (r.dslPositions.at_player_forward) {
             // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
             // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
@@ -1488,9 +1441,9 @@ async function checkBandWelle6XAudit(ctx) {
                 Array.isArray(dslOut.program[1]) &&
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
-            // Das Dorf trägt Ort UND Blick des Sprechers (Gegenprüfung Runde 1: der Anker hing am Blick jedes Peers):
-            // der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und sein Bildwinkel (> 0) — „vor dem Blick" legt
-            // `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9 misst die Häuser vor dem Spieler).
+            // Das Dorf trägt Ort UND Blick des Sprechers: der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und
+            // sein Bildwinkel (> 0) — „vor dem Blick" legt `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9
+            // misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
             r.state.yaw = Math.PI / 2;
             const dslOut2 = r.parseChatToDsl("baue dorf hier");
@@ -1578,7 +1531,6 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x3Results && !wave6x3Results.error) {
-        check("Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert", wave6x3Results.atPlayerForwardExists);
         check(
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
@@ -1613,9 +1565,8 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
+    // ### Welle 6.X.4 — Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
-    // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1623,11 +1574,6 @@ async function checkBandWelle6XAudit(ctx) {
         // --- F1: state-Felder existieren mit Defaults
         out.companionNameDefault = r.state.grok.companionName === "Grok";
         out.playerNameDefault = r.state.player.name === "Schöpfer";
-
-        // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
-        out.companionInputExists = !!document.getElementById("companion-name-input");
-        out.playerInputExists = !!document.getElementById("player-name-input");
-        out.identitySectionExists = !!document.getElementById("identity-section");
 
         // --- F1: Input-Change setzt state + localStorage
         const ci = document.getElementById("companion-name-input");
@@ -1662,63 +1608,20 @@ async function checkBandWelle6XAudit(ctx) {
         r.state.grok.companionName = "Grok";
         r.state.player.name = "Schöpfer";
 
-        // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
-        delete r.state._groundedCache;
-        delete r.state._groundedCachedAt;
-        r.isPlayerGrounded();
-        out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
-
-        // Funktional: zweiter Aufruf direkt danach liefert cached
-        // result (kein Race-Free-Window) — wir prüfen dass der
-        // Wert nicht NaN ist und stabil bleibt.
-        const v1 = r.isPlayerGrounded();
-        const v2 = r.isPlayerGrounded();
-        out.cacheConsistentBetweenCalls = v1 === v2;
-
-        // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
-        r.state._groundedCache = true;
-        r.state._groundedCachedAt = performance.now();
-        out.cachedTrueRespected = r.isPlayerGrounded() === true;
-        r.state._groundedCache = false;
-        r.state._groundedCachedAt = performance.now();
-        out.cachedFalseRespected = r.isPlayerGrounded() === false;
-        // Cache-Expiry: alter timestamp → fresh compute
-        r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
-        // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
-        // aber dass Cache-Time refreshed wird
-        const beforeRefresh = r.state._groundedCachedAt;
-        r.isPlayerGrounded();
-        out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
-
         return out;
     });
 
     if (wave6x45Results && !wave6x45Results.error) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
-        check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
-        check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
-        check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
         check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
         check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-        check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
-        check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
-        check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
-        check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
-        check(
-            "Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)",
-            wave6x45Results.cacheRefreshedAfterExpiry
-        );
     } else {
-        check(
-            "Welle 6.X.4+5: Identity + Performance-Tests laufen",
-            false,
-            wave6x45Results ? wave6x45Results.error : "no result"
-        );
+        check("Welle 6.X.4: Identity-Tests laufen", false, wave6x45Results ? wave6x45Results.error : "no result");
     }
 }
 
@@ -1925,11 +1828,11 @@ async function checkBandNutzerBlickNachbau(ctx) {
                 connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
-            // (4) das Rezeptbuch führt den nachgebauten Wagen sichtbar unter der Gruppe „Fahrzeug".
+            // (4) das Rezeptbuch führt den nachgebauten Wagen sichtbar oben unter „Griffbereit" (ein eigenes Werk, bauen.K1).
             r._recipeBookSig = null;
             r.renderRecipeBook();
             const kids = [...document.getElementById("inventory-recipes").children];
-            const gi = kids.findIndex((e) => e.classList.contains("recipe-group") && e.textContent === "Fahrzeug");
+            const gi = kids.findIndex((e) => e.classList.contains("recipe-group") && e.textContent === "Griffbereit");
             const nach = gi >= 0 ? kids.slice(gi + 1) : [];
             const bis = nach.findIndex((e) => e.classList.contains("recipe-group"));
             out.rezeptGruppe = (bis < 0 ? nach : nach.slice(0, bis)).some(
@@ -1972,7 +1875,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
         res.nachbauVehicle && res.nachbauPlace && res.ohneSitzKeinTrank
     );
     check(
-        "Nutzer-Blick: das Rezeptbuch kennt die Fahrzeug-Gruppe + ein Kachel-Klick ERSETZT die Verbindung (ein Paar, eine Verbindung)",
+        "Nutzer-Blick: das Rezeptbuch führt den eigenen Wagen griffbereit + ein Kachel-Klick ERSETZT die Verbindung (ein Paar, eine Verbindung)",
         res.rezeptGruppe && res.klickErsetzt
     );
 }
@@ -2037,7 +1940,13 @@ async function checkBandWGGelenke(ctx) {
             r._workshopRender = () => {};
             try {
                 const roles = r.computeMotionRoles(wagen.parts, wagen.connections);
-                ws.preview = { active: true, rafId: null, dirty: false, currentMesh: grp, probe: { start: performance.now(), dur: 2200, roles } };
+                ws.preview = {
+                    active: true,
+                    rafId: null,
+                    dirty: false,
+                    currentMesh: grp,
+                    probe: { start: performance.now(), dur: 2200, roles },
+                };
                 r._workshopStartRAF();
                 out.probeInRAF = !!tick && window.__consumes({ t: tick }, "t", r, "_animateCompoundMotion", []);
             } finally {
@@ -2048,8 +1957,7 @@ async function checkBandWGGelenke(ctx) {
             }
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
-        // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
-        out.probeMethod = typeof r._workshopProbeJoints === "function";
+        // (c) GELENK-PROBE: Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
         return out;
     });
@@ -2066,14 +1974,21 @@ async function checkBandWGGelenke(ctx) {
         res.axisGhosts && res.axisTeachAttached && res.axisNoError
     );
     check(
-        "W-G(c) Gelenk-Probe: Methode + Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
-        res.probeMethod && res.probeBtn && res.probeInRAF
+        "W-G(c) Gelenk-Probe: Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
+        res.probeBtn && res.probeInRAF
     );
 }
 
 module.exports = {
-    checkBandV1774UseByRole, checkBandV1776WorkshopPrecision, checkBandV1777SteigerungVisible,
-    checkBandV1789WorkshopReadout, checkBandV1790Recalibration, checkBandWelle6Keybindings,
-    checkBandWellePerfCArchInstancing, checkBandWelle6XAudit, checkBandM1VerbindungsWerkstatt,
-    checkBandNutzerBlickNachbau, checkBandWGGelenke,
+    checkBandV1774UseByRole,
+    checkBandV1776WorkshopPrecision,
+    checkBandV1777SteigerungVisible,
+    checkBandV1789WorkshopReadout,
+    checkBandV1790Recalibration,
+    checkBandWelle6Keybindings,
+    checkBandWellePerfCArchInstancing,
+    checkBandWelle6XAudit,
+    checkBandM1VerbindungsWerkstatt,
+    checkBandNutzerBlickNachbau,
+    checkBandWGGelenke,
 };

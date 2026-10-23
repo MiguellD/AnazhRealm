@@ -1,9 +1,9 @@
 "use strict";
-// scripts/lib/kampf-proben.cjs — die Seiten-Probe der Leben-Prüfung „Kampf“ (gate:kampf-gefuehl), am Domänen-Tag Kampf geteilt
-// (Datei-Decke 4 000, PFLICHT-OFFEN D(3)): eine Seiten-Funktion, die scripts/diag-kampf-gefuehl.cjs per page.evaluate fährt.
+// scripts/lib/kampf-proben.cjs — die Seiten-Probe der Leben-Prüfung „Kampf“ (gate:kampf-gefuehl), am Domänen-Tag Kampf geteilt:
+// eine Seiten-Funktion, die scripts/diag-kampf-gefuehl.cjs per page.evaluate fährt.
 
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
-// die Probe das Verhalten trotzdem — so ist die Linse auf dem Vorher-Stand rot und benennt den Defekt) ──
+// die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
 async function WELLE_L() {
     const r = window.anazhRealm,
         s = r.state,
@@ -26,7 +26,7 @@ async function WELLE_L() {
         lock: s.isPointerLocked,
         hp: p.hp,
         grace: p.respawnGraceUntil,
-        breakHeld: p.breakHeld,
+        breakHeld: s.verbTafel.gehalten.break,
         hotbar: Array.isArray(s.hotbar) ? s.hotbar.slice() : s.hotbar,
     };
     // ── die mitlaufenden Zähler (rufen IMMER durch; nur die Voxel-Ops werden gezählt statt geschnitzt) ──
@@ -44,10 +44,11 @@ async function WELLE_L() {
     const zaehl = { schwung: 0, carve: 0, fill: 0, gegenwehr: 0 };
     // (T7c) der Roh-Spion: ein Schaden im Namen des Spielers IST der Rückgabewert des EINEN Roh-Schaden-Gesetzes, sonst
     // nennt rohTat den Rufer (Laufzeit-Marke statt Rumpf-Text, Lehre 6)
-    let roh = null, rohKraft = null; // rohKraft: die Kraft der Führung am Ruf (K-D6 liest sie, nie Zone oder Wirkung)
+    let roh = null,
+        rohKraft = null; // rohKraft: die Kraft der Führung am Ruf (K-D6 liest sie, nie Zone oder Wirkung)
     const rohTat = [];
     r._kampfRohSchaden = function (...a) {
-        return (rohKraft = a[2]), (roh = orig.roh.apply(this, a));
+        return ((rohKraft = a[2]), (roh = orig.roh.apply(this, a)));
     };
     r.damageCreature = function (c, amount, opts) {
         if (opts && opts.source === "player" && roh !== amount)
@@ -57,7 +58,8 @@ async function WELLE_L() {
         const st0 = opts && opts.stoss;
         treff.push({
             c,
-            amount, kraft: rohKraft,
+            amount,
+            kraft: rohKraft,
             src: opts && opts.source,
             t: T,
             ok: !!(res && res.ok),
@@ -76,10 +78,11 @@ async function WELLE_L() {
             ort: u ? u.ort || null : null,
             eff: u && Number.isFinite(u.eff) ? u.eff : null,
             v: u && Number.isFinite(u.v) ? u.v : null,
+            art: u ? u.art || null : null,
         });
         return orig.juice.apply(this, a);
     };
-    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs, Welle LF)
+    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs)
     r._beginPlayerSwing = function (...a) {
         const ok = orig.swing.apply(this, a);
         if (ok) zaehl.schwung++;
@@ -96,9 +99,8 @@ async function WELLE_L() {
         return orig.damagePlayer.call(this, amount, source);
     };
     const tiere = [];
-    // JE PRÜFUNG IHR EIGENER ABBRUCH (Welle LF kampf Nachbesserung 2): fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
-    // sich mit dem Fehler, und die übrigen laufen weiter — vorher brach die Linse am Basis-Stand mit „_kampfSchwungRahmen is
-    // not a function“ ganz ab und nannte keinen Täter.
+    // JE PRÜFUNG IHR EIGENER ABBRUCH: fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
+    // sich mit dem Fehler, und die übrigen laufen weiter.
     const teil = async (name, f) => {
         try {
             await f();
@@ -198,9 +200,9 @@ async function WELLE_L() {
             if (name && !(res && res.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
         };
         const traf = (sw, c) => sw.treff.find((t) => t.c === c && t.src === "player") || null;
-        if (fn("setCameraMode")) r.setCameraMode("first");
-        if (fn("closeAllDrawers")) r.closeAllDrawers();
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        r.setCameraMode("first");
+        r.closeAllDrawers();
+        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
         const hirsch = setze("wesen");
@@ -223,11 +225,8 @@ async function WELLE_L() {
         w.z.zonen = jz.map((j) => j.zone);
         w.c.zoneJederTreffer = jz.length >= 2 && jz.every((j) => !!j.zone);
         w.c.zoneWirkt = w.z.zoneKopfBein !== null && w.z.zoneKopfBein >= 1.5;
-        // (T2) hangab und klein auf gleicher Höhe, je 10 Hiebe mit dem Fadenkreuz auf der Leibes-Mitte: der Hirsch
-        // des Befunds (1,6 m, Füße 0,62 m unter deinen — „hangab 2/5"), der Fuchs 1,3 m vor dir 0,6 m tiefer, der
-        // kleine Hirsch L 0,64 auf gleicher Höhe („1 aus 10"). Jedes Ziel liegt in der Reichweite der Klinge (Schulter
-        // 1,7 m über dem Fuß, Langschwert 2,1 m + Klingen-Radius) — was die Klinge erreicht und das Fadenkreuz trägt,
-        // trifft sie.
+        // (T2) hangab und klein, je 10 Hiebe auf die Leibes-Mitte: Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m, kleiner Hirsch
+        // L 0,64 gleich hoch — alle in Reichweite der Klinge.
         const seiten = [-0.3, -0.15, 0, 0.15, 0.3, -0.22, 0.22, -0.05, 0.05, 0.1];
         const serie = (c, d, dy) => {
             let n = 0;
@@ -273,12 +272,8 @@ async function WELLE_L() {
         };
         w.z.stopGross = stopEnergie("klinge_grossschwert");
         w.z.stopKeule = stopEnergie("klinge_keule");
-        // (K-D4 entscheidet unten an der ganzen Rezept-Tafel, T4: jede Waffe stoppt nach IHRER Energie)
-        // (T13) DER RÜCKSTOSS JE MASSE UND WAFFE (0710-2, K-D9 — jedes Ziel sprang bei JEDER Waffe 2,16 m, eine Kappe, in
-        // EINEM Takt): ein frischer Fuchs und ein frischer Bär, Dolch und Keule, je EIN Hieb auf die Brust. Für die Probe
-        // steht der Steuer-Schritt der Tiere (die Naht `_steuerGesetz`, danach restauriert): kein Wunsch, keine Flucht nach dem
-        // Treffer bewegt das Ziel — der Weg nach 1,5 s Kreatur-Takt ist allein der Stoß. Gemessen: der Sprung im Treffer-Takt
-        // und der Weg danach.
+        // (T13) der Rückstoß je Masse und Waffe: Fuchs und Bär, Dolch und Keule, je
+        // ein Hieb auf die Brust; der Steuer-Schritt steht (Naht `_steuerGesetz`), der Weg nach 1,5 s ist allein der Stoß.
         const fuchsR = setze("fuchs");
         const baer = setze("baer");
         const rueck = (c, name) => {
@@ -295,12 +290,7 @@ async function WELLE_L() {
             const sprung = Math.hypot(c.position.x - x0, c.position.z - z0);
             const sv = c.userData._stossV;
             const dv = sv ? Math.hypot(sv.x, sv.z) : 0;
-            const masse =
-                typeof r._leibMasse === "function"
-                    ? r._leibMasse(c)
-                    : typeof r._kreaturMasse === "function"
-                      ? r._kreaturMasse(c)
-                      : null;
+            const masse = r._leibMasse(c);
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));
             steht.steuerSchritt = (st) => {
@@ -310,10 +300,8 @@ async function WELLE_L() {
             try {
                 // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
-                    if (typeof r._kreaturStossSchritt === "function") {
-                        r._kreaturStossSchritt(1 / 60);
-                        r._leibKontakte();
-                    }
+                    r._kreaturStossSchritt(1 / 60);
+                    r._leibKontakte();
                     r.updateCreatures(1 / 60);
                 }
             } finally {
@@ -336,7 +324,7 @@ async function WELLE_L() {
             baerDolch: rueck(baer, "klinge_dolch"),
             baerKeule: rueck(baer, "klinge_keule"),
         };
-        // (T14) DIE MASSE-TAFEL (0710-4): je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
+        // (T14) DIE MASSE-TAFEL: je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
         // der der Wirt stößt, gegen das Gewicht der Gestalt (die Linse misst die geschlossene Haut selbst).
         {
             const TC = globalThis.__tetrapodaCore;
@@ -395,8 +383,7 @@ async function WELLE_L() {
                 });
                 return vol;
             };
-            const wirtLeib = (k) =>
-                typeof r._leibMasse === "function" ? r._leibMasse(k) : r._kreaturMasse ? r._kreaturMasse(k) : 0;
+            const wirtLeib = (k) => r._leibMasse(k);
             const leiber = {};
             const ort = pm.position;
             for (const [name, seele] of [
@@ -425,7 +412,11 @@ async function WELLE_L() {
                         nah = o.userData._gelenk.nah;
                 });
                 const vol = hautVolumen(nah || pm, pm, ["haut"]);
-                leiber.mensch = { wirtKg: wirtLeib(pm), gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null, vM3: vol };
+                leiber.mensch = {
+                    wirtKg: wirtLeib(pm),
+                    gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null,
+                    vM3: vol,
+                };
             }
             {
                 const e = r.spawnArchitecture(
@@ -437,12 +428,7 @@ async function WELLE_L() {
                 const G = prof ? r._fahrSatz(e, prof) : null;
                 if (G)
                     leiber.gt = {
-                        wirtKg:
-                            typeof r._fahrMasse === "function"
-                                ? r._fahrMasse(G)
-                                : A.STOSS && A.STOSS.dichteWagen
-                                  ? G.m * A.STOSS.dichteWagen
-                                  : 0,
+                        wirtKg: r._fahrMasse(G),
                         gestaltKg: dichteWagen > 0 ? G.m * dichteWagen : null,
                         vM3: G.m,
                     };
@@ -450,11 +436,8 @@ async function WELLE_L() {
             }
             w.z.masse = { leiber, kernFehlt, zwillinge };
         }
-        // (T15) DER BISS ALS STOSS (0710-4): je Jäger (Größe 1) ein Biss auf ein frisches Kitz 1,2 m neben ihm (die Jagd auf
-        // Beute, _tickCreatureScentStrike) und einer auf den Spieler 1,2 m vor ihm (die Jagd, _tickCreatureHuntStrike, im
-        // Pfad-Modus, volle Gesundheit, der Spieler auf dem Boden). Der Biss ist der Ansprung (Posten 5): der Kreatur-Takt läuft,
-        // bis das Maul schnappt (höchstens 1,5 s). Gemessen: das Δv, das der Stoß des Bisses dem Ziel gibt (im Biss-Takt, am
-        // Ziel gelesen — vorher und nachher _stossV bzw. playerVel).
+        // (T15) der Biss als Stoß: je Jäger ein Biss auf ein Kitz (_tickCreatureScentStrike) und auf den Spieler
+        // (_tickCreatureHuntStrike), der Takt läuft bis zum Schnappen (≤ 1,5 s); gemessen das Δv am Ziel.
         {
             const bissAlt = { mode: r.getGameMode(), hp: p.hp, gnade: p.respawnGraceUntil };
             r.setGameMode("pfad");
@@ -495,8 +478,7 @@ async function WELLE_L() {
                     const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
                     if (j && h) {
                         // gemessen wird der Stoß des Bisses, nicht seine Trefferquote: bis zu drei Ansprünge aus der Ruhe (ein
-                        // Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen, Nachbesserung 2; vorher
-                        // wackelte die Wand in 2 von 27 Läufen am Fuchs)
+                        // Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen)
                         let dv = null;
                         let ansatz = false;
                         for (let a = 0; a < 3 && dv === null; a++) {
@@ -555,62 +537,213 @@ async function WELLE_L() {
             w.z.biss = { beute, spieler };
         }
         parke(hirsch);
-        // (T4) keine Schadens-Kappe: je Nahkampf-Rezept EIN Hieb auf die Brust, Faktor = Schaden ÷ (Kraft × Güte × Zone)
+        // ═══ DIE REZEPT-TAFEL (T4 · K-D4 · Q11; Urteil gesetzVerdict/werkVerdict): je Nahkampf-Rezept EIN Hieb auf die
+        // Brust; (G1) dieselbe Tafel nach je einer Kern-Zahl (MAT.*.rho × 1,25 · dauerProSqrtIKg × 0,8 · MAT.eisen.sigY ×
+        // 1,5), (G2) Kraft ÷ Güte = Leib, (S12) _trefferWirkung ≡ 1 ═══
         const sc = globalThis.__schmiedeCore;
-        const ZT = A._arenaGesetz().zonen || null;
-        const faktoren = [];
-        for (const id of Object.keys(sc.REZEPT_ZU_GATTUNG)) {
-            const g = sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[id]];
-            if (g && g.task && g.task.art === "bogen") continue;
-            const name = "klinge_" + id;
-            if (!s.blueprints[name]) continue;
-            ausruesten(name);
-            r._setBlueprintWear(s.blueprints[name], 1);
-            stelle(hirsch, 1.5);
-            zielen(punkt(hirsch, null));
-            const sw = schwung();
-            const t = traf(sw, hirsch);
-            if (!t) {
-                faktoren.push({ id, f: null });
-                continue;
-            }
-            const z = sw.juice.length && sw.juice[0].zone;
-            const zm = z && ZT && ZT[z] ? ZT[z].mul : 1;
-            const ke = sw.juice.length && Number.isFinite(sw.juice[0].ke) ? sw.juice[0].ke : null;
-            faktoren.push({ id, f: t.amount / ((p.stats.damage || 5) * r._heldGueteFaktor() * zm), ke });
-        }
-        const fs = faktoren.filter((x) => x.f !== null).map((x) => x.f);
-        const fMax = Math.max(...fs);
-        w.z.faktoren = faktoren.map((x) => x.id + ":" + (x.f === null ? "-" : x.f.toFixed(2))).join(" ");
-        w.z.aufDerKappe = fs.filter((f) => f >= fMax * 0.99).length;
-        w.z.nahkampfRezepte = faktoren.length;
-        w.c.keineKappe = fs.length >= 15 && w.z.aufDerKappe <= 2;
-        // K-D4 — DER HIT-STOP IST ENERGIE-SKALIERT an der ganzen Tafel: die Treffer-Energie (sie trägt Hit-Stop und Dip) je
-        // Nahkampf-Rezept, ein Hieb auf die Brust; die größte Gruppe von Rezepten, deren Energie auf ±3 % gleich ist. Der Befund
-        // (Ω-Φ4-Tautologie KE = ½·I·ω² bei ω ∝ 1/√I): 13 von 17 Rezepten stoppten mit 19,8 J.
+        const AG = A._arenaGesetz();
+        const GS = {};
         {
-            const ke = faktoren
-                .map((x) => x.ke)
-                .filter((x) => Number.isFinite(x) && x > 0)
+            const ids = Object.keys(sc.REZEPT_ZU_GATTUNG).filter(
+                (id) => sc.kampfMasze(id) && s.blueprints["klinge_" + id]
+            );
+            const bp = (id) => s.blueprints["klinge_" + id];
+            const ovAlt = ids.map((id) => bp(id).studioOv);
+            const memoLeer = () => ((r._kampfMaszeMemo = null), (r._gueteAnteilMemo = null));
+            const hieb = (id) => {
+                ausruesten("klinge_" + id);
+                r._setBlueprintWear(bp(id), 1);
+                const K = AG.schwung,
+                    dauer = r._playerSwingDauer(),
+                    reach = r._kampfBladeReach(),
+                    w20 = r._trefferWirkung(r._kampfUrteil(20, 0, null));
+                stelle(hirsch, 1.5);
+                zielen(punkt(hirsch, null));
+                const sw = schwung(),
+                    t = traf(sw, hirsch),
+                    j = sw.juice[0];
+                if (!t || !j || !t.stoss) return null;
+                const frei = dauer > K.minDauerSec + 1e-6 && dauer < K.maxDauerSec - 1e-6;
+                const zm = AG.zonen[j.zone] ? AG.zonen[j.zone].mul : 1;
+                const leib = t.kraft / r._heldGueteFaktor();
+                return {
+                    wirk: t.amount / t.kraft,
+                    p: t.stoss.p,
+                    ke: j.ke,
+                    zm,
+                    art: j.art,
+                    frei,
+                    leib,
+                    dauer,
+                    reach,
+                    w20,
+                };
+            };
+            const reihe = () => {
+                memoLeer();
+                return Object.fromEntries(
+                    ids.map((id) => {
+                        const km = sc.kampfMasze(id, bp(id).studioOv);
+                        return [id, Object.assign(hieb(id) || {}, { kg: km.masseKg, I: km.traegheit })];
+                    })
+                );
+            };
+            const mutiert = (os, k, f) => {
+                const alt = os.map((o) => o[k]);
+                os.forEach((o) => (o[k] *= f));
+                try {
+                    return reihe();
+                } finally {
+                    os.forEach((o, i) => (o[k] = alt[i]));
+                    memoLeer();
+                }
+            };
+            ausruesten(null);
+            GS.leib = r.computePlayerStats().stats.damage;
+            try {
+                GS.vor = reihe();
+                GS.masse = mutiert(Object.values(sc.MAT), "rho", 1.25);
+                GS.tempo = mutiert([AG.schwung], "dauerProSqrtIKg", 0.8);
+                const wirk = r._trefferWirkung;
+                r._trefferWirkung = () => 1;
+                try {
+                    GS.s12 = { vor: reihe(), tempo: mutiert([AG.schwung], "dauerProSqrtIKg", 0.8) };
+                } finally {
+                    r._trefferWirkung = wirk;
+                }
+                const km = r._schmiedeKampfMasze;
+                r._schmiedeKampfMasze = () => null; // (EINHEITSBREI-Selbsttest) ohne Kern: Dauer und Reichweite der Spender
+                try {
+                    GS.ohneKern = ids.map(
+                        (id) => (ausruesten("klinge_" + id), [r._playerSwingDauer(), r._kampfBladeReach()])
+                    );
+                } finally {
+                    r._schmiedeKampfMasze = km;
+                }
+                for (const id of ids) bp(id).studioOv = { __tradition: "Nihon" };
+                GS.eisen = reihe();
+                GS.schneide = mutiert([sc.MAT.eisen], "sigY", 1.5);
+            } finally {
+                ids.forEach((id, i) =>
+                    ovAlt[i] === undefined ? delete bp(id).studioOv : (bp(id).studioOv = ovAlt[i])
+                );
+                memoLeer();
+            }
+        }
+        // (T4) keine Schadens-Kappe: der Faktor Schaden ÷ (Kraft × Güte × Zone) ist die Wirkung ÷ Zone (Verschleiß 1)
+        const tafel = Object.entries(GS.vor).filter(([, x]) => x.wirk);
+        const fs = tafel.map(([, x]) => x.wirk / x.zm);
+        const fMax = Math.max(...fs);
+        w.z.faktoren = tafel.map(([id, x]) => id + ":" + (x.wirk / x.zm).toFixed(2)).join(" ");
+        w.z.aufDerKappe = fs.filter((f) => f >= fMax * 0.99).length;
+        w.z.nahkampfRezepte = Object.keys(GS.vor).length;
+        w.c.keineKappe = fs.length >= 15 && w.z.aufDerKappe <= 2;
+        // K-D4 — DER HIT-STOP IST ENERGIE-SKALIERT an der ganzen Tafel: die größte Gruppe von Rezepten, deren Treffer-Energie
+        // (sie trägt Hit-Stop und Dip) auf ±3 % gleich ist.
+        {
+            const ke = tafel
+                .map(([, x]) => x.ke)
+                .filter((x) => x > 0)
                 .sort((a, b) => a - b);
             let gruppe = 0;
-            for (let i = 0; i < ke.length; i++) {
-                let n = 0;
-                for (let j = i; j < ke.length && ke[j] <= ke[i] * 1.06; j++) n++;
-                gruppe = Math.max(gruppe, n);
-            }
+            for (let i = 0; i < ke.length; i++)
+                gruppe = Math.max(gruppe, ke.filter((k) => k >= ke[i] && k <= ke[i] * 1.06).length);
             w.z.keGruppe = gruppe;
             w.z.keRezepte = ke.length;
             w.z.keSpanne = ke.length ? +(ke[ke.length - 1] / ke[0]).toFixed(1) : null;
             w.c.hitStopEnergie = ke.length >= 15 && gruppe <= 3;
         }
-        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (Welle LF 08.10., K-D12): 20 Treffer mit Rückstoß aus 1,6 m
+        // (G3) das Werk nach der Form über tryMouseBreak: Klicks, bis die Eiche fällt, der Fels bricht, der Boden ein Loch
+        // trägt (null: der Klick schwingt); die Form-Mutation des Kerns (ov) und (S13) eine Art-Tafel neben dem Gesetz.
+        {
+            const nix = () => null;
+            let erde = null;
+            for (let ring = 8; !erde && ring <= 320; ring += 8)
+                for (let k = 0; !erde && k < 16; k++) {
+                    const x = pm.position.x + ring * Math.cos(k * 0.3927),
+                        z = pm.position.z + ring * Math.sin(k * 0.3927),
+                        y = r._voxelSurfaceY(x, z);
+                    if (Number.isFinite(y) && r._terrainMaterialAt(x, z, y) === "erde") erde = { hit: true, x, y, z };
+                }
+            if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
+            const klicks = (name, typ, ov) => {
+                ausruesten(name);
+                const bp = name ? s.blueprints[name] : null,
+                    alt = bp ? bp.studioOv : undefined;
+                if (ov) bp.studioOv = ov;
+                if (bp) r._setBlueprintWear(bp, 1);
+                r._kampfMaszeMemo = null;
+                r.setGameMode(typ ? "frieden" : "pfad");
+                const c0 = zaehl.carve;
+                const a =
+                    typ &&
+                    r.spawnArchitecture(
+                        typ,
+                        { x: pm.position.x, y: pm.position.y, z: pm.position.z + 9 },
+                        { silent: true }
+                    );
+                const steht = () => (typ ? s.architectures.indexOf(a) !== -1 : zaehl.carve === c0);
+                const buehne = { _pickCreatureAtCrosshair: nix, _kampfKegelZiel: nix, _pickScatterAtCrosshair: nix };
+                buehne._pickArchitectureAtCrosshair = () => (typ && steht() ? { entry: a, point: a.position } : null);
+                buehne._raycastWorldHit = () => erde || { hit: false };
+                Object.assign(r, buehne);
+                let n = 0;
+                try {
+                    p._dig = null;
+                    for (; n < 60 && steht(); n++) {
+                        p._swing = null;
+                        p.stamina = 1e6;
+                        r.tryMouseBreak();
+                    }
+                } finally {
+                    for (const k in buehne) delete r[k];
+                    if (typ && steht()) r.removeArchitecture(a);
+                    if (ov) alt === undefined ? delete bp.studioOv : (bp.studioOv = alt);
+                    r._kampfMaszeMemo = p._swing = null;
+                    r.setGameMode(saved.mode);
+                }
+                return steht() ? null : n;
+            };
+            const werk = (GS.werk = {});
+            for (const [typ, namen] of [
+                ["baum_eiche", ["faellaxt", "langschwert", "spitzhacke", "vorschlaghammer", "spaten", null]],
+                ["stein_block", ["spitzhacke", "vorschlaghammer", "faellaxt", "langschwert", "spaten", null]],
+                [null, ["spaten", "schaufel", "spitzhacke", "langschwert", "vorschlaghammer", "faellaxt", null]],
+            ])
+                werk[typ || "boden"] = Object.fromEntries(
+                    namen.map((n) => [n || "hand", klicks(n && "klinge_" + n, typ)])
+                );
+            const form = () => {
+                const je = (name, ov) => ({ baum: klicks(name, "baum_eiche", ov), boden: klicks(name, null, ov) });
+                const blatt = { kopfTyp: "grabeblatt" },
+                    axt = { kopfTyp: "axt", beta: 30, reach: 0.08, edgeLen: 0.1 };
+                return {
+                    axt: je("klinge_faellaxt"),
+                    axtBlatt: je("klinge_faellaxt", blatt),
+                    spaten: je("klinge_spaten"),
+                    spatenAxt: je("klinge_spaten", axt),
+                };
+            };
+            werk.form = form();
+            r._geraetGraebt = (bp) => {
+                const g = bp && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(bp)]];
+                return !bp || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
+            };
+            r._implementProfile = () => ({ minePower: 1.6, cutPower: 1.6 });
+            try {
+                werk.s13 = form();
+            } finally {
+                delete r._geraetGraebt;
+                delete r._implementProfile;
+            }
+            w.z.gesetz = GS;
+        }
+        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG: 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
-        // Vorher lief die Probe am Hirsch, den die Substanz-Tags „wehrhaft" nannten.
         r.setGameMode("pfad");
         p.hp = 1e9;
         p.respawnGraceUntil = -Infinity;
-        // Die Gegenwehr ist der Ansprung (Welle LF kampf, Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
+        // Die Gegenwehr ist der Ansprung (Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
         // steht auf dem Boden) — gezählt wird, was das Maul am Leib schnappt.
         const gegenwehrAn = (c) => {
             const g0 = zaehl.gegenwehr;
@@ -663,7 +796,8 @@ async function WELLE_L() {
         ausruesten("klinge_langschwert");
         const st1 = r.computePlayerStats().stats;
         w.z.panzer = `defense ${leer.d.toFixed(2)}→${st1.defense.toFixed(2)} · hpMax ${leer.hp.toFixed(1)}→${st1.hpMax.toFixed(1)} · damage ${leer.dmg.toFixed(2)}→${st1.damage.toFixed(2)}`;
-        w.c.keinPanzer = st1.defense === leer.d && st1.hpMax === leer.hp && st1.damage > leer.dmg;
+        // ein Werk der Schmiede faltet auch nicht in den Angriff (halten-gesetz): seinen Treffer urteilt der Kern
+        w.c.keinPanzer = st1.defense === leer.d && st1.hpMax === leer.hp && st1.damage === leer.dmg;
         // (T7) Verschleiß: 16 Treffer zehren die Klinge, ein verbrauchtes Gerät schlägt nicht
         const bpL = s.blueprints.klinge_langschwert;
         r._setBlueprintWear(bpL, 1);
@@ -683,7 +817,7 @@ async function WELLE_L() {
         w.c.verschleiss = n7 >= 12 && w.z.wear16 < 0.99 && w.z.trefferVerbraucht === 0;
         // (T8) der Pfeil: Impuls im Schaden, die Wand hält ihn
         ausruesten("klinge_langbogen");
-        const rec = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+        const rec = r._heldBogenRecipe();
         const schuss = (frac, ziel) => {
             const n0 = treff.length;
             const list = s._pfeile || [];
@@ -738,7 +872,7 @@ async function WELLE_L() {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
-            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge (K-D6 ganz): sein Verschleiß wirkt im Schaden
+            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge: sein Verschleiß wirkt im Schaden
             // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
             // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
             const bpB = s.blueprints.klinge_langbogen;
@@ -747,7 +881,12 @@ async function WELLE_L() {
                 stelle(hirsch, 2.5);
                 zielen(punkt(hirsch, null));
                 const sh = schuss(1, hirsch);
-                return { flog: sh.flog, amount: sh.treffer ? sh.treffer.amount : null, kraft: sh.treffer ? sh.treffer.kraft : null, nach: r._blueprintWear(bpB) };
+                return {
+                    flog: sh.flog,
+                    amount: sh.treffer ? sh.treffer.amount : null,
+                    kraft: sh.treffer ? sh.treffer.kraft : null,
+                    nach: r._blueprintWear(bpB),
+                };
             };
             const bogenProbe = () => {
                 const b1 = bogenBei(1),
@@ -1017,23 +1156,26 @@ async function WELLE_L() {
             const eigene = Object.getOwnPropertyNames(A.prototype).filter(
                 (n) => typeof (Object.getOwnPropertyDescriptor(A.prototype, n) || {}).value === "function"
             );
-            const eigenTypeof = new RegExp('typeof this\\.(?:' + eigene.join("|").replace(/\$/g, "\\$") + ') === "function"');
+            const eigenTypeof = new RegExp(
+                "typeof this\\.(?:" + eigene.join("|").replace(/\$/g, "\\$") + ') === "function"'
+            );
             const selbst = welleL.filter((m) => !window.__fehlt(A.prototype[m], eigenTypeof));
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
         }
-        // (G3) KEIN DRITTER LEIB (Integration Welle L, Gesetz #0): Klinge und Pfeil fragen das EINE Grob-Tor
+        // (G3) KEIN DRITTER LEIB: Klinge und Pfeil fragen das EINE Grob-Tor
         // (_trefferErreichbar), und das liest den kreatur-Leib (_kreaturLeib) — kein eigenes Körpermaß (2 × Skala) im
         // Treffer-Pfad.
         {
-            w.z.grobFremd = window.__fehlt([A.prototype._kampfSweepTick, A.prototype._tickPfeile], /\.scale\.x\b/) ? 0 : 1;
+            const grobPfade = [A.prototype._kampfSweepTick, A.prototype._tickPfeile, A.prototype._pfeilSehne].filter(
+                Boolean
+            );
+            w.z.grobFremd = window.__fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
             w.z.grobKonsum = konsum;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
-        // (T12) DAS GROB-TOR DECKT DIE GESTALT: jede Gattung in jeder Größen-Grenze (VERHALTEN.groessen), 90 Spiel-Takte;
-        // je Probe jedes Ende jeder Treffer-Glied-Kapsel (+ ihr Radius) — ein Punkt der Gestalt, den das Tor abweist,
-        // wäre ein Treffer, den die Gestalt nie richten darf. Gemessen wird die RÄUMLICHE Spanne vom Fuß-Ursprung (das Tor
-        // fragt waagrecht): sie deckt das Tier in jeder Lage (gekippt, am Hang, im Sprung), nicht nur in der gezeigten.
+        // (T12) das Grob-Tor deckt die Gestalt: jede Gattung in jeder Größen-Grenze, 90 Takte, je Kapsel-Ende (+ Radius) —
+        // ein abgewiesener Punkt wäre ein verbotener Treffer; die Spanne räumlich vom Fuß-Ursprung.
         const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
@@ -1124,53 +1266,13 @@ async function WELLE_L() {
         // ═══ Q9 — MAUS-ABSICHT ═══
         ausruesten("klinge_langschwert");
         s.isPointerLocked = true;
-        // (M1) 3rd-Person: 10 Klicks auf den Hirsch 2 m vor dir. Liegt ein Bau näher auf dem Kamera-Strahl (die
-        // Start-Plattform), gilt das Nächste — der Klick zählt dann als verdeckt, nie als Treffer-Probe.
-        if (fn("setCameraMode")) r.setCameraMode("third");
-        const z1 = { c: zaehl.carve, t: treff.length };
-        let fk = 0,
-            frei = 0,
-            freiSchwung = 0;
-        for (let i = 0; i < 10; i++) {
-            stelle(hirsch, 2);
-            zielen(punkt(hirsch, null));
-            const pick = r._pickCreatureAtCrosshair();
-            const imKreuz = !!(pick && pick.creature === hirsch);
-            if (imKreuz) fk++;
-            const ap = r._pickArchitectureAtCrosshair();
-            const istFrei =
-                imKreuz &&
-                !(ap && ap.point && s.camera.position.distanceTo(ap.point) < s.camera.position.distanceTo(pick.point));
-            if (istFrei) frei++;
-            p._swing = null;
-            p.breakHeld = false;
-            p.stamina = (p.stats && p.stats.staminaMax) || 100; // zwischen zwei Klicks atmet der Spieler
-            const s0 = zaehl.schwung;
-            r.tryMouseBreak();
-            if (istFrei && zaehl.schwung > s0) freiSchwung++;
-            if (p._swing) {
-                p._swing.lastT = T;
-                for (let k = 0; k < 1200 && p._swing; k++) {
-                    T += 0.005;
-                    r._tickKampfSchwung(T);
-                }
-            }
-        }
-        w.z.dritte = {
-            fadenkreuz: fk,
-            frei,
-            schwuenge: freiSchwung,
-            krater: zaehl.carve - z1.c,
-            treffer: treff.slice(z1.t).filter((t) => t.c === hirsch).length,
-        };
-        w.c.dritteSchwingt = fk === 10 && frei >= 8 && freiSchwung === frei && w.z.dritte.krater === 0;
         // (M2) 1st-Person: Drücken auf den Hirsch, der Stoß schiebt ihn fort, das Halten setzt nach
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        r.setCameraMode("first");
         stelle(hirsch, 1.6);
         zielen(punkt(hirsch, null));
         const z2 = zaehl.carve;
         p._swing = null;
-        p.breakHeld = true;
+        s.verbTafel.gehalten.break = true;
         p.lastHarvestStrikeAt = performance.now() / 1000;
         r.tryMouseBreak();
         stelle(hirsch, 1.6, 7); // aus dem Fadenkreuz geschoben
@@ -1185,7 +1287,7 @@ async function WELLE_L() {
             p.lastHarvestStrikeAt = -Infinity;
             r._tickHarvest();
         }
-        p.breakHeld = false;
+        s.verbTafel.gehalten.break = false;
         p._swing = null;
         w.z.haltenKrater = zaehl.carve - z2;
         w.c.haltenOhneKrater = w.z.haltenKrater === 0;
@@ -1252,24 +1354,15 @@ async function WELLE_L() {
         } finally {
             r.tryMouseBreak = tmbOrig;
             delete r.tryMouseBreak;
-            p.breakHeld = false;
+            s.verbTafel.gehalten.break = false;
         }
-        // (M5) FERTIGEN eines Bauwerks (die Eiche) → der Bau-Modus, nicht die Hand
-        r.setGameMode("schöpfer");
-        const fert = r.fertigeBlueprint("baum_eiche");
-        w.z.fertigen = {
-            ok: !!(fert && fert.ok),
-            hand: (p.equipped && p.equipped.held) || null,
-            bauModus: !!(s.buildMode && s.buildMode.active && s.buildMode.blueprintName === "baum_eiche"),
-        };
-        w.c.fertigenBaut = w.z.fertigen.bauModus && w.z.fertigen.hand !== "baum_eiche";
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        // (M5) FERTIGEN eines Bauwerks fährt diag-werkstatt-weg mit echten Klicks (das Werk steht, nie in der Hand)
         ausruesten(null);
         r.setGameMode(saved.mode);
         s.isPointerLocked = saved.lock;
 
         // ═══ Q10 — BLICK-WAHRHEIT ═══
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        r.setCameraMode("first");
         const blickBei = (pitch) => {
             s.pitch = pitch;
             kamera();
@@ -1310,8 +1403,8 @@ async function WELLE_L() {
         s.pitch = 0;
         kamera();
         const dD = camDir();
-        // „baue dorf hier" trägt den Blick des Sprechers (Gier, Programm-Stelle 3 — die Welle L Folge, Gegenprüfung Runde 1:
-        // der Anker hing am Blick jedes Peers): seine Vorwärts-Richtung (`_blickVorn`) blickt wie die Kamera.
+        // „baue dorf hier" trägt den Blick des Sprechers (Gier, Programm-Stelle 3): seine Vorwärts-Richtung (`_blickVorn`)
+        // blickt wie die Kamera.
         const dsl = r.parseChatToDsl("baue dorf hier");
         const gier = dsl && dsl.program ? dsl.program[3] : null;
         const vg = Number.isFinite(gier) ? r._blickVorn(gier, 0) : null;
@@ -1330,7 +1423,7 @@ async function WELLE_L() {
             });
             w.c.s3 = w.z.s3 < 0;
         }
-        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (Welle LF: er fällt, die
+        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (er fällt, die
         // Ballistik hebt ihn) — gemessen der Winkel zwischen Pfeil und Fadenkreuz-Punkt von der Kamera aus, wenn der Pfeil die
         // Weite des Punkts erreicht
         if (rec) {
@@ -1361,12 +1454,11 @@ async function WELLE_L() {
             w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
         }
 
-        // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
-        if (fn("setCameraMode")) r.setCameraMode("first");
+        // ═══ WELLE LF KAMPF — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
+        r.setCameraMode("first");
         // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
-        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
-        // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
+        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt).
         await teil("T16", async () => {
             const hE = setze("wesen");
             const detail = [];
@@ -1427,13 +1519,11 @@ async function WELLE_L() {
             }
             if (hE) parke(hE);
         });
-        // (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3): die Befund-Geometrie — ein Fuchs 1,8 m vor dir, seine Füße 0,77 m
-        // tiefer, das Fadenkreuz auf ihm, neun Klicks über den EINEN Dispatcher (tryMouseBreak) mit dem Langschwert. Gemessen:
-        // das Verb des Drückens (hieb am Tier oder Luftschlag), Treffer, und was der Spieler-Kanal sagt. Gegenprobe: derselbe
-        // Fuchs in 1,3 m / −0,6 m (in Reichweite) trifft. Befund: das Tor wählte „hieb" bis 6 m ab der Schulter, die Klinge
-        // reichte 2,46 m — 9 Schwünge, 0 Treffer, kein Hinweis.
+        // (T17) eine Reichweite aus der Waffe: ein Fuchs 1,8 m/−0,77 m, neun Klicks mit dem Langschwert; gemessen Verb,
+        // Treffer und Kanal; die Gegenprobe 1,3 m/−0,6 m trifft.
         await teil("T17", async () => {
             const fR = setze("fuchs");
+            r._pickArchitectureAtCrosshair = () => null;
             ausruesten("klinge_langschwert");
             if (s.blueprints.klinge_langschwert) r._setBlueprintWear(s.blueprints.klinge_langschwert, 1);
             const sagRoh = r._spielerSagt;
@@ -1476,18 +1566,15 @@ async function WELLE_L() {
                     toreZahl: window.__fehlt(A.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
                 };
             } finally {
+                delete r._pickArchitectureAtCrosshair;
                 r._spielerSagt = sagRoh;
                 delete r._spielerSagt;
                 parke(fR);
             }
         });
-        // (T26) DER HIEB TRIFFT IM HORIZONT-BLICK (K13): die Klick-Pfad-Matrix gegen einen gehaltenen Wolf (Größe 1, Breitseite,
-        // die Mitte d vor dem Spieler) — je Fall ein Klick über tryMouseBreak, der Schwung bis zu seinem Ende. „rumpf": das
-        // Fadenkreuz auf der Leibes-Mitte; „horizont": die Gier aufs Tier, die Neigung waagrecht (der Blick geht über den Wolf).
-        // Der Täter je Fall: kein Schwung (der Klick wurde kein Hieb) · zu weit (der Hinweis) · kein Ziel unter dem Fadenkreuz
-        // (der Schwung ohne Ziel) · Sweep vorbei. Dazu der Wolf 1 m hinter dem Rücken (Horizont nach vorn) und der Dolch Reichweite + 0,8 m vor
-        // dem Wolf (Rumpf, jenseits seiner Klinge). Selbst-Test (S10): die Kegel-Wahl ≡ null → die Horizont-Fälle nennen „kein
-        // Ziel unter dem Fadenkreuz".
+        // (T26) die Klick-Pfad-Matrix gegen einen gehaltenen Wolf, je Fall ein Klick über tryMouseBreak; Täter: kein
+        // Schwung · zu weit · kein Ziel · Sweep vorbei; dazu der Wolf im Rücken und der Dolch jenseits der Klinge. (S10)
+        // die Kegel-Wahl ≡ null.
         await teil("T26", async () => {
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
             const wolf = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "calm", "wolf", {
@@ -1616,13 +1703,9 @@ async function WELLE_L() {
                 stelle(wolf, klingeD + 0.8);
                 zielen(punkt(wolf, null));
                 const zw = klick(wolf);
-                // DIE ERNTE NEBEN DEM WILDTIER (Runde 2): ein ruhiger wilder Wolf steht 1,2 m neben dem Spieler (0,5 rad seitlich) im
-                // Schwung-Kegel, der Blick geht −0,5 rad abwärts (3rd), und das Fadenkreuz trägt sein Ziel in Arm-Länge — ein Stein-
-                // Block (abbau, Langschwert), eine Blüte (pflücken, Langschwert; die Nah-Streu wächst erst im Takt um den Spieler: der
-                // Streu-Pick nennt die Blüte, die Ernte zeichnet auf), der Boden vor der Spitzhacke (graben; der Erd-Auftrag zeichnet
-                // auf, die Welt bleibt ungekerbt). Der Klick bleibt beim Ziel des Fadenkreuzes, der Wolf heil. Gegenfall „fern": ein
-                // Stein-Pfeiler 8 m voraus, jenseits der Arm-Länge, unter dem waagrechten Fadenkreuz, der Wolf 1,3 m voraus — der Hieb
-                // trifft den Wolf. Der Ort: freier Boden (der Spawn steht auf der Start-Plattform), kein Bauwerk unter dem Fadenkreuz.
+                // die Ernte neben dem Wildtier: ein ruhiger Wolf 1,2 m seitlich im Schwung-Kegel, das Fadenkreuz auf Block,
+                // Blüte oder Boden in Arm-Länge — der Klick bleibt dort, der Wolf heil; Gegenfall fern: ein Pfeiler 8 m
+                // voraus, der Hieb trifft den Wolf 1,3 m voraus.
                 const ernte = [];
                 const ortAlt = pm.position.clone();
                 const ernteSteine = [];
@@ -1706,7 +1789,7 @@ async function WELLE_L() {
                         return H.hit ? V3().set(H.x, H.y, H.z) : null;
                     };
                     // abbau: der Stein-Block (1,2 m hoch) 3,2 m voraus, das Fadenkreuz auf seiner Mitte — der Wolf daneben steht dem
-                    // Auge näher als der Block (die Kamera-Abstände, die der Kegel vorher verglich)
+                    // Auge näher als der Block
                     geraet("klinge_langschwert");
                     neige(-0.5);
                     const sb = stein(vorn(3.2).P, 1.2);
@@ -1803,12 +1886,9 @@ async function WELLE_L() {
                 parke(wolf);
             }
         });
-        // (T18) POSE, TREFFER-VOLUMEN UND ICH-SICHT LESEN DENSELBEN SCHWUNG (Posten 2): je Ziel EIN Großschwert-Hieb; im
-        // Treffer-Takt steht die Anzeige-Uhr (Hit-Stop ∞), die Pose des Spielers wird gelegt (animatePlayerSoul), die Kamera
-        // folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der Gestalt reicht
-        // (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte (Ecken des Geräts in
-        // Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte im Bild der Ich-Kamera
-        // liegen (Spitze UND Mitte). Befund: im Treffer-Takt stand das Großschwert über dem Kopf (ks02), die Ich-Sicht zeigte keine Klinge (ks01).
+        // (T18) Pose, Treffer-Volumen und Ich-Sicht lesen denselben Schwung: je Ziel ein Großschwert-Hieb, im Treffer-Takt
+        // steht die Anzeige (Hit-Stop ∞); gemessen Spitze und Mitte gegen die Sweep-Strecke (_kreaturGliedTreffer) und im
+        // Bild der Ich-Kamera.
         await teil("T18", async () => {
             const hP = setze("wesen");
             ausruesten("klinge_grossschwert");
@@ -1849,9 +1929,9 @@ async function WELLE_L() {
                 r.setCameraMode("first");
                 r._loopCamera(T);
             }
-            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (Welle LF: _kampfKlingenKontakt —
+            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (_kampfKlingenKontakt —
             // Klinge B → T und das Tier), auf älteren Ständen der Glied-Test der Gestalt (Strecke a → b)
-            const naht = fn("_kampfKlingenKontakt") ? "_kampfKlingenKontakt" : "_kreaturGliedTreffer";
+            const naht = "_kampfKlingenKontakt";
             const gtRoh = r[naht];
             let strecke = null;
             r[naht] = function (...arg) {
@@ -1920,7 +2000,7 @@ async function WELLE_L() {
                 }
                 if (!strecke || !p._swing) return { traf: false };
                 // der Treffer-Takt: die Anzeige-Uhr steht, die Pose dieses Takts wird gelegt, die Ich-Kamera folgt
-                p._hitStopUntil = Infinity;
+                p._hitStopUntil = T + 1;
                 r.animatePlayerSoul(T);
                 r._loopCamera(T);
                 s.camera.updateMatrixWorld(true);
@@ -1987,8 +2067,7 @@ async function WELLE_L() {
             }
         });
         // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing bei
-        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns). Befund: 5 je Hieb
-        // für Dolch, Großschwert und Keule (flach).
+        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns).
         await teil("T19", async () => {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
@@ -2018,15 +2097,9 @@ async function WELLE_L() {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });
-        // (T27) LEBENSWERTE SIND ZUSTAND (K27): im Modus pfad senkt ein Biss (damagePlayer, jagd) hp und ein Hieb
-        // (_beginPlayerSwing) die Ausdauer; danach geht jeder Rufer der Stat-Neuberechnung einmal — Gerät (equipHeld an und
-        // ab, equipArmor an und ab, repairHeldDevice), Panel (_ichHandleOverlay), Boost (die Trauer der Bisse über der
-        // Schwelle: tickPlayerBoosts an, addPlayerBoost, der Ablauf ab) und der Tod-Takt (drei tickPlayerVitals nach dem Tod
-        // über damagePlayer). Vor jedem Rufer verwunden derselbe Biss und Hieb; gemessen werden hp, Ausdauer und Mana davor
-        // und danach, erlaubt ist Regen·dt (hp hat kein Regen-Gesetz: 0). Auf das Maximum setzen nur die Wandlung
-        // (applyPlayerSoul) und die Rückkehr (_playerDeathRespawn) — die Rufer mit `voll` liest die Probe aus dem Quelltext.
-        // Selbst-Test (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei JEDER Neuberechnung) als Hülle → der erste
-        // Rufer heißt equipHeld. Befund K27: 4 Wege zur Voll-Heilung (Gerät, Panel, Boost, Tod-Takt).
+        // (T27) Lebenswerte sind Zustand (K27): ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
+        // Neuberechnung einmal (Gerät · Panel · Boost · Tod-Takt); erlaubt Regen·dt, voll setzen nur Wandlung und Rückkehr.
+        // (S11) die alte Zeile → equipHeld.
         await teil("T27", async () => {
             const modeL = r.getGameMode();
             const inv = p.inventory;
@@ -2206,7 +2279,7 @@ async function WELLE_L() {
         });
         // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
         // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
-        // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
+        // seines Leibs (_leibMasse).
         await teil("T20", async () => {
             const reihe = [];
             for (const seele of ["fuchs", "wolf", "wesen", "baer"])
@@ -2238,10 +2311,10 @@ async function WELLE_L() {
         });
         // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was fliegt
         // (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut keinen eigenen
-        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
+        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil.
         await teil("T21", async () => {
             ausruesten("klinge_langbogen");
-            const recP = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+            const recP = r._heldBogenRecipe();
             const pfeilAus = { teile: 0, unbeleuchtet: 0, wirft: 0, laenge: null, farben: 0 };
             if (recP) {
                 const n0 = (s._pfeile || []).length;
@@ -2306,11 +2379,8 @@ async function WELLE_L() {
             }
             w.z.pfeilGestalt = pfeilAus;
         });
-        // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7): ein Hirsch auf geneigtem Boden, das Gefälle LÄNGS seiner Leibes-Achse
-        // (die Befund-Lage ks09: er blickt hangab) — die Naht `_fieldGradient` trägt das Gefälle (0,3 längs der Achse); dann der
-        // Tod und der Kreatur-Takt. Gemessen: wohin die Leibes-Achse (vorn, lokal +z) und die Hochachse nach dem Kippen zeigen,
-        // und ob der Leib 10 s danach noch liegt. Befund: der Hirsch richtete sich auf das Hinterteil auf (Kopf senkrecht) und war
-        // nach 22 Takten fort.
+        // (T22) ein Hirsch hangab (Naht `_fieldGradient`, 0,3 längs der Achse) stirbt; gemessen Leibes- und Hochachse nach
+        // dem Kippen und ob er 10 s danach liegt.
         await teil("T22", async () => {
             const hT = setze("wesen");
             stelle(hT, 20, 6);
@@ -2372,10 +2442,9 @@ async function WELLE_L() {
             tod.stromAnteil = kopie.proben ? +(kopie.imStrom / kopie.proben).toFixed(2) : 0;
             tod.kopieOben = Number.isFinite(kopie.obenMax) ? +kopie.obenMax.toFixed(2) : null;
             tod.liegt10s = !!hT.parent && !!hT.userData.dying;
-            // DER LEICHNAM IST KEIN WESEN (Nachbesserung 2 + 3): er steht nicht in der Liste der Wesen; das Fadenkreuz auf ihm
-            // wählt ihn nicht, er belegt keinen Platz der Kappe (ein Spawn bei maxCreatures = alle Leiber samt Leichnam gelingt),
-            // der Nexus zählt ihn nicht, der Lebenszyklus wählt ihn nicht als Ältesten, findNearestCreature nicht als Nächsten;
-            // und kein Leser fragt selbst nach dem Sterben (die Frage lebt nur im Tod, im Leichnam-Takt und im Schadens-Tor)
+            // der Leichnam ist kein Wesen: nicht in der Liste, nicht im Fadenkreuz, in keiner Kappe, im Nexus, im
+            // Lebenszyklus oder in findNearestCreature; die Frage nach dem Sterben lebt nur im Tod, im Leichnam-Takt und im
+            // Schadens-Tor
             tod.unterWesen = s.creatures.indexOf(hT) !== -1;
             tod.aeltester = r._findOldestCreature() === hT;
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
@@ -2433,10 +2502,8 @@ async function WELLE_L() {
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
         });
-        // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75) — ein Stand von vor
-        // dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen rechnet es noch: leibV = 0);
-        // voll gespeichert kehrt er voll zurück, halb verwundet halb; ein neuer Stand mit 30 % Leben kehrt mit 30 % zurück.
-        // Befund Gegenprüfung 1: ein voller Hirsch stand nach dem Reload bei 124/168, ein voller Bär bei 159/391.
+        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär (1,75), ein alter Stand (hp absolut, leibV = 0)
+        // und ein neuer mit 30 %.
         await teil("T25", async () => {
             const wunde = [];
             for (const [seele, L] of [
@@ -2479,12 +2546,8 @@ async function WELLE_L() {
             }
             w.z.wunde = wunde;
         });
-        // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5): alle drei Biss-Wege im ECHTEN Kreatur-Takt (updateCreatures,
-        // 1/60 s) — ein Wolf jagt den stehenden Spieler (6 m vor ihm), ein Wolf beißt ein Kitz 1,5 m vor seiner Schnauze (der
-        // Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die Gegenwehr). Gemessen im Biss-Takt
-        // (damagePlayer / damageCreature): die Geste des Beißers (seine laufende Aktion) und der Spalt zwischen seinem KOPF
-        // (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des Gebissenen (die Kapsel des Spielers / die Glieder
-        // des Tiers), dazu der Abstand der Mitten. Befund K-D13: 12 Bisse am stehenden Spieler, 9 ohne Geste, aus 1,36–2,39 m XZ.
+        // (T23) der Biss trifft, wo die Geste schnappt: Jagd auf den Spieler, Beute-Biss und Gegenwehr im echten Takt (1/60
+        // s); gemessen die Geste und der Spalt Kopf ↔ Leib des Gebissenen.
         await teil("T23", async () => {
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);
@@ -2545,8 +2608,7 @@ async function WELLE_L() {
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
             // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
-            // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe (vorher in
-            // 1 von 20 Läufen: „jagd beißt ohne Ansprung, Kopf 5,56 m vor dem Leib" — gebissen hatte ein anderes Tier)
+            // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe
             const btRoh = r._kreaturBissTakt;
             let beisser = null;
             if (typeof btRoh === "function")
@@ -2578,12 +2640,20 @@ async function WELLE_L() {
                 gnade: p.respawnGraceUntil,
                 ort: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
             };
-            // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen)
-            const P = {
-                x: pm.position.x,
-                y: r.getTerrainHeightAt(pm.position.x, pm.position.z) + A.PLAYER_FOOT_OFFSET,
-                z: pm.position.z,
-            };
+            // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen), auf freiem Feld: kein Bau
+            // in 12 m um ihn und den Wolf (die Start-Plattform stünde zwischen ihnen)
+            const frei = (x, z) =>
+                s.architectures.every(
+                    (e) =>
+                        Math.hypot(e.position.x - x, e.position.z - z) > 12 &&
+                        Math.hypot(e.position.x - x - 0.4, e.position.z - z - 6) > 12
+                );
+            let fx = pm.position.x,
+                fz = pm.position.z;
+            for (let d = 0; d <= 240 && !frei(fx, fz); d += 24)
+                for (let k = 0; k < 8 && !frei(fx, fz); k++)
+                    ((fx = pm.position.x + d * Math.cos(k * 0.785)), (fz = pm.position.z + d * Math.sin(k * 0.785)));
+            const P = { x: fx, y: r.getTerrainHeightAt(fx, fz) + A.PLAYER_FOOT_OFFSET, z: fz };
             const halte = () => {
                 pm.position.set(P.x, P.y, P.z);
                 s.playerVel.setValue(0, s.playerVel.y(), 0);
@@ -2643,10 +2713,8 @@ async function WELLE_L() {
                 }
                 if (jaeger) r.removeCreature(jaeger);
                 if (kitz) r.removeCreature(kitz);
-                // (b2) das stehende Reh (Nachbesserung 2): ein Wolf, ein Reh (Größe 0,8) breitseits vor ihm — sechs Ansprünge aus der
-                // Ruhe (drei aus 1,6 m, drei aus 1,3 m, wo die Hetze hält), je 90 Takte; gezählt Ansprünge, Bisse und die Takte,
-                // in denen das Ziel der Kopf-Neigung an der Klemme des Bisses (BISS.kopfNeigung) steht (Bericht: der Kopf
-                // schwang über, solange sein Rest sich je Takt auf das Ziel des Vor-Takts summierte)
+                // (b2) das stehende Reh (0,8): sechs Ansprünge aus 1,6 und 1,3 m je 90 Takte; gezählt Ansprünge, Bisse und
+                // Takte an der Klemme BISS.kopfNeigung
                 await teil("T24 Reh", async () => {
                     const reh = { versuche: 6, anspruenge: 0, bisse: 0, takte: 0, klemme: 0, je: {} };
                     const j2 = neu("wolf", P.x - 40, P.z + 40, 1);
@@ -2766,23 +2834,11 @@ async function WELLE_L() {
                             r.damageCreature = dcT;
                         }
                     }
-                    // DIE REST-SUMME (Nachbesserung 3, deterministisch): der Wolf 1,3 m vor dem Reh in der Stand-Pose, eine Biss-Geste
-                    // offen; zehnmal das Zielen des Kopfs (_kreaturBissKopf) ohne Takt dazwischen — die gezeigte Pose steht still.
-                    // Beide Leiber stehen in der STAND-POSE des Kerns (_tierBaumNeutralStance, Nachbesserung 4): vorher trug der Wolf
-                    // die Haltung seines letzten Ansprungs — der erste Rest schwankte je Lauf 0,31–1,0 rad und stand oft an der
-                    // Klemme (BISS.kopfNeigung), wo eine Summe sich nie zeigt (die Wand war dort vakuös).
-                    // DIE GIER DES REHS hält die Probe fest (K13b): unter den sechs Ansprüngen dreht der Steuer-Schritt das Reh nach
-                    // dem Wunsch seines Takts (rotation.y = _steuer.gier), je Lauf anders — und das Glied, das dem Kopf des Wolfs
-                    // am nächsten liegt, wechselt mit der Gier: Hinterschenkel (hlT/hrT, Gier ±0,72…±1,56) 0,5871, Vorderlauf
-                    // (flL/frL) 0,81–0,92, Unterschenkel (hlC/hrC, |Gier| ≤ 0,71) die Klemme 1,0, Rumpf −0,02…−0,23. Am Stand
-                    // a5f05612 + gang-gesetz 48e7b013 (Gestalt aus der Ruhe, Pose und Kapseln in 20 Läufen gleich): 18 × 0,5871 bei
-                    // Gier −1,55…−1,01, 2 × 1,0 bei Gier 0,05 (rot). Breitseits (π/2) stünde die Probe auf der Kante zwischen
-                    // Hinterschenkel und Vorderlauf; π/2 − 0,4 liegt mitten im Band des Hinterschenkels (0,45 / 0,40 rad Rand).
+                    // die Rest-Summe: zehnmal _kreaturBissKopf ohne Takt in der Stand-Pose — die gezeigte Pose steht still;
+                    // die Gier des Rehs (π/2 − 0,4) hält das Glied im Band des Hinterschenkels.
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
                         // EINE HÖHE (K16): beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
-                        // Vorher stand das Reh auf dem Gesetz unter sich: am Hang der alten Welt 0,2 m über dem Wolf (der
-                        // Hinterschenkel auf Kopfhöhe, Rest 0,5871), im ebenen Gelände des Kerns 0,28 m unter dem Kopf (Rest
-                        // 0,9921 an der Klemme). Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
+                        // Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
                         // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
                         const gW = r.getTerrainHeightAt(R0.x, R0.z - 1.3);
@@ -2858,8 +2914,7 @@ async function WELLE_L() {
                     // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide Gattungen kalt
                     // (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen, danach wiederhergestellt);
                     // gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt (_kreaturGliederGruppen) und wie viele
-                    // Vertices. Befund Gegenprüfung 2: das Maul des Jägers (Wolf 29 987 Vertices) und die Gestalt der Beute (Fuchs
-                    // 31 405) — 12,4 und 3,1 ms im Kreatur-Takt, an der Bake-Uhr vorbei
+                    // Vertices.
                     {
                         const J1 = { x: P.x + 60, z: P.z - 60 };
                         const wolfC = neu("wolf", J1.x, J1.z, 1);
@@ -2943,10 +2998,8 @@ async function WELLE_L() {
                         for (const c of schar) r.removeCreature(c);
                         if (wolfK) r.removeCreature(wolfK);
                     }
-                    // (b) der Sims — auf trockenem Boden neben der Plattform (der erste Ort, an dem weder der Wolf noch der Fuß des
-                    // Sims im Wasser steht) steht der Spieler 3,5 m über dem Boden, ein Wolf jagt ihn wie in (a): 10 s im Takt,
-                    // gezählt jeder Ansprung; je Takt die Höhe der Füße über Kopf plus Sprung (das Kleinste zählt — so hoch reicht
-                    // der Wolf nie); die Gegenprobe: waagrecht steht er in der Weite seines Ansprungs (ohne die Höhe spränge er)
+                    // (b) der Sims: der Spieler 3,5 m über dem Boden, ein Wolf jagt 10 s; je Takt Füße über Kopf plus
+                    // Sprung (das Kleinste zählt); die Gegenprobe waagrecht in der Weite des Ansprungs
                     {
                         const P0 = { x: P.x, y: P.y, z: P.z };
                         const wolfS = neu("wolf", P.x + 0.4, P.z + 6, 1);
@@ -3023,6 +3076,135 @@ async function WELLE_L() {
             }
             w.z.bissGeste = bisse;
         });
+        // halten.K4 (Q12): die Bahn (3 Winkel × 3 Takte, die Spitze roh — das Urteil rechnet die Parabel), der Treffer-Ort an
+        // einer Wand 18 m voraus (_fieldRaycast), der Pfeil steckt in Wand, Boden und Hirsch und kehrt aus dem Speicher wieder,
+        // die Mutation BOGENMAT ändert E und das Tempo folgt
+        await teil("T28", async () => {
+            const sc = globalThis.__schmiedeCore;
+            const K4 = (w.z.bogenK4 = { bahn: [], fehler: [], g: s.gravity });
+            ausruesten("klinge_langbogen");
+            const rec = r._heldBogenRecipe();
+            const t = rec.fx.task;
+            const mA = A._arenaGesetz().bogen.mArrow;
+            const vSoll = () => Math.sqrt((2 * sc.ableitenBogen(t).energie) / mA);
+            const st = () => (s.pfeileStecken || []).length;
+            const los = () => {
+                p._shotCooldownUntil = 0;
+                r._setBlueprintWear(s.blueprints.klinge_langbogen, 1);
+                const n = s._pfeile ? s._pfeile.length : 0;
+                r._beginPlayerShot(rec, 1);
+                const pf = (s._pfeile || [])[n];
+                return pf && { pf, p0: [pf.x, pf.y, pf.z], v0: [pf.vx, pf.vy, pf.vz] };
+            };
+            const fliege = (sch, hz, bis, proben) => {
+                const pf = sch.pf;
+                for (let k = 1; k / hz <= bis && s._pfeile.includes(pf); k++) {
+                    r._tickPfeile(pf.born + k / hz);
+                    if (proben && s._pfeile.includes(pf)) proben.push([k / hz, pf.x, pf.y, pf.z]);
+                }
+                if (s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
+            };
+            const blick = (gr) => ((s.yaw = 0), (s.pitch = (gr * Math.PI) / 180), kamera());
+            for (const wi of [25, 0, -8])
+                for (const hz of [30, 60, 144]) {
+                    blick(wi);
+                    const sch = los();
+                    const proben = [];
+                    if (sch) fliege(sch, hz, 1.5, proben);
+                    if (sch) K4.bahn.push({ wi, hz, p0: sch.p0, v0: sch.v0, vSoll: vSoll(), proben });
+                }
+            K4.boden = (s.pfeileStecken || []).filter(
+                (x) => Math.abs(x.y - r.getTerrainHeightAt(x.x, x.z)) < 0.5
+            ).length;
+            const P = pm.position;
+            const zF = P.z + 17.8;
+            s.blueprints._k4 = {
+                name: "_k4",
+                parts: [
+                    { shape: "box", material: "stein", size: { x: 8, y: 6, z: 0.4 }, position: { x: 0, y: 3, z: 0 } },
+                ],
+            };
+            const wand = r.spawnArchitecture("_k4", { x: P.x, y: P.y - 1, z: P.z + 18 }, { precise: true, seed: 1 });
+            zielen({ x: P.x, y: P.y + 0.6, z: zF });
+            const echt = r._fieldRaycast;
+            let treffer = null;
+            r._fieldRaycast = function (...a) {
+                const o = echt.apply(this, a);
+                if (o.hit) treffer = o;
+                return o;
+            };
+            const n0 = st();
+            const sch = los();
+            try {
+                if (sch) fliege(sch, 30, 2);
+            } finally {
+                delete r._fieldRaycast;
+            }
+            const x = n0 < st() ? s.pfeileStecken[st() - 1] : null;
+            K4.wand = {
+                zF,
+                p0: sch.p0,
+                v0: sch.v0,
+                treffer,
+                steckt: st() - n0,
+                bild: !!(x && x.mesh && x.mesh.parent === s.scene),
+            };
+            if (wand) r.removeArchitecture(wand);
+            delete s.blueprints._k4;
+            const h = setze("wesen");
+            stelle(h, 12);
+            zielen(punkt(h, null));
+            const sh = los();
+            if (sh) fliege(sh, 60, 1);
+            const sp = h.userData._steckPfeile || [];
+            const T4 = (K4.tier = { n: sp.length });
+            const m = sp.length && sp[0].mesh;
+            if (m) {
+                const w0 = m.getWorldPosition(V3());
+                h.position.x += 2;
+                h.updateMatrixWorld(true);
+                T4.folgt = m.getWorldPosition(V3()).sub(w0).toArray();
+                for (let o = m; o; o = o.parent) if (o === h) T4.amTier = true;
+            }
+            const sn = JSON.parse(JSON.stringify(r._serializeCreature(h)));
+            T4.imSnapshot = (sn.pfeile || []).length;
+            const h2 = r._restoreCreatureFromSnapshot(sn, "happy");
+            const sp2 = (h2 && h2.userData._steckPfeile) || [];
+            T4.wieder = sp2.length;
+            T4.lageGleich =
+                sp2.length > 0 &&
+                sp2.every((y, i) => y.teil === sp[i].teil && y.p.every((v, j) => Math.abs(v - sp[i].p[j]) < 1e-3));
+            T4.bildWieder = sp2.length > 0 && sp2.every((y) => y.mesh && y.mesh.parent);
+            for (const c of [h, h2]) if (c) (tiere.push(c), parke(c));
+            const sw = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+            const vor = sw.pfeileStecken || [];
+            const S4 = (K4.speicher = { steckend: st(), imSnapshot: vor.length });
+            for (const y of s.pfeileStecken || []) r._pfeilDespawn(y);
+            s.pfeileStecken = [];
+            r._loadStateRestoreMiscState(sw);
+            r._tickPfeile(T);
+            const nach = s.pfeileStecken;
+            S4.wieder = nach.length;
+            S4.lageGleich =
+                nach.length > 0 &&
+                nach.every((y, i) => Math.hypot(y.x - vor[i].x, y.y - vor[i].y, y.z - vor[i].z) < 0.002);
+            S4.bild = nach.length > 0 && nach.every((y) => y.mesh && y.mesh.parent === s.scene);
+            const BM = sc.BOGENMAT[t.material];
+            const d0 = BM.dehnung;
+            blick(3);
+            const z1 = los();
+            const vS1 = vSoll();
+            let z2, vS2;
+            BM.dehnung = d0 * 1.25;
+            try {
+                z2 = los();
+                vS2 = vSoll();
+            } finally {
+                BM.dehnung = d0;
+            }
+            for (const z of [z1, z2]) if (z) fliege(z, 60, 0.02);
+            K4.zug = { v1: Math.hypot(...z1.v0), vS1, v2: Math.hypot(...z2.v0), vS2 };
+        });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -3040,19 +3222,21 @@ async function WELLE_L() {
         for (const c of tiere) if (c.parent) r.removeCreature(c); // die Wesen und die Gefallenen
         for (const pf of (s._pfeile || []).slice()) r._pfeilDespawn(pf);
         if (s._pfeile) s._pfeile.length = 0;
+        for (const pf of s.pfeileStecken || []) r._pfeilDespawn(pf); // die steckenden Pfeile der Probe (halten.K4)
+        if (s.pfeileStecken) s.pfeileStecken.length = 0;
         try {
             r.equipHeld(saved.held || null);
         } catch (_e) {}
-        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
         if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
         if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);
-        if (fn("setCameraMode")) r.setCameraMode(saved.cam);
+        r.setCameraMode(saved.cam);
         s.yaw = saved.yaw;
         s.pitch = saved.pitch;
         s.isPointerLocked = saved.lock;
         p.hp = saved.hp;
         p.respawnGraceUntil = saved.grace;
-        p.breakHeld = saved.breakHeld;
+        s.verbTafel.gehalten.break = saved.breakHeld;
         p._swing = saved.swing;
         p._hitStopUntil = saved.hitStop;
         s.maxCreatures = saved.maxC;

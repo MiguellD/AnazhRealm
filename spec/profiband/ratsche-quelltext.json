@@ -39,9 +39,8 @@
             "seite": 1
         },
         "scripts/diag-kamera-laub.cjs": {
-            "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM) und die Studio-Quelle der Absenz W3",
-            "stamm": 1,
-            "datei": 1
+            "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM)",
+            "stamm": 1
         },
         "scripts/diag-ofen-contract.cjs": {
             "zweck": "Messung: führt die Foundry-Brücke als Ofen im vm aus",
@@ -78,6 +77,11 @@
         "scripts/diag-schirm-monotonie.cjs": {
             "zweck": "Struktur: jede Schirm-Lesung am AST ihrem Glied zugeordnet, Alias-Fluss je Methode, Erzeuger und UI-Lage an benannter Liste",
             "stamm": 1
+        },
+        "scripts/diag-studio-uebergabe.cjs": {
+            "zweck": "Messung: führt die Hülle im vm als Studio-Seite aus (sie sendet das Werk); Struktur: die EINE Route der Übergabe in der Heimat",
+            "stamm": 1,
+            "datei": 1
         },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",

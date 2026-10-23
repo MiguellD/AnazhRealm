@@ -1,18 +1,12 @@
 // diag-werk-im-wasser.cjs — DIE WASSER-WAHRHEIT DER WERKE (Schau-2, Familie wasser-wahrheit): „Werk steht im Wasser" und
-// „Wagen im Wasser ohne Widerstand", je Täter beim Namen. Befund 09.10. (artifacts/profiband/leben-schau-2/befund.md §6 #2,
-// sichtbar gespielt auf der Radeon, Bilder a-ankunft-dorf-bauen 41–44 und b-fahren 25): der Vorführ-Satz der Ziellinie
-// „pflanz mir einen eichenhain am wasser" ließ 6 von 6 Eichen 1,2–4,3 m unter dem gezeichneten Wasser stehen, und der GT
-// fuhr 19 m durch 0,61 m Wasser mit 43 km/h. Jede Probe ruft den Chokepoint selbst im echten Boot (headless, Foundry an,
-// Null-Renderer der Welt), im echten Spiel-Takt (`_gameLoopTick`):
+// „Wagen im Wasser ohne Widerstand", je Täter beim Namen. Jede Probe ruft den Chokepoint selbst im echten Boot (headless,
+// Foundry an, Null-Renderer der Welt), im echten Spiel-Takt (`_gameLoopTick`):
 //
-//   H — DER HAIN AM FLUSS (−872/−1127, der Ort der Schau): der Schau-Ablauf — eine Eiche per Bau 16 m östlich (wie F im
-//       Bau-Modus), dann der Satz, dann 1200 Spiel-Takte (20 s). Je Stamm das gezeichnete Wasser (`_wasserBildAt`) im
-//       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht. Befund V18.537: der Bau weckte den
-//       Wasser-Automaten (15 Chunks), der flutete das Tal — 6 von 6 Stämmen 1,9–3,8 m unter dem Wasser.  Soll 0 · 0 Chunks
-//   S — DAS HAUS AUS DEM SATZ (Gegenprüfung 10.10.): „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt
-//       −935/−1070 und den See −906/−634 (je Zentrum bis zu drei trockene Standorte 18–40 m vom Zentrum). Befund am Kopf
-//       f5714efb: 11 von 11 Fundamenten im Wasser (6–67 von 81 Raster-Punkten, bis 0,92–3,68 m) — der Satz fragte die Mitte,
-//       und die Spieler-Klemme der Wurzel schob das Haus vom Spieler weg ins Wasser. Die Häuser misst Z.  Soll ≥ 5 Häuser
+//   H — DER HAIN AM FLUSS: der Schau-Ablauf — eine Eiche per Bau 16 m östlich (wie F im Bau-Modus), dann der Satz „pflanz
+//       mir einen eichenhain am wasser", dann 1200 Spiel-Takte (20 s). Je Stamm das gezeichnete Wasser (`_wasserBildAt`) im
+//       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht.  Soll 0 · 0 Chunks
+//   S — DAS HAUS AUS DEM SATZ: „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt und den See (je Zentrum
+//       bis zu drei trockene Standorte 18–40 m vom Zentrum). Die Häuser misst Z.  Soll ≥ 5 Häuser
 //   Z — DER ZENSUS DER WERKE: jedes Werk, das während der Probe gesetzt wird (Wald und Unterholz beim Strömen, der Hain, die
 //       Bau-Eiche, die Häuser der Sätze, „dorf" am Fluss: `spawnSettlement` seed 7, 18 Häuser, Brunnen, Stände; kein
 //       Fahrzeug). Der Setz-Punkt `spawnArchitecture` ist Beobachtungs-Punkt: ein Stamm misst das Wasser über seinem Fuß VOR
@@ -21,43 +15,35 @@
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
 //       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
 //       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
-//   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): keine Zwillings-Probe des Lands (`_isAboveWaterAt`), `_waterLevelAt`
-//       nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald liest den Bezug nie als Wasser, kein Bau weckt den
-//       Automaten am Setz-Punkt, der Stempel läuft nie den ganzen Bestand, keine zweite Wasser-Wahrheit (`_stempelImWasser`,
-//       `_wasserVerdraengt`), keine Wurzel sagt still ab, `natur_weicht` ist fort.
+//   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): `_waterLevelAt` nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`),
+//       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
+//       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
 //   K — DER KONSUM AM RUF (D3c): am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
 //       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
-//       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
+//       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
 //   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
-//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
-//       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
+//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl
 //       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
 //   E — DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
 //       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
-//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Befund am Kopf 0302a6c4: „10 Kreaturen
-//       gespawnt" bei 3 und 0, „tempel vor dir gebaut" bei 0, das Fraktal baute bei kaltem Buch still 43 Wasserfälle,
-//       „wasserfall vor dir gebaut" bei 0, „dorf vor dir gebaut" sofort bei 0 Häusern. Soll: die tatsächliche Zahl mit dem
+//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem
 //       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
 //       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
 //   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
 //       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
-//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Befund am Kopf f5b331ae (900 Takte): 1 Invalidierung, 2 Chunks wach, nasse
-//       Punkte (±60 m) 3 019 → 2 752, gezeichnete Spalten 2 562 → 2 604 — die Weck-Frage las das Gesetz samt Rand-Füllung, die
-//       Zellen dort sind trocken. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
+//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
-//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Befund am Kopf
-//       e162430b (1800 Takte): 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
-//       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
-//       DER ORT TRÄGT EINEN STAU (K37, 13.10.): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
+//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
+//       DER ORT TRÄGT EINEN STAU (K37): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
 //       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
 //       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. D misst das Feld gegen
 //       die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über
 //       der Flut, keine Stau-Quelle ohne Raum über ihrem Boden (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37 (Tal
 //       26/−120 der alten Welt): gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
-//       DIE KLAMM DER PRÜFBÜHNE (werk-ufer, 14.10.): die K16-Welt trägt keinen Ort, an dem ein Damm staut — ihr Fluss liegt
+//       DIE KLAMM DER PRÜFBÜHNE (werk-ufer): die K16-Welt trägt keinen Ort, an dem ein Damm staut — ihr Fluss liegt
 //       in der Aue (Bett 0,8 m, Ufer 10 m hinter der Kante ≤ 0,96 m über dem Spiegel: das Bankvoll-Bett des Tieflands), das
 //       Stau-Fenster (29 m, Rand auf Spiegel + 0,5 m) hebt dort nichts; von 7 668 Fluss-Punkten in 7 km um die Mess-Wiese lag
 //       keiner in einer Engstelle mit ≥ 4 % Gefälle und ≥ 2,5 m Ufer (außer einer Kaskade von 74 %). Am K16-Fluss −884/−623:
@@ -67,8 +53,7 @@
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
-//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte —
-//       am Kopf e162430b trug er eine eigene: Schüttdichte × Hüll-Quader, GT 1 557 statt 1 341 kg).
+//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -199,7 +184,7 @@ function urteil(b) {
         if (!AD) v.push("A LEER: der geparkte Wagen wurde nicht neu gestempelt");
         else if (AD.nass || AD.invalidierungen > 0)
             v.push(
-                `A: der geparkte Wagen in ${m(AD.tiefe)} m Wasser ist ein Damm — sein Zell-Stempel verdrängt Wasser und weckt den Automaten (${AD.invalidierungen} Invalidierungen, ${AD.caChunks} Chunks wach)`
+                `A: der geparkte Wagen in ${m(AD.tiefe)} m Wasser ist ein Damm — sein Zell-Stempel verdrängt Wasser und weckt den Automaten (${AD.invalidierungen} Invalidierungen, ${AD.caChunks} Chunks wach${AD.wer ? ", Rufer " + AD.wer : ""})`
             );
         const AL = AN.land;
         if (!AL || !(Math.abs(AL.fussUeberBoden) <= S.aussteigBoden))
@@ -341,7 +326,6 @@ function urteil(b) {
 function leserUrteil(w) {
     const v = [];
     const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
-    nicht(null, /_isAboveWaterAt\s*\(/, "die Zwillings-Probe des Lands `_isAboveWaterAt` lebt");
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
     nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
     nicht("_forestCellDarts", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
@@ -352,8 +336,6 @@ function leserUrteil(w) {
         /for \(const \w+ of this\.state\.architectures\)/,
         "der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)"
     );
-    nicht(null, /_stempelImWasser\(/, "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)");
-    nicht(null, /_wasserVerdraengt/, "das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
     // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
     for (const wer of ["spawnArchitecture", "spawnCreatureAt"])
         nicht(wer, /(?<!const nein = \(grund\) => \{[^}]*)return null;/, `die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
@@ -448,20 +430,12 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl0
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const st = r.state;
+    const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
-    const dlF = performance.now() + 60000;
-    while (performance.now() < dlF) {
-        if (f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt) break;
-        await new Promise((res) => setTimeout(res, 100));
-    }
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     if (st.renderer) {
         st.renderer.render = function () {};
         if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
@@ -473,6 +447,13 @@ async function probe(A) {
     const frame = () => {
         tMs += MUSTER[nFrame++ % MUSTER.length];
         r._gameLoopTick(tMs);
+    };
+    // der Takt des Warten auf einen Bau: 30 Bilder (`__gebautNach`)
+    const takte30 = () => {
+        for (let i = 0; i < 30; i++)
+            try {
+                frame();
+            } catch (_e) {}
     };
     // Das Wasser über dem Boden an (x, z), wo es über ihm steht (sonst −Infinity): das gezeichnete (`_wasserBildAt`) und —
     // `gesetz` — das des Gesetzes, aus dem das Bild wird (`_atlasWaterLevelAt` über dem Boden: ein Fern-Chunk zeichnet einen
@@ -529,7 +510,7 @@ async function probe(A) {
     };
     const spawnAlt = r.spawnArchitecture;
     const probeWerke = new Set();
-    r.spawnArchitecture = function (type, position, opts) {
+    r.spawnArchitecture = function (type, position) {
         const natur = r._istNatur({ type });
         const werk = !natur && !/^fahrzeug_/.test(String(type));
         let fussT = null;
@@ -605,7 +586,6 @@ async function probe(A) {
         return null;
     };
     const werkeMessen = async () => {
-        const dl = performance.now() + A.huelleMs;
         const fertig = (w) =>
             w.done ||
             !st.architectures.includes(w.e) ||
@@ -614,14 +594,9 @@ async function probe(A) {
                 : /^haus_/.test(w.e.type)
                   ? !!w.e._hausHuelle
                   : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
-        while (performance.now() < dl && !werke.every(fertig)) {
-            for (let i = 0; i < 30; i++)
-                try {
-                    frame();
-                } catch (_e) {}
-            for (const w of werke) if (!fertig(w)) r._rebuildArchitectureMesh(w.e);
-            await new Promise((res) => setTimeout(res, 50));
-        }
+        // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
+        for (const w of werke)
+            await window.__gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
         for (const w of werke) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
@@ -741,21 +716,23 @@ async function probe(A) {
     };
     // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
     const stroemen = async (X, Z, nachlauf) => {
+        // die Kacheln des Orts aus dem Faden (der Haupt-Faden rechnet sie nie): für die Bestellung hängt er ein
+        const aus = st.voxelWorker;
+        st.voxelWorker = faden;
+        await window.__weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
+        st.voxelWorker = aus;
         st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Ort", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             try {
                 frame();
             } catch (_e) {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         for (let i = 0; i < nachlauf; i++) {
@@ -1032,6 +1009,7 @@ async function probe(A) {
                 const invAltA = r._invalidateWaterCapsAround;
                 r._invalidateWaterCapsAround = function () {
                     invA.n++;
+                    invA.wer = new Error().stack.split("\n")[2].trim().split(" ")[1]; // der Rufer beim Namen
                     return invAltA.apply(this, arguments);
                 };
                 try {
@@ -1052,6 +1030,7 @@ async function probe(A) {
                     r._invalidateWaterCapsAround = invAltA;
                 }
                 ansaug.damm = {
+                    wer: invA.wer || null,
                     invalidierungen: invA.n,
                     nass: !!gt._stempelNass,
                     caChunks: st.waterCAActive ? st.waterCAActive.size : 0,
@@ -1424,8 +1403,7 @@ async function probe(A) {
                         frame();
                     } catch (_e) {}
                 stelle(cx, cz);
-                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier) — die Gier des Birken-Falls zeigte auf
-                // ein anderes Ufer, der Tempel stand 13.10. acht Meter landein und wurde gebaut (E LEER)
+                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier), nie auf ein anderes Ufer
                 st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
                 fall("Tempel im See", "baue tempel hier", 1, "tempel vor dir gebaut", G.wasser);
                 {
@@ -1437,9 +1415,8 @@ async function probe(A) {
                         (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
                     ).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
-                    const dl = performance.now() + A.dorfMs;
                     let echo = "";
-                    while (performance.now() < dl) {
+                    for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
@@ -1594,9 +1571,8 @@ async function probe(A) {
                 let res = null;
                 const v0 = new Set(st.architectures);
                 // der Nexus-Deckel ruht, solange R misst: über dem Deckel fällt der fernste autonome Bau (`_capNexusStructures`),
-                // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht. K16: die Welt trägt
-                // nach den früheren Proben ein Nexus-Dorf 80 m vom Spieler (27 autonome Bauten vor dem Dorf, vorher 19 in 600 m),
-                // der Deckel 48 nahm dem Dorf 9 Bauten, zuerst das Haus am Seerand (131,7 m) — R prüft das Wasser, nicht den Deckel
+                // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht — R prüft das
+                // Wasser, nicht den Deckel
                 const Klasse = r.constructor;
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
@@ -1616,18 +1592,11 @@ async function probe(A) {
                     zensus.quelle = "strom";
                     // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
                     const haeuser = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
-                    const dlH = performance.now() + A.huelleMs;
-                    while (
-                        performance.now() < dlH &&
-                        !haeuser.every((e) => e._hausHuelle || !st.architectures.includes(e))
-                    ) {
-                        for (let i = 0; i < 30; i++)
-                            try {
-                                frame();
-                            } catch (_e) {}
-                        for (const e of haeuser) if (!e._hausHuelle) r._rebuildArchitectureMesh(e);
-                        await new Promise((res2) => setTimeout(res2, 50));
-                    }
+                    for (const e of haeuser)
+                        await window.__gebautNach(e, {
+                            fertig: () => !!e._hausHuelle || !st.architectures.includes(e),
+                            takt: takte30,
+                        }).catch(() => null);
                     // die Chunks am Rand entstehen neu (wie beim Wieder-Strömen): 5 × 5 um das Haus am Rand, dann die Takte
                     await neuBauen();
                 } finally {
@@ -1640,7 +1609,7 @@ async function probe(A) {
                 let zellenWechsel = 0;
                 for (const [k, n] of zellenVor) if (zellenNach.has(k) && zellenNach.get(k) !== n) zellenWechsel++;
                 // DAS RAND-HAUS IST, WO DAS GESETZ ES STELLT (K10-6): die Ort-Wahl (`_ortWahl`) hält jedes Haus samt Saum aus dem
-                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `_ortTraegt`) und rückt das Dorf vom Wunsch
+                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `ortTraegt` im Ort-Faden) und rückt das Dorf vom Wunsch
                 // am Ufer Ring um Ring landein (am Seerand 1807,8/−6152 vier Ringe, 64 m) — das Haus am Wunsch fand R nie mehr
                 // (R LEER: 19 Häuser, keins am Seerand). Das Rand-Haus ist das Haus des Dorfs, das dem Ufer am nächsten steht;
                 // R prüft, was den Automaten weckt: den Erdbau des Dorfs, und der muss an Wasser reichen — je Zelle seiner
@@ -1696,7 +1665,7 @@ async function probe(A) {
             } catch (e) {
                 out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
-        // ── K: DER KONSUM AM RUF (D3c — vorher Präsenz-Proben am Stamm-Text): am Ort des Spielers ruft jeder Leser sein
+        // ── K: DER KONSUM AM RUF (D3c): am Ort des Spielers ruft jeder Leser sein
         //    Gesetz WIRKLICH (der Spion zählt und reicht durch); der Zensus endet vorher, die gesetzten Werke fallen wieder ──
         if (!A.nur)
             try {
@@ -1794,12 +1763,7 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl0
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     if (!r) return { fehler: "die Welt bootete nicht" };
     const st = r.state;
@@ -1824,18 +1788,15 @@ async function dammProbe(A) {
         }
     };
     const stroemen = async (X, Z) => {
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Strom", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             frame();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         await takte(120);
@@ -2139,8 +2100,8 @@ function selbsttest() {
         ],
         [
             "L Zwilling",
-            (b) => b.leser.push("die Zwillings-Probe des Lands `_isAboveWaterAt` lebt"),
-            /L: die Zwillings-Probe/,
+            (b) => b.leser.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis"),
+            /L: das alte Protokoll/,
         ],
         ["F ohne Widerstand", (b) => (b.wagen.v1 = 11.9), /F: Wagen im Wasser ohne Widerstand — 39\.60 km\/h/],
         [
@@ -2173,8 +2134,8 @@ function selbsttest() {
         ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
         [
             "A der geparkte Wagen ist ein Damm (der Kopf c5e8fa44)",
-            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14 }),
-            /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach/,
+            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }),
+            /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach, Rufer AnazhRealm\._stamp/,
         ],
         ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
@@ -2277,27 +2238,9 @@ function selbsttest() {
     const echt = leserUrteil();
     const gifte = [
         [
-            "Zwilling zurück",
-            (s) =>
-                s.replace(
-                    /\n {4}_nassAt\(/,
-                    "\n    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt("
-                ),
-            /Zwillings-Probe/,
-        ],
-        [
             "Bezug als Probe",
             (s) => s.replace("this._waterLevelAt(x, z, uf);", "this._waterLevelAt(x, z);"),
             /liest den Bezug/,
-        ],
-        [
-            "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
-            (s) =>
-                s.replace(
-                    /\n {4}_stempelSpanne\(/,
-                    "\n    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne("
-                ),
-            /zweite Wasser-Wahrheit/,
         ],
         [
             "Stempel läuft den Bestand",
@@ -2408,12 +2351,7 @@ function selbsttest() {
 // Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
 // Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
 async function weltOrte(A) {
-    const dl = performance.now() + 120000;
-    while (
-        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
-        performance.now() < dl
-    )
-        await new Promise((res) => setTimeout(res, 200));
+    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const r = window.anazhRealm;
     const G = window.__gelaendeCore;
     const [MX, MZ] = A.mess;
@@ -2434,7 +2372,7 @@ async function weltOrte(A) {
     out.uferKandidaten = [];
     let R1 = null;
     for (let R = 0; R <= A.R && out.uferKandidaten.length < 4 && !(R1 !== null && R > R1 + 480); R += 6) {
-        if (R % 192 === 0) r._ensureHydroTilesAround(MX, MZ, R);
+        if (R % 192 === 0) await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, R));
         const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
         for (let k = 0; k < n && out.uferKandidaten.length < 4; k++) {
             const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
@@ -2477,7 +2415,7 @@ async function weltOrte(A) {
         .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
         .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
     for (const k of kand) {
-        r._ensureHydroTilesAround(k.x, k.z, 0);
+        await window.__weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
         const h = r._hydroFor(k.x, k.z);
         const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
         if (!lake) continue;
@@ -2560,7 +2498,7 @@ async function lauf() {
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const seitenFehler = [];
     let exit = 2;
     try {
@@ -2594,14 +2532,13 @@ async function lauf() {
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
-            huelleMs: 60000,
             wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,
             satzNah: [ORTE.ufer, [ORTE.fluss.x, ORTE.fluss.z]],
             satzFern: [ORTE.seeUfer],
             dorfMs: 30000, // E: so lange darf das Dorf im See brauchen, bis es sich meldet
-            // R: das Dorf des Nexus am Seerand (Gegenprüfung Runde 3) — Same, Ort, das Haus am Rand, Fenster, Takte
+            // R: das Dorf des Nexus am Seerand — Same, Ort, das Haus am Rand, Fenster, Takte
             rand: {
                 seed: 1500797043,
                 ufer: ORTE.seeUfer,
@@ -2635,14 +2572,7 @@ async function lauf() {
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
-                    const t0 = performance.now();
-                    while (
-                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
-                        performance.now() - t0 < 120000
-                    )
-                        await new Promise((res) => setTimeout(res, 200));
-                    const r = window.anazhRealm;
-                    if (!r || !r.importWorldBeside) return null;
+                    const r = await window.__weltDa();
                     const res = r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);

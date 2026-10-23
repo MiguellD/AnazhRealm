@@ -5,8 +5,8 @@
 //   node scripts/diag-albedo-tafel.cjs                 (npm run gate:albedo-tafel, GPU-frei) die Tafel trägt Schema und
 //        Messung: jede der acht Klassen eine Zeile, jede Zeile Labor-Y, Welt-Y, Verhältnis und Ratsche, jedes Studio
 //        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie der Code, den es trägt (K63-n4, K63-n8:
-//        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft bricht, veraltet ist ROT
-//        „veraltet seit <Commit>" ohne Merge-Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
+//        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft bricht, veraltet
+//        steht benannt ohne Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
 //        Soll-Stand (n von N im Rand) steht in der Ausgabe
 //   node scripts/diag-albedo-tafel.cjs --neu           die veralteten Zeilen auf dem Adapter der Weiche neu messen (lokal die
 //        Karte, unter dem GPU-Schloss): EINE Welt (ALBEDO_WERKBANK_PORT, Standard 4589) + das Labor, Urteil der frischen
@@ -113,8 +113,7 @@ async function messeLabor({ echt, nur, tafel }) {
                 if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
                 return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
             };
-            for (const t0 = Date.now(); !(await page.evaluate(bereit, S)); await new Promise((r) => setTimeout(r, 300)))
-                if (Date.now() - t0 > 180000) throw new Error(`${sid}: die Seite steht nach 180 s nicht bereit`);
+            while (!(await page.evaluate(bereit, S))) await new Promise((r) => setTimeout(r, 300));
             if (!out.geraet)
                 out.geraet = await page.evaluate((S) => {
                     const R = new Function(`return ${S.renderer};`)();
@@ -159,7 +158,7 @@ async function messeLabor({ echt, nur, tafel }) {
     return out;
 }
 
-// ── Die Labor-Seite der Laub-Licht-Linse (K19) ──────────────────────────────────────────────────────────────────────────
+// ── Die Labor-Seite der Laub-Licht-Linse ──────────────────────────────────────────────────────────────────────────
 // `--laub [eiche,birke] [--welt w.json] [--echt]`: je Art die Vorlage im Phytogenesis-Labor, der Key allein hinter bzw. vor
 // der Krone (`__laborLaub`); mit `--welt` (die Ausgabe von `werkbank licht --laub --datei`) das Urteil der EINEN Linse
 // (`laubLichtUrteil`: Welt ≥ 1,3, Labor = Welt nur unter der Sonne ± 10 %).
@@ -243,7 +242,7 @@ async function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
-    // S0 — DER STAND (K63-n4; Prüfer K63 R3: die Wand las das Ist vom 07.10. und stand still grün): beide Seiten am Code-
+    // S0 — DER STAND (K63-n4): beide Seiten am Code-
     // Abdruck von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet seit <Commit>` beim Namen; eine Messung
     // ohne Abdrücke → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
     {
@@ -255,13 +254,14 @@ async function selbsttest() {
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
-        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in einer Stamm-Datei machte jede Zeile veraltet und
-        // sperrte jeden folgenden Merge): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
+        // DER CODE-ABDRUCK (K63-n8): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
         const kommentar = AT.tafelStand(S0, mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n"));
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
+        const dk = "stamm/dirigent-kern.js";
+        const stufe = AU.codeAbdruck(fs.readFileSync(path.join(__dirname, "..", dk), "utf8").replace(/VERSION = "/, "$&0."), dk);
         const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
         const altForm = AT.tafelStand(S0, pruefsumme);
@@ -270,22 +270,30 @@ async function selbsttest() {
         const s0q = JSON.parse(JSON.stringify(T0));
         delete s0q.zeilen[0].quellen;
         t(
-            "Stand: heute gemessen → kein Befund; eine Kommentarzeile → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
+            "Stand: heute gemessen → kein Befund; eine Kommentarzeile oder Versions-Stufe → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
             frisch.length === 0 &&
                 kommentar.length === 0 &&
+                stufe === pruefsumme(dk) &&
                 code.length === 2 * mitD0 &&
                 code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
                 altForm.some((r) => r.zeile === S0.zeilen[0].id && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
                 ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
                 AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
         );
-        // S0w — DIE WAND DES STANDS (K63-n8): ungeprüft bricht (Exit 1), veraltet ist ROT beim Namen und bricht keinen Merge —
-        // jede veraltete Zeile steht in der Liste der Neumessung, keine frische
+        // S0w — DIE WAND DES STANDS: ungeprüft bricht, veraltet nicht; zwei gefälschte Abdrücke stehen beide beim Namen
         const wv = AT.standWand(code);
         const wu = AT.standWand(ohne);
+        const zf = S0.zeilen[S0.zeilen.length - 1];
+        const [fa, fb] = zf.quellen.slice(-2);
+        Object.assign(S0.gemessen.labor, seite());
+        Object.assign(S0.gemessen.welt.quellen, heute, { [fa]: "c:feedfacecafebeef", [fb]: "c:0badc0de0badc0de" });
+        const gef = AT.standWand(AT.tafelStand(S0, pruefsumme)).veraltet[zf.id] || [];
         t(
-            "Wand: veraltet → kein Bruch, jede betroffene Zeile ROT in der Neumessung; ungeprüft → Bruch",
-            wv.brueche.length === 0 &&
+            `Wand: ungeprüft → Bruch, veraltet benannt ohne Bruch; gefälscht ${fa} und ${fb} → beide genannt`,
+            gef.length === 1 &&
+                gef[0].includes(`${fa} geändert (c:feedfacecafebeef → ${pruefsumme(fa)})`) &&
+                gef[0].includes(`${fb} (c:0badc0de0badc0de → ${pruefsumme(fb)})`) &&
+                wv.brueche.length === 0 &&
                 wv.neu.length === mitD0 &&
                 wv.neu.every((id) => S0.zeilen.find((z) => z.id === id).quellen.includes(d0)) &&
                 wu.brueche.length > 0
@@ -317,6 +325,11 @@ async function selbsttest() {
     const m5 = messungZumTest(T0);
     m5.karten.garage.kL = 0.62;
     t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
+    // S5p — die Pflicht-Zeile (material.K1): unter ihrer Ratsche, außerhalb des Solls ROT
+    const P = tafelZumTest();
+    P.zeilen.find((z) => z.id === "haut").ratsche = 0.2;
+    const uP = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
+    t("Pflicht-Zeile 0,86 → nur ROT `soll`", uP.rot.length === 1 && hatRot(uP, "soll"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -331,8 +344,8 @@ async function selbsttest() {
             AT.tafelPruefen(s6c).some((f) => /nicht Labor\/Welt/.test(f)) &&
             !AT.tafelPruefen(AT.ladeTafel()).length
     );
-    // S6s — DIE STUFE (K63-n7; der Lack am 15.10.: der Wagen in der Blende L0/L1, die Stufe 1 faltet Chrom und Glas in den Lack,
-    // Welt 0,0175 gegen 0,0066): die Zeile erklärt L0, die Welt zeichnet L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
+    // S6s — DIE STUFE (K63-n7; die Stufe 1 faltet Chrom und Glas in den Lack): die Zeile erklärt L0, die Welt zeichnet
+    // L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
     // Befund; eine Messung ohne Stufen → ROT; eine Foundry-Klasse ohne erklärte Stufen → Schema rot.
     {
         const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen) && z.welt.stufen.length === 1);
@@ -351,6 +364,10 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
+    // S6t — DER TON DER STUFE: Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
+    const m6t = messungZumTest(T0);
+    m6t.welt["haus-l2"].Y = 0.1892;
+    t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
@@ -454,7 +471,7 @@ window.__bereit = true;
         server.close();
     }
     // S10 — DIE KRONE VON OBEN (K68-N4, `werkbank licht --laub --oben`): das Zwei-Strom-Band über der gemessenen Blatt-Albedo,
-    // der Täter beim Namen (Radeon 15.10.: Tanne R 0,0739 über [0,0381, 0,0521] — die Krone als EINE besonnte Schale).
+    // der Täter beim Namen (0739 über [0, 0381, 0, 0521] — die Krone als EINE besonnte Schale).
     {
         const LL = require("./lib/licht-linsen.cjs");
         const o = (R, A) => ({ oben: { R, A, tau: [0.5, 1], pixel: 1 }, stoffe: "atlas" });
@@ -517,12 +534,11 @@ async function neuMessen(t, ids) {
     const wlog = path.join(ordner, "werkbank.log");
     const fd = fs.openSync(wlog, "w");
     const w = spawn(process.execPath, [WB, "start", "--port", WP], { stdio: ["ignore", fd, fd] });
-    const t0 = Date.now();
     const wd = path.join(ordner, "welt.json");
     console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
     try {
         while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
-            if (w.exitCode != null || Date.now() - t0 > 1200000) throw new Error(`die Werkbank startet nicht (${wlog})`);
+            if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
             await new Promise((r) => setTimeout(r, 2000));
         }
         const gw = t.gemessen.welt || {};
@@ -621,7 +637,7 @@ async function main() {
             process.exit(1);
         }
         // DER SCHREIBER PRÜFT DEN STAND (K63-n8): in die Tafel fällt nur eine Messung am Code von heute — eine ältere schriebe eine
-        // veraltete Zeile, und die Wand bricht nur über ungeprüft, nie über veraltet
+        // veraltete Zeile
         const sn = AT.standWand(AT.tafelStand(r.tafel, pruefsumme));
         if (sn.brueche.length || sn.neu.length) {
             console.log("\nTafel NICHT nachgezogen — die Messung trägt nicht den Code von heute:");
@@ -640,9 +656,8 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
-    // DER STAND (K63-n4, K63-n8): ein Ist, älter als der Code, den es trägt, ist kein Beweis — ungeprüft ist ein Bruch der
-    // Tafel; veraltet ist ROT „veraltet seit <Commit>" beim Namen der Zeile, nie GRÜN, und bricht keinen Merge: die Karte misst
-    // neu (der Job `echt` auf dem Messplatz, K65; lokal `--neu`), swiftshader nicht (K63-n8 gemessen: rinde ×9,9, fell +15 %)
+    for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
+    // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);
     if (errs.length) {
@@ -650,20 +665,9 @@ async function main() {
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
-    if (sw.neu.length) {
-        console.log(`DIE ALBEDO-TAFEL: ${sw.neu.length} von ${t.zeilen.length} Zeilen ROT (veraltet, nie GRÜN):`);
-        for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log("   ROT " + x);
-        const karte = argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware");
-        if (!karte) {
-            console.log(
-                "   → die Neumessung fährt die Karte: der Job `echt` auf dem Messplatz (K65) bzw. lokal " +
-                    "`node scripts/diag-albedo-tafel.cjs --neu` unter dem GPU-Schloss; danach `--nachziehen <welt> <labor>`. " +
-                    "Auf swiftshader misst die Welt-Seite rinde ×9,9 und fell +15 % falsch (K63-n8) — hier kein Urteil."
-            );
-            process.exit(0);
-        }
+    for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log(`⚠ ${x} (benannt, sperrt nicht)`);
+    if (sw.neu.length && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
         return neuMessen(t, sw.neu);
-    }
     const weit = u.zeilen
         .filter((z) => !z.imSoll)
         .sort((a, b) => b.abweichung - a.abweichung)

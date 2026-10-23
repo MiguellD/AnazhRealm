@@ -298,6 +298,11 @@ class AnazhRealm_koerper_seele {
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
+        // die Wunde als Stoß des Leibs: das Rumble (`_rumbleTakt`) ∝ Schaden je Lebenskraft × die Wunden-Verstärkung des Pads
+        this.state.player._stoss = Math.max(
+            this.state.player._stoss || 0,
+            Math.min(1, (scaled / Math.max(1, stats.hpMax || 0)) * AnazhRealm.PAD_GESETZ.rumble.wunde)
+        );
         // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
         // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
         this._feelAction("damage");
@@ -1219,14 +1224,20 @@ class AnazhRealm_koerper_seele {
         // Werkstatt-FERTIGEN und Rezeptbuch („Bauen") rufen ihn (Welle L Folge: das Rezeptbuch zahlte beim Fertigen UND
         // beim Setzen und legte das Werk ins Inventar). Kann das Setzen nicht tragen (`_bauVorabTor` in der Engstelle
         // `_bauModusFuer`: das Gesetz des Modus), sagt FERTIGEN es, statt in einen Bau-Modus zu führen, der nur abgelehnt
-        // werden kann.
+        // werden kann. DIE WAHL IST DER WILLE (bauen.K1): das Werk steht, wohin der Spieler vor dem Öffnen blickte — das
+        // Setzen (`confirmBuild`, das EINE Mach-Tor) folgt im selben Akt; lehnt der Ort ab, spricht es und das Phantom bleibt
+        // zum Zielen (F/Rechtsklick), sonst endet der Bau-Modus (das nächste Werk derselben Art liegt in der Hotbar).
+        // Befund 22.10. (diag-werkstatt-weg, echte Eingaben): Werkstatt und Rezeptbuch verlangten nach der Wahl eine zweite
+        // Bestätigung im Bau-Modus.
         if (bp && this._isPlaceableBlueprint(bp)) {
             const res = this._bauModusFuer(name);
-            if (res.ok) {
-                this.closeAllDrawers();
-                if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
-            }
-            return res.ok ? { ok: true, bauModus: true, slot: res.slot, free: !!res.free } : res;
+            if (!res.ok) return res;
+            this.closeAllDrawers();
+            if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
+            this.tickBuildMode();
+            const steht = this.confirmBuild();
+            if (steht) this._clearBuildMode();
+            return { ok: true, bauModus: !steht, steht, slot: res.slot, free: !!res.free };
         }
         return this.forgeBlueprint(name);
     }
@@ -1562,7 +1573,19 @@ class AnazhRealm_koerper_seele {
     animatePlayerSoul(currentTime) {
         const mesh = this.state.playerMesh;
         if (!mesh || !mesh.userData) return;
-        const soulName = this.state.player.soul || "human";
+        const p = this.state.player;
+        // DER HIT-STOP HÄLT DEN GANZEN LEIB (halten.K2): die Pose ist eine Funktion der Anzeige-Uhr — der Takt des Treffers
+        // legt sie (die Klinge am Ziel, die Phase steht: dt × Faktor 0), danach schreibt bis zum Ende dieses Halts kein Glied:
+        // Gang, Atem, Sitz, der Schwung und seine Achse zum Ziel (das gestoßene Tier gleitet im festen Schritt weiter). Vorher
+        // fror nur die Phase, die Achse folgte dem Ziel je Bild: die Hand glitt im Halt bis 55,8 mm je Takt (Radeon, Hit-Stop
+        // 1 Bild Third/Ego). Die fixe Sim (_loopFixedStep/_stepFixedSim) liest den Faktor NIE (gate:kampf-gefuehl).
+        const uhr = this._hitStopFactor(currentTime);
+        if (uhr === 0 && mesh.userData._haltPose === p._hitStopUntil) {
+            p.animationLastTick = currentTime;
+            return;
+        }
+        mesh.userData._haltPose = uhr === 0 ? p._hitStopUntil : null;
+        const soulName = p.soul || "human";
         const def = this.playerSoulDefs[soulName];
         const hasSkeleton = !!(def && typeof def.animate === "function" && mesh.userData.parts);
         // Custom-Seelen erben die emergente Bewegung: Rollen aus ihren bodyParts (einmal je Seele am Mesh
@@ -1582,7 +1605,6 @@ class AnazhRealm_koerper_seele {
             customRoles = mesh.userData._motionRoles;
             if (!customRoles) return;
         }
-        const p = this.state.player;
         // Im Sattel pausiert der Schritt (Phase eingefroren); der Mensch-Avatar SITZT (_applySeatPose),
         // andere Seelen ruhen in der Idle-Pose.
         const mounted = p.mountedArch !== null && p.mountedArch !== undefined;
@@ -1609,11 +1631,10 @@ class AnazhRealm_koerper_seele {
         const isMoving = speedNow > 0.4;
         // V8.33 — unter Wasser schwimmt der Avatar statt zu laufen.
         const underwater = !!this.state.playerUnderwater;
-        // Frame-Delta aus animationLastTick. Hit-Stop pausiert NUR diese Anzeige-Uhr (Gang-/Schwung-Phase
-        // frieren 60–100 ms, _hitStopFactor 0); die fixe Sim (_loopFixedStep/_stepFixedSim) liest den Faktor
-        // NIE (gate:kampf-gefuehl).
+        // Frame-Delta aus animationLastTick auf der Anzeige-Uhr (im Takt des Treffers 0; der gehaltene Leib oben rückt die Marke
+        // mit — nach dem Halt läuft der Gang ohne Sprung weiter).
         const last = p.animationLastTick;
-        const dt = (last > -Infinity ? Math.max(0, currentTime - last) : 0) * this._hitStopFactor(currentTime);
+        const dt = (last > -Infinity ? Math.max(0, currentTime - last) : 0) * uhr;
         p.animationLastTick = currentTime;
         let gait = null;
         if (underwater) {

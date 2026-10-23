@@ -82,6 +82,7 @@ const server = statikServer();
                     playerVel: mkVel(),
                     player: { mountedArch: null },
                     keys: {},
+                    verbTafel: { gehalten: {} }, // die Verb-Tafel, gefüllt vom echten Sammler (`_verbTafelSammeln`)
                     yaw: 0,
                     speed: 6,
                     sprintSpeed: 12,
@@ -89,9 +90,8 @@ const server = statikServer();
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
-                    // ZWILLINGS-ABSCHIED 19.07.: der Begehbarkeits-Winkel ist kein
-                    // State-Feld mehr — _stepCharacter liest das Steilhang-Gesetz
-                    // (hang.maxSlopeY) direkt aus dem Kern (fail-closed Memo-Leser).
+                    // der Begehbarkeits-Winkel ist kein State-Feld: _stepCharacter liest das Steilhang-Gesetz
+                    // (hang.maxSlopeY) aus dem Kern.
                     worldMeta: { voxelTerrain: true },
                     forward: new THREE.Vector3(),
                     right: new THREE.Vector3(),
@@ -112,8 +112,9 @@ const server = statikServer();
                 shim.state.yaw = yaw || 0;
                 let t = 0;
                 for (let i = 0; i < n; i++) {
-                    shim._stepCharacter(DT, t);
+                    shim._verbTafelSammeln();
                     shim._loopPlayerMovement(t, DT);
+                    shim._stepCharacter(DT, t);
                     t += DT;
                 }
             };
@@ -232,7 +233,7 @@ const server = statikServer();
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
                 // Selbst-Test F2a: das Gesetz der Klip-Schleife auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten` liest es
                 // je Ruf) → fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
-                // Kontakt-Lösers (Welle L: Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
+                // Kontakt-Lösers (Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
                 const k0 = AR.SLIDE_CLIP_PLANES;
                 AR.SLIDE_CLIP_PLANES = 0;
                 let stopped;

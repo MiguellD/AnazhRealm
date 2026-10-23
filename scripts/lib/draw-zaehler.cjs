@@ -1,9 +1,7 @@
-// draw-zaehler.cjs — DER DRAW-ZÄHLER (V18.510): GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
-// Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Befund 02.10.: das HUD (renderer.info) sah die
-// Region-Bundles im Replay nicht (148 dc), die GPU führte 29 943 Befehle aus — 97,5 % davon aus
-// BatchedMeshes, die unter WebGPU je INSTANZ einen drawIndexed ausgeben. Die Zahl hier kommt vom
-// Renderer-Draw selbst (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu
-// aufgenommen (sonst zöge der Replay sie ungesehen).
+// draw-zaehler.cjs — DER DRAW-ZÄHLER: GPU-Draw-Befehle und Dreiecke je PASS (Hauptbild · jede
+// Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Die Zahl hier kommt vom Renderer-Draw selbst
+// (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu aufgenommen (sonst zöge der Replay sie
+// ungesehen).
 //
 // DIE TÄTER-KLASSE (W0, Band-Linse): jeder Befehl trägt einen Namen, der den Täter nennt — die Klasse ist die des
 // Stamms (`AnazhRealm#_taeterKlasse`, `AnazhRealm._instanzKlasse`): Instanz-Gruppen als `<familie>:<preset>:L<stufe>`
@@ -326,7 +324,7 @@ function drawZensus(opts) {
 // `ruhend` im Urteil. Was danach ohne Bild bleibt, kann der Kehraus nicht nehmen: ein Leck.
 function kehrausJetzt() {
     const r = window.anazhRealm;
-    if (!r || typeof r._gpuKehraus !== "function" || !Number.isFinite(window.__zensusCalls)) return 0;
+    if (!r || !Number.isFinite(window.__zensusCalls)) return 0;
     r.state._gpuKehrausT = 0;
     return r._gpuKehraus(window.__zensusCalls, performance.now());
 }
@@ -515,7 +513,243 @@ function texturZensus() {
     };
 }
 
+// DER HALTER DES HEAPS (profiband K5, `werkbank puffer --gang`): jedes ArrayBuffer-Byte, das die Welt hält, am Pfad seines
+// ersten Halters ab der Welt (Breitensuche = der kürzeste Weg; Map/Set/Array als `[]`, Map-Schlüssel als `[k]`) — die
+// Typed-Arrays sind der Heap der Welt (CDP `Runtime.getHeapUsage` backingStorageSize), der Pfad ist der Täter beim Namen.
+function heapHalter(r, tiefe) {
+    const gesehen = new WeakSet(),
+        je = new Map(),
+        q = [[r, "r"]];
+    for (let i = 0; i < q.length; i++) {
+        const [o, p] = q[i];
+        q[i] = null;
+        const kinder = [];
+        if (o instanceof Map) for (const [k, v] of o) kinder.push([v, p + "[]"], [k, p + "[k]"]);
+        else if (o instanceof Set || Array.isArray(o)) for (const v of o) kinder.push([v, p + "[]"]);
+        for (const k of Object.keys(o))
+            if (!Array.isArray(o) || !/^\d+$/.test(k))
+                try {
+                    kinder.push([o[k], p + "." + k]);
+                } catch (_e) {}
+        for (const [v, pp] of kinder) {
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            const buf = ArrayBuffer.isView(v) ? v.buffer : v instanceof ArrayBuffer ? v : null;
+            if (buf) {
+                if (buf !== v && gesehen.has(buf)) continue;
+                gesehen.add(buf);
+                const k = pp
+                    .split(/(?=[.[])/)
+                    .slice(0, tiefe)
+                    .join("");
+                je.set(k, (je.get(k) || 0) + buf.byteLength);
+            } else if (v !== globalThis && !(typeof Node !== "undefined" && v instanceof Node)) q.push([v, pp]);
+        }
+    }
+    return [...je];
+}
+// DAS GANG-URTEIL (`werkbank puffer --gang`): Heap (JS + Typed-Arrays nach GC) und VRAM am Start vor und nach dem Gang; was
+// wuchs, nennt der Diff der Halter-Pfade (`heapHalter`) und der VRAM-Erzeuger (`__vramBericht`).
+const GANG = { heapMBjeMin: 5, vramMB: 2 };
+function gangUrteil({ vor, nach }) {
+    const wuchs = (a, b) => {
+        const m = new Map(a);
+        const d = b.map(([k, x]) => [k, x - (m.get(k) || 0)]).filter(([, x]) => x >= 1);
+        return (
+            d
+                .sort((p, q) => q[1] - p[1])
+                .slice(0, 3)
+                .map(([k, x]) => k + " +" + x.toFixed(1) + " MB")
+                .join(" · ") || "—"
+        );
+    };
+    const mb = (h) => h.map(([k, x]) => [k, x / 1048576]);
+    const vg = (g) => g.vram.liste.map((x) => [x.k, x.mb]);
+    const rate = (nach.heapMB - vor.heapMB) / nach.min;
+    const f = nach.min >= 1 ? [] : ["gang: " + nach.min + " min — zu kurz"];
+    if (rate > GANG.heapMBjeMin)
+        f.push(
+            "heap: +" +
+                rate.toFixed(1) +
+                " MB/min > " +
+                GANG.heapMBjeMin +
+                " — Halter: " +
+                wuchs(mb(vor.halter), mb(nach.halter))
+        );
+    // DIE TIERE ZIEHEN FREI: ein Tier mehr oder weniger am Start ist Bestand, nie Drift — je Art erklärt der Unterschied der
+    // Zahl den Leib je Tier vom Start (eine neue Art den vom Ende); was der Leib je Tier zulegt, bleibt Drift
+    const [vm, nm] = [new Map(vg(vor)), new Map(vg(nach))];
+    const bestand = (k) => {
+        const [a, b] = [(vor.tiere || {})[k] | 0, (nach.tiere || {})[k] | 0];
+        return a ? ((vm.get(k) || 0) / a) * (b - a) : b ? nm.get(k) || 0 : 0;
+    };
+    const drift = nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
+    if (drift > GANG.vramMB)
+        f.push(
+            "vram: +" +
+                drift.toFixed(1) +
+                " MB zurück am Start — " +
+                wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
+        );
+    for (const [k, x] of Object.entries((nach.puffer && nach.puffer.halter) || {}))
+        if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
+    return f;
+}
+// Selbsttest: ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter (LRU 2) nicht, VRAM-Drift beim Erzeuger; ein Wolf
+// mehr ist Bestand, ein Wolf-Leib, der je Tier zulegt, Drift.
+function gangSelbsttest() {
+    const r = { state: { lru: new Map(), offen: [] } };
+    const lauf = (offen) => {
+        const stand = (v) => {
+            const halter = heapHalter(r, 3);
+            const [a, w] = [50 + v * (offen ? 3 : 1), v ? (offen ? 6.4 : 5.2) : 2.6];
+            return {
+                min: v,
+                heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
+                halter,
+                vram: { mb: a + w, liste: [{ k: "buf:a", mb: a }, { k: "buf:szene:tier:wolf", mb: w }] },
+                tiere: { "buf:szene:tier:wolf": v ? 2 : 1 },
+            };
+        };
+        const vor = stand(0);
+        for (let i = 0; i < 8; i++) {
+            if (offen) r.state.offen.push(new Float32Array(262144));
+            r.state.lru.set(Math.random(), new Float32Array(262144));
+            if (r.state.lru.size > 2) r.state.lru.delete(r.state.lru.keys().next().value);
+        }
+        return gangUrteil({ vor, nach: stand(1) }).join(" | ");
+    };
+    const soll =
+        "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +4.2 MB zurück am Start — buf:a +3.0 MB · buf:szene:tier:wolf +1.2 MB";
+    return [lauf(false), lauf(true)].join(" / ") === " / " + soll ? [] : ["der Gang urteilt falsch: " + lauf(true)];
+}
+
+// DER GANG (profiband K5, `werkbank puffer --gang`): am Start eingeschwungen messen (`stand`, die Puffer-Linse der Werkbank),
+// je ein Drittel gehen · fahren (GT, Taste E) · Nacht (Spieler-Wort) über die echten Tasten und den Spiel-Loop, zurück am Start.
+async function gangLauf(page, pufferStand, b) {
+    const cdp = await page.target().createCDPSession();
+    const T = { w: ["KeyW", "w", 87], e: ["KeyE", "e", 69], enter: ["Enter", "", 13] };
+    const taste = (n, type) =>
+        cdp.send("Input.dispatchKeyEvent", {
+            type,
+            code: T[n][0],
+            key: T[n][1] || "Enter",
+            windowsVirtualKeyCode: T[n][2],
+            text: type === "keyDown" && T[n][1] ? T[n][1] : undefined,
+        });
+    const tippe = async (n) => (await taste(n, "keyDown"), await taste(n, "keyUp"));
+    // die Fristen zählen präsentierte Bilder (je 300 dreht ein Steckender ab), nie die Wanduhr; ein Tor, in das der Gang
+    // lief, verlässt er wieder und kehrt um (die Heimkehr verwirft die Tasten: der Rest der Frist geht mit neuem W)
+    const bilder = (n, dreh) =>
+        page.evaluate(
+            async (n, dreh) => {
+                const r = window.anazhRealm,
+                    st = r.state;
+                for (let i = 0, vor = null; i < n; i++) {
+                    await new Promise((f) => requestAnimationFrame(f));
+                    if (r._portalOverlay) return (r.exitPortal(), (st.yaw += Math.PI), n - i);
+                    if (!dreh || i % 300 < 299) continue;
+                    const p = st.playerMesh.position;
+                    if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
+                    vor = [p.x, p.z];
+                }
+                return 0;
+            },
+            n,
+            dreh
+        );
+    const ruhig = () =>
+        page.evaluate(async () => {
+            const raf = () => new Promise((f) => requestAnimationFrame(f));
+            // eingeschwungen: 120 Bilder in Folge, in denen die Welt nichts offen hat (`_weltOffen`; die Tiere regen sich weiter)
+            for (
+                let k = 0, weiter = window.__deckel("die Ruhe der Zählung", Infinity);
+                k < 120 && weiter();
+                k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1
+            )
+                await raf();
+        });
+    const gehe = async (n) => {
+        for (let rest = n; rest > 0; await taste("w", "keyUp"))
+            (await taste("w", "keyDown"), (rest = await bilder(rest, true)));
+    };
+    const drittel = Math.round((Number(b.min) || 6) * 1200);
+    await page.evaluate(() =>
+        window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
+    );
+    await ruhig();
+    await bilder(1200);
+    // EINE RUNDE ab dem Start: je ein Drittel gehen · fahren (GT, Taste E; der Gang räumt seinen GT) · das Uhr-Wort, dann
+    // zurück an den Start und eingeschwungen. Der EINLAUF (halbe Länge, Mittag, danach Mitternacht) füllt, was beim ersten
+    // Gebrauch gedeckelt wächst (die Werkbank der Satz-Blöcke, die Spiegel-Felder, die Leiber der Arten, die Ruhe des Foundry-
+    // Cache, die Render-Objekte und Werfer des Sonnen-Schattens); die gemessene Runde geht in die Gegenrichtung über unbereiste
+    // Welt und wechselt dieselbe Uhr — was mit der bereisten Welt oder je Wechsel wächst, wächst dort weiter.
+    const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
+    const sage = async (wort) => {
+        await tippe("enter");
+        await cdp.send("Input.insertText", { text: "setze uhrzeit " + wort });
+        await tippe("enter");
+        await bilder(30);
+        return page.evaluate(() => window.anazhRealm.state.timeOfDay);
+    };
+    const runde = async (n, wort) => {
+        const t0 = Date.now();
+        await gehe(n);
+        await page.evaluate(async () => {
+            const r = window.anazhRealm,
+                p = r.state.playerMesh.position;
+            const e = (window.__gangGT = r.spawnArchitecture(
+                "fahrzeug_gt",
+                { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
+                { silent: true, precise: true }
+            ));
+            await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
+        });
+        await tippe("e");
+        await bilder(60);
+        const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
+        await gehe(n);
+        if (fahrt) await tippe("e");
+        await page.evaluate(() => window.anazhRealm.removeArchitecture(window.__gangGT));
+        const uhr = await sage(wort);
+        await gehe(n);
+        const min = (Date.now() - t0) / 60000;
+        await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
+        await ruhig();
+        await bilder(1200);
+        return { fahrt, uhr, min };
+    };
+    const ein = await runde(drittel / 2, "mittag");
+    const nacht = await sage("mitternacht");
+    await bilder(1200);
+    await page.evaluate(() => (window.anazhRealm.state.yaw += Math.PI));
+    // die Tiere je Erzeuger (`_taeterKlasse`: `tier:<seele>`) neben dem Stand
+    const tiere = () =>
+        page.evaluate(() => {
+            const n = {};
+            for (const { userData: u } of window.anazhRealm.state.creatures)
+                if (u && u._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+            return n;
+        });
+    const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
+    const lauf = await runde(drittel, "mittag");
+    const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min, tiere: await tiere() });
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+    await cdp.detach();
+    const urteil = gangUrteil({ vor, nach });
+    if (!(ein.fahrt && lauf.fahrt)) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");
+    if (!(nacht < 0.05 || nacht > 0.95) || Math.abs(ein.uhr - 0.5) > 0.05 || Math.abs(lauf.uhr - 0.5) > 0.05)
+        urteil.push(
+            `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
+        );
+    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min, tiere: [vor.tiere, nach.tiere] };
+}
+
 module.exports = {
+    gangLauf,
+    heapHalter,
+    gangUrteil,
+    gangSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,
@@ -526,6 +760,7 @@ module.exports = {
         `window.__satzInhalt = ${satzInhalt.toString()};` +
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
+        `window.__heapHalter = ${heapHalter.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,

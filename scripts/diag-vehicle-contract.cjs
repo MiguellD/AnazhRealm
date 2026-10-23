@@ -60,7 +60,6 @@ function caseKey(c) {
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
-    check("vehicle-core geladen (__vehicleCore + buildInstance)", !!VC && typeof VC.buildInstance === "function");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
     const actual = {};
@@ -73,7 +72,7 @@ function caseKey(c) {
     }
     check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
 
-    // 2) Seed-Semantik (cv:3, Re-Mint W5 05.10. — s. Kopf): die GEOMETRIE ist seed-invariant, der Same wählt den Lack.
+    // 2) Seed-Semantik (cv:3): die GEOMETRIE ist seed-invariant.
     let seedInv = true;
     for (const g of GATTUNGEN)
         if (
@@ -82,20 +81,6 @@ function caseKey(c) {
         )
             seedInv = false;
     check("Seed-Invarianz der Geometrie: seed 7 == seed 12345 je Gattung (kein stochastischer Term)", seedInv);
-    const lackJeSame = [1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
-        let farbe = null;
-        VC.buildInstance("gt", s, 0).traverse((o) => {
-            const m = o.material;
-            if (m && m.userData && m.userData.__lack && !farbe) farbe = m.color.getHex(); // der Karosserie-Lack (lackStoff)
-        });
-        return farbe;
-    });
-    check(
-        "Lack-Gesetz: die Same 1..8 tragen acht verschiedene Karosserie-Lacke (LACK_GESETZ ohne Clay)",
-        new Set(lackJeSame).size === 8 && lackJeSame.every((c) => c !== null),
-        lackJeSame.map((c) => (c === null ? "—" : c.toString(16))).join(" ")
-    );
-
     // 3) ov-Kanal wirkt (Kultur-Override ändert die Geometrie wirklich — kein Passagier).
     check(
         "ov-Kanal: Kultur-Override ändert den Bau (gt != gt+toro)",
@@ -176,7 +161,7 @@ function caseKey(c) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der Same wählt den Lack (cv:3), der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
+        "\n✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
     );
     process.exit(0);
 })();

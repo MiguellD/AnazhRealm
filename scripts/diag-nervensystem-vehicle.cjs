@@ -80,7 +80,7 @@ function staticLaws(q) {
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     const pageErrors = [];
@@ -89,22 +89,12 @@ function staticLaws(q) {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {}, e: {}, f: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            const rc = A._studioRenderConfig;
-            if (f && f.ready && f.recipes && f.recipes.gt && rc && rc.lod && rc.lod.kindStages) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.gt && rc && rc.lod && rc.lod.kindStages; });
         const rc = A._studioRenderConfig;
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der Merge KOMMEN AN =====
@@ -204,10 +194,10 @@ function staticLaws(q) {
             res.e.err = (e && e.message) || String(e);
         }
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
-        // Geometrie (V18.477 FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
-        // vehicle impostor:true, gate:fahrzeug-fern haelt die Route]; ein Wirts-L1-
+        // Geometrie (FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
+        // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
         // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
-        // Die Probe wanderte mit dem Gesetz (16.07.): vorher klemmte [0] hart. =====
+        // Die Probe wanderte mit dem Gesetz: vorher klemmte [0] hart. =====
         try {
             if (!f.requested) f.requested = new Set();
             const before = new Set(f.requested);
@@ -239,7 +229,7 @@ function staticLaws(q) {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
@@ -308,7 +298,7 @@ function staticLaws(q) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
-        // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527); die Anfrage MUSS entstehen (sonst prüfte F nichts)
+        // Körper-Schlüssel preset|gestalt|stufe[|ov]; die Anfrage MUSS entstehen (sonst prüfte F nichts)
         !!out.f.gtKey && !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey),
         out.f.err || String(out.f.gtKey)
     );

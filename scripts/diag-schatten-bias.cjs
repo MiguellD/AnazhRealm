@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Befund (Studio-Welle S3, Familie kreatur): der
-// Schatten-Bias war EIN fester Meter-Wert für beide Kaskaden — `atmosphere.shadowBias` = 1,0 → `shadow.normalBias` 1,0 m
-// (r184 schiebt die Probe des Empfängers um `normalWorld × normalBias` in Welt-Metern, ShadowNode). Der Boden fragte die
-// Karte 1 m über sich selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des
-// Spielers warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0)
-// und 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel.
-// Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt
-// den Selbsttest):
+// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Der Boden fragte die Karte 1 m über sich
+// selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des Spielers
+// warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0) und
+// 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel. Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit
+// Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt den Selbsttest):
 //   (S) DER SCHATTEN: je Werfer (wolf, fuchs, busch, pfosten, spieler) auf der ebenen Bühne der Mess-Wiese, Sonne seitlich
 //       (~26°) und mittags — drei Schüsse LEER · MIT · LEER2; die ERWARTUNG sind die Schatten-Dreiecke des Werfers (was mit
 //       castShadow im Schatten-Pass zeichnet, gehäutet, je Instanz) entlang des Lichts auf den gezeichneten Boden projiziert,
@@ -58,21 +55,7 @@ const MASKE_MIN = 2000;
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f) => {
-        f(n);
-        for (const k of kinder(n)) lauf(k, f);
-    };
+    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const befunde = [];
     lauf(ast, (m) => {
         if (m.type !== "MethodDefinition" || !m.value || !m.value.body) return;
@@ -283,15 +266,12 @@ const server = statikServer();
 
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const dl = performance.now() + 300000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl)
-        await sleep(200);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     if (!st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
     const f = r._ensureAssetFoundry();
-    while (!(f && f.ready && f.recipeCount > 0) && performance.now() < dl) await sleep(200);
+    await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
     const bx = -893.8,
         bz = -844.9;
     st.playerMesh.position.set(bx - 3, r._voxelSurfaceY(bx - 3, bz) + 1.8, bz);
@@ -316,11 +296,10 @@ async function probe(cfg) {
     const W = cfg.W,
         H = cfg.H;
     const csm = st.csmNode;
-    const K = r.constructor.SCHATTEN_KASKADE;
     const aus = { werfer: [], fern: [], akne: [], echt: [], bilder: [], zaehne: null, bias: null, texel: null };
     rend.setAnimationLoop(null);
-    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor (gemessen 09.10.: zwischen dem LEER und dem LEER2 eines Werfers
-    // wanderte die Sonne von 27° auf 36°, 12 665 Pixel „strömten") — nach jedem Takt steht sie wieder auf der Zeit der Probe.
+    // DIE UHR STEHT: jeder Spiel-Takt rückt die Tageszeit vor — nach jedem Takt steht sie wieder auf der Zeit der
+    // Probe.
     let zeitFest = null;
     const uhrHalten = () => {
         if (zeitFest === null) return;
@@ -365,12 +344,7 @@ async function probe(cfg) {
         if (!lw || !f) return;
         const sh = lw.shadow;
         if (modus.art === "spiel") {
-            if (typeof r._schattenBias === "function") r._schattenBias(lw, texelVon(sh, f), f.zt - f.zb);
-            else {
-                const a = st.atmosphere && Number.isFinite(st.atmosphere.shadowBias) ? st.atmosphere.shadowBias : 1;
-                sh.normalBias = a;
-                if (K && K.biasM) sh.bias = K.biasM[Math.min(i, K.biasM.length - 1)] / (f.zt - f.zb);
-            }
+            r._schattenBias(lw, texelVon(sh, f), f.zt - f.zb);
             return;
         }
         const tex = texelVon(sh, f);
@@ -576,8 +550,12 @@ async function probe(cfg) {
         const e = r.spawnArchitecture(typ, { x, y: boden(x, z) + 0.5, z }, { silent: true, rotationY: rotY || 0 });
         if (!e) return null;
         // die nahe Stufe (die Stufen-Wahl der Bauten geht vom Spieler aus; ein Impostor-Slot trägt keinen Schatten-Leib)
-        for (let t = 0; t < 240 && !((e.instSlots || e.mesh) && (e._lodLevel == null || e._lodLevel === 0)); t++)
-            await halten(1);
+        await window.__gebautNach(e, {
+            fertig: () => !!((e.instSlots || e.mesh) && (e._lodLevel == null || e._lodLevel === 0)),
+            bau: () => {},
+            takt: () => halten(1),
+            max: 240,
+        });
         await halten(10);
         return e;
     };
@@ -659,19 +637,18 @@ async function probe(cfg) {
         st.playerMesh.visible = false;
         st.playerMesh.position.set(bx - 4, boden(bx - 4, bz + 4) + 0.9, bz + 4);
     };
-    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag sie ganz
-    // im Schatten der Bäume (vorher wie nachher 0 px: kein Bias-Urteil möglich). Während einer Messung sieht jede Kaskaden-
-    // Kamera nur die Ebene ISO, und auf ihr liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-
-    // Kamera; im Schatten-Pass ist ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der
-    // Kaskaden bleiben die des Spiels.
+    // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag
+    // sie ganz im Schatten der Bäume. Während einer Messung sieht jede Kaskaden-Kamera nur die Ebene ISO, und auf ihr
+    // liegt allein der gemessene Körper (r184 testet `object.layers` gegen die Schatten-Kamera; im Schatten-Pass ist
+    // ein Region-Bundle eine Gruppe, three projiziert seine Kinder frisch). Box, Bias und Takt der Kaskaden bleiben die
+    // des Spiels.
     const ISO = 30;
     const isoAlt = lichter.map((lw) => lw.shadow.camera.layers.mask);
     const isoAn = () => lichter.forEach((lw) => lw.shadow.camera.layers.set(ISO));
     const isoAus = () => lichter.forEach((lw, i) => (lw.shadow.camera.layers.mask = isoAlt[i]));
     // DIE SCHATTEN-PIPELINE VORWÄRMEN: unter der Isolation zeichnet ein frisch gesetzter Körper erst nach dem Aufschalten der
-    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin (Werkbank
-    // 09.10.: derselbe Fuchs warf 1 077 Pixel, wenn seine Pipeline schon stand — in der Sonde 12). Frames mit kurzen Pausen,
-    // bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
+    // Ebene zum ersten Mal in den Schatten-Pass; seine Pipeline entsteht asynchron, r184 überspringt den Zug bis dahin.
+    // Frames mit kurzen Pausen, bis die Erst-Zeichnung ruht (mindestens 6, höchstens 60).
     const schattenWarm = async (k) => {
         const E = r._erstZeichnung;
         for (let i = 0; i < 60; i++) {
@@ -1369,7 +1346,7 @@ async function probe(cfg) {
             const bild = await schuss(k);
             // die Grenze in Sicht-Metern, wie der Stamm sie schneidet (`_kaskadenSaum` über `csm.breaks`, der Saum der Blende)
             let k0bis = null;
-            if (csm && csm.breaks && typeof r._kaskadenSaum === "function") {
+            if (csm && csm.breaks) {
                 const cam = st.camera;
                 const far = Math.min(cam.far, csm.maxFar);
                 const sm = [0, 1];

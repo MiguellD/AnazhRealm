@@ -1395,7 +1395,8 @@ class AnazhRealm_netz_p2p {
             respond({ error: "not_sharing" });
             return;
         }
-        // Rate-Limit pro anfragendem Peer — ein fremder Prompt kostet meine Token. Sentinel "noch nie
+        // Rate-Limit pro anfragendem Peer — ein fremder Prompt kostet meine Token; an der Tür (`llmCall`) ist er ein Ruf im
+        // Hintergrund: die Ruhe-Lücke gilt, der eigene Spieler hat Vorrang. Sentinel "noch nie
         // bedient" = -Infinity, NICHT 0 — sonst wäre jede Anfrage in den ersten COOLDOWN-ms rate-limited.
         const now = typeof performance !== "undefined" ? performance.now() : Date.now();
         const last = p2p._voiceServedAt.has(peerId) ? p2p._voiceServedAt.get(peerId) : -Infinity;
@@ -1412,7 +1413,7 @@ class AnazhRealm_netz_p2p {
         this.log(`Geteilte Stimme: Anfrage von ${peerId.slice(0, 12)}… wird beantwortet`, "INFO");
         let reply;
         try {
-            reply = await this.llmCall(prompt);
+            reply = await this.llmCall(prompt, null, { hintergrund: true });
         } catch (err) {
             reply = { error: (err && err.message) || "LLM-Fehler" };
         }
@@ -1567,6 +1568,8 @@ class AnazhRealm_netz_p2p {
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
                 mesh.position.set(ex, ey, ez);
+                // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Gesetz KREATUR_NAH_MESH (`_tickTierSatz`)
+                mesh.userData._kopie = true;
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
@@ -1608,6 +1611,7 @@ class AnazhRealm_netz_p2p {
             const fern = this._leibSicht(m, ddx * ddx + ddz * ddz, this.isInFrustum(m));
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
+                if (m.userData._satz) this._tierSatzAus(m);
                 m.position.y += ((rc.ty || 0) - m.position.y) * k;
                 const q = this._p2pLageQ || (this._p2pLageQ = new THREE.Quaternion());
                 m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);
@@ -1625,7 +1629,9 @@ class AnazhRealm_netz_p2p {
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
             // Kosten am Schirm: jenseits der Stufen-Grenze (`ab` × Größe aus der Kern-Zeile, die Stufe aus _leibSicht oben)
             // trägt die Grobstufe das Bild und der Gang ruht.
-            if (!fern && m.userData && m.userData._tierBaum) {
+            // im Satz (`_tickTierSatz`, dieselbe Menge wie die eigenen Tiere) geht der Satz: sein Weg rückt die Phase
+            if (m.userData._satz) this._tierSatzGang(m, dt);
+            else if (!fern && m.userData && m.userData._tierBaum) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
                 this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
@@ -1956,12 +1962,13 @@ class AnazhRealm_netz_p2p {
             entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
             this._renderMeshWorldCatalog();
         }
-        // Avatar-Übergabe des Senders: durch DENSELBEN Validator (_studioUebergabeValidate), als PER-PEER-
-        // Wahrheit (entry.uebergabe, NICHT state.studioUebergabe — jeder Spieler trägt seinen Avatar).
+        // Die Avatar-Prägung des Senders: durch DENSELBEN Prüfer wie der Übergabe-Kanal (_studioWerkPruefen), als PER-PEER-
+        // Wahrheit (entry.uebergabe, NICHT der eigene Prägungs-Speicher — jeder Spieler trägt seinen Avatar).
         // Ändert sie sich, wird der Peer-Avatar neu gegossen (auch bei gleichem soulName).
         let uebergabeChanged = false;
         const uK = msg.uebergabe && msg.uebergabe.koerper;
-        const cleanU = uK ? this._studioUebergabeValidate("koerper", uK) : null;
+        const pU = uK ? this._studioWerkPruefen("koerper", AnazhRealm.KOERPER_HOST_RECIPE, uK) : null;
+        const cleanU = pU && Object.keys(pU).length ? pU : null;
         const prevU = entry.uebergabe ? JSON.stringify(entry.uebergabe) : "";
         const nextU = cleanU ? JSON.stringify(cleanU) : "";
         if (prevU !== nextU) {
@@ -2207,12 +2214,12 @@ class AnazhRealm_netz_p2p {
             bekannt ||
             (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0 ? { bodyParts: entry.bodyParts } : null);
         if (!def) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
-        // Der Peer-Guss FÜHRT die Übergabe des SENDERS (entry.uebergabe.koerper): transient gesetzt, damit der EINE Leser
+        // Der Peer-Guss FÜHRT die Prägung des SENDERS (entry.uebergabe): transient gesetzt, damit der EINE Leser
         // _koerperStudioDials sie wählt; try/finally räumt sie IMMER (kein Leck). Nie null übergeben: der Merge fiele sonst
-        // auf die EIGENE state.studioUebergabe des Betrachters — das leere Objekt ist der Sentinel "Peer ohne Wahl" →
+        // auf den EIGENEN Prägungs-Speicher des Betrachters — das leere Objekt ist der Sentinel "Peer ohne Wahl" →
         // Anker-Default, auf allen Clients gleich. Nur der human-Guss liest das Feld.
         const savedActive = this._activePeerUebergabe;
-        this._activePeerUebergabe = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : {};
+        this._activePeerUebergabe = entry.uebergabe && typeof entry.uebergabe === "object" ? entry.uebergabe : {};
         let group;
         try {
             group = this._leibDerSeele(entry.soulName, def, `peer:${entry.peerId}`);
@@ -2375,11 +2382,10 @@ class AnazhRealm_netz_p2p {
         if (entry.nameLabel) entry.nameLabel.visible = ortBekannt;
         if (!ortBekannt) return;
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
-        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
-        // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
-        // Meeresspiegel — in jedem See und Fluss ging er, W-kD3b).
+        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (das EINE
+        // Urteil `_nassAt`) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem Meeresspiegel).
         const fussP = entry.y - AnazhRealm.PLAYER_FOOT_OFFSET;
-        const underwater = this._koerperWasser(entry.x, entry.z, fussP) - fussP > AnazhRealm._schwimmBrustM() * 0.9;
+        const underwater = this._nassAt(entry.x, entry.z, -AnazhRealm._schwimmBrustM() * 0.9, fussP);
         // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
@@ -2542,11 +2548,11 @@ class AnazhRealm_netz_p2p {
         // öffentlich-harmlos (eine Welt-Bezeichnung, kein Pfad/Zustand).
         const dwell = this._loadPortalDwelling();
         if (dwell) msg.dwell = dwell.label;
-        // Die Avatar-Gestalt des Senders reist additiv im soul-Kanal: koerper.{s,gestalt}, nur wenn
-        // nicht-leer; alte Clients ignorieren das Feld (must-ignore). NUR koerper — die Kreatur-Gestalt
-        // gehört an den Kreatur-Sync-Pfad (ein soul-Feld ohne Konsument wäre ein toter Parallelpfad).
-        const su = this.state.studioUebergabe;
-        if (su && su.koerper && su.koerper.s) msg.uebergabe = { koerper: su.koerper };
+        // Die Avatar-Gestalt des Senders reist additiv im soul-Kanal: koerper = die Prägung des Mensch-Rezepts (Dials und
+        // Wahlen, ohne den Samen), nur wenn nicht-leer; alte Clients ignorieren das Feld (must-ignore). NUR koerper — die
+        // Kreatur-Gestalt gehört an den Kreatur-Sync-Pfad (ein soul-Feld ohne Konsument wäre ein toter Parallelpfad).
+        const su = this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
+        if (su) msg.uebergabe = { koerper: su };
         this.p2pSend(msg);
     }
 
@@ -2711,7 +2717,7 @@ class AnazhRealm_netz_p2p {
     }
 
     // ===== LOCKSTEP-MP: NUR INPUTS ÜBERS NETZ =====
-    // Statt Positions-Snaps reist der INPUT jedes Fixed-Steps (seq · yaw · 6-Tasten-Bitmask, gebatcht)
+    // Statt Positions-Snaps reist der INPUT jedes Fixed-Steps (seq · yaw · Sprint/Sprung-Bits · vor · quer der Verb-Tafel, analog, gebatcht)
     // über den reliable+ordered DataChannel; der Empfänger treibt den Fremd-Charakter durch DENSELBEN
     // Schritt-Pfad (`_stepCharacter` + `_loopPlayerMovement(FIXED_DT)`) — der GHOST-SWAP tauscht die
     // Charakter-Felder je Schritt und stellt sie exakt wieder her (keine zweite Sim). 1-Hz-ANKER
@@ -2739,7 +2745,17 @@ class AnazhRealm_netz_p2p {
             jumpPressedAt: -Infinity,
             simT: 0,
             yaw: 0,
-            keys: { w: false, a: false, s: false, d: false, shift: false, " ": false },
+            tafel: {
+                vor: 0,
+                quer: 0,
+                sprint: false,
+                sprung: false,
+                rutsch: false,
+                gas: 0,
+                bremse: 0,
+                lenken: 0,
+                handbremse: false,
+            },
             fwd: new THREE.Vector3(),
             rgt: new THREE.Vector3(),
             mdir: new THREE.Vector3(),
@@ -2772,12 +2788,11 @@ class AnazhRealm_netz_p2p {
             p2p._lockstepOut = null;
             return;
         }
-        const k = st.keys || {};
-        const b =
-            (k.w ? 1 : 0) | (k.a ? 2 : 0) | (k.s ? 4 : 0) | (k.d ? 8 : 0) | (k.shift ? 16 : 0) | (k[" "] ? 32 : 0);
+        const T = st.verbTafel; // die Leib-Felder der Tafel, die der Schritt las — analog (ein Stick reist als Zahl, JSON exakt)
+        const b = (T.sprint ? 1 : 0) | (T.sprung ? 2 : 0);
         const seq = (p2p._lockstepSeq = (Number.isFinite(p2p._lockstepSeq) ? p2p._lockstepSeq : -1) + 1);
         const out = p2p._lockstepOut || (p2p._lockstepOut = { s0: seq, f: [] });
-        out.f.push([st.yaw || 0, b]);
+        out.f.push([st.yaw || 0, b, T.vor, T.quer]);
         const m = st.playerMesh;
         if (seq % 60 === 0 && m && st.playerVel) {
             const a = {
@@ -2852,7 +2867,7 @@ class AnazhRealm_netz_p2p {
         }
         for (let i = 0; i < msg.f.length; i++) {
             const f = msg.f[i];
-            if (!Array.isArray(f) || !Number.isFinite(f[0]) || !Number.isFinite(f[1])) continue;
+            if (!Array.isArray(f) || ![f[0], f[1], f[2], f[3]].every(Number.isFinite)) continue;
             ls.buf.push(f);
         }
         if (ls.buf.length > 900) {
@@ -2870,7 +2885,7 @@ class AnazhRealm_netz_p2p {
     // GHOST-SWAP: die KOMPLETTE Charakter-Sim-Oberfläche Spieler↔Ghost tauschen, den EINEN
     // Schritt-Pfad fahren, exakt zurücktauschen. View-Seeds (_landImpactPending) werden restauriert
     // (der Ghost dippt nie die lokale Kamera); mountedArch ist für den Ghost null.
-    _lockstepStepGhost(ls, yaw, bits) {
+    _lockstepStepGhost(ls, yaw, bits, vor, quer) {
         const st = this.state;
         const mesh = st.playerMesh;
         if (!mesh || !st.playerVel) return;
@@ -2894,7 +2909,7 @@ class AnazhRealm_netz_p2p {
         s.lastMoveT = st._lastMoveT;
         s.spaceWas = st._spaceWasDown;
         s.jpAt = st._jumpPressedAt;
-        s.keys = st.keys;
+        s.tafel = st.verbTafel;
         s.yaw = st.yaw;
         s.fwd = st.forward;
         s.rgt = st.right;
@@ -2921,14 +2936,8 @@ class AnazhRealm_netz_p2p {
         st._lastMoveT = ls.lastMoveT;
         st._spaceWasDown = ls.spaceWasDown;
         st._jumpPressedAt = ls.jumpPressedAt;
-        const k = ls.keys;
-        k.w = !!(bits & 1);
-        k.a = !!(bits & 2);
-        k.s = !!(bits & 4);
-        k.d = !!(bits & 8);
-        k.shift = !!(bits & 16);
-        k[" "] = !!(bits & 32);
-        st.keys = k;
+        Object.assign(ls.tafel, { vor, quer, sprint: !!(bits & 1), sprung: !!(bits & 2) });
+        st.verbTafel = ls.tafel;
         st.yaw = yaw;
         st.forward = ls.fwd;
         st.right = ls.rgt;
@@ -2938,8 +2947,8 @@ class AnazhRealm_netz_p2p {
         if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
         if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
-        this._stepCharacter(FIXED_DT, ls.simT);
         this._loopPlayerMovement(ls.simT, FIXED_DT);
+        this._stepCharacter(FIXED_DT, ls.simT);
         this._rittSchritt(FIXED_DT); // der Ghost reitet nie (mountedArch null) — die Ordnung bleibt exakt
         ls.simT += FIXED_DT;
         // --- Ghost sichern ---
@@ -2979,7 +2988,7 @@ class AnazhRealm_netz_p2p {
         st._lastMoveT = s.lastMoveT;
         st._spaceWasDown = s.spaceWas;
         st._jumpPressedAt = s.jpAt;
-        st.keys = s.keys;
+        st.verbTafel = s.tafel;
         st.yaw = s.yaw;
         st.forward = s.fwd;
         st.right = s.rgt;
@@ -3080,7 +3089,7 @@ class AnazhRealm_netz_p2p {
                 if (ls.bufStart !== ls.doneSeq + 1) break; // nicht anschlussfähig → Anker abwarten
                 const f = ls.buf.shift();
                 ls.bufStart++;
-                this._lockstepStepGhost(ls, f[0], f[1]);
+                this._lockstepStepGhost(ls, f[0], f[1], f[2], f[3]);
                 ls.doneSeq++;
                 n++;
                 if (ls.trace) {

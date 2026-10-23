@@ -1,10 +1,10 @@
-// tor-huelle.cjs — DIE MASSE DER GEZEICHNETEN TOR-GESTALT (Leben-Schau 2, Nachbesserung 10.10.): je Tor-Rezept die Hülle,
+// tor-huelle.cjs — DIE MASSE DER GEZEICHNETEN TOR-GESTALT (Leben-Schau 2): je Tor-Rezept die Hülle,
 // mit der der Wirt das Tor stoßen lässt (`_torBlockerAABBs`), gemessen an der Gestalt, die das Studio zeichnet (porta-core
 // `buildInstance`, LOD 0 — seed-invariant, im Foundry-Worker auf three r128 gebaut wie hier in Node). Je Seite (0: x < 0,
 // 1: x > 0 — eine Ruine fehlt hier ein Stein, dort nicht): die Außenkante der Pfosten (Punkte außerhalb der Öffnung ±rimAx
 // im Körper-Band 0,1 m bis zur Kämpferlinie) und ihre Tiefe, darüber Außenkante und Tiefe des Rahmens; dazu die Oberkante.
-// Der Wirt baut die Gestalt NIE selbst (bis zur Gegenprüfung 10.10. baute er sie synchron am Spawn: 15–50 ms je Gestalt
-// auf dem Haupt-Thread) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`; gate:porta-contract misst sie hier gegen
+// Der Wirt baut die Gestalt NIE selbst (nie synchron am Spawn) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`;
+// gate:porta-contract misst sie hier gegen
 // die gebaute Gestalt (Mint-Treue), `MINT_TOR_HUELLE=1 node scripts/diag-porta-contract.cjs` druckt die Tafel neu.
 "use strict";
 

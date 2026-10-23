@@ -27,7 +27,7 @@ function check(name, ok) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
+    const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
@@ -51,21 +51,12 @@ function check(name, ok) {
         // (GPU-init ist langsam); beim Null-Renderer resolved init() sofort → rendererReady
         // feuert VOR startEternalLoop → Race. Auf den Loop warten ist renderer-unabhängig korrekt.
         await page.evaluate(async () => {
-            // V18.276 — die Boot-Readiness wartet großzügig (wie der volle Gate): auf einem
+            // die Boot-Readiness wartet großzügig (wie der volle Gate): auf einem
             // gedrosselten Container dauert Worldgen+Loop-Boot >5 s (gemessen ~5-26 s); ein zu
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
             // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
-            const dl = performance.now() + 60000;
-            while (
-                (!window.anazhRealm ||
-                    !window.anazhRealm.state ||
-                    !window.anazhRealm.state.rendererReady ||
-                    typeof window.anazhRealm._gameLoopTick !== "function" ||
-                    !window.anazhRealm.state.blueprints) &&
-                performance.now() < dl
-            )
-                await new Promise((r) => setTimeout(r, 100));
+            await window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
@@ -85,7 +76,7 @@ function check(name, ok) {
             const MIN_MS = 3000;
             const PLATEAU_MS = 1500;
             const CAP_MS = 35000;
-            // V18.273 — wie der volle Gate: den Worker für den Warmup aushängen →
+            // wie der volle Gate: den Worker für den Warmup aushängen →
             // der Ring baut SYNC + deterministisch (load-unabhängig), kein
             // Async-Worker-Hunger unter CPU-Last (s. playtest.cjs-Warmup-Kommentar).
             const _warmupSavedWorker = r.state.voxelWorker;
@@ -268,7 +259,7 @@ function check(name, ok) {
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
-            // r.constructor.KIND_SUBSTANCE, die dokumentierte V18.259-Falle).
+            // r.constructor.KIND_SUBSTANCE, die dokumentierte Falle).
             out.blueprintBuilds = safe(() => {
                 const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
                 const names = ["esse", "welt_portal", "ruestung_brustpanzer"];
@@ -305,7 +296,7 @@ function check(name, ok) {
                         continue;
                     }
                     let role = bp.role;
-                    if (!role && typeof r.computeBlueprintRole === "function") role = r.computeBlueprintRole(bp);
+                    if (!role) role = r.computeBlueprintRole(bp);
                     res[n] = role || "?";
                 }
                 return res;
@@ -313,10 +304,8 @@ function check(name, ok) {
             // STATS: der Spieler hat sinnvolle Werte (hp in state.player.hp, speed in state.speed)
             out.playerStats = safe(() => {
                 let hpMax = null;
-                if (typeof r.computePlayerStats === "function") {
-                    const cs = r.computePlayerStats();
-                    hpMax = cs && cs.stats ? cs.stats.hpMax : null;
-                }
+                const cs = r.computePlayerStats();
+                hpMax = cs && cs.stats ? cs.stats.hpMax : null;
                 return {
                     hp: st.player ? st.player.hp : null,
                     hpMax,
@@ -337,7 +326,7 @@ function check(name, ok) {
         check("getTerrainHeightAt(0,0) endlich", R.terrainHeightFinite === true);
         const av = R.avatar || {};
         check("AVATAR baut (_buildHumanGroup ohne Crash)", av.ok === true && !av.__err);
-        // PIPE-VOLLENDUNG (V18.459): der Mensch ist ein Pipe-Asset — je (Gelenk ×
+        // PIPE-VOLLENDUNG: der Mensch ist ein Pipe-Asset — je (Gelenk ×
         // Klasse) GEMERGT (~29 Meshes statt 227, voll gelenkig). Untergrenze 10 =
         // die Struktur-Wand (Gelenke × Klassen), Obergrenze 120 = kein Rückfall
         // in den ungemergten Baum.
@@ -395,44 +384,14 @@ function check(name, ok) {
         check("Spieler-Stats sinnvoll (hp>0, speed>0)", ps && ps.hp > 0 && ps.speed > 0);
         if (!(ps.hp > 0 && ps.speed > 0)) console.log("     ⟶ " + JSON.stringify(ps));
 
-        // V18.492 — v1.0-Schritt 4 (mit der KI erschaffen) als Kern-Gesundheit: der Satz wird
-        // zum Studio-Programm, und die KI-Antwort (gestubbt — kein Netz im Gate) pflanzt echte
-        // Studio-Baupläne über den EINEN Chokepoint. Das volle Band: checkBandV18493CoSchoepferStudio.
+        // v1.0-Schritt 4 ohne Schlüssel: der Satz wird zum Studio-Programm. Die KI-Antwort trägt der Korpus mit den
+        // Antworten eines echten Modells (scripts/diag-v1-pfad.cjs --korpus).
         const K = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const o = {};
             try {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
                 o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
-                // Die Welt wächst während der Antwort weiter (die Promotion um den Spieler macht Streu-Zellen zu Bäumen, das
-                // Welt-Dorf setzt seine Häuser über die Takte): gezählt wird nach Identität, nicht nach Listen-Index — die
-                // CI (Lauf 37717894108) fand neben den Birken einen anderen neuen Eintrag und meldete die Birken als falsch.
-                const vorher = new Set(r.state.architectures);
-                const llm = r.state.llm;
-                const alt = { enabled: llm.enabled, provider: llm.provider };
-                const orig = r.llmCall;
-                llm.enabled = true;
-                llm.provider = "ollama";
-                // Der Spieler steht auf der Genesis-Plattform: ihre Lichtung ist ein Grundriss der Natur-Wand (Entscheid
-                // D3) — keine Birke, deren Krone über die Scheibe reicht (6,5 m + bis 14 m Krone). Die KI pflanzt 30–50 m weit.
-                r.llmCall = async () => ({
-                    say: "Birken.",
-                    program: ["spawn_studio", "birke", ["far_player", 30, 50], 3, 5],
-                });
-                try {
-                    await r.maybeAnswerWithLlm("birken bitte", () => {});
-                } finally {
-                    r.llmCall = orig;
-                    llm.enabled = alt.enabled;
-                    llm.provider = alt.provider;
-                }
-                const neu = r.state.architectures.filter((e) => !vorher.has(e));
-                const birke = r._studioBlueprintForWord("birke");
-                const birken = neu.filter((e) => e.type === birke);
-                // die KI pflanzt Studio-Birken — und nichts, was kein Baum ist (ein Baum der Promotion darf mitwachsen)
-                o.ki = birken.length > 0 && neu.every((e) => e.type === birke || /^(baum_|grown_)/.test(e.type || ""));
-                o.neu = neu.map((e) => e.type).slice(0, 8);
-                for (const e of birken.reverse()) r.removeArchitecture(e);
             } catch (e) {
                 o.err = (e && e.message) || String(e);
             }
@@ -541,9 +500,7 @@ function check(name, ok) {
             RI.faelle === 54 && RI.rot === 0
         );
         check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
-        check("CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)", K.ki === true);
         if (K.err) console.log("     ⟶ " + K.err);
-        if (K.ki !== true) console.log("     ⟶ neu: " + JSON.stringify(K.neu || []));
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);
         if (fails.length) {

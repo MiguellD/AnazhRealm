@@ -109,8 +109,7 @@ async function checkBandStoffSignatur(ctx) {
 
 // Co-Schöpfer spricht Studio: ein Satz an die KI (oder ohne Schlüssel in den Chat) wird über
 // DIESELBEN Tabellen wie die Werkstatt zu Studio-Bauplänen — geerdet, nie im Wasser. Beweist
-// Auflöser · Op · Satz-Parser · near_water · Prompt · KI-Pfad END-ZU-END (gestubbte Antwort →
-// maybeAnswerWithLlm → dslRun → spawnArchitecture).
+// Auflöser · Op · Satz-Parser · near_water · Prompt (den KI-Pfad mit echten Antworten trägt der Korpus, diag-v1-pfad --korpus).
 // (checkBandV18331ReplayDeterminism unten: gleicher Start + gleiche Input-Folge ⇒ bit-identisch;
 // sonst Math.random/Zeit/Float-Drift im Schritt-Pfad.)
 async function checkBandV18493CoSchoepferStudio(ctx) {
@@ -166,7 +165,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 : null;
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
-            // Welle L (V-k5): near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
+            // near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
             // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
             // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
             const pm0 = r.state.playerMesh.position;
@@ -217,29 +216,6 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 !bHaiku.output_config &&
                 !bHaiku.fallbacks &&
                 !hHaiku["anthropic-beta"];
-            // Der KI-Pfad END-ZU-END (die Antwort ist gestubbt — der Container hat kein Netz zum LLM).
-            const llm = r.state.llm;
-            const altLlm = { enabled: llm.enabled, provider: llm.provider };
-            const origCall = r.llmCall;
-            llm.enabled = true;
-            llm.provider = "ollama";
-            r.llmCall = async () => ({
-                say: "Ich lasse Birken wachsen.",
-                program: ["spawn_studio", "birke", ["at", spot.x + 6, p.y, spot.z + 6], 4, 77],
-            });
-            const v3 = archs.length;
-            const said = [];
-            try {
-                await r.maybeAnswerWithLlm("pflanz mir ein paar birken", (t) => said.push(t));
-            } finally {
-                r.llmCall = origCall;
-                llm.enabled = altLlm.enabled;
-                llm.provider = altLlm.provider;
-            }
-            const neu3 = archs.slice(v3);
-            out.kiNeu = neu3.length;
-            out.kiBirke = neu3.length > 0 && neu3.every((e) => e.type === r._studioBlueprintForWord("birke"));
-            out.kiSagte = said.some((t) => /Birken/.test(t)) && said.some((t) => /Welt verändert/.test(t));
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -288,11 +264,6 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         R.promptWoerter === true && R.ruleVerbot === true
     );
     check(
-        "V18.493 Co-Schöpfer: KI-Pfad END-ZU-END — Antwort → maybeAnswerWithLlm → 4 Birken aus dem Studio in der Welt",
-        R.kiNeu === 4 && R.kiBirke === true && R.kiSagte === true,
-        `neu=${R.kiNeu} birke=${R.kiBirke} sagte=${R.kiSagte}`
-    );
-    check(
         "V18.493 Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
         R.anthropicForm === true
     );
@@ -304,15 +275,21 @@ async function checkBandFoundrySpeicherFlach(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const s0 = performance.now();
-        while (performance.now() - s0 < 60000) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0; if (sz >= 25) break; }
-            await sleep(6);
-        }
+        await window.__weltDa();
+        await window
+            .__gebautNach("25 Chunks um den Spieler", {
+                fertig: () => (window.anazhRealm.state.voxelChunks ? window.anazhRealm.state.voxelChunks.size : 0) >= 25,
+                takt: async () => {
+                    try {
+                        window.anazhRealm._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await sleep(6);
+                },
+                max: 2000,
+            });
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
-        const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+        await window.__weltDa(() => !f || f.ready);
         // dichten Wald streamen.
         for (let it = 0; it < 300; it++) {
             r.state._frameOverBudget = false;
@@ -376,19 +353,17 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 }
 
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
-// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf (vorher NULL = Part-Pfad, die „alten Kristalle"); die Ausstattung
-// (glutbrunnen · marktstand_dorf · brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der
-// Architektur; das Glut-Genom ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt
-// nie auf das welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
+// brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
+// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
+// welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
 async function checkBandKristallKleid(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
-        const b0 = performance.now();
-        while (performance.now() - b0 < 60000 && !(f && f.ready && f.recipes && f.recipes.feuerstelle)) await sleep(100);
+        await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
         const bp = r.state.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
@@ -430,16 +405,22 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
     const { page, check } = ctx;
     const out = (await safeEvaluate(page, async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const s0 = performance.now();
-        while (performance.now() - s0 < 60000) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0; if (sz >= 25) break; }
-            await sleep(6);
-        }
+        await window.__weltDa();
+        await window
+            .__gebautNach("25 Chunks um den Spieler", {
+                fertig: () => (window.anazhRealm.state.voxelChunks ? window.anazhRealm.state.voxelChunks.size : 0) >= 25,
+                takt: async () => {
+                    try {
+                        window.anazhRealm._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await sleep(6);
+                },
+                max: 2000,
+            });
         const r = window.anazhRealm;
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
-        const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+        await window.__weltDa(() => !f || f.ready);
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         for (let it = 0; it < 350; it++) {
@@ -459,7 +440,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
         // Baum-Namen UND einen nicht-foundry Leaf (numerischer Index / `grown_…`-Grammatik-Bauplan).
-        // Welle B: ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
+        // ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
         const leafOf = (k) => { const i = k.indexOf("#"); if (i >= 0) return k.slice(i + 1); return /^(f:|fimp:)/.test(k) ? k : ""; };
         const isFoundry = (k) => k.startsWith("fscatter:") || /^(f:|fimp:)/.test(leafOf(k));
         const isTreeName = (k) => /(^|[#@:_])baum_[a-z]+/.test(k) || /grown_baum_/.test(k);
@@ -490,7 +471,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
     );
 }
 
-// Der Leistungs-Vertrag — eingefaltet aus gate:leistungs-vertrag (D3b, Profi-Doktrin Welle 5, 18.07.): die erkämpften Leistungs-
+// Der Leistungs-Vertrag — eingefaltet aus gate:leistungs-vertrag (D3b, Profi-Doktrin Welle 5): die erkämpften Leistungs-
 // Invarianten stehen als VERTRAG. V1 Stand-Churn null (Welt gesettelt, Spieler steht → 0 Gruppen-Mints) · V2 der Ingest-Takt (echte
 // Request-Ergebnisse resolven nie synchron, ≤ 3 je Frame in Ankunfts-Reihenfolge, über Budget 1, headless sofort) · V3 die Gruppen
 // klettern im Stand nicht · V4 der Trace trägt bundleDeckung + ingestTakt + gruppenChurn · V5 das Szene-Live-Set < 700 MB;
@@ -503,12 +484,7 @@ async function checkBandLeistungsVertrag(ctx) {
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const o = { err: null };
         try {
-            const dl = performance.now() + 90000;
-            while (
-                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-                performance.now() < dl
-            )
-                await sleep(100);
+            await window.__weltDa();
             const r = window.anazhRealm,
                 st = r.state;
             // Kurzes Boot-Settle, dann PRODUKTIONS-TREUES Regime: headless streamt
@@ -522,27 +498,30 @@ async function checkBandLeistungsVertrag(ctx) {
                 } catch (_e) {}
                 if (i % 15 === 0) await sleep(15);
             }
-            // DIE WARTENDEN REGIONEN (06.10., V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
             // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
             // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
             // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —
             // das Stand-Fenster misst Churn, nicht den Boot.
             {
-                const dlW = performance.now() + 150000;
                 // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
                 const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
-                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
-                // — der Streamer lief noch nie — als „keine wartet")
+                // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
-                while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
-                    for (let i = 0; i < 30; i++) {
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {}
-                    }
-                    await sleep(30);
-                }
+                await window
+                    .__gebautNach("die Streu um den Spieler und der Vorrat", {
+                        fertig: () => !(wartend() > 0 || vorrat()),
+                        takt: async () => {
+                            for (let i = 0; i < 30; i++) {
+                                try {
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {}
+                            }
+                            await sleep(30);
+                        },
+                        max: 5000,
+                    });
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
                 o.vorratPhase = vorrat();
@@ -573,7 +552,7 @@ async function checkBandLeistungsVertrag(ctx) {
                 };
             r._foundryBuildImpostorFlat = nullKarte(_oKF);
             r._foundryEnsureImpostorRecord = nullKarte(_oKR);
-            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund, 14.10.): die Physical-Klasse des Klarlacks lebt in der
+            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund): die Physical-Klasse des Klarlacks lebt in der
             // Node-Bibliothek des Renderers (`_foundryTreeMaterial`), der Null-Renderer trägt keine — kam eine Lieferung mit
             // Haut im gelüfteten Fenster, brach der Stoff laut („STOFF: die Gruppe der Foundry-Lieferung"). Er baut mit der
             // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
@@ -602,7 +581,7 @@ async function checkBandLeistungsVertrag(ctx) {
             // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
                 // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
-                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // Karte) und jede Region der Karte, die noch wartet
                 // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
                 const ringWartet = () => {
                     const liste = [];
@@ -620,39 +599,39 @@ async function checkBandLeistungsVertrag(ctx) {
                 // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
                 // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
                 // keine wachsende Siedlung). Ein Bau dauert 0,1–25 s; zwei ruhige Batches sind ein Takt-Maß, keine Uhr — am
-                // langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
+                // langsamen CI-Läufer
                 // lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal mit 3 s späteren Worker-Antworten
                 // 88 Mints, 80 → 168. K10-6: der eigene Zähler (Foundry allein) sah den Dorf-Zug nicht — die Ort-Wahl des
                 // Start-Dorfs rechnete in 3 von 3 Läufen noch beim Fenster-Start (18–19 Scheiben), landete im Fenster oder
                 // im Ingest-Takt: CI 12 Mints im Stand (V1), über Budget 0 statt 1 Freigabe (V2, 3 von 6 lokal).
                 const offen = () => window.__einschwingOffen(r);
                 const baut = () => Object.keys(offen()).length;
-                const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
-                while (ruhigeBatches < 2 && performance.now() < dlQ) {
-                    const mv = r._archGruppenMints || 0;
-                    const ring0 = ringStand();
-                    for (let i = 0; i < 100; i++) {
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {}
-                        feed(150);
-                        if (i % 20 === 0) await sleep(15);
-                    }
-                    const ring1 = ringStand();
-                    const ruhig =
-                        (r._archGruppenMints || 0) === mv &&
-                        ring0 === ring1 &&
-                        ring1.endsWith("|0") &&
-                        baut() === 0;
-                    ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
-                }
+                await window
+                    .__gebautNach("die Ruhe der Welt (zwei ruhige Scheiben)", {
+                        fertig: () => ruhigeBatches >= 2,
+                        takt: async () => {
+                            const mv = r._archGruppenMints || 0;
+                            const ring0 = ringStand();
+                            for (let i = 0; i < 100; i++) {
+                                try {
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {}
+                                feed(150);
+                                if (i % 20 === 0) await sleep(15);
+                            }
+                            const ring1 = ringStand();
+                            const ruhig = (r._archGruppenMints || 0) === mv && ring0 === ring1 && ring1.endsWith("|0") && baut() === 0;
+                            ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
+                        },
+                        max: 200,
+                    });
                 o.quieszent = ruhigeBatches >= 2;
                 o.ringOffen = ringWartet();
                 o.baut = baut();
                 o.weltOffen = offen();
             }
-            // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
+            // GOLD 4 — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
             // gesettelten kleinen Welt — keine künftige Welle darf das Live-Set
             // still zurück in die GB-Klasse wachsen lassen (die 819-MB-Messung

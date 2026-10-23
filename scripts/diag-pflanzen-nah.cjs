@@ -1,60 +1,50 @@
-// diag-pflanzen-nah.cjs — DIE LINSE DES PFLANZEN-NAHBILDS (05.10., Gebot 10: die Linse nennt den Täter beim NAMEN).
-// Befund der Blick-Tour V18.530 (Bilder 01/02/04/05/06): die Birken-Rinde gipsweiß, der Hasel-Busch ein Haufen breiter
-// Papier-Streifen, das Laub auf Armlänge meterlange flache Blätter mit harter dunkler Rippe, die Blume nah eine flache
-// Scheibe. Jede Probe liest die GELIEFERTEN Puffer über die echte Foundry-Naht (asset-worker-harness: dieselben Kerne
+// diag-pflanzen-nah.cjs — DIE LINSE DES PFLANZEN-NAHBILDS (Gebot 10: die Linse nennt den Täter beim NAMEN). Jede Probe liest die GELIEFERTEN Puffer über die echte Foundry-Naht (asset-worker-harness: dieselben Kerne
 // wie Labor und Welt; die Welt liest nur Vertex-Farben — Lehre 19), je Art der Klasse, nicht das bequeme Beispiel:
 //
 //  (R) RINDE je Baum-Art (Welt-Gestalt 1, Nah-Stufe L0): die flächen-gewichtete lineare Albedo (Y) des Stamms im Band
 //      y ∈ [0,12 H, 0,35 H] liegt im Band ihres Rinden-Typs (RINDEN_BAND). Die Birke (papery) dazu: Lentizellen
 //      (Flächen-Anteil Y < 0,12 im Stamm-Band), die schwarze Fuß-Borke (y ∈ [0,005 H, 0,05 H]) und die dunklen Zweige
-//      (Rinde über 0,7 H). Vorher: Birke 0,83, kein Strich, weißer Fuß, weiße Zweige.
+//      (Rinde über 0,7 H).
 //  (G) GITTER — das Ringel-Maß des Stamm-Strangs: je Spalte die zweite Differenz der Ring-Luminanz über das Stamm-Band,
 //      relativ zur Luminanz. Ein Muster über dem Nyquist des Ring-Gitters (die Plattenrisse der Fichte: 1,95 Ringe je
-//      Periode, Mikro-Rauschen je Ring zufällig) faltet in Ringel-Bänder: vorher Fichte/Tanne 0,44/0,42, Eiche 0,32,
-//      Karst 0,37. Die lebenden Laub- und Nadel-Rinden halten ≤ RINGEL_MAX; die Birke trägt ihre Zeilen absichtlich,
+//      Periode, Mikro-Rauschen je Ring zufällig) faltet in Ringel-Bänder. Die lebenden Laub- und Nadel-Rinden halten ≤ RINGEL_MAX; die Birke trägt ihre Zeilen absichtlich,
 //      das Totholz seine Zerfalls-Flecken (3D-Rauschen, kein periodischer Term) — beide stehen benannt außerhalb.
 //  (S) STRAUCH (Gestalt 1, beide Gitter-Stufen — die Nah-Stufe L0 und seit Welle 6 die Mittel-Stufe L1): die Krone sind
-//      Karten aus dem EINEN Atlas (foliageTex, keine Klinge) und das Reisig trägt ≥ REISIG_MIN der Dreiecke. Vorher:
-//      8 820 Klingen-Dreiecke, Rinde 24 %.
+//      Karten aus dem EINEN Atlas (foliageTex, keine Klinge) und das Reisig trägt ≥ REISIG_MIN der Dreiecke.
 //  (B) BLUME (L0, Gestalten 1/2): die Blütenblätter tragen den Saftmal-Verlauf — je Blatt Luminanz Spitze : Grund im
-//      Mittel ≥ SAFTMAL_MIN. Vorher: eine Farbe je Blatt (1,0).
+//      Mittel ≥ SAFTMAL_MIN.
 //  (M) BLATT-MASS (Laub-Bäume L0 und der Strauch L0/L1, Gestalt 1): die Länge eines Atlas-Blatts in der Welt =
 //      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
 //      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
-//      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
-//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Seit S3 (09.10.) sitzt die Nadel im
-//      Wedel (Zelle 3, WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
-//      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
-//  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
-//      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
-//  (V) VOLUMEN — die Normale der Krone (K68-N1, Prüfer K68): jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
+//      BLATT_BAND.
+//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Die Nadel sitzt im Wedel (Zelle 3,
+//      WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
+//      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M.
+//  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): jede L1-Krone ist Karte oder Strähne.
+//  (V) VOLUMEN — die Normale der Krone: jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
 //      Normale der Krone (phyto-core kronenNormalen) — aus 8 Peilungen zeigt die GELICHTETE Normale der nahen Kronen-Hälfte
 //      aus der Krone hinaus (Anteil nach innen ≤ KRONE_WEG_MAX). Gelichtet ist, was die Leser tun: lesen Welt-Stoff, Labor und Bäcker der
 //      Karte die Normale flip-frei (`_laubStoffNormale` = normalViewGeometry · injectWind `krone` · der Normal-Pass), ist sie
 //      die Normale; sonst kehrt r184 sie auf jeder Rückseite (front ? n : −n). Dazu das EINE Gesetz: der Grammatik-Baum der
 //      Werkstatt legt dieselbe Normale (`_kronenNormalenAuf` → kronenNormalen), keine zweite Kronen-Normale im Stamm.
-//      Vorher (bbaaff31): die Hälfte der nahen Dreiecke nach innen, der Wirt mit seiner Kuppel vom Kronen-Boden.
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
-//      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
-//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
+//      der hängenden Rute).
+//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht: die Zelle als Karte auf dem Schirm, trilinear,
 //      alphaTest 0,5, das Pixel als Mittel der Halton-Unterproben der zeitlichen Auflösung; Δ-Luma (Laub gegen Himmel)
-//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX (50 % von vorher 0,166), die
+//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX, die
 //      Deckung je λ 1…3 = Stufe 0 ± 0,1 (nah = fern). Konsum-Leser: der Laub-Stoff (`_blattAtlasProbe`).
-//  (H) HÖHEN-ZENSUS je Art (K20): der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
+//  (H) HÖHEN-ZENSUS je Art: der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
 //  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC3 ab Stufe 0, rgba ab
 //      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
 //      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
 //      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
-//      `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest sonst niemand. Vorher (BC1 ohne Teilen): Laub
-//      Y 0,96 → 0,84 je Stufe, die Nadel-Zelle 0,86 — die Welt dunkler als Labor und L2-Karte (Prüfer W5).
-//  (T) TEPPICH — die Halm-Deckung der Wiese (K56): je gelieferte Gras-Stufe (L1, L2) und Gestalt die Vorlage nach dem
+//      `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest sonst niemand.
+//  (T) TEPPICH — die Halm-Deckung der Wiese: je gelieferte Gras-Stufe (L1, L2) und Gestalt die Vorlage nach dem
 //      Wiesen-Gesetz gekachelt (Raster understory.grassStep, Jitter ±0,34, Drehung, Skala placement.scale.gras ·
 //      0,7…1,4, volle Wiese) und parallel unter TEPPICH_NEIGUNG projiziert (der Boden 4,4 m vor dem Ego-Auge): der Anteil
-//      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Vorher Büschel von 0,15 m auf dem 0,72-m-Raster (Augen-Befund 14.10.:
-//      Büschel auf glattem Grün). Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
+//      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
 //      DIE GRASNARBE (K70, Soll-Tafel boden-nah laiWirk ≥ 1,7): die Schwellen tragen die geschlossene Narbe, und der Halm
-//      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe); bis K70 begann jeder Halm eine
-//      Segment-Länge über dem Grund (L1/L2: ein Drittel des Halms Luft, Fuß 7–9 % der Höhe).
+//      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
 // Atlas-Leser ohne ÷ alpha) — die Linse
@@ -304,7 +294,7 @@ function nadelMass(fall, T, skala) {
 }
 // (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").
 // (W) DIE WEIDE trägt Weiden-Blätter: jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE),
-// u in [zelle/4, (zelle+1)/4]. Vorher (Prüfer W5, Bild weide-8m) las sie die Großblatt-Zelle — runde Hasel-Blätter.
+// u in [zelle/4, (zelle+1)/4].
 function weidenZelle(fall, T) {
     const z = PC.BLATT_ATLAS_WEIDE.zelle;
     let n = 0,
@@ -426,8 +416,8 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet jede Ecke über
-// ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie (vorher, 210fe8a7: ROT).
+// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet
+// jede Ecke über ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie.
 function partienDerKrone(f, pre, sk) {
     const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
     if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;
@@ -566,7 +556,7 @@ function frachtStufe(m, wert, teilen) {
     return { Z, zellen };
 }
 // Die Reihen: das Labor (das Bild, gerade) und die Welt je Format (die Fracht, der EINE Leser). `bcLeser` (Selbsttest):
-// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade (der Leser vor 05.10.).
+// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade.
 function frachtReihen(bild, bcLeser) {
     const fr = PC.blattAtlasFracht(bild, true);
     const stufen = (mips, teilen) =>
@@ -605,7 +595,7 @@ function frachtUrteil(R) {
         }
     return v;
 }
-// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht: die Zelle des Atlas als Karte auf dem Schirm
 // (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
 // zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
 // Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
@@ -629,7 +619,6 @@ for (let i = 1; i <= 8; i++) {
 }
 // Die Schwelle des Laub-Stoffs je Schirm-Ort: der alphaTest 0,5 (die Welt zeichnet ohne Raster-Schwelle).
 const kornSchwelle = () => 0.5;
-// Vorher (integ-probe 858ed586, Rang-Mips mit Orts-Hash, BC1): 0,166 an der Eichen-Krone auf 25 m (λ 1,58) — Ziel ≤ 50 %.
 const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
@@ -688,7 +677,7 @@ function kornReihe(mips, zBasis) {
         return { lambda, N, zellen };
     };
 }
-// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20, 13.10.): das Kanten-Korn (oben) misst die Deckung, das Bild
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht: das Kanten-Korn (oben) misst die Deckung, das Bild
 // der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
 // Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
 // Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
@@ -827,7 +816,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
     }
     return { v, m };
 }
-// (H) DER HÖHEN-ZENSUS (K20): die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
+// (H) DER HÖHEN-ZENSUS: die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
 // (phyto-core forestTreeSize); der Altbestand sind die herrschenden Bäume (Größe p75 … p98 über die Bestandsdichte).
 // Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
 // H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
@@ -878,7 +867,7 @@ function brustDurchmesser(T, yWelt, skala) {
 // mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
 const SOLITAER_HD = 0.6;
 // Der Kronenansatz des Solitärs (tiefstes Blatt ÷ Höhe, Solitäreiche Marbach): tief, aber über einem kurzen Stamm —
-// unter 0,08 steht die Krone als Busch auf dem Boden (Blick-Sonde 12.10.), über 0,35 trägt er den Bestands-Schaft.
+// unter 0,08 steht die Krone als Busch auf dem Boden, über 0,35 trägt er den Bestands-Schaft.
 const SOLITAER_ANSATZ = [0.08, 0.35];
 function kronenAnsatz(T) {
     let lo = Infinity;
@@ -942,7 +931,7 @@ function hoehenUrteil(roh, skala) {
 }
 // (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
 // Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
-// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz. Vorher Eiche 4,0 gegen 5,2 · Weide 5,3 gegen 4,5.
+// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
 const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
 function pflanzKroneUrteil(roh, skala, a, nadel) {
     const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore
@@ -975,7 +964,7 @@ function deckungStufe0(bild) {
 }
 
 
-// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
+// (WI) DER WIND — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
 // Gestalt und seine Leser:
 //   f0   je Baum-Art (L0, Gestalt 1): f0 = kF · D / H² mit D = Stamm-Durchmesser in 1,3 m Welt-Höhe (der Ring des Stamm-
 //        Strangs, gemessen von DIESER Linse) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff rechnet (kF · δ / H, δ aus
@@ -1317,7 +1306,7 @@ function windUrteil(fall, T, skala, deltaMul) {
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
     }
-    // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
+    // (H) an kranken Kopien des Zensus: die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
     // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
     {
         const verzerrt = (T, ky, kxz) =>

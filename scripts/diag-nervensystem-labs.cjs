@@ -60,26 +60,17 @@ function staticLaws(manifestSrc) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
+    const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {}, w: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa();
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
         const lofi = f && f.recipes ? f.recipes.lofi : null;
         res.b.lofiKind = lofi && lofi.kind;
@@ -126,7 +117,7 @@ function staticLaws(manifestSrc) {
             res.k.scaleStudio = JSON.stringify(r._lofiActiveScale());
             res.k.semi2Studio = r._lofiScaleSemitone(2); // Blues: scale[2] = 5
             res.k.semi6Studio = r._lofiScaleSemitone(6); // 6-Ton-Skala: idx 6 = Oktav-Wurzel +12
-            // V18.492 — die Akkord-BREITE folgt dem klang-Gesetz colorExt (Genre-DNA color,
+            // die Akkord-BREITE folgt dem klang-Gesetz colorExt (Genre-DNA color,
             // EINE Quelle Lab+Welt): der Grund-Vierklang [0,5,7,12] + (colorExt−1) Terzen darüber.
             const _kc = globalThis.__klangCore;
             const _extSoll = () => {
@@ -270,7 +261,7 @@ function staticLaws(manifestSrc) {
         // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
         try {
             res.x = {};
-            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
+            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH
             const frozenG = r.constructor.CREATURE_SOULS.wolf.bodyParts;
             const effG = r._tetrapodaSoulParts("wolf");
             res.x.glutDocked = !!effG && effG.length === frozenG.length;
@@ -302,7 +293,7 @@ function staticLaws(manifestSrc) {
             res.x.humanDefTags = JSON.stringify(r.computeSoulCompoundTags(r.playerSoulDefs.human) || {});
             res.x.waechterGussLiest = (() => {
                 try {
-                    // PIPE-VOLLENDUNG (V18.459): der Mensch fährt durch die Foundry — der
+                    // PIPE-VOLLENDUNG: der Mensch fährt durch die Foundry — der
                     // Stamm-Rig KONSUMIERT den Mensch-Ofen (_ofenMenschTemplate), der über
                     // den Bäcker-Tisch (BAKERS_BY_KIND.koerper → bauMensch+morphAuf im
                     // Bäcker) gießt. Die Identitäts-Wahrheit: Kern trägt das Gesetz, der
