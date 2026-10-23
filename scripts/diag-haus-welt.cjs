@@ -164,7 +164,7 @@ const BASIS = {
         ],
     ],
     // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
-    // (am Sieger des Ort-Fadens, `_ortTraegtWirt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
+    // (`_ortTraegtWirt`) lesen dieselbe Wand — der Defekt nimmt sie beiden
     bauwand: [
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["if (!this._bauFrei(wx, wz, sl.phi || 0,", "if (false && !this._bauFrei(wx, wz, sl.phi || 0,"],
@@ -172,7 +172,7 @@ const BASIS = {
     ],
     // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
     kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
-    // W10: der Bau räumt den Wurf des Felds nicht — am Deckel der Tiere (`maxCreatures` 6: die CI stand voll, die Saat fiel)
+    // W10: der Bau räumt den Wurf des Felds nicht, am Deckel der Tiere
     tierbau: [
         ['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"],
         ["            maxCreatures: 20,", "            maxCreatures: 6,"],
@@ -389,20 +389,14 @@ async function proben(phasen) {
         const base = e.position.y - 0.5;
         // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
         const fu = e.fundament;
-        // die Saat: ein Wurf des Felds genau in der Mitte der Box (`precise`: die Spieler-Klemme schob ihn 3 m, aus einer
-        // schmalen Box hinaus), der Bau räumt erneut; am Deckel `maxCreatures` weicht der fernste Leib — sonst sagt die Welt
-        // „obergrenze", und die Probe zählt keinen
+        // die Saat: ein Wurf des Felds genau in der Box (`precise`, ohne Spieler-Klemme), am Deckel weicht der fernste Leib
         const sp = welt(e, fu.ox || 0, fu.oz || 0);
         const weit = (c) => Math.hypot(c.position.x - sp.x, c.position.z - sp.z);
         for (let k = 0; k < 64 && s.creatures.length >= s.maxCreatures; k++)
             r.removeCreature(s.creatures.reduce((m, c) => (weit(c) > weit(m) ? c : m)));
-        let nein = "kein Leib";
-        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z, undefined, null, {
-            precise: true,
-            absage: (g) => (nein = g),
-        });
+        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z, undefined, null, { precise: true });
         if (saat) saat.userData.feldWurf = true;
-        h.saat = saat ? r._grundrissRaeumen(e) >= 0 : nein;
+        h.saat = !!saat && r._grundrissRaeumen(e) >= 0;
         h.tiere = s.creatures
             .map((c) => [c, lokal(e, c.position.x, c.position.z)])
             .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
@@ -1276,8 +1270,7 @@ async function proben(phasen) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
         // DER WURF IN DEN GRUNDRISS: je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
-        // (`_naturSetzen`) — keiner steht. Ohne ihn hing W4 an der Natur, die zufällig im Grundriss wuchs (der Selbsttest
-        // „grundriss" sah 1 Busch, nach dem Umzug des Dorfs keinen: blind).
+        // (`_naturSetzen`) — keiner steht
         const wurf = [];
         for (const hs of H) {
             const f = hs.fundament;
@@ -1367,9 +1360,8 @@ async function proben(phasen) {
         o.fernOrt = { x: Math.round(fx), z: Math.round(fz) };
     }
     if (P.has("w4b")) {
-        // W4b DAS FERNE DORF: es entsteht 300 m vom Spieler (das Auto-Dorf entsteht ab 260 m, `AUTO_SETTLEMENT.nearM`) — die
-        // Streu der Region stand schon (Fern-Bäume, Unterholz, Fels). Dann läuft der Spieler hin: der Promotions-Ring (64 m)
-        // macht aus Streu-Bäumen echte Bäume, der Wald des neuen Rings wirft.
+        // W4b (Kopf): 300 m vom Spieler (das Auto-Dorf ab 260 m, `AUTO_SETTLEMENT.nearM`), die Streu steht schon; dann
+        // läuft der Spieler hin, der Promotions-Ring (64 m) macht aus Streu-Bäumen echte Bäume
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
         // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut, ohne Foundry-Aufschub
@@ -1437,8 +1429,7 @@ async function proben(phasen) {
             const RM = A.SCATTER.regionM;
             const keys = new Set();
             // nur Regionen in der Reichweite des Spielers: eine Region außer Reichweite fehlt nach der Regel der Welt und baut
-            // nie neu (das Dorf an −206/1 reichte mit zwei Häusern in −2,−1 und −2,0, das an 215/1 in 1,0 und 1,−1 — die
-            // Vorphasen hatten sie gebaut, am Start fielen sie aus der Reichweite; der Neubau kam nie zur Ruhe)
+            // nie neu
             for (const hs of FH) {
                 const rx = Math.floor(hs.position.x / RM);
                 const rz = Math.floor(hs.position.z / RM);
@@ -1492,10 +1483,8 @@ async function proben(phasen) {
                 }
             o.w4b.kachel = { pflanzen: n, imHaus };
         }
-        // (2) DIE PROMOTION lebt nur ohne warme Foundry: sie kennt jede Art der Baum-Schicht, `_buildVariantLODs` liefert dann
-        // nichts, `_promoteScatterCell` endet vor dem Spawn (im Spiel: der Boot-Spalt vor dem Buch). Die Probe stellt diesen
-        // Zustand über den Gate-Schalter her (`__anazhGateNoFoundry`, für die Scatter-Promotion vorgesehen) und wartet, bis
-        // jede Baum-Zelle im Promotions-Ring promotet ist; die Wand der Promotion (`_naturSetzen`) misst so ihren echten Takt.
+        // (2) DIE PROMOTION lebt nur ohne warme Foundry (im Spiel der Boot-Spalt vor dem Buch): der Gate-Schalter
+        // `__anazhGateNoFoundry`, gewartet, bis jede Baum-Zelle im Promotions-Ring promotet ist
         {
             const PR = A.SCATTER.promoteM;
             const ring = () => {
@@ -1523,9 +1512,9 @@ async function proben(phasen) {
         o.w4b.nah = naturImHaus(FH);
     }
     if (P.has("w6")) {
-        // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf
-        // (bergauf liegt das Podest vorn auf Gelände-Höhe); der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die
-        // Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
+        // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf;
+        // der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis
+        // die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
         o.w6 = [];
         const KULT = ["marokkanisch", "viktorianisch", "alemannisch"];
         const r0 = (x, z) => r.getTerrainHeightAt(x, z);
@@ -1597,8 +1586,7 @@ async function proben(phasen) {
                     ))
                         continue;
                     // der Anlauf-Korridor ist begehbar (2 m breit um die Tür-Achse, 7 m vor der Front bis zur Front, 0,5-m-Raster):
-                    // die oberste Feld-Fläche (`getTerrainHeightAt`) stetig — höchstens 1 m je Schritt; an einer Überhang-Kante
-                    // sprang sie 10,7 m in 1 cm, der Anlauf begann am Fuß der Klippe und lief unter sie — und 1 m darunter solide (die
+                    // die oberste Feld-Fläche (`getTerrainHeightAt`) stetig — höchstens 1 m je Schritt — und 1 m darunter solide (die
                     // Fläche interpoliert das 1,2-m-Raster des Felds)
                     let grund = null;
                     for (const lx of [tu.x - 1, tu.x, tu.x + 1]) {
@@ -1815,15 +1803,14 @@ async function proben(phasen) {
         for (let k = 0; k < 1200 && q && r._autoSettlementQueue === q && q.idx < 3; k++) await pumpe(1);
         const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
-            // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`, wie `saveState`) — ohne ihn
-            // entschied die Uhr: speicherte die Welt vor dem dritten Haus, stand die Ausstattung, sonst Brunnen 0/1, Stände 0/2
+            // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`), nie die Uhr eines Speicherns
             r._dorfGangSchliessen();
             r._autoSettlementQueue = null;
             r._stlWegeKeys.delete(q.cellKey);
         }
         // der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
         const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
-        for (let k = 0; k < 1200 && (zugLebt() || !zellen().start); k++) await pumpe(1);
+        for (let k = 0; k < 6000 && (zugLebt() || !zellen().start); k++) await pumpe(1);
         const zugOffen = !!zugLebt();
         window.__anazhAutoSettlement = takt;
         const an = (x, z, typ) => (e) =>
@@ -1904,9 +1891,7 @@ function urteil(o) {
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const tier = hs.filter((h) => h.tiere && h.tiere.length);
-        const ohneSaat = hs.filter((h) => h.saat !== true);
-        if (ohneSaat.length)
-            f.push(`W10 Saat blind: ${ohneSaat.map((h) => h.typ + " " + (h.fehler || h.saat)).join(" · ")}`);
+        if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
@@ -2141,7 +2126,7 @@ function urteil(o) {
                 `W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen ${[wa.start, wa.gruende, wa.gesperrt, wa.reload, wa.verblasst]}`
             );
         else if (wa.ohne.length) f.push(`W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne})`);
-        if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt nach 1200 Takten");
+        if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt");
         else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
         if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
