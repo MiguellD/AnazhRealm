@@ -13,7 +13,8 @@
  *                              `schritt(fn)` macht aus jeder Tat (Preset, Kultur, Würfel) EINEN Rückgängig-Schritt.
  *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
  *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
- *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt.
+ *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
+ *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`).
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
@@ -584,6 +585,10 @@
             // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt)
             messen: function (obj, s) {
                 zeigen(s == null ? stufen[0] : s, zaehle(obj));
+            },
+            // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer }) — die Welt-Werkstatt zählt das Werk der Foundry
+            setzen: function (s, c) {
+                zeigen(s, c);
             },
             // die Welt-Gestalt neu messen (entprellt, eine Stufe je Leerlauf — der Regler-Zug bleibt frei)
             neu: function () {
