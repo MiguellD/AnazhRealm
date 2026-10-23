@@ -94,3 +94,25 @@
    - ein Auge-Lauf des v1-Pfads auf der Radeon;
    - ~30 % des Budgets für Pflicht-OFFEN A, B und E;
    - Züge alle ~2 h.
+
+## Notbremse 23.10. ~22:40 (Wochen-Budget 97 %)
+
+- **main = 833bbc24** (Zug 10b: halten-k4-bogen +2, studios-k5-fixture +1; gelandet nach ~25 min, Nachwache z10b-abab in der Warteschlange).
+- **Zug 11 fährt als Skript** (`$TEMP/claude/fahre-z11.log`): ultiversum-k5-korpus@cf7828d3, schatten-k1-kontakt@ee3db3c9, haus-keller-k1@46344274, alle drei nach dem Rot von Zug 10 geheilt.
+  - Risiko: `gate:webgl-probe` W4 („der Fern-Ring verfeinert nicht, cursor=0“) war lokal schon an main 13c95713 rot.
+- **Die Punkte-Messung von Zug 9c läuft noch** im Skript (alte fahre-Fassung, Worktree koord-punkte, Zweig punkte-maschine). Danach punkte-maschine nach koordination mergen und buchen.
+- **WIP gesichert** (notbremse.sh, [skip ci], ungeprüft):
+  - ferne-blau-k1 (ferne.K1/K2)
+  - oeko-bestand-k2 (Ökologie K1, K2, K4, K5 + Tiere K1, am weitesten)
+  - physik-k1-kg (physik.K1)
+  - siedlung-k3-trasse (siedlung.K3)
+  - siedlung-k5-nah (siedlung.K5)
+- **speicher-journal-m:** unverändert, fällt an der Decke (+477 gegen main). Er landet nach dem Decken-Entscheid unten, weil Kommentare dann nicht mehr zählen.
+- **Cloud-Sitzungen** (Bewohner, Reifen, Affekt) haben die Anweisung, einen WIP-Stand zu pushen. Ihre Zweige: mensch-bewohner-k5, fahrzeug-k1-reifen, affekt-k1-ort.
+- **aufraeumen.ps1 NICHT gefahren:** Es hätte den echt-Job von Zug 11 auf radeon-890m und die Punkte-Messung von 9c mit beendet. Erst nach deren Ende fahren.
+- **Zuerst nächste Woche:**
+  1. die Nachwache-Urteile z9c, z10b und z11 lesen; bei LANGSAMER Revert;
+  2. buchen und die Karte veröffentlichen;
+  3. Generalprobe;
+  4. Decke ohne Kommentare;
+  5. die WIP-Zweige vollenden und fahren.
